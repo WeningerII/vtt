@@ -1,0 +1,5 @@
+
+
+> @vtt/server@0.0.0 build /home/weningerii/vtt/apps/server
+> tsc -b
+

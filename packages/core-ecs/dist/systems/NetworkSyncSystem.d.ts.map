@@ -1,0 +1,1 @@
+{"version":3,"file":"NetworkSyncSystem.d.ts","sourceRoot":"","sources":["../../src/systems/NetworkSyncSystem.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,UAAU,CAAC;AAEtC;;;;GAIG;AACH,qBAAa,iBAAiB;IAC5B,MAAM,CAAC,KAAK,EAAE,KAAK,GAAG,IAAI;CAO3B"}

@@ -1,0 +1,15 @@
+{
+  "name": "@vtt/tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Command line tools for asset processing and navmesh baking.",
+  "bin": {
+    "vtt-atlas": "dist/atlas.js",
+    "vtt-navmesh": "dist/navmesh.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

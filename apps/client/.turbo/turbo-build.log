@@ -1,0 +1,5 @@
+
+
+> @vtt/client@0.0.0 build /home/weningerii/vtt/apps/client
+> tsc -b
+

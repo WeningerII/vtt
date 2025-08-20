@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  displayName String
+  createdAt   DateTime @default(now())
+  memberships CampaignMember[]
+  messages    ChatMessage[]
+}
+
+model Campaign {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  members   CampaignMember[]
+  scenes    Scene[]
+}
+
+model CampaignMember {
+  id         String   @id @default(uuid())
+  role       String
+  userId     String
+  campaignId String
+  user       User     @relation(fields: [userId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  @@unique([userId, campaignId])
+}
+
+model Scene {
+  id         String   @id @default(uuid())
+  name       String
+  campaignId String
+  createdAt  DateTime @default(now())
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  campaignId String
+  authorId   String
+  channel    String
+  text       String
+  timestamp  DateTime @default(now())
+  author     User     @relation(fields: [authorId], references: [id])
+}

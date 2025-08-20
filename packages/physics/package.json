@@ -1,0 +1,16 @@
+{
+  "name": "@vtt/physics",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Broadphase and narrow-phase collision detection.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@vtt/core-ecs": "workspace:*"
+  },
+  "devDependencies": {}
+}

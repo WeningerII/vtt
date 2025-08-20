@@ -1,0 +1,14 @@
+{
+  "name": "@vtt/net",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Networking and protocol layer for the VTT.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

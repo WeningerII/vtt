@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>VTT Renderer Spike</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      html, body { margin:0; padding:0; height:100%; background:#0b0e13; color:#dbe4ff; font:14px/1.2 system-ui, sans-serif; }
+      #hud { position:fixed; top:8px; left:8px; background:#1116; padding:6px 8px; border-radius:8px; }
+      canvas { display:block; width:100vw; height:100vh; }
+      a { color:#9ecbff; }
+    </style>
+  </head>
+  <body>
+    <div id="hud">wheel=zoom • drag=pan • click=pick (see console)</div>
+    <canvas id="main"></canvas>
+    <script src="./spike.js" type="module"></script>
+  </body>
+</html>
