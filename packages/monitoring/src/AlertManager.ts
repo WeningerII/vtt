@@ -5,7 +5,7 @@
 import { EventEmitter } from "events";
 import { logger } from "@vtt/logging";
 import * as nodemailer from "nodemailer";
-import { MetricsRegistry } from "./Metrics";
+import { MetricsRegistry } from "./metrics";
 import { HealthCheckResult, HealthStatus } from "./HealthCheck";
 
 export type AlertSeverity = "info" | "warning" | "critical";
@@ -106,7 +106,9 @@ export class AlertManager extends EventEmitter {
           await this.handleAlertResolved(rule);
         }
       } catch (error) {
-        logger.error(`Error evaluating alert rule ${rule.name}:`, error);
+        logger.error(`Error evaluating alert rule ${rule.name}:`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
         this.emit("ruleError", rule.name, error);
       }
     }
@@ -166,7 +168,9 @@ export class AlertManager extends EventEmitter {
         await channel.send(alert);
         this.emit("notificationSent", alert.id, channel.name);
       } catch (error) {
-        logger.error(`Failed to send notification via ${channel.name}:`, error);
+        logger.error(`Failed to send notification via ${channel.name}:`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
         this.emit("notificationFailed", alert.id, channel.name, error);
       }
     });
@@ -210,7 +214,7 @@ export class AlertManager extends EventEmitter {
 
   getAlertHistory(limit = 100): Alert[] {
     return this.alertHistory
-      .sort((_a, _b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .sort((_a, _b) => _b.timestamp.getTime() - _a.timestamp.getTime())
       .slice(0, limit);
   }
 
@@ -406,7 +410,9 @@ export class EmailNotificationChannel implements NotificationChannel {
 
       return true;
     } catch (error) {
-      logger.error("Failed to send email notification:", error);
+      logger.error("Failed to send email notification:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -476,7 +482,9 @@ export class SlackNotificationChannel implements NotificationChannel {
 
       return response.ok;
     } catch (error) {
-      logger.error("Failed to send Slack notification:", error);
+      logger.error("Failed to send Slack notification:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -503,7 +511,9 @@ export class WebhookNotificationChannel implements NotificationChannel {
 
       return response.ok;
     } catch (error) {
-      logger.error("Failed to send webhook notification:", error);
+      logger.error("Failed to send webhook notification:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }

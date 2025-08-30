@@ -62,7 +62,7 @@ describe("RateLimiter", () => {
       setTimeout(() => {
         result = limiter.checkLimit("test-user");
         expect(result.allowed).toBe(true);
-        done();
+        _done();
       }, 150);
     });
 
@@ -114,7 +114,7 @@ describe("RateLimiter", () => {
         rateLimitedEmitted = true;
         expect(requestEmitted).toBe(true);
         expect(rateLimitedEmitted).toBe(true);
-        done();
+        _done();
       });
 
       limiter.checkLimit("test-user");
@@ -129,7 +129,7 @@ describe("RateLimiter", () => {
 
       limiter.on("reset", (data) => {
         expect(data.identifier).toBe("test-user");
-        done();
+        _done();
       });
 
       limiter.checkLimit("test-user");
@@ -204,7 +204,7 @@ describe("TokenBucketRateLimiter", () => {
     setTimeout(() => {
       result = limiter.consume("test-user", 1);
       expect(result.allowed).toBe(true);
-      done();
+      _done();
     }, 200); // Wait 200ms for refill
   });
 
@@ -252,7 +252,7 @@ describe("AdaptiveRateLimiter", () => {
     // Wait for adaptation cycle
     setTimeout(() => {
       expect(limitAdapted).toBe(true);
-      done();
+      _done();
     }, 6000); // Wait for adaptation interval
   });
 
@@ -282,7 +282,7 @@ describe("AdaptiveRateLimiter", () => {
 
     setTimeout(() => {
       expect(limitAdapted).toBe(true);
-      done();
+      _done();
     }, 6000);
   });
 });
@@ -412,7 +412,7 @@ describe("Cleanup and Resource Management", () => {
     // Wait for cleanup
     setTimeout(() => {
       expect(cleanupEmitted).toBe(true);
-      done();
+      _done();
     }, 200);
   });
 

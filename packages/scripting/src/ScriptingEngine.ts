@@ -249,12 +249,14 @@ export class ScriptingEngine {
     const permissions = this.createPermissions(manifest.permissions);
 
     return {
-      gameState: permissions.canAccessGameState ? this.api.getGameState() : Record<string, any>,
+      gameState: permissions.canAccessGameState
+        ? this.api.getGameState()
+        : ({} as Record<string, any>),
       entities: permissions.canModifyEntities ? this.api.getEntities() : new Map(),
       events: this.eventSystem,
       api: this.createRestrictedAPI(permissions),
-      storage: this.storage.createNamespace(manifest.id),
-      logger: this.logger.createNamespace(manifest.id),
+      storage: this.storage.createNamespace(manifest.id) as unknown as ScriptStorage,
+      logger: this.logger.createNamespace(manifest.id) as unknown as ScriptLogger,
       permissions,
     };
   }
@@ -316,8 +318,8 @@ export class ScriptingEngine {
       }
 
       this.hooks.get(hookName)!.push({
-        _scriptId: manifest.id,
-        _callback: (data: any) => this.executeHook(manifest.id, _hookName, _data),
+        scriptId: manifest.id,
+        callback: (data: any) => this.executeScriptHook(manifest.id, hookName, data),
       });
     }
   }
@@ -342,7 +344,7 @@ export class ScriptingEngine {
         scriptId: manifest.id,
         command,
         handler: (args: string[], _context: any) =>
-          this.executeCommand(manifest.id, command.name, args, _context),
+          this.executeScriptCommand(manifest.id, command.name, args, _context),
       });
     }
   }
@@ -371,7 +373,7 @@ export class ScriptingEngine {
     }
   }
 
-  private async executeHook(scriptId: string, hookName: string, data: any): Promise<void> {
+  private async executeScriptHook(scriptId: string, hookName: string, data: any): Promise<void> {
     const module = this.modules.get(scriptId);
     if (!module || !module.isActive || !module.instance) return;
 
@@ -410,7 +412,7 @@ export class ScriptingEngine {
     }
   }
 
-  private async executeCommand(
+  private async executeScriptCommand(
     scriptId: string,
     commandName: string,
     args: string[],

@@ -1,5 +1,5 @@
-import { _TextureManager } from "../engine/TextureManager";
-import { _GeometryManager } from "../engine/GeometryManager";
+import { TextureManager } from "../engine/TextureManager";
+import { GeometryManager } from "../engine/GeometryManager";
 
 export enum AssetType {
   TEXTURE = "texture",
@@ -372,7 +372,7 @@ export class AssetManager {
   private runGarbageCollection(): void {
     const assets = Array.from(this.assets.entries())
       .filter(([_, asset]) => asset.referenceCount === 0)
-      .sort((_a, _b) => a[1].lastAccessed - b[1].lastAccessed);
+      .sort((_a, _b) => _a[1].lastAccessed - _b[1].lastAccessed);
 
     let freedMemory = 0;
     const targetMemory = this.maxCacheSize * 0.7; // Free to 70%

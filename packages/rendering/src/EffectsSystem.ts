@@ -365,10 +365,10 @@ export class EffectsSystem {
     // Fireball spell effect
     this.templates.set("fireball", {
       id: "fireball",
-      _name: "Fireball",
-      _category: "spell",
-      _description: "Explosive fireball with particle trail",
-      _createEffect: (position, _options) =>
+      name: "Fireball",
+      category: "spell",
+      description: "Explosive fireball with particle trail",
+      createEffect: (position, _options) =>
         ({
           id: `fireball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: "particle",
@@ -430,10 +430,10 @@ export class EffectsSystem {
     // Lightning bolt effect
     this.templates.set("lightning", {
       id: "lightning",
-      _name: "Lightning Bolt",
-      _category: "spell",
-      _description: "Electric lightning strike",
-      _createEffect: (position, options) =>
+      name: "Lightning Bolt",
+      category: "spell",
+      description: "Electric lightning strike",
+      createEffect: (position, options) =>
         ({
           id: `lightning-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: "animation",
@@ -484,10 +484,10 @@ export class EffectsSystem {
     // Healing aura
     this.templates.set("heal", {
       id: "heal",
-      _name: "Healing Light",
-      _category: "spell",
-      _description: "Gentle healing radiance",
-      _createEffect: (position, _options) =>
+      name: "Healing Light",
+      category: "spell",
+      description: "Gentle healing radiance",
+      createEffect: (position, _options) =>
         ({
           id: `heal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: "particle",
@@ -538,10 +538,10 @@ export class EffectsSystem {
     // Sword swing effect
     this.templates.set("sword_slash", {
       id: "sword_slash",
-      _name: "Sword Slash",
-      _category: "weapon",
-      _description: "Melee weapon slash effect",
-      _createEffect: (position, options) =>
+      name: "Sword Slash",
+      category: "weapon",
+      description: "Melee weapon slash effect",
+      createEffect: (position, options) =>
         ({
           id: `slash-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           type: "animation",
@@ -641,11 +641,11 @@ export class EffectsSystem {
 
   // Event system
   addEventListener(_listener: (event: EffectsEvent) => void): void {
-    this.changeListeners.push(listener);
+    this.changeListeners.push(_listener);
   }
 
   removeEventListener(_listener: (event: EffectsEvent) => void): void {
-    const index = this.changeListeners.indexOf(listener);
+    const index = this.changeListeners.indexOf(_listener);
     if (index > -1) {
       this.changeListeners.splice(index, 1);
     }
@@ -656,7 +656,9 @@ export class EffectsSystem {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Effects event listener error:", error);
+        logger.error("Effects event listener error:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     });
   }

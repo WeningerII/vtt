@@ -225,10 +225,10 @@ export class AssetRegistry {
     const visited = new Set<string>();
 
     const collectDeps = (_assetId: string) => {
-      if (visited.has(assetId)) return;
-      visited.add(assetId);
+      if (visited.has(_assetId)) return;
+      visited.add(_assetId);
 
-      const deps = this.dependencyGraph.get(assetId);
+      const deps = this.dependencyGraph.get(_assetId);
       if (deps) {
         for (const dep of deps) {
           allDeps.add(dep);
@@ -319,7 +319,9 @@ export class AssetRegistry {
         const assets = await this.discoverAssetsInPath(basePath, options);
         discovered.push(...assets);
       } catch (error) {
-        logger.warn(`Failed to discover assets in ${basePath}:`, error);
+        logger.warn(`Failed to discover assets in ${basePath}:`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

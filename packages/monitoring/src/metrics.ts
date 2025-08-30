@@ -135,7 +135,9 @@ export class MetricsRegistry {
         const metrics = await collector.collect();
         collectedMetrics.push(...metrics);
       } catch (error) {
-        logger.error(`Failed to collect metrics from ${collector.name}:`, error);
+        logger.error(`Failed to collect metrics from ${collector.name}:`, {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 
@@ -176,7 +178,7 @@ export class MetricsRegistry {
     }
 
     const nums = values.map((v) => v.value);
-    const sum = nums.reduce((_a, __b) => a + b, 0);
+    const sum = nums.reduce((_a, __b) => _a + __b, 0);
 
     return {
       count: nums.length,
@@ -294,21 +296,21 @@ export class PerformanceMonitor {
 
   static measureFunction<T>(_name: string, _fn: () => T, labels?: Record<string, string>): T {
     const endTimer = this.registry.startTimer(`vtt_function_duration_ms`, {
-      function: name,
+      function: _name,
       ...labels,
     });
 
     try {
-      const result = fn();
+      const result = _fn();
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
-        function: name,
+        function: _name,
         status: "success",
         ...labels,
       });
       return result;
     } catch (error) {
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
-        function: name,
+        function: _name,
         status: "error",
         ...labels,
       });
@@ -324,21 +326,21 @@ export class PerformanceMonitor {
     labels?: Record<string, string>,
   ): Promise<T> {
     const endTimer = this.registry.startTimer(`vtt_function_duration_ms`, {
-      function: name,
+      function: _name,
       ...labels,
     });
 
     try {
-      const result = await fn();
+      const result = await _fn();
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
-        function: name,
+        function: _name,
         status: "success",
         ...labels,
       });
       return result;
     } catch (error) {
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
-        function: name,
+        function: _name,
         status: "error",
         ...labels,
       });

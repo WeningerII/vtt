@@ -7,7 +7,7 @@
     "sourceMap": true,
     "composite": true,
     "incremental": true,
-    "tsBuildInfoFile": "./rendering.tsbuildinfo",
+    "tsBuildInfoFile": "./scripting.tsbuildinfo",
     "types": ["node"]
   },
   "include": ["src/**/*"],
