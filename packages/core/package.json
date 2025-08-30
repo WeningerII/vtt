@@ -1,0 +1,103 @@
+{
+  "name": "@vtt/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Unified core system for VTT platform with shared interfaces, resource management, and system integration",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./events": {
+      "import": "./dist/EventEmitter.js",
+      "types": "./dist/EventEmitter.d.ts"
+    },
+    "./interfaces": {
+      "import": "./dist/SharedInterfaces.js",
+      "types": "./dist/SharedInterfaces.d.ts"
+    },
+    "./gpu": {
+      "import": "./dist/GPUResourceManager.js",
+      "types": "./dist/GPUResourceManager.d.ts"
+    },
+    "./webgpu": {
+      "import": "./dist/WebGPUContextManager.js",
+      "types": "./dist/WebGPUContextManager.d.ts"
+    },
+    "./assets": {
+      "import": "./dist/UnifiedAssetManager.js",
+      "types": "./dist/UnifiedAssetManager.d.ts"
+    },
+    "./performance": {
+      "import": "./dist/PerformanceMonitor.js",
+      "types": "./dist/PerformanceMonitor.d.ts"
+    },
+    "./state": {
+      "import": "./dist/StateManager.js",
+      "types": "./dist/StateManager.d.ts"
+    },
+    "./components": {
+      "import": "./dist/ComponentFactory.js",
+      "types": "./dist/ComponentFactory.d.ts"
+    },
+    "./ai": {
+      "import": "./dist/AIProviderRegistry.js",
+      "types": "./dist/AIProviderRegistry.d.ts"
+    },
+    "./network": {
+      "import": "./dist/NetworkManager.js",
+      "types": "./dist/NetworkManager.d.ts"
+    },
+    "./memory": {
+      "import": "./dist/MemoryOptimizer.js",
+      "types": "./dist/MemoryOptimizer.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "dev": "tsc -b --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
+  },
+  "dependencies": {
+    "@types/node": "^20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0"
+  },
+  "keywords": [
+    "vtt",
+    "virtual-tabletop",
+    "core",
+    "resource-management",
+    "webgpu",
+    "event-system",
+    "state-management",
+    "component-system",
+    "ai-integration",
+    "performance-monitoring",
+    "memory-optimization"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/weningerii/vtt.git",
+    "directory": "packages/core"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

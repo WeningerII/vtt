@@ -1,5 +1,7 @@
 
 
 > @vtt/client@0.0.0 build /home/weningerii/vtt/apps/client
-> tsc -b
+> vite build
 
+[36mvite v7.1.3 [32mbuilding for production...[36m[39m
+[2K[1Gtransforming (1) [2msrc/index.tsx[22m[2K[1Gtransforming (6) [2msrc/App.tsx[22m[2K[1Gtransforming (7) [2msrc/styles/theme.css[2K[1Gtransforming (22) [2msrc/providers/GamePr[2K[1Gtransforming (29) [2m../../node_modules/s[2K[1Gtransforming (43) [2mnode_modules/react-d[2K[1Gtransforming (58) [2msrc/components/ui/Bu[2K[1Gtransforming (65) [2mnode_modules/lucide-[2K[1Gtransforming (120) [2mnode_modules/lucide[2K[1Gtransforming (1063) [2mnode_modules/lucid

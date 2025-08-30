@@ -23,13 +23,13 @@ export function length(a: Vec2): number {
 /**
  * Convert world coordinates to grid cell coordinates given a cell size.
  */
-export function worldToGrid(pos: Vec2, cellSize: number): Vec2 {
+export function worldToGrid(pos: Vec2, _cellSize: number): Vec2 {
   return [Math.floor(pos[0] / cellSize), Math.floor(pos[1] / cellSize)];
 }
 
 /**
  * Convert grid cell coordinates back to world coordinates (cell origin).
  */
-export function gridToWorld(cell: Vec2, cellSize: number): Vec2 {
+export function gridToWorld(cell: Vec2, _cellSize: number): Vec2 {
   return [cell[0] * cellSize, cell[1] * cellSize];
 }

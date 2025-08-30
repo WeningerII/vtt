@@ -1,0 +1,21 @@
+{
+  "name": "@vtt/rules-5e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Rules utilities for D&D 5e: compilers and helpers for stat blocks.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint src --ext .ts",
+    "test": "pnpm -w exec vitest run --root packages/rules-5e",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@vtt/core-schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0",
+    "@vtt/content-5e-srd": "workspace:*"
+  }
+}

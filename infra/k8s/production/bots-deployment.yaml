@@ -1,0 +1,175 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vtt-bots-blue
+  namespace: vtt-production
+  labels:
+    app.kubernetes.io/name: vtt-platform
+    app.kubernetes.io/component: bots
+    app.kubernetes.io/version: "1.0.0"
+    version: blue
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vtt-platform
+      app.kubernetes.io/component: bots
+      version: blue
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vtt-platform
+        app.kubernetes.io/component: bots
+        version: blue
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: vtt-bots
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: bots
+        image: ghcr.io/weningerii/vtt-bots:IMAGE_TAG
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 9090
+          name: metrics
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8080"
+        - name: BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vtt-secrets
+              key: DISCORD_BOT_TOKEN
+        envFrom:
+        - configMapRef:
+            name: vtt-config
+        - secretRef:
+            name: vtt-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+      - key: "node.kubernetes.io/not-ready"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+      - key: "node.kubernetes.io/unreachable"
+        operator: "Exists"
+        effect: "NoExecute"
+        tolerationSeconds: 300
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vtt-bots
+  namespace: vtt-production
+  labels:
+    app.kubernetes.io/name: vtt-platform
+    app.kubernetes.io/component: bots
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: http
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: metrics
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: vtt-platform
+    app.kubernetes.io/component: bots
+    version: blue
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vtt-bots
+  namespace: vtt-production
+  labels:
+    app.kubernetes.io/name: vtt-platform
+    app.kubernetes.io/component: bots
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vtt-bots-hpa
+  namespace: vtt-production
+  labels:
+    app.kubernetes.io/name: vtt-platform
+    app.kubernetes.io/component: bots
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vtt-bots-blue
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

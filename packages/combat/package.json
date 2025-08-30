@@ -1,0 +1,30 @@
+{
+  "name": "@vtt/combat",
+  "version": "0.1.0",
+  "description": "Combat management system for VTT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "vtt",
+    "combat",
+    "initiative",
+    "damage"
+  ],
+  "author": "VTT Team",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

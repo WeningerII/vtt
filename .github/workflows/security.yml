@@ -1,0 +1,93 @@
+name: Security Scanning
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '**/Dockerfile'
+      - '**/package.json'
+      - '**/pnpm-lock.yaml'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD
+          deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  infrastructure-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkov Infrastructure Security
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: kubernetes,dockerfile,github_actions
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          quiet: true
+          soft_fail: false
+
+      - name: Upload Checkov scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'checkov-results.sarif'
+
+      - name: Kubesec scan
+        run: |
+          curl -sSX POST --data-binary @infra/k8s/base/deployment-server.yaml https://v2.kubesec.io/scan > kubesec-server.json
+          curl -sSX POST --data-binary @infra/k8s/base/deployment-client.yaml https://v2.kubesec.io/scan > kubesec-client.json
+          
+          # Fail if score is below 5
+          SERVER_SCORE=$(jq '.[0].score' kubesec-server.json)
+          CLIENT_SCORE=$(jq '.[0].score' kubesec-client.json)
+          
+          if (( $(echo "$SERVER_SCORE < 5" | bc -l) )); then
+            echo "Server deployment security score too low: $SERVER_SCORE"
+            exit 1
+          fi
+          
+          if (( $(echo "$CLIENT_SCORE < 5" | bc -l) )); then
+            echo "Client deployment security score too low: $CLIENT_SCORE"
+            exit 1
+          fi

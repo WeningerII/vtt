@@ -1,0 +1,21 @@
+{
+  "name": "@vtt/token-management",
+  "version": "0.1.0",
+  "description": "Advanced token management system with conditions, animations, and properties",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {},
+  "files": [
+    "dist/**/*"
+  ]
+}

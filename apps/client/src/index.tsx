@@ -1,9 +1,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-
-function App() {
-  return <div>Virtual Tabletop Client Skeleton</div>;
-}
+import App from './App';
+import './i18n.config';
 
 const root = createRoot(document.getElementById('root')!);
 root.render(<App />);

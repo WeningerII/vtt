@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VTT Client</title>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background: #0f1115;
+        color: #e6e6e6;
+      }
+      .container {
+        padding: 16px;
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      .card {
+        background: #151821;
+        border: 1px solid #2a2f3a;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 12px 0;
+      }
+      input,
+      button {
+        font-size: 14px;
+      }
+      input {
+        background: #0f1115;
+        color: #e6e6e6;
+        border: 1px solid #2a2f3a;
+        border-radius: 6px;
+        padding: 8px;
+      }
+      button {
+        background: #2d6cdf;
+        color: white;
+        border: 0;
+        border-radius: 6px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #3b4252;
+        cursor: not-allowed;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .muted {
+        color: #9aa0a6;
+      }
+      code {
+        background: #0b0d12;
+        border: 1px solid #2a2f3a;
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

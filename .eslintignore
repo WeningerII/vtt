@@ -1,0 +1,14 @@
+# Build outputs
+dist/
+build/
+coverage/
+.pnpm-store/
+node_modules/
+
+# Generated files
+*.min.js
+*.bundle.js
+
+# Test artifacts
+playwright-report/
+test-results/

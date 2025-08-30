@@ -2,7 +2,21 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "incremental": true,
+    "tsBuildInfoFile": "./net.tsbuildinfo",
+    "composite": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../logging"
+    }
+  ]
 }

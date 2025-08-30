@@ -16,13 +16,13 @@ export function length(a) {
 /**
  * Convert world coordinates to grid cell coordinates given a cell size.
  */
-export function worldToGrid(pos, cellSize) {
+export function worldToGrid(pos, _cellSize) {
     return [Math.floor(pos[0] / cellSize), Math.floor(pos[1] / cellSize)];
 }
 /**
  * Convert grid cell coordinates back to world coordinates (cell origin).
  */
-export function gridToWorld(cell, cellSize) {
+export function gridToWorld(cell, _cellSize) {
     return [cell[0] * cellSize, cell[1] * cellSize];
 }
 //# sourceMappingURL=index.js.map

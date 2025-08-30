@@ -7,7 +7,7 @@
  * set of visible grid coordinates. This naive implementation simply
  * returns a square region around the origin.
  */
-export function computeGridFov(origin, radius) {
+export function computeGridFov(origin, _radius) {
     const visible = [];
     for (let dx = -radius; dx <= radius; dx++) {
         for (let dy = -radius; dy <= radius; dy++) {
@@ -21,7 +21,7 @@ export function computeGridFov(origin, radius) {
  * environment. In this stub we simply return the origin for
  * demonstration purposes.
  */
-export function computeVisibilityPolygon(origin, obstacles) {
+export function computeVisibilityPolygon(origin, _obstacles) {
     void obstacles;
     return [origin];
 }

@@ -1,0 +1,290 @@
+/**
+ * Genesis Character Creation API Route Handlers
+ */
+
+import { z } from 'zod';
+import { logger } from '@vtt/logging';
+import { PrismaClient } from '@prisma/client';
+import { GenesisService } from '../ai/character';
+import { RouteHandler } from '../router/types';
+
+// Lazy-load Prisma client to avoid initialization issues during module loading
+let prisma: PrismaClient | null = null;
+let genesisService: GenesisService | null = null;
+
+function getServices() {
+  if (!prisma) {
+    prisma = new PrismaClient();
+    genesisService = new GenesisService(prisma);
+  }
+  return { prisma, genesisService: genesisService! };
+}
+
+// Validation helpers
+const validateCharacterConcept = (_body: any) => {
+  const schema = z.object({
+    prompt: z.string().min(10).max(1000),
+    preferences: z.object({
+      system: z.enum(['dnd5e', 'pathfinder', 'generic']).optional(),
+      powerLevel: z.enum(['low', 'standard', 'high', 'epic']).optional(),
+      complexity: z.enum(['simple', 'moderate', 'complex']).optional(),
+      playstyle: z.enum(['combat', 'roleplay', 'exploration', 'balanced']).optional(),
+    }).optional()
+  });
+  return schema.parse(body);
+};
+
+const validateRetryStep = (_body: any) => {
+  const schema = z.object({
+    stepName: z.enum(['concept', 'race', 'class', 'background', 'abilities', 'equipment', 'spells', 'personality', 'optimization'])
+  });
+  return schema.parse(body);
+};
+
+/**
+ * POST /genesis/generate
+ * Start character generation from concept
+ */
+export const generateCharacterHandler: RouteHandler = async (ctx) => {
+  try {
+    // Check authentication
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({ error: 'Authentication required' }));
+      return;
+    }
+
+    // Parse and validate request body
+    let body;
+    try {
+      const bodyData = await new Promise<string>((_resolve, __reject) => {
+        let data = '';
+        ctx.req.on('data', chunk => data += chunk);
+        ctx.req.on('end', () => resolve(data));
+        ctx.req.on('error', reject);
+      });
+      body = JSON.parse(bodyData);
+    } catch (_error) {
+      ctx.res.writeHead(400, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+      return;
+    }
+
+    const { prompt,  preferences  } = validateCharacterConcept(body);
+    const userId = user.id;
+
+    const generation = await genesisService.startGeneration(
+      { prompt, preferences },
+      userId
+    );
+
+    ctx.res.writeHead(201, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: true,
+      data: {
+        generationId: generation.id,
+        status: 'started',
+        currentStep: generation.currentStep,
+        steps: generation.steps
+      }
+    }));
+  } catch (error: any) {
+    logger.error('Genesis generation failed:', error);
+    ctx.res.writeHead(500, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: false,
+      error: 'Failed to start character generation',
+      details: error.message
+    }));
+  }
+};
+
+/**
+ * GET /genesis/:generationId
+ * Get generation status and progress
+ */
+export const getGenerationStatusHandler: RouteHandler = async (ctx) => {
+  try {
+    // Check authentication
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({ error: 'Authentication required' }));
+      return;
+    }
+
+    // Extract generationId from URL path
+    const pathParts = ctx.url.pathname.split('/');
+    const generationId = pathParts[pathParts.length - 1];
+    
+    const generation = genesisService.getGeneration(generationId);
+    if (!generation) {
+      ctx.res.writeHead(404, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({
+        success: false,
+        error: 'Generation not found'
+      }));
+      return;
+    }
+
+    ctx.res.writeHead(200, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: true,
+      data: {
+        id: generation.id,
+        currentStep: generation.currentStep,
+        isComplete: generation.isComplete,
+        steps: generation.steps,
+        character: generation.character,
+        error: generation.error,
+        metadata: generation.metadata
+      }
+    }));
+  } catch (error: any) {
+    logger.error('Failed to get generation status:', error);
+    ctx.res.writeHead(500, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: false,
+      error: 'Failed to get generation status',
+      details: error.message
+    }));
+  }
+};
+
+/**
+ * POST /genesis/:generationId/retry
+ * Retry a specific generation step
+ */
+export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
+  try {
+    // Check authentication
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({ error: 'Authentication required' }));
+      return;
+    }
+
+    // Extract generationId from URL path
+    const pathParts = ctx.url.pathname.split('/');
+    const generationId = pathParts[pathParts.length - 2]; // Before /retry
+
+    // Parse request body
+    let body;
+    try {
+      const bodyData = await new Promise<string>((_resolve, __reject) => {
+        let data = '';
+        ctx.req.on('data', chunk => data += chunk);
+        ctx.req.on('end', () => resolve(data));
+        ctx.req.on('error', reject);
+      });
+      body = JSON.parse(bodyData);
+    } catch (_error) {
+      ctx.res.writeHead(400, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+      return;
+    }
+
+    const { stepName  } = validateRetryStep(body);
+
+    await genesisService.retryStep(generationId, stepName);
+
+    ctx.res.writeHead(200, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: true,
+      message: `Retrying step: ${stepName}`
+    }));
+  } catch (error: any) {
+    logger.error('Failed to retry generation step:', error);
+    ctx.res.writeHead(500, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: false,
+      error: 'Failed to retry generation step',
+      details: error.message
+    }));
+  }
+};
+
+/**
+ * GET /genesis/history
+ * Get user's generation history
+ */
+export const getGenerationHistoryHandler: RouteHandler = async (ctx) => {
+  try {
+    // Check authentication
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { 'Content-Type': 'application/json' });
+      ctx.res.end(JSON.stringify({ error: 'Authentication required' }));
+      return;
+    }
+
+    const userId = user.id;
+    const { genesisService } = getServices();
+    const history = await genesisService.getGenerationHistory(userId);
+
+    ctx.res.writeHead(200, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: true,
+      data: history.map(gen => ({
+        id: gen.id,
+        concept: gen.concept,
+        isComplete: gen.isComplete,
+        currentStep: gen.currentStep,
+        generatedAt: gen.metadata.generatedAt,
+        character: gen.character ? {
+          id: gen.character.id,
+          name: gen.character.name,
+          race: gen.character.race,
+          class: gen.character.class
+        } : null
+      }))
+    }));
+  } catch (error: any) {
+    logger.error('Failed to get generation history:', error);
+    ctx.res.writeHead(500, { 'Content-Type': 'application/json' });
+    ctx.res.end(JSON.stringify({
+      success: false,
+      error: 'Failed to get generation history',
+      details: error.message
+    }));
+  }
+};
+
+/**
+ * WebSocket events for real-time generation updates
+ */
+export const _handleGenesisWebSocket = (ws: any, message: any, _userId: string) => {
+  switch (message.type) {
+    case 'GENESIS_SUBSCRIBE': {
+      const { generationId  } = message.payload;
+      
+      // Subscribe to generation updates
+      ws.generationSubscription = generationId;
+      
+      // Send current status
+      const generation = genesisService.getGeneration(generationId);
+      if (generation) {
+        ws.send(JSON.stringify({
+          type: 'GENESIS_UPDATE',
+          payload: {
+            generationId,
+            currentStep: generation.currentStep,
+            steps: generation.steps,
+            isComplete: generation.isComplete,
+            error: generation.error
+          }
+        }));
+      }
+    }
+      break;
+
+    case 'GENESIS_UNSUBSCRIBE':
+      ws.generationSubscription = null;
+      break;
+  }
+};
+
+// Export genesis service for use in WebSocket handlers
+export { genesisService };

@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
+    "incremental": true,
+    "tsBuildInfoFile": "./testing.tsbuildinfo",
+    "composite": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/e2e/**/*",
+    "src/integration/**/*"
+  ]
+}

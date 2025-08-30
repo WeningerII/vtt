@@ -1,0 +1,144 @@
+// Test Database Schema - Optimized for E2E Testing
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/test-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  passwordHash      String
+  emailVerified     Boolean  @default(false)
+  emailVerifiedAt   DateTime?
+  role              Role     @default(PLAYER)
+  isActive          Boolean  @default(true)
+  lastLoginAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  sessions          Session[]
+  ownedScenes       Scene[]
+  gameParticipants  GameParticipant[]
+  assets            Asset[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  accessToken  String   @unique
+  refreshToken String   @unique
+  expiresAt    DateTime
+  isActive     Boolean  @default(true)
+  userAgent    String?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Scene {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  width       Int      @default(800)
+  height      Int      @default(600)
+  gridSize    Int      @default(50)
+  isActive    Boolean  @default(false)
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User              @relation(fields: [ownerId], references: [id])
+  games       Game[]
+  assets      Asset[]
+
+  @@map("scenes")
+}
+
+model Game {
+  id          String   @id @default(cuid())
+  name        String
+  sceneId     String
+  isActive    Boolean  @default(false)
+  maxPlayers  Int      @default(6)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scene        Scene             @relation(fields: [sceneId], references: [id])
+  participants GameParticipant[]
+
+  @@map("games")
+}
+
+model GameParticipant {
+  id       String @id @default(cuid())
+  gameId   String
+  userId   String
+  role     GameRole @default(PLAYER)
+  joinedAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, userId])
+  @@map("game_participants")
+}
+
+model Asset {
+  id          String    @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  thumbnailUrl String?
+  ownerId     String
+  sceneId     String?
+  isPublic    Boolean   @default(false)
+  uploadedAt  DateTime  @default(now())
+
+  owner User   @relation(fields: [ownerId], references: [id])
+  scene Scene? @relation(fields: [sceneId], references: [id])
+
+  @@map("assets")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+enum Role {
+  ADMIN
+  GM
+  PLAYER
+}
+
+enum GameRole {
+  GM
+  PLAYER
+  OBSERVER
+}

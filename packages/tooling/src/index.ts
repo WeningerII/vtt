@@ -1,3 +1,5 @@
+import { logger } from '@vtt/logging';
+
 /**
  * Tooling package entry point. Provides command line utilities for
  * managing assets and building navmeshes. The actual CLI entry points
@@ -5,10 +7,10 @@
  * here for illustration.
  */
 
-export function buildAtlas(inputDir: string, outputFile: string): void {
-  console.log(`Building atlas from ${inputDir} into ${outputFile} (stub)`);
+export function buildAtlas(_inputDir: string, _outputFile: string): void {
+  logger.info(`Building atlas from ${inputDir} into ${outputFile} (stub)`);
 }
 
-export function bakeNavmesh(mapFile: string, outputFile: string): void {
-  console.log(`Baking navmesh from ${mapFile} into ${outputFile} (stub)`);
+export function bakeNavmesh(_mapFile: string, _outputFile: string): void {
+  logger.info(`Baking navmesh from ${mapFile} into ${outputFile} (stub)`);
 }

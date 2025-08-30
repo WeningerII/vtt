@@ -1,0 +1,34 @@
+{
+  "name": "@vtt/testing",
+  "version": "1.0.0",
+  "description": "Testing utilities and framework for VTT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "test:ui": "vitest --ui"
+  },
+  "peerDependencies": {
+    "@vtt/core-ecs": "workspace:*"
+  },
+  "dependencies": {
+    "@vtt/rules-5e": "workspace:*",
+    "@vtt/physics": "workspace:*",
+    "@vtt/net": "workspace:*",
+    "@vtt/renderer": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@vitest/coverage-c8": "^0.33.0",
+    "@vitest/ui": "^0.33.0",
+    "happy-dom": "^10.0.0",
+    "playwright": "^1.38.0",
+    "typescript": "^5.0.0",
+    "vitest": "^0.33.0",
+    "ws": "^8.13.0"
+  }
+}

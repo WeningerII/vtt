@@ -1,0 +1,173 @@
+/**
+ * D&D 5e SRD Weapons Database
+ * Complete collection of all weapons from the System Reference Document
+ */
+
+import { Weapon, _DamageType, _WeaponProperty } from './index.js';
+
+export const SRD_WEAPONS: Weapon[] = [
+  // Simple Melee Weapons
+  {
+    id: 'club',
+    name: 'Club',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A simple wooden club.',
+    weight: 2,
+    cost: { amount: 1, currency: 'sp' },
+    source: 'SRD',
+    tags: ['simple', 'melee', 'light'],
+    weaponType: 'simple',
+    meleeRanged: 'melee',
+    damage: { dice: '1d4', type: 'bludgeoning' },
+    properties: ['light']
+  },
+  {
+    id: 'dagger',
+    name: 'Dagger',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A simple dagger.',
+    weight: 1,
+    cost: { amount: 2, currency: 'gp' },
+    source: 'SRD',
+    tags: ['simple', 'melee', 'finesse', 'light', 'thrown'],
+    weaponType: 'simple',
+    meleeRanged: 'melee',
+    damage: { dice: '1d4', type: 'piercing' },
+    properties: ['finesse', 'light', 'thrown'],
+    range: { normal: 20, long: 60 }
+  },
+  {
+    id: 'handaxe',
+    name: 'Handaxe',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A light axe designed for throwing.',
+    weight: 2,
+    cost: { amount: 5, currency: 'gp' },
+    source: 'SRD',
+    tags: ['simple', 'melee', 'light', 'thrown'],
+    weaponType: 'simple',
+    meleeRanged: 'melee',
+    damage: { dice: '1d6', type: 'slashing' },
+    properties: ['light', 'thrown'],
+    range: { normal: 20, long: 60 }
+  },
+  {
+    id: 'javelin',
+    name: 'Javelin',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A light spear designed for throwing.',
+    weight: 2,
+    cost: { amount: 5, currency: 'sp' },
+    source: 'SRD',
+    tags: ['simple', 'melee', 'thrown'],
+    weaponType: 'simple',
+    meleeRanged: 'melee',
+    damage: { dice: '1d6', type: 'piercing' },
+    properties: ['thrown'],
+    range: { normal: 30, long: 120 }
+  },
+  {
+    id: 'mace',
+    name: 'Mace',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A heavy club with a weighted head.',
+    weight: 4,
+    cost: { amount: 5, currency: 'gp' },
+    source: 'SRD',
+    tags: ['simple', 'melee'],
+    weaponType: 'simple',
+    meleeRanged: 'melee',
+    damage: { dice: '1d6', type: 'bludgeoning' },
+    properties: []
+  },
+  {
+    id: 'quarterstaff',
+    name: 'Quarterstaff',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A simple wooden staff.',
+    weight: 4,
+    cost: { amount: 2, currency: 'sp' },
+    source: 'SRD',
+    tags: ['simple', 'melee', 'versatile'],
+    weaponType: 'simple',
+    meleeRanged: 'versatile',
+    damage: { dice: '1d6', type: 'bludgeoning', versatile: '1d8' },
+    properties: ['versatile']
+  },
+  {
+    id: 'spear',
+    name: 'Spear',
+    type: 'weapon',
+    category: 'simple_melee',
+    rarity: 'common',
+    description: 'A simple spear with a sharp point.',
+    weight: 3,
+    cost: { amount: 1, currency: 'gp' },
+    source: 'SRD',
+    tags: ['simple', 'melee', 'thrown', 'versatile'],
+    weaponType: 'simple',
+    meleeRanged: 'versatile',
+    damage: { dice: '1d6', type: 'piercing', versatile: '1d8' },
+    properties: ['thrown', 'versatile'],
+    range: { normal: 20, long: 60 }
+  },
+
+  // Simple Ranged Weapons
+  {
+    id: 'crossbow_light',
+    name: 'Crossbow, Light',
+    type: 'weapon',
+    category: 'simple_ranged',
+    rarity: 'common',
+    description: 'A light crossbow that fires bolts.',
+    weight: 5,
+    cost: { amount: 25, currency: 'gp' },
+    source: 'SRD',
+    tags: ['simple', 'ranged', 'ammunition', 'loading', 'two-handed'],
+    weaponType: 'simple',
+    meleeRanged: 'ranged',
+    damage: { dice: '1d8', type: 'piercing' },
+    properties: ['ammunition', 'loading', 'two_handed'],
+    range: { normal: 80, long: 320 },
+    ammunition: 'crossbow_bolts'
+  },
+  {
+    id: 'shortbow',
+    name: 'Shortbow',
+    type: 'weapon',
+    category: 'simple_ranged',
+    rarity: 'common',
+    description: 'A simple bow for shooting arrows.',
+    weight: 2,
+    cost: { amount: 25, currency: 'gp' },
+    source: 'SRD',
+    tags: ['simple', 'ranged', 'ammunition', 'two-handed'],
+    weaponType: 'simple',
+    meleeRanged: 'ranged',
+    damage: { dice: '1d6', type: 'piercing' },
+    properties: ['ammunition', 'two_handed'],
+    range: { normal: 80, long: 320 },
+    ammunition: 'arrows'
+  }
+];
+
+// Martial weapons and utility functions will be added in next file
+export function getWeapon(_id: string): Weapon | undefined {
+  return SRD_WEAPONS.find(weapon => weapon.id === id);
+}
+
+export function getWeaponsByType(_type: 'simple' | 'martial'): Weapon[] {
+  return SRD_WEAPONS.filter(weapon => weapon.weaponType === type);
+}

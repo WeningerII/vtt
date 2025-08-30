@@ -1,0 +1,31 @@
+{
+  "name": "@vtt/rendering",
+  "version": "0.1.0",
+  "description": "Advanced rendering system with lighting and effects for VTT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "vtt",
+    "rendering",
+    "lighting",
+    "effects",
+    "shaders"
+  ],
+  "author": "VTT Team",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

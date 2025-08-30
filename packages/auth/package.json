@@ -1,0 +1,39 @@
+{
+  "name": "@vtt/auth",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Authentication and authorization system for VTT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "speakeasy": "^2.0.0",
+    "qrcode": "^1.5.3",
+    "rate-limiter-flexible": "^5.0.3",
+    "helmet": "^7.1.0",
+    "express-validator": "^7.0.1",
+    "uuid": "^9.0.1",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/speakeasy": "^2.0.10",
+    "@types/qrcode": "^1.5.5",
+    "@types/uuid": "^9.0.7"
+  },
+  "devDependencies": {
+    "@vtt/testing": "workspace:*",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "peerDependencies": {
+    "@vtt/core-ecs": "workspace:*"
+  }
+}

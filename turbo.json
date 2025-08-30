@@ -2,15 +2,46 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": {
-      "dependsOn": [],
-      "outputs": ["dist/**"]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "build/**", "lib/**", "*.tsbuildinfo"],
+      "cache": true,
+      "inputs": ["src/**", "package.json", "tsconfig.json", "tsconfig.*.json"],
+      "env": ["NODE_ENV"],
+      "persistent": false
     },
     "test": {
       "dependsOn": ["build"],
-      "outputs": []
+      "outputs": ["coverage/**"],
+      "cache": true,
+      "inputs": ["src/**", "__tests__/**", "test/**", "*.test.ts", "*.test.tsx", "jest.config.*", "vitest.config.*"],
+      "env": ["NODE_ENV", "CI"]
     },
     "lint": {
-      "outputs": []
+      "outputs": ["eslint-report.json"],
+      "cache": true,
+      "inputs": ["src/**", "*.ts", "*.tsx", ".eslintrc.*", "eslint.config.*"],
+      "dependsOn": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "dependsOn": ["^build"]
+    },
+    "clean": {
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": ["tsconfig.tsbuildinfo", "*.tsbuildinfo"],
+      "cache": true,
+      "inputs": ["src/**", "tsconfig.json", "tsconfig.*.json"]
     }
-  }
+  },
+  "globalEnv": ["NODE_ENV", "CI"],
+  "globalDependencies": ["tsconfig.base.json", ".eslintrc.js", "pnpm-lock.yaml"],
+  "remoteCache": {
+    "signature": true
+  },
+  "daemon": false,
+  "ui": "tui"
 }

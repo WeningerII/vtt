@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from 'ws';
+import { logger } from '@vtt/logging';
 import { World, MovementSystem } from '@vtt/core-ecs';
 
 type Client = { ws: WebSocket; id: string; cx: number; cy: number; spanX: number; spanY: number; };
@@ -25,13 +26,13 @@ for (let i = 0; i < N; i++) {
 
 const clients = new Set<Client>();
 
-function aoiFilter(c: Client, id: number) {
+function aoiFilter(c: Client, _id: number) {
   const halfX = c.spanX * 0.6, halfY = c.spanY * 0.6;
   const x = w.transforms.x[id], y = w.transforms.y[id];
   return x >= c.cx - halfX && x <= c.cx + halfX && y >= c.cy - halfY && y <= c.cy + halfY;
 }
 
-function tick(dt: number) {
+function tick(_dt: number) {
   MovementSystem(w, dt);
   for (const id of ids) {
     const x = w.transforms.x[id], y = w.transforms.y[id];
@@ -61,13 +62,13 @@ function tick(dt: number) {
 
 const PORT = Number(process.env.PORT ?? 8080);
 const wss = new WebSocketServer({ port: PORT });
-console.log(`[sim] WS listening on ws://localhost:${PORT}`);
+logger.info(`[sim] WS listening on ws://localhost:${PORT}`);
 
 wss.on('connection', (ws) => {
   const id = Math.random().toString(36).slice(2, 8);
   const client: Client = { ws, id, cx: 0, cy: 0, spanX: 1000, spanY: 1000 };
   clients.add(client);
-  console.log(`[sim] client ${id} connected`);
+  logger.info(`[sim] client ${id} connected`);
   ws.send(JSON.stringify({ type: 'HELLO', tickRate: 10 }));
 
   ws.on('message', (buf) => {
@@ -81,7 +82,7 @@ wss.on('connection', (ws) => {
       }
     } catch {}
   });
-  ws.on('close', () => { clients.delete(client); console.log(`[sim] client ${id} disconnected`); });
+  ws.on('close', () => { clients.delete(client); logger.info(`[sim] client ${id} disconnected`); });
 });
 
 let acc = 0, last = Date.now();

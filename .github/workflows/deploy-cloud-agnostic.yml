@@ -1,0 +1,320 @@
+name: Deploy Cloud-Agnostic Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud_provider:
+        description: 'Cloud provider (aws, gcp, azure)'
+        required: true
+        default: 'aws'
+        type: choice
+        options:
+          - aws
+          - gcp
+          - azure
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      region:
+        description: 'Cloud region'
+        required: true
+        default: 'us-east-1'
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - 'infra/terraform/**'
+      - 'infra/k8s/**'
+      - '.github/workflows/deploy-cloud-agnostic.yml'
+
+env:
+  TERRAFORM_VERSION: 1.6.0
+  KUBECTL_VERSION: v1.28.0
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cloud_provider: ${{ steps.detect.outputs.cloud_provider }}
+      environment: ${{ steps.detect.outputs.environment }}
+      region: ${{ steps.detect.outputs.region }}
+      deploy_infra: ${{ steps.detect.outputs.deploy_infra }}
+      deploy_k8s: ${{ steps.detect.outputs.deploy_k8s }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect deployment configuration
+        id: detect
+        run: |
+          # Set defaults from workflow inputs or environment
+          CLOUD_PROVIDER="${{ github.event.inputs.cloud_provider || 'aws' }}"
+          ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
+          REGION="${{ github.event.inputs.region || 'us-east-1' }}"
+          
+          # Detect if infrastructure changes require deployment
+          DEPLOY_INFRA="false"
+          DEPLOY_K8S="false"
+          
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            DEPLOY_INFRA="true"
+            DEPLOY_K8S="true"
+          else
+            # Check for infrastructure changes
+            if git diff --name-only HEAD~1 HEAD | grep -E '^infra/terraform/'; then
+              DEPLOY_INFRA="true"
+            fi
+            
+            # Check for Kubernetes changes
+            if git diff --name-only HEAD~1 HEAD | grep -E '^infra/k8s/'; then
+              DEPLOY_K8S="true"
+            fi
+          fi
+          
+          echo "cloud_provider=$CLOUD_PROVIDER" >> $GITHUB_OUTPUT
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+          echo "deploy_infra=$DEPLOY_INFRA" >> $GITHUB_OUTPUT
+          echo "deploy_k8s=$DEPLOY_K8S" >> $GITHUB_OUTPUT
+
+  terraform-plan:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy_infra == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - cloud: ${{ needs.detect-changes.outputs.cloud_provider }}
+            environment: ${{ needs.detect-changes.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Configure cloud credentials
+        run: |
+          case "${{ matrix.cloud }}" in
+            aws)
+              echo "Configuring AWS credentials"
+              echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+              echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+              ;;
+            gcp)
+              echo "Configuring GCP credentials"
+              echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/gcp-key.json
+              echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+              echo "GOOGLE_PROJECT=${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+              ;;
+            azure)
+              echo "Configuring Azure credentials"
+              echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
+              echo "ARM_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}" >> $GITHUB_ENV
+              echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+              echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: |
+          # Configure backend based on cloud provider
+          case "${{ matrix.cloud }}" in
+            aws)
+              terraform init \
+                -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+                -backend-config="key=vtt/${{ matrix.environment }}/terraform.tfstate" \
+                -backend-config="region=${{ needs.detect-changes.outputs.region }}" \
+                -backend-config="dynamodb_table=${{ secrets.TERRAFORM_LOCK_TABLE }}"
+              ;;
+            gcp)
+              terraform init \
+                -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+                -backend-config="prefix=vtt/${{ matrix.environment }}"
+              ;;
+            azure)
+              terraform init \
+                -backend-config="storage_account_name=${{ secrets.TERRAFORM_STATE_STORAGE_ACCOUNT }}" \
+                -backend-config="container_name=${{ secrets.TERRAFORM_STATE_CONTAINER }}" \
+                -backend-config="key=vtt/${{ matrix.environment }}/terraform.tfstate" \
+                -backend-config="resource_group_name=${{ secrets.TERRAFORM_STATE_RESOURCE_GROUP }}"
+              ;;
+          esac
+
+      - name: Terraform Plan
+        working-directory: infra/terraform
+        run: |
+          terraform plan \
+            -var="cloud_provider=${{ matrix.cloud }}" \
+            -var="environment=${{ matrix.environment }}" \
+            -var="region=${{ needs.detect-changes.outputs.region }}" \
+            -var="project_name=vtt" \
+            -out=tfplan
+
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tfplan-${{ matrix.cloud }}-${{ matrix.environment }}
+          path: infra/terraform/tfplan
+
+  terraform-apply:
+    needs: [detect-changes, terraform-plan]
+    if: needs.detect-changes.outputs.deploy_infra == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.detect-changes.outputs.environment }}
+    strategy:
+      matrix:
+        include:
+          - cloud: ${{ needs.detect-changes.outputs.cloud_provider }}
+            environment: ${{ needs.detect-changes.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Configure cloud credentials
+        run: |
+          case "${{ matrix.cloud }}" in
+            aws)
+              echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+              echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+              ;;
+            gcp)
+              echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/gcp-key.json
+              echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+              echo "GOOGLE_PROJECT=${{ secrets.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+              ;;
+            azure)
+              echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
+              echo "ARM_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}" >> $GITHUB_ENV
+              echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+              echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Download Terraform Plan
+        uses: actions/download-artifact@v3
+        with:
+          name: tfplan-${{ matrix.cloud }}-${{ matrix.environment }}
+          path: infra/terraform/
+
+      - name: Terraform Init
+        working-directory: infra/terraform
+        run: |
+          # Configure backend based on cloud provider
+          case "${{ matrix.cloud }}" in
+            aws)
+              terraform init \
+                -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+                -backend-config="key=vtt/${{ matrix.environment }}/terraform.tfstate" \
+                -backend-config="region=${{ needs.detect-changes.outputs.region }}" \
+                -backend-config="dynamodb_table=${{ secrets.TERRAFORM_LOCK_TABLE }}"
+              ;;
+            gcp)
+              terraform init \
+                -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+                -backend-config="prefix=vtt/${{ matrix.environment }}"
+              ;;
+            azure)
+              terraform init \
+                -backend-config="storage_account_name=${{ secrets.TERRAFORM_STATE_STORAGE_ACCOUNT }}" \
+                -backend-config="container_name=${{ secrets.TERRAFORM_STATE_CONTAINER }}" \
+                -backend-config="key=vtt/${{ matrix.environment }}/terraform.tfstate" \
+                -backend-config="resource_group_name=${{ secrets.TERRAFORM_STATE_RESOURCE_GROUP }}"
+              ;;
+          esac
+
+      - name: Terraform Apply
+        working-directory: infra/terraform
+        run: terraform apply -auto-approve tfplan
+
+      - name: Extract Terraform Outputs
+        id: terraform-outputs
+        working-directory: infra/terraform
+        run: |
+          echo "cluster_name=$(terraform output -raw cluster_name)" >> $GITHUB_OUTPUT
+          echo "cluster_endpoint=$(terraform output -raw cluster_endpoint)" >> $GITHUB_OUTPUT
+          echo "database_endpoint=$(terraform output -raw database_endpoint)" >> $GITHUB_OUTPUT
+          echo "storage_bucket=$(terraform output -raw storage_bucket_name)" >> $GITHUB_OUTPUT
+
+    outputs:
+      cluster_name: ${{ steps.terraform-outputs.outputs.cluster_name }}
+      cluster_endpoint: ${{ steps.terraform-outputs.outputs.cluster_endpoint }}
+      database_endpoint: ${{ steps.terraform-outputs.outputs.database_endpoint }}
+      storage_bucket: ${{ steps.terraform-outputs.outputs.storage_bucket }}
+
+  kubernetes-deploy:
+    needs: [detect-changes, terraform-apply]
+    if: always() && (needs.detect-changes.outputs.deploy_k8s == 'true' || needs.terraform-apply.result == 'success')
+    runs-on: ubuntu-latest
+    environment: ${{ needs.detect-changes.outputs.environment }}
+    strategy:
+      matrix:
+        include:
+          - cloud: ${{ needs.detect-changes.outputs.cloud_provider }}
+            environment: ${{ needs.detect-changes.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Configure kubectl for cloud provider
+        run: |
+          case "${{ matrix.cloud }}" in
+            aws)
+              # Configure AWS CLI and update kubeconfig
+              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+              aws configure set region ${{ needs.detect-changes.outputs.region }}
+              aws eks update-kubeconfig --region ${{ needs.detect-changes.outputs.region }} --name ${{ needs.terraform-apply.outputs.cluster_name }}
+              ;;
+            gcp)
+              # Configure gcloud and get credentials
+              echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/gcp-key.json
+              gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+              gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
+              gcloud container clusters get-credentials ${{ needs.terraform-apply.outputs.cluster_name }} --region ${{ needs.detect-changes.outputs.region }}
+              ;;
+            azure)
+              # Configure Azure CLI and get credentials
+              az login --service-principal -u ${{ secrets.AZURE_CLIENT_ID }} -p ${{ secrets.AZURE_CLIENT_SECRET }} --tenant ${{ secrets.AZURE_TENANT_ID }}
+              az aks get-credentials --resource-group vtt-${{ matrix.environment }} --name ${{ needs.terraform-apply.outputs.cluster_name }}
+              ;;
+          esac
+
+      - name: Apply Kubernetes manifests
+        run: |
+          # Apply cloud-agnostic manifests with environment substitution
+          export VTT_DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
+          export VTT_SERVER_IMAGE="vtt/server"
+          export VTT_IMAGE_TAG="${{ github.sha }}"
+          
+          # Apply base manifests
+          envsubst < infra/k8s/cloud-agnostic/configmap.yaml | kubectl apply -f -
+          envsubst < infra/k8s/cloud-agnostic/secret.template.yaml | kubectl apply -f -
+          envsubst < infra/k8s/cloud-agnostic/server-deployment.yaml | kubectl apply -f -
+          envsubst < infra/k8s/cloud-agnostic/ingress.yaml | kubectl apply -f -
+          
+          # Wait for deployment to be ready
+          kubectl rollout status deployment/vtt-server --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -l app.kubernetes.io/name=vtt-server
+          kubectl get services
+          kubectl get ingress

@@ -1,0 +1,20 @@
+{
+  "name": "@vtt/spell-visual-effects",
+  "version": "1.0.0",
+  "description": "Visual effects system integrated with physics for VTT spells",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@vtt/physics": "workspace:*",
+    "@vtt/physics-spell-bridge": "workspace:*",
+    "events": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/events": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}

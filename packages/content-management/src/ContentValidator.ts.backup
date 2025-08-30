@@ -1,0 +1,600 @@
+/**
+ * Content Validation System
+ * Validates assets, content packages, and enforces content policies
+ */
+
+import { AssetMetadata, AssetType, AssetCategory } from './AssetManager';
+import { PackageManifest } from './ContentImporter';
+import * as crypto from 'crypto';
+
+export interface ValidationRule {
+  name: string;
+  description: string;
+  type: 'warning' | 'error';
+  validator: (context: ValidationContext) => ValidationResult;
+}
+
+export interface ValidationContext {
+  asset?: AssetMetadata;
+  data?: ArrayBuffer;
+  manifest?: PackageManifest;
+  filename?: string;
+  mimeType?: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  issues: ValidationIssue[];
+}
+
+export interface ValidationIssue {
+  type: 'error' | 'warning' | 'info';
+  code: string;
+  message: string;
+  field?: string;
+  suggestion?: string;
+}
+
+export interface ContentPolicy {
+  maxFileSize: number; // bytes
+  maxTotalSize: number; // bytes for packages
+  allowedTypes: AssetType[];
+  allowedCategories: AssetCategory[];
+  allowedMimeTypes: string[];
+  blockedMimeTypes: string[];
+  requireMetadata: string[]; // required metadata fields
+  namePattern?: RegExp;
+  tagRestrictions?: {
+    required: string[];
+    forbidden: string[];
+    maxCount: number;
+  };
+  customRules?: ValidationRule[];
+}
+
+export class ContentValidator {
+  private rules = new Map<string, ValidationRule>();
+  private policy: ContentPolicy;
+
+  constructor(policy: ContentPolicy) {
+    this.policy = policy;
+    this.setupDefaultRules();
+    this.setupPolicyRules();
+  }
+
+  public async validateAsset(asset: AssetMetadata, data?: ArrayBuffer): Promise<ValidationResult> {
+    const context: ValidationContext = { asset, data };
+    return this.validate(context);
+  }
+
+  private async validate(context: ValidationContext): Promise<ValidationResult> {
+    const result: ValidationResult = { valid: true, issues: [] };
+    return result;
+  }
+
+  private setupDefaultRules(): void {
+    // Basic validation rules
+  }
+
+  private setupPolicyRules(): void {
+    // Policy-specific rules
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  private async calculateChecksum(data: ArrayBuffer): Promise<string> {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+}
+
+  /**
+   * Validate a file before import
+   */
+  validateFile(filename: string, mimeType: string, data: ArrayBuffer): ValidationResult {
+    const context: ValidationContext = { filename, mimeType, data };
+    return this.runValidation(context);
+  }
+
+  /**
+   * Validate a content package
+   */
+  validatePackage(manifest: PackageManifest, totalSize: number): ValidationResult {
+    const context: ValidationContext = { manifest };
+    const result = this.runValidation(context);
+
+    // Additional package-specific validation
+    if (totalSize > this.policy.maxTotalSize) {
+      result.issues.push({
+        type: 'error',
+        code: 'PACKAGE_TOO_LARGE',
+        message: `Package size ${this.formatBytes(totalSize)} exceeds maximum ${this.formatBytes(this.policy.maxTotalSize)}`,
+        suggestion: 'Reduce package size by removing or compressing assets',
+      });
+      result.valid = false;
+    }
+
+    return result;
+  }
+
+  /**
+   * Validate content integrity
+   */
+  async validateIntegrity(asset: AssetMetadata, data: ArrayBuffer): Promise<ValidationResult> {
+    const result: ValidationResult = { valid: true, issues: [] };
+
+    // Check size matches
+    if (data.byteLength !== asset.size) {
+      result.issues.push({
+        type: 'error',
+        code: 'SIZE_MISMATCH',
+        message: `Asset size mismatch: expected ${asset.size}, got ${data.byteLength}`,
+      });
+      result.valid = false;
+    }
+
+    // Check checksum
+    try {
+      const checksum = await this.calculateChecksum(data);
+      if (checksum !== asset.checksum) {
+        result.issues.push({
+          type: 'error',
+          code: 'CHECKSUM_MISMATCH',
+          message: 'Asset checksum does not match expected value',
+          suggestion: 'Asset may be corrupted or modified',
+        });
+        result.valid = false;
+      }
+    } catch (error) {
+      result.issues.push({
+        type: 'error',
+        code: 'CHECKSUM_ERROR',
+        message: `Failed to calculate checksum: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+      result.valid = false;
+    }
+
+    return result;
+  }
+
+  /**
+   * Register a custom validation rule
+   */
+  registerRule(rule: ValidationRule): void {
+    this.rules.set(rule.name, rule);
+  }
+
+  /**
+   * Remove a validation rule
+   */
+  removeRule(name: string): void {
+    this.rules.delete(name);
+  }
+
+  /**
+   * Get all registered rules
+   */
+  getRules(): ValidationRule[] {
+    return Array.from(this.rules.values());
+  }
+
+  /**
+   * Update content policy
+   */
+  updatePolicy(policy: Partial<ContentPolicy>): void {
+    this.policy = { ...this.policy, ...policy };
+    this.setupPolicyRules(); // Recreate policy-based rules
+  }
+
+  private runValidation(context: ValidationContext): ValidationResult {
+    const result: ValidationResult = { valid: true, issues: [] };
+
+    for (const rule of this.rules.values()) {
+      try {
+        const ruleResult = rule.validator(context);
+        result.issues.push(...ruleResult.issues);
+        
+        if (!ruleResult.valid && rule.type === 'error') {
+          result.valid = false;
+        }
+      } catch (error) {
+        result.issues.push({
+          type: 'error',
+          code: 'RULE_ERROR',
+          message: `Validation rule "${rule.name}" failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+        result.valid = false;
+      }
+    }
+
+    return result;
+  }
+
+  private setupDefaultRules(): void {
+    // File name validation
+    this.rules.set('filename', {
+      name: 'filename',
+      description: 'Validates file names',
+      type: 'error',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const filename = context.filename || context.asset?.name;
+        
+        if (!filename) {
+          return result;
+        }
+
+        // Check for dangerous characters
+        if (/[<>:"/\\|?*\x00-\x1f]/.test(filename)) {
+          result.issues.push({
+            type: 'error',
+            code: 'INVALID_FILENAME',
+            message: 'Filename contains invalid characters',
+            suggestion: 'Remove special characters from filename',
+          });
+          result.valid = false;
+        }
+
+        // Check length
+        if (filename.length > 255) {
+          result.issues.push({
+            type: 'error',
+            code: 'FILENAME_TOO_LONG',
+            message: 'Filename exceeds 255 characters',
+            suggestion: 'Shorten the filename',
+          });
+          result.valid = false;
+        }
+
+        // Check for reserved names (Windows)
+        const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'];
+        const baseName = filename.split('.')[0].toUpperCase();
+        if (reservedNames.includes(baseName)) {
+          result.issues.push({
+            type: 'warning',
+            code: 'RESERVED_FILENAME',
+            message: 'Filename may conflict with system reserved names',
+            suggestion: 'Consider using a different name',
+          });
+        }
+
+        return result;
+      },
+    });
+
+    // Asset metadata validation
+    this.rules.set('metadata', {
+      name: 'metadata',
+      description: 'Validates asset metadata completeness',
+      type: 'warning',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const asset = context.asset;
+
+        if (!asset) {
+          return result;
+        }
+
+        // Check required fields
+        if (!asset.name || asset.name.trim().length === 0) {
+          result.issues.push({
+            type: 'error',
+            code: 'MISSING_NAME',
+            message: 'Asset name is required',
+            field: 'name',
+          });
+          result.valid = false;
+        }
+
+        if (!asset.uploadedBy) {
+          result.issues.push({
+            type: 'warning',
+            code: 'MISSING_UPLOADER',
+            message: 'Asset uploader not specified',
+            field: 'uploadedBy',
+          });
+        }
+
+        if (!asset.tags || asset.tags.length === 0) {
+          result.issues.push({
+            type: 'info',
+            code: 'NO_TAGS',
+            message: 'Asset has no tags for organization',
+            field: 'tags',
+            suggestion: 'Add descriptive tags to improve searchability',
+          });
+        }
+
+        return result;
+      },
+    });
+
+    // Content type validation
+    this.rules.set('content-type', {
+      name: 'content-type',
+      description: 'Validates content type and MIME type consistency',
+      type: 'error',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const mimeType = context.mimeType || context.asset?.mimeType;
+        const assetType = context.asset?.type;
+
+        if (!mimeType) {
+          return result;
+        }
+
+        // Check MIME type format
+        if (!/^[a-zA-Z][a-zA-Z0-9]*/[a-zA-Z0-9][a-zA-Z0-9\-\._]*$/.test(mimeType)) {
+          result.issues.push({
+            type: 'error',
+            code: 'INVALID_MIME_TYPE',
+            message: 'Invalid MIME type format',
+            field: 'mimeType',
+          });
+          result.valid = false;
+        }
+
+        // Check consistency with asset type
+        if (assetType) {
+          const expectedMimeTypes = this.getExpectedMimeTypes(assetType);
+          if (expectedMimeTypes.length > 0 && !expectedMimeTypes.some(expected => mimeType.startsWith(expected))) {
+            result.issues.push({
+              type: 'warning',
+              code: 'MIME_TYPE_MISMATCH',
+              message: `MIME type "${mimeType}" may not match asset type "${assetType}"`,
+              suggestion: `Expected MIME types: ${expectedMimeTypes.join(', ')}`,
+            });
+          }
+        }
+
+        return result;
+      },
+    });
+
+    // Security validation
+    this.rules.set('security', {
+      name: 'security',
+      description: 'Performs basic security checks',
+      type: 'error',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const data = context.data;
+        const mimeType = context.mimeType || context.asset?.mimeType;
+
+        if (!data || !mimeType) {
+          return result;
+        }
+
+        // Check for executable file signatures
+        const executableSignatures = [
+          [0x4D, 0x5A], // PE executable
+          [0x7F, 0x45, 0x4C, 0x46], // ELF executable
+          [0xCF, 0xFA, 0xED, 0xFE], // Mach-O binary
+          [0x23, 0x21], // Script with shebang
+        ];
+
+        const bytes = new Uint8Array(data.slice(0, 10));
+        for (const signature of executableSignatures) {
+          if (this.matchesSignature(bytes, signature)) {
+            result.issues.push({
+              type: 'error',
+              code: 'EXECUTABLE_CONTENT',
+              message: 'File appears to contain executable code',
+              suggestion: 'Executable files are not allowed for security reasons',
+            });
+            result.valid = false;
+            break;
+          }
+        }
+
+        // Check for suspicious script content
+        if (mimeType.includes('text') || mimeType.includes('json')) {
+          const text = new TextDecoder('utf-8', { fatal: false }).decode(data.slice(0, 1024));
+          const suspiciousPatterns = [
+            /<script[^>]*>.*</script>/i,
+            /javascript:/i,
+            /eval\s*\(/i,
+            /document\.write/i,
+            /innerHTML/i,
+          ];
+
+          for (const pattern of suspiciousPatterns) {
+            if (pattern.test(text)) {
+              result.issues.push({
+                type: 'warning',
+                code: 'SUSPICIOUS_CONTENT',
+                message: 'File contains potentially unsafe script content',
+                suggestion: 'Review file content for security risks',
+              });
+              break;
+            }
+          }
+        }
+
+        return result;
+      },
+    });
+  }
+
+  private setupPolicyRules(): void {
+    // Remove existing policy rules
+    for (const [name, rule] of this.rules) {
+      if (name.startsWith('policy')) {
+        this.rules.delete(name);
+      }
+    }
+
+    // File size policy
+    this.rules.set('policy_size', {
+      name: 'policy_size',
+      description: 'Enforces file size policy',
+      type: 'error',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const size = context.data?.byteLength || context.asset?.size;
+
+        if (size && size > this.policy.maxFileSize) {
+          result.issues.push({
+            type: 'error',
+            code: 'FILE_TOO_LARGE',
+            message: `File size ${this.formatBytes(size)} exceeds maximum ${this.formatBytes(this.policy.maxFileSize)}`,
+            suggestion: 'Compress or reduce file size',
+          });
+          result.valid = false;
+        }
+
+        return result;
+      },
+    });
+
+    // Asset type policy
+    this.rules.set('policy_type', {
+      name: 'policy_type',
+      description: 'Enforces allowed asset types',
+      type: 'error',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const assetType = context.asset?.type;
+
+        if (assetType && !this.policy.allowedTypes.includes(assetType)) {
+          result.issues.push({
+            type: 'error',
+            code: 'TYPE_NOT_ALLOWED',
+            message: `Asset type "${assetType}" is not allowed`,
+            suggestion: `Allowed types: ${this.policy.allowedTypes.join(', ')}`,
+          });
+          result.valid = false;
+        }
+
+        return result;
+      },
+    });
+
+    // MIME type policy
+    this.rules.set('policy_mime', {
+      name: 'policy_mime',
+      description: 'Enforces MIME type restrictions',
+      type: 'error',
+      validator: (context) => {
+        const result: ValidationResult = { valid: true, issues: [] };
+        const mimeType = context.mimeType || context.asset?.mimeType;
+
+        if (!mimeType) {
+          return result;
+        }
+
+        // Check blocked MIME types
+        if (this.policy.blockedMimeTypes.some(blocked => mimeType.startsWith(blocked))) {
+          result.issues.push({
+            type: 'error',
+            code: 'MIME_TYPE_BLOCKED',
+            message: `MIME type "${mimeType}" is blocked`,
+          });
+          result.valid = false;
+        }
+
+        // Check allowed MIME types (if specified)
+        if (this.policy.allowedMimeTypes.length > 0 && 
+            !this.policy.allowedMimeTypes.some(allowed => mimeType.startsWith(allowed))) {
+          result.issues.push({
+            type: 'error',
+            code: 'MIME_TYPE_NOT_ALLOWED',
+            message: `MIME type "${mimeType}" is not allowed`,
+            suggestion: `Allowed MIME types: ${this.policy.allowedMimeTypes.join(', ')}`,
+          });
+          result.valid = false;
+        }
+
+        return result;
+      },
+    });
+  }
+
+  private getExpectedMimeTypes(assetType: AssetType): string[] {
+    switch (assetType) {
+      case 'image':
+        return ['image/'];
+      case 'audio':
+        return ['audio/'];
+      case 'model':
+        return ['model/', 'application/'];
+      case 'font':
+        return ['font/', 'application/font'];
+      case 'data':
+        return ['application/json', 'text/', 'application/xml'];
+      default:
+        return [];
+    }
+  }
+
+  private matchesSignature(data: Uint8Array, signature: number[]): boolean {
+    if (data.length < signature.length) {
+      return false;
+    }
+
+    for (let i = 0; i < signature.length; i++) {
+      if (data[i] !== signature[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  private async calculateChecksum(data: ArrayBuffer): Promise<string> {
+    const crypto = globalThis.crypto || require('crypto');
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+}
+
+/**
+ * Default content policy for VTT systems
+ */
+export const DEFAULT_CONTENT_POLICY: ContentPolicy = {
+  maxFileSize: 50 * 1024 * 1024, // 50MB per file
+  maxTotalSize: 500 * 1024 * 1024, // 500MB per package
+  allowedTypes: ['image', 'audio', 'model', 'map', 'token', 'scene', 'campaign', 'data', 'template'],
+  allowedCategories: ['characters', 'environments', 'items', 'effects', 'ui', 'system', 'user'],
+  allowedMimeTypes: [
+    'image/',
+    'audio/',
+    'application/json',
+    'text/',
+    'model/',
+    'font/',
+  ],
+  blockedMimeTypes: [
+    'application/x-executable',
+    'application/x-msdownload',
+    'application/x-dosexec',
+    'application/vnd.microsoft.portable-executable',
+  ],
+  requireMetadata: ['name', 'type', 'category'],
+  namePattern: /^[a-zA-Z0-9\s\-_\.\(\)]+$/,
+  tagRestrictions: {
+    required: [],
+    forbidden: ['admin', 'system', 'hidden'],
+    maxCount: 20,
+  },
+  customRules: [],
+};

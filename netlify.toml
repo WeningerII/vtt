@@ -1,0 +1,36 @@
+[build]
+  # Base directory for the build
+  base = ""
+  
+  # Build command for the client app
+  command = "cd apps/client && npm install --legacy-peer-deps && npm run build"
+  
+  # Publish directory - where Vite outputs the built client files
+  publish = "apps/client/dist"
+
+[build.environment]
+  # Node version for builds
+  NODE_VERSION = "18"
+  # Enable pnpm
+  NPM_FLAGS = "--version"
+
+[[redirects]]
+  # SPA redirect for client-side routing
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    # Cache static assets
+    Cache-Control = "public, max-age=31536000, immutable"

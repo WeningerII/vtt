@@ -1,0 +1,10 @@
+node_modules
+.pnpm-store
+.turbo
+**/dist
+**/coverage
+**/.vite
+**/.next
+**/tsconfig.tsbuildinfo
+**/*.db
+**/.prisma

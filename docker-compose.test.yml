@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+      POSTGRES_DB: vtt_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d vtt_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  server-test:
+    image: ${SERVER_IMAGE:-ghcr.io/weningerii/vtt-server:latest}
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: test
+      DB_HOST: postgres-test
+      DB_PORT: 5432
+      DB_NAME: vtt_test
+      DB_USERNAME: test_user
+      DB_PASSWORD: test_pass
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      JWT_ACCESS_SECRET: test_jwt_secret_123
+      JWT_REFRESH_SECRET: test_jwt_refresh_secret_456
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  client-test:
+    image: ${CLIENT_IMAGE:-ghcr.io/weningerii/vtt-client:latest}
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: test
+      NEXT_PUBLIC_API_URL: http://server-test:3001
+    depends_on:
+      server-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    driver: bridge

@@ -1,0 +1,346 @@
+.dice-roller {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.roller-header {
+  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+  color: white;
+  padding: 1rem;
+}
+
+.roller-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.roll-controls {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.expression-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.expression-input label {
+  font-weight: 500;
+  color: #333;
+}
+
+.dice-input {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.dice-input:focus {
+  outline: none;
+  border-color: #6f42c1;
+}
+
+.roll-modifiers {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.modifier-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modifier-input label {
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+}
+
+.modifier-field {
+  width: 80px;
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  text-align: center;
+  transition: border-color 0.2s ease;
+}
+
+.modifier-field:focus {
+  outline: none;
+  border-color: #6f42c1;
+}
+
+.advantage-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.advantage-btn,
+.disadvantage-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.advantage-btn input,
+.disadvantage-btn input {
+  margin: 0;
+}
+
+.advantage-btn:hover,
+.disadvantage-btn:hover {
+  border-color: #6f42c1;
+}
+
+.advantage-btn.active {
+  background: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.disadvantage-btn.active {
+  background: #dc3545;
+  color: white;
+  border-color: #dc3545;
+}
+
+.roll-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.roll-type label {
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+}
+
+.type-select {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.type-select:focus {
+  outline: none;
+  border-color: #6f42c1;
+}
+
+.roll-btn {
+  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+}
+
+.roll-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
+}
+
+.quick-rolls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quick-rolls label {
+  font-weight: 500;
+  color: #333;
+}
+
+.quick-roll-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.quick-roll-btn {
+  padding: 0.5rem 0.75rem;
+  background: #f8f9fa;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.quick-roll-btn:hover {
+  background: #6f42c1;
+  color: white;
+  border-color: #6f42c1;
+}
+
+.recent-rolls {
+  border-top: 1px solid #e0e0e0;
+  background: #f8f9fa;
+}
+
+.recent-rolls h4 {
+  margin: 0;
+  padding: 1rem 1rem 0.5rem 1rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.rolls-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.no-rolls {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 2rem;
+}
+
+.roll-result {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.roll-result:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.roll-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.roller-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.roll-time {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.roll-type-badge {
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.roll-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.roll-expression {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #333;
+}
+
+.roll-breakdown {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.roll-advantage {
+  color: #6f42c1;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.roll-total {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #6f42c1;
+  text-align: center;
+  min-width: 60px;
+}
+
+@media (max-width: 768px) {
+  .roll-modifiers {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .advantage-controls {
+    justify-content: center;
+  }
+  
+  .roll-type {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  
+  .quick-roll-buttons {
+    justify-content: center;
+  }
+  
+  .roll-result {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  
+  .roll-header {
+    justify-content: center;
+  }
+}
+
+/* Keyboard focus styles for accessibility */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabIndex]:focus-visible {
+  outline: 2px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+button:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+  outline: none;
+}

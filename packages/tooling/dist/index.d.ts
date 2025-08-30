@@ -4,6 +4,6 @@
  * live in separate files (atlas.ts, navmesh.ts) but are stubbed
  * here for illustration.
  */
-export declare function buildAtlas(inputDir: string, outputFile: string): void;
-export declare function bakeNavmesh(mapFile: string, outputFile: string): void;
+export declare function buildAtlas(_inputDir: string, _outputFile: string): void;
+export declare function bakeNavmesh(_mapFile: string, _outputFile: string): void;
 //# sourceMappingURL=index.d.ts.map

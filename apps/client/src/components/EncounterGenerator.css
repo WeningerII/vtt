@@ -1,0 +1,281 @@
+.encounter-generator {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.generator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+}
+
+.generator-header h3 {
+  margin: 0;
+  color: #4a9eff;
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+.generator-form {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+.form-group small {
+  color: #999;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #4a9eff, #0066cc);
+  border: none;
+  border-radius: 6px;
+  padding: 12px 24px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+}
+
+.generate-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5aa5ff, #0077dd);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+}
+
+.generate-btn:disabled {
+  background: #444;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.error-message {
+  background: #2d1b1b;
+  border: 1px solid #d32f2f;
+  border-radius: 4px;
+  padding: 12px;
+  color: #ffcdd2;
+  margin-bottom: 20px;
+}
+
+.generated-encounter {
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.encounter-header {
+  margin-bottom: 15px;
+}
+
+.encounter-header h4 {
+  margin: 0 0 5px 0;
+  color: #4a9eff;
+  font-size: 1.3rem;
+}
+
+.encounter-meta {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.encounter-description,
+.encounter-enemies,
+.encounter-environment,
+.encounter-rewards,
+.scaling-notes {
+  margin-bottom: 20px;
+}
+
+.encounter-description h5,
+.encounter-enemies h5,
+.encounter-environment h5,
+.encounter-rewards h5,
+.scaling-notes h5 {
+  margin: 0 0 10px 0;
+  color: #ccc;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 5px;
+}
+
+.encounter-description p,
+.encounter-environment p,
+.encounter-rewards p,
+.scaling-notes p {
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
+.encounter-enemies ul,
+.encounter-environment ul,
+.encounter-rewards ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.encounter-enemies li {
+  margin-bottom: 8px;
+}
+
+.tactics {
+  color: #999;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.encounter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #333;
+}
+
+.use-encounter-btn {
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.use-encounter-btn:hover {
+  background: linear-gradient(135deg, #5cbf60, #43a047);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.regenerate-btn {
+  background: #444;
+  border: 1px solid #666;
+  border-radius: 6px;
+  padding: 10px 20px;
+  color: #e0e0e0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.regenerate-btn:hover:not(:disabled) {
+  background: #555;
+  border-color: #777;
+}
+
+.regenerate-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.generation-meta {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #333;
+  text-align: center;
+}
+
+.generation-meta small {
+  color: #666;
+  font-size: 0.8rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .encounter-generator {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .encounter-actions {
+    flex-direction: column;
+  }
+  
+  .generator-header h3 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Keyboard focus styles for accessibility */
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabIndex]:focus-visible {
+  outline: 2px solid #4A90E2;
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+button:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) {
+  outline: none;
+}

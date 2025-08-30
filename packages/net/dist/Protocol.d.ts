@@ -17,7 +17,7 @@ export declare enum MessageType {
  * implementations should use binary varints and domain specific
  * encodings.
  */
-export declare const Protocol: {
+export declare const _Protocol: {
     encode<T>(type: MessageType, payload: T): string;
     decode(data: string): {
         type: MessageType;

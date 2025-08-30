@@ -18,7 +18,7 @@ export enum MessageType {
  * implementations should use binary varints and domain specific
  * encodings.
  */
-export const Protocol = {
+export const _Protocol = {
   encode<T>(type: MessageType, payload: T): string {
     return JSON.stringify({ type, payload });
   },

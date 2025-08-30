@@ -1,0 +1,66 @@
+name: Deploy K8s (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      imageTag:
+        description: "Image tag to deploy (e.g. 'main' or a commit SHA)"
+        required: true
+        default: main
+      registryOwner:
+        description: "GHCR owner/namespace (defaults to repo owner)"
+        required: false
+        default: ""
+      kustomizePath:
+        description: "Kustomize path"
+        required: true
+        default: infra/k8s/base
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.29.0
+
+      - name: Write kubeconfig from secret
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+        run: |
+          test -n "$KUBE_CONFIG_B64" || { echo "KUBE_CONFIG_B64 secret missing"; exit 1; }
+          echo "$KUBE_CONFIG_B64" | base64 -d > "$RUNNER_TEMP/kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/kubeconfig" >> $GITHUB_ENV
+
+      - name: Deploy with Kustomize
+        env:
+          OWNER_FALLBACK: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          OWNER="${{ github.event.inputs.registryOwner }}"; if [ -z "$OWNER" ]; then OWNER="$OWNER_FALLBACK"; fi
+          TAG="${{ github.event.inputs.imageTag }}"
+          
+          # Create temporary kustomization with image overrides
+          TMPDIR=$(mktemp -d)
+          cp -r "${{ github.event.inputs.kustomizePath }}"/* "$TMPDIR/"
+          
+          # Update image tags in kustomization
+          sed -i "s|ghcr.io/weningerii/vtt-server:main|ghcr.io/$OWNER/vtt-server:$TAG|g" "$TMPDIR/kustomization.yaml"
+          sed -i "s|ghcr.io/weningerii/vtt-client:main|ghcr.io/$OWNER/vtt-client:$TAG|g" "$TMPDIR/kustomization.yaml"
+          sed -i "s/newTag: main/newTag: $TAG/g" "$TMPDIR/kustomization.yaml"
+          
+          kubectl apply -k "$TMPDIR"
+
+      - name: Wait for rollout
+        run: |
+          set -e
+          kubectl -n vtt rollout status deploy/server --timeout=300s
+          kubectl -n vtt rollout status deploy/client --timeout=120s

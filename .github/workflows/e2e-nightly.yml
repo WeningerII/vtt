@@ -1,0 +1,387 @@
+name: E2E Nightly Tests
+
+on:
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - performance
+          - stress
+          - compatibility
+      browser:
+        description: 'Browser to test'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - chromium
+          - firefox
+          - webkit
+
+concurrency:
+  group: e2e-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
+jobs:
+  comprehensive-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: true
+      TURBO_TELEMETRY_DISABLED: "1"
+      NODE_ENV: test
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        test-suite: [user-journeys, websocket-integration, collaboration, performance, error-handling]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          check-latest: true
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-${{ matrix.browser }}-
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Prisma Generate
+        run: pnpm db:gen
+
+      - name: Setup test environment
+        run: |
+          cp .env.test .env
+          echo "Nightly E2E test environment configured"
+
+      - name: Run E2E Test Suite (${{ matrix.test-suite }} on ${{ matrix.browser }})
+        run: |
+          if [ "${{ github.event.inputs.test_suite }}" != "" ] && [ "${{ github.event.inputs.test_suite }}" != "all" ]; then
+            if [ "${{ matrix.test-suite }}" != "${{ github.event.inputs.test_suite }}" ]; then
+              echo "Skipping ${{ matrix.test-suite }} - only running ${{ github.event.inputs.test_suite }}"
+              exit 0
+            fi
+          fi
+          
+          if [ "${{ github.event.inputs.browser }}" != "" ] && [ "${{ github.event.inputs.browser }}" != "all" ]; then
+            if [ "${{ matrix.browser }}" != "${{ github.event.inputs.browser }}" ]; then
+              echo "Skipping ${{ matrix.browser }} - only running ${{ github.event.inputs.browser }}"
+              exit 0
+            fi
+          fi
+          
+          pnpm exec playwright test e2e/${{ matrix.test-suite }}.spec.ts --project=${{ matrix.browser }} --reporter=html,json
+        env:
+          PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.test-suite }}-${{ matrix.browser }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-nightly-${{ matrix.test-suite }}-${{ matrix.browser }}-${{ github.run_id }}
+          path: |
+            test-results/
+            playwright-report-${{ matrix.test-suite }}-${{ matrix.browser }}/
+            results.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failures-${{ matrix.test-suite }}-${{ matrix.browser }}-${{ github.run_id }}
+          path: |
+            test-results/**/video.webm
+            test-results/**/trace.zip
+            test-results/**/screenshot.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  performance-benchmarks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    if: github.event.inputs.test_suite == 'performance' || github.event.inputs.test_suite == 'all' || github.event_name == 'schedule'
+    env:
+      CI: true
+      TURBO_TELEMETRY_DISABLED: "1"
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          check-latest: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Prisma Generate
+        run: pnpm db:gen
+
+      - name: Setup performance test environment
+        run: |
+          cp .env.test .env
+          echo "Performance testing environment configured"
+
+      - name: Run performance benchmarks
+        run: |
+          pnpm exec playwright test e2e/performance.spec.ts --project=chromium --reporter=json
+          echo "Performance benchmarks completed"
+
+      - name: Generate performance report
+        run: |
+          node -e "
+          const fs = require('fs');
+          const results = JSON.parse(fs.readFileSync('results.json', 'utf8'));
+          const performanceTests = results.suites.find(s => s.title.includes('Performance'));
+          if (performanceTests) {
+            console.log('=== PERFORMANCE BENCHMARK RESULTS ===');
+            performanceTests.specs.forEach(spec => {
+              console.log(\`Test: \${spec.title}\`);
+              spec.tests.forEach(test => {
+                console.log(\`  Status: \${test.results[0].status}\`);
+                console.log(\`  Duration: \${test.results[0].duration}ms\`);
+              });
+            });
+          }
+          " > performance-summary.txt
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-benchmarks-${{ github.run_id }}
+          path: |
+            results.json
+            performance-summary.txt
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  stress-testing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    if: github.event.inputs.test_suite == 'stress' || github.event.inputs.test_suite == 'all' || github.event_name == 'schedule'
+    env:
+      CI: true
+      TURBO_TELEMETRY_DISABLED: "1"
+      NODE_ENV: test
+      STRESS_TEST_MODE: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          check-latest: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Prisma Generate
+        run: pnpm db:gen
+
+      - name: Setup stress test environment
+        run: |
+          cp .env.test .env
+          echo "STRESS_TEST_USERS=50" >> .env
+          echo "STRESS_TEST_DURATION=3600" >> .env
+          echo "Stress testing environment configured"
+
+      - name: Run stress tests
+        run: |
+          echo "Running extended stress tests..."
+          pnpm exec playwright test e2e/performance.spec.ts e2e/collaboration.spec.ts --project=chromium --repeat-each=3 --reporter=json
+          echo "Stress tests completed"
+
+      - name: Upload stress test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: stress-test-results-${{ github.run_id }}
+          path: |
+            results.json
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  compatibility-testing:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    if: github.event.inputs.test_suite == 'compatibility' || github.event.inputs.test_suite == 'all' || github.event_name == 'schedule'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        browser: [chromium, firefox, webkit]
+        exclude:
+          # WebKit is not supported on Linux
+          - os: ubuntu-latest
+            browser: webkit
+    env:
+      CI: true
+      TURBO_TELEMETRY_DISABLED: "1"
+      NODE_ENV: test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: pnpm
+          check-latest: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Prisma Generate
+        run: pnpm db:gen
+
+      - name: Setup test environment
+        shell: bash
+        run: |
+          cp .env.test .env
+          echo "Cross-platform compatibility testing on ${{ matrix.os }} with ${{ matrix.browser }}"
+
+      - name: Run compatibility tests
+        run: |
+          pnpm exec playwright test e2e/user-journeys.spec.ts e2e/websocket-integration.spec.ts --project=${{ matrix.browser }} --reporter=json
+
+      - name: Upload compatibility results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compatibility-${{ matrix.os }}-${{ matrix.browser }}-${{ github.run_id }}
+          path: |
+            results.json
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [comprehensive-e2e, performance-benchmarks, stress-testing, compatibility-testing]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate test summary
+        run: |
+          echo "# E2E Nightly Test Summary" > test-summary.md
+          echo "" >> test-summary.md
+          echo "**Run Date:** $(date)" >> test-summary.md
+          echo "**Commit:** ${{ github.sha }}" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          echo "## Test Results" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          # Count artifacts to determine test completion
+          total_artifacts=$(find artifacts -name "*.json" | wc -l)
+          echo "**Total test runs:** $total_artifacts" >> test-summary.md
+          echo "" >> test-summary.md
+          
+          # Check for failures
+          if find artifacts -name "*failures*" | grep -q .; then
+            echo "⚠️ **Some tests failed** - Check individual test artifacts for details" >> test-summary.md
+          else
+            echo "✅ **All tests passed**" >> test-summary.md
+          fi
+          
+          echo "" >> test-summary.md
+          echo "## Artifacts Generated" >> test-summary.md
+          echo "" >> test-summary.md
+          find artifacts -type f -name "*.json" | head -20 | while read file; do
+            echo "- $(basename $file)" >> test-summary.md
+          done
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-test-summary-${{ github.run_id }}
+          path: test-summary.md
+          retention-days: 30
+
+      - name: Comment on latest commit (if failures)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('test-summary.md', 'utf8');
+            
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `## 🔴 Nightly E2E Tests Failed\n\n${summary}\n\nPlease check the failed test artifacts for more details.`
+            });

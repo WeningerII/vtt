@@ -1,0 +1,22 @@
+{
+  "name": "@vtt/class-features",
+  "version": "1.0.0",
+  "description": "D&D 5e class feature automation system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@vtt/dice-engine": "workspace:*",
+    "@vtt/conditions-engine": "workspace:*",
+    "@vtt/spell-engine": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
+  }
+}

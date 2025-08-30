@@ -1,4 +1,5 @@
 import http from 'http';
+import { logger } from '@vtt/logging';
 import fs from 'fs';
 import path from 'path';
 import url from 'url';
@@ -22,13 +23,13 @@ const server = http.createServer((req, res) => {
     const ext = path.extname(file);
     res.writeHead(200, { 'content-type': mime[ext] || 'application/octet-stream' });
     fs.createReadStream(file).pipe(res);
-  } catch (e) {
+  } catch (_e) {
     res.writeHead(500); res.end('error');
   }
 });
 
 const PORT = 8081;
-server.listen(PORT, () => {
-  console.log(`[spike] serving ${base} at http://localhost:${PORT}`);
-  console.log(`[spike] open that URL and watch the console for PICK logs.`);
+server.listen(_PORT, () => {
+  logger.info(`[spike] serving ${base} at http://localhost:${PORT}`);
+  logger.info(`[spike] open that URL and watch the console for PICK logs.`);
 });

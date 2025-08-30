@@ -1,0 +1,42 @@
+node_modules
+
+# Turbo cache
+.turbo/
+
+# PNPM cache and store
+.pnpm-cache/
+.pnpm-store/
+.pnpm-state/
+
+# local env files
+.env*.local
+.env
+.env.dev
+.env.production
+.env.test
+.env.security
+
+# Build outputs
+**/dist/
+**/*.tsbuildinfo
+
+# Test outputs
+test-results/
+playwright-report/
+coverage/
+reports/
+
+# Temporary files
+uploads/
+*.log
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,25 @@
+{
+  "name": "@vtt/logging",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -w",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "pino": "^8.16.0",
+    "pino-pretty": "^10.2.3",
+    "@opentelemetry/api": "^1.6.0",
+    "@opentelemetry/sdk-node": "^0.44.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.39.4",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.44.0",
+    "@opentelemetry/resources": "^1.17.1",
+    "@opentelemetry/semantic-conventions": "^1.17.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0"
+  }
+}

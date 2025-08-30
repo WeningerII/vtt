@@ -1,0 +1,26 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "types": [
+      "jest",
+      "node"
+    ],
+    "skipLibCheck": true,
+    "composite": true,
+    "isolatedModules": false,
+    "incremental": true,
+    "tsBuildInfoFile": "./monster-abilities.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/__tests__/**/*"
+  ]
+}

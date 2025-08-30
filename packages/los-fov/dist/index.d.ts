@@ -7,11 +7,11 @@
  * set of visible grid coordinates. This naive implementation simply
  * returns a square region around the origin.
  */
-export declare function computeGridFov(origin: [number, number], radius: number): Array<[number, number]>;
+export declare function computeGridFov(origin: [number, number], _radius: number): Array<[number, number]>;
 /**
  * Compute a simple visibility polygon from a point within a polygonal
  * environment. In this stub we simply return the origin for
  * demonstration purposes.
  */
-export declare function computeVisibilityPolygon(origin: [number, number], obstacles: number[][]): [number, number][];
+export declare function computeVisibilityPolygon(origin: [number, number], _obstacles: number[][]): [number, number][];
 //# sourceMappingURL=index.d.ts.map

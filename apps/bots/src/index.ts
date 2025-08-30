@@ -1,12 +1,13 @@
 import { Client, Protocol, MessageType } from '@vtt/net';
+import { logger } from '@vtt/logging';
 
 /**
  * Simple bot that connects to the server and sends a ping message.
  */
 async function runBot() {
   const client = new Client('ws://localhost:8080');
-  client.onMessage((msg: unknown) => {
-    console.log('Bot received', msg);
+  client.onMessage((_msg: unknown) => {
+    logger.info('Bot received', msg);
   });
   // Wait until socket is open before sending
   setTimeout(() => {
@@ -15,4 +16,4 @@ async function runBot() {
   }, 1000);
 }
 
-runBot().catch(err => console.error(err));
+runBot().catch(err => logger.error(err));

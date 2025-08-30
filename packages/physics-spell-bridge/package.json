@@ -1,0 +1,25 @@
+{
+  "name": "@vtt/physics-spell-bridge",
+  "version": "1.0.0",
+  "description": "Physics-Spell Bridge System for VTT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@vtt/physics": "workspace:*",
+    "@vtt/spell-engine": "workspace:*",
+    "events": "^3.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@vtt/physics": "*",
+    "@vtt/spell-engine": "*"
+  }
+}

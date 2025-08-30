@@ -3,8 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "description": "Behavior trees and utility AI for non-player entities.",
+  "type": "module",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "lint": "eslint src --ext .ts"

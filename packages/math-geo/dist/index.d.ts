@@ -9,9 +9,9 @@ export declare function length(a: Vec2): number;
 /**
  * Convert world coordinates to grid cell coordinates given a cell size.
  */
-export declare function worldToGrid(pos: Vec2, cellSize: number): Vec2;
+export declare function worldToGrid(pos: Vec2, _cellSize: number): Vec2;
 /**
  * Convert grid cell coordinates back to world coordinates (cell origin).
  */
-export declare function gridToWorld(cell: Vec2, cellSize: number): Vec2;
+export declare function gridToWorld(cell: Vec2, _cellSize: number): Vec2;
 //# sourceMappingURL=index.d.ts.map

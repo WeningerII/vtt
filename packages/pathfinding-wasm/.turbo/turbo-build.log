@@ -3,3 +3,7 @@
 > @vtt/pathfinding-wasm@0.0.0 build /home/weningerii/vtt/packages/pathfinding-wasm
 > tsc -b
 
+[91merror[0m[90m TS2688: [0mCannot find type definition file for 'chokidar'.
+  The file is in the program because:
+    Entry point for implicit type library 'chokidar'
+

@@ -2,7 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "incremental": true,
+    "tsBuildInfoFile": "./math-geo.tsbuildinfo",
+    "composite": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

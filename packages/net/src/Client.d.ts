@@ -8,7 +8,7 @@ export declare class Client {
     /**
      * Register a handler for messages from the server.
      */
-    onMessage(cb: (data: any) => void): void;
+    onMessage(_cb: (data: any) => void): void;
     /**
      * Send a message to the server. Accepts any serialisable payload.
      */

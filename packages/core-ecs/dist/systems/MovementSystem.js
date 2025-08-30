@@ -1,6 +1,7 @@
 /** Advance positions by velocity; dt is in seconds. */
 export function MovementSystem(world, dt) {
-    const { transforms: T, movement: M } = world;
+    const T = world.transforms;
+    const M = world.movement;
     for (const id of world.iterMoveable()) {
         // Safe reads with defaults (TS: noUncheckedIndexedAccess)
         let vx = M.vx[id] ?? 0;

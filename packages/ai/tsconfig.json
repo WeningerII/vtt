@@ -2,7 +2,26 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "incremental": true,
+    "tsBuildInfoFile": "./ai.tsbuildinfo",
+    "composite": true,
+    "types": ["node"],
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": [
+    "src/index.ts"
+  ],
+  "exclude": [
+    "src/index-broken.ts",
+    "src/ContentGenerator.ts",
+    "src/ProceduralBehaviorGenerator.ts",
+    "src/BehaviorTree.ts",
+    "src/StateMachine.ts",
+    "src/Pathfinding.ts",
+    "src/Agent.ts",
+    "src/NPCBehaviorSystem.ts",
+    "src/npc/**/*",
+    "src/providers/**/*"
+  ]
 }

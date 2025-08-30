@@ -1,0 +1,35 @@
+{
+  "name": "@vtt/performance",
+  "version": "1.0.0",
+  "description": "Performance profiling, optimization, and monitoring utilities for VTT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "benchmark": "node dist/benchmarks.js",
+    "profile": "node --prof dist/profiler.js",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@types/node": "^20.0.0",
+    "performance-now": "^2.1.0",
+    "benchmark": "^2.1.4",
+    "@types/benchmark": "^2.1.5"
+  },
+  "devDependencies": {
+    "@vtt/testing": "workspace:*",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@vtt/core-ecs": "workspace:*",
+    "@vtt/renderer": "workspace:*",
+    "@vtt/net": "workspace:*",
+    "@vtt/physics": "workspace:*",
+    "@vtt/monitoring": "workspace:*"
+  }
+}

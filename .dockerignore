@@ -1,0 +1,38 @@
+# VCS
+.git
+.github
+
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build caches
+.turbo
+**/dist
+**/tsconfig.tsbuildinfo
+
+# Testing
+coverage
+
+# Environment
+.env
+**/.env
+
+# Security sensitive
+**/*.key
+**/*.pem
+**/*.crt
+**/*.p12
+**/*.pfx
+**/secrets
+**/credentials
+
+# Development
+**/.vscode
+**/.idea
+**/README.md
+**/docs
+
+# Misc
+Dockerfile
+**/.DS_Store

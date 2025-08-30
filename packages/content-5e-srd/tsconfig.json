@@ -1,0 +1,35 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "types": [
+      "jest",
+      "node"
+    ],
+    "skipLibCheck": true,
+    "composite": true,
+    "isolatedModules": false,
+    "incremental": true,
+    "tsBuildInfoFile": "./content-5e-srd.tsbuildinfo"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts",
+    "src/__tests__/**/*",
+    "src/UnifiedSpellSystem.ts",
+    "src/SpellCollectionManager.ts",
+    "src/SpellPhysicsIntegration.ts",
+    "src/SpellScalingEngine.ts",
+    "src/spells/level4.ts",
+    "src/spells/level5.ts",
+    "src/spells/level6.ts",
+    "src/spells/level7.ts",
+    "src/spells/level8.ts"
+  ]
+}

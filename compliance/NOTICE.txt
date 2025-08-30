@@ -1,0 +1,5 @@
+VTT - Virtual Tabletop
+==================================================
+
+This software includes the following third-party components:
+
