@@ -3,7 +3,7 @@
  * Handles spell concentration mechanics for D&D 5e
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface ConcentrationSpell {
   id: string;
@@ -21,15 +21,15 @@ export interface ConcentrationSpell {
 
 export interface ConcentrationEffect {
   id: string;
-  type: 'condition' | 'buff' | 'debuff' | 'environmental' | 'utility';
+  type: "condition" | "buff" | "debuff" | "environmental" | "utility";
   targetId?: string;
   effect: any;
-  maintainedBy: 'concentration';
+  maintainedBy: "concentration";
 }
 
 export interface ConcentrationCheck {
   casterId: string;
-  trigger: 'damage' | 'incapacitated' | 'death' | 'manual';
+  trigger: "damage" | "incapacitated" | "death" | "manual";
   dc: number;
   damage?: number;
   result?: {
@@ -52,28 +52,28 @@ export class ConcentrationManager extends EventEmitter {
   /**
    * Start concentrating on a spell
    */
-  startConcentration(concentration: Omit<ConcentrationSpell, 'startTime'>): boolean {
+  startConcentration(concentration: Omit<ConcentrationSpell, "startTime">): boolean {
     const casterId = concentration.casterId;
 
     // End existing concentration
     if (this.concentratingCasters.has(casterId)) {
-      this.endConcentration(casterId, 'new_spell');
+      this.endConcentration(casterId, "new_spell");
     }
 
     const concentrationSpell: ConcentrationSpell = {
       ...concentration,
-      startTime: Date.now()
+      startTime: Date.now(),
     };
 
     this.concentratingCasters.set(casterId, concentrationSpell);
     this.concentrationEffects.set(concentration.id, concentration.effects);
 
-    this.emit('concentrationStarted', concentrationSpell);
-    
+    this.emit("concentrationStarted", concentrationSpell);
+
     // Schedule automatic end
     setTimeout(() => {
       if (this.concentratingCasters.get(casterId)?.id === concentration.id) {
-        this.endConcentration(casterId, 'duration_expired');
+        this.endConcentration(casterId, "duration_expired");
       }
     }, concentration.duration);
 
@@ -96,27 +96,31 @@ export class ConcentrationManager extends EventEmitter {
     this.concentratingCasters.delete(casterId);
     this.concentrationEffects.delete(concentration.id);
 
-    this.emit('concentrationEnded', concentration, reason);
+    this.emit("concentrationEnded", concentration, reason);
     return true;
   }
 
   /**
    * Trigger concentration check from damage
    */
-  triggerConcentrationCheck(casterId: string, trigger: ConcentrationCheck['trigger'], damage?: number): ConcentrationCheck | null {
+  triggerConcentrationCheck(
+    casterId: string,
+    trigger: ConcentrationCheck["trigger"],
+    damage?: number,
+  ): ConcentrationCheck | null {
     const concentration = this.concentratingCasters.get(casterId);
     if (!concentration) return null;
 
     let dc = 10;
-    
+
     switch (trigger) {
-      case 'damage':
+      case "damage":
         if (damage) {
           dc = Math.max(10, Math.floor(damage / 2));
-          
+
           // Auto-fail for massive damage
           if (concentration.autoFail && damage >= concentration.autoFail.damage) {
-            this.endConcentration(casterId, 'massive_damage');
+            this.endConcentration(casterId, "massive_damage");
             return {
               casterId,
               trigger,
@@ -125,15 +129,15 @@ export class ConcentrationManager extends EventEmitter {
               result: {
                 rolled: 0,
                 success: false,
-                maintained: false
-              }
+                maintained: false,
+              },
             };
           }
         }
         break;
-      case 'incapacitated':
+      case "incapacitated":
         // Automatically fail if incapacitated
-        this.endConcentration(casterId, 'incapacitated');
+        this.endConcentration(casterId, "incapacitated");
         return {
           casterId,
           trigger,
@@ -141,11 +145,11 @@ export class ConcentrationManager extends EventEmitter {
           result: {
             rolled: 0,
             success: false,
-            maintained: false
-          }
+            maintained: false,
+          },
         };
-      case 'death':
-        this.endConcentration(casterId, 'death');
+      case "death":
+        this.endConcentration(casterId, "death");
         return {
           casterId,
           trigger,
@@ -153,8 +157,8 @@ export class ConcentrationManager extends EventEmitter {
           result: {
             rolled: 0,
             success: false,
-            maintained: false
-          }
+            maintained: false,
+          },
         };
     }
 
@@ -162,19 +166,23 @@ export class ConcentrationManager extends EventEmitter {
       casterId,
       trigger,
       dc,
-      ...(damage !== undefined && { damage })
+      ...(damage !== undefined && { damage }),
     };
 
     this.checkQueue.push(check);
-    this.emit('concentrationCheckRequired', check);
-    
+    this.emit("concentrationCheckRequired", check);
+
     return check;
   }
 
   /**
    * Resolve concentration check with dice roll
    */
-  resolveConcentrationCheck(checkIndex: number, constitutionSave: number, proficiencyBonus: number = 0): boolean {
+  resolveConcentrationCheck(
+    checkIndex: number,
+    constitutionSave: number,
+    proficiencyBonus: number = 0,
+  ): boolean {
     const check = this.checkQueue[checkIndex];
     if (!check) return false;
 
@@ -184,14 +192,14 @@ export class ConcentrationManager extends EventEmitter {
     check.result = {
       rolled: totalRoll,
       success,
-      maintained: success
+      maintained: success,
     };
 
     if (!success) {
-      this.endConcentration(check.casterId, 'failed_check');
+      this.endConcentration(check.casterId, "failed_check");
     }
 
-    this.emit('concentrationCheckResolved', check);
+    this.emit("concentrationCheckResolved", check);
     this.checkQueue.splice(checkIndex, 1);
 
     return success;
@@ -225,33 +233,33 @@ export class ConcentrationManager extends EventEmitter {
     if (!this.concentrationEffects.has(concentrationId)) {
       this.concentrationEffects.set(concentrationId, []);
     }
-    
+
     this.concentrationEffects.get(concentrationId)!.push(effect);
-    this.emit('concentrationEffectAdded', concentrationId, effect);
+    this.emit("concentrationEffectAdded", concentrationId, effect);
   }
 
   /**
    * Remove concentration effect
    */
   private removeConcentrationEffect(effect: ConcentrationEffect): void {
-    this.emit('concentrationEffectRemoved', effect);
-    
+    this.emit("concentrationEffectRemoved", effect);
+
     // Handle different effect types
     switch (effect.type) {
-      case 'condition':
-        this.emit('conditionRemoved', effect.targetId, effect.effect);
+      case "condition":
+        this.emit("conditionRemoved", effect.targetId, effect.effect);
         break;
-      case 'buff':
-        this.emit('buffRemoved', effect.targetId, effect.effect);
+      case "buff":
+        this.emit("buffRemoved", effect.targetId, effect.effect);
         break;
-      case 'debuff':
-        this.emit('debuffRemoved', effect.targetId, effect.effect);
+      case "debuff":
+        this.emit("debuffRemoved", effect.targetId, effect.effect);
         break;
-      case 'environmental':
-        this.emit('environmentalEffectRemoved', effect.effect);
+      case "environmental":
+        this.emit("environmentalEffectRemoved", effect.effect);
         break;
-      case 'utility':
-        this.emit('utilityEffectRemoved', effect.effect);
+      case "utility":
+        this.emit("utilityEffectRemoved", effect.effect);
         break;
     }
   }
@@ -268,7 +276,7 @@ export class ConcentrationManager extends EventEmitter {
    */
   endAllConcentration(casterId: string): void {
     if (this.concentratingCasters.has(casterId)) {
-      this.endConcentration(casterId, 'forced_end');
+      this.endConcentration(casterId, "forced_end");
     }
   }
 
@@ -294,7 +302,7 @@ export class ConcentrationManager extends EventEmitter {
       }
 
       for (const casterId of expiredConcentrations) {
-        this.endConcentration(casterId, 'duration_expired');
+        this.endConcentration(casterId, "duration_expired");
       }
     }, 1000); // Check every second
   }
@@ -303,52 +311,55 @@ export class ConcentrationManager extends EventEmitter {
    * Handle combat events that affect concentration
    */
   handleCombatEvent(event: {
-    type: 'damage' | 'incapacitated' | 'unconscious' | 'death';
+    type: "damage" | "incapacitated" | "unconscious" | "death";
     targetId: string;
     damage?: number;
   }): void {
     switch (event.type) {
-      case 'damage':
+      case "damage":
         if (event.damage && event.damage > 0) {
-          this.triggerConcentrationCheck(event.targetId, 'damage', event.damage);
+          this.triggerConcentrationCheck(event.targetId, "damage", event.damage);
         }
         break;
-      case 'incapacitated':
-      case 'unconscious':
-        this.triggerConcentrationCheck(event.targetId, 'incapacitated');
+      case "incapacitated":
+      case "unconscious":
+        this.triggerConcentrationCheck(event.targetId, "incapacitated");
         break;
-      case 'death':
-        this.triggerConcentrationCheck(event.targetId, 'death');
+      case "death":
+        this.triggerConcentrationCheck(event.targetId, "death");
         break;
     }
   }
 }
 
 // Cantrip-specific concentration requirements
-export const cantripConcentrationRequirements: Record<string, {
-  requiresConcentration: boolean;
-  duration: number; // milliseconds
-  effects: string[];
-}> = {
+export const cantripConcentrationRequirements: Record<
+  string,
+  {
+    requiresConcentration: boolean;
+    duration: number; // milliseconds
+    effects: string[];
+  }
+> = {
   dancing_lights: {
     requiresConcentration: true,
     duration: 60000, // 1 minute
-    effects: ['light_control', 'movement_control']
+    effects: ["light_control", "movement_control"],
   },
   guidance: {
     requiresConcentration: true,
     duration: 60000, // 1 minute
-    effects: ['ability_bonus']
+    effects: ["ability_bonus"],
   },
   resistance: {
     requiresConcentration: true,
     duration: 60000, // 1 minute
-    effects: ['saving_throw_bonus']
+    effects: ["saving_throw_bonus"],
   },
   true_strike: {
     requiresConcentration: true,
     duration: 6000, // Until end of next turn
-    effects: ['attack_advantage']
+    effects: ["attack_advantage"],
   },
   // Most other cantrips don't require concentration
   acid_splash: { requiresConcentration: false, duration: 0, effects: [] },
@@ -369,7 +380,7 @@ export const cantripConcentrationRequirements: Record<string, {
   shillelagh: { requiresConcentration: false, duration: 0, effects: [] },
   shocking_grasp: { requiresConcentration: false, duration: 0, effects: [] },
   thaumaturgy: { requiresConcentration: false, duration: 0, effects: [] },
-  vicious_mockery: { requiresConcentration: false, duration: 0, effects: [] }
+  vicious_mockery: { requiresConcentration: false, duration: 0, effects: [] },
 };
 
 export const _concentrationManager = new ConcentrationManager();

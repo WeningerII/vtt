@@ -1,4 +1,13 @@
-import type { GPUDevice, GPURenderPipeline, GPUTexture, GPUComputePipeline, GPUBuffer, GPUTextureUsage, GPUBufferUsage, GPUCommandEncoder } from '@webgpu/types';
+import type {
+  GPUDevice,
+  GPURenderPipeline,
+  GPUTexture,
+  GPUComputePipeline,
+  GPUBuffer,
+  GPUTextureUsage,
+  GPUBufferUsage,
+  GPUCommandEncoder,
+} from "@webgpu/types";
 /**
  * Professional Lighting System - Exceeds VTT Industry Standards
  * Features real-time shadows, volumetric lighting, and dynamic environment lighting
@@ -6,7 +15,7 @@ import type { GPUDevice, GPURenderPipeline, GPUTexture, GPUComputePipeline, GPUB
 
 export interface LightSource {
   id: string;
-  type: 'directional' | 'point' | 'spot' | 'area' | 'environment';
+  type: "directional" | "point" | "spot" | "area" | "environment";
   position: [number, number, number];
   direction: [number, number, number];
   color: [number, number, number];
@@ -75,27 +84,27 @@ export interface LightingStats {
 
 export class ProfessionalLightingSystem {
   private device: GPUDevice;
-  
+
   // Shadow mapping
   private shadowMapTextures: Map<string, GPUTexture> = new Map();
   private shadowMapPipeline: GPURenderPipeline | null = null;
   private cascadedShadowMapTexture: GPUTexture | null = null;
-  
+
   // Volumetric lighting
   private volumetricTexture: GPUTexture | null = null;
   private volumetricPipeline: GPUComputePipeline | null = null;
-  
+
   // Environment lighting
   private environmentMapTexture: GPUTexture | null = null;
   private irradianceMapTexture: GPUTexture | null = null;
   private prefilteredMapTexture: GPUTexture | null = null;
   private brdfLutTexture: GPUTexture | null = null;
-  
+
   // Buffers
   private lightBuffer: GPUBuffer | null = null;
   private shadowMatrixBuffer: GPUBuffer | null = null;
   private lightingUniformBuffer: GPUBuffer | null = null;
-  
+
   // State
   private lights: Map<string, LightSource> = new Map();
   private shadowSettings: ShadowSettings;
@@ -113,7 +122,7 @@ export class ProfessionalLightingSystem {
 
   constructor(device: GPUDevice) {
     this.device = device;
-    
+
     this.shadowSettings = {
       enabled: true,
       mapSize: 2048,
@@ -158,8 +167,12 @@ export class ProfessionalLightingSystem {
   private async createShadowMapResources(): Promise<void> {
     // Cascaded Shadow Map texture
     this.cascadedShadowMapTexture = this.device.createTexture({
-      size: [this.shadowSettings.mapSize, this.shadowSettings.mapSize, this.shadowSettings.cascadeCount],
-      format: 'depth32float',
+      size: [
+        this.shadowSettings.mapSize,
+        this.shadowSettings.mapSize,
+        this.shadowSettings.cascadeCount,
+      ],
+      format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
 
@@ -193,32 +206,30 @@ export class ProfessionalLightingSystem {
     });
 
     this.shadowMapPipeline = this.device.createRenderPipeline({
-      layout: 'auto',
+      layout: "auto",
       vertex: {
         module: shadowVertexShader,
-        entryPoint: 'vs_main',
+        entryPoint: "vs_main",
         buffers: [
           {
             arrayStride: 12, // 3 floats for position
-            attributes: [
-              { format: 'float32x3', offset: 0, shaderLocation: 0 },
-            ],
+            attributes: [{ format: "float32x3", offset: 0, shaderLocation: 0 }],
           },
         ],
       },
       fragment: {
         module: shadowFragmentShader,
-        entryPoint: 'fs_main',
+        entryPoint: "fs_main",
         targets: [],
       },
       primitive: {
-        topology: 'triangle-list',
-        cullMode: 'front', // Front-face culling for shadow mapping
+        topology: "triangle-list",
+        cullMode: "front", // Front-face culling for shadow mapping
       },
       depthStencil: {
-        format: 'depth32float',
+        format: "depth32float",
         depthWriteEnabled: true,
-        depthCompare: 'less',
+        depthCompare: "less",
       },
     });
   }
@@ -227,10 +238,10 @@ export class ProfessionalLightingSystem {
     // Volumetric lighting texture (lower resolution for performance)
     const volumetricWidth = Math.floor(1920 / 2);
     const volumetricHeight = Math.floor(1080 / 2);
-    
+
     this.volumetricTexture = this.device.createTexture({
       size: [volumetricWidth, volumetricHeight],
-      format: 'rgba16float',
+      format: "rgba16float",
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.TEXTURE_BINDING,
     });
 
@@ -341,10 +352,10 @@ export class ProfessionalLightingSystem {
     });
 
     this.volumetricPipeline = this.device.createComputePipeline({
-      layout: 'auto',
+      layout: "auto",
       compute: {
         module: volumetricComputeShader,
-        entryPoint: 'cs_main',
+        entryPoint: "cs_main",
       },
     });
   }
@@ -378,7 +389,7 @@ export class ProfessionalLightingSystem {
     // Generate BRDF lookup table for IBL
     this.brdfLutTexture = this.device.createTexture({
       size: [512, 512],
-      format: 'rg16float',
+      format: "rg16float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
 
@@ -414,9 +425,14 @@ export class ProfessionalLightingSystem {
       lightData.set(light.color, offset + 6);
       lightData[offset + 9] = light.intensity;
       lightData[offset + 10] = light.range;
-      lightData[offset + 11] = light.type === 'directional' ? 0 :
-                               light.type === 'point' ? 1 :
-                               light.type === 'spot' ? 2 : 3;
+      lightData[offset + 11] =
+        light.type === "directional"
+          ? 0
+          : light.type === "point"
+            ? 1
+            : light.type === "spot"
+              ? 2
+              : 3;
       lightData[offset + 12] = light.volumetric ? 1 : 0;
       lightData[offset + 13] = light.castShadows ? 1 : 0;
     });
@@ -424,39 +440,43 @@ export class ProfessionalLightingSystem {
     this.device.queue.writeBuffer(this.lightBuffer!, 0, lightData);
   }
 
-  renderShadowMaps(encoder: GPUCommandEncoder, objects: any[], lightViewMatrices: Float32Array[]): void {
+  renderShadowMaps(
+    encoder: GPUCommandEncoder,
+    objects: any[],
+    lightViewMatrices: Float32Array[],
+  ): void {
     const startTime = performance.now();
     this.stats.shadowMapUpdates = 0;
 
     // Render shadow maps for each light that casts shadows
-    const shadowCasters = Array.from(this.lights.values()).filter(light => light.castShadows);
-    
+    const shadowCasters = Array.from(this.lights.values()).filter((light) => light.castShadows);
+
     shadowCasters.forEach((light, _lightIndex) => {
       if (lightIndex >= lightViewMatrices.length / 16) return;
 
       const lightViewMatrix = lightViewMatrices.slice(lightIndex * 16, (lightIndex + 1) * 16);
-      
+
       const renderPass = encoder.beginRenderPass({
         colorAttachments: [],
         depthStencilAttachment: {
           view: this.cascadedShadowMapTexture!.createView({
-            dimension: '2d',
+            dimension: "2d",
             baseArrayLayer: lightIndex,
             arrayLayerCount: 1,
           }),
           depthClearValue: 1.0,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'store',
+          depthLoadOp: "clear",
+          depthStoreOp: "store",
         },
       });
 
       renderPass.setPipeline(this.shadowMapPipeline!);
-      
+
       // Update light view-projection matrix
       this.device.queue.writeBuffer(this.shadowMatrixBuffer!, lightIndex * 64, lightViewMatrix);
 
       // Render objects from light's perspective
-      objects.forEach(obj => {
+      objects.forEach((obj) => {
         if (obj.castShadows) {
           // Render object (simplified - would need proper mesh binding)
           this.stats.shadowMapUpdates++;
@@ -474,10 +494,10 @@ export class ProfessionalLightingSystem {
     if (!this.volumetricSettings.enabled || !this.volumetricPipeline) return;
 
     const startTime = performance.now();
-    
+
     const computePass = encoder.beginComputePass();
     computePass.setPipeline(this.volumetricPipeline);
-    
+
     // Update volumetric uniforms
     const volumetricData = new Float32Array(32);
     // Set matrices, camera position, and volumetric parameters
@@ -487,10 +507,12 @@ export class ProfessionalLightingSystem {
     const workgroupsX = Math.ceil(1920 / 2 / 8);
     const workgroupsY = Math.ceil(1080 / 2 / 8);
     computePass.dispatchWorkgroups(workgroupsX, workgroupsY);
-    
+
     computePass.end();
 
-    const volumetricLights = Array.from(this.lights.values()).filter(light => light.volumetric).length;
+    const volumetricLights = Array.from(this.lights.values()).filter(
+      (light) => light.volumetric,
+    ).length;
     this.stats.volumetricLights = volumetricLights;
     this.stats.volumetricPassTime = performance.now() - startTime;
   }
@@ -500,22 +522,29 @@ export class ProfessionalLightingSystem {
   }
 
   // Advanced lighting effects
-  createFlickeringLight(baseLight: LightSource, flickerSettings: NonNullable<LightSource['flickering']>): void {
+  createFlickeringLight(
+    baseLight: LightSource,
+    flickerSettings: NonNullable<LightSource["flickering"]>,
+  ): void {
     const light = { ...baseLight, flickering: flickerSettings };
     this.addLight(light);
   }
 
-  createMovingLight(baseLight: LightSource, animationSettings: NonNullable<LightSource['animated']>): void {
+  createMovingLight(
+    baseLight: LightSource,
+    animationSettings: NonNullable<LightSource["animated"]>,
+  ): void {
     const light = { ...baseLight, animated: animationSettings };
     this.addLight(light);
   }
 
   // Update animated lights
   updateAnimatedLights(_deltaTime: number): void {
-    this.lights.forEach(light => {
+    this.lights.forEach((light) => {
       if (light.flickering?.enabled) {
         const flicker = light.flickering;
-        const flickerValue = Math.sin(performance.now() * 0.001 * flicker.frequency) * flicker.amplitude;
+        const flickerValue =
+          Math.sin(performance.now() * 0.001 * flicker.frequency) * flicker.amplitude;
         light.intensity = Math.max(0, light.intensity + flickerValue);
       }
 

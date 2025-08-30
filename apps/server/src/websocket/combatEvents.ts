@@ -2,9 +2,9 @@
  * Real-time WebSocket integration for combat state synchronization
  */
 
-import { WebSocket } from 'ws';
-import { logger } from '@vtt/logging';
-import { ActorIntegrationService } from '../services/ActorIntegrationService';
+import { WebSocket } from "ws";
+import { logger } from "@vtt/logging";
+import { ActorIntegrationService } from "../services/ActorIntegrationService";
 
 export interface CombatWebSocketMessage {
   type: string;
@@ -35,25 +35,25 @@ export class CombatWebSocketManager {
     this.userSockets.get(userId)!.push(ws);
 
     // Handle disconnection
-    ws.on('close', () => {
+    ws.on("close", () => {
       this.handleDisconnection(ws, userId);
     });
 
     // Handle messages
-    ws.on('message', (data) => {
+    ws.on("message", (data) => {
       try {
         const message: CombatWebSocketMessage = JSON.parse(data.toString());
         this.handleMessage(ws, userId, message);
       } catch (error) {
-        logger.error('Invalid WebSocket message:', error as Error);
-        this.sendError(ws, 'Invalid message format');
+        logger.error("Invalid WebSocket message:", error as Error);
+        this.sendError(ws, "Invalid message format");
       }
     });
 
     // Send welcome message
     this.sendMessage(ws, {
-      type: 'CONNECTED',
-      payload: { userId, timestamp: Date.now() }
+      type: "CONNECTED",
+      payload: { userId, timestamp: Date.now() },
     });
   }
 
@@ -75,7 +75,7 @@ export class CombatWebSocketManager {
 
     // Remove from encounter subscriptions
     for (const [encounterId, subscriptions] of this.subscriptions.entries()) {
-      const index = subscriptions.findIndex(sub => sub.ws === ws);
+      const index = subscriptions.findIndex((sub) => sub.ws === ws);
       if (index > -1) {
         subscriptions.splice(index, 1);
         if (subscriptions.length === 0) {
@@ -88,49 +88,53 @@ export class CombatWebSocketManager {
   /**
    * Handle incoming WebSocket messages
    */
-  private async handleMessage(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  private async handleMessage(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     switch (message.type) {
-      case 'SUBSCRIBE_ENCOUNTER':
+      case "SUBSCRIBE_ENCOUNTER":
         await this.handleSubscribeEncounter(ws, userId, message);
         break;
 
-      case 'UNSUBSCRIBE_ENCOUNTER':
+      case "UNSUBSCRIBE_ENCOUNTER":
         await this.handleUnsubscribeEncounter(ws, userId, message);
         break;
 
-      case 'UPDATE_ACTOR_HEALTH':
+      case "UPDATE_ACTOR_HEALTH":
         await this.handleUpdateActorHealth(ws, userId, message);
         break;
 
-      case 'START_ENCOUNTER':
+      case "START_ENCOUNTER":
         await this.handleStartEncounter(ws, userId, message);
         break;
 
-      case 'END_ENCOUNTER':
+      case "END_ENCOUNTER":
         // await this.handleEndEncounter(ws, userId, message);
         break;
 
-      case 'ADD_ACTOR':
+      case "ADD_ACTOR":
         await this.handleAddActor(ws, userId, message);
         break;
 
-      case 'REMOVE_ACTOR':
+      case "REMOVE_ACTOR":
         await this.handleRemoveActor(ws, userId, message);
         break;
 
-      case 'UPDATE_INITIATIVE':
+      case "UPDATE_INITIATIVE":
         await this.handleUpdateInitiative(ws, userId, message);
         break;
 
-      case 'NEXT_TURN':
+      case "NEXT_TURN":
         await this.handleNextTurn(ws, userId, message);
         break;
 
-      case 'APPLY_CONDITION':
+      case "APPLY_CONDITION":
         await this.handleApplyCondition(ws, userId, message);
         break;
 
-      case 'REMOVE_CONDITION':
+      case "REMOVE_CONDITION":
         await this.handleRemoveCondition(ws, userId, message);
         break;
 
@@ -142,11 +146,15 @@ export class CombatWebSocketManager {
   /**
    * Subscribe to encounter updates
    */
-  private async handleSubscribeEncounter(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  private async handleSubscribeEncounter(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     const { encounterId } = message.payload;
 
     if (!encounterId) {
-      this.sendError(ws, 'Missing encounterId', message.requestId);
+      this.sendError(ws, "Missing encounterId", message.requestId);
       return;
     }
 
@@ -154,7 +162,7 @@ export class CombatWebSocketManager {
       // Verify encounter exists and user has access
       const encounter = await this.actorService.getEncounter(encounterId);
       if (!encounter) {
-        this.sendError(ws, 'Encounter not found', message.requestId);
+        this.sendError(ws, "Encounter not found", message.requestId);
         return;
       }
 
@@ -168,26 +176,29 @@ export class CombatWebSocketManager {
 
       // Send current encounter state
       this.sendMessage(ws, {
-        type: 'ENCOUNTER_SUBSCRIBED',
+        type: "ENCOUNTER_SUBSCRIBED",
         payload: { encounter },
-        requestId: message.requestId || ''
+        requestId: message.requestId || "",
       });
-
     } catch (error) {
-      logger.error('WebSocket error:', error as Error);
-      this.sendError(ws, 'Failed to subscribe to encounter', message.requestId);
+      logger.error("WebSocket error:", error as Error);
+      this.sendError(ws, "Failed to subscribe to encounter", message.requestId);
     }
   }
 
   /**
    * Unsubscribe from encounter updates
    */
-  private async handleUnsubscribeEncounter(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  private async handleUnsubscribeEncounter(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     const { encounterId } = message.payload;
 
     const subscriptions = this.subscriptions.get(encounterId);
     if (subscriptions) {
-      const index = subscriptions.findIndex(sub => sub.ws === ws && sub.userId === userId);
+      const index = subscriptions.findIndex((sub) => sub.ws === ws && sub.userId === userId);
       if (index > -1) {
         subscriptions.splice(index, 1);
         if (subscriptions.length === 0) {
@@ -197,16 +208,20 @@ export class CombatWebSocketManager {
     }
 
     this.sendMessage(ws, {
-      type: 'ENCOUNTER_UNSUBSCRIBED',
+      type: "ENCOUNTER_UNSUBSCRIBED",
       payload: { encounterId },
-      requestId: message.requestId || ''
+      requestId: message.requestId || "",
     });
   }
 
   /**
    * Handle actor health updates
    */
-  private async handleUpdateActorHealth(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  private async handleUpdateActorHealth(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     const { encounterId, actorId, health } = message.payload;
 
     try {
@@ -214,26 +229,29 @@ export class CombatWebSocketManager {
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'ACTOR_HEALTH_UPDATED',
-        payload: { actorId, health, updatedBy: userId }
+        type: "ACTOR_HEALTH_UPDATED",
+        payload: { actorId, health, updatedBy: userId },
       });
 
       this.sendMessage(ws, {
-        type: 'HEALTH_UPDATE_SUCCESS',
+        type: "HEALTH_UPDATE_SUCCESS",
         payload: { actorId },
-        requestId: message.requestId || ''
+        requestId: message.requestId || "",
       });
-
     } catch (error) {
-      logger.error('Update actor health error:', error as Error);
-      this.sendError(ws, 'Failed to update actor health', message.requestId);
+      logger.error("Update actor health error:", error as Error);
+      this.sendError(ws, "Failed to update actor health", message.requestId);
     }
   }
 
   /**
    * Handle start encounter
    */
-  private async handleStartEncounter(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  private async handleStartEncounter(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     const { encounterId } = message.payload;
 
     try {
@@ -242,158 +260,175 @@ export class CombatWebSocketManager {
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'ENCOUNTER_STARTED',
+        type: "ENCOUNTER_STARTED",
         payload: { encounter },
-        requestId: message.requestId || ''
+        requestId: message.requestId || "",
       });
-
     } catch (error) {
-      logger.error('Start encounter error:', error as Error);
-      this.sendError(ws, 'Failed to start encounter', message.requestId);
+      logger.error("Start encounter error:", error as Error);
+      this.sendError(ws, "Failed to start encounter", message.requestId);
     }
   }
 
   /**
    * Handle actor add
    */
-  private async handleAddActor(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  private async handleAddActor(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     const { encounterId, actorType, actorId, instanceName } = message.payload;
 
     try {
       let actor;
 
-      if (actorType === 'character') {
+      if (actorType === "character") {
         // actor = await this.actorService.addCharacterToEncounter(encounterId, actorId);
-        actor = { id: actorId, type: 'character', encounterId };
-      } else if (actorType === 'monster') {
+        actor = { id: actorId, type: "character", encounterId };
+      } else if (actorType === "monster") {
         // actor = await this.actorService.addMonsterToEncounter(encounterId, actorId, instanceName);
-        actor = { id: actorId, type: 'monster', encounterId, name: instanceName };
+        actor = { id: actorId, type: "monster", encounterId, name: instanceName };
       } else {
-        this.sendError(ws, 'Invalid actor type', message.requestId);
+        this.sendError(ws, "Invalid actor type", message.requestId);
         return;
       }
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'ACTOR_ADDED',
-        payload: { actor, addedBy: userId }
+        type: "ACTOR_ADDED",
+        payload: { actor, addedBy: userId },
       });
-
     } catch (error) {
-      logger.error('Add actor error:', error as Error);
-      this.sendError(ws, 'Failed to add actor', message.requestId);
+      logger.error("Add actor error:", error as Error);
+      this.sendError(ws, "Failed to add actor", message.requestId);
     }
   }
 
   /**
    * Handle remove actor from encounter
    */
-  private async handleRemoveActor(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
-    const { encounterId,  actorId  } = message.payload;
+  private async handleRemoveActor(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
+    const { encounterId, actorId } = message.payload;
 
     try {
       // Remove actor from encounter
       // await this.actorService.removeActorFromEncounter(encounterId, actorId);
-      
+
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'ACTOR_REMOVED',
-        payload: { actorId, removedBy: userId }
+        type: "ACTOR_REMOVED",
+        payload: { actorId, removedBy: userId },
       });
-
     } catch (error) {
-      logger.error('Remove actor error:', error as Error);
-      this.sendError(ws, 'Failed to remove actor', message.requestId);
+      logger.error("Remove actor error:", error as Error);
+      this.sendError(ws, "Failed to remove actor", message.requestId);
     }
   }
 
   /**
    * Handle initiative updates
    */
-  private async handleUpdateInitiative(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
-    const { encounterId,  actorId,  initiative  } = message.payload;
+  private async handleUpdateInitiative(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
+    const { encounterId, actorId, initiative } = message.payload;
 
     try {
       // Update actor initiative
       // await this.actorService.updateActorInitiative(encounterId, actorId, initiative);
-      
+
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'INITIATIVE_UPDATED',
-        payload: { actorId, initiative, updatedBy: userId }
+        type: "INITIATIVE_UPDATED",
+        payload: { actorId, initiative, updatedBy: userId },
       });
-
     } catch (error) {
-      logger.error('Update initiative error:', error as Error);
-      this.sendError(ws, 'Failed to update initiative', message.requestId);
+      logger.error("Update initiative error:", error as Error);
+      this.sendError(ws, "Failed to update initiative", message.requestId);
     }
   }
 
   /**
    * Handle next turn
    */
-  private async handleNextTurn(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
-    const { encounterId  } = message.payload;
+  private async handleNextTurn(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
+    const { encounterId } = message.payload;
 
     try {
       // Advance to next turn
       // const nextActor = await this.actorService.advanceToNextTurn(encounterId);
-      
+
       const encounter = await this.actorService.getEncounter(encounterId);
-      
+
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'TURN_ADVANCED',
-        payload: { encounter, advancedBy: userId }
+        type: "TURN_ADVANCED",
+        payload: { encounter, advancedBy: userId },
       });
-
     } catch (error) {
-      logger.error('Next turn error:', error as Error);
-      this.sendError(ws, 'Failed to advance turn', message.requestId);
+      logger.error("Next turn error:", error as Error);
+      this.sendError(ws, "Failed to advance turn", message.requestId);
     }
   }
 
   /**
    * Handle apply condition
    */
-  private async handleApplyCondition(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
-    const { encounterId,  actorId,  condition  } = message.payload;
+  private async handleApplyCondition(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
+    const { encounterId, actorId, condition } = message.payload;
 
     try {
       // Apply condition to actor
       // await this.actorService.applyConditionToActor(encounterId, actorId, condition);
-      
+
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'CONDITION_APPLIED',
-        payload: { actorId, condition, appliedBy: userId }
+        type: "CONDITION_APPLIED",
+        payload: { actorId, condition, appliedBy: userId },
       });
-
     } catch (error) {
-      logger.error('Apply condition error:', error as Error);
-      this.sendError(ws, 'Failed to apply condition', message.requestId);
+      logger.error("Apply condition error:", error as Error);
+      this.sendError(ws, "Failed to apply condition", message.requestId);
     }
   }
 
   /**
    * Handle remove condition
    */
-  private async handleRemoveCondition(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
-    const { encounterId,  actorId,  conditionId  } = message.payload;
+  private async handleRemoveCondition(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
+    const { encounterId, actorId, conditionId } = message.payload;
 
     try {
       // Remove condition from actor
       // await this.actorService.removeConditionFromActor(encounterId, actorId, conditionId);
-      
+
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
-        type: 'CONDITION_REMOVED',
-        payload: { actorId, conditionId, removedBy: userId }
+        type: "CONDITION_REMOVED",
+        payload: { actorId, conditionId, removedBy: userId },
       });
-
     } catch (error) {
-      logger.error('Remove condition error:', error as Error);
-      this.sendError(ws, 'Failed to remove condition', message.requestId);
+      logger.error("Remove condition error:", error as Error);
+      this.sendError(ws, "Failed to remove condition", message.requestId);
     }
   }
 
@@ -404,7 +439,7 @@ export class CombatWebSocketManager {
     const subscriptions = this.subscriptions.get(encounterId);
     if (!subscriptions) return;
 
-    subscriptions.forEach(subscription => {
+    subscriptions.forEach((subscription) => {
       if (subscription.ws.readyState === WebSocket.OPEN) {
         this.sendMessage(subscription.ws, message);
       }
@@ -425,9 +460,9 @@ export class CombatWebSocketManager {
    */
   private sendError(ws: WebSocket, error: string, requestId?: string): void {
     this.sendMessage(ws, {
-      type: 'ERROR',
+      type: "ERROR",
       payload: { error },
-      requestId: requestId || ''
+      requestId: requestId || "",
     });
   }
 
@@ -439,13 +474,15 @@ export class CombatWebSocketManager {
     totalSubscriptions: number;
     connectedUsers: number;
   } {
-    const totalSubscriptions = Array.from(this.subscriptions.values())
-      .reduce((sum, subs) => sum + subs.length, 0);
+    const totalSubscriptions = Array.from(this.subscriptions.values()).reduce(
+      (sum, subs) => sum + subs.length,
+      0,
+    );
 
     return {
       activeEncounters: this.subscriptions.size,
       totalSubscriptions,
-      connectedUsers: this.userSockets.size
+      connectedUsers: this.userSockets.size,
     };
   }
 }

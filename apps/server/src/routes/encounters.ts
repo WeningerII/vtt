@@ -105,7 +105,7 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
 export const createEncounterHandler: RouteHandler = async (ctx) => {
   try {
     const body = await parseJsonBody(ctx.req);
-    
+
     if (!body?.name || !body?.campaignId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing required fields: name, campaignId" }));
@@ -157,7 +157,7 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
     }
 
     const body = await parseJsonBody(ctx.req);
-    
+
     if (!body?.actorId || typeof body.initiative !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing required fields: actorId, initiative" }));
@@ -329,7 +329,7 @@ export const nextTurnHandler: RouteHandler = async (ctx) => {
     if (newTurn >= participants.length) {
       newTurn = 0;
       newRound += 1;
-      
+
       // Reset hasActed for all participants at start of new round
       await ctx.prisma.encounterParticipant.updateMany({
         where: { encounterId: id },
@@ -359,11 +359,13 @@ export const nextTurnHandler: RouteHandler = async (ctx) => {
     });
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ 
-      success: true, 
-      encounter: updated,
-      currentParticipant: participants[newTurn] || null,
-    }));
+    ctx.res.end(
+      JSON.stringify({
+        success: true,
+        encounter: updated,
+        currentParticipant: participants[newTurn] || null,
+      }),
+    );
   } catch (error: any) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to advance turn" }));

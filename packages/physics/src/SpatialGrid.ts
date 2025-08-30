@@ -68,7 +68,7 @@ export class SpatialGrid {
     for (const key of cellKeys) {
       let cell = this.grid.get(key);
       if (!cell) {
-        const [x, y] = key.split(',').map(Number);
+        const [x, y] = key.split(",").map(Number);
         cell = { x, y, entities: new Set() };
         this.grid.set(key, cell);
       }
@@ -107,13 +107,13 @@ export class SpatialGrid {
 
     for (const cell of this.grid.values()) {
       const entities = Array.from(cell.entities);
-      
+
       for (let i = 0; i < entities.length; i++) {
         for (let j = i + 1; j < entities.length; j++) {
           const a = entities[i];
           const b = entities[j];
           const pairKey = a < b ? `${a},${b}` : `${b},${a}`;
-          
+
           if (!processed.has(pairKey)) {
             pairs.push([a, b]);
             processed.add(pairKey);
@@ -153,14 +153,13 @@ export class SpatialGrid {
   queryPoint(x: number, y: number): number[] {
     const key = this.getCellKey(x, y);
     const cell = this.grid.get(key);
-    
+
     if (!cell) return [];
 
     const entities: number[] = [];
     for (const entityId of cell.entities) {
       const bounds = this.entityBounds.get(entityId);
-      if (bounds && x >= bounds.minX && x <= bounds.maxX && 
-          y >= bounds.minY && y <= bounds.maxY) {
+      if (bounds && x >= bounds.minX && x <= bounds.maxX && y >= bounds.minY && y <= bounds.maxY) {
         entities.push(entityId);
       }
     }
@@ -172,8 +171,7 @@ export class SpatialGrid {
    * Check if two bounds overlap
    */
   private boundsOverlap(a: Bounds, b: Bounds): boolean {
-    return !(a.maxX < b.minX || a.minX > b.maxX || 
-             a.maxY < b.minY || a.minY > b.maxY);
+    return !(a.maxX < b.minX || a.minX > b.maxX || a.maxY < b.minY || a.minY > b.maxY);
   }
 
   /**
@@ -206,7 +204,7 @@ export class SpatialGrid {
       totalCells: this.grid.size,
       totalEntities: this.entityBounds.size,
       averageEntitiesPerCell: this.grid.size > 0 ? totalEntities / this.grid.size : 0,
-      maxEntitiesInCell
+      maxEntitiesInCell,
     };
   }
 }

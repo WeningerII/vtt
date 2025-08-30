@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 // import { CombatEngine, type Combatant } from "@vtt/rules-5e"; // Temporarily disabled for e2e tests
 
 export interface TacticalContext {
@@ -15,7 +15,7 @@ export interface TacticalContext {
     terrain: string[];
     hazards: any[];
     cover: any[];
-    lighting: 'bright' | 'dim' | 'dark';
+    lighting: "bright" | "dim" | "dark";
     weather?: string;
   };
   resources: {
@@ -29,11 +29,11 @@ export interface TacticalContext {
     };
   };
   objectives: string[];
-  threatLevel: 'low' | 'moderate' | 'high' | 'extreme';
+  threatLevel: "low" | "moderate" | "high" | "extreme";
 }
 
 export interface TacticalDecision {
-  action: 'attack' | 'spell' | 'move' | 'dash' | 'dodge' | 'help' | 'hide' | 'ready' | 'disengage';
+  action: "attack" | "spell" | "move" | "dash" | "dodge" | "help" | "hide" | "ready" | "disengage";
   target?: string;
   position?: { x: number; y: number };
   spell?: string;
@@ -53,13 +53,13 @@ export interface CombatSimulation {
   participants: any[];
   rounds: number;
   currentRound: number;
-  winner: 'party' | 'enemies' | 'draw' | null;
+  winner: "party" | "enemies" | "draw" | null;
   casualties: string[];
   tacticalAnalysis: {
     keyMoments: Array<{
       round: number;
       description: string;
-      impact: 'minor' | 'moderate' | 'major' | 'decisive';
+      impact: "minor" | "moderate" | "major" | "decisive";
     }>;
     effectiveness: Record<string, number>;
     recommendations: string[];
@@ -75,12 +75,12 @@ export class CrucibleService {
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
     // this.combatEngine = new CombatEngine(); // Temporarily disabled
-    this.combatEngine = { 
-      addCombatant: () => {}, 
-      startCombat: () => {}, 
-      getCombatants: () => [], 
+    this.combatEngine = {
+      addCombatant: () => {},
+      startCombat: () => {},
+      getCombatants: () => [],
       getCurrentCombatant: () => null,
-      executeAction: () => {}
+      executeAction: () => {},
     } as any; // Stub for now
   }
 
@@ -98,11 +98,11 @@ export class CrucibleService {
   async simulateCombat(
     party: any[],
     enemies: any[],
-    battlefield: TacticalContext['battlefield'],
-    maxRounds: number = 20
+    battlefield: TacticalContext["battlefield"],
+    maxRounds: number = 20,
   ): Promise<CombatSimulation> {
     const simulationId = this.generateId();
-    
+
     const simulation: CombatSimulation = {
       id: simulationId,
       participants: [...party, ...enemies],
@@ -113,38 +113,42 @@ export class CrucibleService {
       tacticalAnalysis: {
         keyMoments: [],
         effectiveness: {},
-        recommendations: []
+        recommendations: [],
       },
-      isComplete: false
+      isComplete: false,
     };
 
     this.activeSimulations.set(simulationId, simulation);
 
     // Initialize combat engine
-    simulation.participants.forEach(p => {
+    simulation.participants.forEach((p) => {
       const combatant = {
         id: p.id,
         name: p.name,
-        type: p.type || 'npc',
+        type: p.type || "npc",
         stats: {
-          hitPoints: { 
-            current: p.hitPoints, 
-            max: p.maxHitPoints, 
-            temporary: 0 
+          hitPoints: {
+            current: p.hitPoints,
+            max: p.maxHitPoints,
+            temporary: 0,
           },
           armorClass: p.armorClass,
           speed: p.speed || 30,
           proficiencyBonus: p.proficiencyBonus || 2,
           abilities: p.abilities || {
-            strength: 10, dexterity: 10, constitution: 10,
-            intelligence: 10, wisdom: 10, charisma: 10
+            strength: 10,
+            dexterity: 10,
+            constitution: 10,
+            intelligence: 10,
+            wisdom: 10,
+            charisma: 10,
           },
           savingThrows: {},
           skills: {},
           resistances: [],
           immunities: [],
           vulnerabilities: [],
-          conditions: []
+          conditions: [],
         },
         attacks: p.attacks || [],
         spells: p.spells || [],
@@ -154,11 +158,11 @@ export class CrucibleService {
         actionsUsed: 0,
         bonusActionUsed: false,
         reactionUsed: false,
-        movementUsed: 0
+        movementUsed: 0,
       };
       this.combatEngine.addCombatant(combatant);
     });
-    
+
     this.combatEngine.startCombat();
 
     // Run simulation
@@ -172,22 +176,32 @@ export class CrucibleService {
    */
   async getBattlefieldRecommendations(
     character: any,
-    battlefield: TacticalContext['battlefield'],
+    battlefield: TacticalContext["battlefield"],
     allies: any[],
-    enemies: any[]
-  ): Promise<Array<{
-    position: { x: number; y: number };
-    reasoning: string;
-    tacticalValue: number;
-    risks: string[];
-    benefits: string[];
-  }>> {
+    enemies: any[],
+  ): Promise<
+    Array<{
+      position: { x: number; y: number };
+      reasoning: string;
+      tacticalValue: number;
+      risks: string[];
+      benefits: string[];
+    }>
+  > {
     const prompt = `Analyze this D&D 5e battlefield and provide tactical positioning recommendations:
 
 Character: ${JSON.stringify(character, null, 2)}
 Battlefield: ${JSON.stringify(battlefield, null, 2)}
-Allies: ${JSON.stringify(allies.map(a => ({ name: a.name, class: a.class, position: a.position })), null, 2)}
-Enemies: ${JSON.stringify(enemies.map(e => ({ name: e.name, type: e.type, position: e.position })), null, 2)}
+Allies: ${JSON.stringify(
+      allies.map((a) => ({ name: a.name, class: a.class, position: a.position })),
+      null,
+      2,
+    )}
+Enemies: ${JSON.stringify(
+      enemies.map((e) => ({ name: e.name, type: e.type, position: e.position })),
+      null,
+      2,
+    )}
 
 Consider:
 1. Character class and abilities (range, melee, support)
@@ -212,12 +226,15 @@ Format as JSON array with position coordinates, reasoning, tactical value (1-10)
    * Analyze combat performance and provide insights
    */
   async analyzeCombatPerformance(combatLog: any[]): Promise<{
-    playerInsights: Record<string, {
-      effectiveness: number;
-      strengths: string[];
-      improvements: string[];
-      keyMoments: string[];
-    }>;
+    playerInsights: Record<
+      string,
+      {
+        effectiveness: number;
+        strengths: string[];
+        improvements: string[];
+        keyMoments: string[];
+      }
+    >;
     tacticalSummary: {
       winCondition: string;
       criticalMistakes: string[];
@@ -252,25 +269,33 @@ Format as detailed JSON with player insights, tactical summary, and actionable r
     return `You are an expert D&D 5e tactical AI making combat decisions for this character:
 
 Character: ${JSON.stringify(context.character, null, 2)}
-Allies: ${JSON.stringify(context.allies.map(a => ({ 
-  name: a.name, 
-  class: a.class, 
-  hitPoints: a.hitPoints, 
-  position: a.position,
-  conditions: a.conditions 
-})), null, 2)}
-Enemies: ${JSON.stringify(context.enemies.map(e => ({ 
-  name: e.name, 
-  type: e.type, 
-  hitPoints: e.hitPoints, 
-  position: e.position,
-  conditions: e.conditions,
-  threatLevel: this.assessThreat(e, context.character)
-})), null, 2)}
+Allies: ${JSON.stringify(
+      context.allies.map((a) => ({
+        name: a.name,
+        class: a.class,
+        hitPoints: a.hitPoints,
+        position: a.position,
+        conditions: a.conditions,
+      })),
+      null,
+      2,
+    )}
+Enemies: ${JSON.stringify(
+      context.enemies.map((e) => ({
+        name: e.name,
+        type: e.type,
+        hitPoints: e.hitPoints,
+        position: e.position,
+        conditions: e.conditions,
+        threatLevel: this.assessThreat(e, context.character),
+      })),
+      null,
+      2,
+    )}
 
 Battlefield: ${JSON.stringify(context.battlefield, null, 2)}
 Resources: ${JSON.stringify(context.resources, null, 2)}
-Objectives: ${context.objectives.join(', ')}
+Objectives: ${context.objectives.join(", ")}
 Threat Level: ${context.threatLevel}
 
 Consider:
@@ -300,42 +325,44 @@ Format as JSON with detailed reasoning for each element.`;
    */
   private async runCombatSimulation(
     simulation: CombatSimulation,
-    battlefield: TacticalContext['battlefield'],
-    maxRounds: number
+    battlefield: TacticalContext["battlefield"],
+    maxRounds: number,
   ): Promise<void> {
     while (simulation.currentRound <= maxRounds && !simulation.isComplete) {
       logger.info(`Simulating round ${simulation.currentRound}`);
-      
+
       // Get combat order
-      const combatOrder = this.combatEngine.getCombatants().filter(c => c.stats.hitPoints.current > 0);
-      
+      const combatOrder = this.combatEngine
+        .getCombatants()
+        .filter((c) => c.stats.hitPoints.current > 0);
+
       // Process each combatant's turn
       const currentCombatant = this.combatEngine.getCurrentCombatant();
       if (!currentCombatant) continue;
-      
+
       for (const participant of combatOrder) {
         if (this.isCombatEnded(simulation)) break;
-        
+
         // Build tactical context
         const context = this.buildTacticalContext(participant, simulation, battlefield);
-        
+
         // Get AI decision
         const decision = await this.makeTacticalDecision(context);
-        
+
         // Execute action
         await this.executeAction(participant, decision, simulation);
-        
+
         // Check for key moments
         this.analyzeRoundForKeyMoments(simulation, participant, decision);
       }
-      
+
       simulation.currentRound++;
       simulation.rounds = simulation.currentRound - 1;
-      
+
       // Check win condition
       this.checkWinCondition(simulation);
     }
-    
+
     // Finalize analysis
     await this.finalizeCombatAnalysis(simulation);
     simulation.isComplete = true;
@@ -347,80 +374,81 @@ Format as JSON with detailed reasoning for each element.`;
   private async executeAction(
     participant: any,
     decision: TacticalDecision,
-    simulation: CombatSimulation
+    simulation: CombatSimulation,
   ): Promise<void> {
     try {
       switch (decision.action) {
-        case 'attack':
+        case "attack":
           if (decision.target) {
             const attackAction = {
-              type: 'attack' as const,
+              type: "attack" as const,
               actorId: participant.id,
               targetId: decision.target,
-              attackId: decision.weapon || 'basic-attack'
+              attackId: decision.weapon || "basic-attack",
             };
             this.combatEngine.executeAction(attackAction);
           }
           break;
-          
-        case 'spell':
+
+        case "spell":
           if (decision.spell) {
             const spellAction = {
-              type: 'spell' as const,
+              type: "spell" as const,
               actorId: participant.id,
               targetId: decision.target,
-              spellId: decision.spell
+              spellId: decision.spell,
             };
             this.combatEngine.executeAction(spellAction);
           }
           break;
-          
-        case 'move':
+
+        case "move":
           if (decision.position) {
             const moveAction = {
-              type: 'move' as const,
+              type: "move" as const,
               actorId: participant.id,
-              targetPosition: decision.position
+              targetPosition: decision.position,
             };
             this.combatEngine.executeAction(moveAction);
           }
           break;
-          
-        case 'dodge': {
-          const dodgeAction = {
-            type: 'dodge' as const,
-            actorId: participant.id
-          };
-          this.combatEngine.executeAction(dodgeAction);
-    }
+
+        case "dodge":
+          {
+            const dodgeAction = {
+              type: "dodge" as const,
+              actorId: participant.id,
+            };
+            this.combatEngine.executeAction(dodgeAction);
+          }
           break;
-          
-        case 'dash': {
-          const dashAction = {
-            type: 'dash' as const,
-            actorId: participant.id
-          };
-          this.combatEngine.executeAction(dashAction);
-    }
+
+        case "dash":
+          {
+            const dashAction = {
+              type: "dash" as const,
+              actorId: participant.id,
+            };
+            this.combatEngine.executeAction(dashAction);
+          }
           break;
-          
-        case 'help':
+
+        case "help":
           if (decision.target) {
             const helpAction = {
-              type: 'help' as const,
+              type: "help" as const,
               actorId: participant.id,
-              targetId: decision.target
+              targetId: decision.target,
             };
             this.combatEngine.executeAction(helpAction);
           }
           break;
       }
-      
+
       // Track effectiveness
       this.trackActionEffectiveness(participant.id, decision, simulation);
-      
     } catch (error) {
-      logger.error('Action execution failed:', error);
+      logger.error("Action execution failed:", error);
     }
   }
 
@@ -430,16 +458,16 @@ Format as JSON with detailed reasoning for each element.`;
   private buildTacticalContext(
     participant: any,
     simulation: CombatSimulation,
-    battlefield: TacticalContext['battlefield']
+    battlefield: TacticalContext["battlefield"],
   ): TacticalContext {
-    const allies = simulation.participants.filter(p => 
-      p.team === participant.team && p.id !== participant.id && p.hitPoints > 0
+    const allies = simulation.participants.filter(
+      (p) => p.team === participant.team && p.id !== participant.id && p.hitPoints > 0,
     );
-    
-    const enemies = simulation.participants.filter(p => 
-      p.team !== participant.team && p.hitPoints > 0
+
+    const enemies = simulation.participants.filter(
+      (p) => p.team !== participant.team && p.hitPoints > 0,
     );
-    
+
     return {
       character: participant,
       allies,
@@ -452,11 +480,11 @@ Format as JSON with detailed reasoning for each element.`;
           action: true,
           bonusAction: true,
           reaction: true,
-          movement: participant.speed || 30
-        }
+          movement: participant.speed || 30,
+        },
       },
       objectives: this.determineObjectives(participant, allies, enemies),
-      threatLevel: this.assessOverallThreat(participant, enemies)
+      threatLevel: this.assessOverallThreat(participant, enemies),
     };
   }
 
@@ -465,23 +493,23 @@ Format as JSON with detailed reasoning for each element.`;
    */
   private parseTacticalDecision(aiResponse: any, context: TacticalContext): TacticalDecision {
     try {
-      if (typeof aiResponse === 'string') {
+      if (typeof aiResponse === "string") {
         aiResponse = JSON.parse(aiResponse);
       }
-      
+
       return {
-        action: aiResponse.action || 'attack',
+        action: aiResponse.action || "attack",
         target: aiResponse.target,
         position: aiResponse.position,
         spell: aiResponse.spell,
         weapon: aiResponse.weapon,
-        reasoning: aiResponse.reasoning || 'AI tactical decision',
+        reasoning: aiResponse.reasoning || "AI tactical decision",
         confidence: Math.min(Math.max(aiResponse.confidence || 0.7, 0), 1),
         alternatives: aiResponse.alternatives || [],
-        tacticalValue: Math.min(Math.max(aiResponse.tacticalValue || 5, 1), 10)
+        tacticalValue: Math.min(Math.max(aiResponse.tacticalValue || 5, 1), 10),
       };
     } catch (error) {
-      logger.error('Failed to parse tactical decision:', error);
+      logger.error("Failed to parse tactical decision:", error);
       return this.fallbackDecision(context);
     }
   }
@@ -491,16 +519,14 @@ Format as JSON with detailed reasoning for each element.`;
    */
   private fallbackDecision(context: TacticalContext): TacticalDecision {
     const nearestEnemy = this.findNearestEnemy(context.character, context.enemies);
-    
+
     return {
-      action: 'attack',
+      action: "attack",
       target: nearestEnemy?.id,
-      reasoning: 'Fallback: Attack nearest enemy',
+      reasoning: "Fallback: Attack nearest enemy",
       confidence: 0.5,
-      alternatives: [
-        { action: 'dodge', reasoning: 'Defensive fallback', confidence: 0.4 }
-      ],
-      tacticalValue: 4
+      alternatives: [{ action: "dodge", reasoning: "Defensive fallback", confidence: 0.4 }],
+      tacticalValue: 4,
     };
   }
 
@@ -509,152 +535,164 @@ Format as JSON with detailed reasoning for each element.`;
    */
   private calculateTacticalDecision(context: TacticalContext): TacticalDecision {
     const character = context.character;
-    const enemies = context.enemies.filter(e => (e.hitPoints || 0) > 0);
-    const allies = context.allies.filter(a => (a.hitPoints || 0) > 0);
-    
+    const enemies = context.enemies.filter((e) => (e.hitPoints || 0) > 0);
+    const allies = context.allies.filter((a) => (a.hitPoints || 0) > 0);
+
     // Assess situation
     const healthPercent = (character.hitPoints || 0) / (character.maxHitPoints || 1);
     const outnumbered = enemies.length > allies.length + 1;
-    const hasSpellSlots = Object.values(context.resources.spellSlots).some(slots => slots > 0);
+    const hasSpellSlots = Object.values(context.resources.spellSlots).some((slots) => slots > 0);
     const nearestEnemy = this.findNearestEnemy(character, enemies);
-    
+
     // Decision logic based on character class and situation
     let decision: TacticalDecision;
-    
-    if (healthPercent < 0.3 && character.class !== 'barbarian') {
+
+    if (healthPercent < 0.3 && character.class !== "barbarian") {
       // Low health - defensive action
       decision = {
-        action: 'dodge',
-        reasoning: 'Critical health - taking defensive action',
+        action: "dodge",
+        reasoning: "Critical health - taking defensive action",
         confidence: 0.9,
         alternatives: [
-          { action: 'disengage', reasoning: 'Retreat to safety', confidence: 0.8 },
-          { action: 'dash', reasoning: 'Escape from combat', confidence: 0.7 }
+          { action: "disengage", reasoning: "Retreat to safety", confidence: 0.8 },
+          { action: "dash", reasoning: "Escape from combat", confidence: 0.7 },
         ],
-        tacticalValue: 7
+        tacticalValue: 7,
       };
-    } else if (character.class === 'cleric' && allies.some(a => (a.hitPoints || 0) < (a.maxHitPoints || 1) * 0.5)) {
+    } else if (
+      character.class === "cleric" &&
+      allies.some((a) => (a.hitPoints || 0) < (a.maxHitPoints || 1) * 0.5)
+    ) {
       // Healer with injured allies
-      const injuredAlly = allies.find(a => (a.hitPoints || 0) < (a.maxHitPoints || 1) * 0.5);
+      const injuredAlly = allies.find((a) => (a.hitPoints || 0) < (a.maxHitPoints || 1) * 0.5);
       decision = {
-        action: 'spell',
-        spell: 'cure-wounds',
+        action: "spell",
+        spell: "cure-wounds",
         target: injuredAlly?.id,
-        reasoning: 'Healing critically injured ally',
+        reasoning: "Healing critically injured ally",
         confidence: 0.95,
         alternatives: [
-          { action: 'spell', reasoning: 'Mass healing spell', confidence: 0.85 },
-          { action: 'help', reasoning: 'Assist ally', confidence: 0.6 }
+          { action: "spell", reasoning: "Mass healing spell", confidence: 0.85 },
+          { action: "help", reasoning: "Assist ally", confidence: 0.6 },
         ],
-        tacticalValue: 9
+        tacticalValue: 9,
       };
-    } else if (character.class === 'wizard' && hasSpellSlots && enemies.length >= 3) {
+    } else if (character.class === "wizard" && hasSpellSlots && enemies.length >= 3) {
       // Spellcaster with AOE opportunity
       decision = {
-        action: 'spell',
-        spell: 'fireball',
+        action: "spell",
+        spell: "fireball",
         position: this.calculateOptimalAOEPosition(enemies),
-        reasoning: 'Multiple enemies clustered - AOE spell opportunity',
+        reasoning: "Multiple enemies clustered - AOE spell opportunity",
         confidence: 0.9,
         alternatives: [
-          { action: 'spell', reasoning: 'Control spell', confidence: 0.8 },
-          { action: 'move', reasoning: 'Reposition for better angle', confidence: 0.6 }
+          { action: "spell", reasoning: "Control spell", confidence: 0.8 },
+          { action: "move", reasoning: "Reposition for better angle", confidence: 0.6 },
         ],
-        tacticalValue: 10
+        tacticalValue: 10,
       };
-    } else if (nearestEnemy && this.calculateDistance(character.position || {x: 0, y: 0}, nearestEnemy.position || {x: 0, y: 0}) <= 5) {
+    } else if (
+      nearestEnemy &&
+      this.calculateDistance(
+        character.position || { x: 0, y: 0 },
+        nearestEnemy.position || { x: 0, y: 0 },
+      ) <= 5
+    ) {
       // Melee range combat
       decision = {
-        action: 'attack',
+        action: "attack",
         target: nearestEnemy.id,
-        weapon: character.mainWeapon || 'melee-attack',
-        reasoning: 'Enemy in melee range - direct attack',
+        weapon: character.mainWeapon || "melee-attack",
+        reasoning: "Enemy in melee range - direct attack",
         confidence: 0.85,
         alternatives: [
-          { action: 'disengage', reasoning: 'Create distance', confidence: 0.6 },
-          { action: 'spell', reasoning: 'Close-range spell', confidence: 0.7 }
+          { action: "disengage", reasoning: "Create distance", confidence: 0.6 },
+          { action: "spell", reasoning: "Close-range spell", confidence: 0.7 },
         ],
-        tacticalValue: 7
+        tacticalValue: 7,
       };
     } else if (nearestEnemy) {
       // Ranged combat or need to close distance
-      const distance = this.calculateDistance(character.position || {x: 0, y: 0}, nearestEnemy.position || {x: 0, y: 0});
-      if (distance > 30 || character.class === 'ranger' || character.class === 'rogue') {
+      const distance = this.calculateDistance(
+        character.position || { x: 0, y: 0 },
+        nearestEnemy.position || { x: 0, y: 0 },
+      );
+      if (distance > 30 || character.class === "ranger" || character.class === "rogue") {
         decision = {
-          action: 'attack',
+          action: "attack",
           target: nearestEnemy.id,
-          weapon: character.rangedWeapon || 'ranged-attack',
-          reasoning: 'Ranged attack on priority target',
+          weapon: character.rangedWeapon || "ranged-attack",
+          reasoning: "Ranged attack on priority target",
           confidence: 0.8,
           alternatives: [
-            { action: 'move', reasoning: 'Better positioning', confidence: 0.7 },
-            { action: 'hide', reasoning: 'Gain advantage', confidence: 0.65 }
+            { action: "move", reasoning: "Better positioning", confidence: 0.7 },
+            { action: "hide", reasoning: "Gain advantage", confidence: 0.65 },
           ],
-          tacticalValue: 6
+          tacticalValue: 6,
         };
       } else {
         decision = {
-          action: 'move',
+          action: "move",
           position: this.calculateApproachPosition(character, nearestEnemy),
-          reasoning: 'Moving to engage enemy',
+          reasoning: "Moving to engage enemy",
           confidence: 0.75,
           alternatives: [
-            { action: 'dash', reasoning: 'Close distance quickly', confidence: 0.7 },
-            { action: 'ready', reasoning: 'Prepare for enemy approach', confidence: 0.6 }
+            { action: "dash", reasoning: "Close distance quickly", confidence: 0.7 },
+            { action: "ready", reasoning: "Prepare for enemy approach", confidence: 0.6 },
           ],
-          tacticalValue: 5
+          tacticalValue: 5,
         };
       }
     } else {
       // No clear target - defensive/support action
       decision = {
-        action: 'dodge',
-        reasoning: 'No immediate threats - maintaining defense',
+        action: "dodge",
+        reasoning: "No immediate threats - maintaining defense",
         confidence: 0.6,
         alternatives: [
-          { action: 'help', reasoning: 'Assist allies', confidence: 0.5 },
-          { action: 'hide', reasoning: 'Gain tactical advantage', confidence: 0.5 }
+          { action: "help", reasoning: "Assist allies", confidence: 0.5 },
+          { action: "hide", reasoning: "Gain tactical advantage", confidence: 0.5 },
         ],
-        tacticalValue: 4
+        tacticalValue: 4,
       };
     }
-    
+
     // Adjust for threat level
-    if (context.threatLevel === 'extreme') {
+    if (context.threatLevel === "extreme") {
       decision.confidence *= 0.8;
       decision.tacticalValue = Math.max(1, decision.tacticalValue - 2);
     }
-    
+
     return decision;
   }
-  
+
   private calculateOptimalAOEPosition(enemies: any[]): { x: number; y: number } {
     if (!enemies.length) return { x: 0, y: 0 };
-    
+
     // Calculate centroid of enemy positions
     const sumX = enemies.reduce((sum, e) => sum + (e.position?.x || 0), 0);
     const sumY = enemies.reduce((sum, e) => sum + (e.position?.y || 0), 0);
-    
+
     return {
       x: Math.round(sumX / enemies.length),
-      y: Math.round(sumY / enemies.length)
+      y: Math.round(sumY / enemies.length),
     };
   }
-  
+
   private calculateApproachPosition(character: any, target: any): { x: number; y: number } {
     const charPos = character.position || { x: 0, y: 0 };
     const targetPos = target.position || { x: 0, y: 0 };
-    
+
     // Move towards target but stop at optimal range (5 ft for melee, 30 ft for ranged)
     const optimalRange = character.prefersMelee ? 5 : 30;
     const distance = this.calculateDistance(charPos, targetPos);
-    
+
     if (distance <= optimalRange) return charPos;
-    
+
     const ratio = optimalRange / distance;
     return {
       x: Math.round(charPos.x + (targetPos.x - charPos.x) * (1 - ratio)),
-      y: Math.round(charPos.y + (targetPos.y - charPos.y) * (1 - ratio))
+      y: Math.round(charPos.y + (targetPos.y - charPos.y) * (1 - ratio)),
     };
   }
 
@@ -668,54 +706,54 @@ Format as JSON with detailed reasoning for each element.`;
     return Math.floor(Math.random() * 20) + 1 + dexMod;
   }
 
-  private assessThreat(enemy: any, character: any): 'low' | 'moderate' | 'high' | 'extreme' {
+  private assessThreat(enemy: any, character: any): "low" | "moderate" | "high" | "extreme" {
     const enemyCR = enemy.challengeRating || 1;
     const charLevel = character.level || 1;
-    
-    if (enemyCR >= charLevel * 2) return 'extreme';
-    if (enemyCR >= charLevel) return 'high';
-    if (enemyCR >= charLevel * 0.5) return 'moderate';
-    return 'low';
+
+    if (enemyCR >= charLevel * 2) return "extreme";
+    if (enemyCR >= charLevel) return "high";
+    if (enemyCR >= charLevel * 0.5) return "moderate";
+    return "low";
   }
 
-  private assessOverallThreat(character: any, enemies: any[]): TacticalContext['threatLevel'] {
+  private assessOverallThreat(character: any, enemies: any[]): TacticalContext["threatLevel"] {
     const totalCR = enemies.reduce((sum, e) => sum + (e.challengeRating || 1), 0);
     const charLevel = character.level || 1;
-    
-    if (totalCR >= charLevel * 3) return 'extreme';
-    if (totalCR >= charLevel * 2) return 'high';
-    if (totalCR >= charLevel) return 'moderate';
-    return 'low';
+
+    if (totalCR >= charLevel * 3) return "extreme";
+    if (totalCR >= charLevel * 2) return "high";
+    if (totalCR >= charLevel) return "moderate";
+    return "low";
   }
 
   private determineObjectives(character: any, allies: any[], enemies: any[]): string[] {
-    const objectives = ['Survive the encounter'];
-    
-    if (character.class === 'cleric' || character.class === 'druid') {
-      objectives.push('Support and heal allies');
+    const objectives = ["Survive the encounter"];
+
+    if (character.class === "cleric" || character.class === "druid") {
+      objectives.push("Support and heal allies");
     }
-    
-    if (character.class === 'fighter' || character.class === 'barbarian') {
-      objectives.push('Engage primary threats');
+
+    if (character.class === "fighter" || character.class === "barbarian") {
+      objectives.push("Engage primary threats");
     }
-    
-    if (character.class === 'wizard' || character.class === 'sorcerer') {
-      objectives.push('Control battlefield and deal area damage');
+
+    if (character.class === "wizard" || character.class === "sorcerer") {
+      objectives.push("Control battlefield and deal area damage");
     }
-    
+
     if (enemies.length > allies.length) {
-      objectives.push('Focus fire priority targets');
+      objectives.push("Focus fire priority targets");
     }
-    
+
     return objectives;
   }
 
   private findNearestEnemy(character: any, enemies: any[]): any | null {
     if (!enemies.length) return null;
-    
+
     const livingEnemies = enemies.filter((e: any) => (e.hitPoints || e.health || 0) > 0);
     if (!livingEnemies.length) return null;
-    
+
     // Return the nearest enemy based on position
     const charPos = character.position || { x: 0, y: 0 };
     return livingEnemies.reduce((nearest: any, enemy: any) => {
@@ -727,26 +765,37 @@ Format as JSON with detailed reasoning for each element.`;
     }, livingEnemies[0]);
   }
 
-  private calculateDistance(pos1: { x: number; y: number }, pos2: { x: number; y: number }): number {
+  private calculateDistance(
+    pos1: { x: number; y: number },
+    pos2: { x: number; y: number },
+  ): number {
     return Math.sqrt(Math.pow(pos2.x - pos1.x, 2) + Math.pow(pos2.y - pos1.y, 2));
   }
 
   private isCombatEnded(simulation: CombatSimulation): boolean {
-    const livingParty = simulation.participants.filter(p => p.team === 'party' && p.hitPoints > 0);
-    const livingEnemies = simulation.participants.filter(p => p.team === 'enemies' && p.hitPoints > 0);
-    
+    const livingParty = simulation.participants.filter(
+      (p) => p.team === "party" && p.hitPoints > 0,
+    );
+    const livingEnemies = simulation.participants.filter(
+      (p) => p.team === "enemies" && p.hitPoints > 0,
+    );
+
     return livingParty.length === 0 || livingEnemies.length === 0;
   }
 
   private checkWinCondition(simulation: CombatSimulation): void {
-    const livingParty = simulation.participants.filter(p => p.team === 'party' && p.hitPoints > 0);
-    const livingEnemies = simulation.participants.filter(p => p.team === 'enemies' && p.hitPoints > 0);
-    
+    const livingParty = simulation.participants.filter(
+      (p) => p.team === "party" && p.hitPoints > 0,
+    );
+    const livingEnemies = simulation.participants.filter(
+      (p) => p.team === "enemies" && p.hitPoints > 0,
+    );
+
     if (livingParty.length === 0) {
-      simulation.winner = 'enemies';
+      simulation.winner = "enemies";
       simulation.isComplete = true;
     } else if (livingEnemies.length === 0) {
-      simulation.winner = 'party';
+      simulation.winner = "party";
       simulation.isComplete = true;
     }
   }
@@ -754,14 +803,14 @@ Format as JSON with detailed reasoning for each element.`;
   private analyzeRoundForKeyMoments(
     simulation: CombatSimulation,
     participant: any,
-    decision: TacticalDecision
+    decision: TacticalDecision,
   ): void {
     // Detect significant tactical moments
     if (decision.tacticalValue >= 8) {
       simulation.tacticalAnalysis.keyMoments.push({
         round: simulation.currentRound,
         description: `${participant.name}: ${decision.reasoning}`,
-        impact: 'major'
+        impact: "major",
       });
     }
   }
@@ -769,22 +818,22 @@ Format as JSON with detailed reasoning for each element.`;
   private trackActionEffectiveness(
     participantId: string,
     decision: TacticalDecision,
-    simulation: CombatSimulation
+    simulation: CombatSimulation,
   ): void {
     if (!simulation.tacticalAnalysis.effectiveness[participantId]) {
       simulation.tacticalAnalysis.effectiveness[participantId] = 0;
     }
-    
+
     simulation.tacticalAnalysis.effectiveness[participantId] += decision.tacticalValue;
   }
 
   private async finalizeCombatAnalysis(simulation: CombatSimulation): Promise<void> {
     // Generate final recommendations
     simulation.tacticalAnalysis.recommendations = [
-      'Focus fire priority targets',
-      'Optimize action economy usage',
-      'Improve battlefield positioning',
-      'Coordinate team abilities'
+      "Focus fire priority targets",
+      "Optimize action economy usage",
+      "Improve battlefield positioning",
+      "Coordinate team abilities",
     ];
   }
 
@@ -796,23 +845,27 @@ Format as JSON with detailed reasoning for each element.`;
     benefits: string[];
   }> {
     try {
-      if (typeof aiResponse === 'string') {
+      if (typeof aiResponse === "string") {
         aiResponse = JSON.parse(aiResponse);
       }
       return aiResponse.map((rec: any) => ({
         position: rec.position || { x: 0, y: 0 },
-        reasoning: rec.reasoning || 'AI positioning recommendation',
+        reasoning: rec.reasoning || "AI positioning recommendation",
         tacticalValue: Math.min(Math.max(rec.tacticalValue || 5, 1), 10),
         risks: rec.risks || [],
-        benefits: rec.benefits || []
+        benefits: rec.benefits || [],
       }));
     } catch (error) {
-      logger.error('Failed to parse positioning recommendations:', error);
+      logger.error("Failed to parse positioning recommendations:", error);
       return [];
     }
   }
 
-  private generateBasicPositions(character: any, allies: any[], enemies: any[]): Array<{
+  private generateBasicPositions(
+    character: any,
+    allies: any[],
+    enemies: any[],
+  ): Array<{
     position: { x: number; y: number };
     reasoning: string;
     tacticalValue: number;
@@ -827,60 +880,60 @@ Format as JSON with detailed reasoning for each element.`;
       benefits: string[];
     }> = [];
     const charPos = character.position || { x: 0, y: 0 };
-    
+
     // Position 1: Behind cover
     positions.push({
       position: { x: charPos.x - 10, y: charPos.y },
-      reasoning: 'Defensive position behind cover',
+      reasoning: "Defensive position behind cover",
       tacticalValue: 7,
-      risks: ['Limited line of sight', 'May be flanked'],
-      benefits: ['Cover from ranged attacks', 'Safe healing position']
+      risks: ["Limited line of sight", "May be flanked"],
+      benefits: ["Cover from ranged attacks", "Safe healing position"],
     });
-    
+
     // Position 2: High ground
     positions.push({
       position: { x: charPos.x, y: charPos.y + 15 },
-      reasoning: 'Elevated position for advantage',
+      reasoning: "Elevated position for advantage",
       tacticalValue: 8,
-      risks: ['Exposed position', 'Limited escape routes'],
-      benefits: ['Ranged attack advantage', 'Better battlefield visibility']
+      risks: ["Exposed position", "Limited escape routes"],
+      benefits: ["Ranged attack advantage", "Better battlefield visibility"],
     });
-    
+
     // Position 3: Support position near allies
     if (allies.length > 0) {
       const allyPos = allies[0].position || { x: 0, y: 0 };
       positions.push({
         position: { x: allyPos.x + 5, y: allyPos.y },
-        reasoning: 'Support position near allies',
+        reasoning: "Support position near allies",
         tacticalValue: 6,
-        risks: ['Vulnerable to area attacks'],
-        benefits: ['Can provide support', 'Coordinated attacks']
+        risks: ["Vulnerable to area attacks"],
+        benefits: ["Can provide support", "Coordinated attacks"],
       });
     }
-    
+
     // Position 4: Flanking position
     if (enemies.length > 0) {
       const enemyPos = enemies[0].position || { x: 0, y: 0 };
       positions.push({
         position: { x: enemyPos.x + 10, y: enemyPos.y - 10 },
-        reasoning: 'Flanking position for tactical advantage',
+        reasoning: "Flanking position for tactical advantage",
         tacticalValue: 9,
-        risks: ['Isolated from allies', 'Enemy reinforcements'],
-        benefits: ['Surprise attacks', 'Forces enemy repositioning']
+        risks: ["Isolated from allies", "Enemy reinforcements"],
+        benefits: ["Surprise attacks", "Forces enemy repositioning"],
       });
     }
-    
+
     return positions;
   }
 
   private parseCombatAnalysis(aiResponse: any): any {
     try {
-      if (typeof aiResponse === 'string') {
+      if (typeof aiResponse === "string") {
         aiResponse = JSON.parse(aiResponse);
       }
       return aiResponse;
     } catch (error) {
-      logger.error('Failed to parse combat analysis:', error);
+      logger.error("Failed to parse combat analysis:", error);
       return this.generateBasicAnalysis([]);
     }
   }
@@ -888,54 +941,42 @@ Format as JSON with detailed reasoning for each element.`;
   private generateBasicAnalysis(combatLog: any[]): any {
     const playerInsights: Record<string, any> = {};
     const participants = new Set<string>();
-    
+
     // Analyze combat log
-    combatLog.forEach(entry => {
+    combatLog.forEach((entry) => {
       if (entry.actor) participants.add(entry.actor);
       if (entry.target) participants.add(entry.target);
     });
-    
-    participants.forEach(participant => {
+
+    participants.forEach((participant) => {
       playerInsights[participant] = {
         effectiveness: Math.floor(Math.random() * 4) + 5, // 5-8 rating
-        strengths: [
-          'Good positioning',
-          'Effective resource management'
-        ],
-        improvements: [
-          'Consider using more crowd control',
-          'Optimize action economy'
-        ],
-        keyMoments: [
-          'Critical hit in round 3',
-          'Successful saving throw against fireball'
-        ]
+        strengths: ["Good positioning", "Effective resource management"],
+        improvements: ["Consider using more crowd control", "Optimize action economy"],
+        keyMoments: ["Critical hit in round 3", "Successful saving throw against fireball"],
       };
     });
-    
+
     return {
       playerInsights,
       tacticalSummary: {
-        winCondition: 'Defeat all enemies',
+        winCondition: "Defeat all enemies",
         criticalMistakes: [
-          'Split party formation in round 2',
-          'Wasted high-level spell slot on minor enemy'
+          "Split party formation in round 2",
+          "Wasted high-level spell slot on minor enemy",
         ],
-        optimalPlays: [
-          'Coordinated focus fire on boss',
-          'Effective use of battlefield terrain'
-        ],
+        optimalPlays: ["Coordinated focus fire on boss", "Effective use of battlefield terrain"],
         alternativeStrategies: [
-          'Could have used stealth approach',
-          'Environmental hazards were underutilized'
-        ]
+          "Could have used stealth approach",
+          "Environmental hazards were underutilized",
+        ],
       },
       recommendations: [
-        'Maintain better party formation',
-        'Prioritize high-threat targets',
-        'Conserve resources for critical moments',
-        'Utilize terrain and cover more effectively'
-      ]
+        "Maintain better party formation",
+        "Prioritize high-threat targets",
+        "Conserve resources for critical moments",
+        "Utilize terrain and cover more effectively",
+      ],
     };
   }
 

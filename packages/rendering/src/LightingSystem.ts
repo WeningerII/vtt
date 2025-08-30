@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Advanced Lighting System
@@ -7,27 +7,27 @@ import { logger } from '@vtt/logging';
 
 export interface LightSource {
   id: string;
-  type: 'point' | 'directional' | 'spot' | 'area';
+  type: "point" | "directional" | "spot" | "area";
   position: { x: number; y: number; z?: number };
   color: { r: number; g: number; b: number; a: number };
   intensity: number;
   range: number;
-  falloff: 'linear' | 'quadratic' | 'constant';
+  falloff: "linear" | "quadratic" | "constant";
   castsShadows: boolean;
   isEnabled: boolean;
-  
+
   // Spot light specific
   direction?: { x: number; y: number };
   angle?: number;
   penumbra?: number;
-  
+
   // Flickering/animation
   animation?: {
-    type: 'flicker' | 'pulse' | 'rotate';
+    type: "flicker" | "pulse" | "rotate";
     speed: number;
     amplitude: number;
   };
-  
+
   // Game-specific properties
   tokenId?: string;
   spellEffect?: boolean;
@@ -43,7 +43,7 @@ export interface AmbientLight {
 
 export interface LightingSettings {
   enableShadows: boolean;
-  shadowQuality: 'low' | 'medium' | 'high' | 'ultra';
+  shadowQuality: "low" | "medium" | "high" | "ultra";
   enableAmbientOcclusion: boolean;
   enableVolumetricLighting: boolean;
   lightBounces: number; // Global illumination bounces
@@ -55,7 +55,7 @@ export interface LightingSettings {
 export interface VisionSource {
   id: string;
   tokenId: string;
-  type: 'normal' | 'darkvision' | 'blindsight' | 'tremorsense' | 'truesight';
+  type: "normal" | "darkvision" | "blindsight" | "tremorsense" | "truesight";
   range: number;
   angle?: number; // Cone vision
   direction?: number; // Degrees
@@ -77,39 +77,39 @@ export class LightingSystem {
   private sceneWidth: number;
   private sceneHeight: number;
   private gridSize: number;
-  
+
   // Cached lighting data
   private lightingCache: Map<string, LightingResult> = new Map();
   private cacheVersion: number = 0;
   private walls: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-  
+
   private changeListeners: Array<(_event: LightingEvent) => void> = [];
 
   constructor(
     sceneWidth: number,
     sceneHeight: number,
     gridSize: number = 50,
-    settings: Partial<LightingSettings> = {}
+    settings: Partial<LightingSettings> = {},
   ) {
     this.sceneWidth = sceneWidth;
     this.sceneHeight = sceneHeight;
     this.gridSize = gridSize;
-    
+
     this.settings = {
       enableShadows: true,
-      shadowQuality: 'medium',
+      shadowQuality: "medium",
       enableAmbientOcclusion: false,
       enableVolumetricLighting: false,
       lightBounces: 1,
       fogOfWarOpacity: 0.8,
       darkvisionRange: 60,
       lowLightVisionRange: 20,
-      ...settings
+      ...settings,
     };
-    
+
     this.ambientLight = {
       color: { r: 0.2, g: 0.2, b: 0.3, a: 1.0 },
-      intensity: 0.1
+      intensity: 0.1,
     };
   }
 
@@ -119,10 +119,10 @@ export class LightingSystem {
   addLightSource(light: LightSource): void {
     this.lightSources.set(light.id, light);
     this.invalidateCache();
-    
+
     this.emitEvent({
-      type: 'light-added',
-      data: { lightId: light.id, light }
+      type: "light-added",
+      data: { lightId: light.id, light },
     });
   }
 
@@ -134,8 +134,8 @@ export class LightingSystem {
     if (removed) {
       this.invalidateCache();
       this.emitEvent({
-        type: 'light-removed',
-        data: { lightId }
+        type: "light-removed",
+        data: { lightId },
       });
     }
   }
@@ -148,10 +148,10 @@ export class LightingSystem {
     if (light) {
       Object.assign(light, updates);
       this.invalidateCache();
-      
+
       this.emitEvent({
-        type: 'light-updated',
-        data: { lightId, light, updates }
+        type: "light-updated",
+        data: { lightId, light, updates },
       });
     }
   }
@@ -162,10 +162,10 @@ export class LightingSystem {
   addVisionSource(vision: VisionSource): void {
     this.visionSources.set(vision.id, vision);
     this.invalidateCache();
-    
+
     this.emitEvent({
-      type: 'vision-added',
-      data: { visionId: vision.id, vision }
+      type: "vision-added",
+      data: { visionId: vision.id, vision },
     });
   }
 
@@ -177,8 +177,8 @@ export class LightingSystem {
     if (removed) {
       this.invalidateCache();
       this.emitEvent({
-        type: 'vision-removed',
-        data: { visionId }
+        type: "vision-removed",
+        data: { visionId },
       });
     }
   }
@@ -189,10 +189,10 @@ export class LightingSystem {
   setWalls(walls: Array<{ x1: number; y1: number; x2: number; y2: number }>): void {
     this.walls = [...walls];
     this.invalidateCache();
-    
+
     this.emitEvent({
-      type: 'walls-updated',
-      data: { wallCount: walls.length }
+      type: "walls-updated",
+      data: { wallCount: walls.length },
     });
   }
 
@@ -201,14 +201,14 @@ export class LightingSystem {
    */
   calculateLighting(): LightingResult {
     const cacheKey = `lighting-${this.cacheVersion}`;
-    
+
     if (this.lightingCache.has(cacheKey)) {
       return this.lightingCache.get(cacheKey)!;
     }
 
     const result = this.performLightingCalculation();
     this.lightingCache.set(cacheKey, result);
-    
+
     // Clear old cache entries
     if (this.lightingCache.size > 5) {
       const oldestKey = this.lightingCache.keys().next().value;
@@ -221,8 +221,9 @@ export class LightingSystem {
   }
 
   private performLightingCalculation(): LightingResult {
-    const mapSize = Math.ceil(this.sceneWidth / this.gridSize) * Math.ceil(this.sceneHeight / this.gridSize);
-    
+    const mapSize =
+      Math.ceil(this.sceneWidth / this.gridSize) * Math.ceil(this.sceneHeight / this.gridSize);
+
     const illuminationMap = new Float32Array(mapSize);
     const shadowMap = new Float32Array(mapSize);
     const visibilityMap = new Float32Array(mapSize);
@@ -256,7 +257,7 @@ export class LightingSystem {
       illuminationMap,
       shadowMap,
       visibilityMap,
-      lightContributions
+      lightContributions,
     };
   }
 
@@ -269,7 +270,7 @@ export class LightingSystem {
       for (let x = 0; x < mapWidth; x++) {
         const worldX = x * this.gridSize + this.gridSize / 2;
         const worldY = y * this.gridSize + this.gridSize / 2;
-        
+
         const intensity = this.calculateLightIntensityAt(light, worldX, worldY);
         contribution[y * mapWidth + x] = intensity;
       }
@@ -288,41 +289,41 @@ export class LightingSystem {
 
     // Calculate base intensity based on falloff
     let intensity = light.intensity;
-    
+
     switch (light.falloff) {
-      case 'linear':
-        intensity *= Math.max(0, 1 - (distance / light.range));
+      case "linear":
+        intensity *= Math.max(0, 1 - distance / light.range);
         break;
-      case 'quadratic':
+      case "quadratic":
         intensity *= Math.max(0, 1 - Math.pow(distance / light.range, 2));
         break;
-      case 'constant':
+      case "constant":
         intensity *= distance <= light.range ? 1 : 0;
         break;
     }
 
     // Apply spot light cone
-    if (light.type === 'spot' && light.direction && light.angle) {
+    if (light.type === "spot" && light.direction && light.angle) {
       const lightAngle = Math.atan2(light.direction.y, light.direction.x);
       const pointAngle = Math.atan2(dy, dx);
       let angleDiff = Math.abs(lightAngle - pointAngle);
-      
+
       // Normalize angle difference
       if (angleDiff > Math.PI) {
         angleDiff = 2 * Math.PI - angleDiff;
       }
-      
-      const halfCone = (light.angle * Math.PI / 180) / 2;
-      
+
+      const halfCone = (light.angle * Math.PI) / 180 / 2;
+
       if (angleDiff > halfCone) {
         return 0; // Outside cone
       }
-      
+
       // Apply penumbra (soft edge)
       if (light.penumbra && light.penumbra > 0) {
         const penumbraAngle = halfCone * light.penumbra;
         if (angleDiff > halfCone - penumbraAngle) {
-          const falloff = 1 - ((angleDiff - (halfCone - penumbraAngle)) / penumbraAngle);
+          const falloff = 1 - (angleDiff - (halfCone - penumbraAngle)) / penumbraAngle;
           intensity *= falloff;
         }
       }
@@ -379,7 +380,7 @@ export class LightingSystem {
     visibilityMap: Float32Array,
     illuminationMap: Float32Array,
     mapWidth: number,
-    mapHeight: number
+    mapHeight: number,
   ): void {
     // This would need token position - simplified for now
     const visionX = this.sceneWidth / 2; // Placeholder
@@ -389,37 +390,35 @@ export class LightingSystem {
       for (let x = 0; x < mapWidth; x++) {
         const worldX = x * this.gridSize + this.gridSize / 2;
         const worldY = y * this.gridSize + this.gridSize / 2;
-        
-        const distance = Math.sqrt(
-          Math.pow(worldX - visionX, 2) + Math.pow(worldY - visionY, 2)
-        );
-        
+
+        const distance = Math.sqrt(Math.pow(worldX - visionX, 2) + Math.pow(worldY - visionY, 2));
+
         const index = y * mapWidth + x;
-        
+
         // Check if within vision range
         if (distance <= vision.range) {
           switch (vision.type) {
-            case 'normal':
+            case "normal":
               // Requires light to see
               if ((illuminationMap[index] ?? 0) > 0.1) {
                 visibilityMap[index] = Math.max(visibilityMap[index] ?? 0, 1);
               }
               break;
-              
-            case 'darkvision':
+
+            case "darkvision":
               // Can see in darkness within range
               visibilityMap[index] = Math.max(visibilityMap[index] ?? 0, 0.7);
               break;
-              
-            case 'blindsight':
-            case 'tremorsense':
+
+            case "blindsight":
+            case "tremorsense":
               // Sees regardless of light
               if (!this.isOccluded({ x: visionX, y: visionY }, { x: worldX, y: worldY })) {
                 visibilityMap[index] = Math.max(visibilityMap[index] ?? 0, 1);
               }
               break;
-              
-            case 'truesight':
+
+            case "truesight":
               // Sees through illusions and invisibility
               visibilityMap[index] = Math.max(visibilityMap[index] ?? 0, 1);
               break;
@@ -442,13 +441,17 @@ export class LightingSystem {
   private lineIntersectsWall(
     from: { x: number; y: number },
     to: { x: number; y: number },
-    wall: { x1: number; y1: number; x2: number; y2: number }
+    wall: { x1: number; y1: number; x2: number; y2: number },
   ): boolean {
     // Line-line intersection algorithm
-    const x1 = from.x, y1 = from.y;
-    const x2 = to.x, y2 = to.y;
-    const x3 = wall.x1, y3 = wall.y1;
-    const x4 = wall.x2, y4 = wall.y2;
+    const x1 = from.x,
+      y1 = from.y;
+    const x2 = to.x,
+      y2 = to.y;
+    const x3 = wall.x1,
+      y3 = wall.y1;
+    const x4 = wall.x2,
+      y4 = wall.y2;
 
     const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
     if (Math.abs(denom) < 1e-10) return false; // Parallel lines
@@ -481,21 +484,23 @@ export class LightingSystem {
     if (!light.animation) return;
 
     const time = Date.now() / 1000;
-    
+
     switch (light.animation.type) {
-      case 'flicker': {
-        const flicker = Math.sin(time * light.animation.speed * 10) * light.animation.amplitude;
-        light.intensity = Math.max(0, light.intensity + flicker);
-    }
+      case "flicker":
+        {
+          const flicker = Math.sin(time * light.animation.speed * 10) * light.animation.amplitude;
+          light.intensity = Math.max(0, light.intensity + flicker);
+        }
         break;
-        
-      case 'pulse': {
-        const pulse = Math.sin(time * light.animation.speed) * light.animation.amplitude;
-        light.intensity = Math.max(0, light.intensity + pulse);
-    }
+
+      case "pulse":
+        {
+          const pulse = Math.sin(time * light.animation.speed) * light.animation.amplitude;
+          light.intensity = Math.max(0, light.intensity + pulse);
+        }
         break;
-        
-      case 'rotate':
+
+      case "rotate":
         if (light.direction) {
           const rotation = time * light.animation.speed;
           light.direction.x = Math.cos(rotation);
@@ -511,11 +516,11 @@ export class LightingSystem {
   getLightIntensityAt(x: number, y: number): number {
     const result = this.calculateLighting();
     const mapWidth = Math.ceil(this.sceneWidth / this.gridSize);
-    
+
     const gridX = Math.floor(x / this.gridSize);
     const gridY = Math.floor(y / this.gridSize);
     const index = gridY * mapWidth + gridX;
-    
+
     return result.illuminationMap[index] || 0;
   }
 
@@ -525,11 +530,11 @@ export class LightingSystem {
   isPointVisible(x: number, y: number, visionId?: string): boolean {
     const result = this.calculateLighting();
     const mapWidth = Math.ceil(this.sceneWidth / this.gridSize);
-    
+
     const gridX = Math.floor(x / this.gridSize);
     const gridY = Math.floor(y / this.gridSize);
     const index = gridY * mapWidth + gridX;
-    
+
     return (result.visibilityMap[index] ?? 0) > 0;
   }
 
@@ -551,7 +556,7 @@ export class LightingSystem {
       lightSources: Array.from(this.lightSources.values()),
       visionSources: Array.from(this.visionSources.values()),
       ambientLight: { ...this.ambientLight },
-      settings: { ...this.settings }
+      settings: { ...this.settings },
     };
   }
 
@@ -566,27 +571,27 @@ export class LightingSystem {
   }): void {
     if (data.lightSources) {
       this.lightSources.clear();
-      data.lightSources.forEach(light => this.lightSources.set(light.id, light));
+      data.lightSources.forEach((light) => this.lightSources.set(light.id, light));
     }
-    
+
     if (data.visionSources) {
       this.visionSources.clear();
-      data.visionSources.forEach(vision => this.visionSources.set(vision.id, vision));
+      data.visionSources.forEach((vision) => this.visionSources.set(vision.id, vision));
     }
-    
+
     if (data.ambientLight) {
       this.ambientLight = { ...data.ambientLight };
     }
-    
+
     if (data.settings) {
       this.settings = { ...this.settings, ...data.settings };
     }
-    
+
     this.invalidateCache();
-    
+
     this.emitEvent({
-      type: 'lighting-imported',
-      data: { lightCount: this.lightSources.size, visionCount: this.visionSources.size }
+      type: "lighting-imported",
+      data: { lightCount: this.lightSources.size, visionCount: this.visionSources.size },
     });
   }
 
@@ -603,11 +608,11 @@ export class LightingSystem {
   }
 
   private emitEvent(event: LightingEvent): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Lighting event listener error:', error);
+        logger.error("Lighting event listener error:", error);
       }
     });
   }
@@ -615,10 +620,13 @@ export class LightingSystem {
 
 // Event Types
 export type LightingEvent =
-  | { type: 'light-added'; data: { lightId: string; light: LightSource } }
-  | { type: 'light-removed'; data: { lightId: string } }
-  | { type: 'light-updated'; data: { lightId: string; light: LightSource; updates: Partial<LightSource> } }
-  | { type: 'vision-added'; data: { visionId: string; vision: VisionSource } }
-  | { type: 'vision-removed'; data: { visionId: string } }
-  | { type: 'walls-updated'; data: { wallCount: number } }
-  | { type: 'lighting-imported'; data: { lightCount: number; visionCount: number } };
+  | { type: "light-added"; data: { lightId: string; light: LightSource } }
+  | { type: "light-removed"; data: { lightId: string } }
+  | {
+      type: "light-updated";
+      data: { lightId: string; light: LightSource; updates: Partial<LightSource> };
+    }
+  | { type: "vision-added"; data: { visionId: string; vision: VisionSource } }
+  | { type: "vision-removed"; data: { visionId: string } }
+  | { type: "walls-updated"; data: { wallCount: number } }
+  | { type: "lighting-imported"; data: { lightCount: number; visionCount: number } };

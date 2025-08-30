@@ -2,17 +2,17 @@
  * Content publishing and distribution system
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import type { Buffer } from 'node:buffer';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import type { Buffer } from "node:buffer";
 
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import * as crypto from 'crypto';
-import JSZip from 'jszip';
-import { AssetManager, _AssetMetadata} from './AssetManager';
-import { Campaign } from './CampaignBuilder';
-import { Scene } from './ContentEditor';
+import { promises as fs } from "fs";
+import * as path from "path";
+import * as crypto from "crypto";
+import JSZip from "jszip";
+import { AssetManager, _AssetMetadata } from "./AssetManager";
+import { Campaign } from "./CampaignBuilder";
+import { Scene } from "./ContentEditor";
 
 export interface ContentPackage {
   id: string;
@@ -20,15 +20,15 @@ export interface ContentPackage {
   version: string;
   description: string;
   author: string;
-  category: 'campaign' | 'adventure' | 'asset_pack' | 'ruleset' | 'supplement';
+  category: "campaign" | "adventure" | "asset_pack" | "ruleset" | "supplement";
   system: string;
   tags: string[];
-  
+
   // Content
   assets: string[];
   scenes: Scene[];
   campaigns: Campaign[];
-  
+
   // Metadata
   license: string;
   requiredVersion: string;
@@ -37,18 +37,18 @@ export interface ContentPackage {
     version: string;
     optional: boolean;
   }>;
-  
+
   // Publishing info
   publishedDate?: Date;
   downloads: number;
   rating: number;
   reviewCount: number;
-  
+
   // File info
   size: number;
   checksum: string;
   filePath?: string;
-  
+
   created: Date;
   modified: Date;
 }
@@ -60,7 +60,7 @@ export interface PublishingConfig {
   includeThumbnails: boolean;
   validateContent: boolean;
   generateManifest: boolean;
-  
+
   // Distribution
   platforms: Array<{
     name: string;
@@ -68,7 +68,7 @@ export interface PublishingConfig {
     apiKey?: string;
     enabled: boolean;
   }>;
-  
+
   // Metadata
   defaultLicense: string;
   authorInfo: {
@@ -81,14 +81,14 @@ export interface PublishingConfig {
 export interface ValidationResult {
   valid: boolean;
   errors: Array<{
-    type: 'error' | 'warning' | 'info';
+    type: "error" | "warning" | "info";
     code: string;
     message: string;
     path?: string;
     severity: number;
   }>;
   warnings: Array<{
-    type: 'error' | 'warning' | 'info';
+    type: "error" | "warning" | "info";
     code: string;
     message: string;
     path?: string;
@@ -118,13 +118,13 @@ export class PublishingManager extends EventEmitter {
     name: string,
     version: string,
     description: string,
-    category: ContentPackage['category'],
+    category: ContentPackage["category"],
     system: string,
     content: {
       assets?: string[];
       scenes?: Scene[];
       campaigns?: Campaign[];
-    }
+    },
   ): Promise<ContentPackage> {
     const pkg: ContentPackage = {
       id: this.generateId(),
@@ -135,28 +135,28 @@ export class PublishingManager extends EventEmitter {
       category,
       system,
       tags: [],
-      
+
       assets: content.assets || [],
       scenes: content.scenes || [],
       campaigns: content.campaigns || [],
-      
+
       license: this.config.defaultLicense,
-      requiredVersion: '1.0.0',
+      requiredVersion: "1.0.0",
       dependencies: [],
-      
+
       downloads: 0,
       rating: 0,
       reviewCount: 0,
-      
+
       size: 0,
-      checksum: '',
-      
+      checksum: "",
+
       created: new Date(),
-      modified: new Date()
+      modified: new Date(),
     };
 
     this.packages.set(pkg.id, pkg);
-    this.emit('packageCreated', pkg);
+    this.emit("packageCreated", pkg);
     return pkg;
   }
 
@@ -175,35 +175,35 @@ export class PublishingManager extends EventEmitter {
         totalAssets: pkg.assets.length,
         totalSize: 0,
         missingAssets: 0,
-        brokenReferences: 0
-      }
+        brokenReferences: 0,
+      },
     };
 
     // Validate basic package info
     if (!pkg.name.trim()) {
       result.errors.push({
-        type: 'error',
-        code: 'MISSING_NAME',
-        message: 'Package name is required',
-        severity: 10
+        type: "error",
+        code: "MISSING_NAME",
+        message: "Package name is required",
+        severity: 10,
       });
     }
 
     if (!pkg.version.match(/^\d+\.\d+\.\d+$/)) {
       result.errors.push({
-        type: 'error',
-        code: 'INVALID_VERSION',
-        message: 'Version must follow semantic versioning (x.y.z)',
-        severity: 8
+        type: "error",
+        code: "INVALID_VERSION",
+        message: "Version must follow semantic versioning (x.y.z)",
+        severity: 8,
       });
     }
 
     if (!pkg.description.trim()) {
       result.warnings.push({
-        type: 'warning',
-        code: 'MISSING_DESCRIPTION',
-        message: 'Package description is recommended',
-        severity: 3
+        type: "warning",
+        code: "MISSING_DESCRIPTION",
+        message: "Package description is recommended",
+        severity: 3,
       });
     }
 
@@ -212,11 +212,11 @@ export class PublishingManager extends EventEmitter {
       const asset = this.assetManager.getAsset(assetId);
       if (!asset) {
         result.errors.push({
-          type: 'error',
-          code: 'MISSING_ASSET',
+          type: "error",
+          code: "MISSING_ASSET",
           message: `Referenced asset not found: ${assetId}`,
           path: `assets/${assetId}`,
-          severity: 9
+          severity: 9,
         });
         result.stats.missingAssets++;
       } else {
@@ -229,10 +229,10 @@ export class PublishingManager extends EventEmitter {
       const scene = pkg.scenes[i];
       if (!scene) continue;
       const sceneErrors = await this.validateScene(scene);
-      
-      sceneErrors.forEach(error => {
-        error.path = `scenes/${i}/${error.path || ''}`;
-        if (error.type === 'error') {
+
+      sceneErrors.forEach((error) => {
+        error.path = `scenes/${i}/${error.path || ""}`;
+        if (error.type === "error") {
           result.errors.push(error);
         } else {
           result.warnings.push(error);
@@ -245,10 +245,10 @@ export class PublishingManager extends EventEmitter {
       const campaign = pkg.campaigns[i];
       if (!campaign) continue;
       const campaignErrors = await this.validateCampaign(campaign);
-      
-      campaignErrors.forEach(error => {
-        error.path = `campaigns/${i}/${error.path || ''}`;
-        if (error.type === 'error') {
+
+      campaignErrors.forEach((error) => {
+        error.path = `campaigns/${i}/${error.path || ""}`;
+        if (error.type === "error") {
           result.errors.push(error);
         } else {
           result.warnings.push(error);
@@ -260,16 +260,16 @@ export class PublishingManager extends EventEmitter {
     for (const dep of pkg.dependencies) {
       if (!this.packages.has(dep.packageId) && !dep.optional) {
         result.warnings.push({
-          type: 'warning',
-          code: 'MISSING_DEPENDENCY',
+          type: "warning",
+          code: "MISSING_DEPENDENCY",
           message: `Required dependency not available: ${dep.packageId}`,
-          severity: 6
+          severity: 6,
         });
       }
     }
 
     result.valid = result.errors.length === 0;
-    this.emit('packageValidated', pkg, result);
+    this.emit("packageValidated", pkg, result);
     return result;
   }
 
@@ -289,44 +289,52 @@ export class PublishingManager extends EventEmitter {
     }
 
     const zip = new JSZip();
-    const exportPath = outputPath || path.join(this.config.exportPath, `${pkg.name}-${pkg.version}.vttp`);
+    const exportPath =
+      outputPath || path.join(this.config.exportPath, `${pkg.name}-${pkg.version}.vttp`);
 
     // Add manifest
     if (this.config.generateManifest) {
       const manifest = this.generateManifest(pkg);
-      zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+      zip.file("manifest.json", JSON.stringify(manifest, null, 2));
     }
 
     // Add package metadata
-    zip.file('package.json', JSON.stringify({
-      id: pkg.id,
-      name: pkg.name,
-      version: pkg.version,
-      description: pkg.description,
-      author: pkg.author,
-      category: pkg.category,
-      system: pkg.system,
-      tags: pkg.tags,
-      license: pkg.license,
-      requiredVersion: pkg.requiredVersion,
-      dependencies: pkg.dependencies,
-      created: pkg.created,
-      modified: pkg.modified
-    }, null, 2));
+    zip.file(
+      "package.json",
+      JSON.stringify(
+        {
+          id: pkg.id,
+          name: pkg.name,
+          version: pkg.version,
+          description: pkg.description,
+          author: pkg.author,
+          category: pkg.category,
+          system: pkg.system,
+          tags: pkg.tags,
+          license: pkg.license,
+          requiredVersion: pkg.requiredVersion,
+          dependencies: pkg.dependencies,
+          created: pkg.created,
+          modified: pkg.modified,
+        },
+        null,
+        2,
+      ),
+    );
 
     // Add content
     if (pkg.scenes.length > 0) {
-      zip.file('scenes.json', JSON.stringify(pkg.scenes, null, 2));
+      zip.file("scenes.json", JSON.stringify(pkg.scenes, null, 2));
     }
 
     if (pkg.campaigns.length > 0) {
-      zip.file('campaigns.json', JSON.stringify(pkg.campaigns, null, 2));
+      zip.file("campaigns.json", JSON.stringify(pkg.campaigns, null, 2));
     }
 
     // Add assets if configured
     if (this.config.includeAssets) {
-      const assetsFolder = zip.folder('assets');
-      
+      const assetsFolder = zip.folder("assets");
+
       for (const assetId of pkg.assets) {
         const asset = this.assetManager.getAsset(assetId);
         if (asset && asset.filePath) {
@@ -350,11 +358,11 @@ export class PublishingManager extends EventEmitter {
 
     // Generate and save package
     const zipBuffer = await zip.generateAsync({
-      type: 'nodebuffer',
-      compression: 'DEFLATE',
+      type: "nodebuffer",
+      compression: "DEFLATE",
       compressionOptions: {
-        level: this.config.compressionLevel
-      }
+        level: this.config.compressionLevel,
+      },
     });
 
     await fs.writeFile(exportPath, zipBuffer);
@@ -365,7 +373,7 @@ export class PublishingManager extends EventEmitter {
     pkg.filePath = exportPath;
     pkg.modified = new Date();
 
-    this.emit('packageExported', pkg, exportPath);
+    this.emit("packageExported", pkg, exportPath);
     return exportPath;
   }
 
@@ -375,16 +383,16 @@ export class PublishingManager extends EventEmitter {
     const zip = await JSZip.loadAsync(zipData);
 
     // Read package metadata
-    const packageFile = zip.file('package.json');
+    const packageFile = zip.file("package.json");
     if (!packageFile) {
-      throw new Error('Invalid package: missing package.json');
+      throw new Error("Invalid package: missing package.json");
     }
 
-    const packageData = JSON.parse(await packageFile.async('text'));
-    
+    const packageData = JSON.parse(await packageFile.async("text"));
+
     // Verify checksum
     const expectedChecksum = this.calculateChecksum(zipData);
-    
+
     const pkg: ContentPackage = {
       ...packageData,
       size: zipData.length,
@@ -392,27 +400,27 @@ export class PublishingManager extends EventEmitter {
       filePath,
       downloads: packageData.downloads || 0,
       rating: packageData.rating || 0,
-      reviewCount: packageData.reviewCount || 0
+      reviewCount: packageData.reviewCount || 0,
     };
 
     // Import scenes
-    const scenesFile = zip.file('scenes.json');
+    const scenesFile = zip.file("scenes.json");
     if (scenesFile) {
-      pkg.scenes = JSON.parse(await scenesFile.async('text'));
+      pkg.scenes = JSON.parse(await scenesFile.async("text"));
     }
 
     // Import campaigns
-    const campaignsFile = zip.file('campaigns.json');
+    const campaignsFile = zip.file("campaigns.json");
     if (campaignsFile) {
-      pkg.campaigns = JSON.parse(await campaignsFile.async('text'));
+      pkg.campaigns = JSON.parse(await campaignsFile.async("text"));
     }
 
     // Import assets
-    const assetsFolder = zip.folder('assets');
+    const assetsFolder = zip.folder("assets");
     if (assetsFolder) {
       for (const [_filename, file] of Object.entries(assetsFolder.files)) {
-        if (file && typeof file === 'object' && 'dir' in file && !file.dir && 'async' in file) {
-          const _assetData = await (file as any).async('nodebuffer');
+        if (file && typeof file === "object" && "dir" in file && !file.dir && "async" in file) {
+          const _assetData = await (file as any).async("nodebuffer");
           // Import asset to asset manager
           // This would integrate with AssetManager.importAsset()
         }
@@ -420,7 +428,7 @@ export class PublishingManager extends EventEmitter {
     }
 
     this.packages.set(pkg.id, pkg);
-    this.emit('packageImported', pkg);
+    this.emit("packageImported", pkg);
     return pkg;
   }
 
@@ -431,12 +439,12 @@ export class PublishingManager extends EventEmitter {
       throw new Error(`Package not found: ${packageId}`);
     }
 
-    const platforms = platformName 
-      ? this.config.platforms.filter(p => p.name === platformName && p.enabled)
-      : this.config.platforms.filter(p => p.enabled);
+    const platforms = platformName
+      ? this.config.platforms.filter((p) => p.name === platformName && p.enabled)
+      : this.config.platforms.filter((p) => p.enabled);
 
     if (platforms.length === 0) {
-      throw new Error('No enabled publishing platforms configured');
+      throw new Error("No enabled publishing platforms configured");
     }
 
     // Export package first
@@ -445,9 +453,9 @@ export class PublishingManager extends EventEmitter {
     for (const platform of platforms) {
       try {
         await this.publishToPlatform(pkg, exportPath, platform);
-        this.emit('packagePublished', pkg, platform.name);
+        this.emit("packagePublished", pkg, platform.name);
       } catch (error) {
-        this.emit('publishFailed', pkg, platform.name, error);
+        this.emit("publishFailed", pkg, platform.name, error);
         throw error;
       }
     }
@@ -469,13 +477,13 @@ export class PublishingManager extends EventEmitter {
     const pkg = this.packages.get(packageId);
     if (pkg) {
       this.packages.delete(packageId);
-      
+
       // Clean up exported file
       if (pkg.filePath) {
         fs.unlink(pkg.filePath).catch(console.warn);
       }
-      
-      this.emit('packageRemoved', pkg);
+
+      this.emit("packageRemoved", pkg);
     }
   }
 
@@ -483,43 +491,57 @@ export class PublishingManager extends EventEmitter {
     const pkg = this.packages.get(packageId);
     if (pkg) {
       Object.assign(pkg, updates, { modified: new Date() });
-      this.emit('packageUpdated', pkg);
+      this.emit("packageUpdated", pkg);
     }
   }
 
   // Private methods
-  private async validateScene(scene: Scene): Promise<Array<{ type: 'error' | 'warning'; code: string; message: string; path?: string; severity: number }>> {
-    const errors: Array<{ type: 'error' | 'warning'; code: string; message: string; path?: string; severity: number }> = [];
+  private async validateScene(scene: Scene): Promise<
+    Array<{
+      type: "error" | "warning";
+      code: string;
+      message: string;
+      path?: string;
+      severity: number;
+    }>
+  > {
+    const errors: Array<{
+      type: "error" | "warning";
+      code: string;
+      message: string;
+      path?: string;
+      severity: number;
+    }> = [];
 
     if (!scene.name.trim()) {
       errors.push({
-        type: 'error',
-        code: 'MISSING_SCENE_NAME',
-        message: 'Scene name is required',
-        severity: 8
+        type: "error",
+        code: "MISSING_SCENE_NAME",
+        message: "Scene name is required",
+        severity: 8,
       });
     }
 
     if (scene.dimensions.width <= 0 || scene.dimensions.height <= 0) {
       errors.push({
-        type: 'error',
-        code: 'INVALID_DIMENSIONS',
-        message: 'Scene dimensions must be positive',
-        severity: 7
+        type: "error",
+        code: "INVALID_DIMENSIONS",
+        message: "Scene dimensions must be positive",
+        severity: 7,
       });
     }
 
     // Validate elements reference valid assets
     for (const element of scene.elements) {
-      if (element.type === 'image' && element.data?.assetId) {
+      if (element.type === "image" && element.data?.assetId) {
         const asset = this.assetManager.getAsset(element.data.assetId);
         if (!asset) {
           errors.push({
-            type: 'error',
-            code: 'MISSING_ELEMENT_ASSET',
+            type: "error",
+            code: "MISSING_ELEMENT_ASSET",
             message: `Element references missing asset: ${element.data.assetId}`,
             path: `elements/${element.id}`,
-            severity: 6
+            severity: 6,
           });
         }
       }
@@ -528,24 +550,38 @@ export class PublishingManager extends EventEmitter {
     return errors;
   }
 
-  private async validateCampaign(campaign: Campaign): Promise<Array<{ type: 'error' | 'warning'; code: string; message: string; path?: string; severity: number }>> {
-    const errors: Array<{ type: 'error' | 'warning'; code: string; message: string; path?: string; severity: number }> = [];
+  private async validateCampaign(campaign: Campaign): Promise<
+    Array<{
+      type: "error" | "warning";
+      code: string;
+      message: string;
+      path?: string;
+      severity: number;
+    }>
+  > {
+    const errors: Array<{
+      type: "error" | "warning";
+      code: string;
+      message: string;
+      path?: string;
+      severity: number;
+    }> = [];
 
     if (!campaign.name.trim()) {
       errors.push({
-        type: 'error',
-        code: 'MISSING_CAMPAIGN_NAME',
-        message: 'Campaign name is required',
-        severity: 8
+        type: "error",
+        code: "MISSING_CAMPAIGN_NAME",
+        message: "Campaign name is required",
+        severity: 8,
       });
     }
 
     if (!campaign.system.trim()) {
       errors.push({
-        type: 'warning',
-        code: 'MISSING_SYSTEM',
-        message: 'Game system should be specified',
-        severity: 4
+        type: "warning",
+        code: "MISSING_SYSTEM",
+        message: "Game system should be specified",
+        severity: 4,
       });
     }
 
@@ -555,11 +591,11 @@ export class PublishingManager extends EventEmitter {
         const asset = this.assetManager.getAsset(character.portraitAssetId);
         if (!asset) {
           errors.push({
-            type: 'warning',
-            code: 'MISSING_PORTRAIT',
+            type: "warning",
+            code: "MISSING_PORTRAIT",
             message: `Character portrait asset not found: ${character.portraitAssetId}`,
             path: `characters/${character.id}/portrait`,
-            severity: 3
+            severity: 3,
           });
         }
       }
@@ -570,7 +606,7 @@ export class PublishingManager extends EventEmitter {
 
   private generateManifest(pkg: ContentPackage): any {
     return {
-      formatVersion: '1.0',
+      formatVersion: "1.0",
       packageId: pkg.id,
       name: pkg.name,
       version: pkg.version,
@@ -583,34 +619,34 @@ export class PublishingManager extends EventEmitter {
       contents: {
         assets: pkg.assets.length,
         scenes: pkg.scenes.length,
-        campaigns: pkg.campaigns.length
+        campaigns: pkg.campaigns.length,
       },
       requirements: {
         minVersion: pkg.requiredVersion,
-        dependencies: pkg.dependencies
-      }
+        dependencies: pkg.dependencies,
+      },
     };
   }
 
   private async publishToPlatform(
     pkg: ContentPackage,
     filePath: string,
-    platform: { name: string; endpoint: string; apiKey?: string }
+    platform: { name: string; endpoint: string; apiKey?: string },
   ): Promise<void> {
     // Mock implementation - would integrate with actual marketplace APIs
     logger.info(`Publishing ${pkg.name} to ${platform.name}`);
-    
+
     // This would typically involve:
     // 1. Uploading the package file
     // 2. Submitting metadata
     // 3. Handling API responses
     // 4. Updating package status
-    
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
   }
 
   private calculateChecksum(data: Buffer): string {
-    return crypto.createHash('sha256').update(data).digest('hex');
+    return crypto.createHash("sha256").update(data).digest("hex");
   }
 
   private generateId(): string {
@@ -620,7 +656,7 @@ export class PublishingManager extends EventEmitter {
   // Configuration management
   updateConfig(updates: Partial<PublishingConfig>): void {
     Object.assign(this.config, updates);
-    this.emit('configUpdated', this.config);
+    this.emit("configUpdated", this.config);
   }
 
   getConfig(): PublishingConfig {
@@ -645,7 +681,7 @@ export class PublishingManager extends EventEmitter {
       reviews: pkg.reviewCount,
       size: pkg.size,
       created: pkg.created,
-      lastModified: pkg.modified
+      lastModified: pkg.modified,
     };
   }
 
@@ -658,22 +694,23 @@ export class PublishingManager extends EventEmitter {
     bySystem: Record<string, number>;
   } {
     const packages = Array.from(this.packages.values());
-    
+
     return {
       totalPackages: packages.length,
       totalDownloads: packages.reduce((_sum, _pkg) => sum + pkg.downloads, 0),
-      averageRating: packages.length > 0 
-        ? packages.reduce((_sum, _pkg) => sum + pkg.rating, 0) / packages.length 
-        : 0,
+      averageRating:
+        packages.length > 0
+          ? packages.reduce((_sum, _pkg) => sum + pkg.rating, 0) / packages.length
+          : 0,
       totalSize: packages.reduce((_sum, _pkg) => sum + pkg.size, 0),
-      byCategory: this.groupBy(packages, 'category'),
-      bySystem: this.groupBy(packages, 'system')
+      byCategory: this.groupBy(packages, "category"),
+      bySystem: this.groupBy(packages, "system"),
     };
   }
 
   private groupBy(array: any[], key: string): Record<string, number> {
     return array.reduce((acc, item) => {
-      const value = item[key] || 'unknown';
+      const value = item[key] || "unknown";
       acc[value] = (acc[value] || 0) + 1;
       return acc;
     }, {});

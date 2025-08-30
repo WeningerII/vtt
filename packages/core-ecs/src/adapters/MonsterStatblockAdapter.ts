@@ -2,7 +2,7 @@
  * Monster Statblock Adapter - Converts D&D 5e monster statblocks to ECS components
  */
 
-import { _Condition, ConditionType } from '../components/Conditions';
+import { _Condition, ConditionType } from "../components/Conditions";
 
 export interface D5eStatblock {
   name: string;
@@ -111,40 +111,41 @@ export class MonsterStatblockAdapter {
     const hitPoints = this.extractHitPoints(statblock.hitPoints);
     const armorClass = this.extractArmorClass(statblock.armorClass);
     const challengeRating = this.extractChallengeRating(statblock.challengeRating);
-    const proficiencyBonus = statblock.proficiencyBonus || this.calculateProficiencyBonus(challengeRating);
+    const proficiencyBonus =
+      statblock.proficiencyBonus || this.calculateProficiencyBonus(challengeRating);
 
     return {
       name: statblock.name,
       health: {
         current: hitPoints,
         max: hitPoints,
-        temporary: 0
+        temporary: 0,
       },
       stats: {
-        STR: { 
-          value: statblock.abilities.STR, 
-          modifier: Math.floor((statblock.abilities.STR - 10) / 2) 
+        STR: {
+          value: statblock.abilities.STR,
+          modifier: Math.floor((statblock.abilities.STR - 10) / 2),
         },
-        DEX: { 
-          value: statblock.abilities.DEX, 
-          modifier: Math.floor((statblock.abilities.DEX - 10) / 2) 
+        DEX: {
+          value: statblock.abilities.DEX,
+          modifier: Math.floor((statblock.abilities.DEX - 10) / 2),
         },
-        CON: { 
-          value: statblock.abilities.CON, 
-          modifier: Math.floor((statblock.abilities.CON - 10) / 2) 
+        CON: {
+          value: statblock.abilities.CON,
+          modifier: Math.floor((statblock.abilities.CON - 10) / 2),
         },
-        INT: { 
-          value: statblock.abilities.INT, 
-          modifier: Math.floor((statblock.abilities.INT - 10) / 2) 
+        INT: {
+          value: statblock.abilities.INT,
+          modifier: Math.floor((statblock.abilities.INT - 10) / 2),
         },
-        WIS: { 
-          value: statblock.abilities.WIS, 
-          modifier: Math.floor((statblock.abilities.WIS - 10) / 2) 
+        WIS: {
+          value: statblock.abilities.WIS,
+          modifier: Math.floor((statblock.abilities.WIS - 10) / 2),
         },
-        CHA: { 
-          value: statblock.abilities.CHA, 
-          modifier: Math.floor((statblock.abilities.CHA - 10) / 2) 
-        }
+        CHA: {
+          value: statblock.abilities.CHA,
+          modifier: Math.floor((statblock.abilities.CHA - 10) / 2),
+        },
       },
       armorClass,
       speed: statblock.speed.walk || 30,
@@ -161,8 +162,8 @@ export class MonsterStatblockAdapter {
         damageImmunities: statblock.damageImmunities || [],
         damageVulnerabilities: statblock.damageVulnerabilities || [],
         senses: statblock.senses || {},
-        languages: statblock.languages || []
-      }
+        languages: statblock.languages || [],
+      },
     };
   }
 
@@ -179,7 +180,7 @@ export class MonsterStatblockAdapter {
   static generateActionSystemActions(monsterData: ECSMonsterData): Array<{
     id: string;
     name: string;
-    actionType: 'action' | 'bonus_action' | 'reaction';
+    actionType: "action" | "bonus_action" | "reaction";
     attackBonus?: number;
     damage?: {
       diceExpression: string;
@@ -195,54 +196,60 @@ export class MonsterStatblockAdapter {
     // Convert main actions
     for (const action of monsterData.actions) {
       actions.push({
-        id: `${monsterData.name.toLowerCase().replace(/\s+/g, '')}_${action.name.toLowerCase().replace(/\s+/g, '')}`,
+        id: `${monsterData.name.toLowerCase().replace(/\s+/g, "")}_${action.name.toLowerCase().replace(/\s+/g, "")}`,
         name: action.name,
-        actionType: 'action' as const,
+        actionType: "action" as const,
         attackBonus: action.attackBonus,
-        damage: action.damage ? {
-          diceExpression: action.damage.diceExpression,
-          damageType: action.damage.damageType
-        } : undefined,
+        damage: action.damage
+          ? {
+              diceExpression: action.damage.diceExpression,
+              damageType: action.damage.damageType,
+            }
+          : undefined,
         saveDC: action.saveDC,
         saveAbility: action.saveAbility,
         range: action.range ? { normal: action.range } : undefined,
-        description: action.description
+        description: action.description,
       });
     }
 
     // Convert bonus actions
     for (const action of monsterData.bonusActions) {
       actions.push({
-        id: `${monsterData.name.toLowerCase().replace(/\s+/g, '')}_${action.name.toLowerCase().replace(/\s+/g, '')}_bonus`,
+        id: `${monsterData.name.toLowerCase().replace(/\s+/g, "")}_${action.name.toLowerCase().replace(/\s+/g, "")}_bonus`,
         name: action.name,
-        actionType: 'bonus_action' as const,
+        actionType: "bonus_action" as const,
         attackBonus: action.attackBonus,
-        damage: action.damage ? {
-          diceExpression: action.damage.diceExpression,
-          damageType: action.damage.damageType
-        } : undefined,
+        damage: action.damage
+          ? {
+              diceExpression: action.damage.diceExpression,
+              damageType: action.damage.damageType,
+            }
+          : undefined,
         saveDC: action.saveDC,
         saveAbility: action.saveAbility,
         range: action.range ? { normal: action.range } : undefined,
-        description: action.description
+        description: action.description,
       });
     }
 
     // Convert reactions
     for (const action of monsterData.reactions) {
       actions.push({
-        id: `${monsterData.name.toLowerCase().replace(/\s+/g, '')}_${action.name.toLowerCase().replace(/\s+/g, '')}_reaction`,
+        id: `${monsterData.name.toLowerCase().replace(/\s+/g, "")}_${action.name.toLowerCase().replace(/\s+/g, "")}_reaction`,
         name: action.name,
-        actionType: 'reaction' as const,
+        actionType: "reaction" as const,
         attackBonus: action.attackBonus,
-        damage: action.damage ? {
-          diceExpression: action.damage.diceExpression,
-          damageType: action.damage.damageType
-        } : undefined,
+        damage: action.damage
+          ? {
+              diceExpression: action.damage.diceExpression,
+              damageType: action.damage.damageType,
+            }
+          : undefined,
         saveDC: action.saveDC,
         saveAbility: action.saveAbility,
         range: action.range ? { normal: action.range } : undefined,
-        description: action.description
+        description: action.description,
       });
     }
 
@@ -253,7 +260,7 @@ export class MonsterStatblockAdapter {
    * Extract hit points from various formats
    */
   private static extractHitPoints(hitPoints: number | { value: number; formula?: string }): number {
-    if (typeof hitPoints === 'number') {
+    if (typeof hitPoints === "number") {
       return hitPoints;
     }
     return hitPoints.value;
@@ -263,7 +270,7 @@ export class MonsterStatblockAdapter {
    * Extract armor class from various formats
    */
   private static extractArmorClass(armorClass: number | { value: number; type?: string }): number {
-    if (typeof armorClass === 'number') {
+    if (typeof armorClass === "number") {
       return armorClass;
     }
     return armorClass.value;
@@ -273,16 +280,16 @@ export class MonsterStatblockAdapter {
    * Extract challenge rating as number
    */
   private static extractChallengeRating(cr: number | string): number {
-    if (typeof cr === 'number') {
+    if (typeof cr === "number") {
       return cr;
     }
-    
+
     // Handle fractional CRs like "1/2", "1/4", "1/8"
-    if (cr.includes('/')) {
-      const [numerator, denominator] = cr.split('/').map(Number);
+    if (cr.includes("/")) {
+      const [numerator, denominator] = cr.split("/").map(Number);
       return numerator / denominator;
     }
-    
+
     return parseFloat(cr) || 0;
   }
 
@@ -306,25 +313,25 @@ export class MonsterStatblockAdapter {
    */
   private static convertConditionImmunities(immunities: string[]): ConditionType[] {
     const conditionMap: Record<string, ConditionType> = {
-      'blinded': 'blinded',
-      'charmed': 'charmed',
-      'deafened': 'deafened',
-      'frightened': 'frightened',
-      'grappled': 'grappled',
-      'incapacitated': 'incapacitated',
-      'invisible': 'invisible',
-      'paralyzed': 'paralyzed',
-      'petrified': 'petrified',
-      'poisoned': 'poisoned',
-      'prone': 'prone',
-      'restrained': 'restrained',
-      'stunned': 'stunned',
-      'unconscious': 'unconscious',
-      'exhaustion': 'exhaustion'
+      blinded: "blinded",
+      charmed: "charmed",
+      deafened: "deafened",
+      frightened: "frightened",
+      grappled: "grappled",
+      incapacitated: "incapacitated",
+      invisible: "invisible",
+      paralyzed: "paralyzed",
+      petrified: "petrified",
+      poisoned: "poisoned",
+      prone: "prone",
+      restrained: "restrained",
+      stunned: "stunned",
+      unconscious: "unconscious",
+      exhaustion: "exhaustion",
     };
 
     return immunities
-      .map(immunity => conditionMap[immunity.toLowerCase()])
+      .map((immunity) => conditionMap[immunity.toLowerCase()])
       .filter(Boolean) as ConditionType[];
   }
 
@@ -344,9 +351,9 @@ export class MonsterStatblockAdapter {
 
     const dice = parseInt(match[1]);
     const sides = parseInt(match[2]);
-    const modifierSign = match[3] === '-' ? -1 : 1;
+    const modifierSign = match[3] === "-" ? -1 : 1;
     const modifier = match[4] ? parseInt(match[4]) * modifierSign : 0;
-    const average = (dice * (sides + 1) / 2) + modifier;
+    const average = (dice * (sides + 1)) / 2 + modifier;
 
     return { dice, sides, modifier, average };
   }
@@ -357,9 +364,9 @@ export class MonsterStatblockAdapter {
   static normalizeSRDMonster(srdMonster: any): D5eStatblock {
     return {
       name: srdMonster.name,
-      size: srdMonster.size || 'Medium',
-      type: srdMonster.type || 'humanoid',
-      alignment: srdMonster.alignment || 'neutral',
+      size: srdMonster.size || "Medium",
+      type: srdMonster.type || "humanoid",
+      alignment: srdMonster.alignment || "neutral",
       armorClass: srdMonster.armor_class || 10,
       hitPoints: srdMonster.hit_points || 10,
       speed: srdMonster.speed || { walk: 30 },
@@ -369,7 +376,7 @@ export class MonsterStatblockAdapter {
         CON: srdMonster.constitution || 10,
         INT: srdMonster.intelligence || 10,
         WIS: srdMonster.wisdom || 10,
-        CHA: srdMonster.charisma || 10
+        CHA: srdMonster.charisma || 10,
       },
       skills: srdMonster.skills,
       savingThrows: srdMonster.saving_throws,
@@ -385,7 +392,7 @@ export class MonsterStatblockAdapter {
       bonusActions: srdMonster.bonus_actions,
       reactions: srdMonster.reactions,
       legendaryActions: srdMonster.legendary_actions,
-      spellcasting: srdMonster.spellcasting
+      spellcasting: srdMonster.spellcasting,
     };
   }
 }

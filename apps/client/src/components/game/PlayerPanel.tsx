@@ -2,29 +2,29 @@
  * Player Panel Component - Display player information, status, and controls
  */
 
-import React, { useState } from 'react';
-import { useAuth } from '../../providers/AuthProvider';
-import { useGame } from '../../providers/GameProvider';
-import { useWebSocket } from '../../providers/WebSocketProvider';
-import { Button } from '../ui/Button';
-import { 
-  Crown, 
-  Users, 
-  Shield, 
-  Heart, 
-  Zap, 
-  Eye, 
-  EyeOff, 
-  Volume2, 
-  VolumeX, 
+import React, { useState } from "react";
+import { useAuth } from "../../providers/AuthProvider";
+import { useGame } from "../../providers/GameProvider";
+import { useWebSocket } from "../../providers/WebSocketProvider";
+import { Button } from "../ui/Button";
+import {
+  Crown,
+  Users,
+  Shield,
+  Heart,
+  Zap,
+  Eye,
+  EyeOff,
+  Volume2,
+  VolumeX,
   Settings,
   UserX,
   MoreVertical,
   Wifi,
-  WifiOff
-} from 'lucide-react';
-import { cn } from '../../lib/utils';
-import type { Player } from '../../providers/GameProvider';
+  WifiOff,
+} from "lucide-react";
+import { cn } from "../../lib/utils";
+import type { Player } from "../../providers/GameProvider";
 
 interface PlayerPanelProps {
   className?: string;
@@ -35,47 +35,55 @@ interface PlayerStatusProps {
   isCurrentUser: boolean;
   isGM: boolean;
   onKick?: (_playerId: string) => void;
-  onUpdatePermissions?: (_playerId: string, permissions: Partial<Player['permissions']>) => void;
+  onUpdatePermissions?: (_playerId: string, permissions: Partial<Player["permissions"]>) => void;
 }
 
-function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions }: PlayerStatusProps) {
+function PlayerStatus({
+  player,
+  isCurrentUser,
+  isGM,
+  onKick,
+  onUpdatePermissions,
+}: PlayerStatusProps) {
   const [showOptions, setShowOptions] = useState(false);
   const [showPermissions, setShowPermissions] = useState(false);
 
   const getStatusColor = (isConnectedParam: boolean) => {
-    return isConnectedParam ? 'bg-success' : 'bg-error';
+    return isConnectedParam ? "bg-success" : "bg-error";
   };
 
   const getAvatarFallback = (displayNameParam: string) => {
     return displayNameParam
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
-  const togglePermission = (permission: keyof Player['permissions']) => {
+  const togglePermission = (permission: keyof Player["permissions"]) => {
     if (!onUpdatePermissions) return;
-    
+
     onUpdatePermissions(player.id, {
-      [permission]: !player.permissions[permission]
+      [permission]: !player.permissions[permission],
     });
   };
 
   return (
-    <div className={cn(
-      'relative p-3 bg-bg-tertiary rounded-lg border',
-      isCurrentUser ? 'border-accent-primary bg-accent-light' : 'border-border-primary'
-    )}>
+    <div
+      className={cn(
+        "relative p-3 bg-bg-tertiary rounded-lg border",
+        isCurrentUser ? "border-accent-primary bg-accent-light" : "border-border-primary",
+      )}
+    >
       {/* Player Info */}
       <div className="flex items-center gap-3">
         {/* Avatar */}
         <div className="relative">
           <div className="w-10 h-10 rounded-full bg-accent-primary flex items-center justify-center text-white font-medium">
             {player.avatar ? (
-              <img 
-                src={player.avatar} 
+              <img
+                src={player.avatar}
                 alt={player.displayName}
                 className="w-full h-full rounded-full object-cover"
               />
@@ -83,37 +91,37 @@ function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions
               getAvatarFallback(player.displayName)
             )}
           </div>
-          
+
           {/* Connection Status */}
-          <div className={cn(
-            'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-bg-tertiary',
-            getStatusColor(player.isConnected)
-          )} />
+          <div
+            className={cn(
+              "absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-bg-tertiary",
+              getStatusColor(player.isConnected),
+            )}
+          />
         </div>
 
         {/* Player Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="font-medium text-text-primary truncate">
-              {player.displayName}
-            </h4>
+            <h4 className="font-medium text-text-primary truncate">{player.displayName}</h4>
             {isCurrentUser && (
               <span className="text-xs bg-accent-primary text-white px-1.5 py-0.5 rounded">
                 You
               </span>
             )}
           </div>
-          
-          <p className="text-sm text-text-secondary truncate">
-            @{player.username}
-          </p>
+
+          <p className="text-sm text-text-secondary truncate">@{player.username}</p>
 
           {/* Character Info */}
           {player.character && (
             <div className="mt-1 text-xs text-text-tertiary">
               <span className="font-medium">{player.character.name}</span>
               <span className="mx-1">•</span>
-              <span>Lv{player.character.level} {player.character.race} {player.character.class}</span>
+              <span>
+                Lv{player.character.level} {player.character.race} {player.character.class}
+              </span>
             </div>
           )}
         </div>
@@ -125,12 +133,12 @@ function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions
           ) : (
             <WifiOff className="h-4 w-4 text-error" />
           )}
-          
+
           {isGM && !isCurrentUser && (
             <button
               onClick={() => setShowOptions(!showOptions)}
               className="p-1 hover:bg-bg-secondary rounded transition-colors"
-              aria-label={showOptions ? 'Hide options' : 'Show options'}
+              aria-label={showOptions ? "Hide options" : "Show options"}
             >
               <MoreVertical className="h-4 w-4 text-text-secondary" />
             </button>
@@ -151,10 +159,10 @@ function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions
                 </span>
               </div>
               <div className="w-full bg-bg-secondary rounded-full h-2">
-                <div 
+                <div
                   className="bg-error h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${Math.max(0, (player.character.hitPoints / player.character.maxHitPoints) * 100)}%` 
+                  style={{
+                    width: `${Math.max(0, (player.character.hitPoints / player.character.maxHitPoints) * 100)}%`,
                   }}
                 />
               </div>
@@ -184,12 +192,12 @@ function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions
             <button
               onClick={() => setShowPermissions(!showPermissions)}
               className="w-full text-left px-2 py-1.5 text-sm hover:bg-bg-tertiary rounded transition-colors"
-              aria-label={showPermissions ? 'Hide permissions' : 'Show permissions'}
+              aria-label={showPermissions ? "Hide permissions" : "Show permissions"}
             >
               <Settings className="h-3 w-3 inline mr-2" />
               Permissions
             </button>
-            
+
             <button
               onClick={() => onKick?.(player.id)}
               className="w-full text-left px-2 py-1.5 text-sm text-error hover:bg-error-light rounded transition-colors"
@@ -210,11 +218,11 @@ function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions
                     <input
                       type="checkbox"
                       checked={value}
-                      onChange={() => togglePermission(key as keyof Player['permissions'])}
+                      onChange={() => togglePermission(key as keyof Player["permissions"])}
                       className="rounded"
                     />
                     <span className="capitalize">
-                      {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                      {key.replace(/([A-Z])/g, " $1").toLowerCase()}
                     </span>
                   </label>
                 ))}
@@ -227,7 +235,9 @@ function PlayerStatus({ player, isCurrentUser, isGM, onKick, onUpdatePermissions
   );
 }
 
-export const PlayerPanel = React.memo(function PlayerPanel({ className }: PlayerPanelProps): JSX.Element {
+export const PlayerPanel = React.memo(function PlayerPanel({
+  className,
+}: PlayerPanelProps): JSX.Element {
   const { user } = useAuth();
   const { session, isGM, kickPlayer, updatePlayerPermissions } = useGame();
   const { isConnected, latency } = useWebSocket();
@@ -235,19 +245,17 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
 
   if (!session) {
     return (
-      <div className={cn('bg-bg-secondary rounded-lg border border-border-primary p-4', className)}>
-        <p className="text-text-secondary text-center">
-          Join a game session to see players
-        </p>
+      <div className={cn("bg-bg-secondary rounded-lg border border-border-primary p-4", className)}>
+        <p className="text-text-secondary text-center">Join a game session to see players</p>
       </div>
     );
   }
 
-  const connectedPlayers = session.players.filter(p => p.isConnected);
-  const offlinePlayers = session.players.filter(p => !p.isConnected);
+  const connectedPlayers = session.players.filter((p) => p.isConnected);
+  const offlinePlayers = session.players.filter((p) => !p.isConnected);
 
   return (
-    <div className={cn('bg-bg-secondary rounded-lg border border-border-primary', className)}>
+    <div className={cn("bg-bg-secondary rounded-lg border border-border-primary", className)}>
       {/* Header */}
       <div className="p-4 border-b border-border-primary">
         <div className="flex items-center justify-between">
@@ -257,15 +265,12 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
               Players ({session.players.length}/{session.settings.maxPlayers})
             </h3>
           </div>
-          
+
           {/* Session Status */}
           <div className="flex items-center gap-2">
-            <div className={cn(
-              'h-2 w-2 rounded-full',
-              isConnected ? 'bg-success' : 'bg-error'
-            )} />
+            <div className={cn("h-2 w-2 rounded-full", isConnected ? "bg-success" : "bg-error")} />
             <span className="text-xs text-text-secondary">
-              {isConnected ? `${latency}ms` : 'Disconnected'}
+              {isConnected ? `${latency}ms` : "Disconnected"}
             </span>
           </div>
         </div>
@@ -277,9 +282,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
             <span className="text-sm font-medium text-text-primary">
               {session.gamemaster.displayName}
             </span>
-            <span className="text-xs text-text-secondary">
-              Gamemaster
-            </span>
+            <span className="text-xs text-text-secondary">Gamemaster</span>
           </div>
         </div>
       </div>
@@ -314,7 +317,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
             <button
               onClick={() => setShowOfflinePlayers(!showOfflinePlayers)}
               className="w-full text-left"
-              aria-label={showOfflinePlayers ? 'Hide offline players' : 'Show offline players'}
+              aria-label={showOfflinePlayers ? "Hide offline players" : "Show offline players"}
             >
               <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2 hover:text-text-primary transition-colors">
                 <WifiOff className="h-4 w-4 text-error" />
@@ -326,7 +329,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
                 )}
               </h4>
             </button>
-            
+
             {showOfflinePlayers && (
               <div className="space-y-2 opacity-60">
                 {offlinePlayers.map((player) => (
@@ -348,9 +351,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
         {session.players.length === 0 && (
           <div className="text-center py-8">
             <Users className="h-8 w-8 text-text-tertiary mx-auto mb-2" />
-            <p className="text-text-secondary">
-              No players have joined yet
-            </p>
+            <p className="text-text-secondary">No players have joined yet</p>
             {isGM && (
               <p className="text-text-tertiary text-sm mt-1">
                 Share the session link to invite players
@@ -364,11 +365,13 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
       {isGM && (
         <div className="p-4 border-t border-border-primary">
           <div className="flex gap-2">
-            {session.status === 'active' ? (
+            {session.status === "active" ? (
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => { /* pause session */ }}
+                onClick={() => {
+                  /* pause session */
+                }}
               >
                 Pause Session
               </Button>
@@ -376,16 +379,20 @@ export const PlayerPanel = React.memo(function PlayerPanel({ className }: Player
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => { /* resume session */ }}
+                onClick={() => {
+                  /* resume session */
+                }}
               >
                 Resume Session
               </Button>
             )}
-            
+
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => { /* end session */ }}
+              onClick={() => {
+                /* end session */
+              }}
             >
               End Session
             </Button>

@@ -2,20 +2,20 @@
  * Game Session Page - Main game interface with map, chat, and controls
  */
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../providers/AuthProvider';
-import { useGame } from '../providers/GameProvider';
-import { ChatSystem } from '../components/game/ChatSystem';
-import { DiceRoller } from '../components/game/DiceRoller';
-import { PlayerPanel } from '../components/game/PlayerPanel';
-import { BattleMap } from '../components/map/BattleMap';
-import { Button } from '../components/ui/Button';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { cn } from '../lib/utils';
-import { 
-  MessageSquare, 
-  Dice6, 
-  Users, 
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../providers/AuthProvider";
+import { useGame } from "../providers/GameProvider";
+import { ChatSystem } from "../components/game/ChatSystem";
+import { DiceRoller } from "../components/game/DiceRoller";
+import { PlayerPanel } from "../components/game/PlayerPanel";
+import { BattleMap } from "../components/map/BattleMap";
+import { Button } from "../components/ui/Button";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { cn } from "../lib/utils";
+import {
+  MessageSquare,
+  Dice6,
+  Users,
   Map,
   ChevronLeft,
   ChevronRight,
@@ -27,8 +27,8 @@ import {
   WifiOff,
   Menu,
   X,
-  Home
-} from 'lucide-react';
+  Home,
+} from "lucide-react";
 
 interface GameSessionProps {
   sessionId: string;
@@ -38,12 +38,12 @@ interface GameSessionProps {
   };
 }
 
-type PanelType = 'chat' | 'dice' | 'players' | 'map' | null;
+type PanelType = "chat" | "dice" | "players" | "map" | null;
 
 export function GameSession({ sessionId, router }: GameSessionProps) {
-  const { user  } = useAuth();
-  const { session,  joinSession,  leaveSession,  isLoading,  isGM  } = useGame();
-  const [activePanel, setActivePanel] = useState<PanelType>('chat');
+  const { user } = useAuth();
+  const { session, joinSession, leaveSession, isLoading, isGM } = useGame();
+  const [activePanel, setActivePanel] = useState<PanelType>("chat");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -67,15 +67,12 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
     return (
       <div className="min-h-screen bg-bg-primary flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-error mb-4">
-            Session Not Found
-          </h1>
+          <h1 className="text-2xl font-bold text-error mb-4">Session Not Found</h1>
           <p className="text-text-secondary mb-6">
-            The game session "{sessionId}" could not be found or you don't have permission to access it.
+            The game session "{sessionId}" could not be found or you don't have permission to access
+            it.
           </p>
-          <Button onClick={() => router.navigate('/dashboard')}>
-            Return to Dashboard
-          </Button>
+          <Button onClick={() => router.navigate("/dashboard")}>Return to Dashboard</Button>
         </div>
       </div>
     );
@@ -83,7 +80,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
 
   const handleLeaveSession = async () => {
     await leaveSession();
-    router.navigate('/dashboard');
+    router.navigate("/dashboard");
   };
 
   const toggleFullscreen = () => {
@@ -98,20 +95,18 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
 
   const renderActivePanel = () => {
     switch (activePanel) {
-      case 'chat':
+      case "chat":
         return <ChatSystem className="h-full" />;
-      case 'dice':
+      case "dice":
         return <DiceRoller className="h-full" />;
-      case 'players':
+      case "players":
         return <PlayerPanel className="h-full" />;
-      case 'map':
+      case "map":
         return (
           <div className="h-full bg-bg-secondary rounded-lg border border-border-primary flex items-center justify-center">
             <div className="text-center">
               <Map className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-text-primary mb-2">
-                Tactical Map
-              </h3>
+              <h3 className="text-lg font-medium text-text-primary mb-2">Tactical Map</h3>
               <p className="text-text-secondary">
                 Map and grid system will be implemented in the next phase
               </p>
@@ -134,14 +129,12 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             leftIcon={sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           >
-            {sidebarCollapsed ? 'Show' : 'Hide'} Panels
+            {sidebarCollapsed ? "Show" : "Hide"} Panels
           </Button>
-          
+
           <div>
             <h1 className="font-semibold text-text-primary">{session.name}</h1>
-            <p className="text-sm text-text-secondary">
-              GM: {session.gamemaster.displayName}
-            </p>
+            <p className="text-sm text-text-secondary">GM: {session.gamemaster.displayName}</p>
           </div>
         </div>
 
@@ -150,19 +143,17 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
             variant="ghost"
             size="sm"
             onClick={toggleFullscreen}
-            leftIcon={isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            leftIcon={
+              isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />
+            }
           >
-            {isFullscreen ? 'Exit' : 'Fullscreen'}
+            {isFullscreen ? "Exit" : "Fullscreen"}
           </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<Settings className="h-4 w-4" />}
-          >
+
+          <Button variant="ghost" size="sm" leftIcon={<Settings className="h-4 w-4" />}>
             Settings
           </Button>
-          
+
           <Button
             variant="secondary"
             size="sm"
@@ -182,19 +173,19 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
             <div className="border-b border-border-primary">
               <div className="flex">
                 {[
-                  { key: 'chat', label: 'Chat', icon: MessageSquare },
-                  { key: 'dice', label: 'Dice', icon: Dice6 },
-                  { key: 'players', label: 'Players', icon: Users },
-                  { key: 'map', label: 'Map', icon: Map }
+                  { key: "chat", label: "Chat", icon: MessageSquare },
+                  { key: "dice", label: "Dice", icon: Dice6 },
+                  { key: "players", label: "Players", icon: Users },
+                  { key: "map", label: "Map", icon: Map },
                 ].map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
                     onClick={() => setActivePanel(key as PanelType)}
                     className={cn(
-                      'flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors border-b-2',
+                      "flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors border-b-2",
                       activePanel === key
-                        ? 'text-accent-primary border-accent-primary bg-accent-light'
-                        : 'text-text-secondary border-transparent hover:text-text-primary hover:bg-bg-tertiary'
+                        ? "text-accent-primary border-accent-primary bg-accent-light"
+                        : "text-text-secondary border-transparent hover:text-text-primary hover:bg-bg-tertiary",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -205,9 +196,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
             </div>
 
             {/* Panel Content */}
-            <div className="flex-1 overflow-hidden">
-              {renderActivePanel()}
-            </div>
+            <div className="flex-1 overflow-hidden">{renderActivePanel()}</div>
           </aside>
         )}
 
@@ -215,11 +204,8 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content Area - Map/Tactical View */}
           <div className="flex-1 bg-bg-primary relative">
-            {activePanel === 'map' ? (
-              <BattleMap 
-                className="h-full" 
-                isGM={isGM} 
-              />
+            {activePanel === "map" ? (
+              <BattleMap className="h-full" isGM={isGM} />
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center">
@@ -234,7 +220,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                   </p>
                   <Button
                     variant="primary"
-                    onClick={() => setActivePanel('map')}
+                    onClick={() => setActivePanel("map")}
                     leftIcon={<Map className="h-4 w-4" />}
                   >
                     Open Battle Map
@@ -250,7 +236,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                     variant="primary"
                     onClick={() => {
                       setSidebarCollapsed(false);
-                      setActivePanel('chat');
+                      setActivePanel("chat");
                     }}
                     leftIcon={<MessageSquare className="h-4 w-4" />}
                   >
@@ -260,7 +246,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                     variant="secondary"
                     onClick={() => {
                       setSidebarCollapsed(false);
-                      setActivePanel('dice');
+                      setActivePanel("dice");
                     }}
                     leftIcon={<Dice6 className="h-4 w-4" />}
                   >
@@ -279,12 +265,13 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                   Session: <span className="text-text-primary">{session.status}</span>
                 </span>
                 <span className="text-text-secondary">
-                  Players: <span className="text-text-primary">
-                    {session.players.filter(p => p.isConnected).length}/{session.players.length}
+                  Players:{" "}
+                  <span className="text-text-primary">
+                    {session.players.filter((p) => p.isConnected).length}/{session.players.length}
                   </span>
                 </span>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 {user && (
                   <span className="text-text-secondary">

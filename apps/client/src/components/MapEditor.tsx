@@ -2,10 +2,10 @@
  * Interactive Map Editor with drawing tools for VTT
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { logger } from '@vtt/logging';
-import AccessibleButton from './AccessibleButton';
-import AccessibleImage from './AccessibleImage';
+import React, { useState, useRef, useEffect } from "react";
+import { logger } from "@vtt/logging";
+import AccessibleButton from "./AccessibleButton";
+import AccessibleImage from "./AccessibleImage";
 
 // Temporarily using any types until renderer package is available
 type Canvas2DRenderer = any;
@@ -14,7 +14,17 @@ type MapLayer = any;
 type Token = any;
 
 export interface DrawingTool {
-  type: 'select' | 'pen' | 'brush' | 'line' | 'rectangle' | 'circle' | 'text' | 'token' | 'wall' | 'door';
+  type:
+    | "select"
+    | "pen"
+    | "brush"
+    | "line"
+    | "rectangle"
+    | "circle"
+    | "text"
+    | "token"
+    | "wall"
+    | "door";
   size: number;
   color: string;
   opacity: number;
@@ -40,30 +50,32 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   onTokenChange,
   readOnly = false,
   initialLayers = [],
-  initialTokens = []
+  initialTokens = [],
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<Canvas2DRenderer | null>(null);
   const [currentTool, setCurrentTool] = useState<DrawingTool>({
-    type: 'select',
+    type: "select",
     size: 5,
-    color: '#000000',
-    opacity: 1
+    color: "#000000",
+    opacity: 1,
   });
-  
+
   const [layers, setLayers] = useState<MapLayer[]>(initialLayers);
   const [paths, setPaths] = useState<DrawingPath[]>([]);
   const [tokens, setTokens] = useState<Token[]>(initialTokens);
-  const [activeTool, setActiveTool] = useState<'select' | 'brush' | 'eraser' | 'token'>('select');
+  const [activeTool, setActiveTool] = useState<"select" | "brush" | "eraser" | "token">("select");
   const [brushSize, setBrushSize] = useState(10);
-  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiPrompt, setAiPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<Array<{uri: string; width: number; height: number}>>([]);
+  const [generatedImages, setGeneratedImages] = useState<
+    Array<{ uri: string; width: number; height: number }>
+  >([]);
   const [showGrid, setShowGrid] = useState(true);
   const [gridConfig, setGridConfig] = useState<GridConfig>({
     size: 50,
-    color: '#cccccc',
-    opacity: 0.5
+    color: "#cccccc",
+    opacity: 0.5,
   });
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<DrawingPath | null>(null);
@@ -80,12 +92,12 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         render: () => {},
         setLayers: () => {},
         setTokens: () => {},
-        destroy: () => {}
+        destroy: () => {},
       };
       rendererRef.current = mockRenderer;
-      logger.info('Map editor renderer initialized');
+      logger.info("Map editor renderer initialized");
     } catch (error) {
-      logger.error('Failed to initialize map editor renderer:', error);
+      logger.error("Failed to initialize map editor renderer:", error);
     }
 
     return () => {
@@ -97,7 +109,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
 
   // Handle canvas drawing
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (readOnly || activeTool === 'select') return;
+    if (readOnly || activeTool === "select") return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -111,7 +123,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
       id: `path-${Date.now()}`,
       tool: currentTool,
       points: [{ x, y }],
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
     setCurrentPath(newPath);
   };
@@ -126,17 +138,21 @@ export const MapEditor: React.FC<MapEditorProps> = ({
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setCurrentPath(prev => prev ? {
-      ...prev,
-      points: [...prev.points, { x, y }]
-    } : null);
+    setCurrentPath((prev) =>
+      prev
+        ? {
+            ...prev,
+            points: [...prev.points, { x, y }],
+          }
+        : null,
+    );
   };
 
   const handleMouseUp = () => {
     if (!isDrawing || !currentPath) return;
 
     setIsDrawing(false);
-    setPaths(prev => [...prev, currentPath]);
+    setPaths((prev) => [...prev, currentPath]);
     setCurrentPath(null);
 
     // Notify parent of changes
@@ -145,13 +161,13 @@ export const MapEditor: React.FC<MapEditorProps> = ({
     }
   };
 
-  const handleToolChange = (tool: 'select' | 'brush' | 'eraser' | 'token') => {
+  const handleToolChange = (tool: "select" | "brush" | "eraser" | "token") => {
     setActiveTool(tool);
     setCurrentTool({
-      type: tool === 'brush' ? 'brush' : tool === 'eraser' ? 'pen' : 'select',
+      type: tool === "brush" ? "brush" : tool === "eraser" ? "pen" : "select",
       size: brushSize,
-      color: tool === 'eraser' ? '#ffffff' : '#000000',
-      opacity: 1
+      color: tool === "eraser" ? "#ffffff" : "#000000",
+      opacity: 1,
     });
   };
 
@@ -161,18 +177,18 @@ export const MapEditor: React.FC<MapEditorProps> = ({
     setIsGenerating(true);
     try {
       // Mock AI generation - replace with actual AI service call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       const mockImage = {
-        uri: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkdlbmVyYXRlZCBNYXA8L3RleHQ+PC9zdmc+',
+        uri: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkdlbmVyYXRlZCBNYXA8L3RleHQ+PC9zdmc+",
         width: 400,
-        height: 300
+        height: 300,
       };
-      
+
       setGeneratedImages([mockImage]);
-      logger.info('AI map generation completed');
+      logger.info("AI map generation completed");
     } catch (error) {
-      logger.error('AI map generation failed:', error);
+      logger.error("AI map generation failed:", error);
     } finally {
       setIsGenerating(false);
     }
@@ -183,35 +199,35 @@ export const MapEditor: React.FC<MapEditorProps> = ({
       {/* Toolbar */}
       <div className="map-toolbar" role="toolbar" aria-label="Map editing tools">
         <AccessibleButton
-          variant={activeTool === 'select' ? 'primary' : 'secondary'}
-          onClick={() => handleToolChange('select')}
+          variant={activeTool === "select" ? "primary" : "secondary"}
+          onClick={() => handleToolChange("select")}
           disabled={readOnly}
           action="select"
         >
           Select
         </AccessibleButton>
-        
+
         <AccessibleButton
-          variant={activeTool === 'brush' ? 'primary' : 'secondary'}
-          onClick={() => handleToolChange('brush')}
+          variant={activeTool === "brush" ? "primary" : "secondary"}
+          onClick={() => handleToolChange("brush")}
           disabled={readOnly}
           action="draw"
         >
           Brush
         </AccessibleButton>
-        
+
         <AccessibleButton
-          variant={activeTool === 'eraser' ? 'primary' : 'secondary'}
-          onClick={() => handleToolChange('eraser')}
+          variant={activeTool === "eraser" ? "primary" : "secondary"}
+          onClick={() => handleToolChange("eraser")}
           disabled={readOnly}
           action="erase"
         >
           Eraser
         </AccessibleButton>
-        
+
         <AccessibleButton
-          variant={activeTool === 'token' ? 'primary' : 'secondary'}
-          onClick={() => handleToolChange('token')}
+          variant={activeTool === "token" ? "primary" : "secondary"}
+          onClick={() => handleToolChange("token")}
           disabled={readOnly}
           action="place"
         >
@@ -236,11 +252,11 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         <AccessibleButton
           variant="secondary"
           onClick={() => setShowGrid(!showGrid)}
-          aria-label={showGrid ? 'Hide grid' : 'Show grid'}
+          aria-label={showGrid ? "Hide grid" : "Show grid"}
           aria-pressed={showGrid}
           action="toggle"
         >
-          {showGrid ? 'Hide Grid' : 'Show Grid'}
+          {showGrid ? "Hide Grid" : "Show Grid"}
         </AccessibleButton>
       </div>
 
@@ -264,7 +280,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
             disabled={readOnly || !aiPrompt.trim()}
             action="generate"
           >
-            {isGenerating ? 'Generating...' : 'Generate'}
+            {isGenerating ? "Generating..." : "Generate"}
           </AccessibleButton>
         </div>
 
@@ -278,7 +294,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
                 context={{
                   name: `Generated map ${index + 1}`,
                   description: aiPrompt,
-                  index: index + 1
+                  index: index + 1,
                 }}
                 width={image.width}
                 height={image.height}
@@ -308,11 +324,8 @@ export const MapEditor: React.FC<MapEditorProps> = ({
 
       {/* Status */}
       <div className="map-status" role="status" aria-live="polite">
-        Active Tool: {activeTool} | 
-        Brush Size: {brushSize}px | 
-        Grid: {showGrid ? 'On' : 'Off'} | 
-        Layers: {layers.length} | 
-        Tokens: {tokens.length}
+        Active Tool: {activeTool} | Brush Size: {brushSize}px | Grid: {showGrid ? "On" : "Off"} |
+        Layers: {layers.length} | Tokens: {tokens.length}
       </div>
     </div>
   );

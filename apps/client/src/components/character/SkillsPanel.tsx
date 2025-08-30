@@ -2,12 +2,12 @@
  * Skills Panel Component - Display and manage character skills and proficiencies
  */
 
-import React, { useState, memo } from 'react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { cn } from '../../lib/utils';
-import { Search, Star, Circle } from 'lucide-react';
-import type { Character } from './CharacterSheet';
+import React, { useState, memo } from "react";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { cn } from "../../lib/utils";
+import { Search, Star, Circle } from "lucide-react";
+import type { Character } from "./CharacterSheet";
 
 interface SkillsPanelProps {
   character: Character;
@@ -17,29 +17,45 @@ interface SkillsPanelProps {
 
 // D&D 5e Skills with their associated ability scores
 const SKILLS_DATA = {
-  'Acrobatics': { ability: 'dexterity', description: 'Stay on your feet in difficult situations' },
-  'Animal Handling': { ability: 'wisdom', description: 'Calm down a domesticated animal' },
-  'Arcana': { ability: 'intelligence', description: 'Recall lore about spells, magic items, symbols' },
-  'Athletics': { ability: 'strength', description: 'Climb, jump, or swim in difficult circumstances' },
-  'Deception': { ability: 'charisma', description: 'Hide the truth convincingly' },
-  'History': { ability: 'intelligence', description: 'Recall lore about historical events' },
-  'Insight': { ability: 'wisdom', description: 'Determine true intentions of a creature' },
-  'Intimidation': { ability: 'charisma', description: 'Influence someone through threats' },
-  'Investigation': { ability: 'intelligence', description: 'Look around for clues and make deductions' },
-  'Medicine': { ability: 'wisdom', description: 'Stabilize dying companion or diagnose illness' },
-  'Nature': { ability: 'intelligence', description: 'Recall lore about terrain, plants, animals' },
-  'Perception': { ability: 'wisdom', description: 'Notice something with one of your senses' },
-  'Performance': { ability: 'charisma', description: 'Delight an audience with music, dance, or acting' },
-  'Persuasion': { ability: 'charisma', description: 'Influence someone in good faith' },
-  'Religion': { ability: 'intelligence', description: 'Recall lore about deities, rites, prayers' },
-  'Sleight of Hand': { ability: 'dexterity', description: 'Pick a pocket or perform a trick' },
-  'Stealth': { ability: 'dexterity', description: 'Conceal yourself from enemies' },
-  'Survival': { ability: 'wisdom', description: 'Follow tracks, hunt, guide others, avoid hazards' }
+  Acrobatics: { ability: "dexterity", description: "Stay on your feet in difficult situations" },
+  "Animal Handling": { ability: "wisdom", description: "Calm down a domesticated animal" },
+  Arcana: {
+    ability: "intelligence",
+    description: "Recall lore about spells, magic items, symbols",
+  },
+  Athletics: {
+    ability: "strength",
+    description: "Climb, jump, or swim in difficult circumstances",
+  },
+  Deception: { ability: "charisma", description: "Hide the truth convincingly" },
+  History: { ability: "intelligence", description: "Recall lore about historical events" },
+  Insight: { ability: "wisdom", description: "Determine true intentions of a creature" },
+  Intimidation: { ability: "charisma", description: "Influence someone through threats" },
+  Investigation: {
+    ability: "intelligence",
+    description: "Look around for clues and make deductions",
+  },
+  Medicine: { ability: "wisdom", description: "Stabilize dying companion or diagnose illness" },
+  Nature: { ability: "intelligence", description: "Recall lore about terrain, plants, animals" },
+  Perception: { ability: "wisdom", description: "Notice something with one of your senses" },
+  Performance: {
+    ability: "charisma",
+    description: "Delight an audience with music, dance, or acting",
+  },
+  Persuasion: { ability: "charisma", description: "Influence someone in good faith" },
+  Religion: { ability: "intelligence", description: "Recall lore about deities, rites, prayers" },
+  "Sleight of Hand": { ability: "dexterity", description: "Pick a pocket or perform a trick" },
+  Stealth: { ability: "dexterity", description: "Conceal yourself from enemies" },
+  Survival: { ability: "wisdom", description: "Follow tracks, hunt, guide others, avoid hazards" },
 } as const;
 
-export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onUpdate }: SkillsPanelProps): JSX.Element {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterBy, setFilterBy] = useState<'all' | 'proficient' | 'expertise'>('all');
+export const SkillsPanel = memo(function SkillsPanel({
+  character,
+  isEditing,
+  onUpdate,
+}: SkillsPanelProps): JSX.Element {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterBy, setFilterBy] = useState<"all" | "proficient" | "expertise">("all");
 
   const getModifier = (score: number): number => {
     return Math.floor((score - 10) / 2);
@@ -53,10 +69,10 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
     const skillData = SKILLS_DATA[skillName as keyof typeof SKILLS_DATA];
     if (!skillData) return 0;
 
-    const abilityScore = character.abilities[skillData.ability as keyof Character['abilities']];
+    const abilityScore = character.abilities[skillData.ability as keyof Character["abilities"]];
     const baseModifier = getModifier(abilityScore);
     const skill = character.skills[skillName];
-    
+
     if (!skill) return baseModifier;
 
     let modifier = baseModifier;
@@ -71,22 +87,30 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
   };
 
   const toggleSkillProficiency = (skillName: string) => {
-    const currentSkill = character.skills[skillName] || { proficient: false, expertise: false, value: 0 };
+    const currentSkill = character.skills[skillName] || {
+      proficient: false,
+      expertise: false,
+      value: 0,
+    };
     const newSkills = {
       ...character.skills,
       [skillName]: {
         ...currentSkill,
         proficient: !currentSkill.proficient,
         expertise: currentSkill.proficient ? false : currentSkill.expertise, // Remove expertise if removing proficiency
-        value: getSkillModifier(skillName)
-      }
+        value: getSkillModifier(skillName),
+      },
     };
 
     onUpdate({ skills: newSkills });
   };
 
   const toggleSkillExpertise = (skillName: string) => {
-    const currentSkill = character.skills[skillName] || { proficient: false, expertise: false, value: 0 };
+    const currentSkill = character.skills[skillName] || {
+      proficient: false,
+      expertise: false,
+      value: 0,
+    };
     if (!currentSkill.proficient) return; // Can't have expertise without proficiency
 
     const newSkills = {
@@ -94,8 +118,8 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
       [skillName]: {
         ...currentSkill,
         expertise: !currentSkill.expertise,
-        value: getSkillModifier(skillName)
-      }
+        value: getSkillModifier(skillName),
+      },
     };
 
     onUpdate({ skills: newSkills });
@@ -103,17 +127,17 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
 
   const filteredSkills = Object.entries(SKILLS_DATA).filter(([skillName]) => {
     const skill = character.skills[skillName];
-    
+
     // Filter by search term
     if (searchTerm && !skillName.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
 
     // Filter by proficiency status
-    if (filterBy === 'proficient' && (!skill || !skill.proficient)) {
+    if (filterBy === "proficient" && (!skill || !skill.proficient)) {
       return false;
     }
-    if (filterBy === 'expertise' && (!skill || !skill.expertise)) {
+    if (filterBy === "expertise" && (!skill || !skill.expertise)) {
       return false;
     }
 
@@ -122,12 +146,12 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
 
   const getAbilityShortName = (ability: string): string => {
     const map: Record<string, string> = {
-      strength: 'STR',
-      dexterity: 'DEX',
-      constitution: 'CON',
-      intelligence: 'INT',
-      wisdom: 'WIS',
-      charisma: 'CHA'
+      strength: "STR",
+      dexterity: "DEX",
+      constitution: "CON",
+      intelligence: "INT",
+      wisdom: "WIS",
+      charisma: "CHA",
     };
     return map[ability] || ability.toUpperCase();
   };
@@ -145,16 +169,16 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
             className="pl-9"
           />
         </div>
-        
+
         <div className="flex gap-2">
           {[
-            { key: 'all', label: 'All Skills' },
-            { key: 'proficient', label: 'Proficient' },
-            { key: 'expertise', label: 'Expertise' }
+            { key: "all", label: "All Skills" },
+            { key: "proficient", label: "Proficient" },
+            { key: "expertise", label: "Expertise" },
           ].map(({ key, label }) => (
             <Button
               key={key}
-              variant={filterBy === key ? 'primary' : 'ghost'}
+              variant={filterBy === key ? "primary" : "ghost"}
               size="sm"
               onClick={() => setFilterBy(key as any)}
             >
@@ -185,7 +209,11 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
       {/* Skills List */}
       <div className="space-y-2">
         {filteredSkills.map(([skillName, skillData]) => {
-          const skill = character.skills[skillName] || { proficient: false, expertise: false, value: 0 };
+          const skill = character.skills[skillName] || {
+            proficient: false,
+            expertise: false,
+            value: 0,
+          };
           const modifier = getSkillModifier(skillName);
           const abilityName = getAbilityShortName(skillData.ability);
 
@@ -202,32 +230,28 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
                       onClick={() => toggleSkillProficiency(skillName)}
                       disabled={!isEditing}
                       className={cn(
-                        'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors',
+                        "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors",
                         skill.proficient
-                          ? 'bg-accent-primary border-accent-primary'
-                          : 'border-border-primary hover:border-accent-primary',
-                        isEditing && 'cursor-pointer',
-                        !isEditing && 'cursor-default'
+                          ? "bg-accent-primary border-accent-primary"
+                          : "border-border-primary hover:border-accent-primary",
+                        isEditing && "cursor-pointer",
+                        !isEditing && "cursor-default",
                       )}
                     >
-                      {skill.proficient && (
-                        <div className="w-2 h-2 bg-white rounded-full" />
-                      )}
+                      {skill.proficient && <div className="w-2 h-2 bg-white rounded-full" />}
                     </button>
 
                     <button
                       onClick={() => toggleSkillExpertise(skillName)}
                       disabled={!isEditing || !skill.proficient}
                       className={cn(
-                        'w-5 h-5 transition-colors',
-                        skill.expertise
-                          ? 'text-warning'
-                          : 'text-text-tertiary hover:text-warning',
-                        (!isEditing || !skill.proficient) && 'cursor-default opacity-50',
-                        isEditing && skill.proficient && 'cursor-pointer'
+                        "w-5 h-5 transition-colors",
+                        skill.expertise ? "text-warning" : "text-text-tertiary hover:text-warning",
+                        (!isEditing || !skill.proficient) && "cursor-default opacity-50",
+                        isEditing && skill.proficient && "cursor-pointer",
                       )}
                     >
-                      <Star className={cn('h-4 w-4', skill.expertise && 'fill-current')} />
+                      <Star className={cn("h-4 w-4", skill.expertise && "fill-current")} />
                     </button>
                   </div>
 
@@ -249,7 +273,7 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
                     </div>
                     {skill.proficient && (
                       <div className="text-xs text-accent-primary">
-                        {skill.expertise ? 'Expertise' : 'Proficient'}
+                        {skill.expertise ? "Expertise" : "Proficient"}
                       </div>
                     )}
                   </div>
@@ -263,16 +287,13 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
       {filteredSkills.length === 0 && (
         <div className="text-center py-8">
           <Circle className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">
-            No Skills Found
-          </h3>
+          <h3 className="text-lg font-medium text-text-primary mb-2">No Skills Found</h3>
           <p className="text-text-secondary">
-            {searchTerm 
+            {searchTerm
               ? `No skills match "${searchTerm}"`
-              : filterBy === 'proficient'
-              ? 'No proficient skills found'
-              : 'No skills with expertise found'
-            }
+              : filterBy === "proficient"
+                ? "No proficient skills found"
+                : "No skills with expertise found"}
           </p>
         </div>
       )}
@@ -283,13 +304,13 @@ export const SkillsPanel = memo(function SkillsPanel({ character, isEditing, onU
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-2xl font-bold text-text-primary">
-              {Object.values(character.skills).filter(skill => skill.proficient).length}
+              {Object.values(character.skills).filter((skill) => skill.proficient).length}
             </div>
             <div className="text-sm text-text-secondary">Proficient</div>
           </div>
           <div>
             <div className="text-2xl font-bold text-warning">
-              {Object.values(character.skills).filter(skill => skill.expertise).length}
+              {Object.values(character.skills).filter((skill) => skill.expertise).length}
             </div>
             <div className="text-sm text-text-secondary">Expertise</div>
           </div>

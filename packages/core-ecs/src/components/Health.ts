@@ -26,7 +26,7 @@ export class HealthStore {
 
   add(entity: number, data: HealthData): void {
     if (this.count >= this.capacity) {
-      throw new Error('HealthStore capacity exceeded');
+      throw new Error("HealthStore capacity exceeded");
     }
 
     const index = this.count++;

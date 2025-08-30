@@ -2,20 +2,20 @@
  * Comprehensive billing and subscription management with Stripe integration
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import type { Buffer } from 'node:buffer';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import type { Buffer } from "node:buffer";
 
-import Stripe from 'stripe';
-import { UserManager, User } from './UserManager';
+import Stripe from "stripe";
+import { UserManager, User } from "./UserManager";
 
 export interface SubscriptionPlan {
   id: string;
   name: string;
-  tier: 'free' | 'basic' | 'premium' | 'enterprise';
+  tier: "free" | "basic" | "premium" | "enterprise";
   price: number;
   currency: string;
-  interval: 'month' | 'year';
+  interval: "month" | "year";
   features: string[];
   limits: {
     maxCampaigns: number;
@@ -36,7 +36,7 @@ export interface Subscription {
   planId: string;
   stripeSubscriptionId: string;
   stripeCustomerId: string;
-  status: 'active' | 'cancelled' | 'past_due' | 'trialing' | 'incomplete' | 'unpaid';
+  status: "active" | "cancelled" | "past_due" | "trialing" | "incomplete" | "unpaid";
   currentPeriodStart: Date;
   currentPeriodEnd: Date;
   cancelAtPeriodEnd: boolean;
@@ -54,7 +54,7 @@ export interface Invoice {
   stripeInvoiceId: string;
   amount: number;
   currency: string;
-  status: 'draft' | 'open' | 'paid' | 'uncollectible' | 'void';
+  status: "draft" | "open" | "paid" | "uncollectible" | "void";
   paidAt?: Date;
   dueDate: Date;
   periodStart: Date;
@@ -67,7 +67,7 @@ export interface PaymentMethod {
   id: string;
   userId: string;
   stripePaymentMethodId: string;
-  type: 'card' | 'bank_account' | 'sepa_debit';
+  type: "card" | "bank_account" | "sepa_debit";
   brand?: string;
   last4?: string;
   expiryMonth?: number;
@@ -80,7 +80,7 @@ export interface UsageRecord {
   id: string;
   userId: string;
   subscriptionId: string;
-  metric: 'storage' | 'campaigns' | 'players' | 'assets';
+  metric: "storage" | "campaigns" | "players" | "assets";
   quantity: number;
   timestamp: Date;
   period: string; // YYYY-MM format
@@ -119,7 +119,7 @@ export class BillingManager extends EventEmitter {
     this.config = config;
     this.userManager = userManager;
     this.stripe = new Stripe(config.stripe.secretKey, {
-      apiVersion: '2023-10-16'
+      apiVersion: "2023-10-16",
     });
   }
 
@@ -127,25 +127,27 @@ export class BillingManager extends EventEmitter {
   async createStripeCustomer(user: User): Promise<string> {
     const customer = await this.stripe.customers.create({
       email: user.email,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username,
+      name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username,
       metadata: {
         userId: user.id,
-        username: user.username
-      }
+        username: user.username,
+      },
     });
 
-    this.emit('customerCreated', user, customer);
+    this.emit("customerCreated", user, customer);
     return customer.id;
   }
 
   async getOrCreateStripeCustomer(userId: string): Promise<string> {
     const user = this.userManager.getUser(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Check if user already has a customer ID in their subscription
-    const userSubscription = Array.from(this.subscriptions.values()).find(s => s.userId === userId);
+    const userSubscription = Array.from(this.subscriptions.values()).find(
+      (s) => s.userId === userId,
+    );
     if (userSubscription) {
       return userSubscription.stripeCustomerId;
     }
@@ -159,16 +161,16 @@ export class BillingManager extends EventEmitter {
     userId: string,
     planId: string,
     paymentMethodId?: string,
-    couponId?: string
+    couponId?: string,
   ): Promise<Subscription> {
     const user = this.userManager.getUser(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
-    const plan = this.config.plans.find(p => p.id === planId);
+    const plan = this.config.plans.find((p) => p.id === planId);
     if (!plan) {
-      throw new Error('Plan not found');
+      throw new Error("Plan not found");
     }
 
     const customerId = await this.getOrCreateStripeCustomer(userId);
@@ -176,28 +178,30 @@ export class BillingManager extends EventEmitter {
     // Attach payment method if provided
     if (paymentMethodId) {
       await this.stripe.paymentMethods.attach(paymentMethodId, {
-        customer: customerId
+        customer: customerId,
       });
 
       // Set as default payment method
       await this.stripe.customers.update(customerId, {
         invoice_settings: {
-          default_payment_method: paymentMethodId
-        }
+          default_payment_method: paymentMethodId,
+        },
       });
     }
 
     const subscriptionData: Stripe.SubscriptionCreateParams = {
       customer: customerId,
-      items: [{
-        price: plan.stripePriceId
-      }],
+      items: [
+        {
+          price: plan.stripePriceId,
+        },
+      ],
       trial_period_days: this.config.trialPeriodDays,
-      collection_method: 'charge_automatically',
+      collection_method: "charge_automatically",
       metadata: {
         userId,
-        planId
-      }
+        planId,
+      },
     };
 
     if (couponId) {
@@ -212,14 +216,18 @@ export class BillingManager extends EventEmitter {
       planId,
       stripeSubscriptionId: stripeSubscription.id,
       stripeCustomerId: customerId,
-      status: stripeSubscription.status as Subscription['status'],
+      status: stripeSubscription.status as Subscription["status"],
       currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
       currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
       cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-      trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : undefined,
-      trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : undefined,
+      trialStart: stripeSubscription.trial_start
+        ? new Date(stripeSubscription.trial_start * 1000)
+        : undefined,
+      trialEnd: stripeSubscription.trial_end
+        ? new Date(stripeSubscription.trial_end * 1000)
+        : undefined,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     this.subscriptions.set(subscription.id, subscription);
@@ -229,33 +237,37 @@ export class BillingManager extends EventEmitter {
       userId,
       plan.tier,
       subscription.id,
-      subscription.currentPeriodEnd
+      subscription.currentPeriodEnd,
     );
 
-    this.emit('subscriptionCreated', subscription, user);
+    this.emit("subscriptionCreated", subscription, user);
     return subscription;
   }
 
   async updateSubscription(subscriptionId: string, newPlanId: string): Promise<Subscription> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
-      throw new Error('Subscription not found');
+      throw new Error("Subscription not found");
     }
 
-    const newPlan = this.config.plans.find(p => p.id === newPlanId);
+    const newPlan = this.config.plans.find((p) => p.id === newPlanId);
     if (!newPlan) {
-      throw new Error('Plan not found');
+      throw new Error("Plan not found");
     }
 
     // Update Stripe subscription
-    const stripeSubscription = await this.stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
-    
+    const stripeSubscription = await this.stripe.subscriptions.retrieve(
+      subscription.stripeSubscriptionId,
+    );
+
     await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-      items: [{
-        id: stripeSubscription.items.data[0].id,
-        price: newPlan.stripePriceId
-      }],
-      proration_behavior: 'create_prorations'
+      items: [
+        {
+          id: stripeSubscription.items.data[0].id,
+          price: newPlan.stripePriceId,
+        },
+      ],
+      proration_behavior: "create_prorations",
     });
 
     // Update local subscription
@@ -267,56 +279,59 @@ export class BillingManager extends EventEmitter {
       subscription.userId,
       newPlan.tier,
       subscription.id,
-      subscription.currentPeriodEnd
+      subscription.currentPeriodEnd,
     );
 
-    this.emit('subscriptionUpdated', subscription);
+    this.emit("subscriptionUpdated", subscription);
     return subscription;
   }
 
-  async cancelSubscription(subscriptionId: string, immediately: boolean = false): Promise<Subscription> {
+  async cancelSubscription(
+    subscriptionId: string,
+    immediately: boolean = false,
+  ): Promise<Subscription> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
-      throw new Error('Subscription not found');
+      throw new Error("Subscription not found");
     }
 
     if (immediately) {
       await this.stripe.subscriptions.cancel(subscription.stripeSubscriptionId);
-      subscription.status = 'cancelled';
+      subscription.status = "cancelled";
       subscription.cancelledAt = new Date();
     } else {
       await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-        cancel_at_period_end: true
+        cancel_at_period_end: true,
       });
       subscription.cancelAtPeriodEnd = true;
     }
 
     subscription.updatedAt = new Date();
 
-    this.emit('subscriptionCancelled', subscription, immediately);
+    this.emit("subscriptionCancelled", subscription, immediately);
     return subscription;
   }
 
   async reactivateSubscription(subscriptionId: string): Promise<Subscription> {
     const subscription = this.subscriptions.get(subscriptionId);
     if (!subscription) {
-      throw new Error('Subscription not found');
+      throw new Error("Subscription not found");
     }
 
-    if (subscription.status !== 'cancelled' && !subscription.cancelAtPeriodEnd) {
-      throw new Error('Subscription is not cancelled');
+    if (subscription.status !== "cancelled" && !subscription.cancelAtPeriodEnd) {
+      throw new Error("Subscription is not cancelled");
     }
 
     // Reactivate in Stripe
     await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
-      cancel_at_period_end: false
+      cancel_at_period_end: false,
     });
 
     subscription.cancelAtPeriodEnd = false;
     subscription.cancelledAt = undefined;
     subscription.updatedAt = new Date();
 
-    this.emit('subscriptionReactivated', subscription);
+    this.emit("subscriptionReactivated", subscription);
     return subscription;
   }
 
@@ -326,18 +341,20 @@ export class BillingManager extends EventEmitter {
 
     // Attach payment method to customer
     const stripePaymentMethod = await this.stripe.paymentMethods.attach(paymentMethodId, {
-      customer: customerId
+      customer: customerId,
     });
 
     // Check if this should be the default payment method
-    const existingMethods = Array.from(this.paymentMethods.values()).filter(pm => pm.userId === userId);
+    const existingMethods = Array.from(this.paymentMethods.values()).filter(
+      (pm) => pm.userId === userId,
+    );
     const isDefault = existingMethods.length === 0;
 
     if (isDefault) {
       await this.stripe.customers.update(customerId, {
         invoice_settings: {
-          default_payment_method: paymentMethodId
-        }
+          default_payment_method: paymentMethodId,
+        },
       });
     }
 
@@ -345,35 +362,35 @@ export class BillingManager extends EventEmitter {
       id: this.generateId(),
       userId,
       stripePaymentMethodId: paymentMethodId,
-      type: stripePaymentMethod.type as PaymentMethod['type'],
+      type: stripePaymentMethod.type as PaymentMethod["type"],
       brand: stripePaymentMethod.card?.brand,
       last4: stripePaymentMethod.card?.last4,
       expiryMonth: stripePaymentMethod.card?.exp_month,
       expiryYear: stripePaymentMethod.card?.exp_year,
       isDefault,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     this.paymentMethods.set(paymentMethod.id, paymentMethod);
-    this.emit('paymentMethodAdded', paymentMethod);
+    this.emit("paymentMethodAdded", paymentMethod);
 
     return paymentMethod;
   }
 
   async removePaymentMethod(paymentMethodId: string): Promise<void> {
     const paymentMethod = Array.from(this.paymentMethods.values()).find(
-      pm => pm.stripePaymentMethodId === paymentMethodId
+      (pm) => pm.stripePaymentMethodId === paymentMethodId,
     );
 
     if (!paymentMethod) {
-      throw new Error('Payment method not found');
+      throw new Error("Payment method not found");
     }
 
     // Detach from Stripe
     await this.stripe.paymentMethods.detach(paymentMethodId);
 
     this.paymentMethods.delete(paymentMethod.id);
-    this.emit('paymentMethodRemoved', paymentMethod);
+    this.emit("paymentMethodRemoved", paymentMethod);
   }
 
   async setDefaultPaymentMethod(userId: string, paymentMethodId: string): Promise<void> {
@@ -382,24 +399,26 @@ export class BillingManager extends EventEmitter {
     // Update in Stripe
     await this.stripe.customers.update(customerId, {
       invoice_settings: {
-        default_payment_method: paymentMethodId
-      }
+        default_payment_method: paymentMethodId,
+      },
     });
 
     // Update local records
-    const userPaymentMethods = Array.from(this.paymentMethods.values()).filter(pm => pm.userId === userId);
-    
+    const userPaymentMethods = Array.from(this.paymentMethods.values()).filter(
+      (pm) => pm.userId === userId,
+    );
+
     for (const pm of userPaymentMethods) {
       pm.isDefault = pm.stripePaymentMethodId === paymentMethodId;
     }
 
-    this.emit('defaultPaymentMethodChanged', userId, paymentMethodId);
+    this.emit("defaultPaymentMethodChanged", userId, paymentMethodId);
   }
 
   // Invoice management
   async getInvoices(userId: string, limit: number = 10): Promise<Invoice[]> {
     const userInvoices = Array.from(this.invoices.values())
-      .filter(invoice => invoice.userId === userId)
+      .filter((invoice) => invoice.userId === userId)
       .sort((_a, _b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limit);
 
@@ -409,27 +428,31 @@ export class BillingManager extends EventEmitter {
   async getInvoiceDownloadUrl(invoiceId: string): Promise<string> {
     const invoice = this.invoices.get(invoiceId);
     if (!invoice) {
-      throw new Error('Invoice not found');
+      throw new Error("Invoice not found");
     }
 
     const stripeInvoice = await this.stripe.invoices.retrieve(invoice.stripeInvoiceId);
-    return stripeInvoice.invoice_pdf || '';
+    return stripeInvoice.invoice_pdf || "";
   }
 
   // Usage tracking
-  async recordUsage(userId: string, metric: UsageRecord['metric'], quantity: number): Promise<void> {
+  async recordUsage(
+    userId: string,
+    metric: UsageRecord["metric"],
+    quantity: number,
+  ): Promise<void> {
     const user = this.userManager.getUser(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
-    const subscription = Array.from(this.subscriptions.values()).find(s => s.userId === userId);
+    const subscription = Array.from(this.subscriptions.values()).find((s) => s.userId === userId);
     if (!subscription) {
       return; // No subscription, no usage tracking needed
     }
 
     const now = new Date();
-    const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     const usageRecord: UsageRecord = {
       id: this.generateId(),
@@ -438,27 +461,31 @@ export class BillingManager extends EventEmitter {
       metric,
       quantity,
       timestamp: now,
-      period
+      period,
     };
 
     const userUsage = this.usageRecords.get(userId) || [];
     userUsage.push(usageRecord);
     this.usageRecords.set(userId, userUsage);
 
-    this.emit('usageRecorded', usageRecord);
+    this.emit("usageRecorded", usageRecord);
   }
 
   async getUsage(userId: string, period?: string): Promise<Record<string, number>> {
     const userUsage = this.usageRecords.get(userId) || [];
     const now = new Date();
-    const currentPeriod = period || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const currentPeriod =
+      period || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    const periodUsage = userUsage.filter(record => record.period === currentPeriod);
+    const periodUsage = userUsage.filter((record) => record.period === currentPeriod);
 
-    return periodUsage.reduce((acc, record) => {
-      acc[record.metric] = (acc[record.metric] || 0) + record.quantity;
-      return acc;
-    }, {} as Record<string, number>);
+    return periodUsage.reduce(
+      (acc, record) => {
+        acc[record.metric] = (acc[record.metric] || 0) + record.quantity;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
   }
 
   // Webhook handling
@@ -469,31 +496,31 @@ export class BillingManager extends EventEmitter {
       event = this.stripe.webhooks.constructEvent(
         payload,
         signature,
-        this.config.stripe.webhookSecret
+        this.config.stripe.webhookSecret,
       );
     } catch (error) {
       throw new Error(`Webhook signature verification failed: ${error}`);
     }
 
     switch (event.type) {
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
         await this.handleSubscriptionChange(event.data.object as Stripe.Subscription);
         break;
 
-      case 'customer.subscription.deleted':
+      case "customer.subscription.deleted":
         await this.handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
 
-      case 'invoice.payment_succeeded':
+      case "invoice.payment_succeeded":
         await this.handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
         break;
 
-      case 'invoice.payment_failed':
+      case "invoice.payment_failed":
         await this.handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
         break;
 
-      case 'payment_method.attached':
+      case "payment_method.attached":
         await this.handlePaymentMethodAttached(event.data.object as Stripe.PaymentMethod);
         break;
 
@@ -501,7 +528,7 @@ export class BillingManager extends EventEmitter {
         logger.info(`Unhandled event type: ${event.type}`);
     }
 
-    this.emit('webhookProcessed', event);
+    this.emit("webhookProcessed", event);
   }
 
   private async handleSubscriptionChange(stripeSubscription: Stripe.Subscription): Promise<void> {
@@ -509,12 +536,12 @@ export class BillingManager extends EventEmitter {
     const planId = stripeSubscription.metadata.planId;
 
     if (!userId || !planId) {
-      logger.warn('Missing metadata in subscription:', stripeSubscription.id);
+      logger.warn("Missing metadata in subscription:", stripeSubscription.id);
       return;
     }
 
     let subscription = Array.from(this.subscriptions.values()).find(
-      s => s.stripeSubscriptionId === stripeSubscription.id
+      (s) => s.stripeSubscriptionId === stripeSubscription.id,
     );
 
     if (!subscription) {
@@ -525,20 +552,24 @@ export class BillingManager extends EventEmitter {
         planId,
         stripeSubscriptionId: stripeSubscription.id,
         stripeCustomerId: stripeSubscription.customer as string,
-        status: stripeSubscription.status as Subscription['status'],
+        status: stripeSubscription.status as Subscription["status"],
         currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
         currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
         cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-        trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : undefined,
-        trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : undefined,
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
+          : undefined,
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
+          : undefined,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       this.subscriptions.set(subscription.id, subscription);
     } else {
       // Update existing subscription
-      subscription.status = stripeSubscription.status as Subscription['status'];
+      subscription.status = stripeSubscription.status as Subscription["status"];
       subscription.currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
       subscription.currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
       subscription.cancelAtPeriodEnd = stripeSubscription.cancel_at_period_end;
@@ -546,55 +577,57 @@ export class BillingManager extends EventEmitter {
     }
 
     // Update user subscription info
-    const plan = this.config.plans.find(p => p.id === planId);
+    const plan = this.config.plans.find((p) => p.id === planId);
     if (plan) {
       this.userManager.updateSubscription(
         userId,
         plan.tier,
         subscription.id,
-        subscription.currentPeriodEnd
+        subscription.currentPeriodEnd,
       );
     }
 
-    this.emit('subscriptionWebhookProcessed', subscription);
+    this.emit("subscriptionWebhookProcessed", subscription);
   }
 
   private async handleSubscriptionDeleted(stripeSubscription: Stripe.Subscription): Promise<void> {
     const subscription = Array.from(this.subscriptions.values()).find(
-      s => s.stripeSubscriptionId === stripeSubscription.id
+      (s) => s.stripeSubscriptionId === stripeSubscription.id,
     );
 
     if (subscription) {
-      subscription.status = 'cancelled';
+      subscription.status = "cancelled";
       subscription.cancelledAt = new Date();
       subscription.updatedAt = new Date();
 
       // Downgrade user to free tier
-      this.userManager.updateSubscription(subscription.userId, 'free');
+      this.userManager.updateSubscription(subscription.userId, "free");
 
-      this.emit('subscriptionDeleted', subscription);
+      this.emit("subscriptionDeleted", subscription);
     }
   }
 
   private async handleInvoicePaymentSucceeded(stripeInvoice: Stripe.Invoice): Promise<void> {
     await this.syncInvoice(stripeInvoice);
-    this.emit('invoicePaymentSucceeded', stripeInvoice);
+    this.emit("invoicePaymentSucceeded", stripeInvoice);
   }
 
   private async handleInvoicePaymentFailed(stripeInvoice: Stripe.Invoice): Promise<void> {
     await this.syncInvoice(stripeInvoice);
-    this.emit('invoicePaymentFailed', stripeInvoice);
+    this.emit("invoicePaymentFailed", stripeInvoice);
   }
 
-  private async handlePaymentMethodAttached(stripePaymentMethod: Stripe.PaymentMethod): Promise<void> {
+  private async handlePaymentMethodAttached(
+    stripePaymentMethod: Stripe.PaymentMethod,
+  ): Promise<void> {
     // This would sync the payment method if needed
-    this.emit('paymentMethodAttached', stripePaymentMethod);
+    this.emit("paymentMethodAttached", stripePaymentMethod);
   }
 
   private async syncInvoice(stripeInvoice: Stripe.Invoice): Promise<void> {
     const subscriptionId = stripeInvoice.subscription as string;
     const subscription = Array.from(this.subscriptions.values()).find(
-      s => s.stripeSubscriptionId === subscriptionId
+      (s) => s.stripeSubscriptionId === subscriptionId,
     );
 
     if (!subscription) {
@@ -608,13 +641,15 @@ export class BillingManager extends EventEmitter {
       stripeInvoiceId: stripeInvoice.id,
       amount: stripeInvoice.amount_paid / 100, // Convert from cents
       currency: stripeInvoice.currency,
-      status: stripeInvoice.status as Invoice['status'],
-      paidAt: stripeInvoice.status_transitions.paid_at ? new Date(stripeInvoice.status_transitions.paid_at * 1000) : undefined,
+      status: stripeInvoice.status as Invoice["status"],
+      paidAt: stripeInvoice.status_transitions.paid_at
+        ? new Date(stripeInvoice.status_transitions.paid_at * 1000)
+        : undefined,
       dueDate: new Date(stripeInvoice.due_date! * 1000),
       periodStart: new Date(stripeInvoice.period_start * 1000),
       periodEnd: new Date(stripeInvoice.period_end * 1000),
       downloadUrl: stripeInvoice.invoice_pdf || undefined,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     this.invoices.set(invoice.id, invoice);
@@ -622,15 +657,15 @@ export class BillingManager extends EventEmitter {
 
   // Utility methods
   getSubscriptionPlans(): SubscriptionPlan[] {
-    return this.config.plans.filter(plan => plan.active);
+    return this.config.plans.filter((plan) => plan.active);
   }
 
   getUserSubscription(userId: string): Subscription | undefined {
-    return Array.from(this.subscriptions.values()).find(s => s.userId === userId);
+    return Array.from(this.subscriptions.values()).find((s) => s.userId === userId);
   }
 
   getUserPaymentMethods(userId: string): PaymentMethod[] {
-    return Array.from(this.paymentMethods.values()).filter(pm => pm.userId === userId);
+    return Array.from(this.paymentMethods.values()).filter((pm) => pm.userId === userId);
   }
 
   private generateId(): string {
@@ -649,37 +684,40 @@ export class BillingManager extends EventEmitter {
     churnRate: number;
   } {
     const subscriptions = Array.from(this.subscriptions.values());
-    const activeSubscriptions = subscriptions.filter(s => s.status === 'active');
+    const activeSubscriptions = subscriptions.filter((s) => s.status === "active");
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
     const monthlyInvoices = Array.from(this.invoices.values()).filter(
-      i => i.status === 'paid' && i.paidAt && i.paidAt >= monthStart
+      (i) => i.status === "paid" && i.paidAt && i.paidAt >= monthStart,
     );
 
     const yearlyInvoices = Array.from(this.invoices.values()).filter(
-      i => i.status === 'paid' && i.paidAt && i.paidAt >= yearStart
+      (i) => i.status === "paid" && i.paidAt && i.paidAt >= yearStart,
     );
 
-    const subscriptionsByTier = activeSubscriptions.reduce((acc, sub) => {
-      const plan = this.config.plans.find(p => p.id === sub.planId);
-      if (plan) {
-        acc[plan.tier] = (acc[plan.tier] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
+    const subscriptionsByTier = activeSubscriptions.reduce(
+      (acc, sub) => {
+        const plan = this.config.plans.find((p) => p.id === sub.planId);
+        if (plan) {
+          acc[plan.tier] = (acc[plan.tier] || 0) + 1;
+        }
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       totalSubscriptions: subscriptions.length,
       activeSubscriptions: activeSubscriptions.length,
       revenue: {
         monthly: monthlyInvoices.reduce((_sum, _inv) => sum + inv.amount, 0),
-        yearly: yearlyInvoices.reduce((_sum, _inv) => sum + inv.amount, 0)
+        yearly: yearlyInvoices.reduce((_sum, _inv) => sum + inv.amount, 0),
       },
       subscriptionsByTier,
-      churnRate: 0 // Would calculate based on historical data
+      churnRate: 0, // Would calculate based on historical data
     };
   }
 }

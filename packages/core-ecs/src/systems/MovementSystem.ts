@@ -1,4 +1,4 @@
-import type { World } from '../World';
+import type { World } from "../World";
 
 /** Advance positions by velocity; dt is in seconds. */
 export function MovementSystem(world: World, dt: number) {
@@ -14,7 +14,8 @@ export function MovementSystem(world: World, dt: number) {
     const speed = Math.hypot(vx, vy);
     if (speed > max && speed > 0) {
       const s = max / speed;
-      vx *= s; vy *= s;
+      vx *= s;
+      vy *= s;
       // keep store consistent after clamp
       M.vx[id] = vx;
       M.vy[id] = vy;

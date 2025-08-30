@@ -1,12 +1,10 @@
-import { lazy, Suspense, ComponentType } from 'react';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { lazy, Suspense, ComponentType } from "react";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 /**
  * Wrapper for lazy loading components with a loading fallback
  */
-export function lazyLoad<T extends ComponentType<any>>(
-  importFunc: () => Promise<{ default: T }>
-) {
+export function lazyLoad<T extends ComponentType<any>>(importFunc: () => Promise<{ default: T }>) {
   const LazyComponent = lazy(importFunc);
 
   return (props: any) => (
@@ -19,8 +17,6 @@ export function lazyLoad<T extends ComponentType<any>>(
 /**
  * Preload a lazy component
  */
-export function preloadComponent(
-  importFunc: () => Promise<any>
-) {
+export function preloadComponent(importFunc: () => Promise<any>) {
   importFunc();
 }

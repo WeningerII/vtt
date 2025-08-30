@@ -3,7 +3,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import SRDMonsters from '@vtt/content-5e-srd';
+import SRDMonsters from "@vtt/content-5e-srd";
 
 export interface CreateMonsterRequest {
   name: string;
@@ -64,20 +64,20 @@ export class MonsterService {
   }
 
   async searchMonsters(options: MonsterSearchOptions = {}) {
-    const { query,  tags,  limit = 50,  offset = 0  } = options;
+    const { query, tags, limit = 50, offset = 0 } = options;
 
     const where: any = {};
-    
+
     if (query || tags?.length) {
       where.OR = [];
-      
+
       if (query) {
         where.OR.push(
           { name: { contains: query, mode: "insensitive" } },
-          { stableId: { contains: query, mode: "insensitive" } }
+          { stableId: { contains: query, mode: "insensitive" } },
         );
       }
-      
+
       if (tags?.length) {
         where.OR.push({ tags: { hasSome: tags } });
       }
@@ -113,7 +113,7 @@ export class MonsterService {
 
   async createMonster(request: CreateMonsterRequest) {
     const stableId = request.stableId || this.generateStableId(request.name);
-    
+
     return this.prisma.monster.create({
       data: {
         name: request.name,
@@ -157,7 +157,7 @@ export class MonsterService {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)+/g, "");
-    
+
     const suffix = Math.random().toString(36).slice(2, 6);
     return base ? `${base}-${suffix}` : `monster-${Date.now()}`;
   }

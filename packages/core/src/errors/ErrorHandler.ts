@@ -2,7 +2,7 @@
  * Global error handler and error recovery system
  */
 
-import { VTTError, ErrorCode, ErrorSeverity, ErrorContext, isVTTError } from './VTTError';
+import { VTTError, ErrorCode, ErrorSeverity, ErrorContext, isVTTError } from "./VTTError";
 // Note: Logger type definition for interface compatibility
 interface Logger {
   debug(message: string, context?: any): void;
@@ -39,11 +39,7 @@ export class ErrorHandler {
   private retryPolicy: RetryPolicy;
   private circuitBreakers: Map<string, CircuitBreaker> = new Map();
 
-  constructor(
-    config: ErrorHandlerConfig,
-    logger: Logger,
-    retryPolicy?: RetryPolicy
-  ) {
+  constructor(config: ErrorHandlerConfig, logger: Logger, retryPolicy?: RetryPolicy) {
     this.config = config;
     this.logger = logger;
     this.retryPolicy = retryPolicy || new DefaultRetryPolicy();
@@ -55,7 +51,7 @@ export class ErrorHandler {
 
   async handleError(error: Error | VTTError, context?: ErrorContext): Promise<void> {
     const vttError = this.normalizeError(error, context);
-    
+
     // Log error
     if (this.config.logErrors) {
       await this.logError(vttError);
@@ -75,7 +71,7 @@ export class ErrorHandler {
   async executeWithRetry<T>(
     _operation: () => Promise<T>,
     operationName: string,
-    context?: ErrorContext
+    context?: ErrorContext,
   ): Promise<T> {
     if (!this.config.enableRetry) {
       return operation();
@@ -87,7 +83,7 @@ export class ErrorHandler {
     while (attempt < this.config.maxRetries) {
       try {
         const result = await operation();
-        
+
         // Reset circuit breaker on success
         if (this.config.enableCircuitBreaker) {
           this.getCircuitBreaker(operationName).recordSuccess();
@@ -119,19 +115,19 @@ export class ErrorHandler {
   async executeWithCircuitBreaker<T>(
     _operation: () => Promise<T>,
     operationName: string,
-    context?: ErrorContext
+    context?: ErrorContext,
   ): Promise<T> {
     if (!this.config.enableCircuitBreaker) {
       return operation();
     }
 
     const circuitBreaker = this.getCircuitBreaker(operationName);
-    
+
     if (circuitBreaker.isOpen()) {
       throw new VTTError(
         ErrorCode.SYSTEM_SERVICE_UNAVAILABLE,
         `Circuit breaker is open for operation: ${operationName}`,
-        { context: context || {} }
+        { context: context || {} },
       );
     }
 
@@ -149,34 +145,26 @@ export class ErrorHandler {
   private normalizeError(error: Error | VTTError, context?: ErrorContext): VTTError {
     if (isVTTError(error)) {
       // Create new error with merged context to avoid mutating readonly property
-      return new VTTError(
-        error.code,
-        error.message,
-        {
-          severity: error.severity,
-          context: { ...error.context, ...(context || {}) },
-          isRetryable: error.isRetryable,
-          statusCode: error.statusCode,
-          ...(error.originalError && { originalError: error.originalError }),
-        }
-      );
+      return new VTTError(error.code, error.message, {
+        severity: error.severity,
+        context: { ...error.context, ...(context || {}) },
+        isRetryable: error.isRetryable,
+        statusCode: error.statusCode,
+        ...(error.originalError && { originalError: error.originalError }),
+      });
     }
 
     // Convert regular Error to VTTError
-    return new VTTError(
-      ErrorCode.SYSTEM_INTERNAL_ERROR,
-      error.message || 'Unknown error',
-      {
-        context: context || {},
-        originalError: error,
-      }
-    );
+    return new VTTError(ErrorCode.SYSTEM_INTERNAL_ERROR, error.message || "Unknown error", {
+      context: context || {},
+      originalError: error,
+    });
   }
 
   private async logError(error: VTTError): Promise<void> {
     const logLevel = this.getLogLevel(error.severity);
-    
-    this.logger[logLevel]('Error occurred', {
+
+    this.logger[logLevel]("Error occurred", {
       errorCode: error.code,
       message: error.message,
       severity: error.severity,
@@ -188,13 +176,13 @@ export class ErrorHandler {
   }
 
   private async reportError(error: VTTError): Promise<void> {
-    const reportPromises = this.reporters.map(async reporter => {
+    const reportPromises = this.reporters.map(async (reporter) => {
       try {
         await reporter.report(error);
       } catch (reportError) {
-        this.logger.warn('Failed to report error', {
+        this.logger.warn("Failed to report error", {
           originalError: error.code,
-          reportError: reportError instanceof Error ? reportError.message : 'Unknown error',
+          reportError: reportError instanceof Error ? reportError.message : "Unknown error",
         });
       }
     });
@@ -204,22 +192,21 @@ export class ErrorHandler {
 
   private shouldReport(error: VTTError): boolean {
     // Don't report low severity errors or validation errors
-    return error.severity !== ErrorSeverity.LOW && 
-           !error.code.startsWith('VALIDATION');
+    return error.severity !== ErrorSeverity.LOW && !error.code.startsWith("VALIDATION");
   }
 
-  private getLogLevel(severity: ErrorSeverity): 'debug' | 'info' | 'warn' | 'error' | 'fatal' {
+  private getLogLevel(severity: ErrorSeverity): "debug" | "info" | "warn" | "error" | "fatal" {
     switch (severity) {
       case ErrorSeverity.LOW:
-        return 'info';
+        return "info";
       case ErrorSeverity.MEDIUM:
-        return 'warn';
+        return "warn";
       case ErrorSeverity.HIGH:
-        return 'error';
+        return "error";
       case ErrorSeverity.CRITICAL:
-        return 'fatal';
+        return "fatal";
       default:
-        return 'error';
+        return "error";
     }
   }
 
@@ -240,10 +227,10 @@ export class ErrorHandler {
 
     // Map error codes to operation names
     const operationMap: Record<string, string> = {
-      [ErrorCode.AUTH_INVALID_CREDENTIALS]: 'authentication',
-      [ErrorCode.GAME_NOT_FOUND]: 'game-lookup',
-      [ErrorCode.ASSET_UPLOAD_FAILED]: 'asset-upload',
-      [ErrorCode.AI_PROVIDER_ERROR]: 'ai-provider',
+      [ErrorCode.AUTH_INVALID_CREDENTIALS]: "authentication",
+      [ErrorCode.GAME_NOT_FOUND]: "game-lookup",
+      [ErrorCode.ASSET_UPLOAD_FAILED]: "asset-upload",
+      [ErrorCode.AI_PROVIDER_ERROR]: "ai-provider",
     };
 
     return operationMap[error.code] || null;
@@ -255,15 +242,15 @@ export class ErrorHandler {
         operationName,
         new CircuitBreaker(
           this.config.circuitBreakerThreshold,
-          this.config.circuitBreakerTimeoutMs
-        )
+          this.config.circuitBreakerTimeoutMs,
+        ),
       );
     }
     return this.circuitBreakers.get(operationName)!;
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
 
@@ -271,17 +258,17 @@ export class ErrorHandler {
 class CircuitBreaker {
   private failureCount = 0;
   private lastFailureTime = 0;
-  private state: 'closed' | 'open' | 'half-open' = 'closed';
+  private state: "closed" | "open" | "half-open" = "closed";
 
   constructor(
     private threshold: number,
-    private timeoutMs: number
+    private timeoutMs: number,
   ) {}
 
   isOpen(): boolean {
-    if (this.state === 'open') {
+    if (this.state === "open") {
       if (Date.now() - this.lastFailureTime >= this.timeoutMs) {
-        this.state = 'half-open';
+        this.state = "half-open";
         return false;
       }
       return true;
@@ -291,7 +278,7 @@ class CircuitBreaker {
 
   recordSuccess(): void {
     this.failureCount = 0;
-    this.state = 'closed';
+    this.state = "closed";
   }
 
   recordFailure(): void {
@@ -299,7 +286,7 @@ class CircuitBreaker {
     this.lastFailureTime = Date.now();
 
     if (this.failureCount >= this.threshold) {
-      this.state = 'open';
+      this.state = "open";
     }
   }
 }
@@ -313,12 +300,12 @@ class DefaultRetryPolicy implements RetryPolicy {
     }
 
     // Don't retry authentication errors
-    if (error.code.startsWith('AUTH')) {
+    if (error.code.startsWith("AUTH")) {
       return false;
     }
 
     // Don't retry validation errors
-    if (error.code.startsWith('VALIDATION')) {
+    if (error.code.startsWith("VALIDATION")) {
       return false;
     }
 
@@ -343,17 +330,13 @@ export class ErrorBoundary {
   }
 
   handleComponentError(error: Error, errorInfo: any): void {
-    const vttError = new VTTError(
-      ErrorCode.SYSTEM_INTERNAL_ERROR,
-      'React component error',
-      {
-        originalError: error,
-        context: {
-          componentStack: errorInfo.componentStack,
-          errorBoundary: true,
-        },
-      }
-    );
+    const vttError = new VTTError(ErrorCode.SYSTEM_INTERNAL_ERROR, "React component error", {
+      originalError: error,
+      context: {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true,
+      },
+    });
 
     this.errorHandler.handleError(vttError);
   }
@@ -362,62 +345,54 @@ export class ErrorBoundary {
 // Global error handlers
 export const _setupGlobalErrorHandlers = (errorHandler: ErrorHandler): void => {
   // Handle unhandled promise rejections
-  if (typeof process !== 'undefined') {
-    process.on('unhandledRejection', (_reason: any, _promise: Promise<any>) => {
+  if (typeof process !== "undefined") {
+    process.on("unhandledRejection", (_reason: any, _promise: Promise<any>) => {
       const error = reason instanceof Error ? reason : new Error(String(reason));
       const vttError = new VTTError(
         ErrorCode.SYSTEM_INTERNAL_ERROR,
-        'Unhandled promise rejection',
+        "Unhandled promise rejection",
         {
           originalError: error,
           context: { unhandledRejection: true },
-        }
+        },
       );
       errorHandler.handleError(vttError);
     });
 
-    process.on('uncaughtException', (error: Error) => {
-      const vttError = new VTTError(
-        ErrorCode.SYSTEM_INTERNAL_ERROR,
-        'Uncaught exception',
-        {
-          originalError: error,
-          context: { uncaughtException: true },
-        }
-      );
+    process.on("uncaughtException", (error: Error) => {
+      const vttError = new VTTError(ErrorCode.SYSTEM_INTERNAL_ERROR, "Uncaught exception", {
+        originalError: error,
+        context: { uncaughtException: true },
+      });
       errorHandler.handleError(vttError);
       process.exit(1);
     });
   }
 
   // Handle browser errors
-  if (typeof window !== 'undefined') {
-    window.addEventListener('error', (event) => {
-      const vttError = new VTTError(
-        ErrorCode.SYSTEM_INTERNAL_ERROR,
-        'Browser error',
-        {
-          originalError: event.error,
-          context: {
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-            browserError: true,
-          },
-        }
-      );
+  if (typeof window !== "undefined") {
+    window.addEventListener("error", (event) => {
+      const vttError = new VTTError(ErrorCode.SYSTEM_INTERNAL_ERROR, "Browser error", {
+        originalError: event.error,
+        context: {
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno,
+          browserError: true,
+        },
+      });
       errorHandler.handleError(vttError);
     });
 
-    window.addEventListener('unhandledrejection', (event) => {
+    window.addEventListener("unhandledrejection", (event) => {
       const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason));
       const vttError = new VTTError(
         ErrorCode.SYSTEM_INTERNAL_ERROR,
-        'Unhandled promise rejection',
+        "Unhandled promise rejection",
         {
           originalError: error,
           context: { unhandledRejection: true, browser: true },
-        }
+        },
       );
       errorHandler.handleError(vttError);
     });

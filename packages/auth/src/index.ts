@@ -3,91 +3,82 @@
  */
 
 // Core managers
-export * from './AuthManager';
-export * from './SecurityMiddleware';
-export * from './SecurityUtils';
-export * from './AuthorizationManager';
+export * from "./AuthManager";
+export * from "./SecurityMiddleware";
+export * from "./SecurityUtils";
+export * from "./AuthorizationManager";
 
 // Auth configuration will be provided by consumers
 
 // Re-export specific classes for convenience
-export { AuthManager } from './AuthManager';
-export { SecurityMiddleware } from './SecurityMiddleware';
-export { AuthorizationManager } from './AuthorizationManager';
-export type { User, AuthConfig, AuthTokens, LoginCredentials, RegisterData } from './types';
+export { AuthManager } from "./AuthManager";
+export { SecurityMiddleware } from "./SecurityMiddleware";
+export { AuthorizationManager } from "./AuthorizationManager";
+export type { User, AuthConfig, AuthTokens, LoginCredentials, RegisterData } from "./types";
 
 // Types and interfaces
-export * from './types';
+export * from "./types";
 
 // Re-export utilities for convenience
-export {
-  EncryptedData,
-  PasswordStrength,
-  CookieOptions
-} from './SecurityUtils';
+export { EncryptedData, PasswordStrength, CookieOptions } from "./SecurityUtils";
 
 /**
  * Create and configure the complete authentication system
  */
-import { AuthManager } from './AuthManager';
-import { AuthorizationManager } from './AuthorizationManager';  
-import { SecurityMiddleware } from './SecurityMiddleware';
+import { AuthManager } from "./AuthManager";
+import { AuthorizationManager } from "./AuthorizationManager";
+import { SecurityMiddleware } from "./SecurityMiddleware";
 
-export function createAuthSystem(config: import('./types').AuthConfig) {
-  
+export function createAuthSystem(config: import("./types").AuthConfig) {
   const authManager = new AuthManager(config);
   const authzManager = new AuthorizationManager();
-  const securityMiddleware = new SecurityMiddleware(
-    authManager, 
-    authzManager, 
-    config.security
-  );
+  const securityMiddleware = new SecurityMiddleware(authManager, authzManager, config.security);
 
   return {
     authManager,
     authzManager,
     securityMiddleware,
-    
+
     // Convenience methods
     authenticate: securityMiddleware.authenticate.bind(securityMiddleware),
     authorize: securityMiddleware.authorize.bind(securityMiddleware),
     rateLimit: securityMiddleware.rateLimit.bind(securityMiddleware),
     securityHeaders: securityMiddleware.securityHeaders.bind(securityMiddleware),
     cors: securityMiddleware.cors.bind(securityMiddleware),
-    secureWebSocket: securityMiddleware.secureWebSocket.bind(securityMiddleware)
+    secureWebSocket: securityMiddleware.secureWebSocket.bind(securityMiddleware),
   };
 }
 
 /**
  * Default configuration factory
  */
-export function createDefaultAuthConfig(): import('./types').AuthConfig {
+export function createDefaultAuthConfig(): import("./types").AuthConfig {
   return {
-    jwtSecret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
-    jwtExpiration: '1h',
-    refreshTokenExpiration: '30d',
+    jwtSecret: process.env.JWT_SECRET || "your-secret-key-change-in-production",
+    jwtExpiration: "1h",
+    refreshTokenExpiration: "30d",
     bcryptRounds: 12,
     rateLimits: {
       login: {
         windowMs: 15 * 60 * 1000, // 15 minutes
         maxRequests: 5,
-        skipSuccessfulRequests: true
+        skipSuccessfulRequests: true,
       },
       register: {
         windowMs: 60 * 60 * 1000, // 1 hour
         maxRequests: 3,
-        skipSuccessfulRequests: true
+        skipSuccessfulRequests: true,
       },
       passwordReset: {
         windowMs: 60 * 60 * 1000, // 1 hour
         maxRequests: 3,
-        skipSuccessfulRequests: true
+        skipSuccessfulRequests: true,
       },
       general: {
         windowMs: 15 * 60 * 1000, // 15 minutes
         maxRequests: 100,
-        skipSuccessfulRequests: false
-      }
+        skipSuccessfulRequests: false,
+      },
     },
     security: {
       requireTwoFactor: false,
@@ -97,10 +88,10 @@ export function createDefaultAuthConfig(): import('./types').AuthConfig {
       requireEmailVerification: true,
       allowGuestAccess: true,
       enforcePasswordComplexity: true,
-      enableAuditLogging: true
+      enableAuditLogging: true,
     },
     oauth: {
       // OAuth configurations would be added here
-    }
+    },
   };
 }

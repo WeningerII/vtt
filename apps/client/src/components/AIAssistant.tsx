@@ -2,12 +2,12 @@
  * AI Assistant component for natural language rule queries and game assistance
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import './AIAssistant.css';
+import React, { useState, useRef, useEffect } from "react";
+import "./AIAssistant.css";
 
 export interface AssistantMessage {
   id: string;
-  type: 'user' | 'assistant';
+  type: "user" | "assistant";
   content: string;
   timestamp: Date;
   metadata?: {
@@ -26,11 +26,17 @@ export interface AIAssistantProps {
   onClose?: () => void;
 }
 
-export const AIAssistant: React.FC<AIAssistantProps> = ({gameSystem = 'D&D 5e', campaignId, playerLevel, characterClass, onClose}) => {
+export const AIAssistant: React.FC<AIAssistantProps> = ({
+  gameSystem = "D&D 5e",
+  campaignId,
+  playerLevel,
+  characterClass,
+  onClose,
+}) => {
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
-      id: '1',
-      type: 'assistant',
+      id: "1",
+      type: "assistant",
       content: `Hello! I'm your D&D 5e rules assistant. I can help you with:
 • Rule explanations and clarifications
 • Spell descriptions and mechanics
@@ -42,12 +48,12 @@ What would you like to know?`,
       timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -60,20 +66,20 @@ What would you like to know?`,
 
     const userMessage: AssistantMessage = {
       id: Date.now().toString(),
-      type: 'user',
+      type: "user",
       content: input.trim(),
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/assistant/query', {
-        method: 'POST',
+      const response = await fetch("/api/assistant/query", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           question: userMessage.content,
@@ -87,29 +93,29 @@ What would you like to know?`,
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get assistant response');
+        throw new Error("Failed to get assistant response");
       }
 
       const data = await response.json();
 
       const assistantMessage: AssistantMessage = {
         id: (Date.now() + 1).toString(),
-        type: 'assistant',
+        type: "assistant",
         content: data.answer,
         timestamp: new Date(),
         metadata: data.metadata,
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch {
       const errorMessage: AssistantMessage = {
         id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        type: "assistant",
+        content: "Sorry, I encountered an error while processing your request. Please try again.",
         timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -119,13 +125,13 @@ What would you like to know?`,
     setInput(prompt);
     // Trigger form submission
     setTimeout(() => {
-      const form = document.querySelector('.ai-assistant-form') as HTMLFormElement;
+      const form = document.querySelector(".ai-assistant-form") as HTMLFormElement;
       form?.requestSubmit();
     }, 100);
   };
 
   const formatTimestamp = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -136,7 +142,7 @@ What would you like to know?`,
           {gameSystem} • Level {playerLevel} {characterClass}
         </div>
         {onClose && (
-          <button className="ai-assistant-close" onClick={onClose} >
+          <button className="ai-assistant-close" onClick={onClose}>
             ×
           </button>
         )}
@@ -144,21 +150,21 @@ What would you like to know?`,
 
       <div className="ai-assistant-quick-actions">
         <button
-          onClick={() => handleQuickAction('spell', 'Explain the spell Fireball')}
+          onClick={() => handleQuickAction("spell", "Explain the spell Fireball")}
           className="quick-action-btn"
           tabIndex={0}
         >
           Explain Spell
         </button>
         <button
-          onClick={() => handleQuickAction('combat', 'What are my combat options?')}
+          onClick={() => handleQuickAction("combat", "What are my combat options?")}
           className="quick-action-btn"
           tabIndex={0}
         >
           Combat Help
         </button>
         <button
-          onClick={() => handleQuickAction('rule', 'How does advantage work?')}
+          onClick={() => handleQuickAction("rule", "How does advantage work?")}
           className="quick-action-btn"
           tabIndex={0}
         >
@@ -170,11 +176,14 @@ What would you like to know?`,
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`message ${message.type === 'user' ? 'message-user' : 'message-assistant'}`}
+            className={`message ${message.type === "user" ? "message-user" : "message-assistant"}`}
           >
             <div className="message-content">
-              {message.content.split('\n').map((line, index) => (
-                <span key={index}>{line}<br /></span>
+              {message.content.split("\n").map((line, index) => (
+                <span key={index}>
+                  {line}
+                  <br />
+                </span>
               ))}
             </div>
             <div className="message-meta">
@@ -216,7 +225,8 @@ What would you like to know?`,
             type="submit"
             disabled={!input.trim() || isLoading}
             className="ai-assistant-send"
-            aria-label="Send message" >
+            aria-label="Send message"
+          >
             Send
           </button>
         </div>

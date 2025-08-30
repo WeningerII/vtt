@@ -3,7 +3,7 @@
  * Exports all token management components
  */
 
-export { 
+export {
   TokenManager,
   type Token,
   type TokenType,
@@ -12,10 +12,7 @@ export {
   type ConditionEffect,
   type TokenAnimation,
   type AnimationKeyframe,
-  type TokenChangeEvent
-} from './TokenManager';
+  type TokenChangeEvent,
+} from "./TokenManager";
 
-export {
-  ConditionRegistry,
-  type ConditionTemplate
-} from './ConditionRegistry';
+export { ConditionRegistry, type ConditionTemplate } from "./ConditionRegistry";

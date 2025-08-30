@@ -10,13 +10,13 @@ export type BrowserLogger = {
   warn: LogMethod;
   error: LogMethod;
   fatal: LogMethod;
-  withContext: (ctx: Record<string, any>) => Omit<BrowserLogger, 'withContext'>;
+  withContext: (ctx: Record<string, any>) => Omit<BrowserLogger, "withContext">;
 };
 
 const formatCtx = (ctx: Record<string, any>) =>
   `[ctx:${Object.entries(ctx)
     .map(([k, v]) => `${k}=${String(v)}`)
-    .join(' ')}]`;
+    .join(" ")}]`;
 
 export const logger: BrowserLogger = {
   trace: (...args) => console.debug(...args),
@@ -50,7 +50,7 @@ export function initTelemetry(): void {
 export async function withTrace<T>(
   _name: string,
   fn: () => Promise<T>,
-  _attributes?: Record<string, any>
+  _attributes?: Record<string, any>,
 ): Promise<T> {
   return fn();
 }

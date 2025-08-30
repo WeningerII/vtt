@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer, RawData } from "ws";
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 import { IncomingMessage } from "http";
 import { World, MovementSystem } from "@vtt/core-ecs";
 import { GameManager } from "../game/GameManager";
@@ -58,13 +58,13 @@ export class WebSocketManager {
 
   private broadcastGameStateDeltas(): void {
     const activeGames = this.gameManager.getGames();
-    
+
     for (const game of activeGames) {
       const delta = game.getNetworkDelta();
       if (!delta || (!delta.created.length && !delta.updated.length && !delta.removed.length)) {
         continue;
       }
-      
+
       // Broadcast delta to all clients in this game
       this.broadcastToGame(game.gameId, {
         type: "DELTA",
@@ -94,70 +94,76 @@ export class WebSocketManager {
 
     const msg = JSON.parse(data.toString());
     logger.info(`[ws] message from ${clientId}:`, msg.type);
-    
+
     try {
       switch (msg.type) {
         case "PING":
           this.sendToClient(clientId, { type: "PONG", t: msg.t });
           break;
-          
+
         case "ECHO":
           this.sendToClient(clientId, { type: "ECHO", payload: msg.payload });
           break;
-          
+
         case "JOIN_GAME":
           this.handleJoinGame(clientId, msg);
           break;
-          
+
         case "LEAVE_GAME":
           this.handleLeaveGame(clientId, msg);
           break;
-          
+
         case "MOVE_TOKEN":
           this.handleMoveToken(clientId, msg);
           break;
-          
-        case "ROLL_DICE": {
-          const rollDiceParams: { dice: string; label?: string; private: boolean } = {
-            dice: msg.dice,
-            private: msg.private
-          };
-          if (msg.label !== undefined) {
-            rollDiceParams.label = msg.label;
+
+        case "ROLL_DICE":
+          {
+            const rollDiceParams: { dice: string; label?: string; private: boolean } = {
+              dice: msg.dice,
+              private: msg.private,
+            };
+            if (msg.label !== undefined) {
+              rollDiceParams.label = msg.label;
+            }
+            this.handleRollDice(clientId, rollDiceParams);
           }
-          this.handleRollDice(clientId, rollDiceParams);
-    }
           break;
-          
+
         case "CHAT_MESSAGE":
           this.handleChatMessage(clientId, msg);
           break;
-          
+
         case "SET_ACTIVE_SCENE":
           this.handleSetActiveScene(clientId, msg);
           break;
-          
+
         case "UPDATE_SCENE_SETTINGS":
           this.handleUpdateSceneSettings(clientId, msg);
           break;
-          
+
         case "SYNC_MAP_VIEW":
           this.handleSyncMapView(clientId, msg);
           break;
-          
-        default: {
-          // Handle combat messages or other unknown types
-          const msgType = (msg as any).type;
-          if (msgType === "COMBAT_SUBSCRIBE" || msgType === "COMBAT_UNSUBSCRIBE" || msgType === "REQUEST_TACTICAL_DECISION") {
-            this.handleCombatMessage(clientId, msg);
-          } else {
-            this.sendToClient(clientId, {
-              type: "ERROR",
-              code: "UNHANDLED_TYPE",
-              message: `Unhandled type ${msgType}`,
-            });
+
+        default:
+          {
+            // Handle combat messages or other unknown types
+            const msgType = (msg as any).type;
+            if (
+              msgType === "COMBAT_SUBSCRIBE" ||
+              msgType === "COMBAT_UNSUBSCRIBE" ||
+              msgType === "REQUEST_TACTICAL_DECISION"
+            ) {
+              this.handleCombatMessage(clientId, msg);
+            } else {
+              this.sendToClient(clientId, {
+                type: "ERROR",
+                code: "UNHANDLED_TYPE",
+                message: `Unhandled type ${msgType}`,
+              });
+            }
           }
-    }
           break;
       }
     } catch (error) {
@@ -171,7 +177,10 @@ export class WebSocketManager {
   }
 
   // Game message handlers
-  private handleJoinGame(clientId: string, msg: { gameId: string; userId: string; displayName: string }): void {
+  private handleJoinGame(
+    clientId: string,
+    msg: { gameId: string; userId: string; displayName: string },
+  ): void {
     const client = this.clients.get(clientId);
     if (!client) return;
 
@@ -182,12 +191,12 @@ export class WebSocketManager {
 
     // Get or create game
     const game = this.gameManager.findOrCreateGame(msg.gameId);
-    
+
     // Add player to game
     const success = game.addPlayer(msg.userId, msg.displayName);
     if (success) {
       logger.info(`[ws] Player ${msg.displayName} joined game ${msg.gameId}`);
-      
+
       // Send game state to client
       this.sendToClient(clientId, {
         type: "GAME_STATE",
@@ -205,12 +214,16 @@ export class WebSocketManager {
       }
 
       // Broadcast player joined to other clients in the game
-      this.broadcastToGame(msg.gameId, {
-        type: "PLAYER_JOINED",
-        userId: msg.userId,
-        displayName: msg.displayName,
-        gameId: msg.gameId,
-      }, clientId);
+      this.broadcastToGame(
+        msg.gameId,
+        {
+          type: "PLAYER_JOINED",
+          userId: msg.userId,
+          displayName: msg.displayName,
+          gameId: msg.gameId,
+        },
+        clientId,
+      );
     } else {
       this.sendToClient(clientId, {
         type: "ERROR",
@@ -227,7 +240,7 @@ export class WebSocketManager {
     const game = this.gameManager.getGame(msg.gameId);
     if (game) {
       game.removePlayer(client.userId);
-      
+
       this.broadcastToGame(msg.gameId, {
         type: "PLAYER_LEFT",
         userId: client.userId,
@@ -241,7 +254,10 @@ export class WebSocketManager {
     delete client.gameId;
   }
 
-  private handleMoveToken(clientId: string, msg: { entityId: number; x: number; y: number; animate: boolean }): void {
+  private handleMoveToken(
+    clientId: string,
+    msg: { entityId: number; x: number; y: number; animate: boolean },
+  ): void {
     const client = this.clients.get(clientId);
     if (!client || !client.gameId) return;
 
@@ -252,17 +268,17 @@ export class WebSocketManager {
     // const token = game.getToken(msg.entityId);
     const isGM = false; // game.isGameMaster(client.userId);
     const isOwner = false; // token && token.ownerId === client.userId;
-    
+
     if (!isGM && !isOwner) {
       this.sendToClient(client.id, {
-        type: 'error',
-        error: 'Unauthorized: You can only move your own tokens'
+        type: "error",
+        error: "Unauthorized: You can only move your own tokens",
       });
       return;
     }
-    
+
     const success = game.moveToken(msg.entityId, msg.x, msg.y, msg.animate);
-    
+
     if (!success) {
       this.sendToClient(clientId, {
         type: "ERROR",
@@ -273,7 +289,10 @@ export class WebSocketManager {
     // Movement will be broadcast automatically via game's network sync
   }
 
-  private handleRollDice(clientId: string, msg: { dice: string; label?: string; private: boolean }): void {
+  private handleRollDice(
+    clientId: string,
+    msg: { dice: string; label?: string; private: boolean },
+  ): void {
     const client = this.clients.get(clientId);
     if (!client || !client.gameId || !client.userId || !client.displayName) return;
 
@@ -318,7 +337,7 @@ export class WebSocketManager {
     if (!client || !client.gameId || !client.userId || !client.displayName) return;
 
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    
+
     this.broadcastToGame(client.gameId, {
       type: "CHAT_BROADCAST",
       messageId,
@@ -337,7 +356,7 @@ export class WebSocketManager {
     try {
       // Import combat WebSocket handler
       // const { handleCombatWebSocket  } = await import("../routes/combat");
-      
+
       // Create a mock WebSocket object with send method for the handler
       const mockWs = {
         send: (data: string) => {
@@ -345,11 +364,11 @@ export class WebSocketManager {
             const response = JSON.parse(data);
             this.sendToClient(clientId, response);
           } catch (error) {
-            logger.error('Error sending combat response:', error as Error);
+            logger.error("Error sending combat response:", error as Error);
           }
-        }
+        },
       };
-      
+
       // Handle the combat message
       // handleCombatWebSocket(mockWs, msg, client.userId);
     } catch (error) {
@@ -368,12 +387,16 @@ export class WebSocketManager {
     if (!client || !client.userId || !client.gameId) return;
 
     try {
-      const { CampaignService  } = await import("../campaign/CampaignService");
+      const { CampaignService } = await import("../campaign/CampaignService");
       const campaignService = new CampaignService({} as any);
-      
+
       // Set active scene (assuming gameId corresponds to campaignId)
-      const success = await campaignService.setActiveScene(client.gameId, msg.sceneId, client.userId);
-      
+      const success = await campaignService.setActiveScene(
+        client.gameId,
+        msg.sceneId,
+        client.userId,
+      );
+
       if (success) {
         // Broadcast scene change to all clients in the campaign
         this.broadcastToGame(client.gameId, {
@@ -433,19 +456,23 @@ export class WebSocketManager {
 
     try {
       // Broadcast map view synchronization to other clients in the campaign
-      this.broadcastToGame(client.gameId, {
-        type: "MAP_VIEW_SYNCED",
-        campaignId: client.gameId,
-        sceneId: msg.sceneId,
-        viewState: {
-          zoom: msg.zoom,
-          centerX: msg.centerX,
-          centerY: msg.centerY,
-          viewport: msg.viewport,
+      this.broadcastToGame(
+        client.gameId,
+        {
+          type: "MAP_VIEW_SYNCED",
+          campaignId: client.gameId,
+          sceneId: msg.sceneId,
+          viewState: {
+            zoom: msg.zoom,
+            centerX: msg.centerX,
+            centerY: msg.centerY,
+            viewport: msg.viewport,
+          },
+          syncedBy: client.userId,
+          timestamp: Date.now(),
         },
-        syncedBy: client.userId,
-        timestamp: Date.now(),
-      }, clientId); // Exclude the sender
+        clientId,
+      ); // Exclude the sender
     } catch (error) {
       logger.error(`[ws] Error syncing map view from ${clientId}:`, error as Error);
       this.sendToClient(clientId, {
@@ -458,13 +485,13 @@ export class WebSocketManager {
 
   private handleDisconnection(clientId: string): void {
     const client = this.clients.get(clientId);
-    
+
     // Clean up game state if client was in a game
     if (client?.gameId && client.userId) {
       const game = this.gameManager.getGame(client.gameId);
       if (game) {
         game.setPlayerConnected(client.userId, false);
-        
+
         this.broadcastToGame(client.gameId, {
           type: "PLAYER_LEFT",
           userId: client.userId,
@@ -501,7 +528,11 @@ export class WebSocketManager {
   private broadcastToGame(gameId: string, message: any, excludeClientId?: string): void {
     const payload = JSON.stringify(message);
     for (const [id, client] of this.clients) {
-      if (client.gameId === gameId && id !== excludeClientId && client.ws.readyState === WebSocket.OPEN) {
+      if (
+        client.gameId === gameId &&
+        id !== excludeClientId &&
+        client.ws.readyState === WebSocket.OPEN
+      ) {
         client.ws.send(payload);
       }
     }

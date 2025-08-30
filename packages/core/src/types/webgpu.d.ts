@@ -45,7 +45,7 @@ declare global {
     label?: string;
   }
 
-  type GPUFeatureName = 
+  type GPUFeatureName =
     | "depth-clip-control"
     | "depth32float-stencil8"
     | "texture-compression-bc"
@@ -124,8 +124,19 @@ declare global {
   interface GPUCommandQueue {
     readonly label: string;
     submit(commandBuffers: GPUCommandBuffer[]): void;
-    writeBuffer(buffer: GPUBuffer, bufferOffset: GPUSize64, data: BufferSource, dataOffset?: GPUSize64, size?: GPUSize64): void;
-    writeTexture(destination: GPUImageCopyTexture, data: BufferSource, dataLayout: GPUImageDataLayout, size: GPUExtent3D): void;
+    writeBuffer(
+      buffer: GPUBuffer,
+      bufferOffset: GPUSize64,
+      data: BufferSource,
+      dataOffset?: GPUSize64,
+      size?: GPUSize64,
+    ): void;
+    writeTexture(
+      destination: GPUImageCopyTexture,
+      data: BufferSource,
+      dataLayout: GPUImageDataLayout,
+      size: GPUExtent3D,
+    ): void;
   }
 
   interface GPUBuffer {
@@ -196,18 +207,43 @@ declare global {
   type GPUTextureAspect = "all" | "stencil-only" | "depth-only";
   type GPUTextureUsageFlags = number;
 
-  type GPUTextureFormat = 
-    | "r8unorm" | "r8snorm" | "r8uint" | "r8sint"
-    | "r16uint" | "r16sint" | "r16float"
-    | "rg8unorm" | "rg8snorm" | "rg8uint" | "rg8sint"
-    | "r32uint" | "r32sint" | "r32float"
-    | "rg16uint" | "rg16sint" | "rg16float"
-    | "rgba8unorm" | "rgba8unorm-srgb" | "rgba8snorm" | "rgba8uint" | "rgba8sint"
-    | "bgra8unorm" | "bgra8unorm-srgb"
-    | "rgb9e5ufloat" | "rgb10a2unorm" | "rg11b10ufloat"
-    | "rg32uint" | "rg32sint" | "rg32float"
-    | "rgba16uint" | "rgba16sint" | "rgba16float"
-    | "rgba32uint" | "rgba32sint" | "rgba32float"
+  type GPUTextureFormat =
+    | "r8unorm"
+    | "r8snorm"
+    | "r8uint"
+    | "r8sint"
+    | "r16uint"
+    | "r16sint"
+    | "r16float"
+    | "rg8unorm"
+    | "rg8snorm"
+    | "rg8uint"
+    | "rg8sint"
+    | "r32uint"
+    | "r32sint"
+    | "r32float"
+    | "rg16uint"
+    | "rg16sint"
+    | "rg16float"
+    | "rgba8unorm"
+    | "rgba8unorm-srgb"
+    | "rgba8snorm"
+    | "rgba8uint"
+    | "rgba8sint"
+    | "bgra8unorm"
+    | "bgra8unorm-srgb"
+    | "rgb9e5ufloat"
+    | "rgb10a2unorm"
+    | "rg11b10ufloat"
+    | "rg32uint"
+    | "rg32sint"
+    | "rg32float"
+    | "rgba16uint"
+    | "rgba16sint"
+    | "rgba16float"
+    | "rgba32uint"
+    | "rgba32sint"
+    | "rgba32float"
     | "stencil8"
     | "depth16unorm"
     | "depth24plus"
@@ -242,7 +278,15 @@ declare global {
   type GPUAddressMode = "clamp-to-edge" | "repeat" | "mirror-repeat";
   type GPUFilterMode = "nearest" | "linear";
   type GPUMipmapFilterMode = "nearest" | "linear";
-  type GPUCompareFunction = "never" | "less" | "equal" | "less-equal" | "greater" | "not-equal" | "greater-equal" | "always";
+  type GPUCompareFunction =
+    | "never"
+    | "less"
+    | "equal"
+    | "less-equal"
+    | "greater"
+    | "not-equal"
+    | "greater-equal"
+    | "always";
 
   interface GPUBindGroupLayout {
     readonly label: string;
@@ -435,29 +479,99 @@ declare global {
   }
 
   type GPUPipelineConstantValue = number;
-  type GPUPrimitiveTopology = "point-list" | "line-list" | "line-strip" | "triangle-list" | "triangle-strip";
+  type GPUPrimitiveTopology =
+    | "point-list"
+    | "line-list"
+    | "line-strip"
+    | "triangle-list"
+    | "triangle-strip";
   type GPUIndexFormat = "uint16" | "uint32";
   type GPUFrontFace = "ccw" | "cw";
   type GPUCullMode = "none" | "front" | "back";
   type GPUVertexStepMode = "vertex" | "instance";
-  type GPUVertexFormat = 
-    | "uint8x2" | "uint8x4" | "sint8x2" | "sint8x4" | "unorm8x2" | "unorm8x4" | "snorm8x2" | "snorm8x4"
-    | "uint16x2" | "uint16x4" | "sint16x2" | "sint16x4" | "unorm16x2" | "unorm16x4" | "snorm16x2" | "snorm16x4"
-    | "float16x2" | "float16x4" | "float32" | "float32x2" | "float32x3" | "float32x4"
-    | "uint32" | "uint32x2" | "uint32x3" | "uint32x4" | "sint32" | "sint32x2" | "sint32x3" | "sint32x4";
-  type GPUStencilOperation = "keep" | "zero" | "replace" | "invert" | "increment-clamp" | "decrement-clamp" | "increment-wrap" | "decrement-wrap";
+  type GPUVertexFormat =
+    | "uint8x2"
+    | "uint8x4"
+    | "sint8x2"
+    | "sint8x4"
+    | "unorm8x2"
+    | "unorm8x4"
+    | "snorm8x2"
+    | "snorm8x4"
+    | "uint16x2"
+    | "uint16x4"
+    | "sint16x2"
+    | "sint16x4"
+    | "unorm16x2"
+    | "unorm16x4"
+    | "snorm16x2"
+    | "snorm16x4"
+    | "float16x2"
+    | "float16x4"
+    | "float32"
+    | "float32x2"
+    | "float32x3"
+    | "float32x4"
+    | "uint32"
+    | "uint32x2"
+    | "uint32x3"
+    | "uint32x4"
+    | "sint32"
+    | "sint32x2"
+    | "sint32x3"
+    | "sint32x4";
+  type GPUStencilOperation =
+    | "keep"
+    | "zero"
+    | "replace"
+    | "invert"
+    | "increment-clamp"
+    | "decrement-clamp"
+    | "increment-wrap"
+    | "decrement-wrap";
   type GPUColorWriteFlags = number;
   type GPUBlendOperation = "add" | "subtract" | "reverse-subtract" | "min" | "max";
-  type GPUBlendFactor = "zero" | "one" | "src" | "one-minus-src" | "src-alpha" | "one-minus-src-alpha" | "dst" | "one-minus-dst" | "dst-alpha" | "one-minus-dst-alpha" | "src-alpha-saturated" | "constant" | "one-minus-constant";
+  type GPUBlendFactor =
+    | "zero"
+    | "one"
+    | "src"
+    | "one-minus-src"
+    | "src-alpha"
+    | "one-minus-src-alpha"
+    | "dst"
+    | "one-minus-dst"
+    | "dst-alpha"
+    | "one-minus-dst-alpha"
+    | "src-alpha-saturated"
+    | "constant"
+    | "one-minus-constant";
 
   interface GPUCommandEncoder {
     readonly label: string;
     beginRenderPass(descriptor: GPURenderPassDescriptor): GPURenderPassEncoder;
     beginComputePass(descriptor?: GPUComputePassDescriptor): GPUComputePassEncoder;
-    copyBufferToBuffer(source: GPUBuffer, sourceOffset: GPUSize64, destination: GPUBuffer, destinationOffset: GPUSize64, size: GPUSize64): void;
-    copyBufferToTexture(source: GPUImageCopyBuffer, destination: GPUImageCopyTexture, copySize: GPUExtent3D): void;
-    copyTextureToBuffer(source: GPUImageCopyTexture, destination: GPUImageCopyBuffer, copySize: GPUExtent3D): void;
-    copyTextureToTexture(source: GPUImageCopyTexture, destination: GPUImageCopyTexture, copySize: GPUExtent3D): void;
+    copyBufferToBuffer(
+      source: GPUBuffer,
+      sourceOffset: GPUSize64,
+      destination: GPUBuffer,
+      destinationOffset: GPUSize64,
+      size: GPUSize64,
+    ): void;
+    copyBufferToTexture(
+      source: GPUImageCopyBuffer,
+      destination: GPUImageCopyTexture,
+      copySize: GPUExtent3D,
+    ): void;
+    copyTextureToBuffer(
+      source: GPUImageCopyTexture,
+      destination: GPUImageCopyBuffer,
+      copySize: GPUExtent3D,
+    ): void;
+    copyTextureToTexture(
+      source: GPUImageCopyTexture,
+      destination: GPUImageCopyTexture,
+      copySize: GPUExtent3D,
+    ): void;
     finish(descriptor?: GPUCommandBufferDescriptor): GPUCommandBuffer;
   }
 
@@ -477,16 +591,36 @@ declare global {
     setBindGroup(index: number, bindGroup: GPUBindGroup, dynamicOffsets?: number[]): void;
     setPipeline(pipeline: GPURenderPipeline): void;
     setVertexBuffer(slot: number, buffer: GPUBuffer, offset?: GPUSize64, size?: GPUSize64): void;
-    setIndexBuffer(buffer: GPUBuffer, format: GPUIndexFormat, offset?: GPUSize64, size?: GPUSize64): void;
-    draw(vertexCount: number, instanceCount?: number, firstVertex?: number, firstInstance?: number): void;
-    drawIndexed(indexCount: number, instanceCount?: number, firstIndex?: number, baseVertex?: number, firstInstance?: number): void;
+    setIndexBuffer(
+      buffer: GPUBuffer,
+      format: GPUIndexFormat,
+      offset?: GPUSize64,
+      size?: GPUSize64,
+    ): void;
+    draw(
+      vertexCount: number,
+      instanceCount?: number,
+      firstVertex?: number,
+      firstInstance?: number,
+    ): void;
+    drawIndexed(
+      indexCount: number,
+      instanceCount?: number,
+      firstIndex?: number,
+      baseVertex?: number,
+      firstInstance?: number,
+    ): void;
     end(): void;
   }
 
   interface GPUComputePassEncoder {
     setBindGroup(index: number, bindGroup: GPUBindGroup, dynamicOffsets?: number[]): void;
     setPipeline(pipeline: GPUComputePipeline): void;
-    dispatchWorkgroups(workgroupCountX: number, workgroupCountY?: number, workgroupCountZ?: number): void;
+    dispatchWorkgroups(
+      workgroupCountX: number,
+      workgroupCountY?: number,
+      workgroupCountZ?: number,
+    ): void;
     end(): void;
   }
 

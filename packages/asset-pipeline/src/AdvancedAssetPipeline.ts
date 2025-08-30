@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Advanced Asset Pipeline - Triple A Quality Asset Management
@@ -24,12 +24,24 @@ export interface Asset {
   streamingInfo?: StreamingInfo;
 }
 
-export type AssetType = 
-  | 'texture' | 'model' | 'audio' | 'video' | 'font' | 'shader' | 'animation'
-  | 'map' | 'character' | 'item' | 'spell' | 'scene' | 'ui' | 'data' | 'script';
+export type AssetType =
+  | "texture"
+  | "model"
+  | "audio"
+  | "video"
+  | "font"
+  | "shader"
+  | "animation"
+  | "map"
+  | "character"
+  | "item"
+  | "spell"
+  | "scene"
+  | "ui"
+  | "data"
+  | "script";
 
-export type AssetStatus = 
-  | 'pending' | 'processing' | 'ready' | 'error' | 'cached' | 'streaming';
+export type AssetStatus = "pending" | "processing" | "ready" | "error" | "cached" | "streaming";
 
 export interface AssetMetadata {
   title?: string;
@@ -41,7 +53,7 @@ export interface AssetMetadata {
   version: string;
   dimensions?: [number, number, number];
   duration?: number;
-  quality?: 'low' | 'medium' | 'high' | 'ultra';
+  quality?: "low" | "medium" | "high" | "ultra";
   customProperties: Record<string, any>;
 }
 
@@ -57,7 +69,7 @@ export interface AssetVariant {
 }
 
 export interface CompressionInfo {
-  algorithm: 'gzip' | 'brotli' | 'lz4' | 'zstd';
+  algorithm: "gzip" | "brotli" | "lz4" | "zstd";
   originalSize: number;
   compressedSize: number;
   ratio: number;
@@ -81,7 +93,7 @@ export interface AssetBundle {
   compressed: boolean;
   priority: number;
   dependencies: string[];
-  loadStrategy: 'immediate' | 'lazy' | 'preload' | 'streaming';
+  loadStrategy: "immediate" | "lazy" | "preload" | "streaming";
 }
 
 export interface ProcessingPipeline {
@@ -127,7 +139,7 @@ export interface ValidationResult {
 }
 
 export interface ValidationIssue {
-  severity: 'error' | 'warning' | 'info';
+  severity: "error" | "warning" | "info";
   message: string;
   suggestion?: string;
 }
@@ -136,7 +148,7 @@ export interface CacheConfig {
   enabled: boolean;
   maxSize: number;
   maxAge: number;
-  strategy: 'lru' | 'lfu' | 'ttl' | 'custom';
+  strategy: "lru" | "lfu" | "ttl" | "custom";
   persistToDisk: boolean;
   diskCacheSize: number;
 }
@@ -157,8 +169,8 @@ export interface OptimizationConfig {
   compressionLevel: number;
   generateMipMaps: boolean;
   automaticLOD: boolean;
-  textureCompression: 'bc' | 'astc' | 'etc' | 'pvrtc';
-  audioCompression: 'mp3' | 'ogg' | 'aac' | 'opus';
+  textureCompression: "bc" | "astc" | "etc" | "pvrtc";
+  audioCompression: "mp3" | "ogg" | "aac" | "opus";
   modelOptimization: boolean;
   meshSimplification: boolean;
 }
@@ -177,32 +189,32 @@ export class AdvancedAssetPipeline {
   private bundles: Map<string, AssetBundle> = new Map();
   private pipelines: Map<string, ProcessingPipeline> = new Map();
   private processors: Map<string, AssetProcessor> = new Map();
-  
+
   // Core systems
   private loader: AssetLoader;
   private cache: AssetCache;
   private streamer: AssetStreamer;
   private optimizer: AssetOptimizer;
   private validator: AssetValidator;
-  
+
   // Processing queue
   private processingQueue: PriorityQueue<ProcessingTask>;
   private worker: ProcessingWorker;
-  
+
   // Configuration
   private cacheConfig: CacheConfig;
   private loadingConfig: LoadingConfig;
   private optimizationConfig: OptimizationConfig;
   private streamingConfig: StreamingConfig;
-  
+
   // CDN and storage
   private cdnManager: CDNManager;
   private storageManager: StorageManager;
-  
+
   // Monitoring and analytics
   private performanceMonitor: PerformanceMonitor;
   private analytics: AssetAnalytics;
-  
+
   // Statistics
   private stats = {
     assetsLoaded: 0,
@@ -219,7 +231,7 @@ export class AdvancedAssetPipeline {
       enabled: true,
       maxSize: 500 * 1024 * 1024, // 500MB
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      strategy: 'lru',
+      strategy: "lru",
       persistToDisk: true,
       diskCacheSize: 2 * 1024 * 1024 * 1024, // 2GB
       ...config?.cache,
@@ -242,8 +254,8 @@ export class AdvancedAssetPipeline {
       compressionLevel: 6,
       generateMipMaps: true,
       automaticLOD: true,
-      textureCompression: 'bc',
-      audioCompression: 'opus',
+      textureCompression: "bc",
+      audioCompression: "opus",
       modelOptimization: true,
       meshSimplification: false,
       ...config?.optimization,
@@ -254,8 +266,8 @@ export class AdvancedAssetPipeline {
       chunkSize: 256 * 1024, // 256KB
       prefetchDistance: 2,
       adaptiveBitrate: true,
-      qualityLevels: ['low', 'medium', 'high', 'ultra'],
-      fallbackQuality: 'medium',
+      qualityLevels: ["low", "medium", "high", "ultra"],
+      fallbackQuality: "medium",
       ...config?.streaming,
     };
 
@@ -280,17 +292,17 @@ export class AdvancedAssetPipeline {
     this.registerProcessor(new TextureProcessor());
     this.registerProcessor(new TextureCompressor());
     this.registerProcessor(new MipMapGenerator());
-    
+
     // Audio processors
     this.registerProcessor(new AudioProcessor());
     this.registerProcessor(new AudioCompressor());
     this.registerProcessor(new AudioNormalizer());
-    
+
     // Model processors
     this.registerProcessor(new ModelProcessor());
     this.registerProcessor(new ModelOptimizer());
     this.registerProcessor(new LODGenerator());
-    
+
     // General processors
     this.registerProcessor(new CompressionProcessor());
     this.registerProcessor(new ValidationProcessor());
@@ -298,17 +310,17 @@ export class AdvancedAssetPipeline {
   }
 
   private setupEventHandlers(): void {
-    this.loader.on('load:start', (asset: Asset) => {
+    this.loader.on("load:start", (asset: Asset) => {
       this.performanceMonitor.recordLoadStart(asset.id);
     });
 
-    this.loader.on('load:complete', (asset: Asset) => {
+    this.loader.on("load:complete", (asset: Asset) => {
       this.performanceMonitor.recordLoadComplete(asset.id);
       this.analytics.recordLoad(asset);
       this.stats.assetsLoaded++;
     });
 
-    this.loader.on('load:error', (asset: Asset, _error: Error) => {
+    this.loader.on("load:error", (asset: Asset, _error: Error) => {
       this.stats.errors++;
       logger.error(`Failed to load asset ${asset.id}:`, error);
     });
@@ -335,11 +347,13 @@ export class AdvancedAssetPipeline {
 
   async importAsset(file: File | string, options?: ImportOptions): Promise<Asset> {
     const asset = await this.createAssetFromSource(file, options);
-    
+
     // Validate asset
     const validation = this.validator.validate(asset);
     if (!validation.valid) {
-      throw new Error(`Asset validation failed: ${validation.issues.map(i => i.message).join(', ')}`);
+      throw new Error(
+        `Asset validation failed: ${validation.issues.map((i) => i.message).join(", ")}`,
+      );
     }
 
     // Process asset through pipeline
@@ -359,7 +373,7 @@ export class AdvancedAssetPipeline {
 
     // Cache asset
     await this.cache.store(asset);
-    
+
     // Register asset
     this.assets.set(asset.id, asset);
     this.stats.totalSize += asset.size;
@@ -367,7 +381,10 @@ export class AdvancedAssetPipeline {
     return asset;
   }
 
-  private async createAssetFromSource(source: File | string, options?: ImportOptions): Promise<Asset> {
+  private async createAssetFromSource(
+    source: File | string,
+    options?: ImportOptions,
+  ): Promise<Asset> {
     let data: ArrayBuffer;
     let name: string;
     let format: string;
@@ -390,15 +407,15 @@ export class AdvancedAssetPipeline {
       type: this.detectAssetType(format),
       format,
       size: data.byteLength,
-      url: source instanceof File ? '' : source,
+      url: source instanceof File ? "" : source,
       metadata: {
         tags: options?.tags || [],
-        version: '1.0.0',
+        version: "1.0.0",
         customProperties: options?.metadata || {},
       },
       dependencies: [],
       variants: [],
-      status: 'pending',
+      status: "pending",
       created: new Date(),
       modified: new Date(),
       checksum: await this.calculateChecksum(data),
@@ -452,10 +469,8 @@ export class AdvancedAssetPipeline {
 
     return new Promise((_resolve, __reject) => {
       this.processingQueue.enqueue(task, task.priority);
-      
-      this.worker.process(task)
-        .then(resolve)
-        .catch(reject);
+
+      this.worker.process(task).then(resolve).catch(reject);
     });
   }
 
@@ -484,7 +499,7 @@ export class AdvancedAssetPipeline {
       compressed: options?.compressed || false,
       priority: options?.priority || 1,
       dependencies: options?.dependencies || [],
-      loadStrategy: options?.loadStrategy || 'lazy',
+      loadStrategy: options?.loadStrategy || "lazy",
     };
 
     // Calculate bundle size
@@ -504,7 +519,7 @@ export class AdvancedAssetPipeline {
     if (!bundle) return [];
 
     const assets: Asset[] = [];
-    
+
     for (const assetId of bundle.assets) {
       const asset = await this.loadAsset(assetId);
       if (asset) {
@@ -516,7 +531,7 @@ export class AdvancedAssetPipeline {
   }
 
   async preloadCriticalAssets(assetIds: string[]): Promise<void> {
-    const loadPromises = assetIds.map(id => this.loadAsset(id));
+    const loadPromises = assetIds.map((id) => this.loadAsset(id));
     await Promise.allSettled(loadPromises);
   }
 
@@ -546,7 +561,7 @@ export class AdvancedAssetPipeline {
   private matchesQuery(asset: Asset, query: AssetSearchQuery): boolean {
     if (query.type && asset.type !== query.type) return false;
     if (query.format && asset.format !== query.format) return false;
-    if (query.tags && !query.tags.every(tag => asset.metadata.tags.includes(tag))) return false;
+    if (query.tags && !query.tags.every((tag) => asset.metadata.tags.includes(tag))) return false;
     if (query.text && !asset.name.toLowerCase().includes(query.text.toLowerCase())) return false;
     return true;
   }
@@ -556,68 +571,68 @@ export class AdvancedAssetPipeline {
 
     return assets.sort((_a, _b) => {
       let comparison = 0;
-      
+
       switch (sort.field) {
-        case 'name':
+        case "name":
           comparison = a.name.localeCompare(b.name);
           break;
-        case 'size':
+        case "size":
           comparison = a.size - b.size;
           break;
-        case 'created':
+        case "created":
           comparison = a.created.getTime() - b.created.getTime();
           break;
-        case 'modified':
+        case "modified":
           comparison = a.modified.getTime() - b.modified.getTime();
           break;
       }
 
-      return sort.order === 'desc' ? -comparison : comparison;
+      return sort.order === "desc" ? -comparison : comparison;
     });
   }
 
   // Utility methods
   private detectAssetType(format: string): AssetType {
-    const imageFormats = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff'];
-    const audioFormats = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'opus'];
-    const videoFormats = ['mp4', 'webm', 'avi', 'mov', 'mkv'];
-    const modelFormats = ['gltf', 'glb', 'obj', 'fbx', 'dae'];
+    const imageFormats = ["jpg", "jpeg", "png", "webp", "gif", "bmp", "tiff"];
+    const audioFormats = ["mp3", "wav", "ogg", "m4a", "flac", "opus"];
+    const videoFormats = ["mp4", "webm", "avi", "mov", "mkv"];
+    const modelFormats = ["gltf", "glb", "obj", "fbx", "dae"];
 
-    if (imageFormats.includes(format.toLowerCase())) return 'texture';
-    if (audioFormats.includes(format.toLowerCase())) return 'audio';
-    if (videoFormats.includes(format.toLowerCase())) return 'video';
-    if (modelFormats.includes(format.toLowerCase())) return 'model';
+    if (imageFormats.includes(format.toLowerCase())) return "texture";
+    if (audioFormats.includes(format.toLowerCase())) return "audio";
+    if (videoFormats.includes(format.toLowerCase())) return "video";
+    if (modelFormats.includes(format.toLowerCase())) return "model";
 
-    return 'data';
+    return "data";
   }
 
   private getFormatFromExtension(filename: string): string {
-    return filename.split('.').pop()?.toLowerCase() || '';
+    return filename.split(".").pop()?.toLowerCase() || "";
   }
 
   private getFormatFromMimeType(mimeType: string): string {
     const mimeMap: Record<string, string> = {
-      'image/jpeg': 'jpg',
-      'image/png': 'png',
-      'image/webp': 'webp',
-      'audio/mpeg': 'mp3',
-      'audio/wav': 'wav',
-      'audio/ogg': 'ogg',
-      'video/mp4': 'mp4',
-      'video/webm': 'webm',
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "audio/mpeg": "mp3",
+      "audio/wav": "wav",
+      "audio/ogg": "ogg",
+      "video/mp4": "mp4",
+      "video/webm": "webm",
     };
 
-    return mimeMap[mimeType] || '';
+    return mimeMap[mimeType] || "";
   }
 
   private getNameFromPath(path: string): string {
-    return path.split('/').pop() || path;
+    return path.split("/").pop() || path;
   }
 
   private async calculateChecksum(data: ArrayBuffer): Promise<string> {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
   private generateId(): string {
@@ -679,7 +694,7 @@ interface BundleOptions {
   compressed?: boolean;
   priority?: number;
   dependencies?: string[];
-  loadStrategy?: 'immediate' | 'lazy' | 'preload' | 'streaming';
+  loadStrategy?: "immediate" | "lazy" | "preload" | "streaming";
 }
 
 interface ProcessingTask {
@@ -699,20 +714,24 @@ interface AssetSearchQuery {
 }
 
 interface AssetSort {
-  field: 'name' | 'size' | 'created' | 'modified';
-  order: 'asc' | 'desc';
+  field: "name" | "size" | "created" | "modified";
+  order: "asc" | "desc";
 }
 
 // Helper classes (simplified implementations)
 class AssetLoader {
   constructor(private config: LoadingConfig) {}
-  async load(asset: Asset): Promise<Asset> { return asset; }
+  async load(asset: Asset): Promise<Asset> {
+    return asset;
+  }
   on(_event: string, _callback: (...args: any[]) => any): void {}
 }
 
 class AssetCache {
   constructor(private config: CacheConfig) {}
-  async get(_id: string): Promise<Asset | null> { return null; }
+  async get(_id: string): Promise<Asset | null> {
+    return null;
+  }
   async store(_asset: Asset): Promise<void> {}
   async clear(): Promise<void> {}
 }
@@ -740,12 +759,21 @@ class AssetValidator {
 
 class PriorityQueue<T> {
   enqueue(_item: T, _priority: number): void {}
-  dequeue(): T | null { return null; }
+  dequeue(): T | null {
+    return null;
+  }
 }
 
 class ProcessingWorker {
   async process(_task: ProcessingTask): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
   terminate(): void {}
 }
@@ -767,109 +795,193 @@ class AssetAnalytics {
 
 // Processor implementations (simplified)
 class TextureProcessor implements AssetProcessor {
-  name = 'texture';
-  version = '1.0.0';
-  supportedFormats = ['jpg', 'png', 'webp'];
+  name = "texture";
+  version = "1.0.0";
+  supportedFormats = ["jpg", "png", "webp"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class TextureCompressor implements AssetProcessor {
-  name = 'texture-compressor';
-  version = '1.0.0';
-  supportedFormats = ['jpg', 'png'];
+  name = "texture-compressor";
+  version = "1.0.0";
+  supportedFormats = ["jpg", "png"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class MipMapGenerator implements AssetProcessor {
-  name = 'mipmap-generator';
-  version = '1.0.0';
-  supportedFormats = ['jpg', 'png'];
+  name = "mipmap-generator";
+  version = "1.0.0";
+  supportedFormats = ["jpg", "png"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class AudioProcessor implements AssetProcessor {
-  name = 'audio';
-  version = '1.0.0';
-  supportedFormats = ['mp3', 'wav', 'ogg'];
+  name = "audio";
+  version = "1.0.0";
+  supportedFormats = ["mp3", "wav", "ogg"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class AudioCompressor implements AssetProcessor {
-  name = 'audio-compressor';
-  version = '1.0.0';
-  supportedFormats = ['wav', 'flac'];
+  name = "audio-compressor";
+  version = "1.0.0";
+  supportedFormats = ["wav", "flac"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class AudioNormalizer implements AssetProcessor {
-  name = 'audio-normalizer';
-  version = '1.0.0';
-  supportedFormats = ['mp3', 'wav', 'ogg'];
+  name = "audio-normalizer";
+  version = "1.0.0";
+  supportedFormats = ["mp3", "wav", "ogg"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class ModelProcessor implements AssetProcessor {
-  name = 'model';
-  version = '1.0.0';
-  supportedFormats = ['gltf', 'glb', 'obj'];
+  name = "model";
+  version = "1.0.0";
+  supportedFormats = ["gltf", "glb", "obj"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class ModelOptimizer implements AssetProcessor {
-  name = 'model-optimizer';
-  version = '1.0.0';
-  supportedFormats = ['gltf', 'glb'];
+  name = "model-optimizer";
+  version = "1.0.0";
+  supportedFormats = ["gltf", "glb"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class LODGenerator implements AssetProcessor {
-  name = 'lod-generator';
-  version = '1.0.0';
-  supportedFormats = ['gltf', 'glb'];
+  name = "lod-generator";
+  version = "1.0.0";
+  supportedFormats = ["gltf", "glb"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class CompressionProcessor implements AssetProcessor {
-  name = 'compression';
-  version = '1.0.0';
-  supportedFormats = ['*'];
+  name = "compression";
+  version = "1.0.0";
+  supportedFormats = ["*"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class ValidationProcessor implements AssetProcessor {
-  name = 'validation';
-  version = '1.0.0';
-  supportedFormats = ['*'];
+  name = "validation";
+  version = "1.0.0";
+  supportedFormats = ["*"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }
 
 class MetadataExtractor implements AssetProcessor {
-  name = 'metadata-extractor';
-  version = '1.0.0';
-  supportedFormats = ['*'];
+  name = "metadata-extractor";
+  version = "1.0.0";
+  supportedFormats = ["*"];
   async process(asset: Asset, _options: Record<string, any>): Promise<ProcessingResult> {
-    return { success: true, outputAssets: [asset], warnings: [], errors: [], metadata: Record<string, any>, processingTime: 0 };
+    return {
+      success: true,
+      outputAssets: [asset],
+      warnings: [],
+      errors: [],
+      metadata: Record<string, any>,
+      processingTime: 0,
+    };
   }
 }

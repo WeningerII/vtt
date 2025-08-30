@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Unified Cross-System Event Bus
@@ -6,7 +6,7 @@ import { logger } from '@vtt/logging';
  */
 
 export interface EventData {
-  source: 'rules' | 'ai' | 'content' | 'visual_scripting' | 'game' | 'user' | 'event_bus';
+  source: "rules" | "ai" | "content" | "visual_scripting" | "game" | "user" | "event_bus";
   timestamp: number;
   sessionId?: string;
   userId?: string;
@@ -14,10 +14,23 @@ export interface EventData {
 }
 
 export interface GameEvent extends EventData {
-  type: 'combat_start' | 'combat_end' | 'turn_start' | 'turn_end' | 'character_death' | 
-        'spell_cast' | 'damage_dealt' | 'condition_applied' | 'movement' | 'interaction' |
-        'rule_triggered' | 'automation_executed' | 'content_generated' | 'script_executed' |
-        'session_created' | 'session_ended';
+  type:
+    | "combat_start"
+    | "combat_end"
+    | "turn_start"
+    | "turn_end"
+    | "character_death"
+    | "spell_cast"
+    | "damage_dealt"
+    | "condition_applied"
+    | "movement"
+    | "interaction"
+    | "rule_triggered"
+    | "automation_executed"
+    | "content_generated"
+    | "script_executed"
+    | "session_created"
+    | "session_ended";
   entityId?: string;
   targetId?: string;
   position?: { x: number; y: number };
@@ -26,8 +39,15 @@ export interface GameEvent extends EventData {
 }
 
 export interface ContentEvent extends EventData {
-  type: 'asset_created' | 'asset_modified' | 'asset_deleted' | 'generation_requested' |
-        'generation_completed' | 'import_completed' | 'export_completed' | 'content_generated';
+  type:
+    | "asset_created"
+    | "asset_modified"
+    | "asset_deleted"
+    | "generation_requested"
+    | "generation_completed"
+    | "import_completed"
+    | "export_completed"
+    | "content_generated";
   assetId?: string;
   assetType?: string;
   context?: Record<string, any>;
@@ -35,16 +55,28 @@ export interface ContentEvent extends EventData {
 }
 
 export interface AIEvent extends EventData {
-  type: 'decision_made' | 'behavior_changed' | 'goal_updated' | 'pathfinding_completed' |
-        'state_transition' | 'personality_modified' | 'memory_updated';
+  type:
+    | "decision_made"
+    | "behavior_changed"
+    | "goal_updated"
+    | "pathfinding_completed"
+    | "state_transition"
+    | "personality_modified"
+    | "memory_updated";
   entityId: string;
   context?: Record<string, any>;
   data: any;
 }
 
 export interface RuleEvent extends EventData {
-  type: 'rule_evaluated' | 'effect_applied' | 'workflow_started' | 'workflow_completed' |
-        'condition_met' | 'trigger_activated' | 'automation_triggered';
+  type:
+    | "rule_evaluated"
+    | "effect_applied"
+    | "workflow_started"
+    | "workflow_completed"
+    | "condition_met"
+    | "trigger_activated"
+    | "automation_triggered";
   ruleId?: string;
   workflowId?: string;
   context?: Record<string, any>;
@@ -76,7 +108,7 @@ export class UnifiedEventBus {
     eventsProcessed: 0,
     handlersExecuted: 0,
     averageProcessingTime: 0,
-    errorCount: 0
+    errorCount: 0,
   };
 
   constructor() {
@@ -93,20 +125,21 @@ export class UnifiedEventBus {
       priority?: number;
       once?: boolean;
       filter?: (event: T) => boolean;
-    } = {}
+    } = {},
   ): string {
     const subscription: EventSubscription = {
       id: this.generateId(),
       eventType,
-      handler: options.filter ? 
-        (event: SystemEvent) => {
-          if (options.filter!(event as T)) {
-            return handler(event as T);
+      handler: options.filter
+        ? (event: SystemEvent) => {
+            if (options.filter!(event as T)) {
+              return handler(event as T);
+            }
           }
-        } : handler as EventHandler,
+        : (handler as EventHandler),
       once: options.once || false,
       priority: options.priority || 0,
-      active: true
+      active: true,
     };
 
     if (!this.subscriptions.has(eventType)) {
@@ -115,7 +148,7 @@ export class UnifiedEventBus {
 
     const handlers = this.subscriptions.get(eventType)!;
     handlers.push(subscription);
-    
+
     // Sort by priority (higher priority first)
     handlers.sort((_a, _b) => b.priority - a.priority);
 
@@ -128,7 +161,7 @@ export class UnifiedEventBus {
   once<T extends SystemEvent>(
     _eventType: string,
     _handler: EventHandler<T>,
-    options: { priority?: number; filter?: (event: T) => boolean } = {}
+    options: { priority?: number; filter?: (event: T) => boolean } = {},
   ): string {
     return this.on(eventType, handler, { ...options, once: true });
   }
@@ -138,7 +171,7 @@ export class UnifiedEventBus {
    */
   off(subscriptionId: string): boolean {
     for (const [eventType, handlers] of this.subscriptions.entries()) {
-      const index = handlers.findIndex(h => h.id === subscriptionId);
+      const index = handlers.findIndex((h) => h.id === subscriptionId);
       if (index >= 0) {
         handlers.splice(index, 1);
         if (handlers.length === 0) {
@@ -162,7 +195,7 @@ export class UnifiedEventBus {
 
     // Add to processing queue
     this.eventQueue.push(event);
-    
+
     if (!this.processing) {
       await this.processQueue();
     }
@@ -181,11 +214,10 @@ export class UnifiedEventBus {
     }
 
     this.processing = false;
-    
+
     // Update stats
     const processingTime = performance.now() - startTime;
-    this.stats.averageProcessingTime = 
-      (this.stats.averageProcessingTime + processingTime) / 2;
+    this.stats.averageProcessingTime = (this.stats.averageProcessingTime + processingTime) / 2;
   }
 
   /**
@@ -193,8 +225,8 @@ export class UnifiedEventBus {
    */
   private async processEvent(event: SystemEvent): Promise<void> {
     const handlers = this.subscriptions.get(event.type) || [];
-    const globalHandlers = this.subscriptions.get('*') || [];
-    const allHandlers = [...handlers, ...globalHandlers].filter(h => h.active);
+    const globalHandlers = this.subscriptions.get("*") || [];
+    const allHandlers = [...handlers, ...globalHandlers].filter((h) => h.active);
 
     this.stats.eventsProcessed++;
 
@@ -204,7 +236,7 @@ export class UnifiedEventBus {
         if (result instanceof Promise) {
           await result;
         }
-        
+
         this.stats.handlersExecuted++;
 
         // Remove one-time subscriptions
@@ -215,17 +247,17 @@ export class UnifiedEventBus {
       } catch (error) {
         this.stats.errorCount++;
         logger.error(`Event handler error for ${event.type}:`, error);
-        
+
         // Emit error event
         this.emitSync({
-          type: 'handler_error' as any,
-          source: 'event_bus',
+          type: "handler_error" as any,
+          source: "event_bus",
           timestamp: Date.now(),
-          data: { 
+          data: {
             originalEvent: event,
             error: error instanceof Error ? error.message : String(error),
-            handlerId: subscription.id
-          }
+            handlerId: subscription.id,
+          },
         });
       }
     }
@@ -245,32 +277,35 @@ export class UnifiedEventBus {
   /**
    * Get event history with filtering
    */
-  getHistory(options: {
-    eventType?: string;
-    source?: string;
-    entityId?: string;
-    since?: number;
-    limit?: number;
-  } = {}): SystemEvent[] {
+  getHistory(
+    options: {
+      eventType?: string;
+      source?: string;
+      entityId?: string;
+      since?: number;
+      limit?: number;
+    } = {},
+  ): SystemEvent[] {
     let events = this.eventHistory;
 
     if (options.eventType) {
-      events = events.filter(e => e.type === options.eventType);
+      events = events.filter((e) => e.type === options.eventType);
     }
 
     if (options.source) {
-      events = events.filter(e => e.source === options.source);
+      events = events.filter((e) => e.source === options.source);
     }
 
     if (options.entityId) {
-      events = events.filter(e => 
-        ('entityId' in e && e.entityId === options.entityId) ||
-        ('assetId' in e && e.assetId === options.entityId)
+      events = events.filter(
+        (e) =>
+          ("entityId" in e && e.entityId === options.entityId) ||
+          ("assetId" in e && e.assetId === options.entityId),
       );
     }
 
     if (options.since) {
-      events = events.filter(e => e.timestamp >= options.since!);
+      events = events.filter((e) => e.timestamp >= options.since!);
     }
 
     if (options.limit) {
@@ -294,7 +329,7 @@ export class UnifiedEventBus {
     for (const event of events) {
       this.eventQueue.push(event);
     }
-    
+
     if (!this.processing) {
       await this.processQueue();
     }
@@ -320,8 +355,14 @@ export class UnifiedEventBus {
       ...this.stats,
       queueSize: this.eventQueue.length,
       historySize: this.eventHistory.length,
-      subscriptionCount: Array.from(this.subscriptions.values()).reduce((_sum, _handlers) => sum + handlers.length, 0),
-      activeSubscriptions: Array.from(this.subscriptions.values()).reduce((_sum, _handlers) => sum + handlers.filter(h => h.active).length, 0)
+      subscriptionCount: Array.from(this.subscriptions.values()).reduce(
+        (_sum, _handlers) => sum + handlers.length,
+        0,
+      ),
+      activeSubscriptions: Array.from(this.subscriptions.values()).reduce(
+        (_sum, _handlers) => sum + handlers.filter((h) => h.active).length,
+        0,
+      ),
     };
   }
 
@@ -345,23 +386,23 @@ export class UnifiedEventBus {
  */
 export class EventCorrelation {
   private events: SystemEvent[] = [];
-  
+
   constructor(
     public readonly id: string,
-    private eventBus: UnifiedEventBus
+    private eventBus: UnifiedEventBus,
   ) {}
 
   /**
    * Emit event with correlation
    */
-  async emit(event: Omit<SystemEvent, 'metadata'>): Promise<void> {
+  async emit(event: Omit<SystemEvent, "metadata">): Promise<void> {
     const correlatedEvent = {
       ...event,
       metadata: {
-        correlationId: this.id
-      }
+        correlationId: this.id,
+      },
     } as SystemEvent;
-    
+
     this.events.push(correlatedEvent);
     await this.eventBus.emit(correlatedEvent);
   }
@@ -400,137 +441,137 @@ export const _globalEventBus = new UnifiedEventBus();
 // Convenience functions for common event types
 export const _GameEvents = {
   combatStart: (entityId: string, data: any): GameEvent => ({
-    type: 'combat_start',
-    source: 'game',
+    type: "combat_start",
+    source: "game",
     timestamp: Date.now(),
     entityId,
-    data
+    data,
   }),
 
   combatEnd: (data: any): GameEvent => ({
-    type: 'combat_end',
-    source: 'game',
+    type: "combat_end",
+    source: "game",
     timestamp: Date.now(),
-    data
+    data,
   }),
 
   spellCast: (entityId: string, targetId: string, spellData: any): GameEvent => ({
-    type: 'spell_cast',
-    source: 'game',
+    type: "spell_cast",
+    source: "game",
     timestamp: Date.now(),
     entityId,
     targetId,
-    data: spellData
+    data: spellData,
   }),
 
   damageDealt: (entityId: string, targetId: string, damage: number, type?: string): GameEvent => ({
-    type: 'damage_dealt',
-    source: 'game',
+    type: "damage_dealt",
+    source: "game",
     timestamp: Date.now(),
     entityId,
     targetId,
-    data: { damage, type }
+    data: { damage, type },
   }),
 
   sessionCreated: (sessionId: string, sessionName: string): GameEvent => ({
-    type: 'session_created',
-    source: 'game',
+    type: "session_created",
+    source: "game",
     timestamp: Date.now(),
     sessionId,
-    data: { sessionName }
+    data: { sessionName },
   }),
 
   sessionEnded: (sessionId: string): GameEvent => ({
-    type: 'session_ended',
-    source: 'game',
+    type: "session_ended",
+    source: "game",
     timestamp: Date.now(),
     sessionId,
-    data: Record<string, any>
-  })
+    data: Record<string, any>,
+  }),
 };
 
 export const _AIEvents = {
   decisionMade: (entityId: string, decision: any): AIEvent => ({
-    type: 'decision_made',
-    source: 'ai',
+    type: "decision_made",
+    source: "ai",
     timestamp: Date.now(),
     entityId,
-    data: decision
+    data: decision,
   }),
 
   behaviorChanged: (entityId: string, oldBehavior: string, newBehavior: string): AIEvent => ({
-    type: 'behavior_changed',
-    source: 'ai',
+    type: "behavior_changed",
+    source: "ai",
     timestamp: Date.now(),
     entityId,
-    data: { oldBehavior, newBehavior }
+    data: { oldBehavior, newBehavior },
   }),
 
   stateTransition: (entityId: string, fromState: string, toState: string): AIEvent => ({
-    type: 'state_transition',
-    source: 'ai',
+    type: "state_transition",
+    source: "ai",
     timestamp: Date.now(),
     entityId,
-    data: { fromState, toState }
-  })
+    data: { fromState, toState },
+  }),
 };
 
 export const _ContentEvents = {
   assetCreated: (assetId: string, assetType: string, data: any): ContentEvent => ({
-    type: 'asset_created',
-    source: 'content',
+    type: "asset_created",
+    source: "content",
     timestamp: Date.now(),
     assetId,
     assetType,
-    data
+    data,
   }),
 
   generationRequested: (prompt: string, type: string, options?: any): ContentEvent => ({
-    type: 'generation_requested',
-    source: 'content',
+    type: "generation_requested",
+    source: "content",
     timestamp: Date.now(),
-    data: { prompt, type, options }
+    data: { prompt, type, options },
   }),
 
   generationCompleted: (assetId: string, generationData: any): ContentEvent => ({
-    type: 'generation_completed',
-    source: 'content',
+    type: "generation_completed",
+    source: "content",
     timestamp: Date.now(),
     assetId,
-    data: generationData
+    data: generationData,
   }),
 
   contentGenerated: (contentType: string, assetId: string, content: any): ContentEvent => ({
-    type: 'content_generated',
-    source: 'content',
+    type: "content_generated",
+    source: "content",
     timestamp: Date.now(),
     assetId,
-    data: { contentType, content }
-  })
+    data: { contentType, content },
+  }),
 };
 
 export const _RuleEvents = {
   ruleEvaluated: (ruleId: string, result: boolean, context: any): RuleEvent => ({
-    type: 'rule_evaluated',
-    source: 'rules',
+    type: "rule_evaluated",
+    source: "rules",
     timestamp: Date.now(),
     ruleId,
-    data: { result, context }
+    data: { result, context },
   }),
 
   effectApplied: (ruleId: string, effect: any, target: string): RuleEvent => ({
-    type: 'effect_applied',
-    source: 'rules',
+    type: "effect_applied",
+    source: "rules",
     timestamp: Date.now(),
     ruleId,
-    data: { effect, target }
+    data: { effect, target },
   }),
 
   workflowStarted: (workflowId: string, parameters: any): RuleEvent => ({
-    type: 'workflow_started',
-    source: 'rules',
+    type: "workflow_started",
+    source: "rules",
     timestamp: Date.now(),
     workflowId,
-    data: parameters
-  })
+    data: parameters,
+  }),
 };

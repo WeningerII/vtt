@@ -39,10 +39,10 @@ export class SparseSet<T> {
    */
   get(entityId: number): T | undefined {
     if (entityId >= this.sparse.length) return undefined;
-    
+
     const denseIndex = this.sparse[entityId];
     if (denseIndex === undefined || denseIndex === -1 || denseIndex >= this.size) return undefined;
-    
+
     return this.components[denseIndex]!;
   }
 
@@ -51,7 +51,7 @@ export class SparseSet<T> {
    */
   has(entityId: number): boolean {
     if (entityId >= this.sparse.length) return false;
-    
+
     const denseIndex = this.sparse[entityId];
     if (denseIndex === undefined) return false;
     return denseIndex !== -1 && denseIndex < this.size && this.dense[denseIndex] === entityId;
@@ -127,7 +127,7 @@ export class SparseSet<T> {
       denseSize: this.size,
       capacity: this.components.length,
       utilization: this.size / this.sparse.length,
-      memoryEfficiency: this.size / (this.maxEntityId + 1)
+      memoryEfficiency: this.size / (this.maxEntityId + 1),
     };
   }
 
@@ -138,12 +138,12 @@ export class SparseSet<T> {
     if (entityId >= this.sparse.length) {
       const newSize = Math.max(entityId + 1, this.sparse.length * 2);
       const newSparse = new Array(newSize).fill(-1);
-      
+
       // Copy existing data
       for (let i = 0; i < this.sparse.length; i++) {
         newSparse[i] = this.sparse[i];
       }
-      
+
       this.sparse = newSparse;
     }
 
@@ -162,11 +162,11 @@ export class SparseSet<T> {
     if (this.maxEntityId + 1 < this.sparse.length / 2) {
       const newSize = Math.max(this.maxEntityId + 1, 16);
       const newSparse = new Array(newSize).fill(-1);
-      
+
       for (let i = 0; i <= this.maxEntityId; i++) {
         newSparse[i] = this.sparse[i];
       }
-      
+
       this.sparse = newSparse;
     }
   }
@@ -250,15 +250,15 @@ export class MultiSparseSet {
    */
   getEntitiesWithComponents(componentTypes: string[]): number[] {
     if (componentTypes.length === 0) return [];
-    
+
     const firstType = componentTypes[0]!;
     const firstSet = this.sparseSets.get(firstType);
     if (!firstSet) return [];
 
     const candidates = firstSet.entities();
-    
-    return candidates.filter(entityId => 
-      componentTypes.every(type => this.hasComponent(entityId, type))
+
+    return candidates.filter((entityId) =>
+      componentTypes.every((type) => this.hasComponent(entityId, type)),
     );
   }
 
@@ -297,7 +297,7 @@ export class MultiSparseSet {
       averageUtilization: totalSets > 0 ? totalUtilization / totalSets : 0,
       globalVersion: this.globalVersion,
       entityVersions: this.entityVersions.size,
-      componentStats: stats
+      componentStats: stats,
     };
   }
 

@@ -3,11 +3,11 @@
  * Provides secure handling of environment variables and secrets
  */
 
-import * as dotenv from 'dotenv';
-import { logger } from '@vtt/logging';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as crypto from 'crypto';
+import * as dotenv from "dotenv";
+import { logger } from "@vtt/logging";
+import * as path from "path";
+import * as fs from "fs";
+import * as crypto from "crypto";
 
 export interface SecretConfig {
   envFile?: string;
@@ -55,7 +55,7 @@ export class SecretManager {
       }
     }
     if (missing.length > 0) {
-      throw new Error(`Missing required secrets: ${missing.join(', ')}`);
+      throw new Error(`Missing required secrets: ${missing.join(", ")}`);
     }
   }
 
@@ -88,25 +88,25 @@ export class SecretManager {
    * Encrypt a value for storage
    */
   public encrypt(value: string, key?: string): string {
-    const encryptionKey = key || this.getRequired('ENCRYPTION_KEY');
+    const encryptionKey = key || this.getRequired("ENCRYPTION_KEY");
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey, 'hex'), iv);
-    let encrypted = cipher.update(value, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted;
+    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(encryptionKey, "hex"), iv);
+    let encrypted = cipher.update(value, "utf8", "hex");
+    encrypted += cipher.final("hex");
+    return iv.toString("hex") + ":" + encrypted;
   }
 
   /**
    * Decrypt a value from storage
    */
   public decrypt(encryptedValue: string, key?: string): string {
-    const encryptionKey = key || this.getRequired('ENCRYPTION_KEY');
-    const parts = encryptedValue.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
+    const encryptionKey = key || this.getRequired("ENCRYPTION_KEY");
+    const parts = encryptedValue.split(":");
+    const iv = Buffer.from(parts[0], "hex");
     const encrypted = parts[1];
-    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(encryptionKey, 'hex'), iv);
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(encryptionKey, "hex"), iv);
+    let decrypted = decipher.update(encrypted, "hex", "utf8");
+    decrypted += decipher.final("utf8");
     return decrypted;
   }
 
@@ -116,15 +116,15 @@ export class SecretManager {
   public async loadFromVault(vaultUrl?: string): Promise<void> {
     const url = vaultUrl || this.config.vaultUrl;
     if (!url) {
-      throw new Error('Vault URL not configured');
+      throw new Error("Vault URL not configured");
     }
     // Vault integration implementation
     try {
       const vaultToken = process.env.VAULT_TOKEN;
-      const vaultNamespace = process.env.VAULT_NAMESPACE || 'secret';
-      
+      const vaultNamespace = process.env.VAULT_NAMESPACE || "secret";
+
       if (!vaultToken) {
-        throw new Error('VAULT_TOKEN environment variable not set');
+        throw new Error("VAULT_TOKEN environment variable not set");
       }
 
       // Basic vault integration structure (would use actual vault client in production)
@@ -133,7 +133,7 @@ export class SecretManager {
           logger.info(`[VAULT] Reading from ${vaultUrl}/${vaultNamespace}/${path}`);
           try {
             const response = await fetch(`${vaultUrl}/v1/${vaultNamespace}/${path}`, {
-              headers: { 'X-Vault-Token': vaultToken }
+              headers: { "X-Vault-Token": vaultToken },
             });
             if (!response.ok) {
               throw new Error(`Vault read failed: ${response.statusText}`);
@@ -149,9 +149,9 @@ export class SecretManager {
           logger.info(`[VAULT] Writing to ${vaultUrl}/${vaultNamespace}/${path}`);
           try {
             const response = await fetch(`${vaultUrl}/v1/${vaultNamespace}/${path}`, {
-              method: 'POST',
-              headers: { 'X-Vault-Token': vaultToken, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ data })
+              method: "POST",
+              headers: { "X-Vault-Token": vaultToken, "Content-Type": "application/json" },
+              body: JSON.stringify({ data }),
             });
             if (!response.ok) {
               throw new Error(`Vault write failed: ${response.statusText}`);
@@ -161,14 +161,13 @@ export class SecretManager {
             logger.error(`Failed to write to vault: ${error}`);
             return null;
           }
-        }
+        },
       };
 
-      logger.info('[VAULT] Vault client initialized (stub implementation)');
+      logger.info("[VAULT] Vault client initialized (stub implementation)");
       return vaultClient;
-      
     } catch (error) {
-      logger.error('[VAULT] Failed to initialize vault integration:', error);
+      logger.error("[VAULT] Failed to initialize vault integration:", error);
       throw error;
     }
   }
@@ -179,23 +178,23 @@ export class SecretManager {
   public async rotateSecret(key: string, newValue: string): Promise<void> {
     const oldValue = this.get(key);
     this.set(key, newValue);
-    
+
     // Audit logging for secret rotation
     const auditEvent = {
       timestamp: new Date().toISOString(),
-      action: 'secret_rotation',
+      action: "secret_rotation",
       key: key,
       oldValueHash: oldValue ? this.hashValue(oldValue) : null,
       newValueHash: this.hashValue(newValue),
-      source: 'SecretManager',
+      source: "SecretManager",
       metadata: {
-        rotatedBy: process.env.USER || 'system',
-        environment: process.env.NODE_ENV || 'unknown'
-      }
+        rotatedBy: process.env.USER || "system",
+        environment: process.env.NODE_ENV || "unknown",
+      },
     };
-    
-    logger.info('[AUDIT]', JSON.stringify(auditEvent));
-    
+
+    logger.info("[AUDIT]", JSON.stringify(auditEvent));
+
     // Notification/webhook for secret rotation
     await this.sendRotationNotification(key, auditEvent);
     return Promise.resolve();
@@ -205,8 +204,8 @@ export class SecretManager {
    * Hash a value for audit logging (one-way hash for security)
    */
   private hashValue(value: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(value).digest('hex').substring(0, 16);
+    const crypto = require("crypto");
+    return crypto.createHash("sha256").update(value).digest("hex").substring(0, 16);
   }
 
   /**
@@ -214,35 +213,35 @@ export class SecretManager {
    */
   private async sendRotationNotification(key: string, auditEvent: any): Promise<void> {
     const webhookUrl = process.env.SECRET_ROTATION_WEBHOOK_URL;
-    
+
     if (!webhookUrl) {
-      logger.warn('No webhook URL configured for secret rotation notifications');
+      logger.warn("No webhook URL configured for secret rotation notifications");
       return;
     }
 
     try {
       const payload = {
-        event: 'secret_rotation',
+        event: "secret_rotation",
         key: key,
         timestamp: auditEvent.timestamp,
         environment: auditEvent.metadata.environment,
-        rotatedBy: auditEvent.metadata.rotatedBy
+        rotatedBy: auditEvent.metadata.rotatedBy,
       };
 
       // Send webhook notification
       logger.info(`[WEBHOOK] Sending to ${webhookUrl}:`, JSON.stringify(payload));
-      
+
       try {
         const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'X-VTT-Event': event,
-            'X-VTT-Timestamp': new Date().toISOString()
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-VTT-Event": event,
+            "X-VTT-Timestamp": new Date().toISOString(),
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
-        
+
         if (!response.ok) {
           logger.error(`Webhook failed with status ${response.status}: ${response.statusText}`);
         } else {
@@ -251,9 +250,8 @@ export class SecretManager {
       } catch (error) {
         logger.error(`Failed to send webhook: ${error}`);
       }
-      
     } catch (error) {
-      logger.error('Failed to send secret rotation notification:', error);
+      logger.error("Failed to send secret rotation notification:", error);
     }
   }
 }

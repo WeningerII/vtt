@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useLocalStorage, useDebounce, useThrottle } from 'usehooks-ts';
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useLocalStorage, useDebounce, useThrottle } from "usehooks-ts";
 
 // Re-export popular hooks from libraries
-export { 
+export {
   useLocalStorage,
   useDebounce,
   useThrottle,
@@ -16,15 +16,15 @@ export {
   useFetch,
   useScript,
   useWindowSize,
-  useScrollPosition
-} from 'usehooks-ts';
+  useScrollPosition,
+} from "usehooks-ts";
 
 // Custom auth hook placeholder
 export const useAuth = () => {
   // This should be implemented based on your auth system
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  
+
   return {
     isAuthenticated,
     user,
@@ -34,7 +34,7 @@ export const useAuth = () => {
     logout: () => {
       setIsAuthenticated(false);
       setUser(null);
-    }
+    },
   };
 };
 
@@ -42,7 +42,7 @@ export const useAuth = () => {
 export const useGame = () => {
   const [gameState, setGameState] = useState(null);
   const [players, setPlayers] = useState([]);
-  
+
   return {
     gameState,
     players,
@@ -52,7 +52,7 @@ export const useGame = () => {
     leaveGame: () => {
       setGameState(null);
       setPlayers([]);
-    }
+    },
   };
 };
 
@@ -61,22 +61,22 @@ export const useWebSocket = (url: string) => {
   const [isConnected, setIsConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState(null);
   const ws = useRef<WebSocket | null>(null);
-  
+
   useEffect(() => {
     ws.current = new WebSocket(url);
-    
+
     ws.current.onopen = () => setIsConnected(true);
     ws.current.onclose = () => setIsConnected(false);
     ws.current.onmessage = (event) => setLastMessage(event.data);
-    
+
     return () => {
       ws.current?.close();
     };
   }, [url]);
-  
+
   const sendMessage = useCallback((message: string) => {
     ws.current?.send(message);
   }, []);
-  
+
   return { isConnected, lastMessage, sendMessage };
 };

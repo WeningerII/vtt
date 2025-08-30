@@ -1,49 +1,48 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // Components that need keyboard navigation
 const componentsToFix = [
-  'CombatTracker.tsx',
-  'CombatTrackerIntegrated.tsx',
-  'MonsterBrowser.tsx',
-  'CharacterSheet.tsx',
-  'DiceRoller.tsx',
-  'GameLobby.tsx',
-  'MapEditor.tsx',
-  'AIAssistant.tsx',
-  'EncounterGenerator.tsx'
+  "CombatTracker.tsx",
+  "CombatTrackerIntegrated.tsx",
+  "MonsterBrowser.tsx",
+  "CharacterSheet.tsx",
+  "DiceRoller.tsx",
+  "GameLobby.tsx",
+  "MapEditor.tsx",
+  "AIAssistant.tsx",
+  "EncounterGenerator.tsx",
 ];
 
 function addKeyboardNavigation(filePath) {
-  let content = fs.readFileSync(filePath, 'utf8');
+  let content = fs.readFileSync(filePath, "utf8");
   let modified = false;
   const fileName = path.basename(filePath);
-  
+
   // Add keyboard event handlers for buttons if not present
-  if (!content.includes('onKeyDown') && content.includes('<button')) {
-    
+  if (!content.includes("onKeyDown") && content.includes("<button")) {
     // For CombatTracker - add keyboard shortcuts
-    if (fileName === 'CombatTracker.tsx' || fileName === 'CombatTrackerIntegrated.tsx') {
+    if (fileName === "CombatTracker.tsx" || fileName === "CombatTrackerIntegrated.tsx") {
       // Add useEffect for keyboard shortcuts
       const importLine = content.match(/import React.*from 'react';/);
-      if (importLine && !content.includes('useEffect')) {
+      if (importLine && !content.includes("useEffect")) {
         content = content.replace(
           /import React, \{ useState/g,
-          'import React, { useState, useEffect'
+          "import React, { useState, useEffect",
         );
         modified = true;
       }
-      
+
       // Add keyboard handler after component declaration
-      const componentStart = content.indexOf('export const CombatTracker');
+      const componentStart = content.indexOf("export const CombatTracker");
       if (componentStart !== -1) {
-        const functionBodyStart = content.indexOf('{', componentStart);
-        const firstHook = content.indexOf('useState', functionBodyStart);
+        const functionBodyStart = content.indexOf("{", componentStart);
+        const firstHook = content.indexOf("useState", functionBodyStart);
         if (firstHook !== -1) {
-          const insertPoint = content.indexOf('\n', firstHook) + 1;
-          
+          const insertPoint = content.indexOf("\n", firstHook) + 1;
+
           const keyboardHandler = `
   // Keyboard navigation
   useEffect(() => {
@@ -84,34 +83,34 @@ function addKeyboardNavigation(filePath) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isActive, readOnly, onNextTurn, onPreviousTurn, onStartCombat, onEndCombat]);
 `;
-          
-          if (!content.includes('handleKeyDown')) {
+
+          if (!content.includes("handleKeyDown")) {
             content = content.slice(0, insertPoint) + keyboardHandler + content.slice(insertPoint);
             modified = true;
           }
         }
       }
     }
-    
+
     // For MonsterBrowser - add arrow key navigation
-    if (fileName === 'MonsterBrowser.tsx') {
+    if (fileName === "MonsterBrowser.tsx") {
       const importLine = content.match(/import React.*from 'react';/);
-      if (importLine && !content.includes('useEffect')) {
+      if (importLine && !content.includes("useEffect")) {
         content = content.replace(
           /import React, \{ useState/g,
-          'import React, { useState, useEffect'
+          "import React, { useState, useEffect",
         );
         modified = true;
       }
-      
+
       // Add keyboard navigation for monster selection
-      const componentStart = content.indexOf('export const MonsterBrowser');
-      if (componentStart !== -1 && !content.includes('handleKeyDown')) {
-        const functionBodyStart = content.indexOf('{', componentStart);
-        const firstHook = content.indexOf('useState', functionBodyStart);
+      const componentStart = content.indexOf("export const MonsterBrowser");
+      if (componentStart !== -1 && !content.includes("handleKeyDown")) {
+        const functionBodyStart = content.indexOf("{", componentStart);
+        const firstHook = content.indexOf("useState", functionBodyStart);
         if (firstHook !== -1) {
-          const insertPoint = content.indexOf('\n', firstHook) + 1;
-          
+          const insertPoint = content.indexOf("\n", firstHook) + 1;
+
           const keyboardHandler = `
   // Keyboard navigation for monster selection
   const [focusedIndex, setFocusedIndex] = useState(0);
@@ -159,22 +158,22 @@ function addKeyboardNavigation(filePath) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [filteredMonsters, focusedIndex, multiSelect, onSelectMonster]);
 `;
-          
+
           content = content.slice(0, insertPoint) + keyboardHandler + content.slice(insertPoint);
           modified = true;
         }
       }
     }
-    
+
     // For DiceRoller - add keyboard shortcut for rolling
-    if (fileName === 'DiceRoller.tsx') {
-      const componentStart = content.indexOf('export const DiceRoller');
-      if (componentStart !== -1 && !content.includes('handleKeyDown')) {
-        const functionBodyStart = content.indexOf('{', componentStart);
-        const firstHook = content.indexOf('useState', functionBodyStart);
+    if (fileName === "DiceRoller.tsx") {
+      const componentStart = content.indexOf("export const DiceRoller");
+      if (componentStart !== -1 && !content.includes("handleKeyDown")) {
+        const functionBodyStart = content.indexOf("{", componentStart);
+        const firstHook = content.indexOf("useState", functionBodyStart);
         if (firstHook !== -1) {
-          const insertPoint = content.indexOf('\n', firstHook) + 1;
-          
+          const insertPoint = content.indexOf("\n", firstHook) + 1;
+
           const keyboardHandler = `
   // Keyboard shortcut for rolling dice
   useEffect(() => {
@@ -189,54 +188,54 @@ function addKeyboardNavigation(filePath) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 `;
-          
+
           content = content.slice(0, insertPoint) + keyboardHandler + content.slice(insertPoint);
           modified = true;
         }
       }
     }
   }
-  
+
   // Add tabIndex to interactive elements
-  if (!content.includes('tabIndex')) {
+  if (!content.includes("tabIndex")) {
     // Add tabIndex to buttons
     content = content.replace(/<button([^>]*?)>/g, (match, attrs) => {
-      if (!attrs.includes('tabIndex')) {
+      if (!attrs.includes("tabIndex")) {
         return `<button${attrs} tabIndex={0}>`;
       }
       return match;
     });
-    
+
     // Add tabIndex to clickable divs
     content = content.replace(/<div([^>]*?)onClick=/g, (match, attrs) => {
-      if (!attrs.includes('tabIndex')) {
+      if (!attrs.includes("tabIndex")) {
         return `<div${attrs} tabIndex={0} onClick=`;
       }
       return match;
     });
-    
-    if (content.includes('tabIndex={0}')) {
+
+    if (content.includes("tabIndex={0}")) {
       modified = true;
     }
   }
-  
+
   // Add role attributes for accessibility
-  if (!content.includes('role=')) {
+  if (!content.includes("role=")) {
     // Add role="button" to clickable divs
     content = content.replace(/<div([^>]*?)onClick=/g, (match, attrs) => {
-      if (!attrs.includes('role=')) {
+      if (!attrs.includes("role=")) {
         return `<div${attrs} role="button" onClick=`;
       }
       return match;
     });
-    
+
     if (content.includes('role="button"')) {
       modified = true;
     }
   }
-  
+
   if (modified) {
-    fs.writeFileSync(filePath, content, 'utf8');
+    fs.writeFileSync(filePath, content, "utf8");
     return true;
   }
   return false;
@@ -244,8 +243,8 @@ function addKeyboardNavigation(filePath) {
 
 // Process each component
 let fixedCount = 0;
-componentsToFix.forEach(fileName => {
-  const filePath = path.join('/home/weningerii/vtt/apps/client/src/components', fileName);
+componentsToFix.forEach((fileName) => {
+  const filePath = path.join("/home/weningerii/vtt/apps/client/src/components", fileName);
   if (fs.existsSync(filePath)) {
     if (addKeyboardNavigation(filePath)) {
       console.log(`Added keyboard navigation to: ${fileName}`);

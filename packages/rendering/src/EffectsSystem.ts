@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Visual Effects System
@@ -7,7 +7,7 @@ import { logger } from '@vtt/logging';
 
 export interface Effect {
   id: string;
-  type: 'particle' | 'animation' | 'shader' | 'overlay';
+  type: "particle" | "animation" | "shader" | "overlay";
   position: { x: number; y: number; z?: number };
   scale: { x: number; y: number };
   rotation: number;
@@ -15,22 +15,22 @@ export interface Effect {
   duration: number; // ms, -1 for infinite
   startTime: number;
   isActive: boolean;
-  
+
   // Animation properties
   animations: EffectAnimation[];
-  
+
   // Rendering properties
-  blendMode: 'normal' | 'add' | 'multiply' | 'screen' | 'overlay';
+  blendMode: "normal" | "add" | "multiply" | "screen" | "overlay";
   renderOrder: number;
-  
+
   // Targeting
   targetId?: string; // Token or object ID
   followTarget?: boolean;
-  
+
   // Spell/combat specific
   spellName?: string;
   damageType?: string;
-  
+
   // Event callbacks
   onStart?: () => void;
   onUpdate?: (_progress: number) => void;
@@ -38,7 +38,7 @@ export interface Effect {
 }
 
 export interface ParticleEffect extends Effect {
-  type: 'particle';
+  type: "particle";
   particleSystem: {
     maxParticles: number;
     emissionRate: number;
@@ -57,12 +57,12 @@ export interface ParticleEffect extends Effect {
       final: { r: number; g: number; b: number; a: number };
     };
     texture?: string;
-    shape: 'circle' | 'square' | 'triangle' | 'star';
+    shape: "circle" | "square" | "triangle" | "star";
   };
 }
 
 export interface AnimationEffect extends Effect {
-  type: 'animation';
+  type: "animation";
   spriteSheet: {
     texture: string;
     frameWidth: number;
@@ -74,25 +74,25 @@ export interface AnimationEffect extends Effect {
 }
 
 export interface ShaderEffect extends Effect {
-  type: 'shader';
+  type: "shader";
   shaderName: string;
   uniforms: Record<string, any>;
 }
 
 export interface OverlayEffect extends Effect {
-  type: 'overlay';
+  type: "overlay";
   texture: string;
   tiling: { x: number; y: number };
   scrollSpeed: { x: number; y: number };
 }
 
 export interface EffectAnimation {
-  property: 'position' | 'scale' | 'rotation' | 'opacity' | 'color';
+  property: "position" | "scale" | "rotation" | "opacity" | "color";
   from: any;
   to: any;
   duration: number;
   delay: number;
-  easing: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out' | 'bounce' | 'elastic';
+  easing: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "bounce" | "elastic";
   repeat: number; // -1 for infinite
   yoyo: boolean;
 }
@@ -100,7 +100,7 @@ export interface EffectAnimation {
 export interface EffectTemplate {
   id: string;
   name: string;
-  category: 'spell' | 'weapon' | 'environmental' | 'ui';
+  category: "spell" | "weapon" | "environmental" | "ui";
   description: string;
   createEffect: (_position: { x: number; y: number }, _options?: any) => Effect;
   previewImage?: string;
@@ -129,16 +129,16 @@ export class EffectsSystem {
 
     const effect = template.createEffect(position, options);
     effect.startTime = Date.now();
-    
+
     this.effects.set(effect.id, effect);
-    
+
     if (effect.onStart) {
       effect.onStart();
     }
-    
+
     this.emitEvent({
-      type: 'effect-created',
-      data: { effectId: effect.id, effect }
+      type: "effect-created",
+      data: { effectId: effect.id, effect },
     });
 
     return effect.id;
@@ -150,14 +150,14 @@ export class EffectsSystem {
   createCustomEffect(effect: Effect): string {
     effect.startTime = Date.now();
     this.effects.set(effect.id, effect);
-    
+
     if (effect.onStart) {
       effect.onStart();
     }
-    
+
     this.emitEvent({
-      type: 'effect-created',
-      data: { effectId: effect.id, effect }
+      type: "effect-created",
+      data: { effectId: effect.id, effect },
     });
 
     return effect.id;
@@ -172,12 +172,12 @@ export class EffectsSystem {
       if (effect.onComplete) {
         effect.onComplete();
       }
-      
+
       this.effects.delete(effectId);
-      
+
       this.emitEvent({
-        type: 'effect-removed',
-        data: { effectId, effect }
+        type: "effect-removed",
+        data: { effectId, effect },
       });
     }
   }
@@ -189,10 +189,10 @@ export class EffectsSystem {
     const effect = this.effects.get(effectId);
     if (effect) {
       Object.assign(effect, updates);
-      
+
       this.emitEvent({
-        type: 'effect-updated',
-        data: { effectId, effect, updates }
+        type: "effect-updated",
+        data: { effectId, effect, updates },
       });
     }
   }
@@ -201,21 +201,21 @@ export class EffectsSystem {
    * Get all active effects
    */
   getActiveEffects(): Effect[] {
-    return Array.from(this.effects.values()).filter(effect => effect.isActive);
+    return Array.from(this.effects.values()).filter((effect) => effect.isActive);
   }
 
   /**
    * Get effects by type
    */
-  getEffectsByType(type: Effect['type']): Effect[] {
-    return Array.from(this.effects.values()).filter(effect => effect.type === type);
+  getEffectsByType(type: Effect["type"]): Effect[] {
+    return Array.from(this.effects.values()).filter((effect) => effect.type === type);
   }
 
   /**
    * Get effects targeting specific entity
    */
   getEffectsByTarget(targetId: string): Effect[] {
-    return Array.from(this.effects.values()).filter(effect => effect.targetId === targetId);
+    return Array.from(this.effects.values()).filter((effect) => effect.targetId === targetId);
   }
 
   private startUpdateLoop(): void {
@@ -252,14 +252,14 @@ export class EffectsSystem {
     }
 
     // Remove completed effects
-    effectsToRemove.forEach(effectId => {
+    effectsToRemove.forEach((effectId) => {
       this.removeEffect(effectId);
     });
 
     if (effectsToRemove.length > 0 || this.effects.size > 0) {
       this.emitEvent({
-        type: 'effects-updated',
-        data: { activeCount: this.effects.size, removedCount: effectsToRemove.length }
+        type: "effects-updated",
+        data: { activeCount: this.effects.size, removedCount: effectsToRemove.length },
       });
     }
   }
@@ -270,14 +270,14 @@ export class EffectsSystem {
 
       const animationElapsed = elapsed - animation.delay;
       const animationDuration = animation.duration;
-      
+
       if (animationElapsed >= animationDuration && animation.repeat !== -1) continue;
 
       let progress = Math.min(1, animationElapsed / animationDuration);
-      
+
       // Apply easing
       progress = this.applyEasing(progress, animation.easing);
-      
+
       // Handle yoyo
       if (animation.yoyo && Math.floor(animationElapsed / animationDuration) % 2 === 1) {
         progress = 1 - progress;
@@ -285,45 +285,49 @@ export class EffectsSystem {
 
       // Interpolate value
       const value = this.interpolateValue(animation.from, animation.to, progress);
-      
+
       // Apply to effect property
       this.setEffectProperty(effect, animation.property, value);
     }
   }
 
-  private applyEasing(t: number, easing: EffectAnimation['easing']): number {
+  private applyEasing(t: number, easing: EffectAnimation["easing"]): number {
     switch (easing) {
-      case 'linear':
+      case "linear":
         return t;
-      case 'ease-in':
+      case "ease-in":
         return t * t;
-      case 'ease-out':
+      case "ease-out":
         return 1 - Math.pow(1 - t, 2);
-      case 'ease-in-out':
+      case "ease-in-out":
         return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      case 'bounce':
+      case "bounce":
         if (t < 1 / 2.75) return 7.5625 * t * t;
         if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
         if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
         return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
-      case 'elastic': {
+      case "elastic": {
         const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1 : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
-    }
+        return t === 0
+          ? 0
+          : t === 1
+            ? 1
+            : -Math.pow(2, 10 * t - 10) * Math.sin((t * 10 - 10.75) * c4);
+      }
       default:
         return t;
     }
   }
 
   private interpolateValue(from: any, to: any, progress: number): any {
-    if (typeof from === 'number' && typeof to === 'number') {
+    if (typeof from === "number" && typeof to === "number") {
       return from + (to - from) * progress;
     }
-    
-    if (typeof from === 'object' && typeof to === 'object') {
+
+    if (typeof from === "object" && typeof to === "object") {
       const result: any = {};
       for (const key in from) {
-        if (typeof from[key] === 'number' && typeof to[key] === 'number') {
+        if (typeof from[key] === "number" && typeof to[key] === "number") {
           result[key] = from[key] + (to[key] - from[key]) * progress;
         } else {
           result[key] = progress < 0.5 ? from[key] : to[key];
@@ -331,22 +335,26 @@ export class EffectsSystem {
       }
       return result;
     }
-    
+
     return progress < 0.5 ? from : to;
   }
 
-  private setEffectProperty(effect: Effect, property: EffectAnimation['property'], value: any): void {
+  private setEffectProperty(
+    effect: Effect,
+    property: EffectAnimation["property"],
+    value: any,
+  ): void {
     switch (property) {
-      case 'position':
+      case "position":
         effect.position = value;
         break;
-      case 'scale':
+      case "scale":
         effect.scale = value;
         break;
-      case 'rotation':
+      case "rotation":
         effect.rotation = value;
         break;
-      case 'opacity':
+      case "opacity":
         effect.opacity = value;
         break;
       // Color and other complex properties would be handled here
@@ -355,224 +363,228 @@ export class EffectsSystem {
 
   private initializeDefaultTemplates(): void {
     // Fireball spell effect
-    this.templates.set('fireball', _{
-      id: 'fireball',
-      _name: 'Fireball',
-      _category: 'spell',
-      _description: 'Explosive fireball with particle trail',
-      _createEffect: (position, _options) => ({
-        id: `fireball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'particle',
-        position: { ...position },
-        scale: { x: 1, y: 1 },
-        rotation: 0,
-        opacity: 1,
-        duration: 2000,
-        startTime: 0,
-        isActive: true,
-        animations: [
-          {
-            property: 'scale',
-            from: { x: 0.1, y: 0.1 },
-            to: { x: 2, y: 2 },
-            duration: 500,
-            delay: 0,
-            easing: 'ease-out',
-            repeat: 0,
-            yoyo: false
+    this.templates.set("fireball", {
+      id: "fireball",
+      _name: "Fireball",
+      _category: "spell",
+      _description: "Explosive fireball with particle trail",
+      _createEffect: (position, _options) =>
+        ({
+          id: `fireball-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: "particle",
+          position: { ...position },
+          scale: { x: 1, y: 1 },
+          rotation: 0,
+          opacity: 1,
+          duration: 2000,
+          startTime: 0,
+          isActive: true,
+          animations: [
+            {
+              property: "scale",
+              from: { x: 0.1, y: 0.1 },
+              to: { x: 2, y: 2 },
+              duration: 500,
+              delay: 0,
+              easing: "ease-out",
+              repeat: 0,
+              yoyo: false,
+            },
+            {
+              property: "opacity",
+              from: 1,
+              to: 0,
+              duration: 1500,
+              delay: 500,
+              easing: "ease-out",
+              repeat: 0,
+              yoyo: false,
+            },
+          ],
+          blendMode: "add",
+          renderOrder: 100,
+          spellName: "Fireball",
+          damageType: "fire",
+          particleSystem: {
+            maxParticles: 50,
+            emissionRate: 25,
+            lifetime: { min: 0.5, max: 1.5 },
+            velocity: {
+              initial: { x: 0, y: 0 },
+              variation: { x: 100, y: 100 },
+            },
+            acceleration: { x: 0, y: 50 },
+            size: {
+              initial: { min: 2, max: 8 },
+              final: { min: 0, max: 2 },
+            },
+            color: {
+              initial: { r: 1, g: 0.8, b: 0.2, a: 1 },
+              final: { r: 1, g: 0.2, b: 0, a: 0 },
+            },
+            shape: "circle",
           },
-          {
-            property: 'opacity',
-            from: 1,
-            to: 0,
-            duration: 1500,
-            delay: 500,
-            easing: 'ease-out',
-            repeat: 0,
-            yoyo: false
-          }
-        ],
-        blendMode: 'add',
-        renderOrder: 100,
-        spellName: 'Fireball',
-        damageType: 'fire',
-        particleSystem: {
-          maxParticles: 50,
-          emissionRate: 25,
-          lifetime: { min: 0.5, max: 1.5 },
-          velocity: {
-            initial: { x: 0, y: 0 },
-            variation: { x: 100, y: 100 }
-          },
-          acceleration: { x: 0, y: 50 },
-          size: {
-            initial: { min: 2, max: 8 },
-            final: { min: 0, max: 2 }
-          },
-          color: {
-            initial: { r: 1, g: 0.8, b: 0.2, a: 1 },
-            final: { r: 1, g: 0.2, b: 0, a: 0 }
-          },
-          shape: 'circle'
-        }
-      } as ParticleEffect)
+        }) as ParticleEffect,
     });
 
     // Lightning bolt effect
-    this.templates.set('lightning', _{
-      id: 'lightning',
-      _name: 'Lightning Bolt',
-      _category: 'spell',
-      _description: 'Electric lightning strike',
-      _createEffect: (position, options) => ({
-        id: `lightning-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'animation',
-        position: { ...position },
-        scale: { x: 1, y: 1 },
-        rotation: options.rotation || 0,
-        opacity: 1,
-        duration: 800,
-        startTime: 0,
-        isActive: true,
-        animations: [
-          {
-            property: 'opacity',
-            from: 0,
-            to: 1,
-            duration: 100,
-            delay: 0,
-            easing: 'linear',
-            repeat: 0,
-            yoyo: false
+    this.templates.set("lightning", {
+      id: "lightning",
+      _name: "Lightning Bolt",
+      _category: "spell",
+      _description: "Electric lightning strike",
+      _createEffect: (position, options) =>
+        ({
+          id: `lightning-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: "animation",
+          position: { ...position },
+          scale: { x: 1, y: 1 },
+          rotation: options.rotation || 0,
+          opacity: 1,
+          duration: 800,
+          startTime: 0,
+          isActive: true,
+          animations: [
+            {
+              property: "opacity",
+              from: 0,
+              to: 1,
+              duration: 100,
+              delay: 0,
+              easing: "linear",
+              repeat: 0,
+              yoyo: false,
+            },
+            {
+              property: "opacity",
+              from: 1,
+              to: 0,
+              duration: 200,
+              delay: 600,
+              easing: "ease-out",
+              repeat: 0,
+              yoyo: false,
+            },
+          ],
+          blendMode: "add",
+          renderOrder: 110,
+          spellName: "Lightning Bolt",
+          damageType: "lightning",
+          spriteSheet: {
+            texture: "lightning_bolt.png",
+            frameWidth: 64,
+            frameHeight: 256,
+            frameCount: 8,
+            fps: 24,
+            loop: false,
           },
-          {
-            property: 'opacity',
-            from: 1,
-            to: 0,
-            duration: 200,
-            delay: 600,
-            easing: 'ease-out',
-            repeat: 0,
-            yoyo: false
-          }
-        ],
-        blendMode: 'add',
-        renderOrder: 110,
-        spellName: 'Lightning Bolt',
-        damageType: 'lightning',
-        spriteSheet: {
-          texture: 'lightning_bolt.png',
-          frameWidth: 64,
-          frameHeight: 256,
-          frameCount: 8,
-          fps: 24,
-          loop: false
-        }
-      } as AnimationEffect)
+        }) as AnimationEffect,
     });
 
     // Healing aura
-    this.templates.set('heal', _{
-      id: 'heal',
-      _name: 'Healing Light',
-      _category: 'spell',
-      _description: 'Gentle healing radiance',
-      _createEffect: (position, _options) => ({
-        id: `heal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'particle',
-        position: { ...position },
-        scale: { x: 1, y: 1 },
-        rotation: 0,
-        opacity: 0.8,
-        duration: 3000,
-        startTime: 0,
-        isActive: true,
-        animations: [
-          {
-            property: 'scale',
-            from: { x: 0.5, y: 0.5 },
-            to: { x: 1.5, y: 1.5 },
-            duration: 1500,
-            delay: 0,
-            easing: 'ease-in-out',
-            repeat: 0,
-            yoyo: false
-          }
-        ],
-        blendMode: 'add',
-        renderOrder: 50,
-        spellName: 'Cure Wounds',
-        particleSystem: {
-          maxParticles: 30,
-          emissionRate: 10,
-          lifetime: { min: 1, max: 2 },
-          velocity: {
-            initial: { x: 0, y: -20 },
-            variation: { x: 20, y: 10 }
+    this.templates.set("heal", {
+      id: "heal",
+      _name: "Healing Light",
+      _category: "spell",
+      _description: "Gentle healing radiance",
+      _createEffect: (position, _options) =>
+        ({
+          id: `heal-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: "particle",
+          position: { ...position },
+          scale: { x: 1, y: 1 },
+          rotation: 0,
+          opacity: 0.8,
+          duration: 3000,
+          startTime: 0,
+          isActive: true,
+          animations: [
+            {
+              property: "scale",
+              from: { x: 0.5, y: 0.5 },
+              to: { x: 1.5, y: 1.5 },
+              duration: 1500,
+              delay: 0,
+              easing: "ease-in-out",
+              repeat: 0,
+              yoyo: false,
+            },
+          ],
+          blendMode: "add",
+          renderOrder: 50,
+          spellName: "Cure Wounds",
+          particleSystem: {
+            maxParticles: 30,
+            emissionRate: 10,
+            lifetime: { min: 1, max: 2 },
+            velocity: {
+              initial: { x: 0, y: -20 },
+              variation: { x: 20, y: 10 },
+            },
+            acceleration: { x: 0, y: -10 },
+            size: {
+              initial: { min: 1, max: 4 },
+              final: { min: 0, max: 1 },
+            },
+            color: {
+              initial: { r: 1, g: 1, b: 0.8, a: 0.8 },
+              final: { r: 0.8, g: 1, b: 0.6, a: 0 },
+            },
+            shape: "star",
           },
-          acceleration: { x: 0, y: -10 },
-          size: {
-            initial: { min: 1, max: 4 },
-            final: { min: 0, max: 1 }
-          },
-          color: {
-            initial: { r: 1, g: 1, b: 0.8, a: 0.8 },
-            final: { r: 0.8, g: 1, b: 0.6, a: 0 }
-          },
-          shape: 'star'
-        }
-      } as ParticleEffect)
+        }) as ParticleEffect,
     });
 
     // Sword swing effect
-    this.templates.set('sword_slash', _{
-      id: 'sword_slash',
-      _name: 'Sword Slash',
-      _category: 'weapon',
-      _description: 'Melee weapon slash effect',
-      _createEffect: (position, options) => ({
-        id: `slash-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'animation',
-        position: { ...position },
-        scale: { x: 1, y: 1 },
-        rotation: options.rotation || 0,
-        opacity: 1,
-        duration: 600,
-        startTime: 0,
-        isActive: true,
-        animations: [
-          {
-            property: 'scale',
-            from: { x: 0.3, y: 0.3 },
-            to: { x: 1.2, y: 1.2 },
-            duration: 300,
-            delay: 0,
-            easing: 'ease-out',
-            repeat: 0,
-            yoyo: false
+    this.templates.set("sword_slash", {
+      id: "sword_slash",
+      _name: "Sword Slash",
+      _category: "weapon",
+      _description: "Melee weapon slash effect",
+      _createEffect: (position, options) =>
+        ({
+          id: `slash-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type: "animation",
+          position: { ...position },
+          scale: { x: 1, y: 1 },
+          rotation: options.rotation || 0,
+          opacity: 1,
+          duration: 600,
+          startTime: 0,
+          isActive: true,
+          animations: [
+            {
+              property: "scale",
+              from: { x: 0.3, y: 0.3 },
+              to: { x: 1.2, y: 1.2 },
+              duration: 300,
+              delay: 0,
+              easing: "ease-out",
+              repeat: 0,
+              yoyo: false,
+            },
+            {
+              property: "opacity",
+              from: 1,
+              to: 0,
+              duration: 300,
+              delay: 300,
+              easing: "ease-in",
+              repeat: 0,
+              yoyo: false,
+            },
+          ],
+          blendMode: "normal",
+          renderOrder: 80,
+          spriteSheet: {
+            texture: "slash_effect.png",
+            frameWidth: 128,
+            frameHeight: 128,
+            frameCount: 6,
+            fps: 20,
+            loop: false,
           },
-          {
-            property: 'opacity',
-            from: 1,
-            to: 0,
-            duration: 300,
-            delay: 300,
-            easing: 'ease-in',
-            repeat: 0,
-            yoyo: false
-          }
-        ],
-        blendMode: 'normal',
-        renderOrder: 80,
-        spriteSheet: {
-          texture: 'slash_effect.png',
-          frameWidth: 128,
-          frameHeight: 128,
-          frameCount: 6,
-          fps: 20,
-          loop: false
-        }
-      } as AnimationEffect)
+        }) as AnimationEffect,
     });
   }
 
@@ -581,10 +593,10 @@ export class EffectsSystem {
    */
   registerTemplate(template: EffectTemplate): void {
     this.templates.set(template.id, template);
-    
+
     this.emitEvent({
-      type: 'template-registered',
-      data: { templateId: template.id, template }
+      type: "template-registered",
+      data: { templateId: template.id, template },
     });
   }
 
@@ -598,8 +610,8 @@ export class EffectsSystem {
   /**
    * Get templates by category
    */
-  getTemplatesByCategory(category: EffectTemplate['category']): EffectTemplate[] {
-    return Array.from(this.templates.values()).filter(template => template.category === category);
+  getTemplatesByCategory(category: EffectTemplate["category"]): EffectTemplate[] {
+    return Array.from(this.templates.values()).filter((template) => template.category === category);
   }
 
   /**
@@ -608,10 +620,10 @@ export class EffectsSystem {
   clearAllEffects(): void {
     const removedCount = this.effects.size;
     this.effects.clear();
-    
+
     this.emitEvent({
-      type: 'all-effects-cleared',
-      data: { removedCount }
+      type: "all-effects-cleared",
+      data: { removedCount },
     });
   }
 
@@ -640,11 +652,11 @@ export class EffectsSystem {
   }
 
   private emitEvent(event: EffectsEvent): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Effects event listener error:', error);
+        logger.error("Effects event listener error:", error);
       }
     });
   }
@@ -652,9 +664,9 @@ export class EffectsSystem {
 
 // Event types
 export type EffectsEvent =
-  | { type: 'effect-created'; data: { effectId: string; effect: Effect } }
-  | { type: 'effect-removed'; data: { effectId: string; effect: Effect } }
-  | { type: 'effect-updated'; data: { effectId: string; effect: Effect; updates: Partial<Effect> } }
-  | { type: 'effects-updated'; data: { activeCount: number; removedCount: number } }
-  | { type: 'template-registered'; data: { templateId: string; template: EffectTemplate } }
-  | { type: 'all-effects-cleared'; data: { removedCount: number } };
+  | { type: "effect-created"; data: { effectId: string; effect: Effect } }
+  | { type: "effect-removed"; data: { effectId: string; effect: Effect } }
+  | { type: "effect-updated"; data: { effectId: string; effect: Effect; updates: Partial<Effect> } }
+  | { type: "effects-updated"; data: { activeCount: number; removedCount: number } }
+  | { type: "template-registered"; data: { templateId: string; template: EffectTemplate } }
+  | { type: "all-effects-cleared"; data: { removedCount: number } };

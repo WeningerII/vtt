@@ -2,10 +2,10 @@
  * Accessible Modal Component with focus management and ARIA support
  */
 
-import React, { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { FocusManager } from '../utils/accessibility';
-import AccessibleButton from './AccessibleButton';
+import React, { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { FocusManager } from "../utils/accessibility";
+import AccessibleButton from "./AccessibleButton";
 
 interface AccessibleModalProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface AccessibleModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
 }
@@ -23,10 +23,10 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
   onClose,
   title,
   children,
-  className = '',
-  size = 'md',
+  className = "",
+  size = "md",
   closeOnOverlayClick = true,
-  closeOnEscape = true
+  closeOnEscape = true,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const titleId = `modal-title-${Math.random().toString(36).substr(2, 9)}`;
@@ -45,26 +45,26 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
 
     // Handle escape key
     const handleEscape = (event: KeyboardEvent) => {
-      if (closeOnEscape && event.key === 'Escape') {
+      if (closeOnEscape && event.key === "Escape") {
         onClose();
       }
     };
 
     // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', handleEscape);
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleEscape);
 
     // Announce modal opening to screen readers
-    FocusManager.announce(`${title} dialog opened`, 'assertive');
+    FocusManager.announce(`${title} dialog opened`, "assertive");
 
     return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleEscape);
       releaseFocusTrap?.();
       restoreFocus();
-      
+
       // Announce modal closing
-      FocusManager.announce(`${title} dialog closed`, 'polite');
+      FocusManager.announce(`${title} dialog closed`, "polite");
     };
   }, [isOpen, onClose, title, closeOnEscape]);
 
@@ -77,10 +77,10 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
   };
 
   const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl'
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
   };
 
   return createPortal(
@@ -91,11 +91,8 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={descriptionId}
-     >
-      <div
-        ref={modalRef}
-        className={`modal-content ${sizeClasses[size]} ${className}`}
-      >
+    >
+      <div ref={modalRef} className={`modal-content ${sizeClasses[size]} ${className}`}>
         <div className="modal-header">
           <h2 id={titleId} className="modal-title">
             {title}
@@ -115,13 +112,13 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
             </svg>
           </AccessibleButton>
         </div>
-        
+
         <div id={descriptionId} className="modal-body">
           {children}
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

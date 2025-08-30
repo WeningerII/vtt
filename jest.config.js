@@ -5,42 +5,42 @@
 
 module.exports = {
   // Test environment
-  testEnvironment: 'node',
-  
+  testEnvironment: "node",
+
   // Root directory for tests
-  rootDir: '.',
-  
+  rootDir: ".",
+
   // Test file patterns
   testMatch: [
-    '<rootDir>/packages/**/__tests__/**/*.test.ts',
-    '<rootDir>/packages/**/__tests__/**/*.spec.ts',
-    '<rootDir>/apps/**/__tests__/**/*.test.ts',
-    '<rootDir>/services/**/__tests__/**/*.test.ts',
+    "<rootDir>/packages/**/__tests__/**/*.test.ts",
+    "<rootDir>/packages/**/__tests__/**/*.spec.ts",
+    "<rootDir>/apps/**/__tests__/**/*.test.ts",
+    "<rootDir>/services/**/__tests__/**/*.test.ts",
   ],
-  
+
   // File extensions to consider
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
+
   // Transform files with TypeScript
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest',
+    "^.+\\.(ts|tsx)$": "ts-jest",
   },
-  
+
   // Module name mapping for path aliases
   moduleNameMapping: {
-    '^@vtt/(.*)$': '<rootDir>/packages/$1/src',
-    '^@apps/(.*)$': '<rootDir>/apps/$1/src',
-    '^@services/(.*)$': '<rootDir>/services/$1/src',
+    "^@vtt/(.*)$": "<rootDir>/packages/$1/src",
+    "^@apps/(.*)$": "<rootDir>/apps/$1/src",
+    "^@services/(.*)$": "<rootDir>/services/$1/src",
   },
-  
+
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
+
   // Coverage configuration
   collectCoverage: true,
-  coverageDirectory: '<rootDir>/coverage',
-  coverageReporters: ['text', 'lcov', 'html', 'json'],
-  
+  coverageDirectory: "<rootDir>/coverage",
+  coverageReporters: ["text", "lcov", "html", "json"],
+
   // Coverage thresholds
   coverageThreshold: {
     global: {
@@ -50,108 +50,108 @@ module.exports = {
       statements: 80,
     },
   },
-  
+
   // Files to include in coverage
   collectCoverageFrom: [
-    'packages/**/*.ts',
-    'apps/**/*.ts',
-    'services/**/*.ts',
-    '!**/__tests__/**',
-    '!**/*.test.ts',
-    '!**/*.spec.ts',
-    '!**/*.d.ts',
-    '!**/node_modules/**',
-    '!**/dist/**',
-    '!**/build/**',
+    "packages/**/*.ts",
+    "apps/**/*.ts",
+    "services/**/*.ts",
+    "!**/__tests__/**",
+    "!**/*.test.ts",
+    "!**/*.spec.ts",
+    "!**/*.d.ts",
+    "!**/node_modules/**",
+    "!**/dist/**",
+    "!**/build/**",
   ],
-  
+
   // Test timeout (30 seconds for integration tests)
   testTimeout: 30000,
-  
+
   // Concurrent test execution
-  maxWorkers: '50%',
-  
+  maxWorkers: "50%",
+
   // Clear mocks between tests
   clearMocks: true,
   restoreMocks: true,
-  
+
   // Verbose output for debugging
   verbose: false,
-  
+
   // Projects for different test types
   projects: [
     {
-      displayName: 'unit',
-      testMatch: ['<rootDir>/packages/**/__tests__/**/*.test.ts'],
-      testEnvironment: 'node',
+      displayName: "unit",
+      testMatch: ["<rootDir>/packages/**/__tests__/**/*.test.ts"],
+      testEnvironment: "node",
     },
     {
-      displayName: 'integration',
-      testMatch: ['<rootDir>/apps/**/__tests__/**/*.test.ts'],
-      testEnvironment: 'node',
+      displayName: "integration",
+      testMatch: ["<rootDir>/apps/**/__tests__/**/*.test.ts"],
+      testEnvironment: "node",
       testTimeout: 60000,
     },
     {
-      displayName: 'services',
-      testMatch: ['<rootDir>/services/**/__tests__/**/*.test.ts'],
-      testEnvironment: 'node',
+      displayName: "services",
+      testMatch: ["<rootDir>/services/**/__tests__/**/*.test.ts"],
+      testEnvironment: "node",
       testTimeout: 45000,
     },
   ],
-  
+
   // Global setup and teardown
-  globalSetup: '<rootDir>/jest.global-setup.js',
-  globalTeardown: '<rootDir>/jest.global-teardown.js',
-  
+  globalSetup: "<rootDir>/jest.global-setup.js",
+  globalTeardown: "<rootDir>/jest.global-teardown.js",
+
   // Test reporter configuration
   reporters: [
-    'default',
+    "default",
     [
-      'jest-junit',
+      "jest-junit",
       {
-        outputDirectory: '<rootDir>/test-results',
-        outputName: 'results.xml',
-        classNameTemplate: '{classname}',
-        titleTemplate: '{title}',
-        ancestorSeparator: ' › ',
+        outputDirectory: "<rootDir>/test-results",
+        outputName: "results.xml",
+        classNameTemplate: "{classname}",
+        titleTemplate: "{title}",
+        ancestorSeparator: " › ",
         usePathForSuiteName: true,
       },
     ],
     [
-      'jest-html-reporters',
+      "jest-html-reporters",
       {
-        publicPath: '<rootDir>/test-results',
-        filename: 'report.html',
+        publicPath: "<rootDir>/test-results",
+        filename: "report.html",
         expand: true,
       },
     ],
   ],
-  
+
   // Mock configuration
-  modulePathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/build/'],
-  
+  modulePathIgnorePatterns: ["<rootDir>/dist/", "<rootDir>/build/"],
+
   // Snapshot configuration
-  snapshotSerializers: ['jest-serializer-path'],
-  
+  snapshotSerializers: ["jest-serializer-path"],
+
   // Watch mode configuration
   watchPathIgnorePatterns: [
-    '<rootDir>/node_modules/',
-    '<rootDir>/dist/',
-    '<rootDir>/build/',
-    '<rootDir>/coverage/',
+    "<rootDir>/node_modules/",
+    "<rootDir>/dist/",
+    "<rootDir>/build/",
+    "<rootDir>/coverage/",
   ],
-  
+
   // Error handling
   errorOnDeprecated: true,
-  
+
   // Performance optimization
   cache: true,
-  cacheDirectory: '<rootDir>/.jest-cache',
-  
+  cacheDirectory: "<rootDir>/.jest-cache",
+
   // TypeScript configuration
   globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.base.json',
+    "ts-jest": {
+      tsconfig: "<rootDir>/tsconfig.base.json",
       isolatedModules: true,
     },
   },

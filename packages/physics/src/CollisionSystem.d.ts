@@ -11,6 +11,6 @@ import type { World } from "@vtt/core-ecs";
  * - Iterates naive O(n^2) and logs number of overlaps once per update.
  */
 export declare class CollisionSystem {
-    update(world: World): void;
+  update(world: World): void;
 }
 //# sourceMappingURL=CollisionSystem.d.ts.map

@@ -51,7 +51,7 @@ export class CombatStore {
         concentrationTarget: undefined,
         legendaryActions: undefined,
         maxLegendaryActions: undefined,
-        usedLegendaryActions: 0
+        usedLegendaryActions: 0,
       });
     }
   }
@@ -79,7 +79,7 @@ export class CombatStore {
       concentrationTarget: undefined,
       legendaryActions: undefined,
       maxLegendaryActions: undefined,
-      usedLegendaryActions: 0
+      usedLegendaryActions: 0,
     };
   }
 
@@ -90,7 +90,7 @@ export class CombatStore {
 
   add(id: EntityId, data: Partial<CombatData> = {}): void {
     const pooledData = this.getPooledData();
-    
+
     // Assign values to pooled object
     pooledData.initiative = data.initiative ?? 0;
     pooledData.turnOrder = data.turnOrder ?? 0;
@@ -105,7 +105,7 @@ export class CombatStore {
     pooledData.legendaryActions = data.legendaryActions;
     pooledData.maxLegendaryActions = data.maxLegendaryActions;
     pooledData.usedLegendaryActions = data.usedLegendaryActions ?? 0;
-    
+
     this.data.set(id, pooledData);
     this.invalidateInitiativeCache();
   }
@@ -249,7 +249,7 @@ export class CombatStore {
     this.initiativeOrderCache = Array.from(this.data.entries())
       .sort(([, a], [, b]) => b.initiative - a.initiative || a.turnOrder - b.turnOrder)
       .map(([id]) => id);
-    
+
     this.initiativeCacheValid = true;
     return [...this.initiativeOrderCache];
   }
@@ -261,7 +261,7 @@ export class CombatStore {
       recycledEntities: this.recycledEntities.size,
       totalEntities: this.data.size,
       lastInitiativeUpdate: this.lastInitiativeUpdate,
-      cacheValid: this.initiativeCacheValid
+      cacheValid: this.initiativeCacheValid,
     };
   }
 

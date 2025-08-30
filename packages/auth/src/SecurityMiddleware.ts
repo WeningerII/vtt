@@ -2,17 +2,12 @@
  * Security Middleware and Rate Limiting
  */
 
-import { EventEmitter } from 'events';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
-import helmet from 'helmet';
-import { AuthManager } from './AuthManager';
-import { AuthorizationManager } from './AuthorizationManager';
-import {
-  SecurityContext,
-  RateLimitConfig,
-  SecuritySettings,
-  AuditLogEntry
-} from './types';
+import { EventEmitter } from "events";
+import { RateLimiterMemory } from "rate-limiter-flexible";
+import helmet from "helmet";
+import { AuthManager } from "./AuthManager";
+import { AuthorizationManager } from "./AuthorizationManager";
+import { SecurityContext, RateLimitConfig, SecuritySettings, AuditLogEntry } from "./types";
 
 export class SecurityMiddleware extends EventEmitter {
   private authManager: AuthManager;
@@ -25,7 +20,7 @@ export class SecurityMiddleware extends EventEmitter {
   constructor(
     authManager: AuthManager,
     authzManager: AuthorizationManager,
-    settings: SecuritySettings
+    settings: SecuritySettings,
   ) {
     super();
     this.authManager = authManager;
@@ -43,21 +38,21 @@ export class SecurityMiddleware extends EventEmitter {
       try {
         const token = this.extractToken(req);
         if (!token) {
-          return this.respondUnauthorized(res, 'No token provided');
+          return this.respondUnauthorized(res, "No token provided");
         }
 
         const ipAddress = this.getClientIP(req);
-        const userAgent = req.get('User-Agent') || '';
+        const userAgent = req.get("User-Agent") || "";
 
         // Check if IP is blocked
         if (this.blockedIPs.has(ipAddress)) {
-          this.logSecurityEvent('blocked_ip_access', '', ipAddress, userAgent);
-          return res.status(403).json({ error: 'Access denied' });
+          this.logSecurityEvent("blocked_ip_access", "", ipAddress, userAgent);
+          return res.status(403).json({ error: "Access denied" });
         }
 
         // Validate token and get security context
         const context = await this.authManager.validateToken(token, ipAddress, userAgent);
-        
+
         // Check for suspicious activity
         await this.checkSuspiciousActivity(context, req);
 
@@ -65,11 +60,19 @@ export class SecurityMiddleware extends EventEmitter {
         req.securityContext = context;
         req.user = context.user;
 
-        this.logSecurityEvent('authenticated', context.user.id, ipAddress, userAgent);
+        this.logSecurityEvent("authenticated", context.user.id, ipAddress, userAgent);
         _next();
       } catch (error) {
-        this.logSecurityEvent('authentication_failed', '', this.getClientIP(req), req.get('User-Agent') || '');
-        return this.respondUnauthorized(res, error instanceof Error ? error.message : 'Authentication failed');
+        this.logSecurityEvent(
+          "authentication_failed",
+          "",
+          this.getClientIP(req),
+          req.get("User-Agent") || "",
+        );
+        return this.respondUnauthorized(
+          res,
+          error instanceof Error ? error.message : "Authentication failed",
+        );
       }
     };
   }
@@ -82,26 +85,32 @@ export class SecurityMiddleware extends EventEmitter {
       try {
         const context = req.securityContext as SecurityContext;
         if (!context) {
-          return res.status(401).json({ error: 'Authentication required' });
+          return res.status(401).json({ error: "Authentication required" });
         }
 
         const resourceId = req.params.id || req.params.resourceId;
-        
+
         if (!this.authzManager.checkPermission(context, permission as any, resource, resourceId)) {
-          this.logSecurityEvent('authorization_failed', context.user.id, context.ipAddress, context.userAgent, {
-            permission,
-            resource,
-            resourceId
-          });
-          return res.status(403).json({ 
-            error: 'Insufficient permissions',
-            required: permission
+          this.logSecurityEvent(
+            "authorization_failed",
+            context.user.id,
+            context.ipAddress,
+            context.userAgent,
+            {
+              permission,
+              resource,
+              resourceId,
+            },
+          );
+          return res.status(403).json({
+            error: "Insufficient permissions",
+            required: permission,
           });
         }
 
         _next();
       } catch (error) {
-        return res.status(500).json({ error: 'Authorization check failed' });
+        return res.status(500).json({ error: "Authorization check failed" });
       }
     };
   }
@@ -109,7 +118,7 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Rate limiting middleware
    */
-  rateLimit(type: string = 'general') {
+  rateLimit(type: string = "general") {
     return async (req: any, res: any, _next: any) => {
       try {
         const limiter = this.rateLimiters.get(type);
@@ -122,24 +131,30 @@ export class SecurityMiddleware extends EventEmitter {
 
         // Set rate limit headers
         res.set({
-          'X-RateLimit-Limit': limiter.points,
-          'X-RateLimit-Remaining': resRateLimit.remainingPoints,
-          'X-RateLimit-Reset': new Date(Date.now() + resRateLimit.msBeforeNext).toISOString()
+          "X-RateLimit-Limit": limiter.points,
+          "X-RateLimit-Remaining": resRateLimit.remainingPoints,
+          "X-RateLimit-Reset": new Date(Date.now() + resRateLimit.msBeforeNext).toISOString(),
         });
 
         _next();
       } catch (rejRes: any) {
         const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
-        
-        this.logSecurityEvent('rate_limit_exceeded', this.getUserId(req), this.getClientIP(req), req.get('User-Agent') || '', {
-          type,
-          retryAfter: secs
-        });
 
-        res.set('Retry-After', String(secs));
+        this.logSecurityEvent(
+          "rate_limit_exceeded",
+          this.getUserId(req),
+          this.getClientIP(req),
+          req.get("User-Agent") || "",
+          {
+            type,
+            retryAfter: secs,
+          },
+        );
+
+        res.set("Retry-After", String(secs));
         return res.status(429).json({
-          error: 'Too many requests',
-          retryAfter: secs
+          error: "Too many requests",
+          retryAfter: secs,
         });
       }
     };
@@ -162,15 +177,15 @@ export class SecurityMiddleware extends EventEmitter {
           objectSrc: ["'none'"],
           baseUri: ["'self'"],
           formAction: ["'self'"],
-          frameAncestors: ["'none'"]
-        }
+          frameAncestors: ["'none'"],
+        },
       },
       crossOriginEmbedderPolicy: false, // Allow WebGL contexts
       hsts: {
         maxAge: 31536000,
         includeSubDomains: true,
-        preload: true
-      }
+        preload: true,
+      },
     });
   }
 
@@ -181,12 +196,18 @@ export class SecurityMiddleware extends EventEmitter {
     return (req: any, res: any, _next: any) => {
       const errors = this.validateRequestData(req, schema);
       if (errors.length > 0) {
-        this.logSecurityEvent('input_validation_failed', this.getUserId(req), this.getClientIP(req), req.get('User-Agent') || '', {
-          errors
-        });
-        return res.status(400).json({ 
-          error: 'Invalid input',
-          details: errors
+        this.logSecurityEvent(
+          "input_validation_failed",
+          this.getUserId(req),
+          this.getClientIP(req),
+          req.get("User-Agent") || "",
+          {
+            errors,
+          },
+        );
+        return res.status(400).json({
+          error: "Invalid input",
+          details: errors,
         });
       }
       _next();
@@ -198,17 +219,20 @@ export class SecurityMiddleware extends EventEmitter {
    */
   cors(allowedOrigins: string[] = []) {
     return (req: any, res: any, _next: any) => {
-      const origin = req.get('Origin');
-      
+      const origin = req.get("Origin");
+
       if (origin && (allowedOrigins.includes(origin) || this.isDevelopment())) {
-        res.set('Access-Control-Allow-Origin', origin);
-        res.set('Access-Control-Allow-Credentials', 'true');
+        res.set("Access-Control-Allow-Origin", origin);
+        res.set("Access-Control-Allow-Credentials", "true");
       }
 
-      res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-      res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key');
+      res.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+      res.set(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-API-Key",
+      );
 
-      if (req.method === 'OPTIONS') {
+      if (req.method === "OPTIONS") {
         return res.status(200).end();
       }
 
@@ -224,43 +248,50 @@ export class SecurityMiddleware extends EventEmitter {
       try {
         const token = this.extractTokenFromWS(req);
         if (!token) {
-          ws.close(1008, 'No token provided');
+          ws.close(1008, "No token provided");
           return;
         }
 
         const ipAddress = this.getClientIP(req);
-        const userAgent = req.headers['user-agent'] || '';
+        const userAgent = req.headers["user-agent"] || "";
 
         if (this.blockedIPs.has(ipAddress)) {
-          ws.close(1008, 'Access denied');
+          ws.close(1008, "Access denied");
           return;
         }
 
         const context = await this.authManager.validateToken(token, ipAddress, userAgent);
-        
+
         // Attach security context to WebSocket
         ws.securityContext = context;
         ws.isAuthenticated = true;
 
-        this.logSecurityEvent('websocket_authenticated', context.user.id, ipAddress, userAgent);
-        
-        // Set up periodic token validation
-        const validationInterval = setInterval(async () => {
-          try {
-            await this.authManager.validateToken(token, ipAddress, userAgent);
-          } catch (error) {
-            clearInterval(validationInterval);
-            ws.close(1008, 'Token expired');
-          }
-        }, 5 * 60 * 1000); // Every 5 minutes
+        this.logSecurityEvent("websocket_authenticated", context.user.id, ipAddress, userAgent);
 
-        ws.on('close', () => {
+        // Set up periodic token validation
+        const validationInterval = setInterval(
+          async () => {
+            try {
+              await this.authManager.validateToken(token, ipAddress, userAgent);
+            } catch (error) {
+              clearInterval(validationInterval);
+              ws.close(1008, "Token expired");
+            }
+          },
+          5 * 60 * 1000,
+        ); // Every 5 minutes
+
+        ws.on("close", () => {
           clearInterval(validationInterval);
         });
-
       } catch (error) {
-        this.logSecurityEvent('websocket_auth_failed', '', this.getClientIP(req), req.headers['user-agent'] || '');
-        ws.close(1008, 'Authentication failed');
+        this.logSecurityEvent(
+          "websocket_auth_failed",
+          "",
+          this.getClientIP(req),
+          req.headers["user-agent"] || "",
+        );
+        ws.close(1008, "Authentication failed");
       }
     };
   }
@@ -270,30 +301,30 @@ export class SecurityMiddleware extends EventEmitter {
    */
   async detectIntrusion(req: any, res: any, _next: any) {
     const ipAddress = this.getClientIP(req);
-    const userAgent = req.get('User-Agent') || '';
+    const userAgent = req.get("User-Agent") || "";
     const userId = this.getUserId(req);
 
     // Check for SQL injection patterns
     if (this.detectSQLInjection(req)) {
-      await this.handleSecurityThreat('sql_injection', userId, ipAddress, userAgent, req);
-      return res.status(400).json({ error: 'Invalid request' });
+      await this.handleSecurityThreat("sql_injection", userId, ipAddress, userAgent, req);
+      return res.status(400).json({ error: "Invalid request" });
     }
 
     // Check for XSS patterns
     if (this.detectXSS(req)) {
-      await this.handleSecurityThreat('xss_attempt', userId, ipAddress, userAgent, req);
-      return res.status(400).json({ error: 'Invalid request' });
+      await this.handleSecurityThreat("xss_attempt", userId, ipAddress, userAgent, req);
+      return res.status(400).json({ error: "Invalid request" });
     }
 
     // Check for path traversal
     if (this.detectPathTraversal(req)) {
-      await this.handleSecurityThreat('path_traversal', userId, ipAddress, userAgent, req);
-      return res.status(400).json({ error: 'Invalid request' });
+      await this.handleSecurityThreat("path_traversal", userId, ipAddress, userAgent, req);
+      return res.status(400).json({ error: "Invalid request" });
     }
 
     // Check for unusual patterns
     if (await this.detectAnomalousActivity(req)) {
-      await this.handleSecurityThreat('anomalous_activity', userId, ipAddress, userAgent, req);
+      await this.handleSecurityThreat("anomalous_activity", userId, ipAddress, userAgent, req);
     }
 
     _next();
@@ -302,14 +333,17 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Block IP address
    */
-  blockIP(ipAddress: string, reason: string = 'Security violation'): void {
+  blockIP(ipAddress: string, reason: string = "Security violation"): void {
     this.blockedIPs.add(ipAddress);
-    this.logSecurityEvent('ip_blocked', '', ipAddress, '', { reason });
-    
+    this.logSecurityEvent("ip_blocked", "", ipAddress, "", { reason });
+
     // Auto-unblock after 24 hours
-    setTimeout(() => {
-      this.unblockIP(ipAddress);
-    }, 24 * 60 * 60 * 1000);
+    setTimeout(
+      () => {
+        this.unblockIP(ipAddress);
+      },
+      24 * 60 * 60 * 1000,
+    );
   }
 
   /**
@@ -317,7 +351,7 @@ export class SecurityMiddleware extends EventEmitter {
    */
   unblockIP(ipAddress: string): void {
     this.blockedIPs.delete(ipAddress);
-    this.logSecurityEvent('ip_unblocked', '', ipAddress, '');
+    this.logSecurityEvent("ip_unblocked", "", ipAddress, "");
   }
 
   /**
@@ -328,7 +362,7 @@ export class SecurityMiddleware extends EventEmitter {
       blockedIPs: this.blockedIPs.size,
       suspiciousActivities: this.suspiciousActivity.size,
       rateLimiterStats: this.getRateLimiterStats(),
-      lastSecurityEvents: this.getRecentSecurityEvents()
+      lastSecurityEvents: this.getRecentSecurityEvents(),
     };
   }
 
@@ -340,34 +374,40 @@ export class SecurityMiddleware extends EventEmitter {
       register: { points: 3, duration: 60 * 60 }, // 3 attempts per hour
       passwordReset: { points: 3, duration: 60 * 60 }, // 3 attempts per hour
       general: { points: 100, duration: 60 * 15 }, // 100 requests per 15 minutes
-      websocket: { points: 10, duration: 60 } // 10 connections per minute
+      websocket: { points: 10, duration: 60 }, // 10 connections per minute
     };
 
     Object.entries(configs).forEach(([type, config]) => {
-      this.rateLimiters.set(type, new RateLimiterMemory({
-        points: config.points,
-        duration: config.duration,
-        blockDuration: config.duration
-      }));
+      this.rateLimiters.set(
+        type,
+        new RateLimiterMemory({
+          points: config.points,
+          duration: config.duration,
+          blockDuration: config.duration,
+        }),
+      );
     });
   }
 
   private startSecurityMonitoring(): void {
     // Clean up old suspicious activity records every hour
-    setInterval(() => {
-      const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
-      
-      for (const [key, tracker] of this.suspiciousActivity) {
-        if (tracker.lastActivity < cutoff) {
-          this.suspiciousActivity.delete(key);
+    setInterval(
+      () => {
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
+
+        for (const [key, tracker] of this.suspiciousActivity) {
+          if (tracker.lastActivity < cutoff) {
+            this.suspiciousActivity.delete(key);
+          }
         }
-      }
-    }, 60 * 60 * 1000);
+      },
+      60 * 60 * 1000,
+    );
   }
 
   private extractToken(req: any): string | null {
-    const authHeader = req.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = req.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       return authHeader.substring(7);
     }
 
@@ -379,7 +419,7 @@ export class SecurityMiddleware extends EventEmitter {
 
     // Check for token in query parameters (less secure, for WebSocket upgrades)
     const queryToken = req.query?.token;
-    if (queryToken && typeof queryToken === 'string') {
+    if (queryToken && typeof queryToken === "string") {
       return queryToken;
     }
 
@@ -388,15 +428,15 @@ export class SecurityMiddleware extends EventEmitter {
 
   private extractTokenFromWS(req: any): string | null {
     // Check query parameters
-    const url = new URL(req.url, 'http://localhost');
-    const token = url.searchParams.get('token');
+    const url = new URL(req.url, "http://localhost");
+    const token = url.searchParams.get("token");
     if (token) {
       return token;
     }
 
     // Check headers
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       return authHeader.substring(7);
     }
 
@@ -404,32 +444,34 @@ export class SecurityMiddleware extends EventEmitter {
   }
 
   private getClientIP(req: any): string {
-    return req.ip || 
-           req.connection?.remoteAddress || 
-           req.socket?.remoteAddress || 
-           req.headers['x-forwarded-for']?.split(',')[0] || 
-           'unknown';
+    return (
+      req.ip ||
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      "unknown"
+    );
   }
 
   private getUserId(req: any): string {
-    return req.securityContext?.user?.id || req.user?.id || '';
+    return req.securityContext?.user?.id || req.user?.id || "";
   }
 
   private getRateLimitKey(req: any, type: string): string {
     const baseKey = this.getClientIP(req);
     const userId = this.getUserId(req);
-    
-    if (userId && type !== 'login') {
+
+    if (userId && type !== "login") {
       return `${type}:${userId}`;
     }
-    
+
     return `${type}:${baseKey}`;
   }
 
   private respondUnauthorized(res: any, message: string): any {
-    return res.status(401).json({ 
-      error: 'Authentication failed',
-      message 
+    return res.status(401).json({
+      error: "Authentication failed",
+      message,
     });
   }
 
@@ -439,15 +481,21 @@ export class SecurityMiddleware extends EventEmitter {
       userId: context.user.id,
       ipAddress: context.ipAddress,
       lastActivity: Date.now(),
-      events: []
+      events: [],
     };
 
     // Update activity
     tracker.lastActivity = Date.now();
-    
+
     // Check for rapid session switching
     if (this.detectRapidSessionSwitching(tracker, context)) {
-      await this.handleSecurityThreat('rapid_session_switching', context.user.id, context.ipAddress, context.userAgent, req);
+      await this.handleSecurityThreat(
+        "rapid_session_switching",
+        context.user.id,
+        context.ipAddress,
+        context.userAgent,
+        req,
+      );
     }
 
     this.suspiciousActivity.set(key, tracker);
@@ -461,11 +509,12 @@ export class SecurityMiddleware extends EventEmitter {
       /(\bDELETE\b.*\bFROM\b)/i,
       /(\bDROP\b.*\bTABLE\b)/i,
       /(;.*--)/,
-      /('.*OR.*'.*=.*')/i
+      /('.*OR.*'.*=.*')/i,
     ];
 
-    const checkString = JSON.stringify(req.body) + JSON.stringify(req.query) + JSON.stringify(req.params);
-    return sqlPatterns.some(pattern => pattern.test(checkString));
+    const checkString =
+      JSON.stringify(req.body) + JSON.stringify(req.query) + JSON.stringify(req.params);
+    return sqlPatterns.some((pattern) => pattern.test(checkString));
   }
 
   private detectXSS(req: any): boolean {
@@ -475,23 +524,18 @@ export class SecurityMiddleware extends EventEmitter {
       /javascript:/gi,
       /vbscript:/gi,
       /onload\s*=/gi,
-      /onerror\s*=/gi
+      /onerror\s*=/gi,
     ];
 
     const checkString = JSON.stringify(req.body) + JSON.stringify(req.query);
-    return xssPatterns.some(pattern => pattern.test(checkString));
+    return xssPatterns.some((pattern) => pattern.test(checkString));
   }
 
   private detectPathTraversal(req: any): boolean {
-    const pathTraversalPatterns = [
-      /\.\./g,
-      /\.\.\//g,
-      /%2e%2e%2f/gi,
-      /%2e%2e%5c/gi
-    ];
+    const pathTraversalPatterns = [/\.\./g, /\.\.\//g, /%2e%2e%2f/gi, /%2e%2e%5c/gi];
 
     const checkString = req.url + JSON.stringify(req.query) + JSON.stringify(req.params);
-    return pathTraversalPatterns.some(pattern => pattern.test(checkString));
+    return pathTraversalPatterns.some((pattern) => pattern.test(checkString));
   }
 
   private async detectAnomalousActivity(req: any): Promise<boolean> {
@@ -500,43 +544,47 @@ export class SecurityMiddleware extends EventEmitter {
     return false;
   }
 
-  private detectRapidSessionSwitching(tracker: SuspiciousActivityTracker, context: SecurityContext): boolean {
+  private detectRapidSessionSwitching(
+    tracker: SuspiciousActivityTracker,
+    context: SecurityContext,
+  ): boolean {
     // Check if user is switching sessions rapidly (potential account takeover)
-    const recentEvents = tracker.events.filter(e => 
-      e.timestamp > Date.now() - (5 * 60 * 1000) && // Last 5 minutes
-      e.type === 'session_switch'
+    const recentEvents = tracker.events.filter(
+      (e) =>
+        e.timestamp > Date.now() - 5 * 60 * 1000 && // Last 5 minutes
+        e.type === "session_switch",
     );
 
     return recentEvents.length > 3; // More than 3 session switches in 5 minutes
   }
 
   private async handleSecurityThreat(
-    type: string, 
-    userId: string, 
-    ipAddress: string, 
-    userAgent: string, 
-    req: any
+    type: string,
+    userId: string,
+    ipAddress: string,
+    userAgent: string,
+    req: any,
   ): Promise<void> {
-    this.logSecurityEvent('security_threat_detected', userId, ipAddress, userAgent, {
+    this.logSecurityEvent("security_threat_detected", userId, ipAddress, userAgent, {
       type,
       url: req.url,
       method: req.method,
       body: req.body,
-      headers: req.headers
+      headers: req.headers,
     });
 
     // Auto-block IP for severe threats
-    const severeThreats = ['sql_injection', 'xss_attempt', 'path_traversal'];
+    const severeThreats = ["sql_injection", "xss_attempt", "path_traversal"];
     if (severeThreats.includes(type)) {
       this.blockIP(ipAddress, `Security threat: ${type}`);
     }
 
-    this.emit('securityThreat', {
+    this.emit("securityThreat", {
       type,
       userId,
       ipAddress,
       userAgent,
-      severity: severeThreats.includes(type) ? 'high' : 'medium'
+      severity: severeThreats.includes(type) ? "high" : "medium",
     });
   }
 
@@ -548,15 +596,15 @@ export class SecurityMiddleware extends EventEmitter {
   }
 
   private isDevelopment(): boolean {
-    return process.env.NODE_ENV === 'development';
+    return process.env.NODE_ENV === "development";
   }
 
   private logSecurityEvent(
-    action: string, 
-    userId: string, 
-    ipAddress: string, 
-    userAgent: string, 
-    details: Record<string, any> = {}
+    action: string,
+    userId: string,
+    ipAddress: string,
+    userAgent: string,
+    details: Record<string, any> = {},
   ): void {
     const event = {
       action,
@@ -564,19 +612,19 @@ export class SecurityMiddleware extends EventEmitter {
       ipAddress,
       userAgent,
       details,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    this.emit('securityEvent', event);
+    this.emit("securityEvent", event);
   }
 
   private getRateLimiterStats(): Record<string, any> {
     const stats: Record<string, any> = {};
-    
+
     for (const [type, limiter] of this.rateLimiters) {
       stats[type] = {
         points: limiter.points,
-        duration: limiter.duration
+        duration: limiter.duration,
       };
     }
 

@@ -2,9 +2,9 @@
  * Physics World - manages all rigid bodies and simulates physics
  */
 
-import { RigidBody, Vector2 } from './RigidBody';
-import { SpatialGrid } from './SpatialGrid';
-import { EventEmitter } from 'events';
+import { RigidBody, Vector2 } from "./RigidBody";
+import { SpatialGrid } from "./SpatialGrid";
+import { EventEmitter } from "events";
 
 export interface CollisionInfo {
   bodyA: RigidBody;
@@ -33,14 +33,14 @@ export class PhysicsWorld extends EventEmitter {
 
   constructor(config: Partial<PhysicsWorldConfig> = {}) {
     super();
-    
+
     this.config = {
       gravity: config.gravity || { x: 0, y: 0 },
       cellSize: config.cellSize || 100,
       maxVelocity: config.maxVelocity || 1000,
       sleepThreshold: config.sleepThreshold || 0.1,
       positionIterations: config.positionIterations || 4,
-      velocityIterations: config.velocityIterations || 8
+      velocityIterations: config.velocityIterations || 8,
     };
 
     this.spatialGrid = new SpatialGrid(this.config.cellSize);
@@ -52,7 +52,7 @@ export class PhysicsWorld extends EventEmitter {
   addBody(body: RigidBody): void {
     this.bodies.set(body.id, body);
     this.updateBodyInGrid(body);
-    this.emit('bodyAdded', body);
+    this.emit("bodyAdded", body);
   }
 
   /**
@@ -63,7 +63,7 @@ export class PhysicsWorld extends EventEmitter {
     if (body) {
       this.bodies.delete(bodyId);
       this.spatialGrid.removeEntity(bodyId);
-      this.emit('bodyRemoved', body);
+      this.emit("bodyRemoved", body);
       return body;
     }
     return null;
@@ -89,7 +89,7 @@ export class PhysicsWorld extends EventEmitter {
   update(deltaTime: number): void {
     // Fixed timestep with accumulator
     this.accumulator += deltaTime;
-    
+
     while (this.accumulator >= this.fixedTimeStep) {
       this.step(this.fixedTimeStep);
       this.accumulator -= this.fixedTimeStep;
@@ -119,7 +119,7 @@ export class PhysicsWorld extends EventEmitter {
     // Apply velocity constraints
     this.constrainVelocities();
 
-    this.emit('step', deltaTime);
+    this.emit("step", deltaTime);
   }
 
   /**
@@ -177,7 +177,7 @@ export class PhysicsWorld extends EventEmitter {
       const collision = this.checkAABBCollision(bodyA, bodyB);
       if (collision) {
         collisions.push(collision);
-        this.emit('collision', collision);
+        this.emit("collision", collision);
       }
     }
 
@@ -214,7 +214,7 @@ export class PhysicsWorld extends EventEmitter {
     // Calculate contact point
     const contactPoint: Vector2 = {
       x: (aabbA.minX + aabbA.maxX + aabbB.minX + aabbB.maxX) * 0.25,
-      y: (aabbA.minY + aabbA.maxY + aabbB.minY + aabbB.maxY) * 0.25
+      y: (aabbA.minY + aabbA.maxY + aabbB.minY + aabbB.maxY) * 0.25,
     };
 
     return {
@@ -222,7 +222,7 @@ export class PhysicsWorld extends EventEmitter {
       bodyB,
       normal,
       penetration,
-      contactPoint
+      contactPoint,
     };
   }
 
@@ -233,11 +233,7 @@ export class PhysicsWorld extends EventEmitter {
     // Iterate multiple times for better stability
     for (let i = 0; i < this.config.positionIterations; i++) {
       for (const collision of collisions) {
-        collision.bodyA.resolveCollision(
-          collision.bodyB,
-          collision.normal,
-          collision.penetration
-        );
+        collision.bodyA.resolveCollision(collision.bodyB, collision.normal, collision.penetration);
       }
     }
   }
@@ -250,7 +246,9 @@ export class PhysicsWorld extends EventEmitter {
       if (body.config.isStatic) continue;
 
       // Max velocity constraint
-      const speed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
+      const speed = Math.sqrt(
+        body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y,
+      );
       if (speed > this.config.maxVelocity) {
         const scale = this.config.maxVelocity / speed;
         body.velocity.x *= scale;
@@ -270,7 +268,9 @@ export class PhysicsWorld extends EventEmitter {
    */
   queryRegion(minX: number, minY: number, maxX: number, maxY: number): RigidBody[] {
     const entityIds = this.spatialGrid.queryRegion({ minX, minY, maxX, maxY });
-    return entityIds.map(id => this.bodies.get(id)).filter((body): body is RigidBody => body !== undefined);
+    return entityIds
+      .map((id) => this.bodies.get(id))
+      .filter((body): body is RigidBody => body !== undefined);
   }
 
   /**
@@ -278,13 +278,19 @@ export class PhysicsWorld extends EventEmitter {
    */
   queryPoint(x: number, y: number): RigidBody[] {
     const entityIds = this.spatialGrid.queryPoint(x, y);
-    return entityIds.map(id => this.bodies.get(id)).filter((body): body is RigidBody => body !== undefined);
+    return entityIds
+      .map((id) => this.bodies.get(id))
+      .filter((body): body is RigidBody => body !== undefined);
   }
 
   /**
    * Raycast from point in direction
    */
-  raycast(origin: Vector2, direction: Vector2, maxDistance: number): {
+  raycast(
+    origin: Vector2,
+    direction: Vector2,
+    maxDistance: number,
+  ): {
     hit: boolean;
     body?: RigidBody;
     point?: Vector2;
@@ -296,7 +302,7 @@ export class PhysicsWorld extends EventEmitter {
     if (length === 0) return { hit: false };
 
     const normalizedDir = { x: direction.x / length, y: direction.y / length };
-    
+
     // Step along ray
     const stepSize = Math.min(this.config.cellSize * 0.1, maxDistance * 0.01);
     let currentDistance = 0;
@@ -304,11 +310,11 @@ export class PhysicsWorld extends EventEmitter {
     while (currentDistance < maxDistance) {
       const testPoint = {
         x: origin.x + normalizedDir.x * currentDistance,
-        y: origin.y + normalizedDir.y * currentDistance
+        y: origin.y + normalizedDir.y * currentDistance,
       };
 
       const bodies = this.queryPoint(testPoint.x, testPoint.y);
-      
+
       for (const body of bodies) {
         if (!body.config.isTrigger) {
           // Calculate surface normal (simplified for AABB)
@@ -316,7 +322,7 @@ export class PhysicsWorld extends EventEmitter {
           const toCenter = { x: center.x - testPoint.x, y: center.y - testPoint.y };
           const absX = Math.abs(toCenter.x);
           const absY = Math.abs(toCenter.y);
-          
+
           let normal: Vector2;
           if (absX > absY) {
             normal = { x: toCenter.x > 0 ? 1 : -1, y: 0 };
@@ -329,7 +335,7 @@ export class PhysicsWorld extends EventEmitter {
             body,
             point: testPoint,
             normal,
-            distance: currentDistance
+            distance: currentDistance,
           };
         }
       }
@@ -362,15 +368,17 @@ export class PhysicsWorld extends EventEmitter {
     activeBodyCount: number;
     gridStats: any;
   } {
-    const activeBodies = Array.from(this.bodies.values())
-      .filter(body => !body.config.isStatic && 
-        (Math.abs(body.velocity.x) > this.config.sleepThreshold || 
-         Math.abs(body.velocity.y) > this.config.sleepThreshold));
+    const activeBodies = Array.from(this.bodies.values()).filter(
+      (body) =>
+        !body.config.isStatic &&
+        (Math.abs(body.velocity.x) > this.config.sleepThreshold ||
+          Math.abs(body.velocity.y) > this.config.sleepThreshold),
+    );
 
     return {
       bodyCount: this.bodies.size,
       activeBodyCount: activeBodies.length,
-      gridStats: this.spatialGrid.getStats()
+      gridStats: this.spatialGrid.getStats(),
     };
   }
 

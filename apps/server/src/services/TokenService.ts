@@ -49,7 +49,7 @@ export class TokenService {
   constructor(private prisma: PrismaClient) {}
 
   async searchTokens(options: TokenSearchOptions) {
-    const { sceneId,  actorId,  disposition,  isVisible,  layer,  limit = 100,  offset = 0  } = options;
+    const { sceneId, actorId, disposition, isVisible, layer, limit = 100, offset = 0 } = options;
 
     const where: any = { sceneId };
     if (actorId) where.actorId = actorId;
@@ -158,7 +158,13 @@ export class TokenService {
     });
   }
 
-  async createTokenFromActor(actorId: string, sceneId: string, x: number, y: number, options: Partial<CreateTokenRequest> = {}) {
+  async createTokenFromActor(
+    actorId: string,
+    sceneId: string,
+    x: number,
+    y: number,
+    options: Partial<CreateTokenRequest> = {},
+  ) {
     const actor = await this.prisma.actor.findUnique({
       where: { id: actorId },
       include: {
@@ -179,12 +185,24 @@ export class TokenService {
       const size = statblock.size;
       // Map D&D sizes to grid squares
       switch (size) {
-        case "TINY": width = height = 0.5; break;
-        case "SMALL": case "MEDIUM": width = height = 1; break;
-        case "LARGE": width = height = 2; break;
-        case "HUGE": width = height = 3; break;
-        case "GARGANTUAN": width = height = 4; break;
-        default: width = height = 1;
+        case "TINY":
+          width = height = 0.5;
+          break;
+        case "SMALL":
+        case "MEDIUM":
+          width = height = 1;
+          break;
+        case "LARGE":
+          width = height = 2;
+          break;
+        case "HUGE":
+          width = height = 3;
+          break;
+        case "GARGANTUAN":
+          width = height = 4;
+          break;
+        default:
+          width = height = 1;
       }
     }
 
@@ -292,7 +310,7 @@ export class TokenService {
       },
     });
 
-    return tokens.filter(token => {
+    return tokens.filter((token) => {
       const distance = Math.sqrt(Math.pow(token.x - x, 2) + Math.pow(token.y - y, 2));
       return distance <= radius;
     });
@@ -325,14 +343,20 @@ export class TokenService {
     return {
       total,
       visible,
-      byDisposition: byDisposition.reduce((_acc, _group) => {
-        acc[group.disposition] = group._count;
-        return acc;
-      }, {} as Record<string, number>),
-      byLayer: byLayer.reduce((_acc, _group) => {
-        acc[group.layer] = group._count;
-        return acc;
-      }, {} as Record<number, number>),
+      byDisposition: byDisposition.reduce(
+        (_acc, _group) => {
+          acc[group.disposition] = group._count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
+      byLayer: byLayer.reduce(
+        (_acc, _group) => {
+          acc[group.layer] = group._count;
+          return acc;
+        },
+        {} as Record<number, number>,
+      ),
     };
   }
 }

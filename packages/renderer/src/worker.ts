@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * In the real application this file would be executed inside a
@@ -11,11 +11,11 @@ export class RendererWorker {
   start(): void {
     this.running = true;
     // Normally we'd kick off a requestAnimationFrame loop here
-    logger.debug('RendererWorker started');
+    logger.debug("RendererWorker started");
   }
 
   stop(): void {
     this.running = false;
-    logger.debug('RendererWorker stopped');
+    logger.debug("RendererWorker stopped");
   }
 }

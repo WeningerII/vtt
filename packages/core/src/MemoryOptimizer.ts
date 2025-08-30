@@ -3,8 +3,8 @@
  * Provides object pooling, weak references, and memory profiling capabilities
  */
 
-import { EventEmitter, SystemEvents } from './EventEmitter';
-import { Disposable } from './SharedInterfaces';
+import { EventEmitter, SystemEvents } from "./EventEmitter";
+import { Disposable } from "./SharedInterfaces";
 
 export interface MemoryConfig {
   enableObjectPooling: boolean;
@@ -47,11 +47,11 @@ export class GenericObjectPool<T> implements ObjectPool<T> {
 
   acquire(): T {
     let obj = this.pool.pop();
-    
+
     if (!obj) {
       obj = this.factory();
     }
-    
+
     this.active.add(obj);
     return obj;
   }
@@ -60,13 +60,13 @@ export class GenericObjectPool<T> implements ObjectPool<T> {
     if (!this.active.has(obj)) {
       return;
     }
-    
+
     this.active.delete(obj);
-    
+
     if (this.reset) {
       this.reset(obj);
     }
-    
+
     if (this.pool.length < this.maxSize) {
       this.pool.push(obj);
     }
@@ -98,7 +98,7 @@ export class WeakRefCache<K, V extends object> {
       // Value already exists and is still alive
       return;
     }
-    
+
     this.cache.set(key, new WeakRef(value));
     this.registry.register(value, key);
   }
@@ -106,26 +106,26 @@ export class WeakRefCache<K, V extends object> {
   get(key: K): V | undefined {
     const ref = this.cache.get(key);
     if (!ref) return undefined;
-    
+
     const value = ref.deref();
     if (!value) {
       this.cache.delete(key);
       return undefined;
     }
-    
+
     return value;
   }
 
   has(key: K): boolean {
     const ref = this.cache.get(key);
     if (!ref) return false;
-    
+
     const value = ref.deref();
     if (!value) {
       this.cache.delete(key);
       return false;
     }
-    
+
     return true;
   }
 
@@ -158,7 +158,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
 
   constructor(config: Partial<MemoryConfig> = {}) {
     super();
-    
+
     this.config = {
       enableObjectPooling: true,
       enableWeakRefs: true,
@@ -166,7 +166,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
       maxPoolSize: 100,
       profileInterval: 10000, // 10 seconds
       enableMemoryProfiling: true,
-      ...config
+      ...config,
     };
 
     if (this.config.enableMemoryProfiling) {
@@ -184,7 +184,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
         acquire: factory,
         release: () => {},
         size: () => 0,
-        clear: () => {}
+        clear: () => {},
       };
     }
 
@@ -208,12 +208,14 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
       // Return a regular Map wrapper
       const regularMap = new Map<K, V>();
       return {
-        set: (_k, _v) => { regularMap.set(k, v); },
+        set: (_k, _v) => {
+          regularMap.set(k, v);
+        },
         get: (_k) => regularMap.get(k),
         has: (_k) => regularMap.has(k),
         delete: (_k) => regularMap.delete(k),
         size: () => regularMap.size,
-        clear: () => regularMap.clear()
+        clear: () => regularMap.clear(),
       } as WeakRefCache<K, V>;
     }
 
@@ -233,7 +235,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
    * Force garbage collection (if available)
    */
   forceGC(): void {
-    if (typeof global !== 'undefined' && (global as any).gc) {
+    if (typeof global !== "undefined" && (global as any).gc) {
       (global as any).gc();
       this.lastGCTime = Date.now();
     }
@@ -254,20 +256,20 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
    * Get current memory information
    */
   getMemoryInfo(): { heapUsed: number; heapTotal: number; external: number; rss?: number } | null {
-    if (typeof process !== 'undefined' && process.memoryUsage) {
+    if (typeof process !== "undefined" && process.memoryUsage) {
       return process.memoryUsage();
     }
-    
+
     // Browser environment - use performance.memory if available
-    if (typeof performance !== 'undefined' && (performance as any).memory) {
+    if (typeof performance !== "undefined" && (performance as any).memory) {
       const mem = (performance as any).memory;
       return {
         heapUsed: mem.usedJSHeapSize,
         heapTotal: mem.totalJSHeapSize,
-        external: 0
+        external: 0,
       };
     }
-    
+
     return null;
   }
 
@@ -281,9 +283,10 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
   /**
    * Clear old memory profiles
    */
-  clearOldProfiles(maxAge: number = 300000): void { // 5 minutes
+  clearOldProfiles(maxAge: number = 300000): void {
+    // 5 minutes
     const cutoff = Date.now() - maxAge;
-    this.memoryProfiles = this.memoryProfiles.filter(p => p.timestamp.getTime() > cutoff);
+    this.memoryProfiles = this.memoryProfiles.filter((p) => p.timestamp.getTime() > cutoff);
   }
 
   /**
@@ -291,16 +294,16 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
    */
   getPoolStats(): Record<string, { size: number; active: number }> {
     const stats: Record<string, { size: number; active: number }> = {};
-    
+
     for (const [name, pool] of this.objectPools) {
       if (pool instanceof GenericObjectPool) {
         stats[name] = {
           size: pool.size(),
-          active: pool.getActiveCount()
+          active: pool.getActiveCount(),
         };
       }
     }
-    
+
     return stats;
   }
 
@@ -328,18 +331,18 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
   optimize(): void {
     // Clear old profiles
     this.clearOldProfiles();
-    
+
     // Clean up weak caches
     for (const cache of this.weakCaches.values()) {
       cache.size(); // This triggers cleanup of dead references
     }
-    
+
     // Trigger GC if needed
     if (this.shouldTriggerGC()) {
       this.forceGC();
     }
-    
-    this.emit('ready', undefined);
+
+    this.emit("ready", undefined);
   }
 
   /**
@@ -357,7 +360,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
       clearInterval(this.profileTimer);
       this.profileTimer = undefined as NodeJS.Timeout | undefined;
     }
-    
+
     this.clearAllPools();
     this.clearAllCaches();
     this.objectPools.clear();
@@ -385,11 +388,11 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
       external: memInfo.external,
       rss: memInfo.rss,
       objectCount: this.estimateObjectCount(),
-      poolStats: this.getPoolStats()
+      poolStats: this.getPoolStats(),
     };
 
     this.memoryProfiles.push(profile);
-    
+
     // Keep only last 100 profiles
     if (this.memoryProfiles.length > 100) {
       this.memoryProfiles.shift();
@@ -398,19 +401,19 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
 
   private estimateObjectCount(): number {
     let count = 0;
-    
+
     // Count objects in pools
     for (const pool of this.objectPools.values()) {
       if (pool instanceof GenericObjectPool) {
         count += pool.size() + pool.getActiveCount();
       }
     }
-    
+
     // Count objects in weak caches
     for (const cache of this.weakCaches.values()) {
       count += cache.size();
     }
-    
+
     return count;
   }
 }
@@ -425,17 +428,17 @@ export class OptimizedArray<T> {
   private reset: ((_obj: T) => void) | undefined;
 
   constructor(
-    optimizer: MemoryOptimizer, 
-    _poolName: string, 
+    optimizer: MemoryOptimizer,
+    _poolName: string,
     _initialCapacity: number = 100,
     _factory?: () => T,
-    reset?: (_obj: T) => void
+    reset?: (_obj: T) => void,
   ) {
-    this.factory = factory || (() => ({} as T));
+    this.factory = factory || (() => ({}) as T);
     this.reset = reset;
-    
+
     this.pool = optimizer.getPool(poolName) || optimizer.createPool(poolName, this.factory, reset);
-    
+
     // Pre-allocate capacity
     this.items.length = initialCapacity;
   }

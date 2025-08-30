@@ -1,14 +1,14 @@
 /**
  * @vtt/user-management - Comprehensive user accounts, billing, and subscription management
- * 
+ *
  * This package provides complete user management functionality including authentication,
  * billing integration with Stripe, and multi-channel notifications.
  */
 
 // Core managers
-export { UserManager } from './UserManager';
-export { BillingManager } from './BillingManager';
-export { NotificationManager } from './NotificationManager';
+export { UserManager } from "./UserManager";
+export { BillingManager } from "./BillingManager";
+export { NotificationManager } from "./NotificationManager";
 
 // Types and interfaces
 export type {
@@ -17,8 +17,8 @@ export type {
   LoginAttempt,
   PasswordResetRequest,
   EmailVerification,
-  UserManagerConfig
-} from './UserManager';
+  UserManagerConfig,
+} from "./UserManager";
 
 export type {
   SubscriptionPlan,
@@ -26,8 +26,8 @@ export type {
   Invoice,
   PaymentMethod,
   UsageRecord,
-  BillingManagerConfig
-} from './BillingManager';
+  BillingManagerConfig,
+} from "./BillingManager";
 
 export type {
   NotificationTemplate,
@@ -35,8 +35,8 @@ export type {
   PushNotification,
   InAppNotification,
   NotificationPreferences,
-  NotificationManagerConfig
-} from './NotificationManager';
+  NotificationManagerConfig,
+} from "./NotificationManager";
 
 // Utility functions
 export const _UserManagementUtils = {
@@ -48,52 +48,48 @@ export const _UserManagementUtils = {
     billing: any;
     notifications: any;
   }) => {
-    const { UserManager  } = await import('./UserManager');
-    const { BillingManager  } = await import('./BillingManager');
-    const { NotificationManager  } = await import('./NotificationManager');
+    const { UserManager } = await import("./UserManager");
+    const { BillingManager } = await import("./BillingManager");
+    const { NotificationManager } = await import("./NotificationManager");
 
     const userManager = new UserManager(config.userManager);
     const billingManager = new BillingManager(config.billing, userManager);
     const notificationManager = new NotificationManager(config.notifications, userManager);
 
     // Wire up event handlers
-    userManager.on('userCreated', async (user: any) => {
+    userManager.on("userCreated", async (user: any) => {
       await notificationManager.sendWelcomeEmail(user.id);
     });
 
-    userManager.on('passwordResetRequested', async (user: any, _token: string) => {
+    userManager.on("passwordResetRequested", async (user: any, _token: string) => {
       await notificationManager.sendPasswordResetEmail(user.id, token);
     });
 
-    userManager.on('emailVerificationSent', async (user: any, _token: string) => {
+    userManager.on("emailVerificationSent", async (user: any, _token: string) => {
       await notificationManager.sendEmailVerification(user.id, token);
     });
 
-    billingManager.on('subscriptionCreated', async (subscription: any) => {
+    billingManager.on("subscriptionCreated", async (subscription: any) => {
       await notificationManager.sendInApp(
         subscription.userId,
-        'success',
-        'Subscription Active',
-        'Your subscription has been activated successfully!'
+        "success",
+        "Subscription Active",
+        "Your subscription has been activated successfully!",
       );
     });
 
-    billingManager.on('invoicePaymentFailed', async (invoice: any) => {
-      await notificationManager.sendEmail(
-        invoice.userId,
-        'payment-failed',
-        {
-          amount: invoice.amount,
-          currency: invoice.currency,
-          retryUrl: '/billing/retry-payment'
-        }
-      );
+    billingManager.on("invoicePaymentFailed", async (invoice: any) => {
+      await notificationManager.sendEmail(invoice.userId, "payment-failed", {
+        amount: invoice.amount,
+        currency: invoice.currency,
+        retryUrl: "/billing/retry-payment",
+      });
     });
 
     return {
       userManager,
       billingManager,
-      notificationManager
+      notificationManager,
     };
   },
 
@@ -102,45 +98,39 @@ export const _UserManagementUtils = {
    */
   getDefaultSubscriptionPlans: (): any[] => [
     {
-      id: 'free',
-      name: 'Free',
-      tier: 'free',
+      id: "free",
+      name: "Free",
+      tier: "free",
       price: 0,
-      currency: 'usd',
-      interval: 'month',
-      features: [
-        '2 campaigns',
-        '4 players per game',
-        '1GB storage',
-        '50 assets',
-        'Basic features'
-      ],
+      currency: "usd",
+      interval: "month",
+      features: ["2 campaigns", "4 players per game", "1GB storage", "50 assets", "Basic features"],
       limits: {
         maxCampaigns: 2,
         maxPlayersPerGame: 4,
         maxStorageGB: 1,
         maxAssets: 50,
         canUseCustomAssets: false,
-        canUseAdvancedFeatures: false
+        canUseAdvancedFeatures: false,
       },
-      stripeProductId: '',
-      stripePriceId: '',
-      active: true
+      stripeProductId: "",
+      stripePriceId: "",
+      active: true,
     },
     {
-      id: 'basic',
-      name: 'Basic',
-      tier: 'basic',
+      id: "basic",
+      name: "Basic",
+      tier: "basic",
       price: 9.99,
-      currency: 'usd',
-      interval: 'month',
+      currency: "usd",
+      interval: "month",
       features: [
-        '5 campaigns',
-        '8 players per game',
-        '5GB storage',
-        '500 assets',
-        'Custom assets',
-        'Priority support'
+        "5 campaigns",
+        "8 players per game",
+        "5GB storage",
+        "500 assets",
+        "Custom assets",
+        "Priority support",
       ],
       limits: {
         maxCampaigns: 5,
@@ -148,28 +138,28 @@ export const _UserManagementUtils = {
         maxStorageGB: 5,
         maxAssets: 500,
         canUseCustomAssets: true,
-        canUseAdvancedFeatures: false
+        canUseAdvancedFeatures: false,
       },
-      stripeProductId: 'prod_basic',
-      stripePriceId: 'price_basic_monthly',
-      active: true
+      stripeProductId: "prod_basic",
+      stripePriceId: "price_basic_monthly",
+      active: true,
     },
     {
-      id: 'premium',
-      name: 'Premium',
-      tier: 'premium',
+      id: "premium",
+      name: "Premium",
+      tier: "premium",
       price: 19.99,
-      currency: 'usd',
-      interval: 'month',
+      currency: "usd",
+      interval: "month",
       features: [
-        '20 campaigns',
-        '12 players per game',
-        '25GB storage',
-        '5,000 assets',
-        'Custom assets',
-        'Advanced features',
-        'API access',
-        'Premium support'
+        "20 campaigns",
+        "12 players per game",
+        "25GB storage",
+        "5,000 assets",
+        "Custom assets",
+        "Advanced features",
+        "API access",
+        "Premium support",
       ],
       limits: {
         maxCampaigns: 20,
@@ -177,29 +167,29 @@ export const _UserManagementUtils = {
         maxStorageGB: 25,
         maxAssets: 5000,
         canUseCustomAssets: true,
-        canUseAdvancedFeatures: true
+        canUseAdvancedFeatures: true,
       },
-      stripeProductId: 'prod_premium',
-      stripePriceId: 'price_premium_monthly',
-      active: true
+      stripeProductId: "prod_premium",
+      stripePriceId: "price_premium_monthly",
+      active: true,
     },
     {
-      id: 'enterprise',
-      name: 'Enterprise',
-      tier: 'enterprise',
+      id: "enterprise",
+      name: "Enterprise",
+      tier: "enterprise",
       price: 49.99,
-      currency: 'usd',
-      interval: 'month',
+      currency: "usd",
+      interval: "month",
       features: [
-        'Unlimited campaigns',
-        'Unlimited players',
-        '100GB storage',
-        'Unlimited assets',
-        'Custom assets',
-        'All advanced features',
-        'Full API access',
-        'Dedicated support',
-        'Custom integrations'
+        "Unlimited campaigns",
+        "Unlimited players",
+        "100GB storage",
+        "Unlimited assets",
+        "Custom assets",
+        "All advanced features",
+        "Full API access",
+        "Dedicated support",
+        "Custom integrations",
       ],
       limits: {
         maxCampaigns: -1,
@@ -207,12 +197,12 @@ export const _UserManagementUtils = {
         maxStorageGB: 100,
         maxAssets: -1,
         canUseCustomAssets: true,
-        canUseAdvancedFeatures: true
+        canUseAdvancedFeatures: true,
       },
-      stripeProductId: 'prod_enterprise',
-      stripePriceId: 'price_enterprise_monthly',
-      active: true
-    }
+      stripeProductId: "prod_enterprise",
+      stripePriceId: "price_enterprise_monthly",
+      active: true,
+    },
   ],
 
   /**
@@ -220,10 +210,10 @@ export const _UserManagementUtils = {
    */
   getDefaultNotificationTemplates: (): any[] => [
     {
-      id: 'welcome',
-      name: 'Welcome Email',
-      type: 'email',
-      subject: 'Welcome to {{ appName }}!',
+      id: "welcome",
+      name: "Welcome Email",
+      type: "email",
+      subject: "Welcome to {{ appName }}!",
       htmlTemplate: `
         <h1>Welcome, {{ firstName }}!</h1>
         <p>Thank you for joining {{ appName }}. We're excited to have you on board!</p>
@@ -242,15 +232,15 @@ export const _UserManagementUtils = {
         
         If you have any questions, don't hesitate to reach out to our support team.
       `,
-      variables: ['firstName', 'username', 'appName', 'loginUrl'],
-      category: 'account',
-      active: true
+      variables: ["firstName", "username", "appName", "loginUrl"],
+      category: "account",
+      active: true,
     },
     {
-      id: 'password-reset',
-      name: 'Password Reset',
-      type: 'email',
-      subject: 'Reset your password',
+      id: "password-reset",
+      name: "Password Reset",
+      type: "email",
+      subject: "Reset your password",
       htmlTemplate: `
         <h1>Password Reset Request</h1>
         <p>Hi {{ firstName }},</p>
@@ -271,15 +261,15 @@ export const _UserManagementUtils = {
         
         If you didn't request this reset, please ignore this email.
       `,
-      variables: ['firstName', 'resetUrl', 'expiresIn'],
-      category: 'account',
-      active: true
+      variables: ["firstName", "resetUrl", "expiresIn"],
+      category: "account",
+      active: true,
     },
     {
-      id: 'email-verification',
-      name: 'Email Verification',
-      type: 'email',
-      subject: 'Verify your email address',
+      id: "email-verification",
+      name: "Email Verification",
+      type: "email",
+      subject: "Verify your email address",
       htmlTemplate: `
         <h1>Verify Your Email</h1>
         <p>Hi {{ firstName }},</p>
@@ -297,15 +287,15 @@ export const _UserManagementUtils = {
         
         If you didn't create this account, please ignore this email.
       `,
-      variables: ['firstName', 'verificationUrl'],
-      category: 'account',
-      active: true
+      variables: ["firstName", "verificationUrl"],
+      category: "account",
+      active: true,
     },
     {
-      id: 'game-invite',
-      name: 'Game Invitation',
-      type: 'email',
-      subject: 'You\'re invited to play {{ gameTitle }}!',
+      id: "game-invite",
+      name: "Game Invitation",
+      type: "email",
+      subject: "You're invited to play {{ gameTitle }}!",
       htmlTemplate: `
         <h1>Game Invitation</h1>
         <p>{{ inviterName }} has invited you to play <strong>{{ gameTitle }}</strong>!</p>
@@ -326,15 +316,15 @@ export const _UserManagementUtils = {
         
         Game link: {{ gameUrl }}
       `,
-      variables: ['inviterName', 'gameTitle', 'acceptUrl', 'declineUrl', 'gameUrl'],
-      category: 'game',
-      active: true
+      variables: ["inviterName", "gameTitle", "acceptUrl", "declineUrl", "gameUrl"],
+      category: "game",
+      active: true,
     },
     {
-      id: 'payment-failed',
-      name: 'Payment Failed',
-      type: 'email',
-      subject: 'Payment failed - Action required',
+      id: "payment-failed",
+      name: "Payment Failed",
+      type: "email",
+      subject: "Payment failed - Action required",
       htmlTemplate: `
         <h1>Payment Failed</h1>
         <p>We were unable to process your payment of {{ amount }} {{ currency }}.</p>
@@ -353,10 +343,10 @@ export const _UserManagementUtils = {
         
         If you have any questions, please contact our support team.
       `,
-      variables: ['amount', 'currency', 'retryUrl'],
-      category: 'billing',
-      active: true
-    }
+      variables: ["amount", "currency", "retryUrl"],
+      category: "billing",
+      active: true,
+    },
   ],
 
   /**
@@ -370,7 +360,9 @@ export const _UserManagementUtils = {
   /**
    * Validate password strength
    */
-  validatePasswordStrength: (password: string): {
+  validatePasswordStrength: (
+    password: string,
+  ): {
     valid: boolean;
     errors: string[];
     score: number;
@@ -379,7 +371,7 @@ export const _UserManagementUtils = {
     let score = 0;
 
     if (password.length < 8) {
-      errors.push('Password must be at least 8 characters long');
+      errors.push("Password must be at least 8 characters long");
     } else {
       score += 1;
     }
@@ -391,31 +383,31 @@ export const _UserManagementUtils = {
     if (/[a-z]/.test(password)) {
       score += 1;
     } else {
-      errors.push('Password must contain at least one lowercase letter');
+      errors.push("Password must contain at least one lowercase letter");
     }
 
     if (/[A-Z]/.test(password)) {
       score += 1;
     } else {
-      errors.push('Password must contain at least one uppercase letter');
+      errors.push("Password must contain at least one uppercase letter");
     }
 
     if (/\d/.test(password)) {
       score += 1;
     } else {
-      errors.push('Password must contain at least one number');
+      errors.push("Password must contain at least one number");
     }
 
     if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
       score += 1;
     } else {
-      errors.push('Password must contain at least one special character');
+      errors.push("Password must contain at least one special character");
     }
 
     return {
       valid: errors.length === 0,
       errors,
-      score: Math.min(score, 5)
+      score: Math.min(score, 5),
     };
   },
 
@@ -423,8 +415,8 @@ export const _UserManagementUtils = {
    * Generate secure random token
    */
   generateSecureToken: (length: number = 32): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
@@ -434,10 +426,10 @@ export const _UserManagementUtils = {
   /**
    * Format currency amount
    */
-  formatCurrency: (amount: number, currency: string = 'USD'): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency.toUpperCase()
+  formatCurrency: (amount: number, currency: string = "USD"): string => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
     }).format(amount);
   },
 
@@ -448,37 +440,37 @@ export const _UserManagementUtils = {
     oldPrice: number,
     newPrice: number,
     daysRemaining: number,
-    totalDays: number
+    totalDays: number,
   ): number => {
     const oldDailyRate = oldPrice / totalDays;
     const newDailyRate = newPrice / totalDays;
     const unusedAmount = oldDailyRate * daysRemaining;
     const newAmount = newDailyRate * daysRemaining;
     return newAmount - unusedAmount;
-  }
+  },
 };
 
 // Constants
 export const _USER_ROLES = {
-  USER: 'user',
-  MODERATOR: 'moderator',
-  ADMIN: 'admin',
-  SUPER_ADMIN: 'super_admin'
+  USER: "user",
+  MODERATOR: "moderator",
+  ADMIN: "admin",
+  SUPER_ADMIN: "super_admin",
 } as const;
 
 export const _SUBSCRIPTION_TIERS = {
-  FREE: 'free',
-  BASIC: 'basic',
-  PREMIUM: 'premium',
-  ENTERPRISE: 'enterprise'
+  FREE: "free",
+  BASIC: "basic",
+  PREMIUM: "premium",
+  ENTERPRISE: "enterprise",
 } as const;
 
 export const _NOTIFICATION_CATEGORIES = {
-  ACCOUNT: 'account',
-  GAME: 'game',
-  BILLING: 'billing',
-  SYSTEM: 'system',
-  MARKETING: 'marketing'
+  ACCOUNT: "account",
+  GAME: "game",
+  BILLING: "billing",
+  SYSTEM: "system",
+  MARKETING: "marketing",
 } as const;
 
 export const _DEFAULT_LIMITS = {
@@ -488,7 +480,7 @@ export const _DEFAULT_LIMITS = {
     maxStorageGB: 1,
     maxAssets: 50,
     canUseCustomAssets: false,
-    canUseAdvancedFeatures: false
+    canUseAdvancedFeatures: false,
   },
   BASIC: {
     maxCampaigns: 5,
@@ -496,7 +488,7 @@ export const _DEFAULT_LIMITS = {
     maxStorageGB: 5,
     maxAssets: 500,
     canUseCustomAssets: true,
-    canUseAdvancedFeatures: false
+    canUseAdvancedFeatures: false,
   },
   PREMIUM: {
     maxCampaigns: 20,
@@ -504,7 +496,7 @@ export const _DEFAULT_LIMITS = {
     maxStorageGB: 25,
     maxAssets: 5000,
     canUseCustomAssets: true,
-    canUseAdvancedFeatures: true
+    canUseAdvancedFeatures: true,
   },
   ENTERPRISE: {
     maxCampaigns: -1,
@@ -512,10 +504,10 @@ export const _DEFAULT_LIMITS = {
     maxStorageGB: 100,
     maxAssets: -1,
     canUseCustomAssets: true,
-    canUseAdvancedFeatures: true
-  }
+    canUseAdvancedFeatures: true,
+  },
 };
 
 // Version information
-export const _VERSION = '1.0.0';
-export const _PACKAGE_NAME = '@vtt/user-management';
+export const _VERSION = "1.0.0";
+export const _PACKAGE_NAME = "@vtt/user-management";

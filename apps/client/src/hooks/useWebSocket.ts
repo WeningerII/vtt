@@ -2,11 +2,21 @@
  * WebSocket hook for real-time VTT communication
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { logger } from '@vtt/logging';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { logger } from "@vtt/logging";
 
 export interface VTTWebSocketMessage {
-  type: 'token_move' | 'token_add' | 'token_remove' | 'scene_update' | 'combat_update' | 'user_join' | 'user_leave' | 'ping' | 'pong' | 'error';
+  type:
+    | "token_move"
+    | "token_add"
+    | "token_remove"
+    | "scene_update"
+    | "combat_update"
+    | "user_join"
+    | "user_leave"
+    | "ping"
+    | "pong"
+    | "error";
   payload: any;
   sessionId: string;
   userId: string;
@@ -40,14 +50,15 @@ interface UseWebSocketReturn {
 }
 
 export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketReturn => {
-  const { sessionId, 
-    userId, 
-    campaignId, 
-    isGM = false, 
-    autoConnect = true, 
-    reconnectAttempts = 5, 
-    reconnectInterval = 3000
-   } = options;
+  const {
+    sessionId,
+    userId,
+    campaignId,
+    isGM = false,
+    autoConnect = true,
+    reconnectAttempts = 5,
+    reconnectInterval = 3000,
+  } = options;
 
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -65,7 +76,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     }
 
     if (!sessionId || !userId || !campaignId) {
-      setError('Missing required connection parameters');
+      setError("Missing required connection parameters");
       return;
     }
 
@@ -82,27 +93,27 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
         setIsConnecting(false);
         setError(null);
         reconnectCountRef.current = 0;
-        logger.info('WebSocket connected');
+        logger.info("WebSocket connected");
       };
 
       ws.onmessage = (event) => {
         try {
           const message: VTTWebSocketMessage = JSON.parse(event.data);
           setLastMessage(message);
-          
+
           // Update connected users count
-          if (message.type === 'user_join' || message.type === 'user_leave') {
+          if (message.type === "user_join" || message.type === "user_leave") {
             setConnectedUsers(message.payload.userCount || 0);
           }
         } catch (err) {
-          logger.error('Failed to parse WebSocket message:', err);
+          logger.error("Failed to parse WebSocket message:", err);
         }
       };
 
       ws.onclose = (event) => {
         setIsConnected(false);
         setIsConnecting(false);
-        logger.info('WebSocket disconnected:', event.code, event.reason);
+        logger.info("WebSocket disconnected:", event.code, event.reason);
 
         // Attempt to reconnect if not manually closed
         if (event.code !== 1000 && reconnectCountRef.current < reconnectAttempts) {
@@ -115,11 +126,10 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
       };
 
       ws.onerror = (event) => {
-        setError('WebSocket connection error');
+        setError("WebSocket connection error");
         setIsConnecting(false);
-        logger.error('WebSocket error:', event);
+        logger.error("WebSocket error:", event);
       };
-
     } catch (err: any) {
       setError(err.message);
       setIsConnecting(false);
@@ -133,7 +143,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     }
 
     if (wsRef.current) {
-      wsRef.current.close(1000, 'Manual disconnect');
+      wsRef.current.close(1000, "Manual disconnect");
       wsRef.current = null;
     }
 
@@ -146,7 +156,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     } else {
-      logger.warn('WebSocket not connected, message not sent:', message);
+      logger.warn("WebSocket not connected, message not sent:", message);
     }
   }, []);
 
@@ -161,38 +171,40 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
   }, [autoConnect, connect, disconnect]);
 
   // Create socket-like interface for compatibility
-  const socketInterface = wsRef.current ? {
-    emit: (event: string, data: any) => {
-      const message: VTTWebSocketMessage = {
-        type: event as any,
-        payload: data,
-        sessionId: sessionId || '',
-        userId: userId || '',
-        timestamp: Date.now()
-      };
-      send(message);
-    },
-    on: (event: string, callback: (data: any) => void) => {
-      // Simple event handling - in a real implementation this would be more sophisticated
-      if (wsRef.current) {
-        const handler = (e: MessageEvent) => {
-          try {
-            const message = JSON.parse(e.data);
-            if (message.type === event) {
-              callback(message.payload);
-            }
-          } catch (err) {
-            logger.error('Failed to parse WebSocket message:', err);
+  const socketInterface = wsRef.current
+    ? {
+        emit: (event: string, data: any) => {
+          const message: VTTWebSocketMessage = {
+            type: event as any,
+            payload: data,
+            sessionId: sessionId || "",
+            userId: userId || "",
+            timestamp: Date.now(),
+          };
+          send(message);
+        },
+        on: (event: string, callback: (data: any) => void) => {
+          // Simple event handling - in a real implementation this would be more sophisticated
+          if (wsRef.current) {
+            const handler = (e: MessageEvent) => {
+              try {
+                const message = JSON.parse(e.data);
+                if (message.type === event) {
+                  callback(message.payload);
+                }
+              } catch (err) {
+                logger.error("Failed to parse WebSocket message:", err);
+              }
+            };
+            wsRef.current.addEventListener("message", handler);
           }
-        };
-        wsRef.current.addEventListener('message', handler);
+        },
+        off: (_event: string, _callback?: (data: any) => void) => {
+          // Remove event listener - simplified implementation
+          // In a real implementation, we'd track listeners properly
+        },
       }
-    },
-    off: (_event: string, _callback?: (data: any) => void) => {
-      // Remove event listener - simplified implementation
-      // In a real implementation, we'd track listeners properly
-    }
-  } : null;
+    : null;
 
   return {
     socket: socketInterface,
@@ -203,6 +215,6 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     error,
     connect,
     disconnect,
-    connectedUsers
+    connectedUsers,
   };
 };

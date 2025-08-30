@@ -3,15 +3,22 @@
  * Handles spell casting mechanics, slot management, and spell effects
  */
 
-import { DiceEngine, DamageResult, diceEngine } from '@vtt/dice-engine';
-import { ConditionsEngine, conditionsEngine, Condition} from '@vtt/conditions-engine';
+import { DiceEngine, DamageResult, diceEngine } from "@vtt/dice-engine";
+import { ConditionsEngine, conditionsEngine, Condition } from "@vtt/conditions-engine";
 
 export interface Spell {
   id: string;
   name: string;
   level: number; // 0 for cantrips
-  school: 'abjuration' | 'conjuration' | 'divination' | 'enchantment' | 
-         'evocation' | 'illusion' | 'necromancy' | 'transmutation';
+  school:
+    | "abjuration"
+    | "conjuration"
+    | "divination"
+    | "enchantment"
+    | "evocation"
+    | "illusion"
+    | "necromancy"
+    | "transmutation";
   castingTime: string; // "1 action", "1 bonus action", "1 minute", etc.
   range: string; // "60 feet", "Touch", "Self", etc.
   components: {
@@ -31,20 +38,28 @@ export interface Spell {
 }
 
 export interface SpellEffect {
-  type: 'damage' | 'healing' | 'condition' | 'teleport' | 'summon' | 
-        'buff' | 'debuff' | 'utility' | 'custom';
-  target: 'self' | 'single' | 'multiple' | 'area' | 'line' | 'cone' | 'sphere';
+  type:
+    | "damage"
+    | "healing"
+    | "condition"
+    | "teleport"
+    | "summon"
+    | "buff"
+    | "debuff"
+    | "utility"
+    | "custom";
+  target: "self" | "single" | "multiple" | "area" | "line" | "cone" | "sphere";
   area?: {
-    type: 'sphere' | 'cube' | 'cylinder' | 'line' | 'cone';
+    type: "sphere" | "cube" | "cylinder" | "line" | "cone";
     size: number; // radius, width, length, etc.
   };
   damage?: {
     dice: string;
     type: string;
     savingThrow?: {
-      ability: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
+      ability: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
       dc?: number; // if not provided, uses caster's spell save DC
-      onSuccess: 'half' | 'none' | 'negates';
+      onSuccess: "half" | "none" | "negates";
     };
   };
   healing?: {
@@ -55,7 +70,7 @@ export interface SpellEffect {
     id: string;
     duration: number;
     savingThrow?: {
-      ability: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
+      ability: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
       dc?: number;
       endOfTurn?: boolean;
     };
@@ -120,14 +135,14 @@ export class SpellEngine {
     caster: any,
     targets: string[],
     spellLevel?: number,
-    position?: { x: number; y: number }
+    position?: { x: number; y: number },
   ): CastingResult {
     const castLevel = spellLevel || spell.level;
-    
+
     // Check spell slot availability
     if (spell.level > 0) {
       if (!this.hasSpellSlot(caster, castLevel)) {
-        return { success: false, error: 'No spell slots available', spellSlotUsed: 0, effects: [] };
+        return { success: false, error: "No spell slots available", spellSlotUsed: 0, effects: [] };
       }
     }
 
@@ -157,7 +172,7 @@ export class SpellEngine {
       caster.concentrationSpell = {
         spell: spell.id,
         duration: this.parseDuration(spell.duration),
-        effects: conditions
+        effects: conditions,
       };
     }
 
@@ -165,7 +180,7 @@ export class SpellEngine {
       success: true,
       spellSlotUsed: castLevel,
       effects,
-      conditions
+      conditions,
     };
   }
 
@@ -174,16 +189,19 @@ export class SpellEngine {
     caster: any,
     targets: string[],
     spellLevel: number,
-    position?: { x: number; y: number }
-  ): { effects: any[]; conditions: Array<{ target: string; condition: string; duration: number }> } {
+    position?: { x: number; y: number },
+  ): {
+    effects: any[];
+    conditions: Array<{ target: string; condition: string; duration: number }>;
+  } {
     const effects: any[] = [];
     const conditions: Array<{ target: string; condition: string; duration: number }> = [];
 
     switch (effect.type) {
-      case 'damage':
+      case "damage":
         if (effect.damage) {
           let damage = effect.damage.dice;
-          
+
           // Apply scaling
           const bonusLevels = spellLevel - 1; // spells scale from their base level
           if (bonusLevels > 0) {
@@ -200,57 +218,58 @@ export class SpellEngine {
               const saveResult = this.rollSavingThrow(
                 targetId,
                 effect.damage.savingThrow.ability,
-                effect.damage.savingThrow.dc || caster.spellSaveDC
+                effect.damage.savingThrow.dc || caster.spellSaveDC,
               );
 
               if (saveResult.success) {
                 switch (effect.damage.savingThrow.onSuccess) {
-                  case 'half':
+                  case "half":
                     finalDamage = Math.floor(finalDamage / 2);
                     break;
-                  case 'none':
+                  case "none":
                     finalDamage = 0;
                     break;
-                  case 'negates':
+                  case "negates":
                     continue; // Skip this target entirely
                 }
               }
             }
 
             effects.push({
-              type: 'damage',
+              type: "damage",
               target: targetId,
-              result: { ...damageResult, total: finalDamage }
+              result: { ...damageResult, total: finalDamage },
             });
           }
         }
         break;
 
-      case 'healing':
+      case "healing":
         if (effect.healing) {
           let healing = effect.healing.dice;
-          
+
           // Apply scaling
           const bonusLevels = spellLevel - 1;
           if (bonusLevels > 0) {
             healing = this.scaleHealing(healing, bonusLevels);
           }
 
-          const healTargets = effect.healing.maxTargets ? 
-            targets.slice(0, effect.healing.maxTargets) : targets;
+          const healTargets = effect.healing.maxTargets
+            ? targets.slice(0, effect.healing.maxTargets)
+            : targets;
 
           for (const targetId of healTargets) {
             const healingRoll = this.dice.roll(healing);
             effects.push({
-              type: 'healing',
+              type: "healing",
               target: targetId,
-              result: { amount: healingRoll.total }
+              result: { amount: healingRoll.total },
             });
           }
         }
         break;
 
-      case 'condition':
+      case "condition":
         if (effect.condition) {
           for (const targetId of targets) {
             let applyCondition = true;
@@ -260,7 +279,7 @@ export class SpellEngine {
               const saveResult = this.rollSavingThrow(
                 targetId,
                 effect.condition.savingThrow.ability,
-                effect.condition.savingThrow.dc || caster.spellSaveDC
+                effect.condition.savingThrow.dc || caster.spellSaveDC,
               );
 
               if (saveResult.success) {
@@ -272,21 +291,21 @@ export class SpellEngine {
               conditions.push({
                 target: targetId,
                 condition: effect.condition.id,
-                duration: effect.condition.duration
+                duration: effect.condition.duration,
               });
 
               effects.push({
-                type: 'condition',
+                type: "condition",
                 target: targetId,
-                result: { condition: effect.condition.id }
+                result: { condition: effect.condition.id },
               });
             }
           }
         }
         break;
 
-      case 'buff':
-      case 'debuff':
+      case "buff":
+      case "debuff":
         if (effect.modifier) {
           for (const targetId of targets) {
             effects.push({
@@ -295,20 +314,20 @@ export class SpellEngine {
               result: {
                 modifier: effect.modifier.target,
                 value: effect.modifier.value,
-                duration: effect.modifier.duration
-              }
+                duration: effect.modifier.duration,
+              },
             });
           }
         }
         break;
 
-      case 'custom':
+      case "custom":
         // Handle custom spell effects
         if (effect.custom) {
           effects.push({
-            type: 'custom',
-            target: targets[0] || 'none',
-            result: { description: effect.custom.description }
+            type: "custom",
+            target: targets[0] || "none",
+            result: { description: effect.custom.description },
           });
         }
         break;
@@ -329,7 +348,11 @@ export class SpellEngine {
     }
   }
 
-  private rollSavingThrow(targetId: string, ability: string, dc: number): { success: boolean; roll: any } {
+  private rollSavingThrow(
+    targetId: string,
+    ability: string,
+    dc: number,
+  ): { success: boolean; roll: any } {
     // This would integrate with the character system to get the target's save bonus
     const saveBonus = 0; // Placeholder - would get from character data
     const roll = this.dice.rollSavingThrow(saveBonus, dc);
@@ -348,9 +371,9 @@ export class SpellEngine {
 
   private parseDuration(duration: string): number {
     // Parse duration strings into rounds/minutes
-    if (duration.includes('1 minute')) return 10; // 10 rounds
-    if (duration.includes('10 minutes')) return 100; // 100 rounds
-    if (duration.includes('1 hour')) return 600; // 600 rounds
+    if (duration.includes("1 minute")) return 10; // 10 rounds
+    if (duration.includes("10 minutes")) return 100; // 100 rounds
+    if (duration.includes("1 hour")) return 600; // 600 rounds
     return 1; // Default to 1 round
   }
 
@@ -376,14 +399,14 @@ export class SpellEngine {
     const dc = Math.max(10, Math.floor(damage / 2));
     const constitutionSave = caster.abilities?.CON?.modifier || 0;
     const proficiencyBonus = caster.proficiencyBonus || 0;
-    
+
     const saveResult = this.dice.rollSavingThrow(constitutionSave + proficiencyBonus, dc);
-    
+
     if (!saveResult.success) {
       this.endConcentration(caster);
       return false;
     }
-    
+
     return true;
   }
 
@@ -409,81 +432,87 @@ export class SpellEngine {
 // Common D&D 5e spells
 export const D5E_SPELLS: Record<string, Spell> = {
   magicMissile: {
-    id: 'magic_missile',
-    name: 'Magic Missile',
+    id: "magic_missile",
+    name: "Magic Missile",
     level: 1,
-    school: 'evocation',
-    castingTime: '1 action',
-    range: '120 feet',
+    school: "evocation",
+    castingTime: "1 action",
+    range: "120 feet",
     components: { verbal: true, somatic: true },
-    duration: 'Instantaneous',
+    duration: "Instantaneous",
     concentration: false,
     ritual: false,
-    description: 'Three glowing darts of magical force strike targets for 1d4+1 force damage each',
-    effects: [{
-      type: 'damage',
-      target: 'multiple',
-      damage: {
-        dice: '1d4+1',
-        type: 'force'
-      }
-    }],
+    description: "Three glowing darts of magical force strike targets for 1d4+1 force damage each",
+    effects: [
+      {
+        type: "damage",
+        target: "multiple",
+        damage: {
+          dice: "1d4+1",
+          type: "force",
+        },
+      },
+    ],
     scaling: {
-      damage: '1d4+1'
-    }
+      damage: "1d4+1",
+    },
   },
   fireball: {
-    id: 'fireball',
-    name: 'Fireball',
+    id: "fireball",
+    name: "Fireball",
     level: 3,
-    school: 'evocation',
-    castingTime: '1 action',
-    range: '150 feet',
-    components: { verbal: true, somatic: true, material: 'A tiny ball of bat guano and sulfur' },
-    duration: 'Instantaneous',
+    school: "evocation",
+    castingTime: "1 action",
+    range: "150 feet",
+    components: { verbal: true, somatic: true, material: "A tiny ball of bat guano and sulfur" },
+    duration: "Instantaneous",
     concentration: false,
     ritual: false,
-    description: 'A bright flash and thunderous boom, creatures in 20-foot radius make Dex save',
-    effects: [{
-      type: 'damage',
-      target: 'area',
-      area: { type: 'sphere', size: 20 },
-      damage: {
-        dice: '8d6',
-        type: 'fire',
-        savingThrow: {
-          ability: 'DEX',
-          onSuccess: 'half'
-        }
-      }
-    }],
+    description: "A bright flash and thunderous boom, creatures in 20-foot radius make Dex save",
+    effects: [
+      {
+        type: "damage",
+        target: "area",
+        area: { type: "sphere", size: 20 },
+        damage: {
+          dice: "8d6",
+          type: "fire",
+          savingThrow: {
+            ability: "DEX",
+            onSuccess: "half",
+          },
+        },
+      },
+    ],
     scaling: {
-      damage: '1d6'
-    }
+      damage: "1d6",
+    },
   },
   cureWounds: {
-    id: 'cure_wounds',
-    name: 'Cure Wounds',
+    id: "cure_wounds",
+    name: "Cure Wounds",
     level: 1,
-    school: 'evocation',
-    castingTime: '1 action',
-    range: 'Touch',
+    school: "evocation",
+    castingTime: "1 action",
+    range: "Touch",
     components: { verbal: true, somatic: true },
-    duration: 'Instantaneous',
+    duration: "Instantaneous",
     concentration: false,
     ritual: false,
-    description: 'Touch a creature to restore hit points',
-    effects: [{
-      type: 'healing',
-      target: 'single',
-      healing: {
-        dice: '1d8'
-      }
-    }],
+    description: "Touch a creature to restore hit points",
+    effects: [
+      {
+        type: "healing",
+        target: "single",
+        healing: {
+          dice: "1d8",
+        },
+      },
+    ],
     scaling: {
-      healing: '1d8'
-    }
-  }
+      healing: "1d8",
+    },
+  },
 };
 
 // Export singleton instance

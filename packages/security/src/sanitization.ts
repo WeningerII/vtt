@@ -6,10 +6,11 @@
 const DOMPurify = {
   sanitize: (html: string, options?: any) => {
     // Basic HTML sanitization
-    return html.replace(/<script[^>]*>.*?<\/script>/gi, '')
-               .replace(/on\w+="[^"]*"/gi, '')
-               .replace(/javascript:/gi, '');
-  }
+    return html
+      .replace(/<script[^>]*>.*?<\/script>/gi, "")
+      .replace(/on\w+="[^"]*"/gi, "")
+      .replace(/javascript:/gi, "");
+  },
 };
 
 const validator = {
@@ -25,7 +26,7 @@ const validator = {
     } catch {
       return false;
     }
-  }
+  },
 };
 
 /**
@@ -37,9 +38,9 @@ const validator = {
  */
 export function sanitizeHTML(html: string): string {
   return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-    ALLOW_DATA_ATTR: false
+    ALLOWED_TAGS: ["b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li"],
+    ALLOWED_ATTR: ["href", "target", "rel"],
+    ALLOW_DATA_ATTR: false,
   });
 }
 
@@ -48,17 +49,17 @@ export function sanitizeHTML(html: string): string {
  */
 export function sanitizeText(text: string): string {
   // Remove any HTML tags
-  let sanitized = text.replace(/<[^>]*>/g, '');
-  
+  let sanitized = text.replace(/<[^>]*>/g, "");
+
   // Escape special characters
   sanitized = sanitized
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
-  
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/\//g, "&#x2F;");
+
   return sanitized;
 }
 
@@ -67,11 +68,11 @@ export function sanitizeText(text: string): string {
  */
 export function sanitizeEmail(email: string): string | null {
   const trimmed = email.trim().toLowerCase();
-  
+
   if (!validator.isEmail(trimmed)) {
     return null;
   }
-  
+
   return validator.normalizeEmail(trimmed) || null;
 }
 
@@ -80,15 +81,17 @@ export function sanitizeEmail(email: string): string | null {
  */
 export function sanitizeURL(url: string): string | null {
   const trimmed = url.trim();
-  
+
   // Only allow http(s) protocols
-  if (!validator.isURL(trimmed, {
-    protocols: ['http', 'https'],
-    require_protocol: true
-  })) {
+  if (
+    !validator.isURL(trimmed, {
+      protocols: ["http", "https"],
+      require_protocol: true,
+    })
+  ) {
     return null;
   }
-  
+
   return trimmed;
 }
 
@@ -98,34 +101,37 @@ export function sanitizeURL(url: string): string | null {
 export function sanitizeFileName(fileName: string): string {
   // Remove any path separators and special characters
   return fileName
-    .replace(/[\/\\]/g, '')
-    .replace(/\.\./g, '')
-    .replace(/[^a-zA-Z0-9\-_.]/g, '_')
+    .replace(/[\/\\]/g, "")
+    .replace(/\.\./g, "")
+    .replace(/[^a-zA-Z0-9\-_.]/g, "_")
     .slice(0, 255); // Limit length
 }
 
 /**
  * Validate and sanitize numeric input
  */
-export function sanitizeNumber(input: string, options?: {
-  min?: number;
-  max?: number;
-  allowFloat?: boolean;
-}): number | null {
+export function sanitizeNumber(
+  input: string,
+  options?: {
+    min?: number;
+    max?: number;
+    allowFloat?: boolean;
+  },
+): number | null {
   const num = options?.allowFloat ? parseFloat(input) : parseInt(input, 10);
-  
+
   if (isNaN(num)) {
     return null;
   }
-  
+
   if (options?.min !== undefined && num < options.min) {
     return null;
   }
-  
+
   if (options?.max !== undefined && num > options.max) {
     return null;
   }
-  
+
   return num;
 }
 
@@ -148,7 +154,7 @@ export function sanitizeJSON(jsonString: string): any | null {
 export function escapeSQLIdentifier(identifier: string): string {
   // Only allow alphanumeric characters and underscores
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
-    throw new Error('Invalid SQL identifier');
+    throw new Error("Invalid SQL identifier");
   }
   return identifier;
 }
@@ -157,27 +163,27 @@ export function escapeSQLIdentifier(identifier: string): string {
  * MongoDB injection prevention
  */
 export function sanitizeMongoQuery(query: any): any {
-  if (typeof query !== 'object' || query === null) {
+  if (typeof query !== "object" || query === null) {
     return query;
   }
-  
+
   const sanitized: any = {};
-  
+
   for (const key in query) {
     // Prevent operator injection
-    if (key.startsWith('$')) {
+    if (key.startsWith("$")) {
       continue;
     }
-    
+
     const value = query[key];
-    
-    if (typeof value === 'object' && value !== null) {
+
+    if (typeof value === "object" && value !== null) {
       sanitized[key] = sanitizeMongoQuery(value);
     } else {
       sanitized[key] = value;
     }
   }
-  
+
   return sanitized;
 }
 
@@ -186,15 +192,15 @@ export function sanitizeMongoQuery(query: any): any {
  */
 export function SafeHTML({ html, className }: { html: string; className?: string }) {
   const sanitized = sanitizeHTML(html);
-  
+
   // Return a React element using createElement
   // This would need React imported in actual usage
   return {
-    type: 'div',
+    type: "div",
     props: {
       className,
-      dangerouslySetInnerHTML: { __html: sanitized }
-    }
+      dangerouslySetInnerHTML: { __html: sanitized },
+    },
   } as any;
 }
 
@@ -204,20 +210,20 @@ export function SafeHTML({ html, className }: { html: string; className?: string
 export function inputSanitization() {
   return (req: any, res: any, next: any) => {
     // Sanitize body
-    if (req.body && typeof req.body === 'object') {
+    if (req.body && typeof req.body === "object") {
       req.body = sanitizeObject(req.body);
     }
-    
+
     // Sanitize query parameters
-    if (req.query && typeof req.query === 'object') {
+    if (req.query && typeof req.query === "object") {
       req.query = sanitizeObject(req.query);
     }
-    
+
     // Sanitize params
-    if (req.params && typeof req.params === 'object') {
+    if (req.params && typeof req.params === "object") {
       req.params = sanitizeObject(req.params);
     }
-    
+
     next();
   };
 }
@@ -226,20 +232,20 @@ export function inputSanitization() {
  * Recursively sanitize an object
  */
 function sanitizeObject(obj: any): any {
-  if (typeof obj !== 'object' || obj === null) {
-    return typeof obj === 'string' ? sanitizeText(obj) : obj;
+  if (typeof obj !== "object" || obj === null) {
+    return typeof obj === "string" ? sanitizeText(obj) : obj;
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(item => sanitizeObject(item));
+    return obj.map((item) => sanitizeObject(item));
   }
-  
+
   const sanitized: any = {};
-  
+
   for (const key in obj) {
     const sanitizedKey = sanitizeText(key);
     sanitized[sanitizedKey] = sanitizeObject(obj[key]);
   }
-  
+
   return sanitized;
 }

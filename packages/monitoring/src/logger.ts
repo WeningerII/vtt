@@ -1,10 +1,10 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Centralized logging system with structured logging and multiple transports
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
 
 export interface LogEntry {
   timestamp: Date;
@@ -51,7 +51,7 @@ export class Logger {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    const levels: LogLevel[] = ['debug', 'info', 'warn', 'error', 'fatal'];
+    const levels: LogLevel[] = ["debug", "info", "warn", "error", "fatal"];
     const configLevelIndex = levels.indexOf(this.config.level);
     const messageLevelIndex = levels.indexOf(level);
     return messageLevelIndex >= configLevelIndex;
@@ -68,10 +68,10 @@ export class Logger {
     }
 
     // Transport logging
-    const promises = this.config.transports.map(transport => 
-      transport.log(entry).catch(error => 
-        console.error(`Transport ${transport.name} failed:`, error)
-      )
+    const promises = this.config.transports.map((transport) =>
+      transport
+        .log(entry)
+        .catch((error) => console.error(`Transport ${transport.name} failed:`, error)),
     );
 
     await Promise.all(promises);
@@ -81,35 +81,35 @@ export class Logger {
     const timestamp = entry.timestamp.toISOString();
     const level = entry.level.toUpperCase().padEnd(5);
     const message = entry.message;
-    
+
     let logMessage = `[${timestamp}] ${level} ${message}`;
-    
+
     if (entry.context && Object.keys(entry.context).length > 0) {
       logMessage += ` | Context: ${JSON.stringify(entry.context)}`;
     }
-    
+
     if (entry.error) {
       logMessage += ` | Error: ${entry.error.message}`;
     }
 
     const logMethod = this.getConsoleMethod(entry.level);
     logMethod(logMessage);
-    
+
     if (entry.error && entry.error.stack) {
       logger.error(entry.error.stack);
     }
   }
 
-  private getConsoleMethod(level: LogLevel): (_...args: any[]) => void {
+  private getConsoleMethod(level: LogLevel): (...args: any[]) => void {
     switch (level) {
-      case 'debug':
+      case "debug":
         return console.debug;
-      case 'info':
+      case "info":
         return console.info;
-      case 'warn':
+      case "warn":
         return console.warn;
-      case 'error':
-      case 'fatal':
+      case "error":
+      case "fatal":
         return console.error;
       default:
         return console.log;
@@ -119,7 +119,7 @@ export class Logger {
   debug(message: string, context?: Record<string, any>): void {
     this.writeLog({
       timestamp: new Date(),
-      level: 'debug',
+      level: "debug",
       message,
       context: { ...this.config.defaultContext, ...context },
     });
@@ -128,7 +128,7 @@ export class Logger {
   info(message: string, context?: Record<string, any>): void {
     this.writeLog({
       timestamp: new Date(),
-      level: 'info',
+      level: "info",
       message,
       context: { ...this.config.defaultContext, ...context },
     });
@@ -137,7 +137,7 @@ export class Logger {
   warn(message: string, context?: Record<string, any>): void {
     this.writeLog({
       timestamp: new Date(),
-      level: 'warn',
+      level: "warn",
       message,
       context: { ...this.config.defaultContext, ...context },
     });
@@ -146,7 +146,7 @@ export class Logger {
   error(message: string, error?: Error, context?: Record<string, any>): void {
     const logEntry: LogEntry = {
       timestamp: new Date(),
-      level: 'error',
+      level: "error",
       message,
       context: { ...this.config.defaultContext, ...(context || {}) },
     };
@@ -159,7 +159,7 @@ export class Logger {
   fatal(message: string, error?: Error, context?: Record<string, any>): void {
     const logEntry: LogEntry = {
       timestamp: new Date(),
-      level: 'fatal',
+      level: "fatal",
       message,
       context: { ...this.config.defaultContext, ...(context || {}) },
     };
@@ -175,7 +175,7 @@ export class Logger {
       ...context,
       userId,
       action,
-      component: 'user-action',
+      component: "user-action",
     });
   }
 
@@ -184,7 +184,7 @@ export class Logger {
       ...context,
       gameId,
       event,
-      component: 'game-engine',
+      component: "game-engine",
     });
   }
 
@@ -193,12 +193,16 @@ export class Logger {
       ...context,
       operation,
       duration,
-      component: 'performance',
+      component: "performance",
     });
   }
 
-  logSecurity(event: string, severity: 'low' | 'medium' | 'high', context?: Record<string, any>): void {
-    const level = severity === 'high' ? 'error' : severity === 'medium' ? 'warn' : 'info';
+  logSecurity(
+    event: string,
+    severity: "low" | "medium" | "high",
+    context?: Record<string, any>,
+  ): void {
+    const level = severity === "high" ? "error" : severity === "medium" ? "warn" : "info";
     this.writeLog({
       timestamp: new Date(),
       level,
@@ -208,13 +212,19 @@ export class Logger {
         ...context,
         securityEvent: event,
         severity,
-        component: 'security',
+        component: "security",
       },
     });
   }
 
-  logAPIRequest(method: string, path: string, statusCode: number, duration: number, context?: Record<string, any>): void {
-    const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+  logAPIRequest(
+    method: string,
+    path: string,
+    statusCode: number,
+    duration: number,
+    context?: Record<string, any>,
+  ): void {
+    const level = statusCode >= 500 ? "error" : statusCode >= 400 ? "warn" : "info";
     this.writeLog({
       timestamp: new Date(),
       level,
@@ -226,7 +236,7 @@ export class Logger {
         path,
         statusCode,
         duration,
-        component: 'api',
+        component: "api",
       },
     });
   }
@@ -243,14 +253,14 @@ export class Logger {
   }
 
   async close(): Promise<void> {
-    const promises = this.config.transports.map(transport => transport.close());
+    const promises = this.config.transports.map((transport) => transport.close());
     await Promise.all(promises);
   }
 }
 
 // File transport for logging to files
 export class FileTransport implements LogTransport {
-  name = 'file';
+  name = "file";
   private filePath: string;
   private maxFileSize: number;
   private maxFiles: number;
@@ -262,18 +272,19 @@ export class FileTransport implements LogTransport {
   }
 
   async log(entry: LogEntry): Promise<void> {
-    const logLine = JSON.stringify({
-      timestamp: entry.timestamp.toISOString(),
-      level: entry.level,
-      message: entry.message,
-      ...entry.context,
-      ...(entry.error && {
-        error: {
-          message: entry.error.message,
-          stack: entry.error.stack,
-        },
-      }),
-    }) + '\n';
+    const logLine =
+      JSON.stringify({
+        timestamp: entry.timestamp.toISOString(),
+        level: entry.level,
+        message: entry.message,
+        ...entry.context,
+        ...(entry.error && {
+          error: {
+            message: entry.error.message,
+            stack: entry.error.stack,
+          },
+        }),
+      }) + "\n";
 
     // In a real implementation, you would write to file system
     // For now, we'll just simulate the interface
@@ -287,7 +298,7 @@ export class FileTransport implements LogTransport {
 
 // HTTP transport for sending logs to external services
 export class HTTPTransport implements LogTransport {
-  name = 'http';
+  name = "http";
   private endpoint: string;
   private headers: Record<string, string>;
   private batchSize: number;
@@ -299,7 +310,7 @@ export class HTTPTransport implements LogTransport {
     endpoint: string,
     headers: Record<string, string> = {},
     batchSize = 100,
-    flushInterval = 5000
+    flushInterval = 5000,
   ) {
     this.endpoint = endpoint;
     this.headers = headers;
@@ -310,7 +321,7 @@ export class HTTPTransport implements LogTransport {
 
   async log(entry: LogEntry): Promise<void> {
     this.batch.push(entry);
-    
+
     if (this.batch.length >= this.batchSize) {
       await this.flush();
     }
@@ -324,9 +335,9 @@ export class HTTPTransport implements LogTransport {
 
     try {
       const response = await fetch(this.endpoint, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           ...this.headers,
         },
         body: JSON.stringify({ logs: logsToSend }),
@@ -336,7 +347,7 @@ export class HTTPTransport implements LogTransport {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
-      logger.error('Failed to send logs to HTTP endpoint:', error);
+      logger.error("Failed to send logs to HTTP endpoint:", error);
       // Re-add logs to batch for retry (in a real implementation)
     }
   }

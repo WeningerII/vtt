@@ -2,15 +2,15 @@
  * Dice Roller Component - Advanced dice rolling mechanics with modifiers and custom rolls
  */
 
-import React, { useState, useRef } from 'react';
-import { logger } from '@vtt/logging';
-import { useWebSocket } from '../../providers/WebSocketProvider';
-import { useAuth } from '../../providers/AuthProvider';
-import { useGame } from '../../providers/GameProvider';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, RotateCcw, History } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import React, { useState, useRef } from "react";
+import { logger } from "@vtt/logging";
+import { useWebSocket } from "../../providers/WebSocketProvider";
+import { useAuth } from "../../providers/AuthProvider";
+import { useGame } from "../../providers/GameProvider";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, RotateCcw, History } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 interface DiceRoll {
   id: string;
@@ -28,47 +28,49 @@ interface DiceRollerProps {
 }
 
 const COMMON_DICE = [
-  { sides: 4, icon: Dice1, color: 'text-red-400' },
-  { sides: 6, icon: Dice2, color: 'text-blue-400' },
-  { sides: 8, icon: Dice3, color: 'text-green-400' },
-  { sides: 10, icon: Dice4, color: 'text-yellow-400' },
-  { sides: 12, icon: Dice5, color: 'text-purple-400' },
-  { sides: 20, icon: Dice6, color: 'text-accent-primary' },
+  { sides: 4, icon: Dice1, color: "text-red-400" },
+  { sides: 6, icon: Dice2, color: "text-blue-400" },
+  { sides: 8, icon: Dice3, color: "text-green-400" },
+  { sides: 10, icon: Dice4, color: "text-yellow-400" },
+  { sides: 12, icon: Dice5, color: "text-purple-400" },
+  { sides: 20, icon: Dice6, color: "text-accent-primary" },
 ];
 
 const PRESET_ROLLS = [
-  { label: 'Attack', dice: '1d20', modifier: 0 },
-  { label: 'Damage', dice: '1d8', modifier: 0 },
-  { label: 'Initiative', dice: '1d20', modifier: 0 },
-  { label: 'Ability Check', dice: '1d20', modifier: 0 },
-  { label: 'Saving Throw', dice: '1d20', modifier: 0 },
-  { label: 'Ability Score', dice: '4d6', modifier: 0, dropLowest: true },
+  { label: "Attack", dice: "1d20", modifier: 0 },
+  { label: "Damage", dice: "1d8", modifier: 0 },
+  { label: "Initiative", dice: "1d20", modifier: 0 },
+  { label: "Ability Check", dice: "1d20", modifier: 0 },
+  { label: "Saving Throw", dice: "1d20", modifier: 0 },
+  { label: "Ability Score", dice: "4d6", modifier: 0, dropLowest: true },
 ];
 
 export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element {
-  const { user  } = useAuth();
-  const { session  } = useGame();
-  const { send  } = useWebSocket();
-  
+  const { user } = useAuth();
+  const { session } = useGame();
+  const { send } = useWebSocket();
+
   const [diceCount, setDiceCount] = useState(1);
   const [diceSides, setDiceSides] = useState(20);
   const [modifier, setModifier] = useState(0);
-  const [customDice, setCustomDice] = useState('');
+  const [customDice, setCustomDice] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [rollHistory, setRollHistory] = useState<DiceRoll[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [advantage, setAdvantage] = useState<'none' | 'advantage' | 'disadvantage'>('none');
-  
+  const [advantage, setAdvantage] = useState<"none" | "advantage" | "disadvantage">("none");
+
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const parseDiceNotation = (notation: string): { count: number; sides: number; modifier: number } => {
+  const parseDiceNotation = (
+    notation: string,
+  ): { count: number; sides: number; modifier: number } => {
     const match = notation.match(/^(\d+)?d(\d+)([+-]\d+)?$/i);
-    if (!match) throw new Error('Invalid dice notation');
-    
-    const count = parseInt(match[1] || '1', 10);
+    if (!match) throw new Error("Invalid dice notation");
+
+    const count = parseInt(match[1] || "1", 10);
     const sides = parseInt(match[2]!, 10);
-    const mod = parseInt(match[3] || '0', 10);
-    
+    const mod = parseInt(match[3] || "0", 10);
+
     return { count, sides, modifier: mod };
   };
 
@@ -101,9 +103,9 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
 
       // Handle advantage/disadvantage for d20 rolls
       let finalRolls: number[];
-      if (rollSides === 20 && rollCount === 1 && advantage !== 'none') {
+      if (rollSides === 20 && rollCount === 1 && advantage !== "none") {
         const rolls = rollDice(rollSides, 2);
-        if (advantage === 'advantage') {
+        if (advantage === "advantage") {
           finalRolls = [Math.max(...rolls)];
         } else {
           finalRolls = [Math.min(...rolls)];
@@ -113,7 +115,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
       }
 
       const total = calculateTotal(finalRolls, rollMod);
-      const notation = `${rollCount}d${rollSides}${rollMod > 0 ? '+' : ''}${rollMod !== 0 ? rollMod : ''}`;
+      const notation = `${rollCount}d${rollSides}${rollMod > 0 ? "+" : ""}${rollMod !== 0 ? rollMod : ""}`;
 
       const roll: DiceRoll = {
         id: `roll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -122,40 +124,39 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
         individual: finalRolls,
         modifier: rollMod,
         createdAt: new Date().toISOString(),
-        public: isRollPublic ?? isPublic
+        public: isRollPublic ?? isPublic,
       };
 
       // Add to history
-      setRollHistory(prev => [roll, ...prev.slice(0, 19)]); // Keep last 20 rolls
+      setRollHistory((prev) => [roll, ...prev.slice(0, 19)]); // Keep last 20 rolls
 
       // Send to server
       const rollData = {
-        type: 'ROLL_DICE',
+        type: "ROLL_DICE",
         sessionId: session.id,
         timestamp: Date.now(),
-        ...roll
+        ...roll,
       };
 
       send(rollData);
       onRoll?.(roll);
-
     } catch (error) {
-      logger.error('Failed to execute roll:', error);
+      logger.error("Failed to execute roll:", error);
     }
   };
 
-  const handlePresetRoll = (preset: typeof PRESET_ROLLS[0]) => {
+  const handlePresetRoll = (preset: (typeof PRESET_ROLLS)[0]) => {
     executeRoll(preset.dice, preset.modifier, isPublic);
   };
 
   const handleCustomRoll = () => {
     if (!customDice.trim()) return;
-    
+
     try {
       executeRoll(customDice.trim(), 0, isPublic);
-      setCustomDice('');
+      setCustomDice("");
     } catch (error) {
-      logger.error('Invalid dice notation:', error);
+      logger.error("Invalid dice notation:", error);
     }
   };
 
@@ -169,18 +170,18 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
   };
 
   const getDiceIcon = (sidesParam: number) => {
-    const dice = COMMON_DICE.find(d => d.sides === sidesParam);
+    const dice = COMMON_DICE.find((d) => d.sides === sidesParam);
     return dice ? dice.icon : Dice6;
   };
 
   const getDiceColor = (sidesParam: number) => {
-    const dice = COMMON_DICE.find(d => d.sides === sidesParam);
-    return dice ? dice.color : 'text-text-primary';
+    const dice = COMMON_DICE.find((d) => d.sides === sidesParam);
+    return dice ? dice.color : "text-text-primary";
   };
 
   if (!session) {
     return (
-      <div className={cn('bg-bg-secondary rounded-lg border border-border-primary p-4', className)}>
+      <div className={cn("bg-bg-secondary rounded-lg border border-border-primary p-4", className)}>
         <p className="text-text-secondary text-center">
           Join a game session to access dice rolling
         </p>
@@ -189,14 +190,19 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
   }
 
   return (
-    <div className={cn('bg-bg-secondary rounded-lg border border-border-primary p-4 space-y-4', className)}>
+    <div
+      className={cn(
+        "bg-bg-secondary rounded-lg border border-border-primary p-4 space-y-4",
+        className,
+      )}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-text-primary flex items-center gap-2">
           <Dice6 className="h-5 w-5 text-accent-primary" />
           Dice Roller
         </h3>
-        
+
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -207,7 +213,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
             />
             Public Roll
           </label>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -229,7 +235,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
             onClick={() => handleQuickRoll(sides)}
             className="flex flex-col items-center gap-1 h-auto py-2"
           >
-            <Icon className={cn('h-5 w-5', color)} />
+            <Icon className={cn("h-5 w-5", color)} />
             <span className="text-xs">d{sides}</span>
           </Button>
         ))}
@@ -249,7 +255,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
               className="text-center"
             />
           </div>
-          
+
           <div>
             <label className="block text-xs text-text-secondary mb-1">Sides</label>
             <Input
@@ -261,7 +267,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
               className="text-center"
             />
           </div>
-          
+
           <div>
             <label className="block text-xs text-text-secondary mb-1">Modifier</label>
             <Input
@@ -279,23 +285,23 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
         {diceSides === 20 && diceCount === 1 && (
           <div className="flex justify-center gap-1">
             <Button
-              variant={advantage === 'none' ? 'primary' : 'ghost'}
+              variant={advantage === "none" ? "primary" : "ghost"}
               size="sm"
-              onClick={() => setAdvantage('none')}
+              onClick={() => setAdvantage("none")}
             >
               Normal
             </Button>
             <Button
-              variant={advantage === 'advantage' ? 'success' : 'ghost'}
+              variant={advantage === "advantage" ? "success" : "ghost"}
               size="sm"
-              onClick={() => setAdvantage('advantage')}
+              onClick={() => setAdvantage("advantage")}
             >
               Advantage
             </Button>
             <Button
-              variant={advantage === 'disadvantage' ? 'destructive' : 'ghost'}
+              variant={advantage === "disadvantage" ? "destructive" : "ghost"}
               size="sm"
-              onClick={() => setAdvantage('disadvantage')}
+              onClick={() => setAdvantage("disadvantage")}
             >
               Disadvantage
             </Button>
@@ -308,13 +314,16 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
           onClick={() => executeRoll()}
           leftIcon={<Dice6 className="h-4 w-4" />}
         >
-          Roll {diceCount}d{diceSides}{modifier !== 0 && (modifier > 0 ? `+${modifier}` : modifier)}
+          Roll {diceCount}d{diceSides}
+          {modifier !== 0 && (modifier > 0 ? `+${modifier}` : modifier)}
         </Button>
       </div>
 
       {/* Custom Dice Notation */}
       <div className="space-y-2">
-        <label className="block text-xs text-text-secondary">Custom Dice (e.g., 3d6+2, 1d20-1)</label>
+        <label className="block text-xs text-text-secondary">
+          Custom Dice (e.g., 3d6+2, 1d20-1)
+        </label>
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -322,13 +331,9 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
             value={customDice}
             onChange={(e) => setCustomDice(e.target.value)}
             placeholder="2d8+3, 1d100, etc."
-            onKeyPress={(e) => e.key === 'Enter' && handleCustomRoll()}
+            onKeyPress={(e) => e.key === "Enter" && handleCustomRoll()}
           />
-          <Button
-            variant="secondary"
-            onClick={handleCustomRoll}
-            disabled={!customDice.trim()}
-          >
+          <Button variant="secondary" onClick={handleCustomRoll} disabled={!customDice.trim()}>
             Roll
           </Button>
         </div>
@@ -368,28 +373,27 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
               </Button>
             )}
           </div>
-          
+
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {rollHistory.length === 0 ? (
               <p className="text-text-tertiary text-sm text-center py-4">No rolls yet</p>
             ) : (
               rollHistory.map((roll) => (
-                <div key={roll.id} className="flex items-center justify-between text-sm bg-bg-tertiary rounded p-2">
+                <div
+                  key={roll.id}
+                  className="flex items-center justify-between text-sm bg-bg-tertiary rounded p-2"
+                >
                   <div className="flex items-center gap-2">
-                    <span className={cn('font-mono', getDiceColor(roll.individual.length > 0 ? 20 : 6))}>
+                    <span
+                      className={cn("font-mono", getDiceColor(roll.individual.length > 0 ? 20 : 6))}
+                    >
                       {roll.dice}
                     </span>
-                    <span className="text-text-tertiary">
-                      [{roll.individual.join(', ')}]
-                    </span>
+                    <span className="text-text-tertiary">[{roll.individual.join(", ")}]</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-accent-primary">
-                      {roll.total}
-                    </span>
-                    {!roll.public && (
-                      <span className="text-xs text-text-tertiary">Private</span>
-                    )}
+                    <span className="font-bold text-accent-primary">{roll.total}</span>
+                    {!roll.public && <span className="text-xs text-text-tertiary">Private</span>}
                   </div>
                 </div>
               ))

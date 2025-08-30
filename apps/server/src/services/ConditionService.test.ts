@@ -1,19 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ConditionService, CreateConditionRequest, UpdateConditionRequest, ApplyConditionRequest, ConditionSearchOptions } from './ConditionService';
-import { PrismaClient } from '@prisma/client';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  ConditionService,
+  CreateConditionRequest,
+  UpdateConditionRequest,
+  ApplyConditionRequest,
+  ConditionSearchOptions,
+} from "./ConditionService";
+import { PrismaClient } from "@prisma/client";
 
 // Mock dependencies
-vi.mock('@prisma/client');
+vi.mock("@prisma/client");
 
-describe('ConditionService', () => {
+describe("ConditionService", () => {
   let service: ConditionService;
   let mockPrisma: any;
 
-  const mockConditionId = 'condition-123';
-  const mockActorId = 'actor-456';
-  const mockTokenId = 'token-789';
-  const mockParticipantId = 'participant-111';
-  const mockAppliedConditionId = 'applied-222';
+  const mockConditionId = "condition-123";
+  const mockActorId = "actor-456";
+  const mockTokenId = "token-789";
+  const mockParticipantId = "participant-111";
+  const mockAppliedConditionId = "applied-222";
 
   beforeEach(() => {
     // Setup mock Prisma client
@@ -25,7 +31,7 @@ describe('ConditionService', () => {
         update: vi.fn(),
         delete: vi.fn(),
         count: vi.fn(),
-        groupBy: vi.fn()
+        groupBy: vi.fn(),
       },
       appliedCondition: {
         findMany: vi.fn(),
@@ -33,17 +39,17 @@ describe('ConditionService', () => {
         create: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
-        count: vi.fn()
+        count: vi.fn(),
       },
       actor: {
-        findUnique: vi.fn()
+        findUnique: vi.fn(),
       },
       token: {
-        findUnique: vi.fn()
+        findUnique: vi.fn(),
       },
       encounterParticipant: {
-        findUnique: vi.fn()
-      }
+        findUnique: vi.fn(),
+      },
     };
 
     service = new ConditionService(mockPrisma);
@@ -53,11 +59,11 @@ describe('ConditionService', () => {
     vi.clearAllMocks();
   });
 
-  describe('searchConditions', () => {
-    it('should search conditions with default pagination', async () => {
+  describe("searchConditions", () => {
+    it("should search conditions with default pagination", async () => {
       const mockConditions = [
-        { id: 'cond-1', name: 'Blessed', type: 'BUFF' },
-        { id: 'cond-2', name: 'Poisoned', type: 'DEBUFF' }
+        { id: "cond-1", name: "Blessed", type: "BUFF" },
+        { id: "cond-2", name: "Poisoned", type: "DEBUFF" },
       ];
 
       mockPrisma.condition.findMany.mockResolvedValue(mockConditions);
@@ -74,35 +80,35 @@ describe('ConditionService', () => {
         where: {},
         skip: 0,
         take: 50,
-        orderBy: { name: 'asc' }
+        orderBy: { name: "asc" },
       });
     });
 
-    it('should filter conditions by type', async () => {
+    it("should filter conditions by type", async () => {
       mockPrisma.condition.findMany.mockResolvedValue([]);
       mockPrisma.condition.count.mockResolvedValue(0);
 
       const options: ConditionSearchOptions = {
-        type: 'BUFF'
+        type: "BUFF",
       };
 
       await service.searchConditions(options);
 
       expect(mockPrisma.condition.findMany).toHaveBeenCalledWith({
-        where: { type: 'BUFF' },
+        where: { type: "BUFF" },
         skip: 0,
         take: 50,
-        orderBy: { name: 'asc' }
+        orderBy: { name: "asc" },
       });
     });
 
-    it('should respect custom pagination', async () => {
+    it("should respect custom pagination", async () => {
       mockPrisma.condition.findMany.mockResolvedValue([]);
       mockPrisma.condition.count.mockResolvedValue(100);
 
       const options: ConditionSearchOptions = {
         limit: 25,
-        offset: 50
+        offset: 50,
       };
 
       const result = await service.searchConditions(options);
@@ -111,18 +117,18 @@ describe('ConditionService', () => {
         where: {},
         skip: 50,
         take: 25,
-        orderBy: { name: 'asc' }
+        orderBy: { name: "asc" },
       });
       expect(result.limit).toBe(25);
       expect(result.offset).toBe(50);
     });
 
-    it('should cap limit at 200', async () => {
+    it("should cap limit at 200", async () => {
       mockPrisma.condition.findMany.mockResolvedValue([]);
       mockPrisma.condition.count.mockResolvedValue(500);
 
       const options: ConditionSearchOptions = {
-        limit: 300
+        limit: 300,
       };
 
       await service.searchConditions(options);
@@ -131,25 +137,25 @@ describe('ConditionService', () => {
         where: {},
         skip: 0,
         take: 200,
-        orderBy: { name: 'asc' }
+        orderBy: { name: "asc" },
       });
     });
   });
 
-  describe('getCondition', () => {
-    it('should get condition with all applied instances', async () => {
+  describe("getCondition", () => {
+    it("should get condition with all applied instances", async () => {
       const mockCondition = {
         id: mockConditionId,
-        name: 'Stunned',
-        type: 'DEBUFF',
+        name: "Stunned",
+        type: "DEBUFF",
         appliedConditions: [
           {
-            id: 'applied-1',
-            actor: { id: 'actor-1', name: 'Hero' },
+            id: "applied-1",
+            actor: { id: "actor-1", name: "Hero" },
             token: null,
-            encounterParticipant: null
-          }
-        ]
+            encounterParticipant: null,
+          },
+        ],
       };
 
       mockPrisma.condition.findUnique.mockResolvedValue(mockCondition);
@@ -166,113 +172,113 @@ describe('ConditionService', () => {
               token: true,
               encounterParticipant: {
                 include: {
-                  actor: true
-                }
-              }
-            }
-          }
-        }
+                  actor: true,
+                },
+              },
+            },
+          },
+        },
       });
     });
 
-    it('should return null for non-existent condition', async () => {
+    it("should return null for non-existent condition", async () => {
       mockPrisma.condition.findUnique.mockResolvedValue(null);
 
-      const result = await service.getCondition('non-existent');
+      const result = await service.getCondition("non-existent");
 
       expect(result).toBeNull();
     });
   });
 
-  describe('createCondition', () => {
-    it('should create condition with all fields', async () => {
+  describe("createCondition", () => {
+    it("should create condition with all fields", async () => {
       const request: CreateConditionRequest = {
-        name: 'Hasted',
-        type: 'BUFF',
-        description: 'Your speed is doubled',
+        name: "Hasted",
+        type: "BUFF",
+        description: "Your speed is doubled",
         duration: 10,
-        metadata: { speedMultiplier: 2 }
+        metadata: { speedMultiplier: 2 },
       };
 
       mockPrisma.condition.create.mockResolvedValue({
         id: mockConditionId,
-        ...request
+        ...request,
       });
 
       const result = await service.createCondition(request);
 
-      expect(result.name).toBe('Hasted');
-      expect(result.type).toBe('BUFF');
+      expect(result.name).toBe("Hasted");
+      expect(result.type).toBe("BUFF");
       expect(mockPrisma.condition.create).toHaveBeenCalledWith({
         data: {
-          name: 'Hasted',
-          type: 'BUFF',
-          description: 'Your speed is doubled',
+          name: "Hasted",
+          type: "BUFF",
+          description: "Your speed is doubled",
           duration: 10,
-          metadata: { speedMultiplier: 2 }
-        }
+          metadata: { speedMultiplier: 2 },
+        },
       });
     });
 
-    it('should use defaults for optional fields', async () => {
+    it("should use defaults for optional fields", async () => {
       const request: CreateConditionRequest = {
-        name: 'Confused',
-        type: 'DEBUFF'
+        name: "Confused",
+        type: "DEBUFF",
       };
 
       mockPrisma.condition.create.mockResolvedValue({
         id: mockConditionId,
-        name: 'Confused',
-        type: 'DEBUFF'
+        name: "Confused",
+        type: "DEBUFF",
       });
 
       await service.createCondition(request);
 
       expect(mockPrisma.condition.create).toHaveBeenCalledWith({
         data: {
-          name: 'Confused',
-          type: 'DEBUFF',
-          description: '',
+          name: "Confused",
+          type: "DEBUFF",
+          description: "",
           duration: undefined,
-          metadata: {}
-        }
+          metadata: {},
+        },
       });
     });
   });
 
-  describe('updateCondition', () => {
-    it('should update all provided fields', async () => {
+  describe("updateCondition", () => {
+    it("should update all provided fields", async () => {
       const request: UpdateConditionRequest = {
-        name: 'Updated Name',
-        type: 'NEUTRAL',
-        description: 'Updated description',
+        name: "Updated Name",
+        type: "NEUTRAL",
+        description: "Updated description",
         duration: 5,
-        metadata: { updated: true }
+        metadata: { updated: true },
       };
 
       mockPrisma.condition.update.mockResolvedValue({
         id: mockConditionId,
-        ...request
+        ...request,
       });
 
       await service.updateCondition(mockConditionId, request);
 
       expect(mockPrisma.condition.update).toHaveBeenCalledWith({
         where: { id: mockConditionId },
-        data: request
+        data: request,
       });
     });
 
-    it('should update only provided fields', async () => {
+    it("should update only provided fields", async () => {
       const request: UpdateConditionRequest = {
         duration: 15,
-        type: 'BUFF'
+        type: "BUFF",
       };
 
       mockPrisma.condition.update.mockResolvedValue({
         id: mockConditionId,
         duration: 15,
-        type: 'BUFF'
+        type: "BUFF",
       });
 
       await service.updateCondition(mockConditionId, request);
@@ -281,19 +287,19 @@ describe('ConditionService', () => {
         where: { id: mockConditionId },
         data: {
           duration: 15,
-          type: 'BUFF'
-        }
+          type: "BUFF",
+        },
       });
     });
 
-    it('should handle undefined values correctly', async () => {
+    it("should handle undefined values correctly", async () => {
       const request: UpdateConditionRequest = {
         name: undefined,
-        duration: 0
+        duration: 0,
       };
 
       mockPrisma.condition.update.mockResolvedValue({
-        id: mockConditionId
+        id: mockConditionId,
       });
 
       await service.updateCondition(mockConditionId, request);
@@ -301,40 +307,40 @@ describe('ConditionService', () => {
       expect(mockPrisma.condition.update).toHaveBeenCalledWith({
         where: { id: mockConditionId },
         data: {
-          duration: 0
-        }
+          duration: 0,
+        },
       });
     });
   });
 
-  describe('deleteCondition', () => {
-    it('should delete condition by id', async () => {
+  describe("deleteCondition", () => {
+    it("should delete condition by id", async () => {
       mockPrisma.condition.delete.mockResolvedValue({
         id: mockConditionId,
-        name: 'Deleted Condition'
+        name: "Deleted Condition",
       });
 
       const result = await service.deleteCondition(mockConditionId);
 
       expect(result.id).toBe(mockConditionId);
       expect(mockPrisma.condition.delete).toHaveBeenCalledWith({
-        where: { id: mockConditionId }
+        where: { id: mockConditionId },
       });
     });
   });
 
-  describe('applyConditionToActor', () => {
-    it('should apply condition to actor', async () => {
+  describe("applyConditionToActor", () => {
+    it("should apply condition to actor", async () => {
       const mockCondition = {
         id: mockConditionId,
-        name: 'Blessed',
-        type: 'BUFF',
-        duration: 10
+        name: "Blessed",
+        type: "BUFF",
+        duration: 10,
       };
 
       const mockActor = {
         id: mockActorId,
-        name: 'Hero'
+        name: "Hero",
       };
 
       mockPrisma.condition.findUnique.mockResolvedValue(mockCondition);
@@ -346,13 +352,13 @@ describe('ConditionService', () => {
         condition: mockCondition,
         actor: mockActor,
         duration: 10,
-        appliedAt: new Date()
+        appliedAt: new Date(),
       });
 
       const request: ApplyConditionRequest = {
         conditionId: mockConditionId,
         duration: 10,
-        appliedBy: 'GM'
+        appliedBy: "GM",
       };
 
       const result = await service.applyConditionToActor(mockActorId, request);
@@ -365,84 +371,84 @@ describe('ConditionService', () => {
           actorId: mockActorId,
           duration: 10,
           metadata: {},
-          appliedBy: 'GM',
-          appliedAt: expect.any(Date)
+          appliedBy: "GM",
+          appliedAt: expect.any(Date),
         },
         include: {
           condition: true,
-          actor: true
-        }
+          actor: true,
+        },
       });
     });
 
-    it('should use condition default duration if not specified', async () => {
+    it("should use condition default duration if not specified", async () => {
       const mockCondition = {
         id: mockConditionId,
-        name: 'Stunned',
-        duration: 5
+        name: "Stunned",
+        duration: 5,
       };
 
       mockPrisma.condition.findUnique.mockResolvedValue(mockCondition);
       mockPrisma.actor.findUnique.mockResolvedValue({ id: mockActorId });
       mockPrisma.appliedCondition.create.mockResolvedValue({
         id: mockAppliedConditionId,
-        duration: 5
+        duration: 5,
       });
 
       const request: ApplyConditionRequest = {
-        conditionId: mockConditionId
+        conditionId: mockConditionId,
       };
 
       await service.applyConditionToActor(mockActorId, request);
 
       expect(mockPrisma.appliedCondition.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          duration: 5
+          duration: 5,
         }),
         include: {
           condition: true,
-          actor: true
-        }
+          actor: true,
+        },
       });
     });
 
-    it('should throw error for non-existent condition', async () => {
+    it("should throw error for non-existent condition", async () => {
       mockPrisma.condition.findUnique.mockResolvedValue(null);
 
       const request: ApplyConditionRequest = {
-        conditionId: 'invalid-id'
+        conditionId: "invalid-id",
       };
 
-      await expect(
-        service.applyConditionToActor(mockActorId, request)
-      ).rejects.toThrow('Condition not found');
+      await expect(service.applyConditionToActor(mockActorId, request)).rejects.toThrow(
+        "Condition not found",
+      );
     });
 
-    it('should throw error for non-existent actor', async () => {
+    it("should throw error for non-existent actor", async () => {
       mockPrisma.condition.findUnique.mockResolvedValue({ id: mockConditionId });
       mockPrisma.actor.findUnique.mockResolvedValue(null);
 
       const request: ApplyConditionRequest = {
-        conditionId: mockConditionId
+        conditionId: mockConditionId,
       };
 
-      await expect(
-        service.applyConditionToActor('invalid-id', request)
-      ).rejects.toThrow('Actor not found');
+      await expect(service.applyConditionToActor("invalid-id", request)).rejects.toThrow(
+        "Actor not found",
+      );
     });
   });
 
-  describe('applyConditionToToken', () => {
-    it('should apply condition to token', async () => {
+  describe("applyConditionToToken", () => {
+    it("should apply condition to token", async () => {
       const mockCondition = {
         id: mockConditionId,
-        name: 'Invisible',
-        type: 'BUFF'
+        name: "Invisible",
+        type: "BUFF",
       };
 
       const mockToken = {
         id: mockTokenId,
-        name: 'Rogue Token'
+        name: "Rogue Token",
       };
 
       mockPrisma.condition.findUnique.mockResolvedValue(mockCondition);
@@ -452,12 +458,12 @@ describe('ConditionService', () => {
         conditionId: mockConditionId,
         tokenId: mockTokenId,
         condition: mockCondition,
-        token: mockToken
+        token: mockToken,
       });
 
       const request: ApplyConditionRequest = {
         conditionId: mockConditionId,
-        metadata: { source: 'spell' }
+        metadata: { source: "spell" },
       };
 
       const result = await service.applyConditionToToken(mockTokenId, request);
@@ -468,42 +474,42 @@ describe('ConditionService', () => {
           conditionId: mockConditionId,
           tokenId: mockTokenId,
           duration: undefined,
-          metadata: { source: 'spell' },
+          metadata: { source: "spell" },
           appliedBy: undefined,
-          appliedAt: expect.any(Date)
+          appliedAt: expect.any(Date),
         },
         include: {
           condition: true,
-          token: true
-        }
+          token: true,
+        },
       });
     });
 
-    it('should throw error for non-existent token', async () => {
+    it("should throw error for non-existent token", async () => {
       mockPrisma.condition.findUnique.mockResolvedValue({ id: mockConditionId });
       mockPrisma.token.findUnique.mockResolvedValue(null);
 
       const request: ApplyConditionRequest = {
-        conditionId: mockConditionId
+        conditionId: mockConditionId,
       };
 
-      await expect(
-        service.applyConditionToToken('invalid-id', request)
-      ).rejects.toThrow('Token not found');
+      await expect(service.applyConditionToToken("invalid-id", request)).rejects.toThrow(
+        "Token not found",
+      );
     });
   });
 
-  describe('applyConditionToEncounterParticipant', () => {
-    it('should apply condition to encounter participant', async () => {
+  describe("applyConditionToEncounterParticipant", () => {
+    it("should apply condition to encounter participant", async () => {
       const mockCondition = {
         id: mockConditionId,
-        name: 'Frightened',
-        type: 'DEBUFF'
+        name: "Frightened",
+        type: "DEBUFF",
       };
 
       const mockParticipant = {
         id: mockParticipantId,
-        actorId: mockActorId
+        actorId: mockActorId,
       };
 
       mockPrisma.condition.findUnique.mockResolvedValue(mockCondition);
@@ -513,12 +519,12 @@ describe('ConditionService', () => {
         conditionId: mockConditionId,
         encounterParticipantId: mockParticipantId,
         condition: mockCondition,
-        encounterParticipant: mockParticipant
+        encounterParticipant: mockParticipant,
       });
 
       const request: ApplyConditionRequest = {
         conditionId: mockConditionId,
-        duration: 3
+        duration: 3,
       };
 
       const result = await service.applyConditionToEncounterParticipant(mockParticipantId, request);
@@ -531,58 +537,58 @@ describe('ConditionService', () => {
           duration: 3,
           metadata: {},
           appliedBy: undefined,
-          appliedAt: expect.any(Date)
+          appliedAt: expect.any(Date),
         },
         include: {
           condition: true,
           encounterParticipant: {
             include: {
-              actor: true
-            }
-          }
-        }
+              actor: true,
+            },
+          },
+        },
       });
     });
 
-    it('should throw error for non-existent participant', async () => {
+    it("should throw error for non-existent participant", async () => {
       mockPrisma.condition.findUnique.mockResolvedValue({ id: mockConditionId });
       mockPrisma.encounterParticipant.findUnique.mockResolvedValue(null);
 
       const request: ApplyConditionRequest = {
-        conditionId: mockConditionId
+        conditionId: mockConditionId,
       };
 
       await expect(
-        service.applyConditionToEncounterParticipant('invalid-id', request)
-      ).rejects.toThrow('Encounter participant not found');
+        service.applyConditionToEncounterParticipant("invalid-id", request),
+      ).rejects.toThrow("Encounter participant not found");
     });
   });
 
-  describe('removeAppliedCondition', () => {
-    it('should remove applied condition', async () => {
+  describe("removeAppliedCondition", () => {
+    it("should remove applied condition", async () => {
       mockPrisma.appliedCondition.delete.mockResolvedValue({
-        id: mockAppliedConditionId
+        id: mockAppliedConditionId,
       });
 
       const result = await service.removeAppliedCondition(mockAppliedConditionId);
 
       expect(result.id).toBe(mockAppliedConditionId);
       expect(mockPrisma.appliedCondition.delete).toHaveBeenCalledWith({
-        where: { id: mockAppliedConditionId }
+        where: { id: mockAppliedConditionId },
       });
     });
   });
 
-  describe('getAppliedCondition', () => {
-    it('should get applied condition with all relations', async () => {
+  describe("getAppliedCondition", () => {
+    it("should get applied condition with all relations", async () => {
       const mockAppliedCondition = {
         id: mockAppliedConditionId,
         conditionId: mockConditionId,
         actorId: mockActorId,
-        condition: { name: 'Blessed' },
-        actor: { name: 'Hero' },
+        condition: { name: "Blessed" },
+        actor: { name: "Hero" },
         token: null,
-        encounterParticipant: null
+        encounterParticipant: null,
       };
 
       mockPrisma.appliedCondition.findUnique.mockResolvedValue(mockAppliedCondition);
@@ -598,29 +604,29 @@ describe('ConditionService', () => {
           token: true,
           encounterParticipant: {
             include: {
-              actor: true
-            }
-          }
-        }
+              actor: true,
+            },
+          },
+        },
       });
     });
   });
 
-  describe('getActorConditions', () => {
-    it('should get all conditions for an actor', async () => {
+  describe("getActorConditions", () => {
+    it("should get all conditions for an actor", async () => {
       const mockConditions = [
         {
-          id: 'applied-1',
-          conditionId: 'cond-1',
-          condition: { name: 'Blessed', type: 'BUFF' },
-          appliedAt: new Date('2024-01-02')
+          id: "applied-1",
+          conditionId: "cond-1",
+          condition: { name: "Blessed", type: "BUFF" },
+          appliedAt: new Date("2024-01-02"),
         },
         {
-          id: 'applied-2',
-          conditionId: 'cond-2',
-          condition: { name: 'Poisoned', type: 'DEBUFF' },
-          appliedAt: new Date('2024-01-01')
-        }
+          id: "applied-2",
+          conditionId: "cond-2",
+          condition: { name: "Poisoned", type: "DEBUFF" },
+          appliedAt: new Date("2024-01-01"),
+        },
       ];
 
       mockPrisma.appliedCondition.findMany.mockResolvedValue(mockConditions);
@@ -631,21 +637,21 @@ describe('ConditionService', () => {
       expect(mockPrisma.appliedCondition.findMany).toHaveBeenCalledWith({
         where: { actorId: mockActorId },
         include: {
-          condition: true
+          condition: true,
         },
-        orderBy: { appliedAt: 'desc' }
+        orderBy: { appliedAt: "desc" },
       });
     });
   });
 
-  describe('getTokenConditions', () => {
-    it('should get all conditions for a token', async () => {
+  describe("getTokenConditions", () => {
+    it("should get all conditions for a token", async () => {
       const mockConditions = [
         {
-          id: 'applied-1',
+          id: "applied-1",
           tokenId: mockTokenId,
-          condition: { name: 'Invisible' }
-        }
+          condition: { name: "Invisible" },
+        },
       ];
 
       mockPrisma.appliedCondition.findMany.mockResolvedValue(mockConditions);
@@ -656,21 +662,21 @@ describe('ConditionService', () => {
       expect(mockPrisma.appliedCondition.findMany).toHaveBeenCalledWith({
         where: { tokenId: mockTokenId },
         include: {
-          condition: true
+          condition: true,
         },
-        orderBy: { appliedAt: 'desc' }
+        orderBy: { appliedAt: "desc" },
       });
     });
   });
 
-  describe('getEncounterParticipantConditions', () => {
-    it('should get all conditions for an encounter participant', async () => {
+  describe("getEncounterParticipantConditions", () => {
+    it("should get all conditions for an encounter participant", async () => {
       const mockConditions = [
         {
-          id: 'applied-1',
+          id: "applied-1",
           encounterParticipantId: mockParticipantId,
-          condition: { name: 'Stunned' }
-        }
+          condition: { name: "Stunned" },
+        },
       ];
 
       mockPrisma.appliedCondition.findMany.mockResolvedValue(mockConditions);
@@ -681,23 +687,23 @@ describe('ConditionService', () => {
       expect(mockPrisma.appliedCondition.findMany).toHaveBeenCalledWith({
         where: { encounterParticipantId: mockParticipantId },
         include: {
-          condition: true
+          condition: true,
         },
-        orderBy: { appliedAt: 'desc' }
+        orderBy: { appliedAt: "desc" },
       });
     });
   });
 
-  describe('updateAppliedCondition', () => {
-    it('should update duration and metadata', async () => {
+  describe("updateAppliedCondition", () => {
+    it("should update duration and metadata", async () => {
       const updates = {
         duration: 5,
-        metadata: { intensity: 'strong' }
+        metadata: { intensity: "strong" },
       };
 
       mockPrisma.appliedCondition.update.mockResolvedValue({
         id: mockAppliedConditionId,
-        ...updates
+        ...updates,
       });
 
       await service.updateAppliedCondition(mockAppliedConditionId, updates);
@@ -711,21 +717,21 @@ describe('ConditionService', () => {
           token: true,
           encounterParticipant: {
             include: {
-              actor: true
-            }
-          }
-        }
+              actor: true,
+            },
+          },
+        },
       });
     });
 
-    it('should update only provided fields', async () => {
+    it("should update only provided fields", async () => {
       const updates = {
-        duration: 10
+        duration: 10,
       };
 
       mockPrisma.appliedCondition.update.mockResolvedValue({
         id: mockAppliedConditionId,
-        duration: 10
+        duration: 10,
       });
 
       await service.updateAppliedCondition(mockAppliedConditionId, updates);
@@ -739,21 +745,21 @@ describe('ConditionService', () => {
           token: true,
           encounterParticipant: {
             include: {
-              actor: true
-            }
-          }
-        }
+              actor: true,
+            },
+          },
+        },
       });
     });
   });
 
-  describe('getConditionStats', () => {
-    it('should return condition statistics', async () => {
+  describe("getConditionStats", () => {
+    it("should return condition statistics", async () => {
       mockPrisma.condition.count.mockResolvedValue(10);
       mockPrisma.condition.groupBy.mockResolvedValue([
-        { type: 'BUFF', _count: 4 },
-        { type: 'DEBUFF', _count: 5 },
-        { type: 'NEUTRAL', _count: 1 }
+        { type: "BUFF", _count: 4 },
+        { type: "DEBUFF", _count: 5 },
+        { type: "NEUTRAL", _count: 1 },
       ]);
       mockPrisma.appliedCondition.count.mockResolvedValue(15);
 
@@ -764,11 +770,11 @@ describe('ConditionService', () => {
       expect(result.byType).toEqual({
         BUFF: 4,
         DEBUFF: 5,
-        NEUTRAL: 1
+        NEUTRAL: 1,
       });
     });
 
-    it('should handle empty results', async () => {
+    it("should handle empty results", async () => {
       mockPrisma.condition.count.mockResolvedValue(0);
       mockPrisma.condition.groupBy.mockResolvedValue([]);
       mockPrisma.appliedCondition.count.mockResolvedValue(0);
@@ -781,19 +787,19 @@ describe('ConditionService', () => {
     });
   });
 
-  describe('cleanupExpiredConditions', () => {
-    it('should remove expired conditions', async () => {
+  describe("cleanupExpiredConditions", () => {
+    it("should remove expired conditions", async () => {
       const expiredConditions = [
         {
-          id: 'expired-1',
+          id: "expired-1",
           duration: 1,
-          appliedAt: new Date('2024-01-01')
+          appliedAt: new Date("2024-01-01"),
         },
         {
-          id: 'expired-2',
+          id: "expired-2",
           duration: 2,
-          appliedAt: new Date('2024-01-01')
-        }
+          appliedAt: new Date("2024-01-01"),
+        },
       ];
 
       mockPrisma.appliedCondition.findMany.mockResolvedValue(expiredConditions);
@@ -804,14 +810,14 @@ describe('ConditionService', () => {
       expect(result.removed).toBe(2);
       expect(mockPrisma.appliedCondition.delete).toHaveBeenCalledTimes(2);
       expect(mockPrisma.appliedCondition.delete).toHaveBeenCalledWith({
-        where: { id: 'expired-1' }
+        where: { id: "expired-1" },
       });
       expect(mockPrisma.appliedCondition.delete).toHaveBeenCalledWith({
-        where: { id: 'expired-2' }
+        where: { id: "expired-2" },
       });
     });
 
-    it('should handle no expired conditions', async () => {
+    it("should handle no expired conditions", async () => {
       mockPrisma.appliedCondition.findMany.mockResolvedValue([]);
 
       const result = await service.cleanupExpiredConditions();
@@ -820,7 +826,7 @@ describe('ConditionService', () => {
       expect(mockPrisma.appliedCondition.delete).not.toHaveBeenCalled();
     });
 
-    it('should only find conditions with duration', async () => {
+    it("should only find conditions with duration", async () => {
       mockPrisma.appliedCondition.findMany.mockResolvedValue([]);
 
       await service.cleanupExpiredConditions();
@@ -829,9 +835,9 @@ describe('ConditionService', () => {
         where: {
           duration: { not: null },
           appliedAt: {
-            lte: expect.any(Date)
-          }
-        }
+            lte: expect.any(Date),
+          },
+        },
       });
     });
   });

@@ -2,13 +2,13 @@
  * Production alerting system for VTT monitoring
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import * as nodemailer from 'nodemailer';
-import { MetricsRegistry } from './Metrics';
-import { HealthCheckResult, HealthStatus } from './HealthCheck';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import * as nodemailer from "nodemailer";
+import { MetricsRegistry } from "./Metrics";
+import { HealthCheckResult, HealthStatus } from "./HealthCheck";
 
-export type AlertSeverity = 'info' | 'warning' | 'critical';
+export type AlertSeverity = "info" | "warning" | "critical";
 
 export interface Alert {
   id: string;
@@ -32,7 +32,7 @@ export interface AlertRule {
 }
 
 export interface AlertCondition {
-  type: 'metric' | 'health' | 'log' | 'custom';
+  type: "metric" | "health" | "log" | "custom";
   evaluate(context: AlertContext): Promise<boolean>;
 }
 
@@ -76,7 +76,7 @@ export class AlertManager extends EventEmitter {
       await this.evaluateAlerts();
     }, this.config.checkInterval);
 
-    this.emit('started');
+    this.emit("started");
   }
 
   stop(): void {
@@ -84,14 +84,14 @@ export class AlertManager extends EventEmitter {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
     }
-    this.emit('stopped');
+    this.emit("stopped");
   }
 
   private async evaluateAlerts(): Promise<void> {
     const context: AlertContext = {
       metrics: this.metricsRegistry,
       healthResults: [], // Would be populated from health check manager
-      currentTime: new Date()
+      currentTime: new Date(),
     };
 
     for (const rule of this.config.rules) {
@@ -99,7 +99,7 @@ export class AlertManager extends EventEmitter {
 
       try {
         const shouldAlert = await rule.condition.evaluate(context);
-        
+
         if (shouldAlert) {
           await this.handleAlertTriggered(rule, context);
         } else {
@@ -107,7 +107,7 @@ export class AlertManager extends EventEmitter {
         }
       } catch (error) {
         logger.error(`Error evaluating alert rule ${rule.name}:`, error);
-        this.emit('ruleError', rule.name, error);
+        this.emit("ruleError", rule.name, error);
       }
     }
 
@@ -134,9 +134,9 @@ export class AlertManager extends EventEmitter {
       name: rule.name,
       severity: rule.severity,
       message: this.buildAlertMessage(rule, context),
-      source: 'alert-manager',
+      source: "alert-manager",
       timestamp: context.currentTime,
-      metadata: { rule: rule.name }
+      metadata: { rule: rule.name },
     };
 
     this.activeAlerts.set(alertKey, alert);
@@ -144,7 +144,7 @@ export class AlertManager extends EventEmitter {
     this.ruleLastTriggered.set(rule.name, now);
 
     await this.sendNotifications(alert, rule.recipients);
-    this.emit('alertTriggered', alert);
+    this.emit("alertTriggered", alert);
   }
 
   private async handleAlertResolved(rule: AlertRule): Promise<void> {
@@ -156,7 +156,7 @@ export class AlertManager extends EventEmitter {
       this.activeAlerts.delete(alertKey);
 
       await this.sendResolutionNotifications(activeAlert, rule.recipients);
-      this.emit('alertResolved', activeAlert);
+      this.emit("alertResolved", activeAlert);
     }
   }
 
@@ -164,10 +164,10 @@ export class AlertManager extends EventEmitter {
     const promises = this.config.channels.map(async (channel) => {
       try {
         await channel.send(alert);
-        this.emit('notificationSent', alert.id, channel.name);
+        this.emit("notificationSent", alert.id, channel.name);
       } catch (error) {
         logger.error(`Failed to send notification via ${channel.name}:`, error);
-        this.emit('notificationFailed', alert.id, channel.name, error);
+        this.emit("notificationFailed", alert.id, channel.name, error);
       }
     });
 
@@ -178,7 +178,7 @@ export class AlertManager extends EventEmitter {
     const resolutionAlert = {
       ...alert,
       message: `RESOLVED: ${alert.message}`,
-      severity: 'info' as AlertSeverity
+      severity: "info" as AlertSeverity,
     };
 
     await this.sendNotifications(resolutionAlert, recipients);
@@ -200,7 +200,7 @@ export class AlertManager extends EventEmitter {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - this.config.retentionDays);
 
-    this.alertHistory = this.alertHistory.filter(alert => alert.timestamp >= cutoff);
+    this.alertHistory = this.alertHistory.filter((alert) => alert.timestamp >= cutoff);
   }
 
   // Public API methods
@@ -220,9 +220,9 @@ export class AlertManager extends EventEmitter {
         alert.metadata = {
           ...alert.metadata,
           acknowledgedBy: userId,
-          acknowledgedAt: new Date()
+          acknowledgedAt: new Date(),
         };
-        this.emit('alertAcknowledged', alert, userId);
+        this.emit("alertAcknowledged", alert, userId);
         return true;
       }
     }
@@ -232,20 +232,20 @@ export class AlertManager extends EventEmitter {
   silenceAlert(ruleName: string, durationMs: number): void {
     const until = Date.now() + durationMs;
     this.ruleLastTriggered.set(ruleName, until);
-    this.emit('alertSilenced', ruleName, durationMs);
+    this.emit("alertSilenced", ruleName, durationMs);
   }
 
   addRule(rule: AlertRule): void {
     this.config.rules.push(rule);
-    this.emit('ruleAdded', rule.name);
+    this.emit("ruleAdded", rule.name);
   }
 
   updateRule(ruleName: string, updates: Partial<AlertRule>): boolean {
-    const ruleIndex = this.config.rules.findIndex(r => r.name === ruleName);
+    const ruleIndex = this.config.rules.findIndex((r) => r.name === ruleName);
     if (ruleIndex !== -1) {
       const currentRule = this.config.rules[ruleIndex];
       if (!currentRule) return false;
-      
+
       this.config.rules[ruleIndex] = {
         name: currentRule.name,
         description: currentRule.description,
@@ -254,19 +254,19 @@ export class AlertManager extends EventEmitter {
         enabled: currentRule.enabled,
         cooldownMs: currentRule.cooldownMs,
         recipients: currentRule.recipients,
-        ...updates
+        ...updates,
       };
-      this.emit('ruleUpdated', ruleName);
+      this.emit("ruleUpdated", ruleName);
       return true;
     }
     return false;
   }
 
   removeRule(ruleName: string): boolean {
-    const ruleIndex = this.config.rules.findIndex(r => r.name === ruleName);
+    const ruleIndex = this.config.rules.findIndex((r) => r.name === ruleName);
     if (ruleIndex !== -1) {
       this.config.rules.splice(ruleIndex, 1);
-      this.emit('ruleRemoved', ruleName);
+      this.emit("ruleRemoved", ruleName);
       return true;
     }
     return false;
@@ -275,13 +275,13 @@ export class AlertManager extends EventEmitter {
 
 // Predefined alert conditions
 export class MetricThresholdCondition implements AlertCondition {
-  type: 'metric' as const = 'metric';
-  
+  readonly type = "metric" as const;
+
   constructor(
     private metricName: string,
     private threshold: number,
-    private operator: '>' | '<' | '>=' | '<=' | '==' | '!=',
-    private timeWindowMs?: number
+    private operator: ">" | "<" | ">=" | "<=" | "==" | "!=",
+    private timeWindowMs?: number,
   ) {}
 
   async evaluate(context: AlertContext): Promise<boolean> {
@@ -291,10 +291,10 @@ export class MetricThresholdCondition implements AlertCondition {
     }
 
     let values = metric.values;
-    
+
     if (this.timeWindowMs) {
       const cutoff = new Date(context.currentTime.getTime() - this.timeWindowMs);
-      values = values.filter(v => v.timestamp >= cutoff);
+      values = values.filter((v) => v.timestamp >= cutoff);
     }
 
     if (values.length === 0) {
@@ -303,67 +303,74 @@ export class MetricThresholdCondition implements AlertCondition {
 
     const latestValue = values[values.length - 1]?.value;
     if (latestValue === undefined) return false;
-    
+
     switch (this.operator) {
-      case '>': return latestValue > this.threshold;
-      case '<': return latestValue < this.threshold;
-      case '>=': return latestValue >= this.threshold;
-      case '<=': return latestValue <= this.threshold;
-      case '==': return latestValue === this.threshold;
-      case '!=': return latestValue !== this.threshold;
-      default: return false;
+      case ">":
+        return latestValue > this.threshold;
+      case "<":
+        return latestValue < this.threshold;
+      case ">=":
+        return latestValue >= this.threshold;
+      case "<=":
+        return latestValue <= this.threshold;
+      case "==":
+        return latestValue === this.threshold;
+      case "!=":
+        return latestValue !== this.threshold;
+      default:
+        return false;
     }
   }
 }
 
 export class HealthCheckCondition implements AlertCondition {
-  type: 'health' as const = 'health';
-  
+  type = "health" as const;
+
   constructor(
     private checkName: string,
-    private expectedStatus: HealthStatus
+    private expectedStatus: HealthStatus,
   ) {}
 
   async evaluate(context: AlertContext): Promise<boolean> {
-    const healthResult = context.healthResults.find(r => r.name === this.checkName);
+    const healthResult = context.healthResults.find((r) => r.name === this.checkName);
     if (!healthResult) {
       return true; // Alert if health check is missing
     }
-    
+
     return healthResult.status !== this.expectedStatus;
   }
 }
 
 export class ErrorRateCondition implements AlertCondition {
-  type: 'metric' as const = 'metric';
-  
+  type = "metric" as const;
+
   constructor(
     private errorMetric: string,
     private totalMetric: string,
     private thresholdPercent: number,
-    private timeWindowMs: number = 5 * 60 * 1000 // 5 minutes
+    private timeWindowMs: number = 5 * 60 * 1000, // 5 minutes
   ) {}
 
   async evaluate(context: AlertContext): Promise<boolean> {
     const errorMetric = context.metrics.getMetric(this.errorMetric);
     const totalMetric = context.metrics.getMetric(this.totalMetric);
-    
+
     if (!errorMetric || !totalMetric || !errorMetric.values || !totalMetric.values) {
       return false;
     }
 
     const cutoff = new Date(context.currentTime.getTime() - this.timeWindowMs);
-    
-    const errorValues = errorMetric.values.filter(v => v.timestamp >= cutoff);
-    const totalValues = totalMetric.values.filter(v => v.timestamp >= cutoff);
-    
+
+    const errorValues = errorMetric.values.filter((v) => v.timestamp >= cutoff);
+    const totalValues = totalMetric.values.filter((v) => v.timestamp >= cutoff);
+
     if (errorValues.length === 0 || totalValues.length === 0) {
       return false;
     }
 
     const errorCount = errorValues[errorValues.length - 1]?.value ?? 0;
     const totalCount = totalValues[totalValues.length - 1]?.value ?? 0;
-    
+
     if (totalCount === 0) {
       return false;
     }
@@ -375,12 +382,12 @@ export class ErrorRateCondition implements AlertCondition {
 
 // Notification channels
 export class EmailNotificationChannel implements NotificationChannel {
-  name = 'email';
+  name = "email";
   private transporter: nodemailer.Transporter;
 
   constructor(
     private smtpConfig: nodemailer.TransportOptions,
-    private fromAddress: string
+    private fromAddress: string,
   ) {
     this.transporter = nodemailer.createTransport(this.smtpConfig);
   }
@@ -394,21 +401,21 @@ export class EmailNotificationChannel implements NotificationChannel {
         from: this.fromAddress,
         to: alert.metadata?.recipients || [],
         subject,
-        html
+        html,
       });
 
       return true;
     } catch (error) {
-      logger.error('Failed to send email notification:', error);
+      logger.error("Failed to send email notification:", error);
       return false;
     }
   }
 
   private buildEmailContent(alert: Alert): string {
     const severityColor = {
-      info: '#2196F3',
-      warning: '#FF9800', 
-      critical: '#F44336'
+      info: "#2196F3",
+      warning: "#FF9800",
+      critical: "#F44336",
     }[alert.severity];
 
     return `
@@ -423,7 +430,7 @@ export class EmailNotificationChannel implements NotificationChannel {
               <p><strong>Message:</strong> ${alert.message}</p>
               <p><strong>Time:</strong> ${alert.timestamp.toISOString()}</p>
               <p><strong>Source:</strong> ${alert.source}</p>
-              ${alert.metadata ? `<p><strong>Details:</strong> ${JSON.stringify(alert.metadata, null, 2)}</p>` : ''}
+              ${alert.metadata ? `<p><strong>Details:</strong> ${JSON.stringify(alert.metadata, null, 2)}</p>` : ""}
             </div>
           </div>
         </body>
@@ -433,70 +440,70 @@ export class EmailNotificationChannel implements NotificationChannel {
 }
 
 export class SlackNotificationChannel implements NotificationChannel {
-  name = 'slack';
-  
-  constructor(
-    private webhookUrl: string
-  ) {}
+  name = "slack";
+
+  constructor(private webhookUrl: string) {}
 
   async send(alert: Alert): Promise<boolean> {
     try {
       const color = {
-        info: '#36a64f',
-        warning: '#ff9800',
-        critical: '#ff4444'
+        info: "#36a64f",
+        warning: "#ff9800",
+        critical: "#ff4444",
       }[alert.severity];
 
       const payload = {
-        attachments: [{
-          color,
-          title: `${alert.severity.toUpperCase()}: ${alert.name}`,
-          text: alert.message,
-          fields: [
-            { title: 'Time', value: alert.timestamp.toISOString(), short: true },
-            { title: 'Source', value: alert.source, short: true }
-          ],
-          footer: 'VTT Monitoring',
-          ts: Math.floor(alert.timestamp.getTime() / 1000)
-        }]
+        attachments: [
+          {
+            color,
+            title: `${alert.severity.toUpperCase()}: ${alert.name}`,
+            text: alert.message,
+            fields: [
+              { title: "Time", value: alert.timestamp.toISOString(), short: true },
+              { title: "Source", value: alert.source, short: true },
+            ],
+            footer: "VTT Monitoring",
+            ts: Math.floor(alert.timestamp.getTime() / 1000),
+          },
+        ],
       };
 
       const response = await fetch(this.webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       return response.ok;
     } catch (error) {
-      logger.error('Failed to send Slack notification:', error);
+      logger.error("Failed to send Slack notification:", error);
       return false;
     }
   }
 }
 
 export class WebhookNotificationChannel implements NotificationChannel {
-  name = 'webhook';
-  
+  name = "webhook";
+
   constructor(
     private url: string,
-    private headers: Record<string, string> = {}
+    private headers: Record<string, string> = {},
   ) {}
 
   async send(alert: Alert): Promise<boolean> {
     try {
       const response = await fetch(this.url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          ...this.headers
+          "Content-Type": "application/json",
+          ...this.headers,
         },
-        body: JSON.stringify(alert)
+        body: JSON.stringify(alert),
       });
 
       return response.ok;
     } catch (error) {
-      logger.error('Failed to send webhook notification:', error);
+      logger.error("Failed to send webhook notification:", error);
       return false;
     }
   }

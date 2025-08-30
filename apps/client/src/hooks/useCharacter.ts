@@ -2,7 +2,7 @@
  * Character management hook
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface Character {
   id: string;
@@ -41,44 +41,47 @@ export const useCharacter = (characterId?: string): UseCharacterReturn => {
   const [error, setError] = useState<string | null>(null);
 
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     const response = await fetch(`/api${endpoint}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
         ...options.headers,
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      const errorData = await response.json().catch(() => ({ error: "Network error" }));
       throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
     return response.json();
   };
 
-  const createCharacter = useCallback(async (characterData: Partial<Character>): Promise<Character> => {
-    setLoading(true);
-    setError(null);
+  const createCharacter = useCallback(
+    async (characterData: Partial<Character>): Promise<Character> => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const result = await apiCall('/characters', {
-        method: 'POST',
-        body: JSON.stringify(characterData),
-      });
+      try {
+        const result = await apiCall("/characters", {
+          method: "POST",
+          body: JSON.stringify(characterData),
+        });
 
-      const newCharacter = result.data || result;
-      setCharacters(prev => [...prev, newCharacter]);
-      return newCharacter;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const newCharacter = result.data || result;
+        setCharacters((prev) => [...prev, newCharacter]);
+        return newCharacter;
+      } catch (err: any) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   const getCharacter = useCallback(async (id: string): Promise<Character> => {
     setLoading(true);
@@ -95,28 +98,29 @@ export const useCharacter = (characterId?: string): UseCharacterReturn => {
     }
   }, []);
 
-  const updateCharacter = useCallback(async (id: string, updates: Partial<Character>): Promise<Character> => {
-    setLoading(true);
-    setError(null);
+  const updateCharacter = useCallback(
+    async (id: string, updates: Partial<Character>): Promise<Character> => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const result = await apiCall(`/characters/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updates),
-      });
+      try {
+        const result = await apiCall(`/characters/${id}`, {
+          method: "PUT",
+          body: JSON.stringify(updates),
+        });
 
-      const updatedCharacter = result.data || result;
-      setCharacters(prev => 
-        prev.map(char => char.id === id ? updatedCharacter : char)
-      );
-      return updatedCharacter;
-    } catch (err: any) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const updatedCharacter = result.data || result;
+        setCharacters((prev) => prev.map((char) => (char.id === id ? updatedCharacter : char)));
+        return updatedCharacter;
+      } catch (err: any) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   const deleteCharacter = useCallback(async (id: string): Promise<void> => {
     setLoading(true);
@@ -124,10 +128,10 @@ export const useCharacter = (characterId?: string): UseCharacterReturn => {
 
     try {
       await apiCall(`/characters/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
-      setCharacters(prev => prev.filter(char => char.id !== id));
+      setCharacters((prev) => prev.filter((char) => char.id !== id));
     } catch (err: any) {
       setError(err.message);
       throw err;
@@ -141,7 +145,7 @@ export const useCharacter = (characterId?: string): UseCharacterReturn => {
     setError(null);
 
     try {
-      const result = await apiCall('/characters');
+      const result = await apiCall("/characters");
       const userCharacters = result.data || result;
       setCharacters(userCharacters);
       return userCharacters;

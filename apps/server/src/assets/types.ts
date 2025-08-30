@@ -2,7 +2,7 @@
  * Asset management types and interfaces
  */
 
-export type AssetType = 'image' | 'audio' | 'map' | 'token' | 'texture' | 'model' | 'document';
+export type AssetType = "image" | "audio" | "map" | "token" | "texture" | "model" | "document";
 
 export interface Asset {
   id: string;
@@ -54,11 +54,26 @@ export interface AssetSearchQuery {
 }
 
 export interface Token extends Asset {
-  type: 'token';
+  type: "token";
   tokenData: {
     gridSize: number; // 1x1, 2x2, etc.
     isPC: boolean; // player character vs NPC
-    category: 'humanoid' | 'beast' | 'undead' | 'construct' | 'elemental' | 'fey' | 'fiend' | 'celestial' | 'dragon' | 'giant' | 'monstrosity' | 'ooze' | 'plant' | 'aberration' | 'other';
+    category:
+      | "humanoid"
+      | "beast"
+      | "undead"
+      | "construct"
+      | "elemental"
+      | "fey"
+      | "fiend"
+      | "celestial"
+      | "dragon"
+      | "giant"
+      | "monstrosity"
+      | "ooze"
+      | "plant"
+      | "aberration"
+      | "other";
     stats?: {
       ac?: number;
       hp?: number;
@@ -69,9 +84,9 @@ export interface Token extends Asset {
 }
 
 export interface GameMap extends Asset {
-  type: 'map';
+  type: "map";
   mapData: {
-    gridType: 'square' | 'hex' | 'none';
+    gridType: "square" | "hex" | "none";
     gridSize: number; // pixels per grid square
     gridOffsetX: number;
     gridOffsetY: number;
@@ -103,12 +118,12 @@ export interface LightSource {
   radius: number;
   intensity: number; // 0-1
   color: string; // hex color
-  type: 'bright' | 'dim' | 'torch' | 'candle' | 'magical';
+  type: "bright" | "dim" | "torch" | "candle" | "magical";
 }
 
 export interface FogArea {
   id: string;
-  type: 'polygon' | 'circle' | 'rectangle';
+  type: "polygon" | "circle" | "rectangle";
   points: Array<{ x: number; y: number }>;
   radius?: number; // for circles
   width?: number; // for rectangles

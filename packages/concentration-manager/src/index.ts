@@ -3,7 +3,7 @@
  * Handles D&D 5e concentration checks for spells during physics events
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface ConcentrationState {
   id: string;
@@ -30,7 +30,7 @@ export interface ConcentrationCheck {
 }
 
 export interface PhysicsEvent {
-  type: 'collision' | 'force' | 'damage';
+  type: "collision" | "force" | "damage";
   entityId: string;
   damage?: number;
   force?: { magnitude: number; direction: { x: number; y: number } };
@@ -40,7 +40,7 @@ export interface PhysicsEvent {
 export class ConcentrationManager extends EventEmitter {
   private activeConcentration: Map<string, ConcentrationState> = new Map();
   private concentrationHistory: ConcentrationCheck[] = [];
-  
+
   constructor() {
     super();
   }
@@ -53,7 +53,7 @@ export class ConcentrationManager extends EventEmitter {
     spellId: string,
     spellName: string,
     constitutionMod: number = 0,
-    proficiencyBonus: number = 0
+    proficiencyBonus: number = 0,
   ): void {
     // End any existing concentration
     this.endConcentration(casterId);
@@ -65,11 +65,11 @@ export class ConcentrationManager extends EventEmitter {
       spellName,
       constitutionMod,
       proficiencyBonus,
-      startedAt: Date.now()
+      startedAt: Date.now(),
     };
 
     this.activeConcentration.set(casterId, concentration);
-    this.emit('concentrationStarted', concentration);
+    this.emit("concentrationStarted", concentration);
   }
 
   /**
@@ -80,7 +80,7 @@ export class ConcentrationManager extends EventEmitter {
     if (!concentration) return false;
 
     this.activeConcentration.delete(casterId);
-    this.emit('concentrationEnded', concentration);
+    this.emit("concentrationEnded", concentration);
     return true;
   }
 
@@ -92,7 +92,7 @@ export class ConcentrationManager extends EventEmitter {
     if (!concentration) return null;
 
     // Only damage events trigger concentration checks
-    if (event.type !== 'damage' || !event.damage) return null;
+    if (event.type !== "damage" || !event.damage) return null;
 
     return this.makeConcentrationCheck(concentration, event.damage);
   }
@@ -100,21 +100,18 @@ export class ConcentrationManager extends EventEmitter {
   /**
    * Make a concentration check
    */
-  makeConcentrationCheck(
-    concentration: ConcentrationState,
-    damage: number
-  ): ConcentrationCheck {
+  makeConcentrationCheck(concentration: ConcentrationState, damage: number): ConcentrationCheck {
     // Calculate DC: 10 or half damage, whichever is higher
     const dc = Math.max(10, Math.floor(damage / 2));
-    
+
     // Roll d20
     const rollResult = this.rollD20();
-    
+
     // Calculate total modifier
     const totalModifier = concentration.constitutionMod + concentration.proficiencyBonus;
-    
+
     // Check success
-    const success = (rollResult + totalModifier) >= dc;
+    const success = rollResult + totalModifier >= dc;
 
     const check: ConcentrationCheck = {
       casterId: concentration.casterId,
@@ -125,7 +122,7 @@ export class ConcentrationManager extends EventEmitter {
       totalModifier,
       rollResult,
       success,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // Update concentration state
@@ -138,9 +135,9 @@ export class ConcentrationManager extends EventEmitter {
     // If failed, end concentration
     if (!success) {
       this.endConcentration(concentration.casterId);
-      this.emit('concentrationBroken', check);
+      this.emit("concentrationBroken", check);
     } else {
-      this.emit('concentrationMaintained', check);
+      this.emit("concentrationMaintained", check);
     }
 
     return check;
@@ -155,12 +152,12 @@ export class ConcentrationManager extends EventEmitter {
 
     // Roll d20
     const rollResult = this.rollD20();
-    
+
     // Calculate total modifier
     const totalModifier = concentration.constitutionMod + concentration.proficiencyBonus;
-    
+
     // Check success
-    const success = (rollResult + totalModifier) >= dc;
+    const success = rollResult + totalModifier >= dc;
 
     const check: ConcentrationCheck = {
       casterId: concentration.casterId,
@@ -171,7 +168,7 @@ export class ConcentrationManager extends EventEmitter {
       totalModifier,
       rollResult,
       success,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // Store check in history
@@ -180,9 +177,9 @@ export class ConcentrationManager extends EventEmitter {
     // If failed, end concentration
     if (!success) {
       this.endConcentration(concentration.casterId);
-      this.emit('concentrationBroken', check);
+      this.emit("concentrationBroken", check);
     } else {
-      this.emit('concentrationMaintained', check);
+      this.emit("concentrationMaintained", check);
     }
 
     return check;
@@ -214,7 +211,7 @@ export class ConcentrationManager extends EventEmitter {
    */
   getConcentrationHistory(casterId?: string): ConcentrationCheck[] {
     if (casterId) {
-      return this.concentrationHistory.filter(check => check.casterId === casterId);
+      return this.concentrationHistory.filter((check) => check.casterId === casterId);
     }
     return [...this.concentrationHistory];
   }
@@ -226,7 +223,7 @@ export class ConcentrationManager extends EventEmitter {
     if (olderThanMs) {
       const cutoff = Date.now() - olderThanMs;
       this.concentrationHistory = this.concentrationHistory.filter(
-        check => check.timestamp > cutoff
+        (check) => check.timestamp > cutoff,
       );
     } else {
       this.concentrationHistory = [];
@@ -242,7 +239,7 @@ export class ConcentrationManager extends EventEmitter {
 
     // Auto-fail if incapacitated, stunned, etc.
     // This would typically integrate with the conditions system
-    
+
     return false; // No auto-fail conditions met
   }
 
@@ -276,18 +273,19 @@ export class ConcentrationManager extends EventEmitter {
     mostRecentCheck?: ConcentrationCheck;
   } {
     const totalChecks = this.concentrationHistory.length;
-    const successfulChecks = this.concentrationHistory.filter(check => check.success).length;
+    const successfulChecks = this.concentrationHistory.filter((check) => check.success).length;
     const successRate = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 0;
-    const averageDC = totalChecks > 0 
-      ? this.concentrationHistory.reduce((_sum, _check) => sum + check.dc, 0) / totalChecks 
-      : 0;
+    const averageDC =
+      totalChecks > 0
+        ? this.concentrationHistory.reduce((_sum, _check) => sum + check.dc, 0) / totalChecks
+        : 0;
 
     return {
       activeCount: this.activeConcentration.size,
       totalChecks,
       successRate,
       averageDC,
-      mostRecentCheck: this.concentrationHistory[this.concentrationHistory.length - 1]
+      mostRecentCheck: this.concentrationHistory[this.concentrationHistory.length - 1],
     };
   }
 
@@ -305,7 +303,7 @@ export class ConcentrationManager extends EventEmitter {
     }
 
     if (checks.length > 0) {
-      this.emit('batchChecksProcessed', checks);
+      this.emit("batchChecksProcessed", checks);
     }
 
     return checks;
@@ -315,9 +313,9 @@ export class ConcentrationManager extends EventEmitter {
    * Handle mass damage events (e.g., fireball)
    */
   handleMassDamageEvent(
-    entityIds: string[], 
-    damage: number, 
-    sourceSpell?: string
+    entityIds: string[],
+    damage: number,
+    sourceSpell?: string,
   ): ConcentrationCheck[] {
     const checks: ConcentrationCheck[] = [];
 
@@ -330,7 +328,7 @@ export class ConcentrationManager extends EventEmitter {
     }
 
     if (checks.length > 0) {
-      this.emit('massDamageProcessed', { checks, sourceSpell });
+      this.emit("massDamageProcessed", { checks, sourceSpell });
     }
 
     return checks;
@@ -348,7 +346,7 @@ export class PhysicsConcentrationIntegration extends EventEmitter {
   constructor(concentrationManager: ConcentrationManager) {
     super();
     this.concentrationManager = concentrationManager;
-    
+
     // Process physics events every 100ms
     this.processingInterval = setInterval(() => {
       this.processPhysicsEventQueue();
@@ -372,9 +370,9 @@ export class PhysicsConcentrationIntegration extends EventEmitter {
     this.physicsEventQueue = [];
 
     const checks = this.concentrationManager.processBatchPhysicsEvents(events);
-    
+
     if (checks.length > 0) {
-      this.emit('concentrationChecksProcessed', checks);
+      this.emit("concentrationChecksProcessed", checks);
     }
   }
 
@@ -391,19 +389,19 @@ export class PhysicsConcentrationIntegration extends EventEmitter {
 
     if (collision.bodyA.entityId) {
       this.queuePhysicsEvent({
-        type: 'collision',
+        type: "collision",
         entityId: collision.bodyA.entityId,
         damage,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     if (collision.bodyB.entityId) {
       this.queuePhysicsEvent({
-        type: 'collision',
+        type: "collision",
         entityId: collision.bodyB.entityId,
         damage,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -413,17 +411,17 @@ export class PhysicsConcentrationIntegration extends EventEmitter {
    */
   handleForceApplication(
     entityId: string,
-    force: { magnitude: number; direction: { x: number; y: number } }
+    force: { magnitude: number; direction: { x: number; y: number } },
   ): void {
     // Large forces might require concentration checks
     if (force.magnitude > 50) {
       const damage = Math.floor(force.magnitude / 20);
       this.queuePhysicsEvent({
-        type: 'force',
+        type: "force",
         entityId,
         damage,
         force,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -443,7 +441,7 @@ export const _createConcentrationManager = (): ConcentrationManager => {
 };
 
 export const _createPhysicsConcentrationIntegration = (
-  concentrationManager: ConcentrationManager
+  concentrationManager: ConcentrationManager,
 ): PhysicsConcentrationIntegration => {
   return new PhysicsConcentrationIntegration(concentrationManager);
 };

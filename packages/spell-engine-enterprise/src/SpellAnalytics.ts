@@ -3,7 +3,7 @@
  * Comprehensive monitoring, metrics collection, and performance analysis
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export class SpellAnalytics extends EventEmitter {
   private metricsCollector: MetricsCollector;
@@ -26,18 +26,18 @@ export class SpellAnalytics extends EventEmitter {
 
     // Collect basic metrics
     await this.metricsCollector.recordSpellCast(event);
-    
+
     // Track usage patterns
     await this.usageTracker.recordUsage(event);
-    
+
     // Performance profiling
     const profile = await this.performanceProfiler.profileSpellCast(event);
-    
+
     // Anomaly detection
     await this.anomalyDetector.checkForAnomalies(event, profile);
 
     const processingTime = performance.now() - startTime;
-    this.emit('analytics_processed', { event, processingTime });
+    this.emit("analytics_processed", { event, processingTime });
   }
 
   async generateReport(type: ReportType, timeRange: TimeRange): Promise<AnalyticsReport> {
@@ -61,24 +61,24 @@ class MetricsCollector {
 
   async recordSpellCast(event: SpellCastEvent): Promise<void> {
     const timestamp = Date.now();
-    
+
     // Record basic spell metrics
-    this.recordMetric('spell_casts_total', 1, timestamp, {
+    this.recordMetric("spell_casts_total", 1, timestamp, {
       spell_id: event.spellId,
       level: event.level.toString(),
       school: event.school,
-      caster_class: event.casterClass
+      caster_class: event.casterClass,
     });
 
     // Record performance metrics
-    this.recordMetric('spell_cast_duration_ms', event.duration, timestamp, {
-      spell_id: event.spellId
+    this.recordMetric("spell_cast_duration_ms", event.duration, timestamp, {
+      spell_id: event.spellId,
     });
 
     // Record resource usage
     if (event.memoryUsage) {
-      this.recordMetric('spell_memory_usage_bytes', event.memoryUsage, timestamp, {
-        spell_id: event.spellId
+      this.recordMetric("spell_memory_usage_bytes", event.memoryUsage, timestamp, {
+        spell_id: event.spellId,
       });
     }
 
@@ -86,15 +86,20 @@ class MetricsCollector {
     await this.updateAggregates(event);
   }
 
-  private recordMetric(name: string, value: number, timestamp: number, labels: Record<string, string>): void {
+  private recordMetric(
+    name: string,
+    value: number,
+    timestamp: number,
+    labels: Record<string, string>,
+  ): void {
     const key = `${name}:${JSON.stringify(labels)}`;
-    
+
     if (!this.metrics.has(key)) {
       this.metrics.set(key, {
         name,
         labels,
         dataPoints: [],
-        lastUpdated: timestamp
+        lastUpdated: timestamp,
       });
     }
 
@@ -103,8 +108,8 @@ class MetricsCollector {
     series.lastUpdated = timestamp;
 
     // Keep only recent data points
-    const cutoff = timestamp - (24 * 60 * 60 * 1000); // 24 hours
-    series.dataPoints = series.dataPoints.filter(dp => dp.timestamp > cutoff);
+    const cutoff = timestamp - 24 * 60 * 60 * 1000; // 24 hours
+    series.dataPoints = series.dataPoints.filter((dp) => dp.timestamp > cutoff);
   }
 
   private async updateAggregates(event: SpellCastEvent): Promise<void> {
@@ -112,9 +117,9 @@ class MetricsCollector {
     const popularityKey = `spell_popularity:${event.spellId}`;
     if (!this.aggregates.has(popularityKey)) {
       this.aggregates.set(popularityKey, {
-        name: 'spell_popularity',
+        name: "spell_popularity",
         value: 0,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       });
     }
     this.aggregates.get(popularityKey)!.value++;
@@ -126,16 +131,16 @@ class MetricsCollector {
       existing.value = (existing.value + event.duration) / 2;
     } else {
       this.aggregates.set(perfKey, {
-        name: 'avg_cast_time',
+        name: "avg_cast_time",
         value: event.duration,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       });
     }
   }
 
   async query(query: MetricsQuery): Promise<MetricsResult> {
     const results: MetricSeries[] = [];
-    
+
     for (const [_key, series] of this.metrics) {
       if (this.matchesQuery(series, query)) {
         const filteredSeries = this.filterByTimeRange(series, query.timeRange);
@@ -147,13 +152,13 @@ class MetricsCollector {
       series: results,
       aggregates: this.getMatchingAggregates(query),
       query,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
   private matchesQuery(series: MetricSeries, query: MetricsQuery): boolean {
     if (query.metricName && series.name !== query.metricName) return false;
-    
+
     if (query.labels) {
       for (const [key, value] of Object.entries(query.labels)) {
         if (series.labels[key] !== value) return false;
@@ -168,9 +173,9 @@ class MetricsCollector {
 
     const filtered = {
       ...series,
-      dataPoints: series.dataPoints.filter(dp => 
-        dp.timestamp >= timeRange.start && dp.timestamp <= timeRange.end
-      )
+      dataPoints: series.dataPoints.filter(
+        (dp) => dp.timestamp >= timeRange.start && dp.timestamp <= timeRange.end,
+      ),
     };
 
     return filtered;
@@ -178,7 +183,7 @@ class MetricsCollector {
 
   private getMatchingAggregates(query: MetricsQuery): AggregateMetric[] {
     const results: AggregateMetric[] = [];
-    
+
     for (const [key, aggregate] of this.aggregates) {
       if (!query.metricName || key.includes(query.metricName)) {
         results.push(aggregate);
@@ -205,7 +210,7 @@ class PerformanceProfiler {
       memoryUsage: event.memoryUsage || 0,
       cpuUsage: event.cpuUsage || 0,
       phases: event.phases || [],
-      bottlenecks: []
+      bottlenecks: [],
     };
 
     // Analyze performance bottlenecks
@@ -223,22 +228,22 @@ class PerformanceProfiler {
     // Check overall duration
     if (profile.duration > this.thresholds.maxCastTime) {
       bottlenecks.push({
-        type: 'duration',
-        severity: profile.duration > this.thresholds.maxCastTime * 2 ? 'critical' : 'warning',
+        type: "duration",
+        severity: profile.duration > this.thresholds.maxCastTime * 2 ? "critical" : "warning",
         value: profile.duration,
         threshold: this.thresholds.maxCastTime,
-        description: `Spell cast took ${profile.duration}ms, exceeding threshold of ${this.thresholds.maxCastTime}ms`
+        description: `Spell cast took ${profile.duration}ms, exceeding threshold of ${this.thresholds.maxCastTime}ms`,
       });
     }
 
     // Check memory usage
     if (profile.memoryUsage > this.thresholds.maxMemoryUsage) {
       bottlenecks.push({
-        type: 'memory',
-        severity: profile.memoryUsage > this.thresholds.maxMemoryUsage * 2 ? 'critical' : 'warning',
+        type: "memory",
+        severity: profile.memoryUsage > this.thresholds.maxMemoryUsage * 2 ? "critical" : "warning",
         value: profile.memoryUsage,
         threshold: this.thresholds.maxMemoryUsage,
-        description: `Memory usage ${profile.memoryUsage} bytes exceeds threshold`
+        description: `Memory usage ${profile.memoryUsage} bytes exceeds threshold`,
       });
     }
 
@@ -246,11 +251,11 @@ class PerformanceProfiler {
     for (const phase of profile.phases) {
       if (phase.duration > this.thresholds.maxPhaseTime) {
         bottlenecks.push({
-          type: 'phase',
-          severity: 'warning',
+          type: "phase",
+          severity: "warning",
           value: phase.duration,
           threshold: this.thresholds.maxPhaseTime,
-          description: `Phase '${phase.name}' took ${phase.duration}ms`
+          description: `Phase '${phase.name}' took ${phase.duration}ms`,
         });
       }
     }
@@ -263,26 +268,28 @@ class PerformanceProfiler {
     const recentProfiles = this.getRecentProfiles(300000); // Last 5 minutes
 
     // Detect trending issues
-    const avgDuration = recentProfiles.reduce((_sum, _p) => sum + p.duration, 0) / recentProfiles.length;
+    const avgDuration =
+      recentProfiles.reduce((_sum, _p) => sum + p.duration, 0) / recentProfiles.length;
     if (avgDuration > this.thresholds.maxCastTime) {
       issues.push({
-        type: 'performance_degradation',
-        severity: 'warning',
+        type: "performance_degradation",
+        severity: "warning",
         description: `Average spell cast time trending upward: ${avgDuration.toFixed(2)}ms`,
         affectedSpells: this.getSlowSpells(recentProfiles),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     // Detect memory leaks
     const memoryTrend = this.analyzeMemoryTrend(recentProfiles);
-    if (memoryTrend.isIncreasing && memoryTrend.rate > 1000) { // 1KB/minute
+    if (memoryTrend.isIncreasing && memoryTrend.rate > 1000) {
+      // 1KB/minute
       issues.push({
-        type: 'memory_leak',
-        severity: 'critical',
+        type: "memory_leak",
+        severity: "critical",
         description: `Memory usage increasing at ${memoryTrend.rate} bytes/minute`,
         affectedSpells: [],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
@@ -291,14 +298,14 @@ class PerformanceProfiler {
 
   private getRecentProfiles(timeWindow: number): PerformanceProfile[] {
     const cutoff = Date.now() - timeWindow;
-    return Array.from(this.profiles.values()).filter(p => p.timestamp > cutoff);
+    return Array.from(this.profiles.values()).filter((p) => p.timestamp > cutoff);
   }
 
   private getSlowSpells(profiles: PerformanceProfile[]): string[] {
     const slowSpells = profiles
-      .filter(p => p.duration > this.thresholds.maxCastTime)
-      .map(p => p.spellId);
-    
+      .filter((p) => p.duration > this.thresholds.maxCastTime)
+      .map((p) => p.spellId);
+
     return [...new Set(slowSpells)];
   }
 
@@ -308,13 +315,13 @@ class PerformanceProfiler {
     const sorted = profiles.sort((_a, _b) => a.timestamp - b.timestamp);
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
-    
+
     const timeDiff = (last.timestamp - first.timestamp) / 60000; // minutes
     const memoryDiff = last.memoryUsage - first.memoryUsage;
-    
+
     return {
       isIncreasing: memoryDiff > 0,
-      rate: timeDiff > 0 ? memoryDiff / timeDiff : 0
+      rate: timeDiff > 0 ? memoryDiff / timeDiff : 0,
     };
   }
 }
@@ -336,15 +343,16 @@ class UsageTracker {
         averageLevel: 0,
         popularTimes: new Map(),
         successRate: 0,
-        totalSuccesses: 0
+        totalSuccesses: 0,
       });
     }
 
     const stats = this.usageStats.get(spellKey)!;
     stats.totalCasts++;
     stats.uniqueUsers.add(event.casterId);
-    stats.averageLevel = (stats.averageLevel * (stats.totalCasts - 1) + event.level) / stats.totalCasts;
-    
+    stats.averageLevel =
+      (stats.averageLevel * (stats.totalCasts - 1) + event.level) / stats.totalCasts;
+
     if (event.success) {
       stats.totalSuccesses++;
     }
@@ -361,7 +369,7 @@ class UsageTracker {
 
   private async updateSessionData(event: SpellCastEvent): Promise<void> {
     const sessionKey = `${event.casterId}:${this.getSessionId(event.timestamp)}`;
-    
+
     if (!this.sessionData.has(sessionKey)) {
       this.sessionData.set(sessionKey, {
         userId: event.casterId,
@@ -370,8 +378,8 @@ class UsageTracker {
         spellsCast: [],
         totalDamageDealt: 0,
         totalHealing: 0,
-        favoriteSchool: '',
-        averageSpellLevel: 0
+        favoriteSchool: "",
+        averageSpellLevel: 0,
       });
     }
 
@@ -381,19 +389,20 @@ class UsageTracker {
       spellId: event.spellId,
       timestamp: event.timestamp,
       level: event.level,
-      success: event.success
+      success: event.success,
     });
 
     // Update session statistics
-    session.averageSpellLevel = session.spellsCast.reduce((_sum, _s) => sum + s.level, 0) / session.spellsCast.length;
-    
+    session.averageSpellLevel =
+      session.spellsCast.reduce((_sum, _s) => sum + s.level, 0) / session.spellsCast.length;
+
     // Track favorite school
     const schoolCounts = new Map<string, number>();
-    session.spellsCast.forEach(_s => {
+    session.spellsCast.forEach((_s) => {
       const count = schoolCounts.get(event.school) || 0;
       schoolCounts.set(event.school, count + 1);
     });
-    
+
     let maxCount = 0;
     for (const [school, count] of schoolCounts) {
       if (count > maxCount) {
@@ -413,37 +422,37 @@ class UsageTracker {
     return Array.from(this.usageStats.values())
       .sort((_a, _b) => b.totalCasts - a.totalCasts)
       .slice(0, limit)
-      .map(stats => ({
+      .map((stats) => ({
         spellId: stats.spellId,
         totalCasts: stats.totalCasts,
         uniqueUsers: stats.uniqueUsers.size,
         successRate: stats.successRate,
-        averageLevel: stats.averageLevel
+        averageLevel: stats.averageLevel,
       }));
   }
 
   getUserInsights(userId: string): UserInsights {
-    const userSessions = Array.from(this.sessionData.values())
-      .filter(session => session.userId === userId);
+    const userSessions = Array.from(this.sessionData.values()).filter(
+      (session) => session.userId === userId,
+    );
 
     const totalSpells = userSessions.reduce((_sum, _s) => sum + s.spellsCast.length, 0);
     const favoriteSchools = new Map<string, number>();
-    
-    userSessions.forEach(session => {
+
+    userSessions.forEach((session) => {
       const count = favoriteSchools.get(session.favoriteSchool) || 0;
       favoriteSchools.set(session.favoriteSchool, count + 1);
     });
 
-    const topSchool = Array.from(favoriteSchools.entries())
-      .sort(_([,_a], [,_b]) => b - a)[0];
+    const topSchool = Array.from(favoriteSchools.entries()).sort(([, a], [, b]) => b - a)[0];
 
     return {
       userId,
       totalSpellsCast: totalSpells,
       totalSessions: userSessions.length,
-      favoriteSchool: topSchool ? topSchool[0] : 'unknown',
+      favoriteSchool: topSchool ? topSchool[0] : "unknown",
       averageSpellsPerSession: totalSpells / userSessions.length,
-      lastActive: Math.max(...userSessions.map(s => s.sessionEnd))
+      lastActive: Math.max(...userSessions.map((s) => s.sessionEnd)),
     };
   }
 }
@@ -456,17 +465,21 @@ class AnomalyDetector {
 
   async checkForAnomalies(event: SpellCastEvent, profile: PerformanceProfile): Promise<void> {
     const baseline = this.getOrCreateBaseline(event.spellId);
-    
+
     // Check for performance anomalies
-    const durationAnomaly = this.detectDurationAnomaly(profile.duration, baseline.averageDuration, baseline.durationStdDev);
+    const durationAnomaly = this.detectDurationAnomaly(
+      profile.duration,
+      baseline.averageDuration,
+      baseline.durationStdDev,
+    );
     if (durationAnomaly) {
       this.recordAnomaly({
-        type: 'performance',
+        type: "performance",
         spellId: event.spellId,
         severity: durationAnomaly.severity,
         description: `Spell cast duration ${profile.duration}ms is ${durationAnomaly.deviations.toFixed(1)} standard deviations from baseline`,
         timestamp: Date.now(),
-        metadata: { duration: profile.duration, baseline: baseline.averageDuration }
+        metadata: { duration: profile.duration, baseline: baseline.averageDuration },
       });
     }
 
@@ -483,55 +496,63 @@ class AnomalyDetector {
         averageMemory: 0,
         memoryStdDev: 0,
         sampleCount: 0,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       });
     }
     return this.baselines.get(spellId)!;
   }
 
-  private detectDurationAnomaly(duration: number, baseline: number, stdDev: number): { severity: 'warning' | 'critical', deviations: number } | null {
+  private detectDurationAnomaly(
+    duration: number,
+    baseline: number,
+    stdDev: number,
+  ): { severity: "warning" | "critical"; deviations: number } | null {
     if (stdDev === 0) return null; // Not enough data
-    
+
     const deviations = Math.abs(duration - baseline) / stdDev;
-    
+
     if (deviations > this.config.criticalThreshold) {
-      return { severity: 'critical', deviations };
+      return { severity: "critical", deviations };
     } else if (deviations > this.config.warningThreshold) {
-      return { severity: 'warning', deviations };
+      return { severity: "warning", deviations };
     }
-    
+
     return null;
   }
 
   private updateBaseline(spellId: string, profile: PerformanceProfile): void {
     const baseline = this.baselines.get(spellId)!;
     baseline.sampleCount++;
-    
+
     // Update running average
-    baseline.averageDuration = (baseline.averageDuration * (baseline.sampleCount - 1) + profile.duration) / baseline.sampleCount;
-    baseline.averageMemory = (baseline.averageMemory * (baseline.sampleCount - 1) + profile.memoryUsage) / baseline.sampleCount;
-    
+    baseline.averageDuration =
+      (baseline.averageDuration * (baseline.sampleCount - 1) + profile.duration) /
+      baseline.sampleCount;
+    baseline.averageMemory =
+      (baseline.averageMemory * (baseline.sampleCount - 1) + profile.memoryUsage) /
+      baseline.sampleCount;
+
     // Update standard deviation (simplified calculation)
     if (baseline.sampleCount > 1) {
       baseline.durationStdDev = Math.sqrt(
-        Math.pow(profile.duration - baseline.averageDuration, 2) / baseline.sampleCount
+        Math.pow(profile.duration - baseline.averageDuration, 2) / baseline.sampleCount,
       );
     }
-    
+
     baseline.lastUpdated = Date.now();
   }
 
   private recordAnomaly(anomaly: Anomaly): void {
     this.anomalies.push(anomaly);
-    
+
     // Keep only recent anomalies
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 hours
-    this.anomalies = this.anomalies.filter(a => a.timestamp > cutoff);
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+    this.anomalies = this.anomalies.filter((a) => a.timestamp > cutoff);
   }
 
   getRecentAnomalies(timeWindow: number = 3600000): Anomaly[] {
     const cutoff = Date.now() - timeWindow;
-    return this.anomalies.filter(a => a.timestamp > cutoff);
+    return this.anomalies.filter((a) => a.timestamp > cutoff);
   }
 }
 
@@ -540,11 +561,11 @@ class ReportGenerator {
 
   async generate(type: ReportType, timeRange: TimeRange): Promise<AnalyticsReport> {
     switch (type) {
-      case 'performance':
+      case "performance":
         return this.generatePerformanceReport(timeRange);
-      case 'usage':
+      case "usage":
         return this.generateUsageReport(timeRange);
-      case 'anomalies':
+      case "anomalies":
         return this.generateAnomalyReport(timeRange);
       default:
         throw new Error(`Unknown report type: ${type}`);
@@ -553,49 +574,49 @@ class ReportGenerator {
 
   private async generatePerformanceReport(timeRange: TimeRange): Promise<AnalyticsReport> {
     return {
-      type: 'performance',
+      type: "performance",
       timeRange,
       generatedAt: Date.now(),
       summary: {
         totalSpellsCast: 0,
         averageCastTime: 0,
         slowestSpells: [],
-        performanceIssues: 0
+        performanceIssues: 0,
       },
       details: Record<string, any>,
-      recommendations: []
+      recommendations: [],
     };
   }
 
   private async generateUsageReport(timeRange: TimeRange): Promise<AnalyticsReport> {
     return {
-      type: 'usage',
+      type: "usage",
       timeRange,
       generatedAt: Date.now(),
       summary: {
         totalUsers: 0,
         popularSpells: [],
         peakUsageHours: [],
-        schoolDistribution: Record<string, any>
+        schoolDistribution: Record<string, any>,
       },
       details: Record<string, any>,
-      recommendations: []
+      recommendations: [],
     };
   }
 
   private async generateAnomalyReport(timeRange: TimeRange): Promise<AnalyticsReport> {
     return {
-      type: 'anomalies',
+      type: "anomalies",
       timeRange,
       generatedAt: Date.now(),
       summary: {
         totalAnomalies: 0,
         criticalAnomalies: 0,
         affectedSpells: [],
-        anomalyTypes: Record<string, any>
+        anomalyTypes: Record<string, any>,
       },
       details: Record<string, any>,
-      recommendations: []
+      recommendations: [],
     };
   }
 }
@@ -661,7 +682,7 @@ interface ReportingConfig {
   reportInterval: number;
 }
 
-type ReportType = 'performance' | 'usage' | 'anomalies';
+type ReportType = "performance" | "usage" | "anomalies";
 
 interface TimeRange {
   start: number;
@@ -711,7 +732,7 @@ interface PerformanceProfile {
 
 interface PerformanceBottleneck {
   type: string;
-  severity: 'warning' | 'critical';
+  severity: "warning" | "critical";
   value: number;
   threshold: number;
   description: string;
@@ -719,7 +740,7 @@ interface PerformanceBottleneck {
 
 interface PerformanceIssue {
   type: string;
-  severity: 'warning' | 'critical';
+  severity: "warning" | "critical";
   description: string;
   affectedSpells: string[];
   timestamp: number;
@@ -788,7 +809,7 @@ interface PerformanceBaseline {
 interface Anomaly {
   type: string;
   spellId: string;
-  severity: 'warning' | 'critical';
+  severity: "warning" | "critical";
   description: string;
   timestamp: number;
   metadata: Record<string, any>;

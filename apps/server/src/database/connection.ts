@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 class DatabaseManager {
   private static instance: PrismaClient;
@@ -19,9 +19,9 @@ class DatabaseManager {
   static getInstance(): PrismaClient {
     if (!DatabaseManager.instance) {
       // Explicit mock mode for E2E or local runs
-      const skipDb = process.env.E2E_SKIP_DB === '1' || process.env.E2E_SKIP_DB === 'true';
+      const skipDb = process.env.E2E_SKIP_DB === "1" || process.env.E2E_SKIP_DB === "true";
       if (skipDb) {
-        logger.warn('[db] E2E_SKIP_DB enabled - using mock Prisma client');
+        logger.warn("[db] E2E_SKIP_DB enabled - using mock Prisma client");
         DatabaseManager.instance = DatabaseManager.createMock();
         return DatabaseManager.instance;
       }
@@ -39,7 +39,7 @@ class DatabaseManager {
           }),
         });
       } catch (error) {
-        console.warn('Failed to initialize PrismaClient, using mock instance:', error);
+        console.warn("Failed to initialize PrismaClient, using mock instance:", error);
         DatabaseManager.instance = DatabaseManager.createMock();
       }
     }

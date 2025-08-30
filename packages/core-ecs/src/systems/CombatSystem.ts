@@ -1,12 +1,12 @@
-import { World, EntityId } from '../World';
-import { logger } from '@vtt/logging';
-import { CombatStore, _CombatData} from '../components/Combat';
-import { SpellcastingSystem, SpellEffect } from './SpellcastingSystem';
+import { World, EntityId } from "../World";
+import { logger } from "@vtt/logging";
+import { CombatStore, _CombatData } from "../components/Combat";
+import { SpellcastingSystem, SpellEffect } from "./SpellcastingSystem";
 
 export interface CombatAction {
   actorId: EntityId;
   entityId: EntityId;
-  type: 'attack' | 'spell' | 'movement' | 'dash' | 'dodge' | 'help' | 'hide' | 'ready' | 'search';
+  type: "attack" | "spell" | "movement" | "dash" | "dodge" | "help" | "hide" | "ready" | "search";
   targetId?: EntityId;
   targets?: EntityId[];
   data?: any;
@@ -19,7 +19,13 @@ export interface CombatAction {
 }
 
 export interface CombatEvent {
-  type: 'combat_start' | 'combat_end' | 'turn_start' | 'turn_end' | 'initiative_rolled' | 'action_taken';
+  type:
+    | "combat_start"
+    | "combat_end"
+    | "turn_start"
+    | "turn_end"
+    | "initiative_rolled"
+    | "action_taken";
   entityId: EntityId;
   data?: any;
   timestamp: number;
@@ -54,12 +60,12 @@ export class CombatSystem {
     for (const entityId of participants) {
       const initiative = this.rollInitiative(entityId);
       this.combat.add(entityId, { initiative, isActive: true });
-      this.emitEvent('initiative_rolled', entityId, { initiative });
+      this.emitEvent("initiative_rolled", entityId, { initiative });
     }
 
     // Set turn order
     this.turnOrder = this.combat.getInitiativeOrder();
-    
+
     // Set turn order numbers
     this.turnOrder.forEach((_entityId, __index) => {
       this.combat.setTurnOrder(entityId, index);
@@ -68,7 +74,7 @@ export class CombatSystem {
     if (this.turnOrder.length > 0) {
       const firstEntity = this.turnOrder[0];
       if (firstEntity !== undefined) {
-        this.emitEvent('combat_start', firstEntity);
+        this.emitEvent("combat_start", firstEntity);
       }
     }
     this.startTurn();
@@ -78,7 +84,7 @@ export class CombatSystem {
     if (!this.isActive) return;
 
     const allCombatants = this.combat.getAllInCombat();
-    
+
     // Clean up combat state
     for (const entityId of allCombatants) {
       this.combat.remove(entityId);
@@ -89,7 +95,7 @@ export class CombatSystem {
     this.turnOrder = [];
     this.round = 1;
 
-    this.emitEvent('combat_end', 0, { participants: allCombatants });
+    this.emitEvent("combat_end", 0, { participants: allCombatants });
   }
 
   nextTurn(): void {
@@ -102,13 +108,13 @@ export class CombatSystem {
         this.combat.endTurn(currentEntity);
       }
       if (currentEntity !== undefined) {
-      this.emitEvent('turn_end', currentEntity, { round: this.round });
-    }
+        this.emitEvent("turn_end", currentEntity, { round: this.round });
+      }
     }
 
     // Advance to next turn
     this.currentTurn++;
-    
+
     // Check if we've completed a round
     if (this.currentTurn >= this.turnOrder.length) {
       this.currentTurn = 0;
@@ -124,9 +130,9 @@ export class CombatSystem {
     const currentEntity = this.turnOrder[this.currentTurn];
     if (currentEntity !== undefined) {
       this.combat.startTurn(currentEntity);
-      this.emitEvent('turn_start', currentEntity, { 
-      round: this.round,
-      turnInRound: this.currentTurn + 1
+      this.emitEvent("turn_start", currentEntity, {
+        round: this.round,
+        turnInRound: this.currentTurn + 1,
       });
     }
   }
@@ -139,7 +145,7 @@ export class CombatSystem {
 
   canTakeAction(entityId: EntityId, actionCost: number = 1): boolean {
     if (!this.isActive) return false;
-    
+
     const currentActor = this.getCurrentActor();
     if (currentActor !== entityId) return false;
 
@@ -156,13 +162,13 @@ export class CombatSystem {
     // Process the action
     this.processAction(action);
 
-    this.emitEvent('action_taken', action.actorId, action);
+    this.emitEvent("action_taken", action.actorId, action);
     return true;
   }
 
   canTakeReaction(entityId: EntityId): boolean {
     if (!this.isActive) return false;
-    
+
     const combatData = this.combat.get(entityId);
     return combatData ? !combatData.reactionUsed : false;
   }
@@ -171,9 +177,9 @@ export class CombatSystem {
     if (!this.canTakeReaction(entityId)) return false;
 
     this.combat.useReaction(entityId);
-    this.emitEvent('action_taken', entityId, { 
-      type: 'reaction', 
-      data: reactionData 
+    this.emitEvent("action_taken", entityId, {
+      type: "reaction",
+      data: reactionData,
     });
     return true;
   }
@@ -183,7 +189,7 @@ export class CombatSystem {
     const baseRoll = Math.floor(Math.random() * 20) + 1;
     const dexModifier = this.getDexterityModifier(entityId);
     const tiebreaker = Math.random(); // For consistent tie-breaking
-    
+
     return baseRoll + dexModifier + tiebreaker;
   }
 
@@ -195,17 +201,17 @@ export class CombatSystem {
 
   private getActionCost(actionType: string): number {
     switch (actionType) {
-      case 'attack':
-      case 'spell':
-      case 'dodge':
-      case 'help':
-      case 'hide':
-      case 'ready':
-      case 'search':
+      case "attack":
+      case "spell":
+      case "dodge":
+      case "help":
+      case "hide":
+      case "ready":
+      case "search":
         return 1; // Full action
-      case 'dash':
+      case "dash":
         return 1; // Full action
-      case 'movement':
+      case "movement":
         return 0; // Movement is free on your turn
       default:
         return 1;
@@ -214,19 +220,19 @@ export class CombatSystem {
 
   private processAction(action: CombatAction): void {
     switch (action.type) {
-      case 'movement':
+      case "movement":
         this.processMovement(action);
         break;
-      case 'attack':
+      case "attack":
         this.processAttack(action);
         break;
-      case 'spell':
+      case "spell":
         this.processSpell(action);
         break;
-      case 'dash':
+      case "dash":
         this.processDash(action);
         break;
-      case 'dodge':
+      case "dodge":
         this.processDodge(action);
         break;
       // Add more action types as needed
@@ -243,70 +249,70 @@ export class CombatSystem {
   private processAttack(action: CombatAction): void {
     if (!action.targetId) return;
 
-    const attackerStats = this.world.getComponent('stats', action.entityId);
-    const targetHealth = this.world.getComponent('health', action.targetId);
-    
+    const attackerStats = this.world.getComponent("stats", action.entityId);
+    const targetHealth = this.world.getComponent("health", action.targetId);
+
     if (!attackerStats || !targetHealth) return;
 
     // Simple attack resolution
     const attackRoll = Math.floor(Math.random() * 20) + 1;
     const attackModifier = attackerStats.abilityModifiers?.strength || 0;
     const proficiencyBonus = attackerStats.proficiencyBonus || 2;
-    
+
     const totalAttack = attackRoll + attackModifier + proficiencyBonus;
-    const targetAC = this.world.getComponent('stats', action.targetId)?.armorClass || 10;
-    
+    const targetAC = this.world.getComponent("stats", action.targetId)?.armorClass || 10;
+
     if (totalAttack >= targetAC) {
       // Hit - roll damage
       const damage = Math.floor(Math.random() * 8) + 1 + attackModifier; // 1d8 + modifier
-      this.world.getStore('health').takeDamage(action.targetId, damage);
-      
+      this.world.getStore("health").takeDamage(action.targetId, damage);
+
       // Check for concentration break
       if (this.spellcastingSystem && this.combatStore.get(action.targetId)?.concentrating) {
         this.spellcastingSystem.concentrationCheck(action.targetId, damage);
       }
-      
-      this.emitEvent('attack_hit', action.entityId, { 
-        targetId: action.targetId, 
+
+      this.emitEvent("attack_hit", action.entityId, {
+        targetId: action.targetId,
         damage,
         attackRoll,
-        totalAttack
+        totalAttack,
       });
     } else {
-      this.emitEvent('attack_miss', action.entityId, { 
+      this.emitEvent("attack_miss", action.entityId, {
         targetId: action.targetId,
         attackRoll,
         totalAttack,
-        targetAC
+        targetAC,
       });
     }
   }
 
   private processSpell(action: CombatAction): void {
     if (!this.spellcastingSystem) {
-      logger.warn('SpellcastingSystem not available');
+      logger.warn("SpellcastingSystem not available");
       return;
     }
 
     // Extract spell data from action
     const spellInstance = {
-      spellId: action.spellId || '',
+      spellId: action.spellId || "",
       casterLevel: action.casterLevel || 1,
       spellSlotLevel: action.spellSlotLevel || 1,
       casterId: action.entityId,
       targets: action.targets || [],
       effects: action.spellEffects || [],
       concentration: action.requiresConcentration || false,
-      duration: action.duration
+      duration: action.duration,
     };
 
     const success = this.spellcastingSystem.castSpell(spellInstance);
-    
-    this.emit('spell_cast', {
+
+    this.emit("spell_cast", {
       entityId: action.entityId,
       spellId: spellInstance.spellId,
       targets: spellInstance.targets,
-      success
+      success,
     });
   }
 
@@ -341,16 +347,16 @@ export class CombatSystem {
       type: type as any,
       entityId,
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const handlers = this.eventHandlers.get(type);
     if (handlers) {
-      handlers.forEach(handler => {
+      handlers.forEach((handler) => {
         try {
           handler(event);
         } catch (error) {
-          logger.error('Combat event handler error:', error);
+          logger.error("Combat event handler error:", error);
         }
       });
     }

@@ -3,8 +3,8 @@
  * Concrete implementation of SyncTransport using Socket.IO
  */
 
-import { SyncTransport, SyncMessage } from './SynchronizationService';
-import { Socket, io } from 'socket.io-client';
+import { SyncTransport, SyncMessage } from "./SynchronizationService";
+import { Socket, io } from "socket.io-client";
 
 export class SocketIOTransport implements SyncTransport {
   private socket: Socket | null = null;
@@ -18,10 +18,10 @@ export class SocketIOTransport implements SyncTransport {
   constructor(url: string, options: any = {}) {
     this.url = url;
     this.options = {
-      transports: ['websocket'],
+      transports: ["websocket"],
       upgrade: false,
       rememberUpgrade: false,
-      ...options
+      ...options,
     };
   }
 
@@ -34,32 +34,32 @@ export class SocketIOTransport implements SyncTransport {
 
       this.socket = io(this.url, this.options);
 
-      this.socket.on('connect', () => {
-        this.connectCallbacks.forEach(callback => callback());
+      this.socket.on("connect", () => {
+        this.connectCallbacks.forEach((callback) => callback());
         resolve();
       });
 
-      this.socket.on('disconnect', (_reason) => {
-        this.disconnectCallbacks.forEach(callback => callback());
+      this.socket.on("disconnect", (_reason) => {
+        this.disconnectCallbacks.forEach((callback) => callback());
       });
 
-      this.socket.on('sync-message', (_message: SyncMessage) => {
-        this.messageCallbacks.forEach(callback => callback(_message));
+      this.socket.on("sync-message", (_message: SyncMessage) => {
+        this.messageCallbacks.forEach((callback) => callback(_message));
       });
 
-      this.socket.on('connect_error', (error) => {
-        this.errorCallbacks.forEach(callback => callback(new Error(error.message)));
+      this.socket.on("connect_error", (error) => {
+        this.errorCallbacks.forEach((callback) => callback(new Error(error.message)));
         reject(error);
       });
 
-      this.socket.on('error', (error) => {
-        this.errorCallbacks.forEach(callback => callback(new Error(error.message)));
+      this.socket.on("error", (error) => {
+        this.errorCallbacks.forEach((callback) => callback(new Error(error.message)));
       });
 
       // Set connection timeout
       setTimeout(() => {
         if (!this.socket?.connected) {
-          reject(new Error('Connection timeout'));
+          reject(new Error("Connection timeout"));
         }
       }, 10000);
     });
@@ -75,11 +75,11 @@ export class SocketIOTransport implements SyncTransport {
   async send(message: SyncMessage): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
-        reject(new Error('Socket not connected'));
+        reject(new Error("Socket not connected"));
         return;
       }
 
-      this.socket.emit('sync-message', message, (ack: any) => {
+      this.socket.emit("sync-message", message, (ack: any) => {
         if (ack?.error) {
           reject(new Error(ack.error));
         } else {
@@ -89,7 +89,7 @@ export class SocketIOTransport implements SyncTransport {
 
       // Timeout for acknowledgment
       setTimeout(() => {
-        reject(new Error('Send timeout'));
+        reject(new Error("Send timeout"));
       }, 5000);
     });
   }

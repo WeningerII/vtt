@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { logger } from '@vtt/logging';
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
+import { logger } from "@vtt/logging";
 
 interface User {
   id: string;
@@ -28,29 +28,29 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     // Initialize socket connection
-    const socketUrl = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
+    const socketUrl = process.env.REACT_APP_SOCKET_URL || "http://localhost:3001";
     const newSocket = io(socketUrl, {
-      transports: ['websocket'],
+      transports: ["websocket"],
       autoConnect: true,
     });
 
-    newSocket.on('connect', () => {
-      logger.info('Socket connected');
+    newSocket.on("connect", () => {
+      logger.info("Socket connected");
       setIsConnected(true);
     });
 
-    newSocket.on('disconnect', () => {
-      logger.info('Socket disconnected');
+    newSocket.on("disconnect", () => {
+      logger.info("Socket disconnected");
       setIsConnected(false);
     });
 
-    newSocket.on('authenticated', (data: { user: User }) => {
-      logger.info('User authenticated:', data.user);
+    newSocket.on("authenticated", (data: { user: User }) => {
+      logger.info("User authenticated:", data.user);
       setUser(data.user);
     });
 
-    newSocket.on('error', (error: any) => {
-      logger.error('Socket error:', error);
+    newSocket.on("error", (error: any) => {
+      logger.error("Socket error:", error);
     });
 
     setSocket(newSocket);
@@ -60,29 +60,41 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, []);
 
-  const authenticate = useCallback((userId: string, campaignId: string) => {
-    if (socket) {
-      socket.emit('authenticate', { userId, campaignId });
-    }
-  }, [socket]);
+  const authenticate = useCallback(
+    (userId: string, campaignId: string) => {
+      if (socket) {
+        socket.emit("authenticate", { userId, campaignId });
+      }
+    },
+    [socket],
+  );
 
-  const joinScene = useCallback((sceneId: string) => {
-    if (socket) {
-      socket.emit('join_scene', { sceneId });
-    }
-  }, [socket]);
+  const joinScene = useCallback(
+    (sceneId: string) => {
+      if (socket) {
+        socket.emit("join_scene", { sceneId });
+      }
+    },
+    [socket],
+  );
 
-  const leaveScene = useCallback((sceneId: string) => {
-    if (socket) {
-      socket.emit('leave_scene', { sceneId });
-    }
-  }, [socket]);
+  const leaveScene = useCallback(
+    (sceneId: string) => {
+      if (socket) {
+        socket.emit("leave_scene", { sceneId });
+      }
+    },
+    [socket],
+  );
 
-  const sendMessage = useCallback((message: string) => {
-    if (socket) {
-      socket.emit('send_message', { text: message });
-    }
-  }, [socket]);
+  const sendMessage = useCallback(
+    (message: string) => {
+      if (socket) {
+        socket.emit("send_message", { text: message });
+      }
+    },
+    [socket],
+  );
 
   const value: SocketContextType = {
     socket,
@@ -100,7 +112,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useSocket = () => {
   const context = useContext(SocketContext);
   if (context === undefined) {
-    throw new Error('useSocket must be used within a SocketProvider');
+    throw new Error("useSocket must be used within a SocketProvider");
   }
   return context;
 };

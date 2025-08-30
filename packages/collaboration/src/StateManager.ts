@@ -1,16 +1,16 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Real-time State Management System
  * Handles state synchronization, conflict resolution, and operation tracking
  */
 
-export type OperationType = 'create' | 'update' | 'delete' | 'move' | 'transform';
+export type OperationType = "create" | "update" | "delete" | "move" | "transform";
 
 export interface Operation {
   id: string;
   type: OperationType;
-  entityType: 'token' | 'scene' | 'layer' | 'condition' | 'effect';
+  entityType: "token" | "scene" | "layer" | "condition" | "effect";
   entityId: string;
   userId: string;
   timestamp: number;
@@ -33,7 +33,7 @@ export interface StateSnapshot {
 }
 
 export interface ConflictResolution {
-  strategy: 'last-writer-wins' | 'merge' | 'manual' | 'priority-based';
+  strategy: "last-writer-wins" | "merge" | "manual" | "priority-based";
   resolver?: (operations: Operation[]) => Operation;
 }
 
@@ -49,7 +49,7 @@ export class StateManager {
 
   constructor(
     userId: string,
-    conflictResolution: ConflictResolution = { strategy: 'last-writer-wins' }
+    conflictResolution: ConflictResolution = { strategy: "last-writer-wins" },
   ) {
     this.userId = userId;
     this.conflictResolution = conflictResolution;
@@ -59,7 +59,9 @@ export class StateManager {
   /**
    * Apply a local operation
    */
-  applyLocalOperation(operation: Omit<Operation, 'id' | 'userId' | 'timestamp' | 'vectorClock'>): Operation {
+  applyLocalOperation(
+    operation: Omit<Operation, "id" | "userId" | "timestamp" | "vectorClock">,
+  ): Operation {
     // Increment local vector clock
     const currentValue = this.vectorClock[this.userId];
     if (currentValue !== undefined) {
@@ -67,13 +69,13 @@ export class StateManager {
     } else {
       this.vectorClock[this.userId] = 1;
     }
-    
+
     const fullOperation: Operation = {
       ...operation,
       id: this.generateOperationId(),
       userId: this.userId,
       timestamp: Date.now(),
-      vectorClock: { ...this.vectorClock }
+      vectorClock: { ...this.vectorClock },
     };
 
     this.queueOperation(fullOperation);
@@ -101,7 +103,7 @@ export class StateManager {
     while (this.operationQueue.length > 0) {
       // Sort operations by causal order using vector clocks
       this.operationQueue.sort((a, b) => this.compareVectorClocks(a.vectorClock, b.vectorClock));
-      
+
       const operation = this.operationQueue.shift()!;
       await this.executeOperation(operation);
     }
@@ -112,7 +114,7 @@ export class StateManager {
   private async executeOperation(operation: Operation): Promise<void> {
     // Check for conflicts
     const conflicts = this.detectConflicts(operation);
-    
+
     if (conflicts.length > 0) {
       const resolvedOperation = await this.resolveConflicts(operation, conflicts);
       if (resolvedOperation) {
@@ -124,58 +126,65 @@ export class StateManager {
   }
 
   private detectConflicts(operation: Operation): Operation[] {
-    return this.operations.filter(existingOp => {
+    return this.operations.filter((existingOp) => {
       // Same entity, overlapping time, different users
-      return existingOp.entityId === operation.entityId &&
-             existingOp.userId !== operation.userId &&
-             this.operationsConflict(existingOp, operation);
+      return (
+        existingOp.entityId === operation.entityId &&
+        existingOp.userId !== operation.userId &&
+        this.operationsConflict(existingOp, operation)
+      );
     });
   }
 
   private operationsConflict(op1: Operation, op2: Operation): boolean {
     // Operations conflict if they happened concurrently (neither causally depends on the other)
-    return !this.happensBefore(op1.vectorClock, op2.vectorClock) &&
-           !this.happensBefore(op2.vectorClock, op1.vectorClock);
+    return (
+      !this.happensBefore(op1.vectorClock, op2.vectorClock) &&
+      !this.happensBefore(op2.vectorClock, op1.vectorClock)
+    );
   }
 
   private happensBefore(clock1: VectorClock, clock2: VectorClock): boolean {
     let foundSmaller = false;
-    
+
     for (const userId in clock1) {
       const time1 = clock1[userId] || 0;
       const time2 = clock2[userId] || 0;
-      
+
       if (time1 > time2) {
         return false;
       } else if (time1 < time2) {
         foundSmaller = true;
       }
     }
-    
+
     for (const userId in clock2) {
       const clock2Value = clock2[userId];
       if (!(userId in clock1) && clock2Value !== undefined && clock2Value > 0) {
         foundSmaller = true;
       }
     }
-    
+
     return foundSmaller;
   }
 
-  private async resolveConflicts(operation: Operation, conflicts: Operation[]): Promise<Operation | null> {
+  private async resolveConflicts(
+    operation: Operation,
+    conflicts: Operation[],
+  ): Promise<Operation | null> {
     switch (this.conflictResolution.strategy) {
-      case 'last-writer-wins':
+      case "last-writer-wins":
         return this.resolveLastWriterWins(operation, conflicts);
-      
-      case 'merge':
+
+      case "merge":
         return this.resolveMerge(operation, conflicts);
-      
-      case 'priority-based':
+
+      case "priority-based":
         return this.resolvePriorityBased(operation, conflicts);
-      
-      case 'manual':
+
+      case "manual":
         return this.resolveManual(operation, conflicts);
-      
+
       default:
         return operation;
     }
@@ -185,36 +194,36 @@ export class StateManager {
     // Find the operation with the latest timestamp
     const allOperations = [operation, ...conflicts];
     return allOperations.reduce((latest, current) =>
-      current.timestamp > latest.timestamp ? current : latest
+      current.timestamp > latest.timestamp ? current : latest,
     );
   }
 
   private resolveMerge(operation: Operation, conflicts: Operation[]): Operation {
     // Merge conflicting operations based on operation type
     let mergedData = { ...operation.data };
-    
+
     for (const conflict of conflicts) {
-      if (operation.type === 'update' && conflict.type === 'update') {
+      if (operation.type === "update" && conflict.type === "update") {
         // Merge update operations by combining non-conflicting fields
         mergedData = this.mergeObjects(mergedData, conflict.data);
       }
     }
-    
+
     return {
       ...operation,
       data: mergedData,
-      id: this.generateOperationId()
+      id: this.generateOperationId(),
     };
   }
 
   private resolvePriorityBased(operation: Operation, conflicts: Operation[]): Operation {
     // Resolve based on user priority or role
     const userPriorities: Record<string, number> = {
-      'gm': 1000,
-      'player': 100,
-      'spectator': 1
+      gm: 1000,
+      player: 100,
+      spectator: 1,
     };
-    
+
     const allOperations = [operation, ...conflicts];
     return allOperations.reduce((highest, current) => {
       const currentPriority = userPriorities[current.userId] || 50;
@@ -223,29 +232,32 @@ export class StateManager {
     });
   }
 
-  private async resolveManual(operation: Operation, conflicts: Operation[]): Promise<Operation | null> {
+  private async resolveManual(
+    operation: Operation,
+    conflicts: Operation[],
+  ): Promise<Operation | null> {
     // Emit conflict event for manual resolution
     const conflictEvent: ConflictEvent = {
-      type: 'conflict-detected',
+      type: "conflict-detected",
       operation,
       conflicts,
       resolve: (_resolvedOp: Operation | null) => {
         return Promise.resolve(operation);
-      }
+      },
     };
-    
-    this.emitChange({ type: 'conflict', data: conflictEvent });
-    
+
+    this.emitChange({ type: "conflict", data: conflictEvent });
+
     // Return null to pause processing until manual resolution
     return null;
   }
 
   private mergeObjects(obj1: any, obj2: any): any {
     const result = { ...obj1 };
-    
+
     for (const key in obj2) {
       if (Object.prototype.hasOwnProperty.call(obj2, key)) {
-        if (typeof obj2[key] === 'object' && typeof obj1[key] === 'object') {
+        if (typeof obj2[key] === "object" && typeof obj1[key] === "object") {
           result[key] = this.mergeObjects(obj1[key], obj2[key]);
         } else {
           // For primitive conflicts, use last-writer-wins
@@ -253,60 +265,63 @@ export class StateManager {
         }
       }
     }
-    
+
     return result;
   }
 
   private async applyOperation(operation: Operation): Promise<void> {
     // Apply the operation to local state
     switch (operation.type) {
-      case 'create':
+      case "create":
         this.state.set(operation.entityId, operation.data);
         break;
-      
-      case 'update': {
-        const existing = this.state.get(operation.entityId);
-        if (existing) {
-          this.state.set(operation.entityId, { ...existing, ...operation.data });
+
+      case "update":
+        {
+          const existing = this.state.get(operation.entityId);
+          if (existing) {
+            this.state.set(operation.entityId, { ...existing, ...operation.data });
+          }
         }
-    }
         break;
-      
-      case 'delete':
+
+      case "delete":
         this.state.delete(operation.entityId);
         break;
-      
-      case 'move': {
-        const entity = this.state.get(operation.entityId);
-        if (entity) {
-          this.state.set(operation.entityId, {
-            ...entity,
-            x: operation.data.x,
-            y: operation.data.y
-          });
+
+      case "move":
+        {
+          const entity = this.state.get(operation.entityId);
+          if (entity) {
+            this.state.set(operation.entityId, {
+              ...entity,
+              x: operation.data.x,
+              y: operation.data.y,
+            });
+          }
         }
-    }
         break;
-      
-      case 'transform': {
-        const transformEntity = this.state.get(operation.entityId);
-        if (transformEntity) {
-          this.state.set(operation.entityId, {
-            ...transformEntity,
-            ...operation.data
-          });
+
+      case "transform":
+        {
+          const transformEntity = this.state.get(operation.entityId);
+          if (transformEntity) {
+            this.state.set(operation.entityId, {
+              ...transformEntity,
+              ...operation.data,
+            });
+          }
         }
-    }
         break;
     }
-    
+
     // Add to operation log
     this.operations.push(operation);
-    
+
     // Emit change event
-    this.emitChange({ 
-      type: 'operation-applied', 
-      data: { operation, state: this.getState() } 
+    this.emitChange({
+      type: "operation-applied",
+      data: { operation, state: this.getState() },
     });
   }
 
@@ -314,10 +329,7 @@ export class StateManager {
     for (const userId in remoteClock) {
       const remoteTime = remoteClock[userId];
       if (remoteTime !== undefined) {
-        this.vectorClock[userId] = Math.max(
-          this.vectorClock[userId] || 0,
-          remoteTime
-        );
+        this.vectorClock[userId] = Math.max(this.vectorClock[userId] || 0, remoteTime);
       }
     }
   }
@@ -360,7 +372,7 @@ export class StateManager {
       timestamp: Date.now(),
       vectorClock: { ...this.vectorClock },
       entities: this.getState(),
-      operations: [...this.operations]
+      operations: [...this.operations],
     };
   }
 
@@ -369,15 +381,15 @@ export class StateManager {
    */
   loadSnapshot(snapshot: StateSnapshot): void {
     this.state.clear();
-    
+
     for (const [entityId, entity] of Object.entries(snapshot.entities)) {
       this.state.set(entityId, entity);
     }
-    
+
     this.operations = [...snapshot.operations];
     this.vectorClock = { ...snapshot.vectorClock };
-    
-    this.emitChange({ type: 'snapshot-loaded', data: snapshot });
+
+    this.emitChange({ type: "snapshot-loaded", data: snapshot });
   }
 
   /**
@@ -385,7 +397,7 @@ export class StateManager {
    */
   getOperationHistory(entityId?: string): Operation[] {
     if (entityId) {
-      return this.operations.filter(op => op.entityId === entityId);
+      return this.operations.filter((op) => op.entityId === entityId);
     }
     return [...this.operations];
   }
@@ -394,47 +406,47 @@ export class StateManager {
    * Undo last operation by this user
    */
   undoLastOperation(): Operation | null {
-    const lastUserOp = this.operations
-      .filter(op => op.userId === this.userId)
-      .pop();
-    
+    const lastUserOp = this.operations.filter((op) => op.userId === this.userId).pop();
+
     if (!lastUserOp) return null;
-    
+
     // Create inverse operation
     const undoOp = this.createInverseOperation(lastUserOp);
     const fullUndoOp = this.applyLocalOperation(undoOp);
-    
+
     return fullUndoOp;
   }
 
-  private createInverseOperation(operation: Operation): Omit<Operation, 'id' | 'userId' | 'timestamp' | 'vectorClock'> {
+  private createInverseOperation(
+    operation: Operation,
+  ): Omit<Operation, "id" | "userId" | "timestamp" | "vectorClock"> {
     switch (operation.type) {
-      case 'create':
+      case "create":
         return {
-          type: 'delete',
+          type: "delete",
           entityType: operation.entityType,
           entityId: operation.entityId,
-          data: {} as Record<string, any>
+          data: {} as Record<string, any>,
         };
-      
-      case 'delete':
+
+      case "delete":
         return {
-          type: 'create',
+          type: "create",
           entityType: operation.entityType,
           entityId: operation.entityId,
-          data: operation.data
+          data: operation.data,
         };
-      
-      case 'update':
+
+      case "update":
         // Would need to store previous state for proper undo
         // For now, emit event for manual handling
         return {
-          type: 'update',
+          type: "update",
           entityType: operation.entityType,
           entityId: operation.entityId,
-          data: {} // Would need previous state
+          data: {}, // Would need previous state
         };
-      
+
       default:
         return operation;
     }
@@ -453,7 +465,7 @@ export class StateManager {
    * Get operations since timestamp
    */
   getOperationsSince(timestamp: number): Operation[] {
-    return this.operations.filter(op => op.timestamp > timestamp);
+    return this.operations.filter((op) => op.timestamp > timestamp);
   }
 
   /**
@@ -461,7 +473,7 @@ export class StateManager {
    */
   cleanOldOperations(maxAge: number = 24 * 60 * 60 * 1000): void {
     const cutoff = Date.now() - maxAge;
-    this.operations = this.operations.filter(op => op.timestamp > cutoff);
+    this.operations = this.operations.filter((op) => op.timestamp > cutoff);
   }
 
   // Event System
@@ -477,11 +489,11 @@ export class StateManager {
   }
 
   private emitChange(change: StateChange): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(change);
       } catch (error) {
-        logger.error('State change listener error:', error as Error);
+        logger.error("State change listener error:", error as Error);
       }
     });
   }
@@ -489,13 +501,13 @@ export class StateManager {
 
 // Event Types
 export interface ConflictEvent {
-  type: 'conflict-detected';
+  type: "conflict-detected";
   operation: Operation;
   conflicts: Operation[];
   resolve: (operation: Operation | null) => Promise<Operation | null>;
 }
 
 export type StateChange =
-  | { type: 'operation-applied'; data: { operation: Operation; state: Record<string, any> } }
-  | { type: 'conflict'; data: ConflictEvent }
-  | { type: 'snapshot-loaded'; data: StateSnapshot };
+  | { type: "operation-applied"; data: { operation: Operation; state: Record<string, any> } }
+  | { type: "conflict"; data: ConflictEvent }
+  | { type: "snapshot-loaded"; data: StateSnapshot };

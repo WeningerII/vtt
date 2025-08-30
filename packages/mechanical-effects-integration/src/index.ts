@@ -3,15 +3,15 @@
  * Connects conditions, spells, equipment, and abilities to their mechanical impacts
  */
 
-import { conditionsEngine, _ConditionEffect, ActiveCondition } from '@vtt/conditions-engine';
-import { equipmentEffectsEngine } from '@vtt/equipment-effects';
-import { _spellEngine } from '@vtt/spell-engine';
-import { monsterAbilitiesEngine } from '@vtt/monster-abilities';
-import { networkSyncEngine } from '@vtt/network-sync';
+import { conditionsEngine, _ConditionEffect, ActiveCondition } from "@vtt/conditions-engine";
+import { equipmentEffectsEngine } from "@vtt/equipment-effects";
+import { _spellEngine } from "@vtt/spell-engine";
+import { monsterAbilitiesEngine } from "@vtt/monster-abilities";
+import { networkSyncEngine } from "@vtt/network-sync";
 
 export interface MechanicalEffectContext {
   entityId: string;
-  actionType: 'attack' | 'save' | 'check' | 'damage' | 'healing' | 'movement' | 'spell';
+  actionType: "attack" | "save" | "check" | "damage" | "healing" | "movement" | "spell";
   target?: string;
   subtype?: string; // e.g., 'strength_save', 'melee_attack', 'fire_damage'
   baseDice?: string;
@@ -55,7 +55,7 @@ export class MechanicalEffectsIntegrator {
       immunities: [],
       vulnerabilities: [],
       prevented: false,
-      additionalEffects: []
+      additionalEffects: [],
     };
 
     // Apply condition effects
@@ -78,8 +78,8 @@ export class MechanicalEffectsIntegrator {
 
   private applyConditionEffects(context: MechanicalEffectContext, result: MechanicalResult): void {
     const conditionEffects = conditionsEngine.applyConditionEffects(
-      context.entityId, 
-      context.actionType
+      context.entityId,
+      context.actionType,
     );
 
     if (conditionEffects.advantage) result.advantage = true;
@@ -87,11 +87,11 @@ export class MechanicalEffectsIntegrator {
     if (conditionEffects.prevented) result.prevented = true;
 
     // Add condition modifiers
-    conditionEffects.modifiers.forEach(modifier => {
+    conditionEffects.modifiers.forEach((modifier) => {
       result.modifiers.push({
-        source: 'condition',
-        type: 'modifier',
-        value: modifier
+        source: "condition",
+        type: "modifier",
+        value: modifier,
       });
     });
 
@@ -108,60 +108,60 @@ export class MechanicalEffectsIntegrator {
     if (!characterData) return;
 
     const equipmentBonuses = equipmentEffectsEngine.calculateEquipmentBonuses(
-      context.entityId, 
-      characterData
+      context.entityId,
+      characterData,
     );
 
     // Apply relevant bonuses based on action type
     switch (context.actionType) {
-      case 'attack':
+      case "attack":
         result.modifiers.push({
-          source: 'equipment',
-          type: 'attack_bonus',
-          value: equipmentBonuses.attackBonus
+          source: "equipment",
+          type: "attack_bonus",
+          value: equipmentBonuses.attackBonus,
         });
         break;
 
-      case 'damage':
+      case "damage":
         result.modifiers.push({
-          source: 'equipment',
-          type: 'damage_bonus',
-          value: equipmentBonuses.damageBonus
+          source: "equipment",
+          type: "damage_bonus",
+          value: equipmentBonuses.damageBonus,
         });
         break;
 
-      case 'save':
+      case "save":
         if (context.subtype && equipmentBonuses.savingThrows[context.subtype]) {
           result.modifiers.push({
-            source: 'equipment',
-            type: 'save_bonus',
-            value: equipmentBonuses.savingThrows[context.subtype]
+            source: "equipment",
+            type: "save_bonus",
+            value: equipmentBonuses.savingThrows[context.subtype],
           });
         }
         break;
     }
 
     // Apply equipment-triggered effects
-    if (context.actionType === 'attack' && context.metadata?.weaponId) {
+    if (context.actionType === "attack" && context.metadata?.weaponId) {
       const weaponEffects = equipmentEffectsEngine.processWeaponAttack(
         context.entityId,
         context.metadata.weaponId,
         characterData,
-        context.target || '',
-        context.metadata
+        context.target || "",
+        context.metadata,
       );
 
       result.modifiers.push({
-        source: 'weapon',
-        type: 'attack_bonus',
-        value: weaponEffects.attackBonus
+        source: "weapon",
+        type: "attack_bonus",
+        value: weaponEffects.attackBonus,
       });
 
-      weaponEffects.effects.forEach(effect => {
+      weaponEffects.effects.forEach((effect) => {
         result.additionalEffects.push({
           type: effect.type,
           value: effect.result,
-          source: 'weapon_property'
+          source: "weapon_property",
         });
       });
     }
@@ -172,21 +172,21 @@ export class MechanicalEffectsIntegrator {
     if (!characterData?.concentrationSpell) return;
 
     const concentrationSpell = characterData.concentrationSpell;
-    
+
     // Apply ongoing spell effects that might affect rolls
-    if (concentrationSpell.spell === 'bless' && context.actionType === 'attack') {
+    if (concentrationSpell.spell === "bless" && context.actionType === "attack") {
       result.modifiers.push({
-        source: 'spell_bless',
-        type: 'divine_bonus',
-        value: 4 // 1d4 average
+        source: "spell_bless",
+        type: "divine_bonus",
+        value: 4, // 1d4 average
       });
     }
 
-    if (concentrationSpell.spell === 'guidance' && context.actionType === 'check') {
+    if (concentrationSpell.spell === "guidance" && context.actionType === "check") {
       result.modifiers.push({
-        source: 'spell_guidance',
-        type: 'divine_bonus',
-        value: 2 // 1d4 average
+        source: "spell_guidance",
+        type: "divine_bonus",
+        value: 2, // 1d4 average
       });
     }
   }
@@ -194,10 +194,10 @@ export class MechanicalEffectsIntegrator {
   private applyAbilityEffects(context: MechanicalEffectContext, result: MechanicalResult): void {
     // Apply monster ability effects
     const availableAbilities = monsterAbilitiesEngine.getAvailableAbilities(context.entityId);
-    
+
     // Check for passive abilities that affect actions
     for (const trait of availableAbilities.traits) {
-      if (trait.type === 'trait' && this.traitAffectsAction(trait, context)) {
+      if (trait.type === "trait" && this.traitAffectsAction(trait, context)) {
         this.applyTraitEffect(trait, context, result);
       }
     }
@@ -206,43 +206,47 @@ export class MechanicalEffectsIntegrator {
   private traitAffectsAction(trait: any, context: MechanicalEffectContext): boolean {
     // Examples of traits that affect actions
     switch (trait.id) {
-      case 'pack_tactics':
-        return context.actionType === 'attack' && this.hasNearbyAllies(context.entityId);
-      case 'keen_senses':
-        return context.actionType === 'check' && context.subtype?.includes('perception');
-      case 'magic_resistance':
-        return context.actionType === 'save' && context.metadata?.isMagical;
+      case "pack_tactics":
+        return context.actionType === "attack" && this.hasNearbyAllies(context.entityId);
+      case "keen_senses":
+        return context.actionType === "check" && context.subtype?.includes("perception");
+      case "magic_resistance":
+        return context.actionType === "save" && context.metadata?.isMagical;
       default:
         return false;
     }
   }
 
-  private applyTraitEffect(trait: any, context: MechanicalEffectContext, result: MechanicalResult): void {
+  private applyTraitEffect(
+    trait: any,
+    context: MechanicalEffectContext,
+    result: MechanicalResult,
+  ): void {
     switch (trait.id) {
-      case 'pack_tactics':
+      case "pack_tactics":
         result.advantage = true;
         result.additionalEffects.push({
-          type: 'pack_tactics',
-          value: 'advantage_on_attack',
-          source: trait.name
+          type: "pack_tactics",
+          value: "advantage_on_attack",
+          source: trait.name,
         });
         break;
 
-      case 'keen_senses':
+      case "keen_senses":
         result.advantage = true;
         result.additionalEffects.push({
-          type: 'keen_senses',
-          value: 'advantage_on_perception',
-          source: trait.name
+          type: "keen_senses",
+          value: "advantage_on_perception",
+          source: trait.name,
         });
         break;
 
-      case 'magic_resistance':
+      case "magic_resistance":
         result.advantage = true;
         result.additionalEffects.push({
-          type: 'magic_resistance',
-          value: 'advantage_on_magic_saves',
-          source: trait.name
+          type: "magic_resistance",
+          value: "advantage_on_magic_saves",
+          source: trait.name,
         });
         break;
     }
@@ -265,7 +269,7 @@ export class MechanicalEffectsIntegrator {
    */
   processDamage(
     targetId: string,
-    damage: { amount: number; type: string; source: string }
+    damage: { amount: number; type: string; source: string },
   ): {
     finalDamage: number;
     resistances: string[];
@@ -275,20 +279,24 @@ export class MechanicalEffectsIntegrator {
   } {
     const context: MechanicalEffectContext = {
       entityId: targetId,
-      actionType: 'damage',
+      actionType: "damage",
       subtype: damage.type,
-      metadata: { damageSource: damage.source }
+      metadata: { damageSource: damage.source },
     };
 
     const mechanicalResult = this.calculateMechanicalEffects(context);
     let finalDamage = damage.amount;
 
     // Apply resistances, immunities, vulnerabilities
-    if (mechanicalResult.immunities.includes(damage.type) || 
-        mechanicalResult.immunities.includes('all_damage')) {
+    if (
+      mechanicalResult.immunities.includes(damage.type) ||
+      mechanicalResult.immunities.includes("all_damage")
+    ) {
       finalDamage = 0;
-    } else if (mechanicalResult.resistances.includes(damage.type) || 
-               mechanicalResult.resistances.includes('all_damage')) {
+    } else if (
+      mechanicalResult.resistances.includes(damage.type) ||
+      mechanicalResult.resistances.includes("all_damage")
+    ) {
       finalDamage = Math.floor(finalDamage / 2);
     } else if (mechanicalResult.vulnerabilities.includes(damage.type)) {
       finalDamage = finalDamage * 2;
@@ -296,9 +304,9 @@ export class MechanicalEffectsIntegrator {
 
     // Apply damage modifiers
     const damageModifiers = mechanicalResult.modifiers
-      .filter(mod => mod.type.includes('damage'))
+      .filter((mod) => mod.type.includes("damage"))
       .reduce((_sum, _mod) => sum + mod.value, 0);
-    
+
     finalDamage = Math.max(0, finalDamage + damageModifiers);
 
     return {
@@ -306,7 +314,7 @@ export class MechanicalEffectsIntegrator {
       resistances: mechanicalResult.resistances,
       immunities: mechanicalResult.immunities,
       vulnerabilities: mechanicalResult.vulnerabilities,
-      effects: mechanicalResult.additionalEffects
+      effects: mechanicalResult.additionalEffects,
     };
   }
 
@@ -315,29 +323,29 @@ export class MechanicalEffectsIntegrator {
    */
   processHealing(
     targetId: string,
-    healing: { amount: number; source: string }
+    healing: { amount: number; source: string },
   ): {
     finalHealing: number;
     effects: Array<{ type: string; value: any; source: string }>;
   } {
     const context: MechanicalEffectContext = {
       entityId: targetId,
-      actionType: 'healing',
-      metadata: { healingSource: healing.source }
+      actionType: "healing",
+      metadata: { healingSource: healing.source },
     };
 
     const mechanicalResult = this.calculateMechanicalEffects(context);
-    
+
     // Apply healing modifiers
     const healingModifiers = mechanicalResult.modifiers
-      .filter(mod => mod.type.includes('healing'))
+      .filter((mod) => mod.type.includes("healing"))
       .reduce((_sum, _mod) => sum + mod.value, 0);
-    
+
     const finalHealing = Math.max(0, healing.amount + healingModifiers);
 
     return {
       finalHealing,
-      effects: mechanicalResult.additionalEffects
+      effects: mechanicalResult.additionalEffects,
     };
   }
 
@@ -348,7 +356,7 @@ export class MechanicalEffectsIntegrator {
     const context: MechanicalEffectContext = {
       entityId,
       actionType: actionType as any,
-      subtype: actionType
+      subtype: actionType,
     };
 
     const result = this.calculateMechanicalEffects(context);
@@ -368,7 +376,7 @@ export class MechanicalEffectsIntegrator {
       conditions: conditionsEngine.getActiveConditions(entityId),
       equipment: equipmentEffectsEngine.getEquippedItems(entityId),
       spells: [], // Would get from spell system
-      abilities: monsterAbilitiesEngine.getAvailableAbilities(entityId).traits
+      abilities: monsterAbilitiesEngine.getAvailableAbilities(entityId).traits,
     };
   }
 
@@ -378,7 +386,7 @@ export class MechanicalEffectsIntegrator {
   triggerEventEffects(
     entityId: string,
     event: string,
-    context?: any
+    context?: any,
   ): Array<{ type: string; effect: any; source: string }> {
     const effects: Array<{ type: string; effect: any; source: string }> = [];
 
@@ -387,15 +395,15 @@ export class MechanicalEffectsIntegrator {
       entityId,
       event,
       this.getCharacterData(entityId),
-      context
+      context,
     );
 
-    equipmentEffects.forEach(result => {
-      result.effects.forEach(effect => {
+    equipmentEffects.forEach((result) => {
+      result.effects.forEach((effect) => {
         effects.push({
           type: effect.type,
           effect: effect.result,
-          source: 'equipment'
+          source: "equipment",
         });
       });
     });
@@ -405,36 +413,36 @@ export class MechanicalEffectsIntegrator {
       entityId,
       event,
       this.getCharacterData(entityId),
-      context
+      context,
     );
 
-    abilityEffects.forEach(result => {
-      result.effects.forEach(effect => {
+    abilityEffects.forEach((result) => {
+      result.effects.forEach((effect) => {
         effects.push({
           type: effect.type,
           effect: effect.result,
-          source: 'monster_ability'
+          source: "monster_ability",
         });
       });
     });
 
     // Process condition effects at start/end of turn
-    if (event === 'start_turn') {
+    if (event === "start_turn") {
       const conditionEffects = conditionsEngine.processTurnStart(entityId);
-      conditionEffects.forEach(effect => {
+      conditionEffects.forEach((effect) => {
         effects.push({
           type: effect.type,
           effect: effect,
-          source: 'condition'
+          source: "condition",
         });
       });
-    } else if (event === 'end_turn') {
+    } else if (event === "end_turn") {
       const turnEndResult = conditionsEngine.processTurnEnd(entityId);
-      turnEndResult.effects.forEach(effect => {
+      turnEndResult.effects.forEach((effect) => {
         effects.push({
           type: effect.type,
           effect: effect,
-          source: 'condition'
+          source: "condition",
         });
       });
     }
@@ -446,7 +454,7 @@ export class MechanicalEffectsIntegrator {
    * Sync mechanical effect changes to network
    */
   syncMechanicalChanges(entityId: string, changes: any): void {
-    networkSyncEngine.updateEntityState(entityId, changes, 'mechanical_effects');
+    networkSyncEngine.updateEntityState(entityId, changes, "mechanical_effects");
   }
 
   private getCharacterData(entityId: string): any {
@@ -457,8 +465,8 @@ export class MechanicalEffectsIntegrator {
       hitPoints: { current: 100, max: 100 },
       abilities: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
       level: 1,
-      class: 'fighter',
-      proficiencyBonus: 2
+      class: "fighter",
+      proficiencyBonus: 2,
     };
   }
 
@@ -481,10 +489,10 @@ export class CombatMechanicsIntegrator {
     targetId: string,
     attackData: {
       weaponId?: string;
-      attackType: 'melee' | 'ranged' | 'spell';
+      attackType: "melee" | "ranged" | "spell";
       baseDamage: string;
       damageType: string;
-    }
+    },
   ): {
     attackRoll: { total: number; advantage: boolean; disadvantage: boolean };
     damage: { total: number; type: string; effects: any[] };
@@ -493,10 +501,10 @@ export class CombatMechanicsIntegrator {
     // Process attack roll
     const attackContext: MechanicalEffectContext = {
       entityId: attackerId,
-      actionType: 'attack',
+      actionType: "attack",
       target: targetId,
       subtype: attackData.attackType,
-      metadata: { weaponId: attackData.weaponId }
+      metadata: { weaponId: attackData.weaponId },
     };
 
     const attackEffects = this.mechanicalEffects.calculateMechanicalEffects(attackContext);
@@ -504,10 +512,10 @@ export class CombatMechanicsIntegrator {
     // Process damage
     const damageContext: MechanicalEffectContext = {
       entityId: targetId,
-      actionType: 'damage',
+      actionType: "damage",
       subtype: attackData.damageType,
       baseDice: attackData.baseDamage,
-      metadata: { attackerId, weaponId: attackData.weaponId }
+      metadata: { attackerId, weaponId: attackData.weaponId },
     };
 
     const damageEffects = this.mechanicalEffects.calculateMechanicalEffects(damageContext);
@@ -516,14 +524,14 @@ export class CombatMechanicsIntegrator {
       attackRoll: {
         total: attackEffects.finalValue,
         advantage: attackEffects.advantage,
-        disadvantage: attackEffects.disadvantage
+        disadvantage: attackEffects.disadvantage,
       },
       damage: {
         total: damageEffects.finalValue,
         type: attackData.damageType,
-        effects: damageEffects.additionalEffects
+        effects: damageEffects.additionalEffects,
       },
-      effects: [...attackEffects.additionalEffects, ...damageEffects.additionalEffects]
+      effects: [...attackEffects.additionalEffects, ...damageEffects.additionalEffects],
     };
   }
 
@@ -534,7 +542,7 @@ export class CombatMechanicsIntegrator {
     entityId: string,
     saveType: string,
     dc: number,
-    source?: string
+    source?: string,
   ): {
     total: number;
     success: boolean;
@@ -544,9 +552,9 @@ export class CombatMechanicsIntegrator {
   } {
     const context: MechanicalEffectContext = {
       entityId,
-      actionType: 'save',
+      actionType: "save",
       subtype: saveType,
-      metadata: { dc, source }
+      metadata: { dc, source },
     };
 
     const result = this.mechanicalEffects.calculateMechanicalEffects(context);
@@ -556,7 +564,7 @@ export class CombatMechanicsIntegrator {
       success: result.finalValue >= dc,
       advantage: result.advantage,
       disadvantage: result.disadvantage,
-      effects: result.additionalEffects
+      effects: result.additionalEffects,
     };
   }
 }

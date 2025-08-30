@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 export class Shader {
   private gl: WebGL2RenderingContext;
@@ -16,9 +16,9 @@ export class Shader {
   private compile(source: string, type: number): WebGLShader {
     const gl = this.gl;
     const shader = gl.createShader(type);
-    
+
     if (!shader) {
-      throw new Error('Failed to create shader');
+      throw new Error("Failed to create shader");
     }
 
     gl.shaderSource(shader, source);
@@ -53,24 +53,33 @@ export class ShaderProgram {
   private attributes = new Map<string, number>();
   private uniformBlocks = new Map<string, number>();
 
-  constructor(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string, geometrySource?: string) {
+  constructor(
+    gl: WebGL2RenderingContext,
+    vertexSource: string,
+    fragmentSource: string,
+    geometrySource?: string,
+  ) {
     this.gl = gl;
     this.program = this.link(vertexSource, fragmentSource, geometrySource);
     this.cacheLocations();
   }
 
-  private link(vertexSource: string, fragmentSource: string, geometrySource?: string): WebGLProgram {
+  private link(
+    vertexSource: string,
+    fragmentSource: string,
+    geometrySource?: string,
+  ): WebGLProgram {
     const gl = this.gl;
     const program = gl.createProgram();
-    
+
     if (!program) {
-      throw new Error('Failed to create shader program');
+      throw new Error("Failed to create shader program");
     }
 
     // Create and attach shaders
     const vertexShader = new Shader(gl, vertexSource, gl.VERTEX_SHADER);
     const fragmentShader = new Shader(gl, fragmentSource, gl.FRAGMENT_SHADER);
-    
+
     gl.attachShader(program, vertexShader.getShader());
     gl.attachShader(program, fragmentShader.getShader());
 
@@ -240,12 +249,12 @@ export class ShaderProgram {
     const gl = this.gl;
     gl.validateProgram(this.program);
     const valid = gl.getProgramParameter(this.program, gl.VALIDATE_STATUS);
-    
+
     if (!valid) {
       const error = gl.getProgramInfoLog(this.program);
       logger.error(`Shader program validation error: ${error}`);
     }
-    
+
     return valid;
   }
 

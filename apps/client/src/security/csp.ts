@@ -34,33 +34,33 @@ export function generateCSPHeader(config: CSPConfig): string {
   // Helper function to format directive
   const addDirective = (name: string, values?: string[]) => {
     if (values && values.length > 0) {
-      directives.push(`${name} ${values.join(' ')}`);
+      directives.push(`${name} ${values.join(" ")}`);
     }
   };
 
   // Add all directives
-  addDirective('default-src', config.defaultSrc);
-  addDirective('script-src', config.scriptSrc);
-  addDirective('style-src', config.styleSrc);
-  addDirective('img-src', config.imgSrc);
-  addDirective('connect-src', config.connectSrc);
-  addDirective('font-src', config.fontSrc);
-  addDirective('object-src', config.objectSrc);
-  addDirective('media-src', config.mediaSrc);
-  addDirective('frame-src', config.frameSrc);
-  addDirective('child-src', config.childSrc);
-  addDirective('worker-src', config.workerSrc);
-  addDirective('manifest-src', config.manifestSrc);
-  addDirective('base-uri', config.baseUri);
-  addDirective('form-action', config.formAction);
-  addDirective('frame-ancestors', config.frameAncestors);
+  addDirective("default-src", config.defaultSrc);
+  addDirective("script-src", config.scriptSrc);
+  addDirective("style-src", config.styleSrc);
+  addDirective("img-src", config.imgSrc);
+  addDirective("connect-src", config.connectSrc);
+  addDirective("font-src", config.fontSrc);
+  addDirective("object-src", config.objectSrc);
+  addDirective("media-src", config.mediaSrc);
+  addDirective("frame-src", config.frameSrc);
+  addDirective("child-src", config.childSrc);
+  addDirective("worker-src", config.workerSrc);
+  addDirective("manifest-src", config.manifestSrc);
+  addDirective("base-uri", config.baseUri);
+  addDirective("form-action", config.formAction);
+  addDirective("frame-ancestors", config.frameAncestors);
 
   // Add boolean directives
   if (config.upgradeInsecureRequests) {
-    directives.push('upgrade-insecure-requests');
+    directives.push("upgrade-insecure-requests");
   }
   if (config.blockAllMixedContent) {
-    directives.push('block-all-mixed-content');
+    directives.push("block-all-mixed-content");
   }
 
   // Add reporting directives
@@ -71,7 +71,7 @@ export function generateCSPHeader(config: CSPConfig): string {
     directives.push(`report-to ${config.reportTo}`);
   }
 
-  return directives.join('; ');
+  return directives.join("; ");
 }
 
 /**
@@ -84,34 +84,23 @@ export const defaultCSPConfig: CSPConfig = {
     "'unsafe-inline'", // Required for React development
     "'unsafe-eval'", // Required for development tools
     "https://cdn.jsdelivr.net",
-    "https://unpkg.com"
+    "https://unpkg.com",
   ],
   styleSrc: [
     "'self'",
     "'unsafe-inline'", // Required for styled-components and CSS-in-JS
     "https://fonts.googleapis.com",
-    "https://cdn.jsdelivr.net"
+    "https://cdn.jsdelivr.net",
   ],
   imgSrc: [
     "'self'",
     "data:",
     "blob:",
     "https:",
-    "http:" // Allow HTTP images for user uploads
+    "http:", // Allow HTTP images for user uploads
   ],
-  connectSrc: [
-    "'self'",
-    "wss:",
-    "ws:",
-    "https://api.vtt.com",
-    "https://*.vtt.com"
-  ],
-  fontSrc: [
-    "'self'",
-    "data:",
-    "https://fonts.gstatic.com",
-    "https://cdn.jsdelivr.net"
-  ],
+  connectSrc: ["'self'", "wss:", "ws:", "https://api.vtt.com", "https://*.vtt.com"],
+  fontSrc: ["'self'", "data:", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
   objectSrc: ["'none'"],
   mediaSrc: ["'self'", "blob:", "data:"],
   frameSrc: ["'none'"],
@@ -123,7 +112,7 @@ export const defaultCSPConfig: CSPConfig = {
   frameAncestors: ["'none'"],
   upgradeInsecureRequests: true,
   blockAllMixedContent: false, // Allow mixed content for development
-  reportUri: "/api/csp-report"
+  reportUri: "/api/csp-report",
 };
 
 /**
@@ -134,28 +123,16 @@ export const productionCSPConfig: CSPConfig = {
   scriptSrc: [
     "'self'",
     // Remove unsafe-inline and unsafe-eval for production
-    "https://cdn.jsdelivr.net"
+    "https://cdn.jsdelivr.net",
   ],
   styleSrc: [
     "'self'",
     "'unsafe-inline'", // Still needed for some CSS frameworks
-    "https://fonts.googleapis.com"
+    "https://fonts.googleapis.com",
   ],
-  imgSrc: [
-    "'self'",
-    "data:",
-    "blob:",
-    "https:"
-  ],
-  connectSrc: [
-    "'self'",
-    "wss://api.vtt.com",
-    "https://api.vtt.com"
-  ],
-  fontSrc: [
-    "'self'",
-    "https://fonts.gstatic.com"
-  ],
+  imgSrc: ["'self'", "data:", "blob:", "https:"],
+  connectSrc: ["'self'", "wss://api.vtt.com", "https://api.vtt.com"],
+  fontSrc: ["'self'", "https://fonts.gstatic.com"],
   objectSrc: ["'none'"],
   mediaSrc: ["'self'", "blob:"],
   frameSrc: ["'none'"],
@@ -167,7 +144,7 @@ export const productionCSPConfig: CSPConfig = {
   frameAncestors: ["'none'"],
   upgradeInsecureRequests: true,
   blockAllMixedContent: true,
-  reportUri: "/api/csp-report"
+  reportUri: "/api/csp-report",
 };
 
 /**
@@ -248,8 +225,8 @@ export class CSPManager {
    * Apply CSP to document
    */
   apply(): void {
-    const meta = document.createElement('meta');
-    meta.httpEquiv = 'Content-Security-Policy';
+    const meta = document.createElement("meta");
+    meta.httpEquiv = "Content-Security-Policy";
     meta.content = this.getHeaderValue();
     document.head.appendChild(meta);
   }
@@ -280,28 +257,28 @@ export interface CSPViolation {
  * Handle CSP violation reports
  */
 export function handleCSPViolation(violation: CSPViolation): void {
-  console.warn('CSP Violation:', violation);
+  console.warn("CSP Violation:", violation);
 
   // Send to monitoring service
-  if (typeof window !== 'undefined' && 'navigator' in window && 'sendBeacon' in navigator) {
+  if (typeof window !== "undefined" && "navigator" in window && "sendBeacon" in navigator) {
     const data = JSON.stringify({
-      type: 'csp-violation',
+      type: "csp-violation",
       violation,
       userAgent: navigator.userAgent,
       timestamp: new Date().toISOString(),
-      url: window.location.href
+      url: window.location.href,
     });
 
-    navigator.sendBeacon('/api/csp-report', data);
+    navigator.sendBeacon("/api/csp-report", data);
   }
 
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
-    console.group('CSP Violation Details');
-    console.log('Blocked URI:', violation.blockedUri);
-    console.log('Violated Directive:', violation.violatedDirective);
-    console.log('Source File:', violation.sourceFile);
-    console.log('Line:', violation.lineNumber);
+  if (process.env.NODE_ENV === "development") {
+    console.group("CSP Violation Details");
+    console.log("Blocked URI:", violation.blockedUri);
+    console.log("Violated Directive:", violation.violatedDirective);
+    console.log("Source File:", violation.sourceFile);
+    console.log("Line:", violation.lineNumber);
     console.groupEnd();
   }
 }
@@ -310,8 +287,8 @@ export function handleCSPViolation(violation: CSPViolation): void {
  * Set up CSP violation event listener
  */
 export function setupCSPReporting(): void {
-  if (typeof document !== 'undefined') {
-    document.addEventListener('securitypolicyviolation', (event) => {
+  if (typeof document !== "undefined") {
+    document.addEventListener("securitypolicyviolation", (event) => {
       handleCSPViolation({
         documentUri: event.documentURI,
         referrer: event.referrer,
@@ -320,7 +297,7 @@ export function setupCSPReporting(): void {
         originalPolicy: event.originalPolicy,
         sourceFile: event.sourceFile,
         lineNumber: event.lineNumber,
-        columnNumber: event.columnNumber
+        columnNumber: event.columnNumber,
       });
     });
   }
@@ -344,28 +321,35 @@ export function useCSP(config?: CSPConfig) {
     return cspManager.generateNonce();
   }, [cspManager]);
 
-  const addAllowedDomain = React.useCallback((directive: keyof CSPConfig, domain: string) => {
-    cspManager.addAllowedDomain(directive, domain);
-    cspManager.apply(); // Reapply CSP
-  }, [cspManager]);
+  const addAllowedDomain = React.useCallback(
+    (directive: keyof CSPConfig, domain: string) => {
+      cspManager.addAllowedDomain(directive, domain);
+      cspManager.apply(); // Reapply CSP
+    },
+    [cspManager],
+  );
 
   return {
     generateNonce,
     addAllowedDomain,
-    getHeaderValue: () => cspManager.getHeaderValue()
+    getHeaderValue: () => cspManager.getHeaderValue(),
   };
 }
 
 /**
  * Utility to check if a URL is allowed by CSP
  */
-export function isURLAllowed(url: string, directive: 'scriptSrc' | 'styleSrc' | 'imgSrc' | 'connectSrc', config: CSPConfig): boolean {
+export function isURLAllowed(
+  url: string,
+  directive: "scriptSrc" | "styleSrc" | "imgSrc" | "connectSrc",
+  config: CSPConfig,
+): boolean {
   const allowedSources = config[directive] || [];
-  
+
   try {
     const urlObj = new URL(url);
-    
-    return allowedSources.some(source => {
+
+    return allowedSources.some((source) => {
       if (source === "'self'") {
         return urlObj.origin === window.location.origin;
       }
@@ -378,7 +362,7 @@ export function isURLAllowed(url: string, directive: 'scriptSrc' | 'styleSrc' | 
       if (source === "data:" || source === "blob:") {
         return url.startsWith(source);
       }
-      if (source.endsWith('*')) {
+      if (source.endsWith("*")) {
         const baseUrl = source.slice(0, -1);
         return url.startsWith(baseUrl);
       }
@@ -391,5 +375,5 @@ export function isURLAllowed(url: string, directive: 'scriptSrc' | 'styleSrc' | 
 
 // Initialize CSP manager for the application
 export const cspManager = new CSPManager(
-  process.env.NODE_ENV === 'production' ? productionCSPConfig : defaultCSPConfig
+  process.env.NODE_ENV === "production" ? productionCSPConfig : defaultCSPConfig,
 );

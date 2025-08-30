@@ -25,9 +25,7 @@ export function createAIServices(prisma: PrismaClient) {
   //   registry.register(new StabilityProvider(opts as any) as unknown as AIProvider);
   // }
 
-  const router = new AIRouter(
-    registry,
-    stabilityKey ? { preferred: ["stability"] } : {});
+  const router = new AIRouter(registry, stabilityKey ? { preferred: ["stability"] } : {});
 
   function listProviders() {
     return registry

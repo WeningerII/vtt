@@ -4,17 +4,37 @@
 
 import { RouteHandler } from "../router/types";
 import { TokenService } from "../services/TokenService";
-import { handleRouteError, _validateRequired, validateEnum, _validateString, validateNumber, validateUUID, _validateCoordinates, NotFoundError } from "../middleware/errorHandler";
+import {
+  handleRouteError,
+  _validateRequired,
+  validateEnum,
+  _validateString,
+  validateNumber,
+  validateUUID,
+  _validateCoordinates,
+  NotFoundError,
+} from "../middleware/errorHandler";
 
 // GET /tokens - List tokens for a scene
 export const listTokensHandler: RouteHandler = async (ctx) => {
   try {
     const sceneId = ctx.url.searchParams.get("sceneId");
     const actorId = ctx.url.searchParams.get("actorId") || undefined;
-    const disposition = ctx.url.searchParams.get("disposition") as "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN" | undefined;
-    const isVisible = ctx.url.searchParams.get("isVisible") === "true" ? true : 
-                      ctx.url.searchParams.get("isVisible") === "false" ? false : undefined;
-    const layer = ctx.url.searchParams.get("layer") ? parseInt(ctx.url.searchParams.get("layer")!) : undefined;
+    const disposition = ctx.url.searchParams.get("disposition") as
+      | "FRIENDLY"
+      | "NEUTRAL"
+      | "HOSTILE"
+      | "UNKNOWN"
+      | undefined;
+    const isVisible =
+      ctx.url.searchParams.get("isVisible") === "true"
+        ? true
+        : ctx.url.searchParams.get("isVisible") === "false"
+          ? false
+          : undefined;
+    const layer = ctx.url.searchParams.get("layer")
+      ? parseInt(ctx.url.searchParams.get("layer")!)
+      : undefined;
     const limit = parseInt(ctx.url.searchParams.get("limit") || "100");
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
 
@@ -24,11 +44,20 @@ export const listTokensHandler: RouteHandler = async (ctx) => {
 
     validateUUID(sceneId, "sceneId");
     if (actorId) validateUUID(actorId, "actorId");
-    if (disposition) validateEnum(disposition, ["FRIENDLY", "NEUTRAL", "HOSTILE", "UNKNOWN"], "disposition");
+    if (disposition)
+      validateEnum(disposition, ["FRIENDLY", "NEUTRAL", "HOSTILE", "UNKNOWN"], "disposition");
     if (layer !== undefined) validateNumber(layer, "layer", { integer: true });
 
     const tokenService = new TokenService(ctx.prisma);
-    const result = await tokenService.searchTokens({ sceneId, actorId, disposition, isVisible, layer, limit, offset });
+    const result = await tokenService.searchTokens({
+      sceneId,
+      actorId,
+      disposition,
+      isVisible,
+      layer,
+      limit,
+      offset,
+    });
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(result));
@@ -88,7 +117,7 @@ export const getTokenHandler: RouteHandler = async (ctx) => {
 export const createTokenHandler: RouteHandler = async (ctx) => {
   try {
     const body = await parseJsonBody(ctx.req);
-    
+
     if (!body?.name || !body?.sceneId || typeof body.x !== "number" || typeof body.y !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing required fields: name, sceneId, x, y" }));
@@ -99,7 +128,11 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
     const validDispositions = ["FRIENDLY", "NEUTRAL", "HOSTILE", "UNKNOWN"];
     if (body.disposition && !validDispositions.includes(body.disposition)) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Invalid disposition. Must be FRIENDLY, NEUTRAL, HOSTILE, or UNKNOWN" }));
+      ctx.res.end(
+        JSON.stringify({
+          error: "Invalid disposition. Must be FRIENDLY, NEUTRAL, HOSTILE, or UNKNOWN",
+        }),
+      );
       return;
     }
 
@@ -170,8 +203,13 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
 export const createTokenFromActorHandler: RouteHandler = async (ctx) => {
   try {
     const body = await parseJsonBody(ctx.req);
-    
-    if (!body?.actorId || !body?.sceneId || typeof body.x !== "number" || typeof body.y !== "number") {
+
+    if (
+      !body?.actorId ||
+      !body?.sceneId ||
+      typeof body.x !== "number" ||
+      typeof body.y !== "number"
+    ) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing required fields: actorId, sceneId, x, y" }));
       return;
@@ -199,12 +237,24 @@ export const createTokenFromActorHandler: RouteHandler = async (ctx) => {
       const size = statblock.size;
       // Map D&D sizes to grid squares
       switch (size) {
-        case "TINY": width = height = 0.5; break;
-        case "SMALL": case "MEDIUM": width = height = 1; break;
-        case "LARGE": width = height = 2; break;
-        case "HUGE": width = height = 3; break;
-        case "GARGANTUAN": width = height = 4; break;
-        default: width = height = 1;
+        case "TINY":
+          width = height = 0.5;
+          break;
+        case "SMALL":
+        case "MEDIUM":
+          width = height = 1;
+          break;
+        case "LARGE":
+          width = height = 2;
+          break;
+        case "HUGE":
+          width = height = 3;
+          break;
+        case "GARGANTUAN":
+          width = height = 4;
+          break;
+        default:
+          width = height = 1;
       }
     }
 
@@ -263,7 +313,7 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
     }
 
     const body = await parseJsonBody(ctx.req);
-    
+
     if (typeof body.x !== "number" || typeof body.y !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing or invalid x, y coordinates" }));

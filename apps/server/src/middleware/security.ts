@@ -15,21 +15,22 @@ export const securityHeadersMiddleware: Middleware = async (ctx, _next) => {
 
   // Adaptive CSP based on endpoint
   let csp: string;
-  if (ctx.url.pathname === '/docs') {
+  if (ctx.url.pathname === "/docs") {
     // Relaxed CSP for Swagger UI documentation
-    csp = process.env.CSP_DOCS ?? 
+    csp =
+      process.env.CSP_DOCS ??
       "default-src 'self'; " +
-      "style-src 'self' 'unsafe-inline'; " +
-      "script-src 'self' 'unsafe-inline'; " +
-      "img-src 'self' data: https:; " +
-      "font-src 'self' data:; " +
-      "frame-ancestors 'none'; " +
-      "base-uri 'self'";
+        "style-src 'self' 'unsafe-inline'; " +
+        "script-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data: https:; " +
+        "font-src 'self' data:; " +
+        "frame-ancestors 'none'; " +
+        "base-uri 'self'";
   } else {
     // Strict CSP for API endpoints
     csp = process.env.CSP ?? "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
   }
-  
+
   ctx.res.setHeader("Content-Security-Policy", csp);
 
   await _next();

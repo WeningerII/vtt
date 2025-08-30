@@ -2,11 +2,11 @@
  * Central observability manager coordinating logging, metrics, health checks, and alerting
  */
 
-import { EventEmitter } from 'events';
-import { Logger, LoggerConfig } from './Logger';
-import { MetricsRegistry, SystemMetricsCollector, GameMetricsCollector } from './Metrics';
-import { HealthCheckManager, HealthCheckConfig } from './HealthCheck';
-import { AlertManager, AlertManagerConfig } from './AlertManager';
+import { EventEmitter } from "events";
+import { Logger, LoggerConfig } from "./Logger";
+import { MetricsRegistry, SystemMetricsCollector, GameMetricsCollector } from "./Metrics";
+import { HealthCheckManager, HealthCheckConfig } from "./HealthCheck";
+import { AlertManager, AlertManagerConfig } from "./AlertManager";
 
 export interface ObservabilityConfig {
   logging: LoggerConfig;
@@ -78,7 +78,7 @@ export class ObservabilityManager extends EventEmitter {
       try {
         await systemCollector.collect();
       } catch (error) {
-        this.logger.error('Failed to collect system metrics', error as Error);
+        this.logger.error("Failed to collect system metrics", error as Error);
       }
     }, 30000); // Every 30 seconds
   }
@@ -89,15 +89,15 @@ export class ObservabilityManager extends EventEmitter {
   }
 
   private setupAlertListeners(): void {
-    this.alertManager.on('alertTriggered', (alert) => {
+    this.alertManager.on("alertTriggered", (alert) => {
       this.logger.warn(`Alert triggered: ${alert.name}`, { alert });
-      this.metrics.incrementCounter('vtt_alerts_total', 1, {
+      this.metrics.incrementCounter("vtt_alerts_total", 1, {
         severity: alert.severity,
-        name: alert.name
+        name: alert.name,
       });
     });
 
-    this.alertManager.on('alertResolved', (alert) => {
+    this.alertManager.on("alertResolved", (alert) => {
       this.logger.info(`Alert resolved: ${alert.name}`, { alert });
     });
   }
@@ -109,7 +109,7 @@ export class ObservabilityManager extends EventEmitter {
 
   // Public API
   async start(): Promise<void> {
-    this.logger.info('Starting observability manager');
+    this.logger.info("Starting observability manager");
 
     // Start health checks
     this.healthManager.start();
@@ -122,12 +122,12 @@ export class ObservabilityManager extends EventEmitter {
       await this.startDashboard();
     }
 
-    this.emit('started');
-    this.logger.info('Observability manager started successfully');
+    this.emit("started");
+    this.logger.info("Observability manager started successfully");
   }
 
   async stop(): Promise<void> {
-    this.logger.info('Stopping observability manager');
+    this.logger.info("Stopping observability manager");
 
     // Stop components
     this.healthManager.stop();
@@ -139,7 +139,7 @@ export class ObservabilityManager extends EventEmitter {
 
     await this.logger.close();
 
-    this.emit('stopped');
+    this.emit("stopped");
   }
 
   // Logging interface
@@ -147,45 +147,49 @@ export class ObservabilityManager extends EventEmitter {
     return context ? this.logger.child(context) : this.logger;
   }
 
-  // Metrics interface  
+  // Metrics interface
   getMetrics(): MetricsRegistry {
     return this.metrics;
   }
 
   recordUserAction(userId: string, action: string, metadata?: Record<string, any>): void {
     this.logger.logUserAction(userId, action, metadata);
-    this.metrics.incrementCounter('vtt_user_actions_total', 1, {
+    this.metrics.incrementCounter("vtt_user_actions_total", 1, {
       action,
-      user_id: userId
+      user_id: userId,
     });
   }
 
   recordGameEvent(gameId: string, event: string, metadata?: Record<string, any>): void {
     this.logger.logGameEvent(gameId, event, metadata);
-    this.metrics.incrementCounter('vtt_game_events_total', 1, {
+    this.metrics.incrementCounter("vtt_game_events_total", 1, {
       event,
-      game_id: gameId
+      game_id: gameId,
     });
   }
 
   recordAPIRequest(method: string, path: string, statusCode: number, duration: number): void {
     this.logger.logAPIRequest(method, path, statusCode, duration);
-    this.metrics.incrementCounter('vtt_api_requests_total', 1, {
+    this.metrics.incrementCounter("vtt_api_requests_total", 1, {
       method,
       path,
-      status_code: statusCode.toString()
+      status_code: statusCode.toString(),
     });
-    this.metrics.recordHistogram('vtt_api_request_duration_ms', duration, {
+    this.metrics.recordHistogram("vtt_api_request_duration_ms", duration, {
       method,
-      path
+      path,
     });
   }
 
-  recordSecurityEvent(event: string, severity: 'low' | 'medium' | 'high', metadata?: Record<string, any>): void {
+  recordSecurityEvent(
+    event: string,
+    severity: "low" | "medium" | "high",
+    metadata?: Record<string, any>,
+  ): void {
     this.logger.logSecurity(event, severity, metadata);
-    this.metrics.incrementCounter('vtt_security_events_total', 1, {
+    this.metrics.incrementCounter("vtt_security_events_total", 1, {
       event,
-      severity
+      severity,
     });
   }
 
@@ -194,12 +198,12 @@ export class ObservabilityManager extends EventEmitter {
     if (!this.config.enableTracing) {
       // Return a no-op span
       return {
-        traceId: 'disabled',
-        spanId: 'disabled',
+        traceId: "disabled",
+        spanId: "disabled",
         operationName,
         startTime: new Date(),
         tags: Record<string, any>,
-        logs: []
+        logs: [],
       };
     }
 
@@ -210,7 +214,7 @@ export class ObservabilityManager extends EventEmitter {
       operationName,
       startTime: new Date(),
       tags: Record<string, any>,
-      logs: []
+      logs: [],
     };
 
     this.activeSpans.set(span.spanId, span);
@@ -218,13 +222,13 @@ export class ObservabilityManager extends EventEmitter {
   }
 
   finishSpan(span: TracingSpan, tags?: Record<string, any>): void {
-    if (!this.config.enableTracing || span.spanId === 'disabled') {
+    if (!this.config.enableTracing || span.spanId === "disabled") {
       return;
     }
 
     span.endTime = new Date();
     span.duration = span.endTime.getTime() - span.startTime.getTime();
-    
+
     if (tags) {
       span.tags = { ...span.tags, ...tags };
     }
@@ -234,26 +238,26 @@ export class ObservabilityManager extends EventEmitter {
       traceId: span.traceId,
       spanId: span.spanId,
       duration: span.duration,
-      tags: span.tags
+      tags: span.tags,
     });
 
     // Record span metrics
-    this.metrics.recordHistogram('vtt_span_duration_ms', span.duration, {
-      operation: span.operationName
+    this.metrics.recordHistogram("vtt_span_duration_ms", span.duration, {
+      operation: span.operationName,
     });
 
     this.activeSpans.delete(span.spanId);
   }
 
-  addSpanLog(span: TracingSpan, message: string, level: string = 'info'): void {
-    if (!this.config.enableTracing || span.spanId === 'disabled') {
+  addSpanLog(span: TracingSpan, message: string, level: string = "info"): void {
+    if (!this.config.enableTracing || span.spanId === "disabled") {
       return;
     }
 
     span.logs.push({
       timestamp: new Date(),
       message,
-      level
+      level,
     });
   }
 
@@ -261,7 +265,7 @@ export class ObservabilityManager extends EventEmitter {
   async measureAsync<T>(
     _operationName: string,
     _operation: () => Promise<T>,
-    context?: Record<string, any>
+    context?: Record<string, any>,
   ): Promise<T> {
     const span = this.startSpan(operationName);
     const startTime = Date.now();
@@ -269,56 +273,56 @@ export class ObservabilityManager extends EventEmitter {
     try {
       const result = await operation();
       const duration = Date.now() - startTime;
-      
+
       this.finishSpan(span, { success: true, ...context });
       this.recordPerformance(operationName, duration, { success: true, ...context });
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.finishSpan(span, { success: false, error: errorMsg, ...context });
       this.recordPerformance(operationName, duration, { success: false, ...context });
       this.logger.error(`Operation failed: ${operationName}`, error as Error, context);
-      
+
       throw error;
     }
   }
 
-  measure<T>(
-    _operationName: string,
-    _operation: () => T,
-    context?: Record<string, any>
-  ): T {
+  measure<T>(_operationName: string, _operation: () => T, context?: Record<string, any>): T {
     const span = this.startSpan(operationName);
     const startTime = Date.now();
 
     try {
       const result = operation();
       const duration = Date.now() - startTime;
-      
+
       this.finishSpan(span, { success: true, ...context });
       this.recordPerformance(operationName, duration, { success: true, ...context });
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.finishSpan(span, { success: false, error: errorMsg, ...context });
       this.recordPerformance(operationName, duration, { success: false, ...context });
       this.logger.error(`Operation failed: ${operationName}`, error as Error, context);
-      
+
       throw error;
     }
   }
 
-  private recordPerformance(operation: string, duration: number, context?: Record<string, any>): void {
+  private recordPerformance(
+    operation: string,
+    duration: number,
+    context?: Record<string, any>,
+  ): void {
     this.logger.logPerformance(operation, duration, context);
-    this.metrics.recordHistogram('vtt_operation_duration_ms', duration, {
+    this.metrics.recordHistogram("vtt_operation_duration_ms", duration, {
       operation,
-      ...context
+      ...context,
     });
   }
 
@@ -341,12 +345,14 @@ export class ObservabilityManager extends EventEmitter {
 
     // In a real implementation, this would start an HTTP server
     // serving a monitoring dashboard with metrics, logs, and alerts
-    this.logger.info(`Dashboard would be available at http://localhost:${this.config.dashboardPort}`);
-    
+    this.logger.info(
+      `Dashboard would be available at http://localhost:${this.config.dashboardPort}`,
+    );
+
     // Simulate dashboard server
     this.dashboardServer = {
       port: this.config.dashboardPort,
-      close: () => Promise.resolve()
+      close: () => Promise.resolve(),
     };
   }
 
@@ -367,33 +373,36 @@ export class ObservabilityManager extends EventEmitter {
   }
 
   // Export observability data
-  async exportMetrics(format: 'prometheus' | 'json' = 'json'): Promise<string> {
+  async exportMetrics(format: "prometheus" | "json" = "json"): Promise<string> {
     const metrics = await this.metrics.getAllMetrics();
-    
-    if (format === 'prometheus') {
+
+    if (format === "prometheus") {
       return this.formatMetricsAsPrometheus(metrics);
     }
-    
+
     return JSON.stringify(metrics, null, 2);
   }
 
   private formatMetricsAsPrometheus(metrics: any[]): string {
-    let output = '';
-    
+    let output = "";
+
     for (const metric of metrics) {
       output += `# HELP ${metric.name} ${metric.description}\n`;
       output += `# TYPE ${metric.name} ${metric.type}\n`;
-      
+
       for (const value of metric.values) {
-        const labels = value.labels ? 
-          Object.entries(value.labels).map([k, _v] => `${k}="${v}"`).join(',') : '';
-        const labelStr = labels ? `{${labels}}` : '';
-        
+        const labels = value.labels
+          ? Object.entries(value.labels)
+              .map(([k, v]) => `${k}="${v}"`)
+              .join(",")
+          : "";
+        const labelStr = labels ? `{${labels}}` : "";
+
         output += `${metric.name}${labelStr} ${value.value} ${value.timestamp.getTime()}\n`;
       }
-      output += '\n';
+      output += "\n";
     }
-    
+
     return output;
   }
 
@@ -404,9 +413,9 @@ export class ObservabilityManager extends EventEmitter {
 
   async exportTraces(traceId?: string, limit: number = 100): Promise<TracingSpan[]> {
     if (traceId) {
-      return Array.from(this.activeSpans.values()).filter(span => span.traceId === traceId);
+      return Array.from(this.activeSpans.values()).filter((span) => span.traceId === traceId);
     }
-    
+
     return Array.from(this.activeSpans.values()).slice(0, limit);
   }
 
@@ -416,31 +425,31 @@ export class ObservabilityManager extends EventEmitter {
       observability: {
         logging: {
           level: this.config.logging.level,
-          transports: this.config.logging.transports.length
+          transports: this.config.logging.transports.length,
         },
         metrics: {
           enabled: this.config.enableMetrics,
-          activeMetrics: this.metrics ? Array.from((this.metrics as any).metrics?.size || 0) : 0
+          activeMetrics: this.metrics ? Array.from((this.metrics as any).metrics?.size || 0) : 0,
         },
         tracing: {
           enabled: this.config.enableTracing,
-          activeSpans: this.activeSpans.size
+          activeSpans: this.activeSpans.size,
         },
         healthChecks: {
           count: this.config.healthChecks.checks.length,
-          interval: this.config.healthChecks.interval
+          interval: this.config.healthChecks.interval,
         },
         alerts: {
           rules: this.config.alerts.rules.length,
-          activeAlerts: this.alertManager.getActiveAlerts().length
-        }
+          activeAlerts: this.alertManager.getActiveAlerts().length,
+        },
       },
       runtime: {
-        nodeVersion: process.version || 'unknown',
-        platform: process.platform || 'unknown',
+        nodeVersion: process.version || "unknown",
+        platform: process.platform || "unknown",
         uptime: process.uptime ? process.uptime() : 0,
-        memory: process.memoryUsage ? process.memoryUsage() : Record<string, any>
-      }
+        memory: process.memoryUsage ? process.memoryUsage() : Record<string, any>,
+      },
     };
   }
 }

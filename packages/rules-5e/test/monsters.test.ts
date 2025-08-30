@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import SRDMonsters, { Goblin, Orc, Skeleton, _Wolf} from "@vtt/content-5e-srd";
+import SRDMonsters, { Goblin, Orc, Skeleton, _Wolf } from "@vtt/content-5e-srd";
 import { compileMonster, abilityMod, CR_XP_MAP, crToProficiency } from "../src";
 
 describe("abilityMod()", () => {
@@ -33,7 +33,7 @@ describe("compileMonster()", () => {
   });
 
   it("compiles Orc and derives values when missing", () => {
-    const { xp: _xp,  proficiencyBonus: _pb,  passivePerception: _pp,  _...rest  } = Orc as any;
+    const { xp: _xp, proficiencyBonus: _pb, passivePerception: _pp, ...rest } = Orc as any;
     const cm = compileMonster(rest);
     expect(cm.xp).toBe(100); // from CR map
     expect(cm.proficiencyBonus).toBe(2); // from CR

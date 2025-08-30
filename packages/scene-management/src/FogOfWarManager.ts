@@ -101,8 +101,14 @@ export class FogOfWarManager {
 
     for (const wall of this.walls) {
       const intersection = this.lineIntersection(
-        fromX, fromY, toX, toY,
-        wall.x1, wall.y1, wall.x2, wall.y2
+        fromX,
+        fromY,
+        toX,
+        toY,
+        wall.x1,
+        wall.y1,
+        wall.x2,
+        wall.y2,
       );
 
       if (intersection) {
@@ -115,13 +121,19 @@ export class FogOfWarManager {
       visible: !blocked,
       blocked,
       blockingPoints,
-      distance
+      distance,
     };
   }
 
   private lineIntersection(
-    x1: number, y1: number, x2: number, y2: number,
-    x3: number, y3: number, x4: number, y4: number
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    x4: number,
+    y4: number,
   ): { x: number; y: number } | null {
     const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
     if (Math.abs(denom) < 0.0001) return null;
@@ -132,7 +144,7 @@ export class FogOfWarManager {
     if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
       return {
         x: x1 + t * (x2 - x1),
-        y: y1 + t * (y2 - y1)
+        y: y1 + t * (y2 - y1),
       };
     }
 
@@ -155,7 +167,7 @@ export class FogOfWarManager {
   private castRays(source: VisionSource): Array<{ x: number; y: number; distance: number }> {
     const rays: Array<{ x: number; y: number; distance: number }> = [];
     const rayCount = 360; // Cast rays in 1-degree increments
-    
+
     const startAngle = source.angle ? source.direction! - source.angle / 2 : 0;
     const endAngle = source.angle ? source.direction! + source.angle / 2 : 360;
 
@@ -165,12 +177,12 @@ export class FogOfWarManager {
       const endY = source.y + Math.sin(rad) * source.radius;
 
       const lineOfSight = this.calculateLineOfSight(source.x, source.y, endX, endY);
-      
+
       if (lineOfSight.blocked && lineOfSight.blockingPoints.length > 0) {
         // Use the closest blocking point
         let closestPoint = lineOfSight.blockingPoints[0]!;
         let closestDistance = Math.sqrt(
-          (closestPoint.x - source.x) ** 2 + (closestPoint.y - source.y) ** 2
+          (closestPoint.x - source.x) ** 2 + (closestPoint.y - source.y) ** 2,
         );
 
         for (const point of lineOfSight.blockingPoints) {
@@ -184,13 +196,13 @@ export class FogOfWarManager {
         rays.push({
           x: closestPoint.x,
           y: closestPoint.y,
-          distance: closestDistance
+          distance: closestDistance,
         });
       } else {
         rays.push({
           x: endX,
           y: endY,
-          distance: source.radius
+          distance: source.radius,
         });
       }
     }
@@ -200,7 +212,7 @@ export class FogOfWarManager {
 
   private raysToPolygon(
     rays: Array<{ x: number; y: number; distance: number }>,
-    source: VisionSource
+    source: VisionSource,
   ): Array<{ x: number; y: number }> {
     const polygon: Array<{ x: number; y: number }> = [];
 
@@ -208,7 +220,7 @@ export class FogOfWarManager {
     polygon.push({ x: source.x, y: source.y });
 
     // Add ray endpoints
-    rays.forEach(ray => {
+    rays.forEach((ray) => {
       polygon.push({ x: ray.x, y: ray.y });
     });
 
@@ -220,11 +232,11 @@ export class FogOfWarManager {
    */
   addExploredArea(points: Array<{ x: number; y: number }>): string {
     const areaId = `area-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     this.exploredAreas.set(areaId, {
       id: areaId,
       points,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     return areaId;
@@ -261,19 +273,19 @@ export class FogOfWarManager {
 
   private pointInPolygon(x: number, y: number, polygon: Array<{ x: number; y: number }>): boolean {
     let inside = false;
-    
+
     for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
       const pointI = polygon[i]!;
       const pointJ = polygon[j]!;
-      
+
       if (
-        (pointI.y > y) !== (pointJ.y > y) &&
+        pointI.y > y !== pointJ.y > y &&
         x < ((pointJ.x - pointI.x) * (y - pointI.y)) / (pointJ.y - pointI.y) + pointI.x
       ) {
         inside = !inside;
       }
     }
-    
+
     return inside;
   }
 
@@ -285,7 +297,7 @@ export class FogOfWarManager {
 
     for (const source of this.visionSources.values()) {
       const visionPolygon = this.calculateVisionPolygon(source.id);
-      
+
       if (visionPolygon.length > 0) {
         this.addExploredArea(visionPolygon);
       }
@@ -314,7 +326,7 @@ export class FogOfWarManager {
    * Check if a token can see another token
    */
   canTokenSeeToken(fromTokenId: string, toX: number, toY: number): boolean {
-    const source = Array.from(this.visionSources.values()).find(s => s.tokenId === fromTokenId);
+    const source = Array.from(this.visionSources.values()).find((s) => s.tokenId === fromTokenId);
     if (!source) return false;
 
     const distance = Math.sqrt((toX - source.x) ** 2 + (toY - source.y) ** 2);
@@ -327,12 +339,15 @@ export class FogOfWarManager {
   /**
    * Get all tokens visible to a specific token
    */
-  getVisibleTokens(fromTokenId: string, allTokens: Array<{ id: string; x: number; y: number }>): string[] {
+  getVisibleTokens(
+    fromTokenId: string,
+    allTokens: Array<{ id: string; x: number; y: number }>,
+  ): string[] {
     const visibleTokenIds: string[] = [];
 
     for (const token of allTokens) {
       if (token.id === fromTokenId) continue;
-      
+
       if (this.canTokenSeeToken(fromTokenId, token.x, token.y)) {
         visibleTokenIds.push(token.id);
       }
@@ -368,7 +383,7 @@ export class FogOfWarManager {
       settings: this.settings,
       visionSources: Array.from(this.visionSources.values()),
       exploredAreas: Array.from(this.exploredAreas.values()),
-      walls: [...this.walls]
+      walls: [...this.walls],
     };
   }
 
@@ -383,14 +398,14 @@ export class FogOfWarManager {
   }): void {
     this.settings = data.settings;
     this.walls = data.walls;
-    
+
     this.visionSources.clear();
-    data.visionSources.forEach(source => {
+    data.visionSources.forEach((source) => {
       this.visionSources.set(source.id, source);
     });
 
     this.exploredAreas.clear();
-    data.exploredAreas.forEach(area => {
+    data.exploredAreas.forEach((area) => {
       this.exploredAreas.set(area.id, area);
     });
   }

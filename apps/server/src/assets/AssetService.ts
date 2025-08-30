@@ -2,13 +2,22 @@
  * Asset management service
  */
 
-import { Asset, AssetUploadRequest, AssetUpdateRequest, AssetSearchQuery, AssetType, Token, GameMap, AssetLibrary } from './types';
-import type { Buffer } from 'node:buffer';
+import {
+  Asset,
+  AssetUploadRequest,
+  AssetUpdateRequest,
+  AssetSearchQuery,
+  AssetType,
+  Token,
+  GameMap,
+  AssetLibrary,
+} from "./types";
+import type { Buffer } from "node:buffer";
 
-import { v4 as uuidv4 } from 'uuid';
-import * as fs from 'fs';
-import * as path from 'path';
-import { promisify } from 'util';
+import { v4 as uuidv4 } from "uuid";
+import * as fs from "fs";
+import * as path from "path";
+import { promisify } from "util";
 
 const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);
@@ -21,7 +30,7 @@ export class AssetService {
   private libraries = new Map<string, AssetLibrary>();
   private uploadPath: string;
 
-  constructor(uploadPath: string = './uploads') {
+  constructor(uploadPath: string = "./uploads") {
     this.uploadPath = uploadPath;
     this.ensureUploadDirectory();
   }
@@ -38,30 +47,30 @@ export class AssetService {
    * Upload and create a new asset
    */
   async uploadAsset(
-    userId: string, 
-    request: AssetUploadRequest, 
-    fileBuffer: Buffer, 
-    originalFilename: string, 
-    mimeType: string
+    userId: string,
+    request: AssetUploadRequest,
+    fileBuffer: Buffer,
+    originalFilename: string,
+    mimeType: string,
   ): Promise<Asset> {
     const assetId = uuidv4();
     const now = new Date();
-    
+
     // Generate unique filename
     const extension = path.extname(originalFilename);
     const filename = `${assetId}${extension}`;
     const filePath = path.join(this.uploadPath, filename);
-    
+
     // Save file to disk
     await writeFile(filePath, fileBuffer);
-    
+
     // Detect asset type if not provided
     const assetType = request.type || this.detectAssetType(mimeType, originalFilename);
-    
+
     // Get file dimensions for images
     let width: number | undefined;
     let height: number | undefined;
-    if (assetType === 'image') {
+    if (assetType === "image") {
       ({ width, height } = await this.getImageDimensions(fileBuffer));
     }
 
@@ -82,7 +91,7 @@ export class AssetService {
       tags: request.tags || [],
       metadata: {} as Record<string, any>,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     this.assets.set(assetId, asset);
@@ -120,32 +129,31 @@ export class AssetService {
     // Apply filters
     if (query.name) {
       const searchTerm = query.name.toLowerCase();
-      results = results.filter(asset => 
-        asset.name.toLowerCase().includes(searchTerm) ||
-        asset.description?.toLowerCase().includes(searchTerm)
+      results = results.filter(
+        (asset) =>
+          asset.name.toLowerCase().includes(searchTerm) ||
+          asset.description?.toLowerCase().includes(searchTerm),
       );
     }
 
     if (query.type) {
-      results = results.filter(asset => asset.type === query.type);
+      results = results.filter((asset) => asset.type === query.type);
     }
 
     if (query.userId) {
-      results = results.filter(asset => asset.userId === query.userId);
+      results = results.filter((asset) => asset.userId === query.userId);
     }
 
     if (query.campaignId) {
-      results = results.filter(asset => asset.campaignId === query.campaignId);
+      results = results.filter((asset) => asset.campaignId === query.campaignId);
     }
 
     if (query.isPublic !== undefined) {
-      results = results.filter(asset => asset.isPublic === query.isPublic);
+      results = results.filter((asset) => asset.isPublic === query.isPublic);
     }
 
     if (query.tags && query.tags.length > 0) {
-      results = results.filter(asset => 
-        query.tags!.some(tag => asset.tags.includes(tag))
-      );
+      results = results.filter((asset) => query.tags!.some((tag) => asset.tags.includes(tag)));
     }
 
     const total = results.length;
@@ -161,9 +169,13 @@ export class AssetService {
   /**
    * Update asset metadata
    */
-  async updateAsset(assetId: string, userId: string, update: AssetUpdateRequest): Promise<Asset | null> {
+  async updateAsset(
+    assetId: string,
+    userId: string,
+    update: AssetUpdateRequest,
+  ): Promise<Asset | null> {
     const asset = this.assets.get(assetId);
-    
+
     if (!asset || asset.userId !== userId) {
       return null; // Only owner can update
     }
@@ -184,7 +196,7 @@ export class AssetService {
    */
   async deleteAsset(assetId: string, userId: string): Promise<boolean> {
     const asset = this.assets.get(assetId);
-    
+
     if (!asset || asset.userId !== userId) {
       return false; // Only owner can delete
     }
@@ -204,15 +216,15 @@ export class AssetService {
    * Get user's assets
    */
   async getUserAssets(userId: string): Promise<Asset[]> {
-    return Array.from(this.assets.values()).filter(asset => asset.userId === userId);
+    return Array.from(this.assets.values()).filter((asset) => asset.userId === userId);
   }
 
   /**
    * Get campaign assets
    */
   async getCampaignAssets(campaignId: string): Promise<Asset[]> {
-    return Array.from(this.assets.values()).filter(asset => 
-      asset.campaignId === campaignId || asset.isPublic
+    return Array.from(this.assets.values()).filter(
+      (asset) => asset.campaignId === campaignId || asset.isPublic,
     );
   }
 
@@ -220,7 +232,7 @@ export class AssetService {
    * Get public assets
    */
   async getPublicAssets(): Promise<Asset[]> {
-    return Array.from(this.assets.values()).filter(asset => asset.isPublic);
+    return Array.from(this.assets.values()).filter((asset) => asset.isPublic);
   }
 
   /**
@@ -228,8 +240,8 @@ export class AssetService {
    */
   async createToken(assetId: string, userId: string, tokenData: any): Promise<Token | null> {
     const asset = this.assets.get(assetId);
-    
-    if (!asset || asset.type !== 'image') {
+
+    if (!asset || asset.type !== "image") {
       return null;
     }
 
@@ -238,16 +250,16 @@ export class AssetService {
     const token: Token = {
       ...asset,
       id: tokenId,
-      type: 'token',
+      type: "token",
       name: `${asset.name} (Token)`,
       tokenData: {
         gridSize: tokenData.gridSize || 1,
         isPC: tokenData.isPC || false,
-        category: tokenData.category || 'other',
-        stats: tokenData.stats
+        category: tokenData.category || "other",
+        stats: tokenData.stats,
       },
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     this.assets.set(tokenId, token);
@@ -259,8 +271,8 @@ export class AssetService {
    */
   async createMap(assetId: string, userId: string, mapData: any): Promise<GameMap | null> {
     const asset = this.assets.get(assetId);
-    
-    if (!asset || asset.type !== 'image') {
+
+    if (!asset || asset.type !== "image") {
       return null;
     }
 
@@ -269,31 +281,33 @@ export class AssetService {
     const map: GameMap = {
       ...asset,
       id: mapId,
-      type: 'map',
+      type: "map",
       name: `${asset.name} (Map)`,
       mapData: {
-        gridType: mapData.gridType || 'square',
+        gridType: mapData.gridType || "square",
         gridSize: mapData.gridSize || 50,
         gridOffsetX: mapData.gridOffsetX || 0,
         gridOffsetY: mapData.gridOffsetY || 0,
-        scenes: mapData.scenes || [{
-          id: uuidv4(),
-          name: 'Default Scene',
-          backgroundAssetId: assetId,
-          overlayAssetIds: [],
-          lighting: {
-            ambientLight: 0.3,
-            lightSources: []
+        scenes: mapData.scenes || [
+          {
+            id: uuidv4(),
+            name: "Default Scene",
+            backgroundAssetId: assetId,
+            overlayAssetIds: [],
+            lighting: {
+              ambientLight: 0.3,
+              lightSources: [],
+            },
+            fog: {
+              enabled: false,
+              exploredAreas: [],
+              hiddenAreas: [],
+            },
           },
-          fog: {
-            enabled: false,
-            exploredAreas: [],
-            hiddenAreas: []
-          }
-        }]
+        ],
       },
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     this.assets.set(mapId, map);
@@ -303,10 +317,15 @@ export class AssetService {
   /**
    * Create asset library
    */
-  async createLibrary(userId: string, name: string, description: string, isPublic: boolean = false): Promise<AssetLibrary> {
+  async createLibrary(
+    userId: string,
+    name: string,
+    description: string,
+    isPublic: boolean = false,
+  ): Promise<AssetLibrary> {
     const libraryId = uuidv4();
     const now = new Date();
-    
+
     const library: AssetLibrary = {
       id: libraryId,
       name,
@@ -316,7 +335,7 @@ export class AssetService {
       assets: [],
       tags: [],
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
     this.libraries.set(libraryId, library);
@@ -329,7 +348,7 @@ export class AssetService {
   async addAssetToLibrary(libraryId: string, assetId: string, userId: string): Promise<boolean> {
     const library = this.libraries.get(libraryId);
     const asset = this.assets.get(assetId);
-    
+
     if (!library || !asset || library.ownerId !== userId) {
       return false;
     }
@@ -347,21 +366,21 @@ export class AssetService {
    * Get user's libraries
    */
   async getUserLibraries(userId: string): Promise<AssetLibrary[]> {
-    return Array.from(this.libraries.values()).filter(lib => lib.ownerId === userId);
+    return Array.from(this.libraries.values()).filter((lib) => lib.ownerId === userId);
   }
 
   // Helper methods
   private detectAssetType(mimeType: string, filename: string): AssetType {
-    if (mimeType.startsWith('image/')) return 'image';
-    if (mimeType.startsWith('audio/')) return 'audio';
-    if (mimeType === 'application/pdf') return 'document';
-    
+    if (mimeType.startsWith("image/")) return "image";
+    if (mimeType.startsWith("audio/")) return "audio";
+    if (mimeType === "application/pdf") return "document";
+
     const ext = path.extname(filename).toLowerCase();
-    if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) return 'image';
-    if (['.mp3', '.wav', '.ogg', '.m4a'].includes(ext)) return 'audio';
-    if (['.pdf', '.txt', '.md'].includes(ext)) return 'document';
-    
-    return 'document'; // Default fallback
+    if ([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"].includes(ext)) return "image";
+    if ([".mp3", ".wav", ".ogg", ".m4a"].includes(ext)) return "audio";
+    if ([".pdf", ".txt", ".md"].includes(ext)) return "document";
+
+    return "document"; // Default fallback
   }
 
   private async getImageDimensions(buffer: Buffer): Promise<{ width?: number; height?: number }> {
@@ -369,21 +388,21 @@ export class AssetService {
     // In a real app, you'd use a library like 'sharp' or 'image-size'
     try {
       // Basic PNG header check
-      if (buffer.length > 24 && buffer.toString('ascii', 1, 4) === 'PNG') {
+      if (buffer.length > 24 && buffer.toString("ascii", 1, 4) === "PNG") {
         const width = buffer.readUInt32BE(16);
         const height = buffer.readUInt32BE(20);
         return { width, height };
       }
-      
+
       // Basic JPEG header check
-      if (buffer.length > 4 && buffer[0] === 0xFF && buffer[1] === 0xD8) {
+      if (buffer.length > 4 && buffer[0] === 0xff && buffer[1] === 0xd8) {
         // This would require more complex parsing in a real implementation
         return {};
       }
     } catch {
       // Ignore errors
     }
-    
+
     return {};
   }
 
@@ -392,10 +411,13 @@ export class AssetService {
    */
   getStats(): any {
     const assets = Array.from(this.assets.values());
-    const typeStats = assets.reduce((acc, asset) => {
-      acc[asset.type] = (acc[asset.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const typeStats = assets.reduce(
+      (acc, asset) => {
+        acc[asset.type] = (acc[asset.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     const totalSize = assets.reduce((sum, asset) => sum + asset.size, 0);
 
@@ -403,8 +425,8 @@ export class AssetService {
       totalAssets: assets.length,
       totalSize,
       typeBreakdown: typeStats,
-      publicAssets: assets.filter(a => a.isPublic).length,
-      libraries: this.libraries.size
+      publicAssets: assets.filter((a) => a.isPublic).length,
+      libraries: this.libraries.size,
     };
   }
 }

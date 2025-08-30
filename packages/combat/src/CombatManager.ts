@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Combat Management System
@@ -9,7 +9,7 @@ export interface Combatant {
   id: string;
   tokenId?: string;
   name: string;
-  type: 'pc' | 'npc' | 'monster';
+  type: "pc" | "npc" | "monster";
   initiative: number;
   initiativeModifier: number;
   maxHitPoints: number;
@@ -50,7 +50,7 @@ export interface CombatRound {
 
 export interface CombatEvent {
   id: string;
-  type: 'damage' | 'healing' | 'condition' | 'death' | 'action' | 'movement' | 'spell' | 'attack';
+  type: "damage" | "healing" | "condition" | "death" | "action" | "movement" | "spell" | "attack";
   timestamp: number;
   combatantId: string;
   targetIds?: string[];
@@ -61,7 +61,7 @@ export interface CombatEvent {
 export interface CombatState {
   id: string;
   name: string;
-  status: 'preparing' | 'active' | 'paused' | 'ended';
+  status: "preparing" | "active" | "paused" | "ended";
   currentRound: number;
   currentTurn: number;
   turnStartTime: number;
@@ -71,7 +71,7 @@ export interface CombatState {
 }
 
 export interface CombatSettings {
-  initiativeType: 'standard' | 'group' | 'side';
+  initiativeType: "standard" | "group" | "side";
   turnTimer: number; // seconds, 0 = no timer
   autoAdvance: boolean;
   showInitiative: boolean;
@@ -94,11 +94,11 @@ export class CombatManager {
    */
   startCombat(
     name: string,
-    combatants: Omit<Combatant, 'id' | 'actions' | 'isActive'>[],
-    settings: Partial<CombatSettings> = {}
+    combatants: Omit<Combatant, "id" | "actions" | "isActive">[],
+    settings: Partial<CombatSettings> = {},
   ): CombatState {
     // Roll initiative for all combatants
-    const processedCombatants = combatants.map(combatant => ({
+    const processedCombatants = combatants.map((combatant) => ({
       ...combatant,
       id: this.generateCombatantId(),
       initiative: this.rollInitiative(combatant.initiativeModifier),
@@ -107,9 +107,9 @@ export class CombatManager {
         bonusAction: true,
         reaction: true,
         movement: combatant.stats ? this.calculateMovementSpeed(combatant as any) : 30,
-        maxMovement: combatant.stats ? this.calculateMovementSpeed(combatant as any) : 30
+        maxMovement: combatant.stats ? this.calculateMovementSpeed(combatant as any) : 30,
       },
-      isActive: false
+      isActive: false,
     }));
 
     // Sort by initiative (highest first, then by dexterity modifier)
@@ -117,34 +117,38 @@ export class CombatManager {
       if (b.initiative !== a.initiative) {
         return b.initiative - a.initiative;
       }
-      return this.getDexterityModifier(b.stats?.dexterity || 10) - 
-             this.getDexterityModifier(a.stats?.dexterity || 10);
+      return (
+        this.getDexterityModifier(b.stats?.dexterity || 10) -
+        this.getDexterityModifier(a.stats?.dexterity || 10)
+      );
     });
 
     // Create combat state
     this.combatState = {
       id: this.generateCombatId(),
       name,
-      status: 'active',
+      status: "active",
       currentRound: 1,
       currentTurn: 0,
       turnStartTime: Date.now(),
       combatants: processedCombatants,
-      rounds: [{
-        number: 1,
-        startTime: Date.now(),
-        events: []
-      }],
+      rounds: [
+        {
+          number: 1,
+          startTime: Date.now(),
+          events: [],
+        },
+      ],
       settings: {
-        initiativeType: 'standard',
+        initiativeType: "standard",
         turnTimer: 0,
         autoAdvance: false,
         showInitiative: true,
         showHealth: true,
         allowDelayedActions: false,
         automaticDamageApplication: true,
-        ...settings
-      }
+        ...settings,
+      },
     };
 
     // Activate first combatant
@@ -156,8 +160,8 @@ export class CombatManager {
     }
 
     this.emitEvent({
-      type: 'combat-started',
-      data: { combat: this.combatState }
+      type: "combat-started",
+      data: { combat: this.combatState },
     });
 
     return this.combatState;
@@ -169,7 +173,7 @@ export class CombatManager {
   endCombat(): void {
     if (!this.combatState) return;
 
-    this.combatState.status = 'ended';
+    this.combatState.status = "ended";
     this.stopTurnTimer();
 
     // Mark current round as ended
@@ -179,8 +183,8 @@ export class CombatManager {
     }
 
     this.emitEvent({
-      type: 'combat-ended',
-      data: { combat: this.combatState }
+      type: "combat-ended",
+      data: { combat: this.combatState },
     });
 
     this.combatState = null;
@@ -190,7 +194,7 @@ export class CombatManager {
    * Advance to next turn
    */
   nextTurn(): void {
-    if (!this.combatState || this.combatState.status !== 'active') return;
+    if (!this.combatState || this.combatState.status !== "active") return;
 
     // Deactivate current combatant
     const currentCombatant = this.getCurrentCombatant();
@@ -215,17 +219,16 @@ export class CombatManager {
 
       // Emit event with the new current combatant
       this.emitEvent({
-        type: 'turn-advanced',
+        type: "turn-advanced",
         data: {
           combat: this.combatState!,
-          currentCombatant: nextCombatant
-        }
+          currentCombatant: nextCombatant,
+        },
       });
     }
 
     this.combatState.turnStartTime = Date.now();
     this.startTurnTimer();
-
   }
 
   /**
@@ -248,12 +251,12 @@ export class CombatManager {
     const newRound: CombatRound = {
       number: this.combatState.currentRound,
       startTime: Date.now(),
-      events: []
+      events: [],
     };
     this.combatState.rounds.push(newRound);
 
     // Reset all combatant actions and process effects
-    this.combatState.combatants.forEach(combatant => {
+    this.combatState.combatants.forEach((combatant) => {
       this.resetCombatantActions(combatant);
       this.processEndOfRoundEffects(combatant);
     });
@@ -268,11 +271,11 @@ export class CombatManager {
     this.startTurnTimer();
 
     this.emitEvent({
-      type: 'round-started',
+      type: "round-started",
       data: {
         combat: this.combatState,
-        round: newRound
-      }
+        round: newRound,
+      },
     });
   }
 
@@ -282,8 +285,8 @@ export class CombatManager {
   applyDamage(
     combatantId: string,
     damage: number,
-    damageType: string = 'untyped',
-    source?: string
+    damageType: string = "untyped",
+    source?: string,
   ): void {
     const combatant = this.getCombatant(combatantId);
     if (!combatant) return;
@@ -309,20 +312,20 @@ export class CombatManager {
 
     // Log damage event
     this.logCombatEvent({
-      type: 'damage',
+      type: "damage",
       combatantId,
-      description: `${combatant.name} takes ${actualDamage} ${damageType} damage${source ? ` from ${source}` : ''}`,
+      description: `${combatant.name} takes ${actualDamage} ${damageType} damage${source ? ` from ${source}` : ""}`,
       data: {
         damage: actualDamage,
         damageType,
         source,
-        remainingHp: combatant.currentHitPoints
-      }
+        remainingHp: combatant.currentHitPoints,
+      },
     });
 
     this.emitEvent({
-      type: 'damage-applied',
-      data: { combatantId, damage: actualDamage, combatant }
+      type: "damage-applied",
+      data: { combatantId, damage: actualDamage, combatant },
     });
   }
 
@@ -338,19 +341,19 @@ export class CombatManager {
 
     // Log healing event
     this.logCombatEvent({
-      type: 'healing',
+      type: "healing",
       combatantId,
-      description: `${combatant.name} heals ${actualHealing} hit points${source ? ` from ${source}` : ''}`,
+      description: `${combatant.name} heals ${actualHealing} hit points${source ? ` from ${source}` : ""}`,
       data: {
         healing: actualHealing,
         source,
-        currentHp: combatant.currentHitPoints
-      }
+        currentHp: combatant.currentHitPoints,
+      },
     });
 
     this.emitEvent({
-      type: 'healing-applied',
-      data: { combatantId, healing: actualHealing, combatant }
+      type: "healing-applied",
+      data: { combatantId, healing: actualHealing, combatant },
     });
   }
 
@@ -364,20 +367,20 @@ export class CombatManager {
     combatant.conditions.push(condition);
 
     this.logCombatEvent({
-      type: 'condition',
+      type: "condition",
       combatantId,
-      description: `${combatant.name} gains condition: ${condition}${duration ? ` (${duration} rounds)` : ''}`,
+      description: `${combatant.name} gains condition: ${condition}${duration ? ` (${duration} rounds)` : ""}`,
       data: {
         condition,
         duration,
         source,
-        added: true
-      }
+        added: true,
+      },
     });
 
     this.emitEvent({
-      type: 'condition-added',
-      data: { combatantId, condition, combatant }
+      type: "condition-added",
+      data: { combatantId, condition, combatant },
     });
   }
 
@@ -393,18 +396,18 @@ export class CombatManager {
       combatant.conditions.splice(index, 1);
 
       this.logCombatEvent({
-        type: 'condition',
+        type: "condition",
         combatantId,
         description: `${combatant.name} loses condition: ${condition}`,
         data: {
           condition,
-          added: false
-        }
+          added: false,
+        },
       });
 
       this.emitEvent({
-        type: 'condition-removed',
-        data: { combatantId, condition, combatant }
+        type: "condition-removed",
+        data: { combatantId, condition, combatant },
       });
     }
   }
@@ -417,7 +420,7 @@ export class CombatManager {
     targetId: string,
     attackBonus: number,
     damage: { dice: string; bonus: number; type: string },
-    options: { advantage?: boolean; disadvantage?: boolean; critical?: number } = {}
+    options: { advantage?: boolean; disadvantage?: boolean; critical?: number } = {},
   ): {
     hit: boolean;
     critical: boolean;
@@ -426,28 +429,28 @@ export class CombatManager {
   } {
     const attacker = this.getCombatant(attackerId);
     const target = this.getCombatant(targetId);
-    
+
     if (!attacker || !target) {
-      throw new Error('Invalid combatant IDs');
+      throw new Error("Invalid combatant IDs");
     }
 
     // Roll attack
     const attackRoll = this.rollD20(options.advantage, options.disadvantage);
     const totalAttack = attackRoll + attackBonus;
-    
+
     // Check for critical hit
     const criticalThreshold = options.critical || 20;
     const isCritical = attackRoll >= criticalThreshold;
-    
+
     // Check if attack hits
     const hits = totalAttack >= target.armorClass || isCritical;
-    
+
     let damageRoll: number | undefined;
-    
+
     if (hits) {
       // Roll damage
       damageRoll = this.rollDamage(damage.dice, damage.bonus, isCritical);
-      
+
       // Apply damage if automatic damage application is enabled
       if (this.combatState?.settings.automaticDamageApplication) {
         this.applyDamage(targetId, damageRoll, damage.type, attacker.name);
@@ -456,10 +459,10 @@ export class CombatManager {
 
     // Log attack event
     this.logCombatEvent({
-      type: 'attack',
+      type: "attack",
       combatantId: attackerId,
       targetIds: [targetId],
-      description: `${attacker.name} attacks ${target.name}: ${totalAttack} vs AC ${target.armorClass} - ${hits ? 'HIT' : 'MISS'}${isCritical ? ' (CRITICAL)' : ''}`,
+      description: `${attacker.name} attacks ${target.name}: ${totalAttack} vs AC ${target.armorClass} - ${hits ? "HIT" : "MISS"}${isCritical ? " (CRITICAL)" : ""}`,
       data: {
         attackRoll,
         totalAttack,
@@ -467,15 +470,15 @@ export class CombatManager {
         hit: hits,
         critical: isCritical,
         damageRoll,
-        damageType: damage.type
-      }
+        damageType: damage.type,
+      },
     });
 
     return {
       hit: hits,
       critical: isCritical,
       attackRoll,
-      ...(damageRoll !== undefined ? { damageRoll } : Record<string, any>)
+      ...(damageRoll !== undefined ? { damageRoll } : Record<string, any>),
     };
   }
 
@@ -486,22 +489,23 @@ export class CombatManager {
     combatantId: string,
     ability: string,
     dc: number,
-    options: { advantage?: boolean; disadvantage?: boolean } = {}
+    options: { advantage?: boolean; disadvantage?: boolean } = {},
   ): { success: boolean; roll: number; total: number } {
     const combatant = this.getCombatant(combatantId);
     if (!combatant) {
-      throw new Error('Invalid combatant ID');
+      throw new Error("Invalid combatant ID");
     }
 
     const roll = this.rollD20(options.advantage, options.disadvantage);
-    const modifier = combatant.savingThrows[ability] || this.getAbilityModifier(combatant.stats, ability);
+    const modifier =
+      combatant.savingThrows[ability] || this.getAbilityModifier(combatant.stats, ability);
     const total = roll + modifier;
     const success = total >= dc;
 
     this.logCombatEvent({
-      type: 'action',
+      type: "action",
       combatantId,
-      description: `${combatant.name} makes a ${ability} saving throw: ${total} vs DC ${dc} - ${success ? 'SUCCESS' : 'FAILURE'}`,
+      description: `${combatant.name} makes a ${ability} saving throw: ${total} vs DC ${dc} - ${success ? "SUCCESS" : "FAILURE"}`,
       data: {
         savingThrow: true,
         ability,
@@ -509,8 +513,8 @@ export class CombatManager {
         modifier,
         total,
         dc,
-        success
-      }
+        success,
+      },
     });
 
     return { success, roll, total };
@@ -519,17 +523,17 @@ export class CombatManager {
   /**
    * Use combatant action
    */
-  useAction(combatantId: string, actionType: 'action' | 'bonusAction' | 'reaction'): boolean {
+  useAction(combatantId: string, actionType: "action" | "bonusAction" | "reaction"): boolean {
     const combatant = this.getCombatant(combatantId);
     if (!combatant || !combatant.actions[actionType]) {
       return false;
     }
 
     combatant.actions[actionType] = false;
-    
+
     this.emitEvent({
-      type: 'action-used',
-      data: { combatantId, actionType, combatant }
+      type: "action-used",
+      data: { combatantId, actionType, combatant },
     });
 
     return true;
@@ -547,13 +551,13 @@ export class CombatManager {
     combatant.actions.movement -= distance;
 
     this.logCombatEvent({
-      type: 'movement',
+      type: "movement",
       combatantId,
       description: `${combatant.name} moves ${distance} feet`,
       data: {
         distance,
-        remainingMovement: combatant.actions.movement
-      }
+        remainingMovement: combatant.actions.movement,
+      },
     });
 
     return true;
@@ -585,16 +589,16 @@ export class CombatManager {
     const match = dice.match(/(\d+)d(\d+)/);
     if (!match) return bonus;
 
-    const numDice = parseInt(match[1] || '1');
-    const diceSides = parseInt(match[2] || '6');
-    
+    const numDice = parseInt(match[1] || "1");
+    const diceSides = parseInt(match[2] || "6");
+
     let total = 0;
     const rollCount = critical ? numDice * 2 : numDice;
-    
+
     for (let i = 0; i < rollCount; i++) {
       total += Math.floor(Math.random() * diceSides) + 1;
     }
-    
+
     return total + bonus;
   }
 
@@ -612,7 +616,7 @@ export class CombatManager {
     return Math.floor((dexterity - 10) / 2);
   }
 
-  private getAbilityModifier(stats: Combatant['stats'], ability: string): number {
+  private getAbilityModifier(stats: Combatant["stats"], ability: string): number {
     const score = stats[ability as keyof typeof stats] || 10;
     return Math.floor((score - 10) / 2);
   }
@@ -631,17 +635,17 @@ export class CombatManager {
 
   private handleCombatantDefeated(combatant: Combatant): void {
     combatant.isDefeated = true;
-    
+
     this.logCombatEvent({
-      type: 'death',
+      type: "death",
       combatantId: combatant.id,
       description: `${combatant.name} is defeated`,
-      data: Record<string, any>
+      data: Record<string, any>,
     });
 
     this.emitEvent({
-      type: 'combatant-defeated',
-      data: { combatant }
+      type: "combatant-defeated",
+      data: { combatant },
     });
   }
 
@@ -654,8 +658,8 @@ export class CombatManager {
         this.nextTurn();
       } else {
         this.emitEvent({
-          type: 'turn-timer-expired',
-          data: { combatant: this.getCurrentCombatant() }
+          type: "turn-timer-expired",
+          data: { combatant: this.getCurrentCombatant() },
         });
       }
     }, this.combatState.settings.turnTimer * 1000);
@@ -668,13 +672,13 @@ export class CombatManager {
     }
   }
 
-  private logCombatEvent(event: Omit<CombatEvent, 'id' | 'timestamp'>): void {
+  private logCombatEvent(event: Omit<CombatEvent, "id" | "timestamp">): void {
     if (!this.combatState) return;
 
     const combatEvent: CombatEvent = {
       ...event,
       id: this.generateEventId(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     const currentRound = this.getCurrentRound();
@@ -695,7 +699,7 @@ export class CombatManager {
 
   getCombatant(id: string): Combatant | null {
     if (!this.combatState) return null;
-    return this.combatState.combatants.find(c => c.id === id) || null;
+    return this.combatState.combatants.find((c) => c.id === id) || null;
   }
 
   getCurrentRound(): CombatRound | null {
@@ -728,11 +732,11 @@ export class CombatManager {
   }
 
   private emitEvent(event: CombatManagerEvent): void {
-    this.eventListeners.forEach(listener => {
+    this.eventListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Combat manager event listener error:', error);
+        logger.error("Combat manager event listener error:", error);
       }
     });
   }
@@ -740,14 +744,23 @@ export class CombatManager {
 
 // Event types
 export type CombatManagerEvent =
-  | { type: 'combat-started'; data: { combat: CombatState } }
-  | { type: 'combat-ended'; data: { combat: CombatState } }
-  | { type: 'turn-advanced'; data: { combat: CombatState; currentCombatant: Combatant } }
-  | { type: 'round-started'; data: { combat: CombatState; round: CombatRound } }
-  | { type: 'damage-applied'; data: { combatantId: string; damage: number; combatant: Combatant } }
-  | { type: 'healing-applied'; data: { combatantId: string; healing: number; combatant: Combatant } }
-  | { type: 'condition-added'; data: { combatantId: string; condition: string; combatant: Combatant } }
-  | { type: 'condition-removed'; data: { combatantId: string; condition: string; combatant: Combatant } }
-  | { type: 'action-used'; data: { combatantId: string; actionType: string; combatant: Combatant } }
-  | { type: 'combatant-defeated'; data: { combatant: Combatant } }
-  | { type: 'turn-timer-expired'; data: { combatant: Combatant | null } };
+  | { type: "combat-started"; data: { combat: CombatState } }
+  | { type: "combat-ended"; data: { combat: CombatState } }
+  | { type: "turn-advanced"; data: { combat: CombatState; currentCombatant: Combatant } }
+  | { type: "round-started"; data: { combat: CombatState; round: CombatRound } }
+  | { type: "damage-applied"; data: { combatantId: string; damage: number; combatant: Combatant } }
+  | {
+      type: "healing-applied";
+      data: { combatantId: string; healing: number; combatant: Combatant };
+    }
+  | {
+      type: "condition-added";
+      data: { combatantId: string; condition: string; combatant: Combatant };
+    }
+  | {
+      type: "condition-removed";
+      data: { combatantId: string; condition: string; combatant: Combatant };
+    }
+  | { type: "action-used"; data: { combatantId: string; actionType: string; combatant: Combatant } }
+  | { type: "combatant-defeated"; data: { combatant: Combatant } }
+  | { type: "turn-timer-expired"; data: { combatant: Combatant | null } };

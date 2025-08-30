@@ -3,7 +3,7 @@
  * Exports all audio-related components
  */
 
-export * from './AudioSystem';
+export * from "./AudioSystem";
 
 // Re-export commonly used types for convenience
 export type {
@@ -12,5 +12,5 @@ export type {
   AudioPlaylist,
   SpatialAudioSettings,
   AudioSettings,
-  AudioEvent
-} from './AudioSystem';
+  AudioEvent,
+} from "./AudioSystem";

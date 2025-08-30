@@ -3,12 +3,19 @@
  * Handles social mechanics, reactions, and cross-entity interactions
  */
 
-import { DiceEngine, diceEngine } from '@vtt/dice-engine';
-import { ConditionsEngine, conditionsEngine } from '@vtt/conditions-engine';
+import { DiceEngine, diceEngine } from "@vtt/dice-engine";
+import { ConditionsEngine, conditionsEngine } from "@vtt/conditions-engine";
 
 export interface SocialInteraction {
   id: string;
-  type: 'persuasion' | 'deception' | 'intimidation' | 'insight' | 'performance' | 'reaction' | 'opportunity_attack';
+  type:
+    | "persuasion"
+    | "deception"
+    | "intimidation"
+    | "insight"
+    | "performance"
+    | "reaction"
+    | "opportunity_attack";
   initiator: string;
   target: string;
   dc?: number;
@@ -33,7 +40,7 @@ export interface InteractionResult {
 }
 
 export interface InteractionEffect {
-  type: 'condition' | 'attitude' | 'information' | 'combat_trigger' | 'opportunity_attack';
+  type: "condition" | "attitude" | "information" | "combat_trigger" | "opportunity_attack";
   target: string;
   value?: any;
   duration?: number;
@@ -42,7 +49,7 @@ export interface InteractionEffect {
 export interface RelationshipChange {
   target: string;
   change: number; // -5 to +5 scale
-  newAttitude: 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'helpful';
+  newAttitude: "hostile" | "unfriendly" | "neutral" | "friendly" | "helpful";
 }
 
 export interface Reaction {
@@ -57,24 +64,34 @@ export interface Reaction {
 }
 
 export interface ReactionTrigger {
-  event: 'opportunity_attack' | 'spell_cast' | 'movement' | 'attack_made' | 'damage_taken' | 'ally_damaged' | 'custom';
+  event:
+    | "opportunity_attack"
+    | "spell_cast"
+    | "movement"
+    | "attack_made"
+    | "damage_taken"
+    | "ally_damaged"
+    | "custom";
   condition?: string;
   range?: number;
 }
 
 export interface ReactionEffect {
-  type: 'attack' | 'spell' | 'condition' | 'movement' | 'damage_reduction' | 'advantage_grant';
-  target?: 'triggering_entity' | 'self' | 'nearest_ally' | 'custom';
+  type: "attack" | "spell" | "condition" | "movement" | "damage_reduction" | "advantage_grant";
+  target?: "triggering_entity" | "self" | "nearest_ally" | "custom";
   value?: any;
 }
 
 export interface EntityRelationships {
   entityId: string;
-  relationships: Map<string, {
-    attitude: 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'helpful';
-    value: number; // -10 to +10 scale
-    history: SocialInteraction[];
-  }>;
+  relationships: Map<
+    string,
+    {
+      attitude: "hostile" | "unfriendly" | "neutral" | "friendly" | "helpful";
+      value: number; // -10 to +10 scale
+      history: SocialInteraction[];
+    }
+  >;
 }
 
 export class SocialEngine {
@@ -95,7 +112,7 @@ export class SocialEngine {
   initializeEntity(entityId: string, reactions?: Reaction[]): void {
     this.entityRelationships.set(entityId, {
       entityId,
-      relationships: new Map()
+      relationships: new Map(),
     });
 
     if (reactions) {
@@ -106,14 +123,12 @@ export class SocialEngine {
   /**
    * Perform a social interaction (skill check)
    */
-  performSocialCheck(
-    interaction: Omit<SocialInteraction, 'id' | 'result'>
-  ): InteractionResult {
+  performSocialCheck(interaction: Omit<SocialInteraction, "id" | "result">): InteractionResult {
     const interactionId = `social_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    
+
     // Get character's skill bonus for the interaction type
     const skillBonus = this.getSkillBonus(interaction.initiator, interaction.type);
-    
+
     // Roll the check
     let roll;
     if (interaction.advantage) {
@@ -134,9 +149,9 @@ export class SocialEngine {
         dice: roll.rolls[0] || 0,
         modifier: roll.modifier,
         advantage: interaction.advantage,
-        disadvantage: interaction.disadvantage
+        disadvantage: interaction.disadvantage,
       },
-      effects: []
+      effects: [],
     };
 
     // Apply results based on interaction type and success
@@ -152,7 +167,7 @@ export class SocialEngine {
     const fullInteraction: SocialInteraction = {
       id: interactionId,
       ...interaction,
-      result
+      result,
     };
 
     this.addInteractionHistory(interaction.initiator, interaction.target, fullInteraction);
@@ -167,7 +182,7 @@ export class SocialEngine {
     movingEntity: string,
     startPosition: { x: number; y: number },
     endPosition: { x: number; y: number },
-    nearbyEntities: Array<{ id: string; position: { x: number; y: number }; reach: number }>
+    nearbyEntities: Array<{ id: string; position: { x: number; y: number }; reach: number }>,
   ): Array<{ attacker: string; result: any }> {
     const opportunityAttacks: Array<{ attacker: string; result: any }> = [];
 
@@ -175,25 +190,25 @@ export class SocialEngine {
       if (entity.id === movingEntity) continue;
 
       const reactions = this.entityReactions.get(entity.id) || [];
-      const opportunityReaction = reactions.find(r => 
-        r.trigger.event === 'opportunity_attack' && !r.used
+      const opportunityReaction = reactions.find(
+        (r) => r.trigger.event === "opportunity_attack" && !r.used,
       );
 
       if (opportunityReaction) {
         // Check if movement triggers opportunity attack
         const distance = this.calculateDistance(startPosition, entity.position);
         const newDistance = this.calculateDistance(endPosition, entity.position);
-        
+
         if (distance <= entity.reach && newDistance > entity.reach) {
           // Movement triggers opportunity attack
           const attackResult = this.executeReaction(entity.id, opportunityReaction, {
             target: movingEntity,
-            trigger: 'movement_away'
+            trigger: "movement_away",
           });
 
           opportunityAttacks.push({
             attacker: entity.id,
-            result: attackResult
+            result: attackResult,
           });
 
           // Mark reaction as used
@@ -216,7 +231,7 @@ export class SocialEngine {
       position?: { x: number; y: number };
       spellId?: string;
       damage?: number;
-    }
+    },
   ): Array<{ reactor: string; result: any }> {
     const reactionResults: Array<{ reactor: string; result: any }> = [];
 
@@ -229,7 +244,7 @@ export class SocialEngine {
             const result = this.executeReaction(entityId, reaction, context);
             reactionResults.push({
               reactor: entityId,
-              result
+              result,
             });
 
             reaction.used = true;
@@ -246,7 +261,7 @@ export class SocialEngine {
    */
   resetReactions(entityId: string): void {
     const reactions = this.entityReactions.get(entityId) || [];
-    reactions.forEach(reaction => {
+    reactions.forEach((reaction) => {
       reaction.used = false;
     });
   }
@@ -254,19 +269,22 @@ export class SocialEngine {
   /**
    * Get relationship between two entities
    */
-  getRelationship(entityA: string, entityB: string): {
-    attitude: 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'helpful';
+  getRelationship(
+    entityA: string,
+    entityB: string,
+  ): {
+    attitude: "hostile" | "unfriendly" | "neutral" | "friendly" | "helpful";
     value: number;
   } | null {
     const relationships = this.entityRelationships.get(entityA);
     if (!relationships) return null;
 
     const relationship = relationships.relationships.get(entityB);
-    if (!relationship) return { attitude: 'neutral', value: 0 };
+    if (!relationship) return { attitude: "neutral", value: 0 };
 
     return {
       attitude: relationship.attitude,
-      value: relationship.value
+      value: relationship.value,
     };
   }
 
@@ -277,15 +295,15 @@ export class SocialEngine {
     entityA: string,
     entityB: string,
     change: number,
-    reason?: string
+    reason?: string,
   ): RelationshipChange | null {
     const relationships = this.entityRelationships.get(entityA);
     if (!relationships) return null;
 
     const current = relationships.relationships.get(entityB) || {
-      attitude: 'neutral' as const,
+      attitude: "neutral" as const,
       value: 0,
-      history: []
+      history: [],
     };
 
     const newValue = Math.max(-10, Math.min(10, current.value + change));
@@ -294,13 +312,13 @@ export class SocialEngine {
     relationships.relationships.set(entityB, {
       ...current,
       value: newValue,
-      attitude: newAttitude
+      attitude: newAttitude,
     });
 
     return {
       target: entityB,
       change,
-      newAttitude
+      newAttitude,
     };
   }
 
@@ -313,22 +331,28 @@ export class SocialEngine {
   private getDefaultDC(interactionType: string, target: string): number {
     // Default DCs based on interaction type and target attitude
     const relationship = this.getRelationship(target, target);
-    const _baseDC = {
-      'persuasion': 15,
-      'deception': 15,
-      'intimidation': 15,
-      'insight': 15,
-      'performance': 15
-    }[interactionType] || 15;
+    const _baseDC =
+      {
+        persuasion: 15,
+        deception: 15,
+        intimidation: 15,
+        insight: 15,
+        performance: 15,
+      }[interactionType] || 15;
 
     // Adjust DC based on relationship
     if (relationship) {
       switch (relationship.attitude) {
-        case 'hostile': return baseDE + 5;
-        case 'unfriendly': return baseDE + 2;
-        case 'neutral': return baseDE;
-        case 'friendly': return baseDE - 2;
-        case 'helpful': return baseDE - 5;
+        case "hostile":
+          return baseDE + 5;
+        case "unfriendly":
+          return baseDE + 2;
+        case "neutral":
+          return baseDE;
+        case "friendly":
+          return baseDE - 2;
+        case "helpful":
+          return baseDE - 5;
       }
     }
 
@@ -339,28 +363,28 @@ export class SocialEngine {
     const effects: InteractionEffect[] = [];
 
     switch (interaction.type) {
-      case 'intimidation':
+      case "intimidation":
         effects.push({
-          type: 'condition',
+          type: "condition",
           target: interaction.target,
-          value: 'frightened',
-          duration: 1 // 1 round
+          value: "frightened",
+          duration: 1, // 1 round
         });
         break;
 
-      case 'persuasion':
+      case "persuasion":
         effects.push({
-          type: 'attitude',
+          type: "attitude",
           target: interaction.target,
-          value: 'improved_cooperation'
+          value: "improved_cooperation",
         });
         break;
 
-      case 'insight':
+      case "insight":
         effects.push({
-          type: 'information',
+          type: "information",
           target: interaction.initiator,
-          value: 'target_intentions_revealed'
+          value: "target_intentions_revealed",
         });
         break;
     }
@@ -372,11 +396,11 @@ export class SocialEngine {
     const effects: InteractionEffect[] = [];
 
     // Failed intimidation might anger the target
-    if (interaction.type === 'intimidation') {
+    if (interaction.type === "intimidation") {
       effects.push({
-        type: 'attitude',
+        type: "attitude",
         target: interaction.target,
-        value: 'becomes_more_hostile'
+        value: "becomes_more_hostile",
       });
     }
 
@@ -385,17 +409,17 @@ export class SocialEngine {
 
   private updateRelationship(
     interaction: SocialInteraction,
-    success: boolean
+    success: boolean,
   ): RelationshipChange | undefined {
     let change = 0;
 
     if (success) {
       switch (interaction.type) {
-        case 'persuasion':
-        case 'performance':
+        case "persuasion":
+        case "performance":
           change = 1;
           break;
-        case 'intimidation':
+        case "intimidation":
           change = -1; // Intimidation damages relationships even when successful
           break;
       }
@@ -410,15 +434,14 @@ export class SocialEngine {
     return undefined;
   }
 
-  private calculateDistance(pos1: { x: number; y: number }, pos2: { x: number; y: number }): number {
+  private calculateDistance(
+    pos1: { x: number; y: number },
+    pos2: { x: number; y: number },
+  ): number {
     return Math.sqrt(Math.pow(pos2.x - pos1.x, 2) + Math.pow(pos2.y - pos1.y, 2));
   }
 
-  private checkReactionCondition(
-    reaction: Reaction,
-    context: any,
-    reactorId: string
-  ): boolean {
+  private checkReactionCondition(reaction: Reaction, context: any, reactorId: string): boolean {
     // Check range if applicable
     if (reaction.range && context.position) {
       // Would need to get reactor position and check distance
@@ -428,9 +451,9 @@ export class SocialEngine {
     // Check specific conditions
     if (reaction.trigger.condition) {
       switch (reaction.trigger.condition) {
-        case 'ally_in_danger':
+        case "ally_in_danger":
           return context.target !== reactorId && this.isAlly(reactorId, context.target);
-        case 'spell_targets_self':
+        case "spell_targets_self":
           return context.target === reactorId;
         default:
           return true;
@@ -442,58 +465,60 @@ export class SocialEngine {
 
   private executeReaction(entityId: string, reaction: Reaction, context: any): any {
     switch (reaction.effect.type) {
-      case 'attack':
+      case "attack":
         return {
-          type: 'attack',
+          type: "attack",
           attacker: entityId,
           target: context.target || context.triggerer,
-          result: 'opportunity_attack_made'
+          result: "opportunity_attack_made",
         };
 
-      case 'condition':
+      case "condition":
         this.conditions.applyCondition(
           context.target || context.triggerer,
           reaction.effect.value,
-          1
+          1,
         );
         return {
-          type: 'condition_applied',
+          type: "condition_applied",
           target: context.target || context.triggerer,
-          condition: reaction.effect.value
+          condition: reaction.effect.value,
         };
 
-      case 'damage_reduction':
+      case "damage_reduction":
         return {
-          type: 'damage_reduction',
+          type: "damage_reduction",
           target: context.target,
-          reduction: reaction.effect.value
+          reduction: reaction.effect.value,
         };
 
       default:
         return {
-          type: 'reaction_triggered',
-          reaction: reaction.name
+          type: "reaction_triggered",
+          reaction: reaction.name,
         };
     }
   }
 
   private isAlly(entityA: string, entityB: string): boolean {
     const relationship = this.getRelationship(entityA, entityB);
-    return relationship && ['friendly', 'helpful'].includes(relationship.attitude);
+    return relationship && ["friendly", "helpful"].includes(relationship.attitude);
   }
 
-  private calculateAttitude(value: number): 'hostile' | 'unfriendly' | 'neutral' | 'friendly' | 'helpful' {
-    if (value <= -6) return 'hostile';
-    if (value <= -3) return 'unfriendly';
-    if (value <= 2) return 'neutral';
-    if (value <= 6) return 'friendly';
-    return 'helpful';
+  private calculateAttitude(
+    value: number,
+  ): "hostile" | "unfriendly" | "neutral" | "friendly" | "helpful" {
+    if (value <= -6) return "hostile";
+    if (value <= -3) return "unfriendly";
+    if (value <= 2) return "neutral";
+    if (value <= 6) return "friendly";
+    return "helpful";
   }
 
   private addInteractionHistory(
     initiator: string,
     target: string,
-    interaction: SocialInteraction
+    interaction: SocialInteraction,
   ): void {
     const relationships = this.entityRelationships.get(initiator);
     if (relationships) {
@@ -512,47 +537,47 @@ export class SocialEngine {
 // Common reaction templates
 export const COMMON_REACTIONS: Record<string, Reaction> = {
   opportunityAttack: {
-    id: 'opportunity_attack',
-    name: 'Opportunity Attack',
-    description: 'Make a melee attack against a creature leaving your reach',
+    id: "opportunity_attack",
+    name: "Opportunity Attack",
+    description: "Make a melee attack against a creature leaving your reach",
     trigger: {
-      event: 'opportunity_attack'
+      event: "opportunity_attack",
     },
     effect: {
-      type: 'attack',
-      target: 'triggering_entity'
-    }
+      type: "attack",
+      target: "triggering_entity",
+    },
   },
 
   counterspell: {
-    id: 'counterspell',
-    name: 'Counterspell',
-    description: 'Interrupt a spell being cast within 60 feet',
+    id: "counterspell",
+    name: "Counterspell",
+    description: "Interrupt a spell being cast within 60 feet",
     trigger: {
-      event: 'spell_cast',
-      range: 60
+      event: "spell_cast",
+      range: 60,
     },
     effect: {
-      type: 'spell',
-      target: 'triggering_entity'
+      type: "spell",
+      target: "triggering_entity",
     },
-    range: 60
+    range: 60,
   },
 
   protectiveReaction: {
-    id: 'protective_reaction',
-    name: 'Protective Reaction',
-    description: 'Grant advantage to an ally\'s saving throw',
+    id: "protective_reaction",
+    name: "Protective Reaction",
+    description: "Grant advantage to an ally's saving throw",
     trigger: {
-      event: 'damage_taken',
-      condition: 'ally_in_danger',
-      range: 30
+      event: "damage_taken",
+      condition: "ally_in_danger",
+      range: 30,
     },
     effect: {
-      type: 'advantage_grant',
-      target: 'nearest_ally'
-    }
-  }
+      type: "advantage_grant",
+      target: "nearest_ally",
+    },
+  },
 };
 
 // Export singleton

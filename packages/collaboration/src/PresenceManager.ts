@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Presence Manager
@@ -8,8 +8,8 @@ import { logger } from '@vtt/logging';
 export interface UserPresence {
   userId: string;
   username: string;
-  role: 'gm' | 'player' | 'spectator';
-  status: 'active' | 'idle' | 'away';
+  role: "gm" | "player" | "spectator";
+  status: "active" | "idle" | "away";
   lastSeen: number;
   cursor?: {
     x: number;
@@ -56,10 +56,10 @@ export class PresenceManager {
     }, 30000); // Check every 30 seconds
 
     // Track user activity
-    if (typeof document !== 'undefined') {
-      document.addEventListener('mousemove', () => this.recordActivity());
-      document.addEventListener('keypress', () => this.recordActivity());
-      document.addEventListener('click', () => this.recordActivity());
+    if (typeof document !== "undefined") {
+      document.addEventListener("mousemove", () => this.recordActivity());
+      document.addEventListener("keypress", () => this.recordActivity());
+      document.addEventListener("click", () => this.recordActivity());
     }
   }
 
@@ -67,23 +67,23 @@ export class PresenceManager {
     const currentUser = this.users.get(this.currentUserId);
     if (currentUser) {
       this.updateUserPresence(this.currentUserId, {
-        status: 'active',
-        lastSeen: Date.now()
+        status: "active",
+        lastSeen: Date.now(),
       });
     }
   }
 
   private updatePresenceStatuses(): void {
     const now = Date.now();
-    
+
     for (const [userId, presence] of this.users.entries()) {
       const timeSinceLastSeen = now - presence.lastSeen;
       let newStatus = presence.status;
 
       if (timeSinceLastSeen > this.awayTimeout) {
-        newStatus = 'away';
+        newStatus = "away";
       } else if (timeSinceLastSeen > this.idleTimeout) {
-        newStatus = 'idle';
+        newStatus = "idle";
       }
 
       if (newStatus !== presence.status) {
@@ -97,23 +97,23 @@ export class PresenceManager {
    */
   updateUserPresence(userId: string, updates: Partial<UserPresence>): void {
     const existingPresence = this.users.get(userId);
-    const updatedPresence: UserPresence = existingPresence 
+    const updatedPresence: UserPresence = existingPresence
       ? { ...existingPresence, ...updates }
       : {
           userId,
-          username: updates.username || 'Unknown User',
-          role: updates.role || 'player',
-          status: updates.status || 'active',
+          username: updates.username || "Unknown User",
+          role: updates.role || "player",
+          status: updates.status || "active",
           lastSeen: Date.now(),
           color: updates.color || this.generateUserColor(userId),
-          ...updates
+          ...updates,
         };
 
     this.users.set(userId, updatedPresence);
-    
+
     this.emitChange({
-      type: 'presence-updated',
-      data: { userId, presence: updatedPresence, isCurrentUser: userId === this.currentUserId }
+      type: "presence-updated",
+      data: { userId, presence: updatedPresence, isCurrentUser: userId === this.currentUserId },
     });
   }
 
@@ -125,8 +125,8 @@ export class PresenceManager {
     if (presence) {
       this.users.delete(userId);
       this.emitChange({
-        type: 'presence-removed',
-        data: { userId, presence }
+        type: "presence-removed",
+        data: { userId, presence },
       });
     }
   }
@@ -137,7 +137,7 @@ export class PresenceManager {
   updateCursor(userId: string, x: number, y: number, sceneId: string): void {
     this.updateUserPresence(userId, {
       cursor: { x, y, sceneId },
-      lastSeen: Date.now()
+      lastSeen: Date.now(),
     });
   }
 
@@ -147,7 +147,7 @@ export class PresenceManager {
   updateSelection(userId: string, entityType: string, entityIds: string[]): void {
     this.updateUserPresence(userId, {
       selection: { entityType, entityIds },
-      lastSeen: Date.now()
+      lastSeen: Date.now(),
     });
   }
 
@@ -157,7 +157,7 @@ export class PresenceManager {
   updateViewport(userId: string, x: number, y: number, zoom: number, sceneId: string): void {
     this.updateUserPresence(userId, {
       viewport: { x, y, zoom, sceneId },
-      lastSeen: Date.now()
+      lastSeen: Date.now(),
     });
   }
 
@@ -172,55 +172,64 @@ export class PresenceManager {
    * Get all active users
    */
   getActiveUsers(): UserPresence[] {
-    return Array.from(this.users.values())
-      .filter(user => user.status !== 'away');
+    return Array.from(this.users.values()).filter((user) => user.status !== "away");
   }
 
   /**
    * Get users in scene
    */
   getUsersInScene(sceneId: string): UserPresence[] {
-    return Array.from(this.users.values())
-      .filter(user => user.viewport?.sceneId === sceneId || user.cursor?.sceneId === sceneId);
+    return Array.from(this.users.values()).filter(
+      (user) => user.viewport?.sceneId === sceneId || user.cursor?.sceneId === sceneId,
+    );
   }
 
   /**
    * Get users with cursor in area
    */
-  getUserCursorsInArea(sceneId: string, x: number, y: number, width: number, height: number): UserPresence[] {
-    return Array.from(this.users.values())
-      .filter(user => {
-        const cursor = user.cursor;
-        return cursor && 
-               cursor.sceneId === sceneId &&
-               cursor.x >= x && cursor.x <= x + width &&
-               cursor.y >= y && cursor.y <= y + height;
-      });
+  getUserCursorsInArea(
+    sceneId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+  ): UserPresence[] {
+    return Array.from(this.users.values()).filter((user) => {
+      const cursor = user.cursor;
+      return (
+        cursor &&
+        cursor.sceneId === sceneId &&
+        cursor.x >= x &&
+        cursor.x <= x + width &&
+        cursor.y >= y &&
+        cursor.y <= y + height
+      );
+    });
   }
 
   /**
    * Get users with overlapping selections
    */
   getUsersWithSelection(entityType: string, entityId: string): UserPresence[] {
-    return Array.from(this.users.values())
-      .filter(user => {
-        const selection = user.selection;
-        return selection &&
-               selection.entityType === entityType &&
-               selection.entityIds.includes(entityId);
-      });
+    return Array.from(this.users.values()).filter((user) => {
+      const selection = user.selection;
+      return (
+        selection && selection.entityType === entityType && selection.entityIds.includes(entityId)
+      );
+    });
   }
 
   /**
    * Check if entity is being edited by another user
    */
   isEntityLocked(entityType: string, entityId: string): { locked: boolean; users: UserPresence[] } {
-    const editingUsers = this.getUsersWithSelection(entityType, entityId)
-      .filter(user => user.userId !== this.currentUserId);
+    const editingUsers = this.getUsersWithSelection(entityType, entityId).filter(
+      (user) => user.userId !== this.currentUserId,
+    );
 
     return {
       locked: editingUsers.length > 0,
-      users: editingUsers
+      users: editingUsers,
     };
   }
 
@@ -230,18 +239,27 @@ export class PresenceManager {
   private generateUserColor(userId: string): string {
     // Generate consistent color based on user ID
     const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-      '#FECA57', '#FF9FF3', '#54A0FF', '#5F27CD',
-      '#00D2D3', '#FF9F43', '#10AC84', '#EE5A24'
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FECA57",
+      "#FF9FF3",
+      "#54A0FF",
+      "#5F27CD",
+      "#00D2D3",
+      "#FF9F43",
+      "#10AC84",
+      "#EE5A24",
     ];
-    
+
     let hash = 0;
     for (let i = 0; i < userId.length; i++) {
       hash = ((hash << 5) - hash + userId.charCodeAt(i)) & 0xffffffff;
     }
-    
+
     const color = colors[Math.abs(hash) % colors.length];
-    return color || '#808080'; // Fallback color if undefined
+    return color || "#808080"; // Fallback color if undefined
   }
 
   /**
@@ -254,18 +272,18 @@ export class PresenceManager {
   /**
    * Set current user info
    */
-  setCurrentUser(username: string, role: 'gm' | 'player' | 'spectator', avatar?: string): void {
+  setCurrentUser(username: string, role: "gm" | "player" | "spectator", avatar?: string): void {
     const presenceUpdate: Partial<UserPresence> = {
       username,
       role,
-      status: 'active',
-      lastSeen: Date.now()
+      status: "active",
+      lastSeen: Date.now(),
     };
-    
+
     if (avatar !== undefined) {
       presenceUpdate.avatar = avatar;
     }
-    
+
     this.updateUserPresence(this.currentUserId, presenceUpdate);
   }
 
@@ -292,7 +310,7 @@ export class PresenceManager {
         updates.push({
           userId,
           updates: presence,
-          timestamp: presence.lastSeen
+          timestamp: presence.lastSeen,
         });
       }
     }
@@ -312,30 +330,30 @@ export class PresenceManager {
 
     return {
       cursors: users
-        .filter(user => user.cursor && user.userId !== this.currentUserId)
-        .map(user => ({
+        .filter((user) => user.cursor && user.userId !== this.currentUserId)
+        .map((user) => ({
           userId: user.userId,
           x: user.cursor!.x,
           y: user.cursor!.y,
           color: user.color,
-          username: user.username
+          username: user.username,
         })),
-      
+
       selections: users
-        .filter(user => user.selection && user.userId !== this.currentUserId)
-        .map(user => ({
+        .filter((user) => user.selection && user.userId !== this.currentUserId)
+        .map((user) => ({
           userId: user.userId,
           entityIds: user.selection!.entityIds,
           color: user.color,
-          username: user.username
+          username: user.username,
         })),
-      
-      viewers: users.map(user => ({
+
+      viewers: users.map((user) => ({
         userId: user.userId,
         username: user.username,
         color: user.color,
-        status: user.status
-      }))
+        status: user.status,
+      })),
     };
   }
 
@@ -344,7 +362,7 @@ export class PresenceManager {
    */
   clear(): void {
     this.users.clear();
-    this.emitChange({ type: 'presence-cleared', data: {} });
+    this.emitChange({ type: "presence-cleared", data: {} });
   }
 
   /**
@@ -359,12 +377,12 @@ export class PresenceManager {
    */
   importPresence(presenceData: UserPresence[]): void {
     this.users.clear();
-    
+
     for (const presence of presenceData) {
       this.users.set(presence.userId, presence);
     }
 
-    this.emitChange({ type: 'presence-imported', data: { users: presenceData } });
+    this.emitChange({ type: "presence-imported", data: { users: presenceData } });
   }
 
   // Event System
@@ -380,11 +398,11 @@ export class PresenceManager {
   }
 
   private emitChange(event: PresenceEvent): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Presence event listener error:', error as Error);
+        logger.error("Presence event listener error:", error as Error);
       }
     });
   }
@@ -403,7 +421,10 @@ export class PresenceManager {
 
 // Event Types
 export type PresenceEvent =
-  | { type: 'presence-updated'; data: { userId: string; presence: UserPresence; isCurrentUser: boolean } }
-  | { type: 'presence-removed'; data: { userId: string; presence: UserPresence } }
-  | { type: 'presence-cleared'; data: {} }
-  | { type: 'presence-imported'; data: { users: UserPresence[] } };
+  | {
+      type: "presence-updated";
+      data: { userId: string; presence: UserPresence; isCurrentUser: boolean };
+    }
+  | { type: "presence-removed"; data: { userId: string; presence: UserPresence } }
+  | { type: "presence-cleared"; data: {} }
+  | { type: "presence-imported"; data: { users: UserPresence[] } };

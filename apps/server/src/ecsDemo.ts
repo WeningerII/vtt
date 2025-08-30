@@ -1,5 +1,5 @@
-import { World, MovementSystem } from '@vtt/core-ecs';
-import { logger } from '@vtt/logging';
+import { World, MovementSystem } from "@vtt/core-ecs";
+import { logger } from "@vtt/logging";
 
 const w = new World(1024);
 const N = 3;
@@ -23,4 +23,4 @@ for (let id = 0; id < N; id++) {
   const y = w.transforms.y[id] ?? 0;
   out.push({ id, x: Number(x.toFixed(3)), y: Number(y.toFixed(3)) });
 }
-logger.info('Positions after', t.toFixed(2), 's:', out);
+logger.info("Positions after", t.toFixed(2), "s:", out);

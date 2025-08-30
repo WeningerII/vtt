@@ -3,16 +3,16 @@
  * Consolidates component creation between UI framework and content creation systems
  */
 
-import { EventEmitter, SystemEvents } from './EventEmitter';
-import { logger } from '@vtt/logging';
-import { 
-  Component, 
-  ComponentType, 
-  ComponentProperties, 
+import { EventEmitter, SystemEvents } from "./EventEmitter";
+import { logger } from "@vtt/logging";
+import {
+  Component,
+  ComponentType,
+  ComponentProperties,
   ComponentFactory as IComponentFactory,
   ComponentConstructor,
-  Disposable 
-} from './SharedInterfaces';
+  Disposable,
+} from "./SharedInterfaces";
 
 export interface ComponentDefinition {
   type: ComponentType;
@@ -39,32 +39,32 @@ export class BaseComponent implements Component {
   public properties: ComponentProperties;
   public children: Component[] = [];
   public parent: Component | undefined;
-  
+
   protected eventListeners = new Map<string, Set<EventListener>>();
   protected initialized = false;
   protected destroyed = false;
 
   constructor(properties: ComponentProperties = {}) {
     this.id = this.generateId();
-    this.type = (properties as any).type || 'base';
+    this.type = (properties as any).type || "base";
     this.name = properties.name || `${this.type}_${this.id}`;
     this.properties = { ...properties };
   }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
-    
+
     // Initialize children
     for (const child of this.children) {
       await child.initialize();
     }
-    
+
     this.initialized = true;
   }
 
   update(deltaTime: number): void {
     if (!this.initialized || this.destroyed) return;
-    
+
     // Update children
     for (const child of this.children) {
       child.update(deltaTime);
@@ -73,7 +73,7 @@ export class BaseComponent implements Component {
 
   render(): void {
     if (!this.initialized || this.destroyed) return;
-    
+
     // Render children
     for (const child of this.children) {
       child.render();
@@ -82,13 +82,13 @@ export class BaseComponent implements Component {
 
   destroy(): void {
     if (this.destroyed) return;
-    
+
     // Destroy children
     for (const child of this.children) {
       child.destroy();
     }
     this.children = [];
-    
+
     // Remove from parent
     if (this.parent) {
       const index = this.parent.children.indexOf(this);
@@ -96,10 +96,10 @@ export class BaseComponent implements Component {
         this.parent.children.splice(index, 1);
       }
     }
-    
+
     // Clear event listeners
     this.eventListeners.clear();
-    
+
     this.destroyed = true;
   }
 
@@ -140,7 +140,7 @@ export class BaseComponent implements Component {
         child.parent.children.splice(index, 1);
       }
     }
-    
+
     child.parent = this;
     this.children.push(child);
   }
@@ -156,7 +156,7 @@ export class BaseComponent implements Component {
   findChild(id: string): Component | null {
     for (const child of this.children) {
       if (child.id === id) return child;
-      
+
       const found = child.findChild(id);
       if (found) return found;
     }
@@ -166,7 +166,7 @@ export class BaseComponent implements Component {
   findChildByType(type: ComponentType): Component | null {
     for (const child of this.children) {
       if (child.type === type) return child;
-      
+
       const found = child.findChildByType(type);
       if (found) return found;
     }
@@ -178,7 +178,10 @@ export class BaseComponent implements Component {
   }
 }
 
-export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implements IComponentFactory, Disposable {
+export class UnifiedComponentFactory
+  extends EventEmitter<SystemEvents>
+  implements IComponentFactory, Disposable
+{
   private registry: ComponentRegistry = {};
   private instances = new Map<string, Component>();
   private templates = new Map<string, string>();
@@ -210,7 +213,7 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
     const component = new definition.constructor(mergedProperties);
     this.instances.set(component.id, component);
 
-    this.emit('ready', undefined);
+    this.emit("ready", undefined);
     return component;
   }
 
@@ -222,12 +225,12 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
       type,
       name: type,
       description: `Component of type ${type}`,
-      category: 'custom',
+      category: "custom",
       defaultProperties: Record<string, any>,
       requiredProperties: [],
       constructor,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     };
 
     this.registry[type] = definition;
@@ -238,11 +241,11 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
    */
   registerDefinition(definition: ComponentDefinition): void {
     this.registry[definition.type] = definition;
-    
+
     if (definition.template) {
       this.templates.set(definition.type, definition.template);
     }
-    
+
     if (definition.styles) {
       this.styles.set(definition.type, definition.styles);
     }
@@ -312,7 +315,7 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
    * Get components by type
    */
   getComponentsByType(type: ComponentType): Component[] {
-    return Array.from(this.instances.values()).filter(comp => comp.type === type);
+    return Array.from(this.instances.values()).filter((comp) => comp.type === type);
   }
 
   /**
@@ -320,14 +323,14 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
    */
   getStats(): { totalComponents: number; byType: Record<string, number> } {
     const byType: Record<string, number> = {};
-    
+
     for (const component of this.instances.values()) {
       byType[component.type] = (byType[component.type] || 0) + 1;
     }
 
     return {
       totalComponents: this.instances.size,
-      byType
+      byType,
     };
   }
 
@@ -339,7 +342,7 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
     for (const component of this.instances.values()) {
       component.destroy();
     }
-    
+
     this.instances.clear();
     this.registry = {};
     this.templates.clear();
@@ -352,177 +355,177 @@ export class UnifiedComponentFactory extends EventEmitter<SystemEvents> implemen
   private registerBuiltInComponents(): void {
     // UI Components
     this.registerDefinition({
-      type: 'ui_element',
-      name: 'UI Element',
-      description: 'Base UI element component',
-      category: 'ui',
+      type: "ui_element",
+      name: "UI Element",
+      description: "Base UI element component",
+      category: "ui",
       defaultProperties: {
         visible: true,
         enabled: true,
-        style: Record<string, any>
+        style: Record<string, any>,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     this.registerDefinition({
-      type: 'panel',
-      name: 'Panel',
-      description: 'Container panel for other UI elements',
-      category: 'ui',
+      type: "panel",
+      name: "Panel",
+      description: "Container panel for other UI elements",
+      category: "ui",
       defaultProperties: {
         visible: true,
         enabled: true,
         style: {
-          backgroundColor: '#f0f0f0',
+          backgroundColor: "#f0f0f0",
           borderWidth: 1,
-          borderColor: '#ccc'
-        }
+          borderColor: "#ccc",
+        },
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     this.registerDefinition({
-      type: 'dialog',
-      name: 'Dialog',
-      description: 'Modal dialog component',
-      category: 'ui',
+      type: "dialog",
+      name: "Dialog",
+      description: "Modal dialog component",
+      category: "ui",
       defaultProperties: {
         visible: false,
         enabled: true,
         modal: true,
         style: {
-          position: 'fixed',
-          zIndex: 1000
-        }
+          position: "fixed",
+          zIndex: 1000,
+        },
       },
-      requiredProperties: ['title'],
+      requiredProperties: ["title"],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // Game Object Components
     this.registerDefinition({
-      type: 'game_object',
-      name: 'Game Object',
-      description: 'Base game object component',
-      category: 'game',
+      type: "game_object",
+      name: "Game Object",
+      description: "Base game object component",
+      category: "game",
       defaultProperties: {
         transform: {
           position: { x: 0, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 }
+          scale: { x: 1, y: 1, z: 1 },
         },
         visible: true,
-        enabled: true
+        enabled: true,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // Layout Components
     this.registerDefinition({
-      type: 'layout',
-      name: 'Layout',
-      description: 'Layout container for arranging child components',
-      category: 'layout',
+      type: "layout",
+      name: "Layout",
+      description: "Layout container for arranging child components",
+      category: "layout",
       defaultProperties: {
-        direction: 'row',
+        direction: "row",
         spacing: 0,
-        alignment: 'start'
+        alignment: "start",
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // Widget Components
     this.registerDefinition({
-      type: 'widget',
-      name: 'Widget',
-      description: 'Interactive widget component',
-      category: 'widget',
+      type: "widget",
+      name: "Widget",
+      description: "Interactive widget component",
+      category: "widget",
       defaultProperties: {
         interactive: true,
-        focusable: true
+        focusable: true,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // Control Components
     this.registerDefinition({
-      type: 'control',
-      name: 'Control',
-      description: 'User input control component',
-      category: 'control',
+      type: "control",
+      name: "Control",
+      description: "User input control component",
+      category: "control",
       defaultProperties: {
         enabled: true,
-        value: null
+        value: null,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // System Components
     this.registerDefinition({
-      type: 'system',
-      name: 'System',
-      description: 'System component for game logic',
-      category: 'system',
+      type: "system",
+      name: "System",
+      description: "System component for game logic",
+      category: "system",
       defaultProperties: {
         enabled: true,
-        priority: 0
+        priority: 0,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // Behavior Components
     this.registerDefinition({
-      type: 'behavior',
-      name: 'Behavior',
-      description: 'Behavior component for entity logic',
-      category: 'behavior',
+      type: "behavior",
+      name: "Behavior",
+      description: "Behavior component for entity logic",
+      category: "behavior",
       defaultProperties: {
-        enabled: true
+        enabled: true,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
 
     // Effect Components
     this.registerDefinition({
-      type: 'effect',
-      name: 'Effect',
-      description: 'Visual or audio effect component',
-      category: 'effect',
+      type: "effect",
+      name: "Effect",
+      description: "Visual or audio effect component",
+      category: "effect",
       defaultProperties: {
         duration: 1000,
         loop: false,
-        autoPlay: true
+        autoPlay: true,
       },
       requiredProperties: [],
       constructor: BaseComponent,
       dependencies: [],
-      version: '1.0.0'
+      version: "1.0.0",
     });
   }
 }

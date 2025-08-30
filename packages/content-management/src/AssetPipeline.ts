@@ -3,8 +3,8 @@
  * Handles asset optimization, transformation, and preparation for VTT usage
  */
 
-import { EventEmitter } from 'events';
-import { AssetMetadata, AssetType } from './AssetManager';
+import { EventEmitter } from "events";
+import { AssetMetadata, AssetType } from "./AssetManager";
 
 export interface PipelineStage {
   name: string;
@@ -17,7 +17,11 @@ export interface PipelineStage {
 export interface AssetProcessor {
   name: string;
   supportedTypes: AssetType[];
-  process(data: ArrayBuffer, metadata: AssetMetadata, options?: Record<string, any>): Promise<ProcessingResult>;
+  process(
+    data: ArrayBuffer,
+    metadata: AssetMetadata,
+    options?: Record<string, any>,
+  ): Promise<ProcessingResult>;
 }
 
 export interface ProcessingResult {
@@ -64,21 +68,26 @@ export class AssetPipeline extends EventEmitter {
     const warnings: string[] = [];
     const errors: string[] = [];
 
-    const applicableStages = this.config.stages.filter(stage => 
-      stage.enabled && this.canProcessType(stage.processor, metadata.type)
+    const applicableStages = this.config.stages.filter(
+      (stage) => stage.enabled && this.canProcessType(stage.processor, metadata.type),
     );
 
     for (let i = 0; i < applicableStages.length; i++) {
       const stage = applicableStages[i];
-      
-      this.emitProgress(stage.name, i / applicableStages.length, metadata.name, `Processing with ${stage.name}`);
+
+      this.emitProgress(
+        stage.name,
+        i / applicableStages.length,
+        metadata.name,
+        `Processing with ${stage.name}`,
+      );
 
       try {
         const result = await stage.processor.process(currentData, currentMetadata, stage.options);
-        
+
         currentData = result.data;
         currentMetadata = { ...currentMetadata, ...result.metadata };
-        
+
         if (result.derivatives) {
           for (const [key, value] of result.derivatives) {
             derivatives.set(key, value);
@@ -92,19 +101,18 @@ export class AssetPipeline extends EventEmitter {
         if (result.errors) {
           errors.push(...result.errors);
         }
-
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown processing error';
+        const errorMsg = error instanceof Error ? error.message : "Unknown processing error";
         errors.push(`${stage.name}: ${errorMsg}`);
-        
+
         // Continue with next stage unless it's a critical error
-        if (error instanceof Error && error.message.includes('CRITICAL')) {
+        if (error instanceof Error && error.message.includes("CRITICAL")) {
           break;
         }
       }
     }
 
-    this.emitProgress('complete', 1, metadata.name, 'Processing complete');
+    this.emitProgress("complete", 1, metadata.name, "Processing complete");
 
     return {
       data: currentData,
@@ -118,12 +126,14 @@ export class AssetPipeline extends EventEmitter {
   /**
    * Process multiple assets in batch
    */
-  async processBatch(assets: Array<{ data: ArrayBuffer; metadata: AssetMetadata }>): Promise<ProcessingResult[]> {
+  async processBatch(
+    assets: Array<{ data: ArrayBuffer; metadata: AssetMetadata }>,
+  ): Promise<ProcessingResult[]> {
     const results: ProcessingResult[] = [];
 
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
-      
+
       try {
         const result = await this.processAsset(asset.data, asset.metadata);
         results.push(result);
@@ -132,12 +142,12 @@ export class AssetPipeline extends EventEmitter {
         results.push({
           data: asset.data,
           metadata: asset.metadata,
-          errors: [error instanceof Error ? error.message : 'Unknown batch processing error'],
+          errors: [error instanceof Error ? error.message : "Unknown batch processing error"],
         });
       }
 
       // Emit batch progress
-      this.emit('batchProgress', {
+      this.emit("batchProgress", {
         completed: i + 1,
         total: assets.length,
         current: asset.metadata.name,
@@ -174,45 +184,50 @@ export class AssetPipeline extends EventEmitter {
 
   private setupDefaultProcessors(): void {
     // Image optimization processor
-    this.processors.set('imageOptimizer', new ImageOptimizer());
-    
-    // Audio normalization processor  
-    this.processors.set('audioNormalizer', new AudioNormalizer());
-    
+    this.processors.set("imageOptimizer", new ImageOptimizer());
+
+    // Audio normalization processor
+    this.processors.set("audioNormalizer", new AudioNormalizer());
+
     // Thumbnail generator
-    this.processors.set('thumbnailGenerator', new ThumbnailGenerator());
-    
+    this.processors.set("thumbnailGenerator", new ThumbnailGenerator());
+
     // Model optimizer
-    this.processors.set('modelOptimizer', new ModelOptimizer());
-    
+    this.processors.set("modelOptimizer", new ModelOptimizer());
+
     // Data validator
-    this.processors.set('dataValidator', new DataValidator());
+    this.processors.set("dataValidator", new DataValidator());
 
     // Add processors to default stages
     this.config.stages = this.config.stages || [
       {
-        name: 'validation',
-        description: 'Validate asset data',
+        name: "validation",
+        description: "Validate asset data",
         enabled: true,
-        processor: this.processors.get('dataValidator')!,
+        processor: this.processors.get("dataValidator")!,
       },
       {
-        name: 'optimization',
-        description: 'Optimize asset for VTT usage',
+        name: "optimization",
+        description: "Optimize asset for VTT usage",
         enabled: true,
-        processor: this.processors.get('imageOptimizer')!,
+        processor: this.processors.get("imageOptimizer")!,
       },
       {
-        name: 'thumbnails',
-        description: 'Generate thumbnails and previews',
+        name: "thumbnails",
+        description: "Generate thumbnails and previews",
         enabled: this.config.generateThumbnails || true,
-        processor: this.processors.get('thumbnailGenerator')!,
+        processor: this.processors.get("thumbnailGenerator")!,
       },
     ];
   }
 
-  private emitProgress(stage: string, progress: number, currentAsset?: string, message?: string): void {
-    this.emit('progress', {
+  private emitProgress(
+    stage: string,
+    progress: number,
+    currentAsset?: string,
+    message?: string,
+  ): void {
+    this.emit("progress", {
       stage,
       progress,
       currentAsset,
@@ -225,20 +240,24 @@ export class AssetPipeline extends EventEmitter {
  * Image optimization processor
  */
 class ImageOptimizer implements AssetProcessor {
-  name = 'imageOptimizer';
-  supportedTypes: AssetType[] = ['image'];
+  name = "imageOptimizer";
+  supportedTypes: AssetType[] = ["image"];
 
-  async process(data: ArrayBuffer, metadata: AssetMetadata, options?: Record<string, any>): Promise<ProcessingResult> {
+  async process(
+    data: ArrayBuffer,
+    metadata: AssetMetadata,
+    options?: Record<string, any>,
+  ): Promise<ProcessingResult> {
     // In a real implementation, you would use Sharp or similar
     // For now, we'll simulate optimization
-    
+
     const quality = options?.quality || 0.85;
-    const format = options?.format || 'webp';
+    const format = options?.format || "webp";
     const _maxWidth = options?.maxWidth || 2048;
     const _maxHeight = options?.maxHeight || 2048;
 
     // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Mock optimization - in reality would compress/resize image
     let optimizedData = data;
@@ -246,9 +265,9 @@ class ImageOptimizer implements AssetProcessor {
 
     // Simulate size reduction based on quality
     if (quality < 1.0) {
-      const reductionFactor = 0.3 + (quality * 0.4); // 30-70% of original size
+      const reductionFactor = 0.3 + quality * 0.4; // 30-70% of original size
       sizeReduction = data.byteLength * (1 - reductionFactor);
-      
+
       // Create mock optimized data (in reality would be actual compressed image)
       const mockSize = Math.floor(data.byteLength * reductionFactor);
       optimizedData = data.slice(0, mockSize);
@@ -268,7 +287,7 @@ class ImageOptimizer implements AssetProcessor {
 
     const warnings: string[] = [];
     if (sizeReduction > data.byteLength * 0.5) {
-      warnings.push('Significant quality reduction may affect visual appearance');
+      warnings.push("Significant quality reduction may affect visual appearance");
     }
 
     return {
@@ -283,15 +302,19 @@ class ImageOptimizer implements AssetProcessor {
  * Audio normalization processor
  */
 class AudioNormalizer implements AssetProcessor {
-  name = 'audioNormalizer';
-  supportedTypes: AssetType[] = ['audio'];
+  name = "audioNormalizer";
+  supportedTypes: AssetType[] = ["audio"];
 
-  async process(data: ArrayBuffer, metadata: AssetMetadata, options?: Record<string, any>): Promise<ProcessingResult> {
+  async process(
+    data: ArrayBuffer,
+    metadata: AssetMetadata,
+    options?: Record<string, any>,
+  ): Promise<ProcessingResult> {
     // Mock audio processing
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     const targetLUFS = options?.targetLUFS || -23; // Broadcast standard
-    const format = options?.format || 'ogg';
+    const format = options?.format || "ogg";
 
     const updatedMetadata: Partial<AssetMetadata> = {
       customProperties: {
@@ -313,23 +336,27 @@ class AudioNormalizer implements AssetProcessor {
  * Thumbnail generator processor
  */
 class ThumbnailGenerator implements AssetProcessor {
-  name = 'thumbnailGenerator';
-  supportedTypes: AssetType[] = ['image', 'model', 'map', 'scene'];
+  name = "thumbnailGenerator";
+  supportedTypes: AssetType[] = ["image", "model", "map", "scene"];
 
-  async process(data: ArrayBuffer, metadata: AssetMetadata, options?: Record<string, any>): Promise<ProcessingResult> {
-    await new Promise(resolve => setTimeout(resolve, 150));
+  async process(
+    data: ArrayBuffer,
+    metadata: AssetMetadata,
+    options?: Record<string, any>,
+  ): Promise<ProcessingResult> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     const thumbnailSize = options?.thumbnailSize || 128;
     const previewSize = options?.previewSize || 512;
-    
+
     const derivatives = new Map<string, ArrayBuffer>();
 
     // Mock thumbnail generation
     const mockThumbnail = new ArrayBuffer(1024); // 1KB placeholder
-    const mockPreview = new ArrayBuffer(8192);   // 8KB placeholder
-    
-    derivatives.set('thumbnail', mockThumbnail);
-    derivatives.set('preview', mockPreview);
+    const mockPreview = new ArrayBuffer(8192); // 8KB placeholder
+
+    derivatives.set("thumbnail", mockThumbnail);
+    derivatives.set("preview", mockPreview);
 
     const updatedMetadata: Partial<AssetMetadata> = {
       thumbnailUrl: `thumbnail_${metadata.id}`,
@@ -355,11 +382,15 @@ class ThumbnailGenerator implements AssetProcessor {
  * 3D model optimizer processor
  */
 class ModelOptimizer implements AssetProcessor {
-  name = 'modelOptimizer';
-  supportedTypes: AssetType[] = ['model'];
+  name = "modelOptimizer";
+  supportedTypes: AssetType[] = ["model"];
 
-  async process(data: ArrayBuffer, metadata: AssetMetadata, options?: Record<string, any>): Promise<ProcessingResult> {
-    await new Promise(resolve => setTimeout(resolve, 300));
+  async process(
+    data: ArrayBuffer,
+    metadata: AssetMetadata,
+    options?: Record<string, any>,
+  ): Promise<ProcessingResult> {
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const decimateRatio = options?.decimateRatio || 0.8; // Reduce poly count by 20%
     const compressTextures = options?.compressTextures || true;
@@ -381,7 +412,7 @@ class ModelOptimizer implements AssetProcessor {
 
     const warnings: string[] = [];
     if (decimateRatio < 0.5) {
-      warnings.push('Aggressive polygon reduction may affect model quality');
+      warnings.push("Aggressive polygon reduction may affect model quality");
     }
 
     return {
@@ -396,8 +427,8 @@ class ModelOptimizer implements AssetProcessor {
  * Data validation processor
  */
 class DataValidator implements AssetProcessor {
-  name = 'dataValidator';
-  supportedTypes: AssetType[] = ['data', 'scene', 'campaign', 'template'];
+  name = "dataValidator";
+  supportedTypes: AssetType[] = ["data", "scene", "campaign", "template"];
 
   async process(data: ArrayBuffer, metadata: AssetMetadata): Promise<ProcessingResult> {
     const errors: string[] = [];
@@ -405,20 +436,20 @@ class DataValidator implements AssetProcessor {
 
     // Basic validation
     if (data.byteLength === 0) {
-      errors.push('Asset data is empty');
+      errors.push("Asset data is empty");
     }
 
     // JSON validation for data assets
-    if (metadata.mimeType === 'application/json') {
+    if (metadata.mimeType === "application/json") {
       try {
         const text = new TextDecoder().decode(data);
         const json = JSON.parse(text);
-        
-        if (typeof json !== 'object') {
-          warnings.push('JSON data is not an object');
+
+        if (typeof json !== "object") {
+          warnings.push("JSON data is not an object");
         }
       } catch (error) {
-        errors.push(`Invalid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(`Invalid JSON: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     }
 
@@ -446,8 +477,18 @@ export const _DEFAULT_PIPELINE_CONFIGS = {
   // Fast processing for development
   development: {
     stages: [
-      { name: 'validation', description: 'Basic validation', enabled: true, processor: new DataValidator() },
-      { name: 'thumbnails', description: 'Generate thumbnails', enabled: true, processor: new ThumbnailGenerator() },
+      {
+        name: "validation",
+        description: "Basic validation",
+        enabled: true,
+        processor: new DataValidator(),
+      },
+      {
+        name: "thumbnails",
+        description: "Generate thumbnails",
+        enabled: true,
+        processor: new ThumbnailGenerator(),
+      },
     ],
     generateThumbnails: true,
     generatePreviews: false,
@@ -457,11 +498,37 @@ export const _DEFAULT_PIPELINE_CONFIGS = {
   // Full processing for production
   production: {
     stages: [
-      { name: 'validation', description: 'Comprehensive validation', enabled: true, processor: new DataValidator() },
-      { name: 'optimization', description: 'Optimize for web', enabled: true, processor: new ImageOptimizer(), options: { quality: 0.8 } },
-      { name: 'audio', description: 'Normalize audio', enabled: true, processor: new AudioNormalizer() },
-      { name: 'models', description: 'Optimize 3D models', enabled: true, processor: new ModelOptimizer() },
-      { name: 'thumbnails', description: 'Generate all previews', enabled: true, processor: new ThumbnailGenerator() },
+      {
+        name: "validation",
+        description: "Comprehensive validation",
+        enabled: true,
+        processor: new DataValidator(),
+      },
+      {
+        name: "optimization",
+        description: "Optimize for web",
+        enabled: true,
+        processor: new ImageOptimizer(),
+        options: { quality: 0.8 },
+      },
+      {
+        name: "audio",
+        description: "Normalize audio",
+        enabled: true,
+        processor: new AudioNormalizer(),
+      },
+      {
+        name: "models",
+        description: "Optimize 3D models",
+        enabled: true,
+        processor: new ModelOptimizer(),
+      },
+      {
+        name: "thumbnails",
+        description: "Generate all previews",
+        enabled: true,
+        processor: new ThumbnailGenerator(),
+      },
     ],
     generateThumbnails: true,
     generatePreviews: true,
@@ -481,12 +548,29 @@ export const _DEFAULT_PIPELINE_CONFIGS = {
     },
   } as PipelineConfig,
 
-  // Lightweight processing for mobile/bandwidth-constrained environments  
+  // Lightweight processing for mobile/bandwidth-constrained environments
   mobile: {
     stages: [
-      { name: 'validation', description: 'Quick validation', enabled: true, processor: new DataValidator() },
-      { name: 'optimization', description: 'Aggressive optimization', enabled: true, processor: new ImageOptimizer(), options: { quality: 0.6, maxWidth: 1024, maxHeight: 1024 } },
-      { name: 'thumbnails', description: 'Small thumbnails only', enabled: true, processor: new ThumbnailGenerator(), options: { thumbnailSize: 64, previewSize: 256 } },
+      {
+        name: "validation",
+        description: "Quick validation",
+        enabled: true,
+        processor: new DataValidator(),
+      },
+      {
+        name: "optimization",
+        description: "Aggressive optimization",
+        enabled: true,
+        processor: new ImageOptimizer(),
+        options: { quality: 0.6, maxWidth: 1024, maxHeight: 1024 },
+      },
+      {
+        name: "thumbnails",
+        description: "Small thumbnails only",
+        enabled: true,
+        processor: new ThumbnailGenerator(),
+        options: { thumbnailSize: 64, previewSize: 256 },
+      },
     ],
     generateThumbnails: true,
     generatePreviews: false,

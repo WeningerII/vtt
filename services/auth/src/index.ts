@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Authentication service stub. Real implementation would issue JWTs,
@@ -6,7 +6,7 @@ import { logger } from '@vtt/logging';
  * only log that the service started.
  */
 function main() {
-  logger.info('Auth service stub – handle user sessions here');
+  logger.info("Auth service stub – handle user sessions here");
 }
 
 main();

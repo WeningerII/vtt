@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { VTTApp } from './VTTApp';
+import React, { useState } from "react";
+import { VTTApp } from "./VTTApp";
 
 export const VTTDemo: React.FC = () => {
   const [user, setUser] = useState<{ id: string; campaignId: string } | null>(null);
-  const [loginForm, setLoginForm] = useState({ userId: '', campaignId: '' });
+  const [loginForm, setLoginForm] = useState({ userId: "", campaignId: "" });
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (loginForm.userId && loginForm.campaignId) {
       setUser({
         id: loginForm.userId,
-        campaignId: loginForm.campaignId
+        campaignId: loginForm.campaignId,
       });
     }
   };
@@ -30,7 +30,7 @@ export const VTTDemo: React.FC = () => {
                   type="text"
                   id="userId"
                   value={loginForm.userId}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, userId: e.target.value }))}
+                  onChange={(e) => setLoginForm((prev) => ({ ...prev, userId: e.target.value }))}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter your user ID"
                   required
@@ -44,7 +44,9 @@ export const VTTDemo: React.FC = () => {
                   type="text"
                   id="campaignId"
                   value={loginForm.campaignId}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, campaignId: e.target.value }))}
+                  onChange={(e) =>
+                    setLoginForm((prev) => ({ ...prev, campaignId: e.target.value }))
+                  }
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter campaign ID"
                   required
@@ -53,7 +55,8 @@ export const VTTDemo: React.FC = () => {
               <button
                 type="submit"
                 className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-               aria-label="Join campaign" >
+                aria-label="Join campaign"
+              >
                 Join Campaign
               </button>
             </form>

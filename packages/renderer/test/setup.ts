@@ -2,10 +2,10 @@
  * Test setup for renderer package
  */
 
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 // Mock HTMLCanvasElement
-Object.defineProperty(_HTMLCanvasElement.prototype, 'getContext', _{
+Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
   value: vi.fn(() => ({
     save: vi.fn(),
     restore: vi.fn(),
@@ -23,11 +23,11 @@ Object.defineProperty(_HTMLCanvasElement.prototype, 'getContext', _{
     fill: vi.fn(),
     arc: vi.fn(),
     clearRect: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
+    fillStyle: "",
+    strokeStyle: "",
     lineWidth: 1,
     globalAlpha: 1,
-    filter: '',
+    filter: "",
   })),
 });
 
@@ -50,11 +50,11 @@ global.cancelAnimationFrame = vi.fn();
 global.Image = vi.fn().mockImplementation(() => ({
   onload: null,
   onerror: null,
-  src: '',
+  src: "",
 }));
 
 // Mock devicePixelRatio
-Object.defineProperty(window, 'devicePixelRatio', {
+Object.defineProperty(window, "devicePixelRatio", {
   value: 1,
   writable: true,
 });

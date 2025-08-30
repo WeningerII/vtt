@@ -2,13 +2,13 @@
  * Combat tracker component for managing initiative and combat flow
  */
 
-import React, { useState, useEffect } from 'react';
-import './CombatTracker.css';
+import React, { useState, useEffect } from "react";
+import "./CombatTracker.css";
 
 export interface Combatant {
   id: string;
   name: string;
-  type: 'player' | 'npc' | 'monster';
+  type: "player" | "npc" | "monster";
   initiative: number;
   hitPoints: {
     current: number;
@@ -32,40 +32,59 @@ export interface CombatTrackerProps {
   isActive: boolean;
   onInitiativeChange: (_combatantId: string, _initiative: number) => void;
   onHealthChange: (_combatantId: string, _current: number, _temporary?: number) => void;
-  onConditionAdd: (_combatantId: string, condition: { name: string; duration: number; description: string }) => void;
+  onConditionAdd: (
+    _combatantId: string,
+    condition: { name: string; duration: number; description: string },
+  ) => void;
   onConditionRemove: (_combatantId: string, _conditionName: string) => void;
   onNextTurn: () => void;
   onPreviousTurn: () => void;
   onStartCombat: () => void;
   onEndCombat: () => void;
-  onAddCombatant: (combatant: Omit<Combatant, 'id'>) => void;
+  onAddCombatant: (combatant: Omit<Combatant, "id">) => void;
   onRemoveCombatant: (_combatantId: string) => void;
   readOnly?: boolean;
 }
 
-export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, currentTurn, round, isActive, onInitiativeChange, onHealthChange, onConditionAdd, onConditionRemove, onNextTurn, onPreviousTurn, onStartCombat, onEndCombat, onAddCombatant, onRemoveCombatant, readOnly = false}) => {
+export const CombatTracker: React.FC<CombatTrackerProps> = ({
+  combatants,
+  currentTurn,
+  round,
+  isActive,
+  onInitiativeChange,
+  onHealthChange,
+  onConditionAdd,
+  onConditionRemove,
+  onNextTurn,
+  onPreviousTurn,
+  onStartCombat,
+  onEndCombat,
+  onAddCombatant,
+  onRemoveCombatant,
+  readOnly = false,
+}) => {
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (readOnly) return;
-      
+
       // Keyboard shortcuts
-      switch(e.key) {
-        case 'n':
+      switch (e.key) {
+        case "n":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             onNextTurn();
           }
           break;
-        case 'p':
+        case "p":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             onPreviousTurn();
           }
           break;
-        case 's':
+        case "s":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             if (isActive) {
@@ -75,18 +94,18 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
             }
           }
           break;
-        case 'Escape':
+        case "Escape":
           setShowAddForm(false);
           break;
       }
     };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isActive, readOnly, onNextTurn, onPreviousTurn, onStartCombat, onEndCombat]);
   const [newCombatant, setNewCombatant] = useState({
-    name: '',
-    type: 'monster' as const,
+    name: "",
+    type: "monster" as const,
     initiative: 10,
     hitPoints: { current: 10, max: 10, temporary: 0 },
     armorClass: 10,
@@ -102,8 +121,8 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
     if (newCombatant.name.trim()) {
       onAddCombatant(newCombatant);
       setNewCombatant({
-        name: '',
-        type: 'monster',
+        name: "",
+        type: "monster",
         initiative: 10,
         hitPoints: { current: 10, max: 10, temporary: 0 },
         armorClass: 10,
@@ -126,11 +145,11 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
   };
 
   const getHealthBarColor = (percentage: number) => {
-    if (percentage <= 0) return 'dead';
-    if (percentage <= 25) return 'critical';
-    if (percentage <= 50) return 'bloodied';
-    if (percentage <= 75) return 'injured';
-    return 'healthy';
+    if (percentage <= 0) return "dead";
+    if (percentage <= 25) return "critical";
+    if (percentage <= 50) return "bloodied";
+    if (percentage <= 75) return "injured";
+    return "healthy";
   };
 
   return (
@@ -143,9 +162,7 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
               <div className="round-info">
                 <span>Round {round}</span>
                 {currentCombatant && (
-                  <span className="current-turn">
-                    Current: {currentCombatant.name}
-                  </span>
+                  <span className="current-turn">Current: {currentCombatant.name}</span>
                 )}
               </div>
             </>
@@ -157,18 +174,18 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
         {!readOnly && (
           <div className="combat-controls">
             {!isActive ? (
-              <button className="start-combat-btn" onClick={onStartCombat} >
+              <button className="start-combat-btn" onClick={onStartCombat}>
                 Start Combat
               </button>
             ) : (
               <>
-                <button className="prev-turn-btn" onClick={onPreviousTurn} >
+                <button className="prev-turn-btn" onClick={onPreviousTurn}>
                   Previous
                 </button>
-                <button className="next-turn-btn" onClick={onNextTurn} >
+                <button className="next-turn-btn" onClick={onNextTurn}>
                   Next Turn
                 </button>
-                <button className="end-combat-btn" onClick={onEndCombat} >
+                <button className="end-combat-btn" onClick={onEndCombat}>
                   End Combat
                 </button>
               </>
@@ -181,18 +198,16 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
         {sortedCombatants.map((combatant, index) => (
           <div
             key={combatant.id}
-            className={`combatant ${index === currentTurn ? 'current-turn' : ''} ${
-              combatant.hitPoints.current <= 0 ? 'unconscious' : ''
+            className={`combatant ${index === currentTurn ? "current-turn" : ""} ${
+              combatant.hitPoints.current <= 0 ? "unconscious" : ""
             }`}
           >
             <div className="combatant-header">
               <div className="combatant-name">
                 <span className="name">{combatant.name}</span>
-                <span className={`type-badge ${combatant.type}`}>
-                  {combatant.type}
-                </span>
+                <span className={`type-badge ${combatant.type}`}>{combatant.type}</span>
               </div>
-              
+
               <div className="initiative-section">
                 <label>Initiative:</label>
                 {!readOnly ? (
@@ -200,7 +215,9 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
                     <input
                       type="number"
                       value={combatant.initiative}
-                      onChange={(e) => onInitiativeChange(combatant.id, parseInt(e.target.value) || 0)}
+                      onChange={(e) =>
+                        onInitiativeChange(combatant.id, parseInt(e.target.value) || 0)
+                      }
                       className="initiative-input"
                     />
                     <button
@@ -236,7 +253,9 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
                       <input
                         type="number"
                         value={combatant.hitPoints.current}
-                        onChange={(e) => onHealthChange(combatant.id, parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                          onHealthChange(combatant.id, parseInt(e.target.value) || 0)
+                        }
                         className="health-input"
                         min="0"
                         max={combatant.hitPoints.max}
@@ -301,10 +320,7 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
       {!readOnly && (
         <div className="add-combatant-section">
           {!showAddForm ? (
-            <button
-              className="add-combatant-btn"
-              onClick={() => setShowAddForm(true)}
-            >
+            <button className="add-combatant-btn" onClick={() => setShowAddForm(true)}>
               Add Combatant
             </button>
           ) : (
@@ -319,7 +335,9 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
                 />
                 <select
                   value={newCombatant.type}
-                  onChange={(e) => setNewCombatant({ ...newCombatant, type: e.target.value as any })}
+                  onChange={(e) =>
+                    setNewCombatant({ ...newCombatant, type: e.target.value as any })
+                  }
                   className="type-select"
                 >
                   <option value="player">Player</option>
@@ -327,16 +345,18 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
                   <option value="monster">Monster</option>
                 </select>
               </div>
-              
+
               <div className="form-row">
                 <label>Initiative:</label>
                 <input
                   type="number"
                   value={newCombatant.initiative}
-                  onChange={(e) => setNewCombatant({ ...newCombatant, initiative: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setNewCombatant({ ...newCombatant, initiative: parseInt(e.target.value) || 0 })
+                  }
                   className="stat-input"
                 />
-                
+
                 <label>HP:</label>
                 <input
                   type="number"
@@ -345,23 +365,29 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({combatants, current
                     const hp = parseInt(e.target.value) || 0;
                     setNewCombatant({
                       ...newCombatant,
-                      hitPoints: { current: hp, max: hp, temporary: 0 }
+                      hitPoints: { current: hp, max: hp, temporary: 0 },
                     });
                   }}
                   className="stat-input"
                 />
-                
+
                 <label>AC:</label>
                 <input
                   type="number"
                   value={newCombatant.armorClass}
-                  onChange={(e) => setNewCombatant({ ...newCombatant, armorClass: parseInt(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setNewCombatant({ ...newCombatant, armorClass: parseInt(e.target.value) || 0 })
+                  }
                   className="stat-input"
                 />
               </div>
-              
+
               <div className="form-actions">
-                <button onClick={handleAddCombatant} className="confirm-btn" aria-label="Add new item" >
+                <button
+                  onClick={handleAddCombatant}
+                  className="confirm-btn"
+                  aria-label="Add new item"
+                >
                   Add
                 </button>
                 <button onClick={() => setShowAddForm(false)} className="cancel-btn">

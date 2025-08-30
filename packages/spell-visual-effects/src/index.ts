@@ -3,36 +3,36 @@
  * Connects spell casting to visual and audio effects for immersive gameplay
  */
 
-import { EventEmitter } from 'events';
-export * from './PhysicsVisualBridge';
+import { EventEmitter } from "events";
+export * from "./PhysicsVisualBridge";
 
 export interface VisualEffect {
   id: string;
-  type: 'particle' | 'mesh' | 'light' | 'shockwave' | 'beam' | 'aura' | 'animation';
+  type: "particle" | "mesh" | "light" | "shockwave" | "beam" | "aura" | "animation";
   spellId: string;
   duration: number;
-  
+
   // Positioning
   position?: { x: number; y: number; z?: number };
   targetPosition?: { x: number; y: number; z?: number };
   followEntity?: string; // Entity ID to follow
-  
+
   // Visual properties
   color?: string;
   intensity?: number;
   scale?: number;
   opacity?: number;
-  
+
   // Animation properties
-  animationType?: 'fade' | 'grow' | 'pulse' | 'rotate' | 'travel' | 'explosion';
+  animationType?: "fade" | "grow" | "pulse" | "rotate" | "travel" | "explosion";
   animationDuration?: number;
-  easing?: 'linear' | 'ease-in' | 'ease-out' | 'bounce';
-  
+  easing?: "linear" | "ease-in" | "ease-out" | "bounce";
+
   // Particle-specific
   particleCount?: number;
   particleSpread?: number;
   particleVelocity?: { x: number; y: number; z?: number };
-  
+
   // Cleanup
   autoDestroy?: boolean;
   fadeOut?: boolean;
@@ -40,16 +40,16 @@ export interface VisualEffect {
 
 export interface AudioEffect {
   id: string;
-  type: 'sfx' | 'voice' | 'ambient';
+  type: "sfx" | "voice" | "ambient";
   spellId: string;
   audioFile: string;
-  
+
   // Audio properties
   volume?: number;
   pitch?: number;
   delay?: number;
   loop?: boolean;
-  
+
   // Spatial audio
   position?: { x: number; y: number; z?: number };
   maxDistance?: number;
@@ -61,7 +61,7 @@ export interface SpellVisualTemplate {
   spellName: string;
   visualEffects: Partial<VisualEffect>[];
   audioEffects: Partial<AudioEffect>[];
-  
+
   // Timing
   castingEffects?: VisualEffect[]; // During casting
   projectileEffects?: VisualEffect[]; // For projectile spells
@@ -85,17 +85,17 @@ export class SpellVisualEffectsManager extends EventEmitter {
    */
   registerSpellTemplate(template: SpellVisualTemplate): void {
     this.spellTemplates.set(template.spellId, template);
-    this.emit('templateRegistered', template.spellId);
+    this.emit("templateRegistered", template.spellId);
   }
 
   /**
    * Trigger spell casting effects
    */
   triggerSpellCasting(
-    spellId: string, 
-    casterId: string, 
+    spellId: string,
+    casterId: string,
     position: { x: number; y: number; z?: number },
-    duration: number = 1000
+    duration: number = 1000,
   ): string[] {
     const template = this.spellTemplates.get(spellId);
     if (!template?.castingEffects) return [];
@@ -105,23 +105,23 @@ export class SpellVisualEffectsManager extends EventEmitter {
     for (const effectTemplate of template.castingEffects) {
       const effect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || 'particle',
+        type: effectTemplate.type || "particle",
         spellId,
         duration,
         position,
         followEntity: casterId,
-        ...effectTemplate
+        ...effectTemplate,
       };
 
       this.activeEffects.set(effect.id, effect);
       effectIds.push(effect.id);
-      
-      this.emit('effectCreated', effect);
+
+      this.emit("effectCreated", effect);
     }
 
     // Auto-cleanup casting effects
     setTimeout(() => {
-      effectIds.forEach(id => this.destroyEffect(id));
+      effectIds.forEach((id) => this.destroyEffect(id));
     }, duration);
 
     return effectIds;
@@ -134,7 +134,7 @@ export class SpellVisualEffectsManager extends EventEmitter {
     spellId: string,
     startPosition: { x: number; y: number; z?: number },
     endPosition: { x: number; y: number; z?: number },
-    travelTime: number = 1000
+    travelTime: number = 1000,
   ): string[] {
     const template = this.spellTemplates.get(spellId);
     if (!template?.projectileEffects) return [];
@@ -144,20 +144,20 @@ export class SpellVisualEffectsManager extends EventEmitter {
     for (const effectTemplate of template.projectileEffects) {
       const effect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || 'beam',
+        type: effectTemplate.type || "beam",
         spellId,
         duration: travelTime,
         position: startPosition,
         targetPosition: endPosition,
-        animationType: 'travel',
+        animationType: "travel",
         animationDuration: travelTime,
-        ...effectTemplate
+        ...effectTemplate,
       };
 
       this.activeEffects.set(effect.id, effect);
       effectIds.push(effect.id);
-      
-      this.emit('effectCreated', effect);
+
+      this.emit("effectCreated", effect);
     }
 
     return effectIds;
@@ -169,7 +169,7 @@ export class SpellVisualEffectsManager extends EventEmitter {
   triggerSpellImpact(
     spellId: string,
     impactPosition: { x: number; y: number; z?: number },
-    targets: string[] = []
+    targets: string[] = [],
   ): string[] {
     const template = this.spellTemplates.get(spellId);
     if (!template?.impactEffects) return [];
@@ -180,33 +180,33 @@ export class SpellVisualEffectsManager extends EventEmitter {
       // Create effect at impact position
       const mainEffect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || 'explosion',
+        type: effectTemplate.type || "explosion",
         spellId,
         duration: effectTemplate.duration || 1000,
         position: impactPosition,
-        animationType: effectTemplate.animationType || 'explosion',
-        ...effectTemplate
+        animationType: effectTemplate.animationType || "explosion",
+        ...effectTemplate,
       };
 
       this.activeEffects.set(mainEffect.id, mainEffect);
       effectIds.push(mainEffect.id);
-      this.emit('effectCreated', mainEffect);
+      this.emit("effectCreated", mainEffect);
 
       // Create effects on targets if specified
-      targets.forEach(targetId => {
+      targets.forEach((targetId) => {
         const targetEffect: VisualEffect = {
           id: this.generateEffectId(),
-          type: effectTemplate.type || 'aura',
+          type: effectTemplate.type || "aura",
           spellId,
           duration: effectTemplate.duration || 1000,
           followEntity: targetId,
           scale: (effectTemplate.scale || 1.0) * 0.7, // Smaller for individual targets
-          ...effectTemplate
+          ...effectTemplate,
         };
 
         this.activeEffects.set(targetEffect.id, targetEffect);
         effectIds.push(targetEffect.id);
-        this.emit('effectCreated', targetEffect);
+        this.emit("effectCreated", targetEffect);
       });
     }
 
@@ -216,11 +216,7 @@ export class SpellVisualEffectsManager extends EventEmitter {
   /**
    * Create persistent spell effects (e.g., concentration spells)
    */
-  createPersistentEffect(
-    spellId: string,
-    entityId: string,
-    duration: number
-  ): string[] {
+  createPersistentEffect(spellId: string, entityId: string, duration: number): string[] {
     const template = this.spellTemplates.get(spellId);
     if (!template?.persistentEffects) return [];
 
@@ -229,19 +225,19 @@ export class SpellVisualEffectsManager extends EventEmitter {
     for (const effectTemplate of template.persistentEffects) {
       const effect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || 'aura',
+        type: effectTemplate.type || "aura",
         spellId,
         duration,
         followEntity: entityId,
         autoDestroy: true,
         fadeOut: true,
-        ...effectTemplate
+        ...effectTemplate,
       };
 
       this.activeEffects.set(effect.id, effect);
       effectIds.push(effect.id);
-      
-      this.emit('effectCreated', effect);
+
+      this.emit("effectCreated", effect);
 
       // Schedule cleanup
       setTimeout(() => {
@@ -255,10 +251,7 @@ export class SpellVisualEffectsManager extends EventEmitter {
   /**
    * Play spell audio effects
    */
-  playSpellAudio(
-    spellId: string,
-    position?: { x: number; y: number; z?: number }
-  ): string[] {
+  playSpellAudio(spellId: string, position?: { x: number; y: number; z?: number }): string[] {
     const template = this.spellTemplates.get(spellId);
     if (!template?.audioEffects) return [];
 
@@ -267,17 +260,17 @@ export class SpellVisualEffectsManager extends EventEmitter {
     for (const audioTemplate of template.audioEffects) {
       const audio: AudioEffect = {
         id: this.generateEffectId(),
-        type: audioTemplate.type || 'sfx',
+        type: audioTemplate.type || "sfx",
         spellId,
         audioFile: audioTemplate.audioFile || `spells/${spellId}.mp3`,
         position,
-        ...audioTemplate
+        ...audioTemplate,
       };
 
       this.activeAudio.set(audio.id, audio);
       audioIds.push(audio.id);
-      
-      this.emit('audioCreated', audio);
+
+      this.emit("audioCreated", audio);
     }
 
     return audioIds;
@@ -286,14 +279,11 @@ export class SpellVisualEffectsManager extends EventEmitter {
   /**
    * Update effect position (for following entities)
    */
-  updateEffectPosition(
-    entityId: string,
-    position: { x: number; y: number; z?: number }
-  ): void {
+  updateEffectPosition(entityId: string, position: { x: number; y: number; z?: number }): void {
     for (const effect of this.activeEffects.values()) {
       if (effect.followEntity === entityId) {
         effect.position = position;
-        this.emit('effectUpdated', effect);
+        this.emit("effectUpdated", effect);
       }
     }
   }
@@ -307,17 +297,17 @@ export class SpellVisualEffectsManager extends EventEmitter {
 
     if (fadeOut && effect.fadeOut) {
       // Trigger fade out animation
-      effect.animationType = 'fade';
+      effect.animationType = "fade";
       effect.animationDuration = 500;
-      this.emit('effectUpdated', effect);
+      this.emit("effectUpdated", effect);
 
       setTimeout(() => {
         this.activeEffects.delete(effectId);
-        this.emit('effectDestroyed', effectId);
+        this.emit("effectDestroyed", effectId);
       }, 500);
     } else {
       this.activeEffects.delete(effectId);
-      this.emit('effectDestroyed', effectId);
+      this.emit("effectDestroyed", effectId);
     }
   }
 
@@ -325,10 +315,11 @@ export class SpellVisualEffectsManager extends EventEmitter {
    * Destroy all effects for a spell
    */
   destroySpellEffects(spellId: string): void {
-    const effectsToDestroy = Array.from(this.activeEffects.values())
-      .filter(effect => effect.spellId === spellId);
+    const effectsToDestroy = Array.from(this.activeEffects.values()).filter(
+      (effect) => effect.spellId === spellId,
+    );
 
-    effectsToDestroy.forEach(effect => {
+    effectsToDestroy.forEach((effect) => {
       this.destroyEffect(effect.id, true);
     });
   }
@@ -344,8 +335,7 @@ export class SpellVisualEffectsManager extends EventEmitter {
    * Get effects for a specific spell
    */
   getSpellEffects(spellId: string): VisualEffect[] {
-    return Array.from(this.activeEffects.values())
-      .filter(effect => effect.spellId === spellId);
+    return Array.from(this.activeEffects.values()).filter((effect) => effect.spellId === spellId);
   }
 
   /**
@@ -361,211 +351,201 @@ export class SpellVisualEffectsManager extends EventEmitter {
   private setupDefaultSpellTemplates(): void {
     // Magic Missile
     this.registerSpellTemplate({
-      spellId: 'magic_missile',
-      spellName: 'Magic Missile',
+      spellId: "magic_missile",
+      spellName: "Magic Missile",
       visualEffects: [],
-      audioEffects: [
-        { audioFile: 'spells/magic_missile_cast.mp3', type: 'sfx', volume: 0.8 }
-      ],
+      audioEffects: [{ audioFile: "spells/magic_missile_cast.mp3", type: "sfx", volume: 0.8 }],
       castingEffects: [
         {
-          type: 'particle',
-          color: '#4A90E2',
+          type: "particle",
+          color: "#4A90E2",
           particleCount: 20,
           duration: 800,
-          animationType: 'pulse'
-        }
+          animationType: "pulse",
+        },
       ],
       projectileEffects: [
         {
-          type: 'beam',
-          color: '#4A90E2',
+          type: "beam",
+          color: "#4A90E2",
           intensity: 1.5,
-          animationType: 'travel'
-        }
+          animationType: "travel",
+        },
       ],
       impactEffects: [
         {
-          type: 'explosion',
-          color: '#4A90E2',
+          type: "explosion",
+          color: "#4A90E2",
           duration: 300,
           scale: 0.5,
-          animationType: 'explosion'
-        }
-      ]
+          animationType: "explosion",
+        },
+      ],
     });
 
     // Fireball
     this.registerSpellTemplate({
-      spellId: 'fireball',
-      spellName: 'Fireball',
+      spellId: "fireball",
+      spellName: "Fireball",
       visualEffects: [],
       audioEffects: [
-        { audioFile: 'spells/fireball_cast.mp3', type: 'sfx', volume: 1.0 },
-        { audioFile: 'spells/fireball_explosion.mp3', type: 'sfx', volume: 1.2, delay: 1000 }
+        { audioFile: "spells/fireball_cast.mp3", type: "sfx", volume: 1.0 },
+        { audioFile: "spells/fireball_explosion.mp3", type: "sfx", volume: 1.2, delay: 1000 },
       ],
       castingEffects: [
         {
-          type: 'particle',
-          color: '#FF6B35',
+          type: "particle",
+          color: "#FF6B35",
           particleCount: 50,
           duration: 1000,
-          animationType: 'grow'
-        }
+          animationType: "grow",
+        },
       ],
       projectileEffects: [
         {
-          type: 'mesh',
-          color: '#FF6B35',
+          type: "mesh",
+          color: "#FF6B35",
           scale: 1.0,
-          animationType: 'travel'
-        }
+          animationType: "travel",
+        },
       ],
       impactEffects: [
         {
-          type: 'explosion',
-          color: '#FF6B35',
+          type: "explosion",
+          color: "#FF6B35",
           duration: 800,
           scale: 4.0,
           particleCount: 100,
-          animationType: 'explosion'
+          animationType: "explosion",
         },
         {
-          type: 'shockwave',
-          color: '#FF4500',
+          type: "shockwave",
+          color: "#FF4500",
           duration: 1200,
           scale: 6.0,
-          opacity: 0.6
-        }
-      ]
+          opacity: 0.6,
+        },
+      ],
     });
 
     // Healing Word
     this.registerSpellTemplate({
-      spellId: 'healing_word',
-      spellName: 'Healing Word',
+      spellId: "healing_word",
+      spellName: "Healing Word",
       visualEffects: [],
-      audioEffects: [
-        { audioFile: 'spells/healing_cast.mp3', type: 'voice', volume: 0.7 }
-      ],
+      audioEffects: [{ audioFile: "spells/healing_cast.mp3", type: "voice", volume: 0.7 }],
       castingEffects: [
         {
-          type: 'light',
-          color: '#50C878',
+          type: "light",
+          color: "#50C878",
           intensity: 2.0,
           duration: 500,
-          animationType: 'pulse'
-        }
+          animationType: "pulse",
+        },
       ],
       impactEffects: [
         {
-          type: 'aura',
-          color: '#50C878',
+          type: "aura",
+          color: "#50C878",
           duration: 2000,
           scale: 1.5,
-          animationType: 'pulse',
-          opacity: 0.7
+          animationType: "pulse",
+          opacity: 0.7,
         },
         {
-          type: 'particle',
-          color: '#90EE90',
+          type: "particle",
+          color: "#90EE90",
           particleCount: 30,
           duration: 1500,
-          particleVelocity: { x: 0, y: 0.1, z: 0 }
-        }
-      ]
+          particleVelocity: { x: 0, y: 0.1, z: 0 },
+        },
+      ],
     });
 
     // Shield
     this.registerSpellTemplate({
-      spellId: 'shield',
-      spellName: 'Shield',
+      spellId: "shield",
+      spellName: "Shield",
       visualEffects: [],
-      audioEffects: [
-        { audioFile: 'spells/shield_cast.mp3', type: 'sfx', volume: 0.8 }
-      ],
+      audioEffects: [{ audioFile: "spells/shield_cast.mp3", type: "sfx", volume: 0.8 }],
       castingEffects: [
         {
-          type: 'light',
-          color: '#7B68EE',
+          type: "light",
+          color: "#7B68EE",
           intensity: 1.5,
           duration: 300,
-          animationType: 'grow'
-        }
+          animationType: "grow",
+        },
       ],
       persistentEffects: [
         {
-          type: 'aura',
-          color: '#7B68EE',
+          type: "aura",
+          color: "#7B68EE",
           scale: 1.2,
           opacity: 0.3,
-          animationType: 'pulse'
-        }
-      ]
+          animationType: "pulse",
+        },
+      ],
     });
 
     // Web
     this.registerSpellTemplate({
-      spellId: 'web',
-      spellName: 'Web',
+      spellId: "web",
+      spellName: "Web",
       visualEffects: [],
-      audioEffects: [
-        { audioFile: 'spells/web_cast.mp3', type: 'sfx', volume: 0.9 }
-      ],
+      audioEffects: [{ audioFile: "spells/web_cast.mp3", type: "sfx", volume: 0.9 }],
       castingEffects: [
         {
-          type: 'particle',
-          color: '#8B7355',
+          type: "particle",
+          color: "#8B7355",
           particleCount: 25,
           duration: 800,
-          animationType: 'grow'
-        }
+          animationType: "grow",
+        },
       ],
       impactEffects: [
         {
-          type: 'mesh',
-          color: '#D2B48C',
+          type: "mesh",
+          color: "#D2B48C",
           scale: 3.0,
           duration: 60000, // 1 minute
-          opacity: 0.8
-        }
+          opacity: 0.8,
+        },
       ],
       persistentEffects: [
         {
-          type: 'animation',
-          animationType: 'pulse',
+          type: "animation",
+          animationType: "pulse",
           duration: 60000,
-          opacity: 0.6
-        }
-      ]
+          opacity: 0.6,
+        },
+      ],
     });
 
     // Misty Step
     this.registerSpellTemplate({
-      spellId: 'misty_step',
-      spellName: 'Misty Step',
+      spellId: "misty_step",
+      spellName: "Misty Step",
       visualEffects: [],
-      audioEffects: [
-        { audioFile: 'spells/teleport.mp3', type: 'sfx', volume: 0.9 }
-      ],
+      audioEffects: [{ audioFile: "spells/teleport.mp3", type: "sfx", volume: 0.9 }],
       castingEffects: [
         {
-          type: 'particle',
-          color: '#C8A2C8',
+          type: "particle",
+          color: "#C8A2C8",
           particleCount: 40,
           duration: 500,
-          animationType: 'fade'
-        }
+          animationType: "fade",
+        },
       ],
       impactEffects: [
         {
-          type: 'particle',
-          color: '#C8A2C8',
+          type: "particle",
+          color: "#C8A2C8",
           particleCount: 40,
           duration: 800,
-          animationType: 'grow'
-        }
-      ]
+          animationType: "grow",
+        },
+      ],
     });
   }
 

@@ -1,11 +1,11 @@
-import { EntityId } from '../components/Combat';
-import { logger } from '@vtt/logging';
-import { HealthStore } from '../components/Health';
-import { StatsStore } from '../components/Stats';
-import { CombatStore } from '../components/Combat';
+import { EntityId } from "../components/Combat";
+import { logger } from "@vtt/logging";
+import { HealthStore } from "../components/Health";
+import { StatsStore } from "../components/Stats";
+import { CombatStore } from "../components/Combat";
 
 export interface SpellEffect {
-  type: 'damage' | 'healing' | 'condition' | 'buff' | 'debuff';
+  type: "damage" | "healing" | "condition" | "buff" | "debuff";
   target: EntityId | EntityId[];
   value?: number;
   diceExpression?: string;
@@ -15,7 +15,7 @@ export interface SpellEffect {
   savingThrow?: {
     ability: string;
     dc: number;
-    onSave?: 'half' | 'negates';
+    onSave?: "half" | "negates";
   };
 }
 
@@ -94,17 +94,17 @@ export class SpellcastingSystem {
 
     for (const targetId of targets) {
       switch (effect.type) {
-        case 'damage':
+        case "damage":
           this.applyDamage(spell, effect, targetId);
           break;
-        case 'healing':
+        case "healing":
           this.applyHealing(spell, effect, targetId);
           break;
-        case 'condition':
+        case "condition":
           this.applyCondition(effect, targetId);
           break;
-        case 'buff':
-        case 'debuff':
+        case "buff":
+        case "debuff":
           this.applyStatModifier(effect, targetId);
           break;
       }
@@ -122,9 +122,9 @@ export class SpellcastingSystem {
     // Apply saving throw if specified
     if (effect.savingThrow) {
       const saved = this.rollSavingThrow(targetId, effect.savingThrow);
-      if (saved && effect.savingThrow.onSave === 'half') {
+      if (saved && effect.savingThrow.onSave === "half") {
         damage = Math.floor(damage / 2);
-      } else if (saved && effect.savingThrow.onSave === 'negates') {
+      } else if (saved && effect.savingThrow.onSave === "negates") {
         damage = 0;
       }
     }
@@ -163,7 +163,7 @@ export class SpellcastingSystem {
 
     const abilityMod = stats.abilityModifiers[save.ability.toLowerCase()] || 0;
     const roll = Math.floor(Math.random() * 20) + 1;
-    return (roll + abilityMod) >= save.dc;
+    return roll + abilityMod >= save.dc;
   }
 
   private rollDice(expression: string): number {
@@ -174,8 +174,8 @@ export class SpellcastingSystem {
     const [, numDice, sides, modifier] = match;
     let total = 0;
 
-    for (let i = 0; i < parseInt(numDice || '1'); i++) {
-      total += Math.floor(Math.random() * parseInt(sides || '6')) + 1;
+    for (let i = 0; i < parseInt(numDice || "1"); i++) {
+      total += Math.floor(Math.random() * parseInt(sides || "6")) + 1;
     }
 
     if (modifier) {
@@ -211,12 +211,12 @@ export class SpellcastingSystem {
   // Force concentration check (e.g., when taking damage)
   concentrationCheck(entityId: EntityId, damage: number): boolean {
     const dc = Math.max(10, Math.floor(damage / 2));
-    const result = this.rollSavingThrow(entityId, { ability: 'constitution', dc });
-    
+    const result = this.rollSavingThrow(entityId, { ability: "constitution", dc });
+
     if (!result) {
       this.breakExistingConcentration(entityId);
     }
-    
+
     return result;
   }
 }

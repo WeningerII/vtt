@@ -3,22 +3,22 @@
  * Handles initialization and wiring of AI services, rules engine, map service, and automation
  */
 
-import { PrismaClient } from '@prisma/client';
-import { logger } from '@vtt/logging';
-import { WebSocketManager } from '../websocket/WebSocketManager';
-import { MapService } from '../map/MapService';
-import { GameEventBridge } from '../integration/GameEventBridge';
+import { PrismaClient } from "@prisma/client";
+import { logger } from "@vtt/logging";
+import { WebSocketManager } from "../websocket/WebSocketManager";
+import { MapService } from "../map/MapService";
+import { GameEventBridge } from "../integration/GameEventBridge";
 // import { CrucibleService } from '../ai/combat'; // Temporarily disabled for e2e tests
-import { ContentInjectionService } from './ContentInjectionService';
+import { ContentInjectionService } from "./ContentInjectionService";
 
 // Import AI services
-import { AIAssistantService } from '../ai/assistant';
-import { AICharacterService } from '../ai/character';
-import { AIContentService } from '../ai/content';
+import { AIAssistantService } from "../ai/assistant";
+import { AICharacterService } from "../ai/character";
+import { AIContentService } from "../ai/content";
 
 export class GameServiceManager {
   private static instance: GameServiceManager;
-  
+
   private prismaClient: PrismaClient;
   private webSocketManager: WebSocketManager;
   private mapService: MapService;
@@ -28,7 +28,7 @@ export class GameServiceManager {
   private aiAssistant?: any;
   private aiCharacter?: any;
   private aiContent?: any;
-  
+
   private initialized = false;
 
   private constructor() {
@@ -36,13 +36,13 @@ export class GameServiceManager {
     this.webSocketManager = new WebSocketManager();
     this.mapService = new MapService(this.prismaClient, this.webSocketManager);
     this.crucibleService = new CrucibleService();
-    
+
     // Initialize the GameEventBridge with core services
     this.gameEventBridge = new GameEventBridge(
       this.mapService,
       this.crucibleService,
       this.webSocketManager,
-      this.prismaClient
+      this.prismaClient,
     );
 
     // Initialize ContentInjectionService
@@ -50,7 +50,7 @@ export class GameServiceManager {
       this.mapService,
       this.gameEventBridge,
       this.prismaClient,
-      this.webSocketManager
+      this.webSocketManager,
     );
   }
 
@@ -67,7 +67,7 @@ export class GameServiceManager {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
-    logger.info('Initializing VTT Game Service Manager...');
+    logger.info("Initializing VTT Game Service Manager...");
 
     try {
       // Initialize AI services if API keys are available
@@ -75,7 +75,7 @@ export class GameServiceManager {
 
       // Set up service connections
       this.mapService.setEventBridge(this.gameEventBridge);
-      
+
       // Initialize the event bridge
       await this.gameEventBridge.initialize();
 
@@ -83,9 +83,9 @@ export class GameServiceManager {
       this.setupWebSocketEventHandling();
 
       this.initialized = true;
-      logger.info('VTT Game Service Manager initialized successfully');
+      logger.info("VTT Game Service Manager initialized successfully");
     } catch (error) {
-      logger.error('Failed to initialize VTT Game Service Manager:', error);
+      logger.error("Failed to initialize VTT Game Service Manager:", error);
       throw error;
     }
   }
@@ -100,8 +100,8 @@ export class GameServiceManager {
       const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
 
       if (hasOpenAI || hasAnthropic) {
-        logger.info('AI API keys detected, initializing AI services...');
-        
+        logger.info("AI API keys detected, initializing AI services...");
+
         this.aiAssistant = new AIAssistantService();
         this.aiCharacter = new AICharacterService();
         this.aiContent = new AIContentService();
@@ -110,17 +110,17 @@ export class GameServiceManager {
         this.gameEventBridge.setAIServices({
           assistant: this.aiAssistant,
           character: this.aiCharacter,
-          content: this.aiContent
+          content: this.aiContent,
         });
 
-        logger.info('AI services initialized and connected');
+        logger.info("AI services initialized and connected");
       } else {
-        logger.warn('No AI API keys found. AI features will be disabled.');
-        logger.warn('Set OPENAI_API_KEY or ANTHROPIC_API_KEY to enable AI automation');
+        logger.warn("No AI API keys found. AI features will be disabled.");
+        logger.warn("Set OPENAI_API_KEY or ANTHROPIC_API_KEY to enable AI automation");
       }
     } catch (error) {
-      logger.error('Error initializing AI services:', error);
-      logger.warn('Continuing without AI services...');
+      logger.error("Error initializing AI services:", error);
+      logger.warn("Continuing without AI services...");
     }
   }
 
@@ -133,7 +133,7 @@ export class GameServiceManager {
       this.gameEventBridge.handleWebSocketMessage(userId, sessionId, message);
     });
 
-    logger.info('WebSocket event handling configured');
+    logger.info("WebSocket event handling configured");
   }
 
   /**
@@ -210,20 +210,20 @@ export class GameServiceManager {
    * Shutdown all services gracefully
    */
   async shutdown(): Promise<void> {
-    logger.info('Shutting down VTT Game Service Manager...');
-    
+    logger.info("Shutting down VTT Game Service Manager...");
+
     try {
       await this.prismaClient.$disconnect();
       this.webSocketManager.close();
-      
+
       if (this.gameEventBridge) {
         await this.gameEventBridge.shutdown();
       }
 
       this.initialized = false;
-      logger.info('VTT Game Service Manager shut down successfully');
+      logger.info("VTT Game Service Manager shut down successfully");
     } catch (error) {
-      logger.error('Error during shutdown:', error);
+      logger.error("Error during shutdown:", error);
     }
   }
 
@@ -231,7 +231,7 @@ export class GameServiceManager {
    * Health check for all services
    */
   async healthCheck(): Promise<{
-    status: 'healthy' | 'degraded' | 'unhealthy';
+    status: "healthy" | "degraded" | "unhealthy";
     services: Record<string, boolean>;
   }> {
     const services = {
@@ -242,7 +242,7 @@ export class GameServiceManager {
       combat: false,
       aiAssistant: false,
       aiCharacter: false,
-      aiContent: false
+      aiContent: false,
     };
 
     try {
@@ -264,14 +264,14 @@ export class GameServiceManager {
 
     const healthyCount = Object.values(services).filter(Boolean).length;
     const totalCount = Object.keys(services).length;
-    
-    let status: 'healthy' | 'degraded' | 'unhealthy';
+
+    let status: "healthy" | "degraded" | "unhealthy";
     if (healthyCount === totalCount) {
-      status = 'healthy';
+      status = "healthy";
     } else if (healthyCount >= totalCount * 0.7) {
-      status = 'degraded';
+      status = "degraded";
     } else {
-      status = 'unhealthy';
+      status = "unhealthy";
     }
 
     return { status, services };

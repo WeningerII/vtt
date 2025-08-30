@@ -3,13 +3,13 @@
  * Handles complex interactive behaviors for utility spells like Mage Hand, Dancing Lights, etc.
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface UtilitySpellEntity {
   id: string;
   spellId: string;
   casterId: string;
-  type: 'spectral_hand' | 'dancing_lights' | 'minor_illusion' | 'light_source';
+  type: "spectral_hand" | "dancing_lights" | "minor_illusion" | "light_source";
   position: { x: number; y: number };
   properties: Record<string, any>;
   duration: number;
@@ -37,10 +37,10 @@ export class UtilityMechanics extends EventEmitter {
   /**
    * Create a utility spell entity (Mage Hand, Dancing Lights, etc.)
    */
-  createUtilityEntity(entity: Omit<UtilitySpellEntity, 'expiresAt'>): string {
+  createUtilityEntity(entity: Omit<UtilitySpellEntity, "expiresAt">): string {
     const fullEntity: UtilitySpellEntity = {
       ...entity,
-      expiresAt: Date.now() + entity.duration
+      expiresAt: Date.now() + entity.duration,
     };
 
     this.activeEntities.set(entity.id, fullEntity);
@@ -57,127 +57,131 @@ export class UtilityMechanics extends EventEmitter {
     }
     this.entitiesByCaster.get(entity.casterId)!.add(entity.id);
 
-    this.emit('entityCreated', fullEntity);
+    this.emit("entityCreated", fullEntity);
     return entity.id;
   }
 
   /**
    * Execute a command on a utility entity
    */
-  async executeCommand(command: InteractionCommand): Promise<{ success: boolean; result?: any; error?: string }> {
+  async executeCommand(
+    command: InteractionCommand,
+  ): Promise<{ success: boolean; result?: any; error?: string }> {
     const entity = this.activeEntities.get(command.entityId);
     if (!entity) {
-      return { success: false, error: 'Entity not found' };
+      return { success: false, error: "Entity not found" };
     }
 
     if (entity.casterId !== command.casterId) {
-      return { success: false, error: 'Not authorized to control this entity' };
+      return { success: false, error: "Not authorized to control this entity" };
     }
 
     if (!entity.commands.includes(command.command)) {
-      return { success: false, error: 'Command not supported by this entity' };
+      return { success: false, error: "Command not supported by this entity" };
     }
 
     try {
       const result = await this.handleCommand(entity, command);
-      this.emit('commandExecuted', entity, command, result);
+      this.emit("commandExecuted", entity, command, result);
       return { success: true, result };
     } catch (error) {
-      return { success: false, error: error instanceof Error ? error.message : 'Command failed' };
+      return { success: false, error: error instanceof Error ? error.message : "Command failed" };
     }
   }
 
   /**
    * Handle specific commands for different entity types
    */
-  private async handleCommand(entity: UtilitySpellEntity, command: InteractionCommand): Promise<any> {
+  private async handleCommand(
+    entity: UtilitySpellEntity,
+    command: InteractionCommand,
+  ): Promise<any> {
     switch (entity.type) {
-      case 'spectral_hand':
+      case "spectral_hand":
         return this.handleMageHandCommand(entity, command);
-      case 'dancing_lights':
+      case "dancing_lights":
         return this.handleDancingLightsCommand(entity, command);
-      case 'minor_illusion':
+      case "minor_illusion":
         return this.handleMinorIllusionCommand(entity, command);
-      case 'light_source':
+      case "light_source":
         return this.handleLightSourceCommand(entity, command);
       default:
-        throw new Error('Unknown entity type');
+        throw new Error("Unknown entity type");
     }
   }
 
   /**
    * Handle Mage Hand commands
    */
-  private async handleMageHandCommand(entity: UtilitySpellEntity, command: InteractionCommand): Promise<any> {
-    const { command: cmd,  parameters  } = command;
+  private async handleMageHandCommand(
+    entity: UtilitySpellEntity,
+    command: InteractionCommand,
+  ): Promise<any> {
+    const { command: cmd, parameters } = command;
 
     switch (cmd) {
-      case 'move': {
+      case "move": {
         const newPosition = parameters.position;
         const distance = Math.sqrt(
-          Math.pow(newPosition.x - entity.position.x, 2) + 
-          Math.pow(newPosition.y - entity.position.y, 2)
+          Math.pow(newPosition.x - entity.position.x, 2) +
+            Math.pow(newPosition.y - entity.position.y, 2),
         );
 
         if (distance > entity.properties.movementSpeed) {
-          throw new Error('Movement exceeds speed limit');
+          throw new Error("Movement exceeds speed limit");
         }
 
         entity.position = newPosition;
-        this.emit('entityMoved', entity, newPosition);
+        this.emit("entityMoved", entity, newPosition);
         return { position: newPosition };
-
-    }
-      case 'manipulate': {
+      }
+      case "manipulate": {
         const targetId = parameters.targetId;
         const action = parameters.action; // 'open', 'close', 'pull', 'push'
-        
+
         // Check weight limit and restrictions
         if (parameters.weight && parameters.weight > entity.properties.weightLimit) {
-          throw new Error('Object too heavy for Mage Hand');
+          throw new Error("Object too heavy for Mage Hand");
         }
 
-        this.emit('objectManipulated', {
+        this.emit("objectManipulated", {
           handId: entity.id,
           targetId,
           action,
-          success: true
+          success: true,
         });
 
         return { action, targetId, success: true };
-
-    }
-      case 'carry': {
+      }
+      case "carry": {
         const objectId = parameters.objectId;
         const destination = parameters.destination;
 
         if (parameters.weight > entity.properties.weightLimit) {
-          throw new Error('Object too heavy');
+          throw new Error("Object too heavy");
         }
 
-        this.emit('objectCarried', {
+        this.emit("objectCarried", {
           handId: entity.id,
           objectId,
           from: entity.position,
-          to: destination
+          to: destination,
         });
 
         entity.position = destination;
         return { carried: objectId, to: destination };
-
-    }
-      case 'activate_object': {
+      }
+      case "activate_object": {
         const activateTargetId = parameters.targetId;
-        
-        this.emit('objectActivated', {
+
+        this.emit("objectActivated", {
           handId: entity.id,
           targetId: activateTargetId,
-          activationType: parameters.activationType
+          activationType: parameters.activationType,
         });
 
         return { activated: activateTargetId };
-
-    }
+      }
       default:
         throw new Error(`Unknown Mage Hand command: ${cmd}`);
     }
@@ -186,49 +190,49 @@ export class UtilityMechanics extends EventEmitter {
   /**
    * Handle Dancing Lights commands
    */
-  private async handleDancingLightsCommand(entity: UtilitySpellEntity, command: InteractionCommand): Promise<any> {
-    const { command: cmd,  parameters  } = command;
+  private async handleDancingLightsCommand(
+    entity: UtilitySpellEntity,
+    command: InteractionCommand,
+  ): Promise<any> {
+    const { command: cmd, parameters } = command;
 
     switch (cmd) {
-      case 'move_lights': {
+      case "move_lights": {
         const lightPositions = parameters.positions;
         if (lightPositions.length > 4) {
-          throw new Error('Cannot have more than 4 dancing lights');
+          throw new Error("Cannot have more than 4 dancing lights");
         }
 
         entity.properties.lightPositions = lightPositions;
-        this.emit('lightsRepositioned', entity, lightPositions);
+        this.emit("lightsRepositioned", entity, lightPositions);
         return { positions: lightPositions };
-
-    }
-      case 'combine_lights': {
+      }
+      case "combine_lights": {
         // Combine lights into a single brighter light
         const combinedPosition = parameters.position;
         entity.properties.combined = true;
         entity.properties.lightPositions = [combinedPosition];
         entity.properties.brightness = 40; // Brighter when combined
 
-        this.emit('lightsCombined', entity, combinedPosition);
+        this.emit("lightsCombined", entity, combinedPosition);
         return { combined: true, position: combinedPosition };
-
-    }
-      case 'separate_lights': {
+      }
+      case "separate_lights": {
         // Separate back into individual lights
         const separatePositions = parameters.positions || [
           { x: entity.position.x, y: entity.position.y },
           { x: entity.position.x + 5, y: entity.position.y },
           { x: entity.position.x, y: entity.position.y + 5 },
-          { x: entity.position.x + 5, y: entity.position.y + 5 }
+          { x: entity.position.x + 5, y: entity.position.y + 5 },
         ];
 
         entity.properties.combined = false;
         entity.properties.lightPositions = separatePositions;
         entity.properties.brightness = 10; // Normal brightness
 
-        this.emit('lightsSeparated', entity, separatePositions);
+        this.emit("lightsSeparated", entity, separatePositions);
         return { separated: true, positions: separatePositions };
-
-    }
+      }
       default:
         throw new Error(`Unknown Dancing Lights command: ${cmd}`);
     }
@@ -237,39 +241,41 @@ export class UtilityMechanics extends EventEmitter {
   /**
    * Handle Minor Illusion commands
    */
-  private async handleMinorIllusionCommand(entity: UtilitySpellEntity, command: InteractionCommand): Promise<any> {
-    const { command: cmd,  parameters  } = command;
+  private async handleMinorIllusionCommand(
+    entity: UtilitySpellEntity,
+    command: InteractionCommand,
+  ): Promise<any> {
+    const { command: cmd, parameters } = command;
 
     switch (cmd) {
-      case 'change_sound':
-        if (entity.properties.type !== 'sound') {
-          throw new Error('This illusion is not a sound');
+      case "change_sound":
+        if (entity.properties.type !== "sound") {
+          throw new Error("This illusion is not a sound");
         }
 
         entity.properties.soundDescription = parameters.soundDescription;
-        entity.properties.volume = parameters.volume || 'normal';
+        entity.properties.volume = parameters.volume || "normal";
 
-        this.emit('illusionSoundChanged', entity, parameters.soundDescription);
+        this.emit("illusionSoundChanged", entity, parameters.soundDescription);
         return { soundChanged: true };
 
-      case 'investigation_check': {
+      case "investigation_check": {
         const investigatorId = parameters.investigatorId;
         const checkResult = parameters.checkResult;
         const dc = entity.properties.detectableDC || 13;
 
         const detected = checkResult >= dc;
-        
-        this.emit('illusionInvestigated', {
+
+        this.emit("illusionInvestigated", {
           entityId: entity.id,
           investigatorId,
           detected,
           checkResult,
-          dc
+          dc,
         });
 
         return { detected, checkResult, dc };
-
-    }
+      }
       default:
         throw new Error(`Unknown Minor Illusion command: ${cmd}`);
     }
@@ -278,20 +284,23 @@ export class UtilityMechanics extends EventEmitter {
   /**
    * Handle Light Source commands
    */
-  private async handleLightSourceCommand(entity: UtilitySpellEntity, command: InteractionCommand): Promise<any> {
-    const { command: cmd,  parameters  } = command;
+  private async handleLightSourceCommand(
+    entity: UtilitySpellEntity,
+    command: InteractionCommand,
+  ): Promise<any> {
+    const { command: cmd, parameters } = command;
 
     switch (cmd) {
-      case 'cover_light':
+      case "cover_light":
         entity.properties.covered = parameters.covered;
-        
-        this.emit('lightCovered', entity, parameters.covered);
+
+        this.emit("lightCovered", entity, parameters.covered);
         return { covered: parameters.covered };
 
-      case 'change_color':
+      case "change_color":
         entity.properties.color = parameters.color;
-        
-        this.emit('lightColorChanged', entity, parameters.color);
+
+        this.emit("lightColorChanged", entity, parameters.color);
         return { color: parameters.color };
 
       default:
@@ -305,8 +314,8 @@ export class UtilityMechanics extends EventEmitter {
   getEntitiesByCaster(casterId: string): UtilitySpellEntity[] {
     const entityIds = this.entitiesByCaster.get(casterId) || new Set();
     return Array.from(entityIds)
-      .map(id => this.activeEntities.get(id))
-      .filter(entity => entity !== undefined) as UtilitySpellEntity[];
+      .map((id) => this.activeEntities.get(id))
+      .filter((entity) => entity !== undefined) as UtilitySpellEntity[];
   }
 
   /**
@@ -315,8 +324,8 @@ export class UtilityMechanics extends EventEmitter {
   getEntitiesByType(type: string): UtilitySpellEntity[] {
     const entityIds = this.entitysByType.get(type) || new Set();
     return Array.from(entityIds)
-      .map(id => this.activeEntities.get(id))
-      .filter(entity => entity !== undefined) as UtilitySpellEntity[];
+      .map((id) => this.activeEntities.get(id))
+      .filter((entity) => entity !== undefined) as UtilitySpellEntity[];
   }
 
   /**
@@ -338,7 +347,7 @@ export class UtilityMechanics extends EventEmitter {
     this.entitiesByCaster.get(entity.casterId)?.delete(entityId);
     this.activeEntities.delete(entityId);
 
-    this.emit('entityRemoved', entity);
+    this.emit("entityRemoved", entity);
     return true;
   }
 
@@ -377,7 +386,7 @@ export class UtilityMechanics extends EventEmitter {
     if (!entity) return false;
 
     entity.expiresAt += additionalTime;
-    this.emit('durationExtended', entity, additionalTime);
+    this.emit("durationExtended", entity, additionalTime);
     return true;
   }
 
@@ -391,8 +400,7 @@ export class UtilityMechanics extends EventEmitter {
     if (!casterPosition) return false;
 
     const distance = Math.sqrt(
-      Math.pow(position.x - casterPosition.x, 2) + 
-      Math.pow(position.y - casterPosition.y, 2)
+      Math.pow(position.x - casterPosition.x, 2) + Math.pow(position.y - casterPosition.y, 2),
     );
 
     return distance <= maxRange;
@@ -418,41 +426,41 @@ export class UtilityMechanics extends EventEmitter {
     parameters: Record<string, any>;
   }): Promise<{ success: boolean; result?: any; error?: string }> {
     switch (effect.type) {
-      case 'light_fire':
-        this.emit('environmentalChange', {
-          type: 'ignite_fire',
+      case "light_fire":
+        this.emit("environmentalChange", {
+          type: "ignite_fire",
           position: effect.position,
-          size: 'small',
-          duration: effect.parameters.duration || 3600000
+          size: "small",
+          duration: effect.parameters.duration || 3600000,
         });
         return { success: true, result: { fireIgnited: true } };
 
-      case 'clean_object':
-        this.emit('objectStateChange', {
-          type: 'clean',
+      case "clean_object":
+        this.emit("objectStateChange", {
+          type: "clean",
           targetId: effect.target,
-          area: effect.parameters.area || { volume: 1 }
+          area: effect.parameters.area || { volume: 1 },
         });
         return { success: true, result: { cleaned: effect.target } };
 
-      case 'flavor_food':
-        this.emit('objectPropertyChange', {
-          type: 'alter_taste_temperature',
+      case "flavor_food":
+        this.emit("objectPropertyChange", {
+          type: "alter_taste_temperature",
           targetId: effect.target,
-          properties: effect.parameters.properties
+          properties: effect.parameters.properties,
         });
         return { success: true, result: { flavored: effect.target } };
 
-      case 'sensory_effect':
-        this.emit('sensoryEffect', {
-          type: effect.parameters.sensoryType || 'harmless_effect',
+      case "sensory_effect":
+        this.emit("sensoryEffect", {
+          type: effect.parameters.sensoryType || "harmless_effect",
           position: effect.position,
-          duration: effect.parameters.duration || 3600000
+          duration: effect.parameters.duration || 3600000,
         });
         return { success: true, result: { effectCreated: true } };
 
       default:
-        return { success: false, error: 'Unknown prestidigitation effect' };
+        return { success: false, error: "Unknown prestidigitation effect" };
     }
   }
 
@@ -465,19 +473,19 @@ export class UtilityMechanics extends EventEmitter {
     repairType: string;
   }): Promise<{ success: boolean; result?: any; error?: string }> {
     // Check if target is repairable
-    this.emit('objectRepair', {
+    this.emit("objectRepair", {
       targetId: repair.targetId,
       repairType: repair.repairType,
       casterId: repair.caster,
-      restrictions: ['cosmetic_only', 'no_functionality_restore']
+      restrictions: ["cosmetic_only", "no_functionality_restore"],
     });
 
-    return { 
-      success: true, 
-      result: { 
+    return {
+      success: true,
+      result: {
         repaired: repair.targetId,
-        type: repair.repairType 
-      } 
+        type: repair.repairType,
+      },
     };
   }
 

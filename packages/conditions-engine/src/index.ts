@@ -20,16 +20,29 @@ export interface Condition {
 }
 
 export interface ConditionEffect {
-  type: 'ability_modifier' | 'skill_modifier' | 'save_modifier' | 'ac_modifier' | 
-        'speed_modifier' | 'damage_modifier' | 'resistance' | 'immunity' | 
-        'vulnerability' | 'advantage' | 'disadvantage' | 'prevent_action' | 
-        'force_action' | 'damage_over_time' | 'healing_over_time' | 'custom';
+  type:
+    | "ability_modifier"
+    | "skill_modifier"
+    | "save_modifier"
+    | "ac_modifier"
+    | "speed_modifier"
+    | "damage_modifier"
+    | "resistance"
+    | "immunity"
+    | "vulnerability"
+    | "advantage"
+    | "disadvantage"
+    | "prevent_action"
+    | "force_action"
+    | "damage_over_time"
+    | "healing_over_time"
+    | "custom";
   target: string; // what it affects
   value?: number; // modifier amount
   dice?: string; // for DoT effects
   damageType?: string;
-  duration?: 'permanent' | 'turn' | 'round' | 'encounter';
-  trigger?: 'start_turn' | 'end_turn' | 'attack' | 'spell_cast' | 'damage_taken';
+  duration?: "permanent" | "turn" | "round" | "encounter";
+  trigger?: "start_turn" | "end_turn" | "attack" | "spell_cast" | "damage_taken";
 }
 
 export interface ActiveCondition extends Condition {
@@ -42,161 +55,159 @@ export interface ActiveCondition extends Condition {
 // Predefined D&D 5e conditions
 export const D5E_CONDITIONS: Record<string, Condition> = {
   blinded: {
-    id: 'blinded',
-    name: 'Blinded',
-    description: 'Cannot see and automatically fails ability checks that require sight',
+    id: "blinded",
+    name: "Blinded",
+    description: "Cannot see and automatically fails ability checks that require sight",
     duration: -1,
     effects: [
-      { type: 'disadvantage', target: 'attack_rolls' },
-      { type: 'advantage', target: 'incoming_attacks' }
-    ]
+      { type: "disadvantage", target: "attack_rolls" },
+      { type: "advantage", target: "incoming_attacks" },
+    ],
   },
   charmed: {
-    id: 'charmed',
-    name: 'Charmed',
-    description: 'Cannot attack the charmer or target them with harmful abilities',
+    id: "charmed",
+    name: "Charmed",
+    description: "Cannot attack the charmer or target them with harmful abilities",
     duration: -1,
     effects: [
-      { type: 'prevent_action', target: 'attack_charmer' },
-      { type: 'advantage', target: 'charmer_social_interactions' }
-    ]
+      { type: "prevent_action", target: "attack_charmer" },
+      { type: "advantage", target: "charmer_social_interactions" },
+    ],
   },
   deafened: {
-    id: 'deafened',
-    name: 'Deafened',
-    description: 'Cannot hear and automatically fails ability checks that require hearing',
+    id: "deafened",
+    name: "Deafened",
+    description: "Cannot hear and automatically fails ability checks that require hearing",
     duration: -1,
-    effects: []
+    effects: [],
   },
   frightened: {
-    id: 'frightened',
-    name: 'Frightened',
-    description: 'Disadvantage on ability checks and attacks while source is in sight',
+    id: "frightened",
+    name: "Frightened",
+    description: "Disadvantage on ability checks and attacks while source is in sight",
     duration: -1,
     effects: [
-      { type: 'disadvantage', target: 'ability_checks' },
-      { type: 'disadvantage', target: 'attack_rolls' },
-      { type: 'prevent_action', target: 'move_closer_to_source' }
-    ]
+      { type: "disadvantage", target: "ability_checks" },
+      { type: "disadvantage", target: "attack_rolls" },
+      { type: "prevent_action", target: "move_closer_to_source" },
+    ],
   },
   grappled: {
-    id: 'grappled',
-    name: 'Grappled',
-    description: 'Speed becomes 0 and cannot benefit from bonuses to speed',
+    id: "grappled",
+    name: "Grappled",
+    description: "Speed becomes 0 and cannot benefit from bonuses to speed",
     duration: -1,
-    effects: [
-      { type: 'speed_modifier', target: 'all', value: 0 }
-    ]
+    effects: [{ type: "speed_modifier", target: "all", value: 0 }],
   },
   incapacitated: {
-    id: 'incapacitated',
-    name: 'Incapacitated',
-    description: 'Cannot take actions or reactions',
+    id: "incapacitated",
+    name: "Incapacitated",
+    description: "Cannot take actions or reactions",
     duration: -1,
     effects: [
-      { type: 'prevent_action', target: 'actions' },
-      { type: 'prevent_action', target: 'reactions' }
-    ]
+      { type: "prevent_action", target: "actions" },
+      { type: "prevent_action", target: "reactions" },
+    ],
   },
   invisible: {
-    id: 'invisible',
-    name: 'Invisible',
-    description: 'Cannot be seen without special senses',
+    id: "invisible",
+    name: "Invisible",
+    description: "Cannot be seen without special senses",
     duration: -1,
     effects: [
-      { type: 'advantage', target: 'attack_rolls' },
-      { type: 'disadvantage', target: 'incoming_attacks' },
-      { type: 'advantage', target: 'stealth_checks' }
-    ]
+      { type: "advantage", target: "attack_rolls" },
+      { type: "disadvantage", target: "incoming_attacks" },
+      { type: "advantage", target: "stealth_checks" },
+    ],
   },
   paralyzed: {
-    id: 'paralyzed',
-    name: 'Paralyzed',
-    description: 'Incapacitated and cannot move or speak',
+    id: "paralyzed",
+    name: "Paralyzed",
+    description: "Incapacitated and cannot move or speak",
     duration: -1,
     effects: [
-      { type: 'prevent_action', target: 'actions' },
-      { type: 'prevent_action', target: 'reactions' },
-      { type: 'prevent_action', target: 'movement' },
-      { type: 'prevent_action', target: 'speech' },
-      { type: 'advantage', target: 'incoming_attacks' },
-      { type: 'advantage', target: 'incoming_melee_crits' }
-    ]
+      { type: "prevent_action", target: "actions" },
+      { type: "prevent_action", target: "reactions" },
+      { type: "prevent_action", target: "movement" },
+      { type: "prevent_action", target: "speech" },
+      { type: "advantage", target: "incoming_attacks" },
+      { type: "advantage", target: "incoming_melee_crits" },
+    ],
   },
   petrified: {
-    id: 'petrified',
-    name: 'Petrified',
-    description: 'Incapacitated, cannot move or speak, and has resistance to all damage',
+    id: "petrified",
+    name: "Petrified",
+    description: "Incapacitated, cannot move or speak, and has resistance to all damage",
     duration: -1,
     effects: [
-      { type: 'prevent_action', target: 'actions' },
-      { type: 'prevent_action', target: 'reactions' },
-      { type: 'prevent_action', target: 'movement' },
-      { type: 'prevent_action', target: 'speech' },
-      { type: 'resistance', target: 'all_damage' }
-    ]
+      { type: "prevent_action", target: "actions" },
+      { type: "prevent_action", target: "reactions" },
+      { type: "prevent_action", target: "movement" },
+      { type: "prevent_action", target: "speech" },
+      { type: "resistance", target: "all_damage" },
+    ],
   },
   poisoned: {
-    id: 'poisoned',
-    name: 'Poisoned',
-    description: 'Disadvantage on attack rolls and ability checks',
+    id: "poisoned",
+    name: "Poisoned",
+    description: "Disadvantage on attack rolls and ability checks",
     duration: -1,
     effects: [
-      { type: 'disadvantage', target: 'attack_rolls' },
-      { type: 'disadvantage', target: 'ability_checks' }
-    ]
+      { type: "disadvantage", target: "attack_rolls" },
+      { type: "disadvantage", target: "ability_checks" },
+    ],
   },
   prone: {
-    id: 'prone',
-    name: 'Prone',
-    description: 'Disadvantage on attack rolls, advantage on incoming melee attacks',
+    id: "prone",
+    name: "Prone",
+    description: "Disadvantage on attack rolls, advantage on incoming melee attacks",
     duration: -1,
     effects: [
-      { type: 'disadvantage', target: 'attack_rolls' },
-      { type: 'advantage', target: 'incoming_melee_attacks' },
-      { type: 'disadvantage', target: 'incoming_ranged_attacks' }
-    ]
+      { type: "disadvantage", target: "attack_rolls" },
+      { type: "advantage", target: "incoming_melee_attacks" },
+      { type: "disadvantage", target: "incoming_ranged_attacks" },
+    ],
   },
   restrained: {
-    id: 'restrained',
-    name: 'Restrained',
-    description: 'Speed becomes 0, disadvantage on attacks and Dex saves',
+    id: "restrained",
+    name: "Restrained",
+    description: "Speed becomes 0, disadvantage on attacks and Dex saves",
     duration: -1,
     effects: [
-      { type: 'speed_modifier', target: 'all', value: 0 },
-      { type: 'disadvantage', target: 'attack_rolls' },
-      { type: 'disadvantage', target: 'dexterity_saves' },
-      { type: 'advantage', target: 'incoming_attacks' }
-    ]
+      { type: "speed_modifier", target: "all", value: 0 },
+      { type: "disadvantage", target: "attack_rolls" },
+      { type: "disadvantage", target: "dexterity_saves" },
+      { type: "advantage", target: "incoming_attacks" },
+    ],
   },
   stunned: {
-    id: 'stunned',
-    name: 'Stunned',
-    description: 'Incapacitated, cannot move, and can speak only falteringly',
+    id: "stunned",
+    name: "Stunned",
+    description: "Incapacitated, cannot move, and can speak only falteringly",
     duration: -1,
     effects: [
-      { type: 'prevent_action', target: 'actions' },
-      { type: 'prevent_action', target: 'reactions' },
-      { type: 'prevent_action', target: 'movement' },
-      { type: 'advantage', target: 'incoming_attacks' }
-    ]
+      { type: "prevent_action", target: "actions" },
+      { type: "prevent_action", target: "reactions" },
+      { type: "prevent_action", target: "movement" },
+      { type: "advantage", target: "incoming_attacks" },
+    ],
   },
   unconscious: {
-    id: 'unconscious',
-    name: 'Unconscious',
-    description: 'Incapacitated, cannot move or speak, unaware of surroundings',
+    id: "unconscious",
+    name: "Unconscious",
+    description: "Incapacitated, cannot move or speak, unaware of surroundings",
     duration: -1,
     effects: [
-      { type: 'prevent_action', target: 'actions' },
-      { type: 'prevent_action', target: 'reactions' },
-      { type: 'prevent_action', target: 'movement' },
-      { type: 'prevent_action', target: 'speech' },
-      { type: 'advantage', target: 'incoming_attacks' },
-      { type: 'advantage', target: 'incoming_melee_crits' },
-      { type: 'custom', target: 'drop_concentration' }
+      { type: "prevent_action", target: "actions" },
+      { type: "prevent_action", target: "reactions" },
+      { type: "prevent_action", target: "movement" },
+      { type: "prevent_action", target: "speech" },
+      { type: "advantage", target: "incoming_attacks" },
+      { type: "advantage", target: "incoming_melee_crits" },
+      { type: "custom", target: "drop_concentration" },
     ],
-    replaces: ['prone']
-  }
+    replaces: ["prone"],
+  },
 };
 
 export class ConditionsEngine {
@@ -206,15 +217,14 @@ export class ConditionsEngine {
    * Apply condition to entity
    */
   applyCondition(
-    entityId: string, 
-    condition: Condition | string, 
+    entityId: string,
+    condition: Condition | string,
     duration?: number,
     source?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): ActiveCondition {
-    const conditionData = typeof condition === 'string' ? 
-      D5E_CONDITIONS[condition] : condition;
-    
+    const conditionData = typeof condition === "string" ? D5E_CONDITIONS[condition] : condition;
+
     if (!conditionData) {
       throw new Error(`Unknown condition: ${condition}`);
     }
@@ -236,12 +246,12 @@ export class ConditionsEngine {
 
     // Check if condition is stackable
     if (!conditionData.stackable) {
-      const existing = existingConditions.find(c => c.id === conditionData.id);
+      const existing = existingConditions.find((c) => c.id === conditionData.id);
       if (existing) {
         // Update existing condition instead of stacking
         existing.remainingDuration = Math.max(
-          existing.remainingDuration, 
-          duration ?? conditionData.duration
+          existing.remainingDuration,
+          duration ?? conditionData.duration,
         );
         existing.metadata = { ...existing.metadata, ...metadata };
         return existing;
@@ -252,14 +262,14 @@ export class ConditionsEngine {
       ...conditionData,
       appliedAt: Date.now(),
       remainingDuration: duration ?? conditionData.duration,
-      appliedBy: source || 'unknown',
-      metadata: metadata || {}
+      appliedBy: source || "unknown",
+      metadata: metadata || {},
     };
 
     if (!this.activeConditions.has(entityId)) {
       this.activeConditions.set(entityId, []);
     }
-    
+
     this.activeConditions.get(entityId)!.push(activeCondition);
     return activeCondition;
   }
@@ -271,7 +281,7 @@ export class ConditionsEngine {
     const conditions = this.activeConditions.get(entityId);
     if (!conditions) return false;
 
-    const index = conditions.findIndex(c => c.id === conditionId);
+    const index = conditions.findIndex((c) => c.id === conditionId);
     if (index === -1) return false;
 
     conditions.splice(index, 1);
@@ -290,7 +300,7 @@ export class ConditionsEngine {
    */
   hasCondition(entityId: string, conditionId: string): boolean {
     const conditions = this.activeConditions.get(entityId);
-    return conditions?.some(c => c.id === conditionId) || false;
+    return conditions?.some((c) => c.id === conditionId) || false;
   }
 
   /**
@@ -303,7 +313,7 @@ export class ConditionsEngine {
     for (const condition of conditions) {
       // Process start-of-turn effects
       for (const effect of condition.effects) {
-        if (effect.trigger === 'start_turn') {
+        if (effect.trigger === "start_turn") {
           effects.push(effect);
         }
       }
@@ -323,7 +333,10 @@ export class ConditionsEngine {
   /**
    * Process end of turn condition updates
    */
-  processTurnEnd(entityId: string): { effects: ConditionEffect[]; saves: Array<{ condition: string; dc: number; ability: string }> } {
+  processTurnEnd(entityId: string): {
+    effects: ConditionEffect[];
+    saves: Array<{ condition: string; dc: number; ability: string }>;
+  } {
     const effects: ConditionEffect[] = [];
     const saves: Array<{ condition: string; dc: number; ability: string }> = [];
     const conditions = this.getActiveConditions(entityId);
@@ -331,7 +344,7 @@ export class ConditionsEngine {
     for (const condition of conditions) {
       // Process end-of-turn effects
       for (const effect of condition.effects) {
-        if (effect.trigger === 'end_turn') {
+        if (effect.trigger === "end_turn") {
           effects.push(effect);
         }
       }
@@ -341,7 +354,7 @@ export class ConditionsEngine {
         saves.push({
           condition: condition.id,
           dc: condition.dc,
-          ability: condition.saveAbility
+          ability: condition.saveAbility,
         });
       }
     }
@@ -352,7 +365,10 @@ export class ConditionsEngine {
   /**
    * Apply condition effect results
    */
-  applyConditionEffects(entityId: string, rollType: string): {
+  applyConditionEffects(
+    entityId: string,
+    rollType: string,
+  ): {
     advantage: boolean;
     disadvantage: boolean;
     modifiers: number[];
@@ -368,20 +384,20 @@ export class ConditionsEngine {
       for (const effect of condition.effects) {
         if (this.effectApplies(effect, rollType)) {
           switch (effect.type) {
-            case 'advantage':
+            case "advantage":
               advantage = true;
               break;
-            case 'disadvantage':
+            case "disadvantage":
               disadvantage = true;
               break;
-            case 'ability_modifier':
-            case 'skill_modifier':
-            case 'save_modifier':
+            case "ability_modifier":
+            case "skill_modifier":
+            case "save_modifier":
               if (effect.value !== undefined) {
                 modifiers.push(effect.value);
               }
               break;
-            case 'prevent_action':
+            case "prevent_action":
               prevented = true;
               break;
           }
@@ -408,13 +424,13 @@ export class ConditionsEngine {
     for (const condition of conditions) {
       for (const effect of condition.effects) {
         switch (effect.type) {
-          case 'resistance':
+          case "resistance":
             resistances.push(effect.target);
             break;
-          case 'immunity':
+          case "immunity":
             immunities.push(effect.target);
             break;
-          case 'vulnerability':
+          case "vulnerability":
             vulnerabilities.push(effect.target);
             break;
         }
@@ -426,11 +442,11 @@ export class ConditionsEngine {
 
   private effectApplies(effect: ConditionEffect, rollType: string): boolean {
     switch (effect.target) {
-      case 'all':
-      case 'attack_rolls':
-      case 'ability_checks':
-      case 'saving_throws':
-        return rollType.includes(effect.target) || rollType === 'all';
+      case "all":
+      case "attack_rolls":
+      case "ability_checks":
+      case "saving_throws":
+        return rollType.includes(effect.target) || rollType === "all";
       default:
         return effect.target === rollType;
     }
@@ -451,14 +467,14 @@ export class ConditionsEngine {
     name: string,
     description: string,
     effects: ConditionEffect[],
-    duration = -1
+    duration = -1,
   ): Condition {
     return {
       id,
       name,
       description,
       duration,
-      effects
+      effects,
     };
   }
 }
@@ -467,7 +483,11 @@ export class ConditionsEngine {
 export const conditionsEngine = new ConditionsEngine();
 
 // Utility functions
-export function applyCondition(_entityId: string, _conditionId: string, _duration?: number): ActiveCondition {
+export function applyCondition(
+  _entityId: string,
+  _conditionId: string,
+  _duration?: number,
+): ActiveCondition {
   return conditionsEngine.applyCondition(entityId, conditionId, duration);
 }
 

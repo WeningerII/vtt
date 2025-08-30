@@ -2,13 +2,13 @@
  * Core Authentication Manager
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import * as jwt from 'jsonwebtoken';
-import * as bcrypt from 'bcryptjs';
-import * as speakeasy from 'speakeasy';
-import * as qrcode from 'qrcode';
-import { v4 as uuidv4 } from 'uuid';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import * as jwt from "jsonwebtoken";
+import * as bcrypt from "bcryptjs";
+import * as speakeasy from "speakeasy";
+import * as qrcode from "qrcode";
+import { v4 as uuidv4 } from "uuid";
 import {
   User,
   LoginCredentials,
@@ -21,8 +21,8 @@ import {
   TwoFactorSetup,
   PasswordResetRequest,
   PasswordReset,
-  AuthEvent
-} from './types';
+  AuthEvent,
+} from "./types";
 
 export class AuthManager extends EventEmitter {
   private config: AuthConfig;
@@ -46,12 +46,12 @@ export class AuthManager extends EventEmitter {
     // Check if user already exists
     const existingUser = await this.findUserByEmail(data.email);
     if (existingUser) {
-      throw new Error('User already exists with this email');
+      throw new Error("User already exists with this email");
     }
 
     const existingUsername = await this.findUserByUsername(data.username);
     if (existingUsername) {
-      throw new Error('Username already taken');
+      throw new Error("Username already taken");
     }
 
     // Hash password
@@ -63,14 +63,14 @@ export class AuthManager extends EventEmitter {
       email: data.email.toLowerCase(),
       username: data.username,
       displayName: data.displayName,
-      role: 'player',
-      permissions: this.getDefaultPermissions('player'),
-      subscription: 'free',
+      role: "player",
+      permissions: this.getDefaultPermissions("player"),
+      subscription: "free",
       isEmailVerified: false,
       isTwoFactorEnabled: false,
       lastLogin: new Date(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // Store user (would typically be in database)
@@ -81,7 +81,7 @@ export class AuthManager extends EventEmitter {
       await this.sendVerificationEmail(user);
     }
 
-    this.emitAuthEvent('register', user.id, { email: data.email });
+    this.emitAuthEvent("register", user.id, { email: data.email });
     return user;
   }
 
@@ -90,24 +90,24 @@ export class AuthManager extends EventEmitter {
    */
   async findUserById(id: string): Promise<User | null> {
     logger.info(`Finding user by ID: ${id}`);
-    
+
     try {
       // Check in-memory cache first
       const cachedUser = this.userCache.get(id);
       if (cachedUser) {
         return cachedUser;
       }
-      
+
       // Query database (using mock data for now)
       // In production, this would be a proper database query
-      const user = this.mockDatabase.users.find(u => u.id === id);
-      
+      const user = this.mockDatabase.users.find((u) => u.id === id);
+
       if (user) {
         // Cache the user for future requests
         this.userCache.set(id, user);
         return user;
       }
-      
+
       return null;
     } catch (error) {
       logger.error(`Error finding user by ID ${id}:`, error as Record<string, any>);
@@ -123,13 +123,13 @@ export class AuthManager extends EventEmitter {
     const session: AuthSession = {
       id: uuidv4(),
       userId: user.id,
-      deviceId: 'oauth-device',
-      ipAddress: '0.0.0.0',
-      userAgent: 'oauth',
+      deviceId: "oauth-device",
+      ipAddress: "0.0.0.0",
+      userAgent: "oauth",
       isActive: true,
       lastActivity: new Date(),
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     };
 
     return this.generateTokens(user, session);
@@ -138,22 +138,26 @@ export class AuthManager extends EventEmitter {
   /**
    * Authenticate user login
    */
-  async login(credentials: LoginCredentials, ipAddress: string, userAgent: string): Promise<{ user: User; tokens: AuthTokens; session: AuthSession }> {
-    const { email,  password,  twoFactorCode,  rememberMe  } = credentials;
+  async login(
+    credentials: LoginCredentials,
+    ipAddress: string,
+    userAgent: string,
+  ): Promise<{ user: User; tokens: AuthTokens; session: AuthSession }> {
+    const { email, password, twoFactorCode, rememberMe } = credentials;
 
     // Check rate limiting
-    await this.checkRateLimit(email, 'login');
+    await this.checkRateLimit(email, "login");
 
     // Find user
     const user = await this.findUserByEmail(email);
     if (!user) {
       await this.recordFailedAttempt(email);
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Check if account is locked
     if (await this.isAccountLocked(user.id)) {
-      throw new Error('Account is temporarily locked due to too many failed attempts');
+      throw new Error("Account is temporarily locked due to too many failed attempts");
     }
 
     // Verify password
@@ -161,19 +165,19 @@ export class AuthManager extends EventEmitter {
     const isPasswordValid = await bcrypt.compare(password, storedPassword);
     if (!isPasswordValid) {
       await this.recordFailedAttempt(email);
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Check two-factor authentication
     if (user.isTwoFactorEnabled) {
       if (!twoFactorCode) {
-        throw new Error('Two-factor authentication code required');
+        throw new Error("Two-factor authentication code required");
       }
-      
+
       const isValidTwoFactor = await this.verifyTwoFactorCode(user.id, twoFactorCode);
       if (!isValidTwoFactor) {
         await this.recordFailedAttempt(email);
-        throw new Error('Invalid two-factor authentication code');
+        throw new Error("Invalid two-factor authentication code");
       }
     }
 
@@ -190,7 +194,7 @@ export class AuthManager extends EventEmitter {
     user.lastLogin = new Date();
     await this.updateUser(user);
 
-    this.emitAuthEvent('login', user.id, { ipAddress, userAgent });
+    this.emitAuthEvent("login", user.id, { ipAddress, userAgent });
     return { user, tokens, session };
   }
 
@@ -201,14 +205,14 @@ export class AuthManager extends EventEmitter {
     try {
       const decoded = jwt.verify(refreshToken, this.config.jwtSecret) as JWTPayload;
       const session = this.activeSessions.get(decoded.sessionId);
-      
+
       if (!session || !session.isActive) {
-        throw new Error('Invalid session');
+        throw new Error("Invalid session");
       }
 
       const user = await this.findUserById(decoded.sub);
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       // Update session activity
@@ -216,7 +220,7 @@ export class AuthManager extends EventEmitter {
 
       return this.generateTokens(user, session);
     } catch (_error) {
-      throw new Error('Invalid refresh token');
+      throw new Error("Invalid refresh token");
     }
   }
 
@@ -228,32 +232,36 @@ export class AuthManager extends EventEmitter {
     if (session) {
       session.isActive = false;
       this.activeSessions.delete(sessionId);
-      this.emitAuthEvent('logout', session.userId, { sessionId });
+      this.emitAuthEvent("logout", session.userId, { sessionId });
     }
   }
 
   /**
    * Validate JWT token and return security context
    */
-  async validateToken(token: string, ipAddress: string, userAgent: string): Promise<SecurityContext> {
+  async validateToken(
+    token: string,
+    ipAddress: string,
+    userAgent: string,
+  ): Promise<SecurityContext> {
     try {
       const decoded = jwt.verify(token, this.config.jwtSecret) as JWTPayload;
       const session = this.activeSessions.get(decoded.sessionId);
-      
+
       if (!session || !session.isActive) {
-        throw new Error('Invalid session');
+        throw new Error("Invalid session");
       }
 
       // Check session expiry
       if (session.expiresAt < new Date()) {
         session.isActive = false;
         this.activeSessions.delete(decoded.sessionId);
-        throw new Error('Session expired');
+        throw new Error("Session expired");
       }
 
       const user = await this.findUserById(decoded.sub);
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       // Update session activity
@@ -264,10 +272,10 @@ export class AuthManager extends EventEmitter {
         session,
         permissions: user.permissions,
         ipAddress,
-        userAgent
+        userAgent,
       };
     } catch (_error) {
-      throw new Error('Invalid token');
+      throw new Error("Invalid token");
     }
   }
 
@@ -277,12 +285,12 @@ export class AuthManager extends EventEmitter {
   async setupTwoFactor(userId: string): Promise<TwoFactorSetup> {
     const user = await this.findUserById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     const secret = speakeasy.generateSecret({
       name: `VTT:${user.email}`,
-      issuer: 'Virtual Tabletop'
+      issuer: "Virtual Tabletop",
     });
 
     const qrCode = await qrcode.toDataURL(secret.otpauth_url!);
@@ -294,7 +302,7 @@ export class AuthManager extends EventEmitter {
     return {
       secret: secret.base32,
       qrCode,
-      backupCodes
+      backupCodes,
     };
   }
 
@@ -304,18 +312,18 @@ export class AuthManager extends EventEmitter {
   async enableTwoFactor(userId: string, verificationCode: string): Promise<boolean> {
     const tempSecret = await this.getTempTwoFactorSecret(userId);
     if (!tempSecret) {
-      throw new Error('Two-factor setup not initiated');
+      throw new Error("Two-factor setup not initiated");
     }
 
     const isValid = speakeasy.totp.verify({
       secret: tempSecret.secret,
-      encoding: 'base32',
+      encoding: "base32",
       token: verificationCode,
-      window: 2
+      window: 2,
     });
 
     if (!isValid) {
-      throw new Error('Invalid verification code');
+      throw new Error("Invalid verification code");
     }
 
     // Enable 2FA for user
@@ -353,7 +361,7 @@ export class AuthManager extends EventEmitter {
   async resetPassword(reset: PasswordReset): Promise<boolean> {
     const resetData = await this.getPasswordResetToken(reset.token);
     if (!resetData || resetData.expiresAt < new Date()) {
-      throw new Error('Invalid or expired reset token');
+      throw new Error("Invalid or expired reset token");
     }
 
     // Validate new password
@@ -369,7 +377,7 @@ export class AuthManager extends EventEmitter {
     // Invalidate all sessions for this user
     await this.invalidateUserSessions(resetData.userId);
 
-    this.emitAuthEvent('password_reset', resetData.userId, {});
+    this.emitAuthEvent("password_reset", resetData.userId, {});
     return true;
   }
 
@@ -385,11 +393,11 @@ export class AuthManager extends EventEmitter {
    */
   hasRole(context: SecurityContext, role: string): boolean {
     const roleHierarchy: Record<string, number> = {
-      'guest': 0,
-      'player': 1,
-      'gamemaster': 2,
-      'moderator': 3,
-      'admin': 4
+      guest: 0,
+      player: 1,
+      gamemaster: 2,
+      moderator: 3,
+      admin: 4,
     };
 
     const userLevel = roleHierarchy[context.user.role] || 0;
@@ -408,32 +416,37 @@ export class AuthManager extends EventEmitter {
       permissions: user.permissions,
       sessionId: session.id,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour
-      iss: 'vtt-auth',
-      aud: 'vtt-client'
+      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+      iss: "vtt-auth",
+      aud: "vtt-client",
     };
 
     const accessToken = jwt.sign(payload, this.config.jwtSecret);
     const refreshPayload = {
       sub: user.id,
       sessionId: session.id,
-      iat: Math.floor(Date.now() / 1000)
+      iat: Math.floor(Date.now() / 1000),
     };
-    
+
     const refreshOptions = {
-      expiresIn: this.config.refreshTokenExpiration
+      expiresIn: this.config.refreshTokenExpiration,
     } as jwt.SignOptions;
-    
+
     const refreshToken = jwt.sign(refreshPayload, this.config.jwtSecret, refreshOptions);
 
     return {
       accessToken,
       refreshToken,
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
     };
   }
 
-  private async createSession(user: User, ipAddress: string, userAgent: string, rememberMe?: boolean): Promise<AuthSession> {
+  private async createSession(
+    user: User,
+    ipAddress: string,
+    userAgent: string,
+    rememberMe?: boolean,
+  ): Promise<AuthSession> {
     const session: AuthSession = {
       id: uuidv4(),
       userId: user.id,
@@ -443,7 +456,9 @@ export class AuthManager extends EventEmitter {
       isActive: true,
       lastActivity: new Date(),
       createdAt: new Date(),
-      expiresAt: new Date(Date.now() + (rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000)) // 30 days or 1 day
+      expiresAt: new Date(
+        Date.now() + (rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
+      ), // 30 days or 1 day
     };
 
     this.activeSessions.set(session.id, session);
@@ -452,7 +467,7 @@ export class AuthManager extends EventEmitter {
 
   private generateDeviceId(userAgent: string): string {
     // Generate a device fingerprint based on user agent
-    return Buffer.from(userAgent).toString('base64').substring(0, 16);
+    return Buffer.from(userAgent).toString("base64").substring(0, 16);
   }
 
   private async verifyTwoFactorCode(userId: string, code: string): Promise<boolean> {
@@ -464,9 +479,9 @@ export class AuthManager extends EventEmitter {
     // Check TOTP code
     const isValidTOTP = speakeasy.totp.verify({
       secret: secret.secret,
-      encoding: 'base32',
+      encoding: "base32",
       token: code,
-      window: 2
+      window: 2,
     });
 
     if (isValidTOTP) {
@@ -477,7 +492,7 @@ export class AuthManager extends EventEmitter {
     const isValidBackup = secret.backupCodes.includes(code);
     if (isValidBackup) {
       // Remove used backup code
-      const updatedCodes = secret.backupCodes.filter(c => c !== code);
+      const updatedCodes = secret.backupCodes.filter((c) => c !== code);
       await this.updateBackupCodes(userId, updatedCodes);
       return true;
     }
@@ -495,50 +510,50 @@ export class AuthManager extends EventEmitter {
 
   private validateRegistrationData(data: RegisterData): void {
     if (!data.email || !this.isValidEmail(data.email)) {
-      throw new Error('Invalid email address');
+      throw new Error("Invalid email address");
     }
 
     if (!data.username || data.username.length < 3 || data.username.length > 20) {
-      throw new Error('Username must be between 3 and 20 characters');
+      throw new Error("Username must be between 3 and 20 characters");
     }
 
     if (!data.password) {
-      throw new Error('Password is required');
+      throw new Error("Password is required");
     }
 
     this.validatePassword(data.password);
 
     if (!data.acceptTerms) {
-      throw new Error('Must accept terms of service');
+      throw new Error("Must accept terms of service");
     }
   }
 
   private validatePassword(password: string): void {
     if (!this.config.security.enforcePasswordComplexity) {
       if (password.length < 8) {
-        throw new Error('Password must be at least 8 characters long');
+        throw new Error("Password must be at least 8 characters long");
       }
       return;
     }
 
     if (password.length < 12) {
-      throw new Error('Password must be at least 12 characters long');
+      throw new Error("Password must be at least 12 characters long");
     }
 
     if (!/[A-Z]/.test(password)) {
-      throw new Error('Password must contain at least one uppercase letter');
+      throw new Error("Password must contain at least one uppercase letter");
     }
 
     if (!/[a-z]/.test(password)) {
-      throw new Error('Password must contain at least one lowercase letter');
+      throw new Error("Password must contain at least one lowercase letter");
     }
 
     if (!/[0-9]/.test(password)) {
-      throw new Error('Password must contain at least one number');
+      throw new Error("Password must contain at least one number");
     }
 
     if (!/[^A-Za-z0-9]/.test(password)) {
-      throw new Error('Password must contain at least one special character');
+      throw new Error("Password must contain at least one special character");
     }
   }
 
@@ -549,14 +564,40 @@ export class AuthManager extends EventEmitter {
 
   private getDefaultPermissions(role: string): any[] {
     const permissions: Record<string, string[]> = {
-      'guest': ['session.join'],
-      'player': ['session.join', 'session.create'],
-      'gamemaster': ['session.join', 'session.create', 'session.manage', 'content.create', 'content.edit'],
-      'moderator': ['session.join', 'session.create', 'session.manage', 'content.create', 'content.edit', 'user.moderate'],
-      'admin': ['session.join', 'session.create', 'session.manage', 'session.delete', 'content.create', 'content.edit', 'content.delete', 'content.publish', 'user.manage', 'user.moderate', 'system.admin', 'billing.manage']
+      guest: ["session.join"],
+      player: ["session.join", "session.create"],
+      gamemaster: [
+        "session.join",
+        "session.create",
+        "session.manage",
+        "content.create",
+        "content.edit",
+      ],
+      moderator: [
+        "session.join",
+        "session.create",
+        "session.manage",
+        "content.create",
+        "content.edit",
+        "user.moderate",
+      ],
+      admin: [
+        "session.join",
+        "session.create",
+        "session.manage",
+        "session.delete",
+        "content.create",
+        "content.edit",
+        "content.delete",
+        "content.publish",
+        "user.manage",
+        "user.moderate",
+        "system.admin",
+        "billing.manage",
+      ],
     };
 
-    return permissions[role] || permissions['guest'] || [];
+    return permissions[role] || permissions["guest"] || [];
   }
 
   private async recordFailedAttempt(email: string): Promise<void> {
@@ -582,11 +623,11 @@ export class AuthManager extends EventEmitter {
       userId,
       details,
       timestamp: new Date(),
-      ipAddress: details.ipAddress || '',
-      userAgent: details.userAgent || ''
+      ipAddress: details.ipAddress || "",
+      userAgent: details.userAgent || "",
     };
 
-    this.emit('authEvent', event);
+    this.emit("authEvent", event);
   }
 
   // Database interaction methods (would be implemented with actual database)
@@ -600,7 +641,6 @@ export class AuthManager extends EventEmitter {
     return null;
   }
 
-
   private async storeUser(_user: User, _hashedPassword: string): Promise<void> {
     // Placeholder - would store in database
   }
@@ -611,7 +651,7 @@ export class AuthManager extends EventEmitter {
 
   private async getStoredPassword(_userId: string): Promise<string> {
     // Placeholder - would query database
-    return '';
+    return "";
   }
 
   private async updatePassword(_userId: string, _hashedPassword: string): Promise<void> {
@@ -626,11 +666,17 @@ export class AuthManager extends EventEmitter {
     // Placeholder - would send email
   }
 
-  private async storeTempTwoFactorSecret(_userId: string, _secret: string, _backupCodes: string[]): Promise<void> {
+  private async storeTempTwoFactorSecret(
+    _userId: string,
+    _secret: string,
+    _backupCodes: string[],
+  ): Promise<void> {
     // Placeholder - would store in database
   }
 
-  private async getTempTwoFactorSecret(_userId: string): Promise<{ secret: string; backupCodes: string[] } | null> {
+  private async getTempTwoFactorSecret(
+    _userId: string,
+  ): Promise<{ secret: string; backupCodes: string[] } | null> {
     // Placeholder - would query database
     return null;
   }
@@ -639,11 +685,17 @@ export class AuthManager extends EventEmitter {
     // Placeholder - would delete from database
   }
 
-  private async storeTwoFactorSecret(_userId: string, _secret: string, _backupCodes: string[]): Promise<void> {
+  private async storeTwoFactorSecret(
+    _userId: string,
+    _secret: string,
+    _backupCodes: string[],
+  ): Promise<void> {
     // Placeholder - would store in database
   }
 
-  private async getTwoFactorSecret(_userId: string): Promise<{ secret: string; backupCodes: string[] } | null> {
+  private async getTwoFactorSecret(
+    _userId: string,
+  ): Promise<{ secret: string; backupCodes: string[] } | null> {
     // Placeholder - would query database
     return null;
   }
@@ -652,11 +704,17 @@ export class AuthManager extends EventEmitter {
     // Placeholder - would update database
   }
 
-  private async storePasswordResetToken(_userId: string, _token: string, _expiresAt: Date): Promise<void> {
+  private async storePasswordResetToken(
+    _userId: string,
+    _token: string,
+    _expiresAt: Date,
+  ): Promise<void> {
     // Placeholder - would store in database
   }
 
-  private async getPasswordResetToken(_token: string): Promise<{ userId: string; expiresAt: Date } | null> {
+  private async getPasswordResetToken(
+    _token: string,
+  ): Promise<{ userId: string; expiresAt: Date } | null> {
     // Placeholder - would query database
     return null;
   }

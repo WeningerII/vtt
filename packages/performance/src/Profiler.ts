@@ -2,8 +2,8 @@
  * Performance profiling and measurement utilities for VTT systems
  */
 
-import perfNow from 'performance-now';
-import { logger } from '@vtt/logging';
+import perfNow from "performance-now";
+import { logger } from "@vtt/logging";
 
 export interface ProfileEntry {
   name: string;
@@ -71,7 +71,7 @@ export class Profiler {
       name,
       startTime: perfNow(),
       metadata: metadata || undefined,
-      children: []
+      children: [],
     };
 
     this.activeProfiles.set(name, profile);
@@ -108,13 +108,13 @@ export class Profiler {
   profile<T extends (...args: any[]) => any>(
     name: string,
     fn: T,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): T {
     return ((...args: any[]) => {
       this.startProfile(name, metadata);
       try {
         const result = fn(...args);
-        
+
         if (result instanceof Promise) {
           return result.finally(() => {
             this.endProfile(name);
@@ -134,7 +134,7 @@ export class Profiler {
   async profileAsync<T>(
     name: string,
     _operation: () => Promise<T>,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Promise<T> {
     this.startProfile(name, metadata);
     try {
@@ -149,7 +149,7 @@ export class Profiler {
   measureFunction<T extends (...args: any[]) => any>(
     name: string,
     fn: T,
-    iterations: number = 1000
+    iterations: number = 1000,
   ): PerformanceMetrics {
     const durations: number[] = [];
 
@@ -166,7 +166,7 @@ export class Profiler {
   async measureAsyncFunction<T>(
     name: string,
     _fn: () => Promise<T>,
-    iterations: number = 100
+    iterations: number = 100,
   ): Promise<PerformanceMetrics> {
     const durations: number[] = [];
 
@@ -184,8 +184,9 @@ export class Profiler {
     const sorted = durations.sort((a, b) => a - b);
     const sum = durations.reduce((a, b) => a + b, 0);
     const mean = sum / durations.length;
-    
-    const variance = durations.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / durations.length;
+
+    const variance =
+      durations.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / durations.length;
     const standardDeviation = Math.sqrt(variance);
 
     return {
@@ -200,27 +201,27 @@ export class Profiler {
         p50: sorted[Math.floor(sorted.length * 0.5)] || 0,
         p90: sorted[Math.floor(sorted.length * 0.9)] || 0,
         p95: sorted[Math.floor(sorted.length * 0.95)] || 0,
-        p99: sorted[Math.floor(sorted.length * 0.99)] || 0
-      }
+        p99: sorted[Math.floor(sorted.length * 0.99)] || 0,
+      },
     };
   }
 
   // System resource monitoring
   private setupGCMonitoring(): void {
-    if (typeof PerformanceObserver !== 'undefined') {
+    if (typeof PerformanceObserver !== "undefined") {
       try {
         this.gcObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           for (const entry of entries) {
-            if (entry.entryType === 'measure' && entry.name.includes('gc')) {
+            if (entry.entryType === "measure" && entry.name.includes("gc")) {
               // GC event detected
               this.recordGCEvent(entry);
             }
           }
         });
-        this.gcObserver.observe({ entryTypes: ['measure', 'mark'] });
+        this.gcObserver.observe({ entryTypes: ["measure", "mark"] });
       } catch (error) {
-        logger.warn('GC monitoring not available:', error);
+        logger.warn("GC monitoring not available:", error);
       }
     }
   }
@@ -231,7 +232,7 @@ export class Profiler {
       latestMetrics.gc = {
         collections: (latestMetrics.gc?.collections || 0) + 1,
         duration: entry.duration,
-        type: entry.name
+        type: entry.name,
       };
     }
   }
@@ -246,7 +247,7 @@ export class Profiler {
     const metrics: SystemResourceMetrics = {
       timestamp: Date.now(),
       memory: this.getMemoryMetrics(),
-      cpu: this.getCPUMetrics()
+      cpu: this.getCPUMetrics(),
     };
 
     this.resourceHistory.push(metrics);
@@ -258,14 +259,14 @@ export class Profiler {
   }
 
   private getMemoryMetrics() {
-    if (typeof process !== 'undefined' && process.memoryUsage) {
+    if (typeof process !== "undefined" && process.memoryUsage) {
       const usage = process.memoryUsage();
       return {
         used: usage.heapUsed,
         total: usage.heapTotal,
         heap: usage.heapUsed,
         external: usage.external,
-        rss: usage.rss
+        rss: usage.rss,
       };
     }
 
@@ -275,17 +276,17 @@ export class Profiler {
       total: 0,
       heap: 0,
       external: 0,
-      rss: 0
+      rss: 0,
     };
   }
 
   private getCPUMetrics() {
-    if (typeof process !== 'undefined' && process.cpuUsage) {
+    if (typeof process !== "undefined" && process.cpuUsage) {
       const usage = process.cpuUsage();
       return {
         user: usage.user / 1000000, // Convert to milliseconds
         system: usage.system / 1000000,
-        idle: 0
+        idle: 0,
       };
     }
 
@@ -325,7 +326,7 @@ export class Profiler {
     }
 
     const cutoff = Date.now() - timeWindowMs;
-    return this.resourceHistory.filter(m => m.timestamp >= cutoff);
+    return this.resourceHistory.filter((m) => m.timestamp >= cutoff);
   }
 
   // ... (rest of the code remains the same)
@@ -336,13 +337,13 @@ export class Profiler {
       name: string;
       averageTime: number;
       samples: number;
-      severity: 'low' | 'medium' | 'high' | 'critical';
+      severity: "low" | "medium" | "high" | "critical";
     }>;
     resourceUsage: {
       currentMemory: number;
       averageMemory: number;
       peakMemory: number;
-      memoryTrend: 'increasing' | 'stable' | 'decreasing';
+      memoryTrend: "increasing" | "stable" | "decreasing";
     };
     recommendations: string[];
   } {
@@ -352,7 +353,8 @@ export class Profiler {
 
     const memoryHistory = this.resourceHistory.map((m) => m.memory.used);
     const currentMemory = memoryHistory[memoryHistory.length - 1] || 0;
-    const recentMemory = memoryHistory.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, memoryHistory.length) || 0;
+    const recentMemory =
+      memoryHistory.slice(-10).reduce((a, b) => a + b, 0) / Math.min(10, memoryHistory.length) || 0;
     const peakMemory = Math.max(...memoryHistory) || 0;
 
     // Simple trend analysis
@@ -360,91 +362,97 @@ export class Profiler {
     const secondHalf = memoryHistory.slice(Math.floor(memoryHistory.length / 2));
     const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length || 0;
     const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length || 0;
-    
-    let memoryTrend: 'increasing' | 'stable' | 'decreasing' = 'stable';
-    if (secondAvg > firstAvg * 1.1) memoryTrend = 'increasing';
-    else if (secondAvg < firstAvg * 0.9) memoryTrend = 'decreasing';
+
+    let memoryTrend: "increasing" | "stable" | "decreasing" = "stable";
+    if (secondAvg > firstAvg * 1.1) memoryTrend = "increasing";
+    else if (secondAvg < firstAvg * 0.9) memoryTrend = "decreasing";
 
     const recommendations = this.generateRecommendations(bottlenecks, memoryTrend);
 
     return {
       summary,
-      bottlenecks: bottlenecks.sort((a, b) => a.count - b.count)
+      bottlenecks: bottlenecks
+        .sort((a, b) => a.count - b.count)
         .slice(0, 3)
         .map((b) => ({
           name: b.name,
           averageTime: b.avgTime,
           samples: b.count,
-          severity: b.impact === 'high' ? 'critical' : 'medium'
+          severity: b.impact === "high" ? "critical" : "medium",
         })),
       resourceUsage: {
         currentMemory,
         averageMemory: firstAvg,
         peakMemory,
-        memoryTrend
+        memoryTrend,
       },
-      recommendations
+      recommendations,
     };
   }
 
   public findBottlenecks() {
     const bottlenecks: Array<{ name: string; impact: string; avgTime: number; count: number }> = [];
-    
+
     for (const [name, times] of this.performanceData.entries()) {
       if (times.length === 0) continue;
-      
+
       const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
       const count = times.length;
-      
-      if (avgTime > 100) { // More than 100ms
+
+      if (avgTime > 100) {
+        // More than 100ms
         bottlenecks.push({
           name,
-          impact: 'high',
+          impact: "high",
           avgTime,
-          count
+          count,
         });
-      } else if (avgTime > 50) { // More than 50ms
+      } else if (avgTime > 50) {
+        // More than 50ms
         bottlenecks.push({
           name,
-          impact: 'medium', 
+          impact: "medium",
           avgTime,
-          count
+          count,
         });
       }
     }
-    
+
     return bottlenecks.sort((a, b) => b.avgTime - a.avgTime);
   }
 
-  private generateRecommendations(
-    bottlenecks: any[],
-    memoryTrend: string
-  ): string[] {
+  private generateRecommendations(bottlenecks: any[], memoryTrend: string): string[] {
     const recommendations: string[] = [];
 
     if (bottlenecks.length > 0) {
-      recommendations.push(`Found ${bottlenecks.length} performance bottlenecks requiring attention`);
-      
-      const longRunning = bottlenecks.filter((b) => b.impact === 'high');
+      recommendations.push(
+        `Found ${bottlenecks.length} performance bottlenecks requiring attention`,
+      );
+
+      const longRunning = bottlenecks.filter((b) => b.impact === "high");
       if (longRunning.length > 0) {
-        recommendations.push(`CRITICAL: ${longRunning.map(b => b.name).join(', ')} are taking >100ms per operation`);
+        recommendations.push(
+          `CRITICAL: ${longRunning.map((b) => b.name).join(", ")} are taking >100ms per operation`,
+        );
       }
     }
 
-    if (memoryTrend === 'increasing') {
-      recommendations.push('Memory usage is trending upward - check for memory leaks');
+    if (memoryTrend === "increasing") {
+      recommendations.push("Memory usage is trending upward - check for memory leaks");
     }
 
-    if (bottlenecks.some(b => b.name.includes('render'))) {
-      recommendations.push('Consider render optimization: object pooling, culling, or LOD systems');
+    if (bottlenecks.some((b) => b.name.includes("render"))) {
+      recommendations.push("Consider render optimization: object pooling, culling, or LOD systems");
     }
 
-    if (bottlenecks.some(b => b.name.includes('network'))) {
-      recommendations.push('Network operations are slow - consider batching, compression, or caching');
+    if (bottlenecks.some((b) => b.name.includes("network"))) {
+      recommendations.push(
+        "Network operations are slow - consider batching, compression, or caching",
+      );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('No significant performance issues detected');
+      recommendations.push("No significant performance issues detected");
     }
 
     return recommendations;
@@ -455,7 +463,7 @@ export class Profiler {
     if (this.gcObserver) {
       this.gcObserver.disconnect();
     }
-    
+
     this.activeProfiles.clear();
     this.completedProfiles = [];
     this.performanceData.clear();

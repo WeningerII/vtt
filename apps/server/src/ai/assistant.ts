@@ -32,7 +32,7 @@ export interface AssistantResponse {
 export function createAssistantService(prisma: PrismaClient) {
   const openaiKey = process.env.OPENAI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  
+
   // let openaiProvider: OpenAIProvider | null = null;
   // let anthropicProvider: AnthropicProvider | null = null;
 
@@ -46,7 +46,7 @@ export function createAssistantService(prisma: PrismaClient) {
 
   async function askQuestion(query: AssistantQuery): Promise<AssistantResponse> {
     // Temporarily disabled due to build issues
-    throw new Error('AI Assistant temporarily disabled due to AI provider build issues');
+    throw new Error("AI Assistant temporarily disabled due to AI provider build issues");
   }
 
   async function queryRules(query: AssistantQuery): Promise<AssistantResponse> {
@@ -69,10 +69,7 @@ export function createAssistantService(prisma: PrismaClient) {
     return askQuestion({ question: `Generate a ruling for: ${scenario}`, context });
   }
 
-  async function getQueryHistory(filters?: {
-    campaignId?: string;
-    limit?: number;
-  }) {
+  async function getQueryHistory(filters?: { campaignId?: string; limit?: number }) {
     // Temporarily disabled due to build issues
     return [];
   }

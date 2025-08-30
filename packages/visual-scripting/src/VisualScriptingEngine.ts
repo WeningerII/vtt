@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Visual Scripting System - Triple A Quality Node-Based Automation
@@ -20,9 +20,22 @@ export interface ScriptNode {
   color?: string;
 }
 
-export type NodeCategory = 
-  | 'event' | 'action' | 'condition' | 'math' | 'logic' | 'data' | 'flow' 
-  | 'game' | 'character' | 'combat' | 'dice' | 'ui' | 'audio' | 'animation' | 'custom';
+export type NodeCategory =
+  | "event"
+  | "action"
+  | "condition"
+  | "math"
+  | "logic"
+  | "data"
+  | "flow"
+  | "game"
+  | "character"
+  | "combat"
+  | "dice"
+  | "ui"
+  | "audio"
+  | "animation"
+  | "custom";
 
 export interface NodeInput {
   id: string;
@@ -41,9 +54,19 @@ export interface NodeOutput {
   description?: string;
 }
 
-export type DataType = 
-  | 'exec' | 'boolean' | 'number' | 'string' | 'vector' | 'object' 
-  | 'character' | 'item' | 'spell' | 'dice' | 'array' | 'any';
+export type DataType =
+  | "exec"
+  | "boolean"
+  | "number"
+  | "string"
+  | "vector"
+  | "object"
+  | "character"
+  | "item"
+  | "spell"
+  | "dice"
+  | "array"
+  | "any";
 
 export interface Connection {
   nodeId: string;
@@ -73,7 +96,7 @@ export interface ScriptVariable {
   name: string;
   type: DataType;
   defaultValue: any;
-  scope: 'local' | 'global' | 'persistent';
+  scope: "local" | "global" | "persistent";
   description?: string;
 }
 
@@ -103,7 +126,7 @@ export interface ScriptEvent {
 }
 
 export interface EventTrigger {
-  type: 'game_event' | 'user_input' | 'timer' | 'condition' | 'custom';
+  type: "game_event" | "user_input" | "timer" | "condition" | "custom";
   event: string;
   conditions?: string[];
 }
@@ -172,7 +195,7 @@ export interface OutputDefinition {
 export interface PropertyDefinition {
   id: string;
   name: string;
-  type: 'string' | 'number' | 'boolean' | 'enum' | 'color' | 'vector';
+  type: "string" | "number" | "boolean" | "enum" | "color" | "vector";
   defaultValue: any;
   options?: any[];
   description?: string;
@@ -185,7 +208,11 @@ export interface InputValidation {
   options?: any[];
 }
 
-export type NodeExecutor = (inputs: Record<string, any>, properties: Record<string, any>, context: ExecutionContext) => Promise<Record<string, any>>;
+export type NodeExecutor = (
+  inputs: Record<string, any>,
+  properties: Record<string, any>,
+  context: ExecutionContext,
+) => Promise<Record<string, any>>;
 export type NodeValidator = (properties: Record<string, any>) => ValidationResult;
 
 export interface ValidationResult {
@@ -208,23 +235,23 @@ export class VisualScriptingEngine {
   private nodeDefinitions: Map<string, NodeDefinition> = new Map();
   private executionContexts: Map<string, ExecutionContext> = new Map();
   private eventListeners: Map<string, ScriptEventHandler[]> = new Map();
-  
+
   // Runtime execution
   private scheduler: ExecutionScheduler;
   private debugger: ScriptDebugger;
   private profiler: ScriptProfiler;
-  
+
   // Node registry
   private nodeRegistry: NodeRegistry;
   private customNodes: Map<string, NodeDefinition> = new Map();
-  
+
   // Compilation and optimization
   private compiler: ScriptCompiler;
   private optimizer: ScriptOptimizer;
-  
+
   // Integration with game systems
   private gameIntegration: GameSystemIntegration;
-  
+
   // Statistics
   private stats = {
     scriptsExecuted: 0,
@@ -242,36 +269,36 @@ export class VisualScriptingEngine {
     this.compiler = new ScriptCompiler();
     this.optimizer = new ScriptOptimizer();
     this.gameIntegration = new GameSystemIntegration();
-    
+
     this.registerBuiltinNodes();
   }
 
   private registerBuiltinNodes(): void {
     // Event nodes
     this.registerNode({
-      type: 'event_start',
-      name: 'Start',
-      category: 'event',
-      description: 'Script execution starts here',
+      type: "event_start",
+      name: "Start",
+      category: "event",
+      description: "Script execution starts here",
       inputs: [],
-      outputs: [{ id: 'exec', name: 'Execute', type: 'exec' }],
+      outputs: [{ id: "exec", name: "Execute", type: "exec" }],
       properties: [],
       executor: async () => ({ exec: true }),
     });
 
     // Flow control nodes
     this.registerNode({
-      type: 'flow_branch',
-      name: 'Branch',
-      category: 'flow',
-      description: 'Conditional execution flow',
+      type: "flow_branch",
+      name: "Branch",
+      category: "flow",
+      description: "Conditional execution flow",
       inputs: [
-        { id: 'exec', name: 'Execute', type: 'exec', required: true },
-        { id: 'condition', name: 'Condition', type: 'boolean', required: true },
+        { id: "exec", name: "Execute", type: "exec", required: true },
+        { id: "condition", name: "Condition", type: "boolean", required: true },
       ],
       outputs: [
-        { id: 'true', name: 'True', type: 'exec' },
-        { id: 'false', name: 'False', type: 'exec' },
+        { id: "true", name: "True", type: "exec" },
+        { id: "false", name: "False", type: "exec" },
       ],
       properties: [],
       executor: async (inputs: any) => ({
@@ -282,33 +309,33 @@ export class VisualScriptingEngine {
 
     // Math nodes
     this.registerNode({
-      type: 'math_add',
-      name: 'Add',
-      category: 'math',
-      description: 'Add two numbers',
+      type: "math_add",
+      name: "Add",
+      category: "math",
+      description: "Add two numbers",
       inputs: [
-        { id: 'a', name: 'A', type: 'number', required: true, defaultValue: 0 },
-        { id: 'b', name: 'B', type: 'number', required: true, defaultValue: 0 },
+        { id: "a", name: "A", type: "number", required: true, defaultValue: 0 },
+        { id: "b", name: "B", type: "number", required: true, defaultValue: 0 },
       ],
-      outputs: [{ id: 'result', name: 'Result', type: 'number' }],
+      outputs: [{ id: "result", name: "Result", type: "number" }],
       properties: [],
       executor: async (inputs: any) => ({ result: inputs.a + inputs.b }),
     });
 
     // Game-specific nodes
     this.registerNode({
-      type: 'dice_roll',
-      name: 'Roll Dice',
-      category: 'dice',
-      description: 'Roll dice with specified formula',
+      type: "dice_roll",
+      name: "Roll Dice",
+      category: "dice",
+      description: "Roll dice with specified formula",
       inputs: [
-        { id: 'exec', name: 'Execute', type: 'exec', required: true },
-        { id: 'formula', name: 'Formula', type: 'string', required: true, defaultValue: '1d20' },
+        { id: "exec", name: "Execute", type: "exec", required: true },
+        { id: "formula", name: "Formula", type: "string", required: true, defaultValue: "1d20" },
       ],
       outputs: [
-        { id: 'exec', name: 'Execute', type: 'exec' },
-        { id: 'result', name: 'Result', type: 'number' },
-        { id: 'rolls', name: 'Individual Rolls', type: 'array' },
+        { id: "exec", name: "Execute", type: "exec" },
+        { id: "result", name: "Result", type: "number" },
+        { id: "rolls", name: "Individual Rolls", type: "array" },
       ],
       properties: [],
       executor: async (inputs: any) => {
@@ -323,15 +350,15 @@ export class VisualScriptingEngine {
 
     // Character interaction nodes
     this.registerNode({
-      type: 'character_get_stat',
-      name: 'Get Character Stat',
-      category: 'character',
-      description: 'Get a character attribute or stat',
+      type: "character_get_stat",
+      name: "Get Character Stat",
+      category: "character",
+      description: "Get a character attribute or stat",
       inputs: [
-        { id: 'character', name: 'Character', type: 'character', required: true },
-        { id: 'stat', name: 'Stat Name', type: 'string', required: true },
+        { id: "character", name: "Character", type: "character", required: true },
+        { id: "stat", name: "Stat Name", type: "string", required: true },
       ],
-      outputs: [{ id: 'value', name: 'Value', type: 'any' }],
+      outputs: [{ id: "value", name: "Value", type: "any" }],
       properties: [],
       executor: async (inputs: any) => {
         const value = this.gameIntegration.getCharacterStat(inputs.character, inputs.stat);
@@ -354,15 +381,15 @@ export class VisualScriptingEngine {
     const script: VisualScript = {
       id: this.generateId(),
       name,
-      description: description || '',
-      category: 'general',
+      description: description || "",
+      category: "general",
       nodes: [],
       connections: [],
       variables: [],
       functions: [],
       events: [],
       version: 1,
-      author: 'User',
+      author: "User",
       created: new Date(),
       modified: new Date(),
       tags: [],
@@ -375,7 +402,7 @@ export class VisualScriptingEngine {
   addNode(scriptId: string, nodeType: string, position: [number, number]): ScriptNode {
     const script = this.scripts.get(scriptId);
     const definition = this.nodeDefinitions.get(nodeType);
-    
+
     if (!script || !definition) {
       throw new Error(`Script or node type not found`);
     }
@@ -386,7 +413,7 @@ export class VisualScriptingEngine {
       name: definition.name,
       category: definition.category,
       position,
-      inputs: definition.inputs.map(input => ({
+      inputs: definition.inputs.map((input) => ({
         id: input.id,
         name: input.name,
         type: input.type,
@@ -394,7 +421,7 @@ export class VisualScriptingEngine {
         defaultValue: input.defaultValue,
         description: input.description,
       })),
-      outputs: definition.outputs.map(output => ({
+      outputs: definition.outputs.map((output) => ({
         id: output.id,
         name: output.name,
         type: output.type,
@@ -405,23 +432,29 @@ export class VisualScriptingEngine {
 
     script.nodes.push(node);
     script.modified = new Date();
-    
+
     return node;
   }
 
   private initializeProperties(definitions: PropertyDefinition[]): Record<string, any> {
     const properties: Record<string, any> = {};
-    
-    definitions.forEach(def => {
+
+    definitions.forEach((def) => {
       properties[def.id] = def.defaultValue;
     });
-    
+
     return properties;
   }
 
-  connectNodes(scriptId: string, fromNodeId: string, outputId: string, toNodeId: string, inputId: string): void {
+  connectNodes(
+    scriptId: string,
+    fromNodeId: string,
+    outputId: string,
+    toNodeId: string,
+    inputId: string,
+  ): void {
     const script = this.scripts.get(scriptId);
-    if (!script) throw new Error('Script not found');
+    if (!script) throw new Error("Script not found");
 
     const connection: Connection = {
       nodeId: fromNodeId,
@@ -430,9 +463,9 @@ export class VisualScriptingEngine {
     };
 
     // Update input connection
-    const toNode = script.nodes.find(n => n.id === toNodeId);
+    const toNode = script.nodes.find((n) => n.id === toNodeId);
     if (toNode) {
-      const input = toNode.inputs.find(i => i.id === inputId);
+      const input = toNode.inputs.find((i) => i.id === inputId);
       if (input) {
         input.connected = connection;
       }
@@ -445,14 +478,14 @@ export class VisualScriptingEngine {
   async executeScript(scriptId: string, eventData?: any): Promise<ExecutionResult> {
     const startTime = performance.now();
     const script = this.scripts.get(scriptId);
-    
+
     if (!script) {
       throw new Error(`Script ${scriptId} not found`);
     }
 
     // Compile script if needed
     const _compiledScript = await this.compiler.compile(script);
-    
+
     // Create execution context
     const context: ExecutionContext = {
       scriptId,
@@ -473,14 +506,14 @@ export class VisualScriptingEngine {
 
     try {
       // Find entry point (Start node)
-      const startNode = script.nodes.find(node => node.type === 'event_start');
+      const startNode = script.nodes.find((node) => node.type === "event_start");
       if (!startNode) {
-        throw new Error('No start node found in script');
+        throw new Error("No start node found in script");
       }
 
       // Execute from start node
       const result = await this.executeNode(startNode, {}, context, script);
-      
+
       // Update statistics
       const executionTime = performance.now() - startTime;
       this.stats.scriptsExecuted++;
@@ -493,7 +526,6 @@ export class VisualScriptingEngine {
         context,
         executionTime,
       };
-      
     } catch (error) {
       return {
         success: false,
@@ -506,7 +538,12 @@ export class VisualScriptingEngine {
     }
   }
 
-  private async executeNode(node: ScriptNode, inputs: Record<string, any>, context: ExecutionContext, script: VisualScript): Promise<any> {
+  private async executeNode(
+    node: ScriptNode,
+    inputs: Record<string, any>,
+    context: ExecutionContext,
+    script: VisualScript,
+  ): Promise<any> {
     context.currentNode = node.id;
     context.performance.nodeExecutions++;
     this.stats.nodesExecuted++;
@@ -535,12 +572,12 @@ export class VisualScriptingEngine {
 
     // Execute connected output nodes
     const results: Record<string, any> = {};
-    
+
     for (const [outputId, value] of Object.entries(outputs)) {
-      if (value === true && outputId === 'exec') {
+      if (value === true && outputId === "exec") {
         // Find connected execution nodes
         const connectedNodes = this.findConnectedNodes(script, node.id, outputId);
-        
+
         for (const connectedNode of connectedNodes) {
           const connectedResult = await this.executeNode(connectedNode, outputs, context, script);
           Object.assign(results, connectedResult);
@@ -553,13 +590,18 @@ export class VisualScriptingEngine {
     return results;
   }
 
-  private async prepareInputs(node: ScriptNode, executionInputs: Record<string, any>, context: ExecutionContext, script: VisualScript): Promise<Record<string, any>> {
+  private async prepareInputs(
+    node: ScriptNode,
+    executionInputs: Record<string, any>,
+    context: ExecutionContext,
+    script: VisualScript,
+  ): Promise<Record<string, any>> {
     const inputs: Record<string, any> = {};
 
     for (const input of node.inputs) {
       if (input.connected) {
         // Get value from connected output
-        const sourceNode = script.nodes.find(n => n.id === input.connected!.nodeId);
+        const sourceNode = script.nodes.find((n) => n.id === input.connected!.nodeId);
         if (sourceNode) {
           // This would normally involve recursive execution or cached values
           inputs[input.id] = executionInputs[input.connected.outputId];
@@ -575,19 +617,21 @@ export class VisualScriptingEngine {
 
   private findConnectedNodes(script: VisualScript, nodeId: string, outputId: string): ScriptNode[] {
     const connected: ScriptNode[] = [];
-    
+
     for (const connection of script.connections) {
       if (connection.nodeId === nodeId && connection.outputId === outputId) {
-        const targetNode = script.nodes.find(n => 
-          n.inputs.some(input => input.id === connection.inputId && input.connected?.nodeId === nodeId)
+        const targetNode = script.nodes.find((n) =>
+          n.inputs.some(
+            (input) => input.id === connection.inputId && input.connected?.nodeId === nodeId,
+          ),
         );
-        
+
         if (targetNode) {
           connected.push(targetNode);
         }
       }
     }
-    
+
     return connected;
   }
 
@@ -601,7 +645,7 @@ export class VisualScriptingEngine {
 
   triggerEvent(eventType: string, data: any): void {
     const handlers = this.eventListeners.get(eventType) || [];
-    handlers.forEach(handler => {
+    handlers.forEach((handler) => {
       try {
         handler(data);
       } catch (error) {
@@ -621,7 +665,7 @@ export class VisualScriptingEngine {
   setBreakpoint(scriptId: string, nodeId: string): void {
     const script = this.scripts.get(scriptId);
     if (script) {
-      const node = script.nodes.find(n => n.id === nodeId);
+      const node = script.nodes.find((n) => n.id === nodeId);
       if (node) {
         node.breakpoint = true;
       }
@@ -634,7 +678,7 @@ export class VisualScriptingEngine {
 
     return {
       currentNode: context.currentNode,
-      executionPath: context.callStack.map(frame => frame.nodeId),
+      executionPath: context.callStack.map((frame) => frame.nodeId),
       variableStates: Object.fromEntries(context.variables),
       callStack: [...context.callStack],
       breakpointHit: false,
@@ -650,7 +694,7 @@ export class VisualScriptingEngine {
 
     const count = parseInt(match[1]);
     const sides = parseInt(match[2]);
-    const modifier = parseInt(match[3] || '0');
+    const modifier = parseInt(match[3] || "0");
 
     const rolls: number[] = [];
     let total = modifier;
@@ -683,25 +727,25 @@ export class VisualScriptingEngine {
   validateScript(scriptId: string): ValidationResult {
     const script = this.scripts.get(scriptId);
     if (!script) {
-      return { valid: false, errors: ['Script not found'], warnings: [] };
+      return { valid: false, errors: ["Script not found"], warnings: [] };
     }
 
     const errors: string[] = [];
     const warnings: string[] = [];
 
     // Check for start node
-    const hasStartNode = script.nodes.some(node => node.type === 'event_start');
+    const hasStartNode = script.nodes.some((node) => node.type === "event_start");
     if (!hasStartNode) {
-      errors.push('Script must have a Start node');
+      errors.push("Script must have a Start node");
     }
 
     // Check for disconnected nodes
-    script.nodes.forEach(node => {
-      const hasIncomingConnection = script.connections.some(conn => 
-        node.inputs.some(input => input.connected?.nodeId === conn.nodeId)
+    script.nodes.forEach((node) => {
+      const hasIncomingConnection = script.connections.some((conn) =>
+        node.inputs.some((input) => input.connected?.nodeId === conn.nodeId),
       );
-      
-      if (!hasIncomingConnection && node.type !== 'event_start') {
+
+      if (!hasIncomingConnection && node.type !== "event_start") {
         warnings.push(`Node ${node.name} has no incoming connections`);
       }
     });
@@ -735,13 +779,21 @@ type ScriptEventHandler = (_data: any) => void;
 
 // Helper classes (simplified implementations)
 class ExecutionScheduler {}
-class ScriptDebugger { 
+class ScriptDebugger {
   async handleBreakpoint(_node: ScriptNode, _context: ExecutionContext): Promise<void> {}
 }
 class ScriptProfiler {}
-class NodeRegistry { register(_definition: NodeDefinition): void {} }
-class ScriptCompiler { async compile(script: VisualScript): Promise<any> { return script; } }
+class NodeRegistry {
+  register(_definition: NodeDefinition): void {}
+}
+class ScriptCompiler {
+  async compile(script: VisualScript): Promise<any> {
+    return script;
+  }
+}
 class ScriptOptimizer {}
-class GameSystemIntegration { 
-  getCharacterStat(_character: any, _stat: string): any { return 0; }
+class GameSystemIntegration {
+  getCharacterStat(_character: any, _stat: string): any {
+    return 0;
+  }
 }

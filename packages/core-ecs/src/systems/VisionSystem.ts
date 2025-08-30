@@ -1,6 +1,6 @@
-import { World, EntityId } from '../World';
-import { VisionStore, VisionData } from '../components/Vision';
-import { LightingStore } from '../components/Lighting';
+import { World, EntityId } from "../World";
+import { VisionStore, VisionData } from "../components/Vision";
+import { LightingStore } from "../components/Lighting";
 
 export interface GridCell {
   x: number;
@@ -46,17 +46,18 @@ export class VisionSystem {
     if (!visionData) return;
 
     const visibleCells = new Set<string>();
-    
+
     // Calculate line of sight using ray casting
     const maxRange = Math.max(
       visionData.sightRange,
       visionData.darkvisionRange,
       visionData.blindsightRange,
-      visionData.truesightRange
+      visionData.truesightRange,
     );
 
     // Cast rays in all directions
-    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 180) { // 1 degree steps
+    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 180) {
+      // 1 degree steps
       this.castRay(x, y, angle, maxRange, visionData, visibleCells);
     }
 
@@ -65,34 +66,34 @@ export class VisionSystem {
   }
 
   private castRay(
-    startX: number, 
-    startY: number, 
-    angle: number, 
-    maxRange: number, 
+    startX: number,
+    startY: number,
+    angle: number,
+    maxRange: number,
     visionData: VisionData,
-    visibleCells: Set<string>
+    visibleCells: Set<string>,
   ): void {
     const dx = Math.cos(angle);
     const dy = Math.sin(angle);
-    
+
     for (let step = 0; step <= maxRange; step += 0.5) {
       const x = Math.floor(startX + dx * step);
       const y = Math.floor(startY + dy * step);
-      
+
       // Check bounds
       if (x < 0 || x >= this.mapWidth || y < 0 || y >= this.mapHeight) {
         break;
       }
-      
+
       const cellKey = `${x},${y}`;
       const lightLevel = this.lighting.calculateLightLevel(x, y);
       const distance = Math.sqrt((x - startX) ** 2 + (y - startY) ** 2);
-      
+
       // Check if this cell can be seen based on vision type
       if (this.canSeeCell(visionData, distance, lightLevel)) {
         visibleCells.add(cellKey);
       }
-      
+
       // Stop if we hit an obstacle (unless we have truesight or can see through walls)
       if (this.isObstacle(x, y)) {
         if (!visionData.canSeeThroughWalls && distance > visionData.truesightRange) {
@@ -107,80 +108,85 @@ export class VisionSystem {
     if (distance <= visionData.truesightRange) {
       return true;
     }
-    
+
     // Blindsight doesn't need light
     if (distance <= visionData.blindsightRange) {
       return true;
     }
-    
+
     // Check light sensitivity
     if (lightLevel > visionData.lightSensitivity) {
       return false; // Blinded by bright light
     }
-    
+
     // Normal sight in bright light
     if (lightLevel >= 0.5 && distance <= visionData.sightRange) {
       return true;
     }
-    
+
     // Darkvision in dim light or darkness
     if (lightLevel < 0.5 && distance <= visionData.darkvisionRange) {
       return true;
     }
-    
+
     return false;
   }
 
   getVisibleEntities(observerId: EntityId): EntityId[] {
     const observerVision = this.vision.get(observerId);
     if (!observerVision) return [];
-    
+
     const visibleEntities: EntityId[] = [];
     const observerTransform = this.world.transforms.get(observerId);
     if (!observerTransform) return [];
-    
+
     // Check all other entities
     for (const entityId of this.world.getEntities()) {
       if (entityId === observerId) continue;
-      
+
       const targetTransform = this.world.transforms.get(entityId);
       if (!targetTransform) continue;
-      
+
       const distance = Math.sqrt(
-        (targetTransform.x - observerTransform.x) ** 2 + 
-        (targetTransform.y - observerTransform.y) ** 2
+        (targetTransform.x - observerTransform.x) ** 2 +
+          (targetTransform.y - observerTransform.y) ** 2,
       );
-      
+
       const targetGridX = Math.floor(targetTransform.x / this.gridSize);
       const targetGridY = Math.floor(targetTransform.y / this.gridSize);
       const cellKey = `${targetGridX},${targetGridY}`;
-      
+
       // Check if the target's cell is visible
       if (observerVision.currentVisibleAreas.has(cellKey)) {
         const lightLevel = this.lighting.calculateLightLevel(targetGridX, targetGridY);
-        
+
         // Additional checks for invisible creatures, etc.
         if (this.canSeeEntity(observerId, entityId, distance, lightLevel)) {
           visibleEntities.push(entityId);
         }
       }
     }
-    
+
     return visibleEntities;
   }
 
-  private canSeeEntity(observerId: EntityId, targetId: EntityId, distance: number, lightLevel: number): boolean {
+  private canSeeEntity(
+    observerId: EntityId,
+    targetId: EntityId,
+    distance: number,
+    lightLevel: number,
+  ): boolean {
     const visionData = this.vision.get(observerId);
     if (!visionData) return false;
-    
+
     // Check basic vision capabilities
     if (!visionData.canSeeEntity(observerId, targetId, distance, lightLevel)) {
       return false;
     }
-    
+
     // TODO: Check for invisibility, ethereal plane, etc.
     // This would integrate with other component systems
-    
+
     return true;
   }
 
@@ -191,22 +197,22 @@ export class VisionSystem {
     const sx = x1 < x2 ? 1 : -1;
     const sy = y1 < y2 ? 1 : -1;
     let err = dx - dy;
-    
+
     let x = x1;
     let y = y1;
-    
+
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // Check if current cell blocks vision
       if (this.isObstacle(x, y)) {
         return false;
       }
-      
+
       // Reached target
       if (x === x2 && y === y2) {
         return true;
       }
-      
+
       const e2 = 2 * err;
       if (e2 > -dy) {
         err -= dy;
@@ -223,13 +229,13 @@ export class VisionSystem {
   update(_deltaTime: number): void {
     for (const entityId of this.world.getEntities()) {
       if (!this.vision.has(entityId)) continue;
-      
+
       const transform = this.world.transforms.get(entityId);
       if (!transform) continue;
-      
+
       const gridX = Math.floor(transform.x / this.gridSize);
       const gridY = Math.floor(transform.y / this.gridSize);
-      
+
       this.calculateVisibility(entityId, gridX, gridY);
     }
   }
@@ -238,7 +244,7 @@ export class VisionSystem {
   revealArea(entityId: EntityId, centerX: number, centerY: number, radius: number): void {
     const visionData = this.vision.get(entityId);
     if (!visionData || !visionData.fogOfWarEnabled) return;
-    
+
     for (let x = centerX - radius; x <= centerX + radius; x++) {
       for (let y = centerY - radius; y <= centerY + radius; y++) {
         const distance = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);

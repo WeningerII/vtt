@@ -2,11 +2,11 @@
  * ECS Bridge Service - Connects CharacterService and MonsterService to ECS components
  */
 
-import { World, EntityId } from '../World';
-import { _HealthStore } from '../components/Health';
-import { _StatsStore } from '../components/Stats';
-import { _ConditionsStore, Condition } from '../components/Conditions';
-import { _CombatStore } from '../components/Combat';
+import { World, EntityId } from "../World";
+import { _HealthStore } from "../components/Health";
+import { _StatsStore } from "../components/Stats";
+import { _ConditionsStore, Condition } from "../components/Conditions";
+import { _CombatStore } from "../components/Combat";
 // Service interfaces for dependency injection
 export interface ICharacterService {
   getCharacter(id: string): Promise<any>;
@@ -20,7 +20,7 @@ export interface IMonsterService {
 export interface EntityData {
   id: string;
   name: string;
-  type: 'character' | 'monster';
+  type: "character" | "monster";
   hitPoints: {
     current: number;
     max: number;
@@ -59,7 +59,7 @@ export class ECSBridgeService {
   constructor(
     private world: World,
     private characterService?: ICharacterService,
-    private monsterService?: IMonsterService
+    private monsterService?: IMonsterService,
   ) {}
 
   /**
@@ -75,7 +75,7 @@ export class ECSBridgeService {
    */
   async createCharacterEntity(characterId: string): Promise<EntityId> {
     if (!this.characterService) {
-      throw new Error('CharacterService not initialized');
+      throw new Error("CharacterService not initialized");
     }
 
     const character = await this.characterService.getCharacter(characterId);
@@ -84,7 +84,7 @@ export class ECSBridgeService {
     }
 
     const entityId = this.world.createEntity();
-    
+
     // Map the entity
     this.entityMap.set(characterId, entityId);
     this.reverseEntityMap.set(entityId, characterId);
@@ -93,7 +93,7 @@ export class ECSBridgeService {
     this.healthStore.add(entityId, {
       current: character.hitPoints.current,
       max: character.hitPoints.max,
-      temporary: character.hitPoints.temporary || 0
+      temporary: character.hitPoints.temporary || 0,
     });
 
     // Set stats - convert character abilities format to ECS format
@@ -104,21 +104,39 @@ export class ECSBridgeService {
         constitution: character.abilities.CON?.value || 10,
         intelligence: character.abilities.INT?.value || 10,
         wisdom: character.abilities.WIS?.value || 10,
-        charisma: character.abilities.CHA?.value || 10
+        charisma: character.abilities.CHA?.value || 10,
       },
       proficiencyBonus: character.proficiencyBonus || 2,
       armorClass: character.armorClass || 10,
       speed: character.speed || 30,
       level: character.level || 1,
-      hitDie: character.hitDie || 'd8'
+      hitDie: character.hitDie || "d8",
     });
     this.statsStore.add(entityId, {
-      STR: { value: character.abilities.STR?.value || 10, modifier: character.abilities.STR?.modifier || 0 },
-      DEX: { value: character.abilities.DEX?.value || 10, modifier: character.abilities.DEX?.modifier || 0 },
-      CON: { value: character.abilities.CON?.value || 10, modifier: character.abilities.CON?.modifier || 0 },
-      INT: { value: character.abilities.INT?.value || 10, modifier: character.abilities.INT?.modifier || 0 },
-      WIS: { value: character.abilities.WIS?.value || 10, modifier: character.abilities.WIS?.modifier || 0 },
-      CHA: { value: character.abilities.CHA?.value || 10, modifier: character.abilities.CHA?.modifier || 0 }
+      STR: {
+        value: character.abilities.STR?.value || 10,
+        modifier: character.abilities.STR?.modifier || 0,
+      },
+      DEX: {
+        value: character.abilities.DEX?.value || 10,
+        modifier: character.abilities.DEX?.modifier || 0,
+      },
+      CON: {
+        value: character.abilities.CON?.value || 10,
+        modifier: character.abilities.CON?.modifier || 0,
+      },
+      INT: {
+        value: character.abilities.INT?.value || 10,
+        modifier: character.abilities.INT?.modifier || 0,
+      },
+      WIS: {
+        value: character.abilities.WIS?.value || 10,
+        modifier: character.abilities.WIS?.modifier || 0,
+      },
+      CHA: {
+        value: character.abilities.CHA?.value || 10,
+        modifier: character.abilities.CHA?.modifier || 0,
+      },
     });
 
     // Initialize combat component
@@ -130,7 +148,7 @@ export class ECSBridgeService {
       actionPoints: 1,
       maxActionPoints: 1,
       reactionUsed: false,
-      concentrating: false
+      concentrating: false,
     });
     this.combatStore.add(entityId, {
       initiative: character.initiative || 0,
@@ -139,7 +157,7 @@ export class ECSBridgeService {
       bonusActionUsed: false,
       reactionUsed: false,
       hasMovedThisTurn: false,
-      turnOrder: -1
+      turnOrder: -1,
     });
 
     return entityId;
@@ -150,7 +168,7 @@ export class ECSBridgeService {
    */
   async createMonsterEntity(monsterId: string, instanceName?: string): Promise<EntityId> {
     if (!this.monsterService) {
-      throw new Error('MonsterService not initialized');
+      throw new Error("MonsterService not initialized");
     }
 
     const monster = await this.monsterService.getMonster(monsterId);
@@ -160,20 +178,23 @@ export class ECSBridgeService {
 
     const entityId = this.world.createEntity();
     const instanceId = instanceName ? `${monsterId}_${instanceName}` : monsterId;
-    
+
     // Map the entity
     this.entityMap.set(instanceId, entityId);
     this.reverseEntityMap.set(entityId, instanceId);
 
     // Extract statblock data
     const statblock = monster.statblock as MonsterStatblock;
-    const maxHP = typeof statblock.hitPoints === 'number' ? statblock.hitPoints : this.calculateHPFromString(statblock.hitPoints as any);
+    const maxHP =
+      typeof statblock.hitPoints === "number"
+        ? statblock.hitPoints
+        : this.calculateHPFromString(statblock.hitPoints as any);
 
     // Create health component
     this.healthStore.add(entityId, {
       current: maxHP,
       max: maxHP,
-      temporary: 0
+      temporary: 0,
     });
 
     // Set stats from statblock - convert to ECS format
@@ -184,21 +205,39 @@ export class ECSBridgeService {
         constitution: statblock.abilities.CON || 10,
         intelligence: statblock.abilities.INT || 10,
         wisdom: statblock.abilities.WIS || 10,
-        charisma: statblock.abilities.CHA || 10
+        charisma: statblock.abilities.CHA || 10,
       },
       proficiencyBonus: Math.max(2, Math.floor((statblock.hitPoints + 7) / 4)), // CR-based proficiency
       armorClass: statblock.armorClass,
       speed: statblock.speed || 30,
       level: Math.max(1, Math.floor(statblock.hitPoints / 2)) || 1,
-      hitDie: 'd8' // Default for monsters
+      hitDie: "d8", // Default for monsters
     });
     this.statsStore.add(entityId, {
-      STR: { value: statblock.abilities.STR, modifier: Math.floor((statblock.abilities.STR - 10) / 2) },
-      DEX: { value: statblock.abilities.DEX, modifier: Math.floor((statblock.abilities.DEX - 10) / 2) },
-      CON: { value: statblock.abilities.CON, modifier: Math.floor((statblock.abilities.CON - 10) / 2) },
-      INT: { value: statblock.abilities.INT, modifier: Math.floor((statblock.abilities.INT - 10) / 2) },
-      WIS: { value: statblock.abilities.WIS, modifier: Math.floor((statblock.abilities.WIS - 10) / 2) },
-      CHA: { value: statblock.abilities.CHA, modifier: Math.floor((statblock.abilities.CHA - 10) / 2) }
+      STR: {
+        value: statblock.abilities.STR,
+        modifier: Math.floor((statblock.abilities.STR - 10) / 2),
+      },
+      DEX: {
+        value: statblock.abilities.DEX,
+        modifier: Math.floor((statblock.abilities.DEX - 10) / 2),
+      },
+      CON: {
+        value: statblock.abilities.CON,
+        modifier: Math.floor((statblock.abilities.CON - 10) / 2),
+      },
+      INT: {
+        value: statblock.abilities.INT,
+        modifier: Math.floor((statblock.abilities.INT - 10) / 2),
+      },
+      WIS: {
+        value: statblock.abilities.WIS,
+        modifier: Math.floor((statblock.abilities.WIS - 10) / 2),
+      },
+      CHA: {
+        value: statblock.abilities.CHA,
+        modifier: Math.floor((statblock.abilities.CHA - 10) / 2),
+      },
     });
 
     // Initialize combat component with monster initiative bonus
@@ -211,7 +250,7 @@ export class ECSBridgeService {
       actionPoints: 1,
       maxActionPoints: 1,
       reactionUsed: false,
-      concentrating: false
+      concentrating: false,
     });
     this.combatStore.add(entityId, {
       initiative: 0,
@@ -220,7 +259,7 @@ export class ECSBridgeService {
       bonusActionUsed: false,
       reactionUsed: false,
       hasMovedThisTurn: false,
-      turnOrder: -1
+      turnOrder: -1,
     });
 
     return entityId;
@@ -231,9 +270,9 @@ export class ECSBridgeService {
    */
   async syncStatsToCharacter(entityId: number): Promise<void> {
     if (!this.characterService) return;
-    
+
     const externalId = this.reverseEntityMap.get(entityId);
-    if (!externalId || !externalId.startsWith('char')) return;
+    if (!externalId || !externalId.startsWith("char")) return;
 
     const characterId = externalId.substring(5);
     const stats = this.statsStore.get(entityId);
@@ -247,11 +286,11 @@ export class ECSBridgeService {
         CON: { value: stats.CON.value, modifier: stats.CON.modifier },
         INT: { value: stats.INT.value, modifier: stats.INT.modifier },
         WIS: { value: stats.WIS.value, modifier: stats.WIS.modifier },
-        CHA: { value: stats.CHA.value, modifier: stats.CHA.modifier }
-      }
+        CHA: { value: stats.CHA.value, modifier: stats.CHA.modifier },
+      },
     };
 
-    await this.characterService.updateCharacter(characterId, 'system', characterUpdates);
+    await this.characterService.updateCharacter(characterId, "system", characterUpdates);
   }
 
   /**
@@ -267,12 +306,12 @@ export class ECSBridgeService {
     const _conditions = this.conditionsStore.get(entityId);
 
     if (health) {
-      await this.characterService.updateCharacter(characterId, 'system', {
+      await this.characterService.updateCharacter(characterId, "system", {
         hitPoints: {
           current: health.current,
           max: health.max,
-          temporary: health.temporary
-        }
+          temporary: health.temporary,
+        },
       });
     }
 
@@ -283,15 +322,19 @@ export class ECSBridgeService {
   /**
    * Apply damage to entity and sync back to services
    */
-  async applyDamage(externalId: string, damage: number, _damageType: string = 'untyped'): Promise<boolean> {
+  async applyDamage(
+    externalId: string,
+    damage: number,
+    _damageType: string = "untyped",
+  ): Promise<boolean> {
     const entityId = this.entityMap.get(externalId);
     if (!entityId) return false;
 
     const success = this.healthStore.takeDamage(entityId, damage);
-    
+
     if (success) {
       // Sync back to appropriate service
-      if (externalId.includes('')) {
+      if (externalId.includes("")) {
         // Monster instance - no sync needed typically
       } else {
         await this.syncCharacterToService(externalId);
@@ -309,9 +352,9 @@ export class ECSBridgeService {
     if (!entityId) return false;
 
     const success = this.healthStore.heal(entityId, healing);
-    
+
     if (success) {
-      if (!externalId.includes('')) {
+      if (!externalId.includes("")) {
         await this.syncCharacterToService(externalId);
       }
     }
@@ -358,16 +401,16 @@ export class ECSBridgeService {
     return {
       id: externalId,
       name: externalId, // Would need to store name separately
-      type: externalId.includes('') ? 'monster' : 'character',
+      type: externalId.includes("") ? "monster" : "character",
       hitPoints: {
         current: health.current,
         max: health.max,
-        temporary: health.temporary
+        temporary: health.temporary,
       },
       armorClass: 10, // Would need to calculate from stats and equipment
       abilities: stats,
       conditions,
-      initiative: combat?.initiative
+      initiative: combat?.initiative,
     };
   }
 
@@ -419,8 +462,8 @@ export class ECSBridgeService {
    * Calculate HP from D&D hit dice string (e.g., "4d8+4")
    */
   private calculateHPFromString(hpString: string | number): number {
-    if (typeof hpString === 'number') return hpString;
-    
+    if (typeof hpString === "number") return hpString;
+
     // Simple parsing for formats like "4d8+4" or "58 (9d8 + 18)"
     const match = hpString.toString().match(/(\d+)(?:\s*\([^)]+\))?/);
     return match ? parseInt(match[1]) : 10;
@@ -431,9 +474,10 @@ export class ECSBridgeService {
    */
   async syncAllToServices(): Promise<void> {
     const promises = [];
-    
+
     for (const [externalId, _entityId] of this.entityMap) {
-      if (!externalId.includes('')) { // Only sync characters, not monster instances
+      if (!externalId.includes("")) {
+        // Only sync characters, not monster instances
         promises.push(this.syncCharacterToService(externalId));
       }
     }

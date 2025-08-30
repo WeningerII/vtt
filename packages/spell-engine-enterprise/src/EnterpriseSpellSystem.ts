@@ -3,14 +3,14 @@
  * Orchestrates all enterprise spell components into a unified system
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import { SpellSystemArchitecture } from './SpellSystemArchitecture';
-import { SpellRuleValidator, SpellTestFramework } from './SpellValidationFramework';
-import { SpellDataPipeline } from './SpellDataPipeline';
-import { SpellInteractionEngine } from './SpellInteractionEngine';
-import { SpellAnalytics } from './SpellAnalytics';
-import { AdvancedPhysicsPatterns } from '../enhanced-dnd5e-spells/src/AdvancedPhysicsPatterns';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import { SpellSystemArchitecture } from "./SpellSystemArchitecture";
+import { SpellRuleValidator, SpellTestFramework } from "./SpellValidationFramework";
+import { SpellDataPipeline } from "./SpellDataPipeline";
+import { SpellInteractionEngine } from "./SpellInteractionEngine";
+import { SpellAnalytics } from "./SpellAnalytics";
+import { AdvancedPhysicsPatterns } from "../enhanced-dnd5e-spells/src/AdvancedPhysicsPatterns";
 
 export class EnterpriseSpellSystem extends EventEmitter {
   private architecture: SpellSystemArchitecture;
@@ -20,35 +20,35 @@ export class EnterpriseSpellSystem extends EventEmitter {
   private interactionEngine: SpellInteractionEngine;
   private analytics: SpellAnalytics;
   private physicsPatterns: AdvancedPhysicsPatterns;
-  
+
   private isInitialized = false;
   private performanceMonitor: PerformanceMonitor;
 
   constructor(config: EnterpriseSpellConfig) {
     super();
-    
+
     // Initialize core architecture
     this.architecture = new SpellSystemArchitecture(config.architecture);
-    
+
     // Initialize validation system
     this.validator = new SpellRuleValidator();
     this.testFramework = new SpellTestFramework(this.validator);
-    
+
     // Initialize data pipeline
     this.dataPipeline = new SpellDataPipeline(config.dataPipeline);
-    
+
     // Initialize interaction engine
     this.interactionEngine = new SpellInteractionEngine();
-    
+
     // Initialize analytics
     this.analytics = new SpellAnalytics(config.analytics);
-    
+
     // Initialize physics patterns
     this.physicsPatterns = new AdvancedPhysicsPatterns(config.physicsWorld);
-    
+
     // Initialize performance monitoring
     this.performanceMonitor = new PerformanceMonitor();
-    
+
     this.setupEventHandlers();
   }
 
@@ -56,37 +56,36 @@ export class EnterpriseSpellSystem extends EventEmitter {
     if (this.isInitialized) return;
 
     const startTime = performance.now();
-    this.emit('initialization_started');
+    this.emit("initialization_started");
 
     try {
       // Initialize components in dependency order
       await this.architecture.initialize();
-      await this.dataPipeline.loadSpellPackage('core-5e-srd', 'latest');
-      
+      await this.dataPipeline.loadSpellPackage("core-5e-srd", "latest");
+
       // Run initial validation tests
-      const testResults = await this.testFramework.runTestSuite('core_functionality');
+      const testResults = await this.testFramework.runTestSuite("core_functionality");
       if (testResults.failedTests > 0) {
         throw new Error(`Core functionality tests failed: ${testResults.failedTests} failures`);
       }
 
       // Start background processes
       this.startBackgroundProcesses();
-      
+
       this.isInitialized = true;
       const initTime = performance.now() - startTime;
-      
-      this.emit('initialization_completed', { duration: initTime });
+
+      this.emit("initialization_completed", { duration: initTime });
       logger.info(`Enterprise Spell System initialized in ${initTime.toFixed(2)}ms`);
-      
     } catch (error) {
-      this.emit('initialization_failed', error);
+      this.emit("initialization_failed", error);
       throw error;
     }
   }
 
   async castSpell(request: SpellCastRequest): Promise<SpellCastResult> {
     if (!this.isInitialized) {
-      throw new Error('Enterprise Spell System not initialized');
+      throw new Error("Enterprise Spell System not initialized");
     }
 
     const startTime = performance.now();
@@ -95,20 +94,20 @@ export class EnterpriseSpellSystem extends EventEmitter {
     try {
       // Performance tracking
       const memoryBefore = this.performanceMonitor.getMemoryUsage();
-      
+
       // Validate spell request
       const validationResult = await this.validator.validateSpell(request.spell, {
         caster: request.caster,
         targets: request.targets,
-        activeSpells: await this.getActiveSpells(request.caster.id)
+        activeSpells: await this.getActiveSpells(request.caster.id),
       });
 
       if (!validationResult.isValid) {
         return {
           success: false,
           castId,
-          errors: validationResult.errors.map(e => e.message),
-          duration: performance.now() - startTime
+          errors: validationResult.errors.map((e) => e.message),
+          duration: performance.now() - startTime,
         };
       }
 
@@ -118,15 +117,15 @@ export class EnterpriseSpellSystem extends EventEmitter {
         request.caster,
         request.targets,
         request.spellLevel,
-        request.position
+        request.position,
       );
 
       if (!architectureResult.success) {
         return {
           success: false,
           castId,
-          errors: [architectureResult.error || 'Spell casting failed'],
-          duration: performance.now() - startTime
+          errors: [architectureResult.error || "Spell casting failed"],
+          duration: performance.now() - startTime,
         };
       }
 
@@ -140,7 +139,7 @@ export class EnterpriseSpellSystem extends EventEmitter {
       const spellId = await this.interactionEngine.registerSpell(
         request.spell,
         request.caster,
-        request.position || { x: 0, y: 0, z: 0 }
+        request.position || { x: 0, y: 0, z: 0 },
       );
 
       // Process immediate interactions
@@ -149,18 +148,18 @@ export class EnterpriseSpellSystem extends EventEmitter {
       // Track analytics
       const duration = performance.now() - startTime;
       const memoryAfter = this.performanceMonitor.getMemoryUsage();
-      
+
       await this.analytics.trackSpellCast({
         spellId: request.spell.id,
         casterId: request.caster.id,
-        casterClass: request.caster.class || 'unknown',
+        casterClass: request.caster.class || "unknown",
         level: request.spellLevel || request.spell.level,
         school: request.spell.school,
         timestamp: Date.now(),
         duration,
         success: true,
         memoryUsage: memoryAfter - memoryBefore,
-        phases: architectureResult.phases
+        phases: architectureResult.phases,
       });
 
       const result: SpellCastResult = {
@@ -169,40 +168,39 @@ export class EnterpriseSpellSystem extends EventEmitter {
         spellId,
         effects: architectureResult.effects,
         physicsEffects,
-        interactions: interactions.map(i => i.id),
+        interactions: interactions.map((i) => i.id),
         duration,
         performance: {
           memoryUsed: memoryAfter - memoryBefore,
           cacheHits: architectureResult.cacheHits || 0,
-          validationTime: validationResult.performance.validationTime
-        }
+          validationTime: validationResult.performance.validationTime,
+        },
       };
 
-      this.emit('spell_cast_completed', result);
+      this.emit("spell_cast_completed", result);
       return result;
-
     } catch (error) {
       const duration = performance.now() - startTime;
-      
+
       // Track failed cast
       await this.analytics.trackSpellCast({
         spellId: request.spell.id,
         casterId: request.caster.id,
-        casterClass: request.caster.class || 'unknown',
+        casterClass: request.caster.class || "unknown",
         level: request.spellLevel || request.spell.level,
         school: request.spell.school,
         timestamp: Date.now(),
         duration,
-        success: false
+        success: false,
       });
 
-      this.emit('spell_cast_failed', { castId, error, duration });
-      
+      this.emit("spell_cast_failed", { castId, error, duration });
+
       return {
         success: false,
         castId,
         errors: [error.message],
-        duration
+        duration,
       };
     }
   }
@@ -214,7 +212,7 @@ export class EnterpriseSpellSystem extends EventEmitter {
     for (const detection of detections) {
       // Validate combination safety
       const validationResult = await this.validateCombination(detection);
-      
+
       if (validationResult.isValid) {
         opportunities.push({
           id: detection.id,
@@ -222,7 +220,7 @@ export class EnterpriseSpellSystem extends EventEmitter {
           expectedEffect: detection.combination.resultType,
           potency: detection.combination.damageMultiplier,
           risk: validationResult.riskLevel,
-          recommendation: validationResult.recommendation
+          recommendation: validationResult.recommendation,
         });
       }
     }
@@ -241,36 +239,36 @@ export class EnterpriseSpellSystem extends EventEmitter {
       return {
         success: false,
         errors: validationResult.errors,
-        combinationId
+        combinationId,
       };
     }
 
     const result = await this.interactionEngine.executeCombination(detection);
-    
+
     // Apply advanced physics for combination
     const physicsEffects = await this.physicsPatterns.createElementalReaction(
-      { damageType: 'fire' } as any, // Simplified for example
-      { damageType: 'ice' } as any,
-      result.position
+      { damageType: "fire" } as any, // Simplified for example
+      { damageType: "ice" } as any,
+      result.position,
     );
 
     // Track combination analytics
     await this.analytics.trackSpellCast({
       spellId: `combination_${result.type}`,
-      casterId: 'system',
-      casterClass: 'combination',
+      casterId: "system",
+      casterClass: "combination",
       level: 0,
-      school: 'combination',
+      school: "combination",
       timestamp: Date.now(),
       duration: 0,
-      success: true
+      success: true,
     });
 
     return {
       success: true,
       combinationId,
       result,
-      physicsEffects: physicsEffects ? [physicsEffects] : []
+      physicsEffects: physicsEffects ? [physicsEffects] : [],
     };
   }
 
@@ -278,35 +276,41 @@ export class EnterpriseSpellSystem extends EventEmitter {
     const performanceIssues = await this.analytics.detectPerformanceIssues();
     const memoryUsage = this.performanceMonitor.getMemoryUsage();
     const cacheStats = this.architecture.getCacheStatistics();
-    
+
     return {
       timestamp: Date.now(),
-      status: performanceIssues.length === 0 ? 'healthy' : 'degraded',
+      status: performanceIssues.length === 0 ? "healthy" : "degraded",
       performance: {
         averageSpellCastTime: await this.getAverageSpellCastTime(),
         memoryUsage,
         cacheHitRate: cacheStats.hitRate,
-        activeSpells: this.interactionEngine['activeSpells'].size
+        activeSpells: this.interactionEngine["activeSpells"].size,
       },
       issues: performanceIssues,
-      recommendations: this.generateHealthRecommendations(performanceIssues)
+      recommendations: this.generateHealthRecommendations(performanceIssues),
     };
   }
 
-  async generateAnalyticsReport(type: 'performance' | 'usage' | 'anomalies', timeRange: TimeRange): Promise<any> {
+  async generateAnalyticsReport(
+    type: "performance" | "usage" | "anomalies",
+    timeRange: TimeRange,
+  ): Promise<any> {
     return this.analytics.generateReport(type, timeRange);
   }
 
   async runDiagnostics(): Promise<DiagnosticsReport> {
     const testResults = await this.testFramework.runAllTests();
     const validationErrors: string[] = [];
-    
+
     // Test core spells
     const coreSpells = await this.getCoreSpells();
-    for (const spell of coreSpells.slice(0, 10)) { // Test first 10 for speed
+    for (const spell of coreSpells.slice(0, 10)) {
+      // Test first 10 for speed
       const validation = await this.validator.validateSpell(spell);
       if (!validation.isValid) {
-        validationErrors.push(`${spell.name}: ${validation.errors.map(e => e.message).join(', ')}`);
+        validationErrors.push(
+          `${spell.name}: ${validation.errors.map((e) => e.message).join(", ")}`,
+        );
       }
     }
 
@@ -315,30 +319,30 @@ export class EnterpriseSpellSystem extends EventEmitter {
       testResults: Array.from(testResults.values()),
       validationErrors,
       systemHealth: await this.getSystemHealth(),
-      recommendations: this.generateDiagnosticRecommendations(testResults, validationErrors)
+      recommendations: this.generateDiagnosticRecommendations(testResults, validationErrors),
     };
   }
 
   // Private methods
   private setupEventHandlers(): void {
     // Architecture events
-    this.architecture.on('performance_warning', (warning) => {
-      this.emit('system_warning', { type: 'performance', ...warning });
+    this.architecture.on("performance_warning", (warning) => {
+      this.emit("system_warning", { type: "performance", ...warning });
     });
 
     // Interaction events
-    this.interactionEngine.on('elemental_reaction', (reaction) => {
-      this.emit('spell_interaction', { type: 'elemental_reaction', ...reaction });
+    this.interactionEngine.on("elemental_reaction", (reaction) => {
+      this.emit("spell_interaction", { type: "elemental_reaction", ...reaction });
     });
 
     // Analytics events
-    this.analytics.on('anomaly_detected', (anomaly) => {
-      this.emit('system_anomaly', anomaly);
+    this.analytics.on("anomaly_detected", (anomaly) => {
+      this.emit("system_anomaly", anomaly);
     });
 
     // Data pipeline events
-    this.dataPipeline.on('package_loaded', (event) => {
-      this.emit('content_updated', event);
+    this.dataPipeline.on("package_loaded", (event) => {
+      this.emit("content_updated", event);
     });
   }
 
@@ -348,7 +352,7 @@ export class EnterpriseSpellSystem extends EventEmitter {
       try {
         await this.interactionEngine.processInteractions();
       } catch (error) {
-        this.emit('background_error', { process: 'interactions', error });
+        this.emit("background_error", { process: "interactions", error });
       }
     }, 100);
 
@@ -356,9 +360,9 @@ export class EnterpriseSpellSystem extends EventEmitter {
     setInterval(async () => {
       try {
         const health = await this.getSystemHealth();
-        this.emit('health_report', health);
+        this.emit("health_report", health);
       } catch (error) {
-        this.emit('background_error', { process: 'health_monitoring', error });
+        this.emit("background_error", { process: "health_monitoring", error });
       }
     }, 300000);
 
@@ -369,20 +373,22 @@ export class EnterpriseSpellSystem extends EventEmitter {
   }
 
   private requiresAdvancedPhysics(spell: any): boolean {
-    return spell.damage?.damageType === 'force' || 
-           spell.school === 'evocation' ||
-           spell.areaOfEffect?.shape === 'sphere';
+    return (
+      spell.damage?.damageType === "force" ||
+      spell.school === "evocation" ||
+      spell.areaOfEffect?.shape === "sphere"
+    );
   }
 
   private async applyAdvancedPhysics(request: SpellCastRequest): Promise<any[]> {
     const effects: any[] = [];
 
-    if (request.spell.damage?.damageType === 'lightning') {
+    if (request.spell.damage?.damageType === "lightning") {
       const chainEffect = await this.physicsPatterns.createChainLightning(
         request.position || { x: 0, y: 0, z: 0 },
-        request.targets.map(t => ({ id: t.id, position: t.position })) as any[],
+        request.targets.map((t) => ({ id: t.id, position: t.position })) as any[],
         3,
-        0.7
+        0.7,
       );
       effects.push(chainEffect);
     }
@@ -394,9 +400,9 @@ export class EnterpriseSpellSystem extends EventEmitter {
     // Simplified validation - in practice would be more comprehensive
     return {
       isValid: true,
-      riskLevel: 'low',
-      recommendation: 'Safe to execute',
-      errors: []
+      riskLevel: "low",
+      recommendation: "Safe to execute",
+      errors: [],
     };
   }
 
@@ -412,11 +418,11 @@ export class EnterpriseSpellSystem extends EventEmitter {
 
   private async getAverageSpellCastTime(): Promise<number> {
     const metrics = await this.analytics.getMetrics({
-      metricName: 'spell_cast_duration_ms',
+      metricName: "spell_cast_duration_ms",
       timeRange: {
         start: Date.now() - 3600000, // Last hour
-        end: Date.now()
-      }
+        end: Date.now(),
+      },
     });
 
     if (metrics.series.length === 0) return 0;
@@ -438,21 +444,27 @@ export class EnterpriseSpellSystem extends EventEmitter {
   private generateHealthRecommendations(issues: any[]): string[] {
     const recommendations: string[] = [];
 
-    if (issues.some(i => i.type === 'memory_leak')) {
-      recommendations.push('Consider restarting the spell system to clear memory leaks');
+    if (issues.some((i) => i.type === "memory_leak")) {
+      recommendations.push("Consider restarting the spell system to clear memory leaks");
     }
 
-    if (issues.some(i => i.type === 'performance_degradation')) {
-      recommendations.push('Review recent spell implementations for performance bottlenecks');
+    if (issues.some((i) => i.type === "performance_degradation")) {
+      recommendations.push("Review recent spell implementations for performance bottlenecks");
     }
 
     return recommendations;
   }
 
-  private generateDiagnosticRecommendations(testResults: Map<string, any>, validationErrors: string[]): string[] {
+  private generateDiagnosticRecommendations(
+    testResults: Map<string, any>,
+    validationErrors: string[],
+  ): string[] {
     const recommendations: string[] = [];
 
-    const failedTests = Array.from(testResults.values()).reduce((_sum, _result) => sum + result.failedTests, 0);
+    const failedTests = Array.from(testResults.values()).reduce(
+      (_sum, _result) => sum + result.failedTests,
+      0,
+    );
     if (failedTests > 0) {
       recommendations.push(`Fix ${failedTests} failing tests before production deployment`);
     }
@@ -516,7 +528,7 @@ interface CombinationOpportunity {
   spells: string[];
   expectedEffect: string;
   potency: number;
-  risk: 'low' | 'medium' | 'high';
+  risk: "low" | "medium" | "high";
   recommendation: string;
 }
 
@@ -530,14 +542,14 @@ interface CombinationExecutionResult {
 
 interface CombinationValidationResult {
   isValid: boolean;
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: "low" | "medium" | "high";
   recommendation: string;
   errors: string[];
 }
 
 interface SystemHealthReport {
   timestamp: number;
-  status: 'healthy' | 'degraded' | 'critical';
+  status: "healthy" | "degraded" | "critical";
   performance: {
     averageSpellCastTime: number;
     memoryUsage: number;

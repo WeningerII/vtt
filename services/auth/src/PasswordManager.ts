@@ -2,7 +2,7 @@
  * Password hashing and validation
  */
 
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from "bcrypt";
 
 export interface PasswordConfig {
   saltRounds: number;
@@ -36,34 +36,34 @@ export class PasswordManager {
     }
 
     if (this.config.requireUppercase && !/[A-Z]/.test(password)) {
-      errors.push('Password must contain at least one uppercase letter');
+      errors.push("Password must contain at least one uppercase letter");
     }
 
     if (this.config.requireLowercase && !/[a-z]/.test(password)) {
-      errors.push('Password must contain at least one lowercase letter');
+      errors.push("Password must contain at least one lowercase letter");
     }
 
     if (this.config.requireNumbers && !/\d/.test(password)) {
-      errors.push('Password must contain at least one number');
+      errors.push("Password must contain at least one number");
     }
 
     if (this.config.requireSpecialChars && !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-      errors.push('Password must contain at least one special character');
+      errors.push("Password must contain at least one special character");
     }
 
     if (errors.length > 0) {
-      throw new Error(`Password validation failed: ${errors.join(', ')}`);
+      throw new Error(`Password validation failed: ${errors.join(", ")}`);
     }
   }
 
   generateRandomPassword(length = 16): string {
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const numbers = '0123456789';
+    const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lowercase = "abcdefghijklmnopqrstuvwxyz";
+    const numbers = "0123456789";
     const specialChars = '!@#$%^&*(),.?":{}|<>';
 
-    let chars = '';
-    let password = '';
+    let chars = "";
+    let password = "";
 
     // Ensure at least one character from each required category
     if (this.config.requireUppercase) {
@@ -92,6 +92,9 @@ export class PasswordManager {
     }
 
     // Shuffle the password
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+    return password
+      .split("")
+      .sort(() => Math.random() - 0.5)
+      .join("");
   }
 }

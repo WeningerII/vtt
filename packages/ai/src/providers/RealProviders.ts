@@ -3,7 +3,16 @@
  * Production-ready integrations with actual AI services
  */
 
-import { AIProvider, TextToImageRequest, TextToImageResult, DepthRequest, DepthResult, SegmentationRequest, SegmentationResult, AIContext } from '../index';
+import {
+  AIProvider,
+  TextToImageRequest,
+  TextToImageResult,
+  DepthRequest,
+  DepthResult,
+  SegmentationRequest,
+  SegmentationResult,
+  AIContext,
+} from "../index";
 
 export interface StabilityAIConfig {
   apiKey: string;
@@ -12,7 +21,7 @@ export interface StabilityAIConfig {
 }
 
 export class StabilityAIProvider implements AIProvider {
-  name = 'stability-ai';
+  name = "stability-ai";
   private config: StabilityAIConfig;
 
   constructor(config: StabilityAIConfig) {
@@ -20,7 +29,7 @@ export class StabilityAIProvider implements AIProvider {
   }
 
   capabilities() {
-    return ['textToImage'] as const;
+    return ["textToImage"] as const;
   }
 
   async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
@@ -28,27 +37,30 @@ export class StabilityAIProvider implements AIProvider {
     const signal = ctx?.signal;
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/v1/generation/${this.config.model}/text-to-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Accept': 'application/json'
+      const response = await fetch(
+        `${this.config.baseUrl}/v1/generation/${this.config.model}/text-to-image`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.config.apiKey}`,
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            text_prompts: [
+              { text: req.prompt, weight: 1 },
+              ...(req.negativePrompt ? [{ text: req.negativePrompt, weight: -1 }] : []),
+            ],
+            cfg_scale: 7,
+            height: req.height || 512,
+            width: req.width || 512,
+            samples: 1,
+            steps: 30,
+            seed: req.seed || Math.floor(Math.random() * 4294967295),
+          }),
+          signal,
         },
-        body: JSON.stringify({
-          text_prompts: [
-            { text: req.prompt, weight: 1 },
-            ...(req.negativePrompt ? [{ text: req.negativePrompt, weight: -1 }] : [])
-          ],
-          cfg_scale: 7,
-          height: req.height || 512,
-          width: req.width || 512,
-          samples: 1,
-          steps: 30,
-          seed: req.seed || Math.floor(Math.random() * 4294967295)
-        }),
-        signal
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`Stability AI API error: ${response.status} ${response.statusText}`);
@@ -56,14 +68,14 @@ export class StabilityAIProvider implements AIProvider {
 
       const data = await response.json();
       const artifact = data.artifacts[0];
-      
+
       if (!artifact) {
-        throw new Error('No image generated');
+        throw new Error("No image generated");
       }
 
       const imageUri = `data:image/png;base64,${artifact.base64}`;
       const latencyMs = Date.now() - start;
-      
+
       // Estimate cost (roughly $0.002 per image for SDXL)
       const costUSD = 0.002;
 
@@ -76,8 +88,8 @@ export class StabilityAIProvider implements AIProvider {
           uri: imageUri,
           width: req.width || 512,
           height: req.height || 512,
-          mimeType: 'image/png'
-        }
+          mimeType: "image/png",
+        },
       };
     } catch (error) {
       throw new Error(`Stability AI generation failed: ${error.message}`);
@@ -91,7 +103,7 @@ export interface OpenAIConfig {
 }
 
 export class OpenAIProvider implements AIProvider {
-  name = 'openai';
+  name = "openai";
   private config: OpenAIConfig;
 
   constructor(config: OpenAIConfig) {
@@ -99,7 +111,7 @@ export class OpenAIProvider implements AIProvider {
   }
 
   capabilities() {
-    return ['textToImage'] as const;
+    return ["textToImage"] as const;
   }
 
   async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
@@ -108,20 +120,20 @@ export class OpenAIProvider implements AIProvider {
 
     try {
       const response = await fetch(`${this.config.baseUrl}/v1/images/generations`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.config.apiKey}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify({
-          model: 'dall-e-3',
+          model: "dall-e-3",
           prompt: req.prompt,
           size: `${req.width || 1024}x${req.height || 1024}`,
-          quality: 'hd',
+          quality: "hd",
           n: 1,
-          response_format: 'b64_json'
+          response_format: "b64_json",
         }),
-        signal
+        signal,
       });
 
       if (!response.ok) {
@@ -130,28 +142,28 @@ export class OpenAIProvider implements AIProvider {
 
       const data = await response.json();
       const imageData = data.data[0];
-      
+
       if (!imageData) {
-        throw new Error('No image generated');
+        throw new Error("No image generated");
       }
 
       const imageUri = `data:image/png;base64,${imageData.b64_json}`;
       const latencyMs = Date.now() - start;
-      
+
       // DALL-E 3 HD pricing: $0.080 per image
-      const costUSD = 0.080;
+      const costUSD = 0.08;
 
       return {
         provider: this.name,
-        model: 'dall-e-3',
+        model: "dall-e-3",
         costUSD,
         latencyMs,
         image: {
           uri: imageUri,
           width: req.width || 1024,
           height: req.height || 1024,
-          mimeType: 'image/png'
-        }
+          mimeType: "image/png",
+        },
       };
     } catch (error) {
       throw new Error(`OpenAI generation failed: ${error.message}`);
@@ -165,7 +177,7 @@ export interface HuggingFaceConfig {
 }
 
 export class HuggingFaceProvider implements AIProvider {
-  name = 'huggingface';
+  name = "huggingface";
   private config: HuggingFaceConfig;
 
   constructor(config: HuggingFaceConfig) {
@@ -173,7 +185,7 @@ export class HuggingFaceProvider implements AIProvider {
   }
 
   capabilities() {
-    return ['textToImage', 'depth', 'segmentation'] as const;
+    return ["textToImage", "depth", "segmentation"] as const;
   }
 
   async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
@@ -181,24 +193,27 @@ export class HuggingFaceProvider implements AIProvider {
     const signal = ctx?.signal;
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/models/stabilityai/stable-diffusion-xl-base-1.0`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${this.config.baseUrl}/models/stabilityai/stable-diffusion-xl-base-1.0`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            inputs: req.prompt,
+            parameters: {
+              negative_prompt: req.negativePrompt,
+              width: req.width || 1024,
+              height: req.height || 1024,
+              num_inference_steps: 25,
+              seed: req.seed,
+            },
+          }),
+          signal,
         },
-        body: JSON.stringify({
-          inputs: req.prompt,
-          parameters: {
-            negative_prompt: req.negativePrompt,
-            width: req.width || 1024,
-            height: req.height || 1024,
-            num_inference_steps: 25,
-            seed: req.seed
-          }
-        }),
-        signal
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HuggingFace API error: ${response.status} ${response.statusText}`);
@@ -208,21 +223,21 @@ export class HuggingFaceProvider implements AIProvider {
       const base64 = await this.blobToBase64(blob);
       const imageUri = `data:image/jpeg;base64,${base64}`;
       const latencyMs = Date.now() - start;
-      
+
       // HuggingFace inference is typically free/low cost
       const costUSD = 0.001;
 
       return {
         provider: this.name,
-        model: 'stable-diffusion-xl-base-1.0',
+        model: "stable-diffusion-xl-base-1.0",
         costUSD,
         latencyMs,
         image: {
           uri: imageUri,
           width: req.width || 1024,
           height: req.height || 1024,
-          mimeType: 'image/jpeg'
-        }
+          mimeType: "image/jpeg",
+        },
       };
     } catch (error) {
       throw new Error(`HuggingFace generation failed: ${error.message}`);
@@ -236,14 +251,14 @@ export class HuggingFaceProvider implements AIProvider {
     try {
       // Convert data URI to blob for upload
       const imageBlob = await this.dataUriToBlob(req.image.uri);
-      
+
       const response = await fetch(`${this.config.baseUrl}/models/Intel/dpt-large`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`
+          Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: imageBlob,
-        signal
+        signal,
       });
 
       if (!response.ok) {
@@ -257,13 +272,13 @@ export class HuggingFaceProvider implements AIProvider {
 
       return {
         provider: this.name,
-        model: 'dpt-large',
+        model: "dpt-large",
         costUSD: 0.001,
         latencyMs,
         depth: {
           uri: depthUri,
-          mimeType: 'image/png'
-        }
+          mimeType: "image/png",
+        },
       };
     } catch (error) {
       throw new Error(`HuggingFace depth estimation failed: ${error.message}`);
@@ -276,22 +291,27 @@ export class HuggingFaceProvider implements AIProvider {
 
     try {
       const imageBlob = await this.dataUriToBlob(req.image.uri);
-      
-      const response = await fetch(`${this.config.baseUrl}/models/facebook/detr-resnet-50-panoptic`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`
+
+      const response = await fetch(
+        `${this.config.baseUrl}/models/facebook/detr-resnet-50-panoptic`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.config.apiKey}`,
+          },
+          body: imageBlob,
+          signal,
         },
-        body: imageBlob,
-        signal
-      });
+      );
 
       if (!response.ok) {
-        throw new Error(`HuggingFace Segmentation API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `HuggingFace Segmentation API error: ${response.status} ${response.statusText}`,
+        );
       }
 
       const results = await response.json();
-      
+
       // Process segmentation results to create mask
       const maskUri = await this.createSegmentationMask(results);
       const latencyMs = Date.now() - start;
@@ -303,14 +323,14 @@ export class HuggingFaceProvider implements AIProvider {
 
       return {
         provider: this.name,
-        model: 'detr-resnet-50-panoptic',
+        model: "detr-resnet-50-panoptic",
         costUSD: 0.001,
         latencyMs,
         mask: {
           uri: maskUri,
-          mimeType: 'image/png'
+          mimeType: "image/png",
         },
-        classes
+        classes,
       };
     } catch (error) {
       throw new Error(`HuggingFace segmentation failed: ${error.message}`);
@@ -321,7 +341,7 @@ export class HuggingFaceProvider implements AIProvider {
     return new Promise((_resolve, __reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
+        const base64 = (reader.result as string).split(",")[1];
         resolve(base64);
       };
       reader.onerror = reject;
@@ -336,21 +356,21 @@ export class HuggingFaceProvider implements AIProvider {
 
   private async createSegmentationMask(results: any[]): Promise<string> {
     // Create a simple colored mask based on segmentation results
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 512;
     canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
-    
+    const ctx = canvas.getContext("2d")!;
+
     // Fill with transparent background
-    ctx.fillStyle = 'rgba(0,0,0,0)';
+    ctx.fillStyle = "rgba(0,0,0,0)";
     ctx.fillRect(0, 0, 512, 512);
-    
+
     // Draw segmentation regions with different colors
     results.forEach((result: any, _index: number) => {
       if (result.mask) {
         const hue = (index * 137.5) % 360; // Golden angle for color distribution
         ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.7)`;
-        
+
         // This is simplified - in reality you'd decode the actual mask data
         const box = result.box;
         if (box) {
@@ -358,13 +378,13 @@ export class HuggingFaceProvider implements AIProvider {
         }
       }
     });
-    
-    return canvas.toDataURL('image/png');
+
+    return canvas.toDataURL("image/png");
   }
 }
 
 export class ReplicateProvider implements AIProvider {
-  name = 'replicate';
+  name = "replicate";
   private apiKey: string;
 
   constructor(apiKey: string) {
@@ -372,7 +392,7 @@ export class ReplicateProvider implements AIProvider {
   }
 
   capabilities() {
-    return ['textToImage', 'depth'] as const;
+    return ["textToImage", "depth"] as const;
   }
 
   async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
@@ -381,14 +401,14 @@ export class ReplicateProvider implements AIProvider {
 
     try {
       // Start prediction
-      const response = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
+      const response = await fetch("https://api.replicate.com/v1/predictions", {
+        method: "POST",
         headers: {
-          'Authorization': `Token ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          Authorization: `Token ${this.apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          version: 'ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4', // SDXL
+          version: "ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4", // SDXL
           input: {
             prompt: req.prompt,
             negative_prompt: req.negativePrompt,
@@ -396,10 +416,10 @@ export class ReplicateProvider implements AIProvider {
             height: req.height || 1024,
             num_inference_steps: 25,
             seed: req.seed,
-            guidance_scale: 7.5
-          }
+            guidance_scale: 7.5,
+          },
         }),
-        signal
+        signal,
       });
 
       if (!response.ok) {
@@ -407,17 +427,17 @@ export class ReplicateProvider implements AIProvider {
       }
 
       const prediction = await response.json();
-      
+
       // Poll for completion
       const result = await this.pollPrediction(prediction.id, signal);
-      
-      if (result.status === 'failed') {
+
+      if (result.status === "failed") {
         throw new Error(`Prediction failed: ${result.error}`);
       }
 
       const imageUrl = result.output[0];
       const latencyMs = Date.now() - start;
-      
+
       // Convert URL to data URI
       const imageResponse = await fetch(imageUrl, { signal });
       const imageBlob = await imageResponse.blob();
@@ -426,15 +446,15 @@ export class ReplicateProvider implements AIProvider {
 
       return {
         provider: this.name,
-        model: 'sdxl',
+        model: "sdxl",
         costUSD: 0.0023, // Replicate SDXL pricing
         latencyMs,
         image: {
           uri: imageUri,
           width: req.width || 1024,
           height: req.height || 1024,
-          mimeType: 'image/png'
-        }
+          mimeType: "image/png",
+        },
       };
     } catch (error) {
       throw new Error(`Replicate generation failed: ${error.message}`);
@@ -446,19 +466,19 @@ export class ReplicateProvider implements AIProvider {
     const signal = ctx?.signal;
 
     try {
-      const response = await fetch('https://api.replicate.com/v1/predictions', {
-        method: 'POST',
+      const response = await fetch("https://api.replicate.com/v1/predictions", {
+        method: "POST",
         headers: {
-          'Authorization': `Token ${this.apiKey}`,
-          'Content-Type': 'application/json'
+          Authorization: `Token ${this.apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          version: 'cdf5b33e7dd86c9f3ce87b2e5d5b3553e47e96c77dc59d40ed6c4de15e6de6b4', // MiDaS
+          version: "cdf5b33e7dd86c9f3ce87b2e5d5b3553e47e96c77dc59d40ed6c4de15e6de6b4", // MiDaS
           input: {
-            image: req.image.uri
-          }
+            image: req.image.uri,
+          },
         }),
-        signal
+        signal,
       });
 
       if (!response.ok) {
@@ -467,14 +487,14 @@ export class ReplicateProvider implements AIProvider {
 
       const prediction = await response.json();
       const result = await this.pollPrediction(prediction.id, signal);
-      
-      if (result.status === 'failed') {
+
+      if (result.status === "failed") {
         throw new Error(`Prediction failed: ${result.error}`);
       }
 
       const depthUrl = result.output;
       const latencyMs = Date.now() - start;
-      
+
       // Convert URL to data URI
       const depthResponse = await fetch(depthUrl, { signal });
       const depthBlob = await depthResponse.blob();
@@ -483,13 +503,13 @@ export class ReplicateProvider implements AIProvider {
 
       return {
         provider: this.name,
-        model: 'midas',
+        model: "midas",
         costUSD: 0.0023,
         latencyMs,
         depth: {
           uri: depthUri,
-          mimeType: 'image/png'
-        }
+          mimeType: "image/png",
+        },
       };
     } catch (error) {
       throw new Error(`Replicate depth estimation failed: ${error.message}`);
@@ -502,34 +522,34 @@ export class ReplicateProvider implements AIProvider {
 
     while (attempts < maxAttempts) {
       if (signal?.aborted) {
-        throw new Error('Request aborted');
+        throw new Error("Request aborted");
       }
 
       const response = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
         headers: {
-          'Authorization': `Token ${this.apiKey}`
+          Authorization: `Token ${this.apiKey}`,
         },
-        signal
+        signal,
       });
 
       const prediction = await response.json();
-      
-      if (prediction.status === 'succeeded' || prediction.status === 'failed') {
+
+      if (prediction.status === "succeeded" || prediction.status === "failed") {
         return prediction;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
       attempts++;
     }
 
-    throw new Error('Prediction timed out');
+    throw new Error("Prediction timed out");
   }
 
   private async blobToBase64(blob: Blob): Promise<string> {
     return new Promise((_resolve, __reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
+        const base64 = (reader.result as string).split(",")[1];
         resolve(base64);
       };
       reader.onerror = reject;

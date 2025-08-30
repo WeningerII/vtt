@@ -3,8 +3,8 @@
  * Handles real-time synchronization between clients and server
  */
 
-import { StateManager, Operation, StateSnapshot } from './StateManager';
-import { logger } from '@vtt/logging';
+import { StateManager, Operation, StateSnapshot } from "./StateManager";
+import { logger } from "@vtt/logging";
 
 export interface SyncConfig {
   syncInterval: number; // ms
@@ -23,7 +23,7 @@ export interface ConnectionState {
 }
 
 export interface SyncMessage {
-  type: 'operations' | 'snapshot' | 'heartbeat' | 'ack';
+  type: "operations" | "snapshot" | "heartbeat" | "ack";
   timestamp: number;
   userId: string;
   data: any;
@@ -35,7 +35,10 @@ export class SynchronizationService {
   private config: SyncConfig;
   private connectionState: ConnectionState;
   private sendQueue: SyncMessage[] = [];
-  private ackQueue: Map<string, { resolve: (...args: any[]) => any; reject: (...args: any[]) => any; timeout: NodeJS.Timeout }> = new Map();
+  private ackQueue: Map<
+    string,
+    { resolve: (...args: any[]) => any; reject: (...args: any[]) => any; timeout: NodeJS.Timeout }
+  > = new Map();
   private syncInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private eventListeners: Array<(event: SyncEvent) => void> = [];
@@ -46,7 +49,7 @@ export class SynchronizationService {
   constructor(
     stateManager: StateManager,
     transport: SyncTransport,
-    config: Partial<SyncConfig> = {}
+    config: Partial<SyncConfig> = {},
   ) {
     this.stateManager = stateManager;
     this.transport = transport;
@@ -56,7 +59,7 @@ export class SynchronizationService {
       retryAttempts: 3,
       retryDelay: 1000,
       heartbeatInterval: 30000,
-      ...config
+      ...config,
     };
 
     this.connectionState = {
@@ -64,7 +67,7 @@ export class SynchronizationService {
       lastSync: 0,
       lastHeartbeat: 0,
       reconnectAttempts: 0,
-      latency: 0
+      latency: 0,
     };
 
     this.setupTransportListeners();
@@ -77,14 +80,14 @@ export class SynchronizationService {
       this.connectionState.reconnectAttempts = 0;
       this.startSyncLoop();
       this.startHeartbeat();
-      this.emit({ type: 'connected', data: {} });
+      this.emit({ type: "connected", data: {} });
     });
 
     this.transport.onDisconnect(() => {
       this.connectionState.connected = false;
       this.stopSyncLoop();
       this.stopHeartbeat();
-      this.emit({ type: 'disconnected', data: {} });
+      this.emit({ type: "disconnected", data: {} });
       this.attemptReconnect();
     });
 
@@ -93,13 +96,13 @@ export class SynchronizationService {
     });
 
     this.transport.onError((error: Error) => {
-      this.emit({ type: 'error', data: { error } });
+      this.emit({ type: "error", data: { error } });
     });
   }
 
   private setupStateManagerListeners(): void {
     this.stateManager.addChangeListener((change) => {
-      if (change.type === 'operation-applied') {
+      if (change.type === "operation-applied") {
         this.queueOperation(change.data.operation);
       }
     });
@@ -107,11 +110,11 @@ export class SynchronizationService {
 
   private queueOperation(operation: Operation): void {
     const message: SyncMessage = {
-      type: 'operations',
+      type: "operations",
       timestamp: Date.now(),
       userId: operation.userId,
       data: { operations: [operation] },
-      messageId: this.generateMessageId()
+      messageId: this.generateMessageId(),
     };
 
     this.sendQueue.push(message);
@@ -154,7 +157,7 @@ export class SynchronizationService {
 
     // Batch operations
     const batch = this.sendQueue.splice(0, this.config.batchSize);
-    
+
     if (batch.length === 1) {
       const message = batch[0];
       if (message) {
@@ -162,16 +165,16 @@ export class SynchronizationService {
       }
     } else if (batch.length > 1) {
       // Combine multiple operations into one message
-      const operations = batch.flatMap(msg => msg.data.operations || []);
+      const operations = batch.flatMap((msg) => msg.data.operations || []);
       const firstMessage = batch[0];
       if (!firstMessage) return;
-      
+
       const combinedMessage: SyncMessage = {
-        type: 'operations',
+        type: "operations",
         timestamp: Date.now(),
         userId: firstMessage.userId,
         data: { operations },
-        messageId: this.generateMessageId()
+        messageId: this.generateMessageId(),
       };
 
       await this.sendMessage(combinedMessage);
@@ -188,7 +191,7 @@ export class SynchronizationService {
     try {
       const startTime = Date.now();
       await this.transport.send(message);
-      
+
       if (message.messageId) {
         // Wait for acknowledgment
         await this.waitForAck(message.messageId);
@@ -196,12 +199,11 @@ export class SynchronizationService {
 
       this.connectionState.latency = Date.now() - startTime;
       this.connectionState.lastSync = Date.now();
-      
     } catch (error) {
-      logger.error('Failed to send message:', error as Error);
+      logger.error("Failed to send message:", error as Error);
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      this.emit({ type: 'send-error', data: { message, error: errorObj } });
-      
+      this.emit({ type: "send-error", data: { message, error: errorObj } });
+
       // Re-queue for retry
       this.sendQueue.unshift(message);
     }
@@ -220,46 +222,46 @@ export class SynchronizationService {
 
   private sendHeartbeat(): void {
     const heartbeatMessage: SyncMessage = {
-      type: 'heartbeat',
+      type: "heartbeat",
       timestamp: Date.now(),
-      userId: this.stateManager['userId'], // Access private field
+      userId: this.stateManager["userId"], // Access private field
       data: {
         latency: this.connectionState.latency,
-        lastSync: this.connectionState.lastSync
-      }
+        lastSync: this.connectionState.lastSync,
+      },
     };
 
-    this.transport.send(heartbeatMessage).catch(error => {
-      logger.error('Heartbeat failed:', error);
+    this.transport.send(heartbeatMessage).catch((error) => {
+      logger.error("Heartbeat failed:", error);
     });
   }
 
   private async handleMessage(message: SyncMessage): Promise<void> {
     switch (message.type) {
-      case 'operations':
+      case "operations":
         await this.handleOperationsMessage(message);
         break;
-      
-      case 'snapshot':
+
+      case "snapshot":
         await this.handleSnapshotMessage(message);
         break;
-      
-      case 'heartbeat':
+
+      case "heartbeat":
         await this.handleHeartbeatMessage(message);
         break;
-      
-      case 'ack':
+
+      case "ack":
         this.handleAckMessage(message);
         break;
     }
 
     // Send acknowledgment for messages that request it
-    if (message.messageId && message.type !== 'ack') {
+    if (message.messageId && message.type !== "ack") {
       const ackMessage: SyncMessage = {
-        type: 'ack',
+        type: "ack",
         timestamp: Date.now(),
-        userId: this.stateManager['userId'],
-        data: { messageId: message.messageId }
+        userId: this.stateManager["userId"],
+        data: { messageId: message.messageId },
       };
 
       await this.transport.send(ackMessage);
@@ -268,40 +270,40 @@ export class SynchronizationService {
 
   private async handleOperationsMessage(message: SyncMessage): Promise<void> {
     const operations: Operation[] = message.data.operations || [];
-    
+
     for (const operation of operations) {
       this.stateManager.applyRemoteOperation(operation);
     }
 
-    this.emit({ 
-      type: 'operations-received', 
-      data: { operations, fromUser: message.userId } 
+    this.emit({
+      type: "operations-received",
+      data: { operations, fromUser: message.userId },
     });
   }
 
   private async handleSnapshotMessage(message: SyncMessage): Promise<void> {
     const snapshot: StateSnapshot = message.data.snapshot;
     this.stateManager.loadSnapshot(snapshot);
-    
-    this.emit({ 
-      type: 'snapshot-received', 
-      data: { snapshot, fromUser: message.userId } 
+
+    this.emit({
+      type: "snapshot-received",
+      data: { snapshot, fromUser: message.userId },
     });
   }
 
   private async handleHeartbeatMessage(message: SyncMessage): Promise<void> {
     this.connectionState.lastHeartbeat = message.timestamp;
-    
+
     // Respond with our own heartbeat
     const responseMessage: SyncMessage = {
-      type: 'heartbeat',
+      type: "heartbeat",
       timestamp: Date.now(),
-      userId: this.stateManager['userId'],
+      userId: this.stateManager["userId"],
       data: {
         latency: this.connectionState.latency,
         lastSync: this.connectionState.lastSync,
-        responseToHeartbeat: message.timestamp
-      }
+        responseToHeartbeat: message.timestamp,
+      },
     };
 
     await this.transport.send(responseMessage);
@@ -310,7 +312,7 @@ export class SynchronizationService {
   private handleAckMessage(message: SyncMessage): void {
     const messageId = message.data.messageId;
     const ackEntry = this.ackQueue.get(messageId);
-    
+
     if (ackEntry) {
       clearTimeout(ackEntry.timeout);
       ackEntry.resolve();
@@ -320,20 +322,20 @@ export class SynchronizationService {
 
   private async attemptReconnect(): Promise<void> {
     if (this.connectionState.reconnectAttempts >= this.config.retryAttempts) {
-      this.emit({ type: 'max-reconnect-attempts', data: {} });
+      this.emit({ type: "max-reconnect-attempts", data: {} });
       return;
     }
 
     this.connectionState.reconnectAttempts++;
-    
-    await new Promise(resolve => 
-      setTimeout(resolve, this.config.retryDelay * this.connectionState.reconnectAttempts)
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, this.config.retryDelay * this.connectionState.reconnectAttempts),
     );
 
     try {
       await this.transport.connect();
     } catch (error) {
-      logger.error('Reconnection failed:', error as Error);
+      logger.error("Reconnection failed:", error as Error);
       this.attemptReconnect();
     }
   }
@@ -365,10 +367,10 @@ export class SynchronizationService {
     // Send current state snapshot
     const snapshot = this.stateManager.createSnapshot();
     const message: SyncMessage = {
-      type: 'snapshot',
+      type: "snapshot",
       timestamp: Date.now(),
-      userId: this.stateManager['userId'],
-      data: { snapshot }
+      userId: this.stateManager["userId"],
+      data: { snapshot },
     };
 
     await this.sendMessage(message);
@@ -379,11 +381,11 @@ export class SynchronizationService {
    */
   async requestFullSync(): Promise<void> {
     const message: SyncMessage = {
-      type: 'operations',
+      type: "operations",
       timestamp: Date.now(),
-      userId: this.stateManager['userId'],
+      userId: this.stateManager["userId"],
       data: { requestFullSync: true },
-      messageId: this.generateMessageId()
+      messageId: this.generateMessageId(),
     };
 
     await this.sendMessage(message);
@@ -409,7 +411,7 @@ export class SynchronizationService {
       queueSize: this.sendQueue.length,
       pendingAcks: this.ackQueue.size,
       averageLatency: this.connectionState.latency,
-      syncRate: 1000 / this.config.syncInterval
+      syncRate: 1000 / this.config.syncInterval,
     };
   }
 
@@ -426,11 +428,11 @@ export class SynchronizationService {
   }
 
   private emit(event: SyncEvent): void {
-    this.eventListeners.forEach(listener => {
+    this.eventListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Sync event listener error:', error as Error);
+        logger.error("Sync event listener error:", error as Error);
       }
     });
   }
@@ -449,10 +451,10 @@ export interface SyncTransport {
 
 // Event Types
 export type SyncEvent =
-  | { type: 'connected'; data: Record<string, unknown>}
-  | { type: 'disconnected'; data: Record<string, unknown>}
-  | { type: 'operations-received'; data: { operations: Operation[]; fromUser: string } }
-  | { type: 'snapshot-received'; data: { snapshot: StateSnapshot; fromUser: string } }
-  | { type: 'send-error'; data: { message: SyncMessage; error: Error } }
-  | { type: 'error'; data: { error: Error } }
-  | { type: 'max-reconnect-attempts'; data: Record<string, unknown>};
+  | { type: "connected"; data: Record<string, unknown> }
+  | { type: "disconnected"; data: Record<string, unknown> }
+  | { type: "operations-received"; data: { operations: Operation[]; fromUser: string } }
+  | { type: "snapshot-received"; data: { snapshot: StateSnapshot; fromUser: string } }
+  | { type: "send-error"; data: { message: SyncMessage; error: Error } }
+  | { type: "error"; data: { error: Error } }
+  | { type: "max-reconnect-attempts"; data: Record<string, unknown> };

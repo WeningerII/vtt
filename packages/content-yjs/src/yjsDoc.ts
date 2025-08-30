@@ -9,12 +9,14 @@ export class YjsDocument implements SharedDocument {
   public version = 0;
   private doc: Y.Doc;
   private text: Y.Text;
-  private listeners = new Set<(
-    content: string,
-    _meta: { version: number; actor?: string; ts: number }
-  ) => void>();
+  private listeners = new Set<
+    (content: string, _meta: { version: number; actor?: string; ts: number }) => void
+  >();
 
-  constructor(public id: string, initial: string = "") {
+  constructor(
+    public id: string,
+    initial: string = "",
+  ) {
     this.doc = new Y.Doc();
     this.text = this.doc.getText("content");
     if (initial && initial.length) {
@@ -28,7 +30,11 @@ export class YjsDocument implements SharedDocument {
   }
 
   private emit(actor?: string) {
-    const meta = { version: this.version, ts: Date.now(), ...(actor ? { actor } : Record<string, any>) };
+    const meta = {
+      version: this.version,
+      ts: Date.now(),
+      ...(actor ? { actor } : Record<string, any>),
+    };
     const snapshot = this.text.toString();
     for (const l of this.listeners) l(snapshot, meta);
   }
@@ -51,7 +57,8 @@ export class YjsDocument implements SharedDocument {
   }
 
   subscribe(
-    _listener: (content: string, _meta: { version: number; actor?: string; ts: number }) => void): () => void {
+    _listener: (content: string, _meta: { version: number; actor?: string; ts: number }) => void,
+  ): () => void {
     this.listeners.add(listener);
     listener(this.text.toString(), { version: this.version, ts: Date.now() });
     return () => this.listeners.delete(listener);

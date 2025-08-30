@@ -4,44 +4,44 @@
  * Scans all dependencies and validates against approved licenses
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
 // Approved licenses (permissive and compatible with commercial use)
 const APPROVED_LICENSES = [
-  'MIT',
-  'Apache-2.0',
-  'BSD-2-Clause',
-  'BSD-3-Clause',
-  'ISC',
-  'CC0-1.0',
-  'Unlicense',
-  'WTFPL',
-  '0BSD'
+  "MIT",
+  "Apache-2.0",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "CC0-1.0",
+  "Unlicense",
+  "WTFPL",
+  "0BSD",
 ];
 
 // Licenses that require review
 const REVIEW_REQUIRED = [
-  'GPL-2.0',
-  'GPL-3.0',
-  'LGPL-2.1',
-  'LGPL-3.0',
-  'AGPL-3.0',
-  'MPL-2.0',
-  'EPL-1.0',
-  'EPL-2.0',
-  'CDDL-1.0',
-  'CDDL-1.1'
+  "GPL-2.0",
+  "GPL-3.0",
+  "LGPL-2.1",
+  "LGPL-3.0",
+  "AGPL-3.0",
+  "MPL-2.0",
+  "EPL-1.0",
+  "EPL-2.0",
+  "CDDL-1.0",
+  "CDDL-1.1",
 ];
 
 // Prohibited licenses
 const PROHIBITED_LICENSES = [
-  'AGPL-1.0',
-  'AGPL-3.0-only',
-  'GPL-1.0',
-  'GPL-2.0-only',
-  'GPL-3.0-only'
+  "AGPL-1.0",
+  "AGPL-3.0-only",
+  "GPL-1.0",
+  "GPL-2.0-only",
+  "GPL-3.0-only",
 ];
 
 class LicenseChecker {
@@ -53,60 +53,59 @@ class LicenseChecker {
   }
 
   async checkLicenses() {
-    console.log('🔍 Scanning dependencies for license compliance...\n');
+    console.log("🔍 Scanning dependencies for license compliance...\n");
 
     try {
       // Get dependency tree with licenses
-      const output = execSync('pnpm licenses list --json', { 
-        encoding: 'utf8',
-        cwd: process.cwd()
+      const output = execSync("pnpm licenses list --json", {
+        encoding: "utf8",
+        cwd: process.cwd(),
       });
 
       const licenseData = JSON.parse(output);
-      
+
       for (const [packageName, info] of Object.entries(licenseData)) {
         this.analyzeLicense(packageName, info);
       }
 
       this.generateReport();
-      
     } catch (error) {
-      console.error('❌ Failed to check licenses:', error.message);
-      
+      console.error("❌ Failed to check licenses:", error.message);
+
       // Fallback: check package.json files directly
-      console.log('📦 Falling back to package.json analysis...');
+      console.log("📦 Falling back to package.json analysis...");
       await this.checkPackageJsonLicenses();
     }
   }
 
   analyzeLicense(packageName, info) {
     const license = info.license || info.licenses;
-    const licenseString = Array.isArray(license) ? license.join(' OR ') : license;
+    const licenseString = Array.isArray(license) ? license.join(" OR ") : license;
 
-    if (!licenseString || licenseString === 'UNKNOWN') {
-      this.unknown.push({ package: packageName, license: 'UNKNOWN', ...info });
+    if (!licenseString || licenseString === "UNKNOWN") {
+      this.unknown.push({ package: packageName, license: "UNKNOWN", ...info });
       return;
     }
 
     // Check for prohibited licenses
     if (this.containsProhibitedLicense(licenseString)) {
-      this.violations.push({ 
-        package: packageName, 
-        license: licenseString, 
-        severity: 'HIGH',
-        reason: 'Prohibited license detected',
-        ...info 
+      this.violations.push({
+        package: packageName,
+        license: licenseString,
+        severity: "HIGH",
+        reason: "Prohibited license detected",
+        ...info,
       });
       return;
     }
 
     // Check for licenses requiring review
     if (this.requiresReview(licenseString)) {
-      this.reviewRequired.push({ 
-        package: packageName, 
+      this.reviewRequired.push({
+        package: packageName,
         license: licenseString,
-        reason: 'License requires legal review',
-        ...info 
+        reason: "License requires legal review",
+        ...info,
       });
       return;
     }
@@ -118,56 +117,57 @@ class LicenseChecker {
     }
 
     // Unknown/custom license
-    this.unknown.push({ 
-      package: packageName, 
+    this.unknown.push({
+      package: packageName,
       license: licenseString,
-      reason: 'Custom or unrecognized license',
-      ...info 
+      reason: "Custom or unrecognized license",
+      ...info,
     });
   }
 
   containsProhibitedLicense(licenseString) {
-    return PROHIBITED_LICENSES.some(prohibited => 
-      licenseString.toLowerCase().includes(prohibited.toLowerCase())
+    return PROHIBITED_LICENSES.some((prohibited) =>
+      licenseString.toLowerCase().includes(prohibited.toLowerCase()),
     );
   }
 
   requiresReview(licenseString) {
-    return REVIEW_REQUIRED.some(review => 
-      licenseString.toLowerCase().includes(review.toLowerCase())
+    return REVIEW_REQUIRED.some((review) =>
+      licenseString.toLowerCase().includes(review.toLowerCase()),
     );
   }
 
   isApproved(licenseString) {
-    return APPROVED_LICENSES.some(approved => 
-      licenseString.toLowerCase().includes(approved.toLowerCase())
+    return APPROVED_LICENSES.some((approved) =>
+      licenseString.toLowerCase().includes(approved.toLowerCase()),
     );
   }
 
   async checkPackageJsonLicenses() {
-    const nodeModulesPath = path.join(process.cwd(), 'node_modules');
-    
+    const nodeModulesPath = path.join(process.cwd(), "node_modules");
+
     if (!fs.existsSync(nodeModulesPath)) {
-      console.log('⚠️  node_modules not found. Run pnpm install first.');
+      console.log("⚠️  node_modules not found. Run pnpm install first.");
       return;
     }
 
-    const packages = fs.readdirSync(nodeModulesPath)
-      .filter(dir => !dir.startsWith('.'))
+    const packages = fs
+      .readdirSync(nodeModulesPath)
+      .filter((dir) => !dir.startsWith("."))
       .slice(0, 100); // Limit for performance
 
     for (const packageDir of packages) {
-      const packageJsonPath = path.join(nodeModulesPath, packageDir, 'package.json');
-      
+      const packageJsonPath = path.join(nodeModulesPath, packageDir, "package.json");
+
       if (fs.existsSync(packageJsonPath)) {
         try {
-          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
           const license = packageJson.license || packageJson.licenses;
-          
+
           this.analyzeLicense(packageJson.name || packageDir, {
             license,
             version: packageJson.version,
-            repository: packageJson.repository
+            repository: packageJson.repository,
           });
         } catch (error) {
           // Skip invalid package.json files
@@ -177,8 +177,8 @@ class LicenseChecker {
   }
 
   generateReport() {
-    console.log('📊 License Compliance Report');
-    console.log('=' .repeat(50));
+    console.log("📊 License Compliance Report");
+    console.log("=".repeat(50));
 
     // Summary
     console.log(`\n📈 Summary:`);
@@ -190,7 +190,7 @@ class LicenseChecker {
     // Violations (critical)
     if (this.violations.length > 0) {
       console.log(`\n❌ LICENSE VIOLATIONS (${this.violations.length}):`);
-      this.violations.forEach(violation => {
+      this.violations.forEach((violation) => {
         console.log(`  • ${violation.package} (${violation.license})`);
         console.log(`    Reason: ${violation.reason}`);
       });
@@ -199,7 +199,7 @@ class LicenseChecker {
     // Review required
     if (this.reviewRequired.length > 0) {
       console.log(`\n⚠️  REVIEW REQUIRED (${this.reviewRequired.length}):`);
-      this.reviewRequired.forEach(item => {
+      this.reviewRequired.forEach((item) => {
         console.log(`  • ${item.package} (${item.license})`);
       });
     }
@@ -207,8 +207,8 @@ class LicenseChecker {
     // Unknown licenses
     if (this.unknown.length > 0) {
       console.log(`\n❓ UNKNOWN LICENSES (${this.unknown.length}):`);
-      this.unknown.slice(0, 10).forEach(item => {
-        console.log(`  • ${item.package} (${item.license || 'UNKNOWN'})`);
+      this.unknown.slice(0, 10).forEach((item) => {
+        console.log(`  • ${item.package} (${item.license || "UNKNOWN"})`);
       });
       if (this.unknown.length > 10) {
         console.log(`  ... and ${this.unknown.length - 10} more`);
@@ -220,20 +220,20 @@ class LicenseChecker {
 
     // Exit code
     const exitCode = this.violations.length > 0 ? 1 : 0;
-    
+
     if (exitCode === 0) {
-      console.log('\n✅ License compliance check passed!');
+      console.log("\n✅ License compliance check passed!");
     } else {
-      console.log('\n❌ License compliance check failed!');
-      console.log('Please resolve violations before proceeding.');
+      console.log("\n❌ License compliance check failed!");
+      console.log("Please resolve violations before proceeding.");
     }
 
     process.exit(exitCode);
   }
 
   generateComplianceFiles() {
-    const complianceDir = path.join(process.cwd(), 'compliance');
-    
+    const complianceDir = path.join(process.cwd(), "compliance");
+
     if (!fs.existsSync(complianceDir)) {
       fs.mkdirSync(complianceDir, { recursive: true });
     }
@@ -245,43 +245,40 @@ class LicenseChecker {
         approved: this.approved.length,
         reviewRequired: this.reviewRequired.length,
         violations: this.violations.length,
-        unknown: this.unknown.length
+        unknown: this.unknown.length,
       },
       approved: this.approved,
       reviewRequired: this.reviewRequired,
       violations: this.violations,
-      unknown: this.unknown
+      unknown: this.unknown,
     };
 
     fs.writeFileSync(
-      path.join(complianceDir, 'license-report.json'),
-      JSON.stringify(report, null, 2)
+      path.join(complianceDir, "license-report.json"),
+      JSON.stringify(report, null, 2),
     );
 
     // Generate NOTICE file for attribution
     const noticeContent = this.generateNoticeFile();
-    fs.writeFileSync(
-      path.join(complianceDir, 'NOTICE.txt'),
-      noticeContent
-    );
+    fs.writeFileSync(path.join(complianceDir, "NOTICE.txt"), noticeContent);
 
-    console.log('\n📄 Compliance files generated:');
-    console.log('  • compliance/license-report.json');
-    console.log('  • compliance/NOTICE.txt');
+    console.log("\n📄 Compliance files generated:");
+    console.log("  • compliance/license-report.json");
+    console.log("  • compliance/NOTICE.txt");
   }
 
   generateNoticeFile() {
-    let notice = 'VTT - Virtual Tabletop\n';
-    notice += '=' .repeat(50) + '\n\n';
-    notice += 'This software includes the following third-party components:\n\n';
+    let notice = "VTT - Virtual Tabletop\n";
+    notice += "=".repeat(50) + "\n\n";
+    notice += "This software includes the following third-party components:\n\n";
 
-    this.approved.forEach(item => {
+    this.approved.forEach((item) => {
       notice += `${item.package}\n`;
       notice += `License: ${item.license}\n`;
       if (item.repository) {
-        notice += `Repository: ${typeof item.repository === 'string' ? item.repository : item.repository.url}\n`;
+        notice += `Repository: ${typeof item.repository === "string" ? item.repository : item.repository.url}\n`;
       }
-      notice += '\n';
+      notice += "\n";
     });
 
     return notice;

@@ -1,16 +1,16 @@
-import { test, expect } from '@playwright/test';
-import { factory } from './utils/factories';
-import { authUtils } from './utils/auth';
-import { testDb } from './utils/database';
+import { test, expect } from "@playwright/test";
+import { factory } from "./utils/factories";
+import { authUtils } from "./utils/auth";
+import { testDb } from "./utils/database";
 
-test.describe('Performance and Load Testing', () => {
+test.describe("Performance and Load Testing", () => {
   test.beforeEach(async () => {
     await testDb.reset();
   });
 
-  test('Large scene with many tokens performance', async ({ page }) => {
+  test("Large scene with many tokens performance", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Create a large number of tokens
     const tokenCount = 100;
@@ -43,10 +43,13 @@ test.describe('Performance and Load Testing', () => {
 
     // Wait for all tokens to render
     await page.waitForSelector('[data-testid="token"]');
-    await page.waitForFunction(() => {
-      const tokens = document.querySelectorAll('[data-testid="token"]');
-      return tokens.length >= 100;
-    }, { timeout: 30000 });
+    await page.waitForFunction(
+      () => {
+        const tokens = document.querySelectorAll('[data-testid="token"]');
+        return tokens.length >= 100;
+      },
+      { timeout: 30000 },
+    );
 
     const loadTime = Date.now() - startTime;
     console.log(`Scene with ${tokenCount} tokens loaded in ${loadTime}ms`);
@@ -74,21 +77,21 @@ test.describe('Performance and Load Testing', () => {
 
     // Test bulk operations
     const bulkStartTime = Date.now();
-    await page.keyboard.press('Control+a'); // Select all
+    await page.keyboard.press("Control+a"); // Select all
     await page.waitForSelector('[data-testid="bulk-selection"]');
     const bulkTime = Date.now() - bulkStartTime;
 
     expect(bulkTime).toBeLessThan(2000); // Bulk selection under 2s
   });
 
-  test('Concurrent user load testing', async ({ browser }) => {
+  test("Concurrent user load testing", async ({ browser }) => {
     const gameSession = await factory.createCompleteGameSession();
-    const { _gm  } = gameSession.users;
+    const { _gm } = gameSession.users;
 
     // Create multiple test users
     const userCount = 10;
     const testUsers = [];
-    
+
     for (let i = 0; i < userCount; i++) {
       const user = await factory.createUser({
         displayName: `Load Test User ${i}`,
@@ -101,37 +104,31 @@ test.describe('Performance and Load Testing', () => {
         data: {
           campaignId: gameSession.campaign.id,
           userId: user.id,
-          role: 'PLAYER',
+          role: "PLAYER",
         },
       });
     }
 
     // Create contexts and pages for all users
     const contexts = await Promise.all(
-      Array(userCount).fill(null).map(() => browser.newContext())
+      Array(userCount)
+        .fill(null)
+        .map(() => browser.newContext()),
     );
 
-    const pages = await Promise.all(
-      contexts.map(ctx => ctx.newPage())
-    );
+    const pages = await Promise.all(contexts.map((ctx) => ctx.newPage()));
 
     try {
       // Authenticate all users
-      await Promise.all(
-        _pages.map((page, _i) => authUtils.mockAuthentication(page, testUsers[i]))
-      );
+      await Promise.all(_pages.map((page, _i) => authUtils.mockAuthentication(page, testUsers[i])));
 
       const sceneUrl = `/scenes/${gameSession.scene.id}`;
 
       // Measure concurrent load time
       const loadStartTime = Date.now();
-      await Promise.all(
-        pages.map(page => page.goto(sceneUrl))
-      );
+      await Promise.all(pages.map((page) => page.goto(sceneUrl)));
 
-      await Promise.all(
-        pages.map(page => authUtils.waitForAuthReady(page))
-      );
+      await Promise.all(pages.map((page) => authUtils.waitForAuthReady(page)));
 
       const concurrentLoadTime = Date.now() - loadStartTime;
       console.log(`${userCount} users loaded scene in ${concurrentLoadTime}ms`);
@@ -141,13 +138,14 @@ test.describe('Performance and Load Testing', () => {
 
       // Test concurrent interactions
       const interactionStartTime = Date.now();
-      
+
       // All users send chat messages simultaneously
       await Promise.all(
         _pages.map((page, _i) => {
-          return page.fill('[data-testid="chat-input"]', `Concurrent message from user ${i}`)
-            .then(() => page.press('[data-testid="chat-input"]', 'Enter'));
-        })
+          return page
+            .fill('[data-testid="chat-input"]', `Concurrent message from user ${i}`)
+            .then(() => page.press('[data-testid="chat-input"]', "Enter"));
+        }),
       );
 
       // Wait for all messages to propagate
@@ -167,7 +165,7 @@ test.describe('Performance and Load Testing', () => {
       // Test concurrent token movements
       const moveStartTime = Date.now();
       const tokens = await pages[0].locator('[data-testid="token"]').all();
-      
+
       if (tokens.length >= userCount) {
         await Promise.all(
           pages.slice(0, Math.min(userCount, tokens.length)).map(async (page, _i) => {
@@ -176,7 +174,7 @@ test.describe('Performance and Load Testing', () => {
             await page.mouse.down();
             await page.mouse.move(300 + i * 20, 300 + i * 20);
             await page.mouse.up();
-          })
+          }),
         );
       }
 
@@ -184,15 +182,14 @@ test.describe('Performance and Load Testing', () => {
       console.log(`Concurrent token movements completed in ${moveTime}ms`);
 
       expect(moveTime).toBeLessThan(8000);
-
     } finally {
-      await Promise.all(contexts.map(ctx => ctx.close()));
+      await Promise.all(contexts.map((ctx) => ctx.close()));
     }
   });
 
-  test('Memory usage and resource management', async ({ page }) => {
+  test("Memory usage and resource management", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     await authUtils.mockAuthentication(page, gm);
     await page.goto(`/scenes/${gameSession.scene.id}`);
@@ -217,7 +214,7 @@ test.describe('Performance and Load Testing', () => {
       await page.waitForTimeout(50);
 
       // Delete token
-      await page.click('[data-testid="token"]', { button: 'right' });
+      await page.click('[data-testid="token"]', { button: "right" });
       await page.click('[data-testid="delete-token"]');
       await page.waitForTimeout(50);
     }
@@ -240,28 +237,28 @@ test.describe('Performance and Load Testing', () => {
       };
     });
 
-    console.log('Initial memory:', initialMetrics);
-    console.log('Final memory:', finalMetrics);
+    console.log("Initial memory:", initialMetrics);
+    console.log("Final memory:", finalMetrics);
 
     // Memory should not grow excessively
     const memoryGrowth = finalMetrics.usedJSHeapSize - initialMetrics.usedJSHeapSize;
     const memoryGrowthMB = memoryGrowth / (1024 * 1024);
-    
+
     console.log(`Memory growth: ${memoryGrowthMB.toFixed(2)}MB`);
     expect(memoryGrowthMB).toBeLessThan(50); // Less than 50MB growth
   });
 
-  test('Network bandwidth optimization', async ({ page }) => {
+  test("Network bandwidth optimization", async ({ page }) => {
     const gameSession = await factory.createCompleteGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     let totalBytesReceived = 0;
     let requestCount = 0;
 
     // Monitor network requests
-    page.on('response', response => {
+    page.on("response", (response) => {
       requestCount++;
-      const contentLength = response.headers()['content-length'];
+      const contentLength = response.headers()["content-length"];
       if (contentLength) {
         totalBytesReceived += parseInt(contentLength);
       }
@@ -280,7 +277,7 @@ test.describe('Performance and Load Testing', () => {
     // Move tokens
     const tokens = page.locator('[data-testid="token"]');
     const tokenCount = await tokens.count();
-    
+
     for (let i = 0; i < Math.min(tokenCount, 5); i++) {
       const token = tokens.nth(i);
       await token.hover();
@@ -293,7 +290,7 @@ test.describe('Performance and Load Testing', () => {
     // Send chat messages
     for (let i = 0; i < 5; i++) {
       await page.fill('[data-testid="chat-input"]', `Performance test message ${i}`);
-      await page.press('[data-testid="chat-input"]', 'Enter');
+      await page.press('[data-testid="chat-input"]', "Enter");
       await page.waitForTimeout(300);
     }
 
@@ -313,13 +310,13 @@ test.describe('Performance and Load Testing', () => {
     expect(requestsMade).toBeLessThan(50); // Reasonable request count
   });
 
-  test('Database query performance', async ({ page }) => {
+  test("Database query performance", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Create many database records
     const recordCount = 200;
-    
+
     for (let i = 0; i < recordCount; i++) {
       const actor = await factory.createActor(gm.id, gameSession.campaign.id, {
         name: `DB Performance Actor ${i}`,
@@ -339,8 +336,8 @@ test.describe('Performance and Load Testing', () => {
     // Measure API response times
     const apiTimes: number[] = [];
 
-    page.on('response', response => {
-      if (response.url().includes('/api/')) {
+    page.on("response", (response) => {
+      if (response.url().includes("/api/")) {
         const timing = response.timing();
         apiTimes.push(timing.responseEnd);
       }
@@ -351,10 +348,13 @@ test.describe('Performance and Load Testing', () => {
     await authUtils.waitForAuthReady(page);
 
     // Wait for all data to load
-    await page.waitForFunction(() => {
-      const tokens = document.querySelectorAll('[data-testid="token"]');
-      return tokens.length >= 200;
-    }, { timeout: 30000 });
+    await page.waitForFunction(
+      () => {
+        const tokens = document.querySelectorAll('[data-testid="token"]');
+        return tokens.length >= 200;
+      },
+      { timeout: 30000 },
+    );
 
     const loadTime = Date.now() - startTime;
     console.log(`Database-heavy scene loaded in ${loadTime}ms`);
@@ -371,7 +371,7 @@ test.describe('Performance and Load Testing', () => {
 
     // Test search performance
     const searchStartTime = Date.now();
-    await page.fill('[data-testid="search-input"]', 'Actor 1');
+    await page.fill('[data-testid="search-input"]', "Actor 1");
     await page.waitForSelector('[data-testid="search-results"]');
     const searchTime = Date.now() - searchStartTime;
 
@@ -379,9 +379,9 @@ test.describe('Performance and Load Testing', () => {
     expect(searchTime).toBeLessThan(2000);
   });
 
-  test('Asset loading and caching performance', async ({ page }) => {
+  test("Asset loading and caching performance", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Create assets for testing
     const assetCount = 20;
@@ -390,8 +390,8 @@ test.describe('Performance and Load Testing', () => {
     for (let i = 0; i < assetCount; i++) {
       const asset = await factory.createAsset(gm.id, {
         name: `Performance Asset ${i}`,
-        type: 'IMAGE',
-        mimeType: 'image/png',
+        type: "IMAGE",
+        mimeType: "image/png",
         size: 1024 * 1024, // 1MB
         url: `https://example.com/asset${i}.png`,
       });
@@ -403,10 +403,10 @@ test.describe('Performance and Load Testing', () => {
     let cacheMisses = 0;
 
     // Monitor image loading
-    page.on('response', response => {
-      if (response.url().includes('.png') || response.url().includes('.jpg')) {
-        const cacheStatus = response.headers()['x-cache'] || response.headers()['cf-cache-status'];
-        if (cacheStatus === 'HIT') {
+    page.on("response", (response) => {
+      if (response.url().includes(".png") || response.url().includes(".jpg")) {
+        const cacheStatus = response.headers()["x-cache"] || response.headers()["cf-cache-status"];
+        if (cacheStatus === "HIT") {
           cacheHits++;
         } else {
           cacheMisses++;
@@ -459,9 +459,9 @@ test.describe('Performance and Load Testing', () => {
     expect(dragTime).toBeLessThan(3000);
   });
 
-  test('Real-time update performance under load', async ({ browser }) => {
+  test("Real-time update performance under load", async ({ browser }) => {
     const gameSession = await factory.createCompleteGameSession();
-    const { gm,  player1  } = gameSession.users;
+    const { gm, player1 } = gameSession.users;
 
     // Create many tokens for stress testing
     for (let i = 0; i < 50; i++) {
@@ -486,11 +486,11 @@ test.describe('Performance and Load Testing', () => {
       let updateCount = 0;
 
       // Monitor updates on player page
-      playerPage.on('websocket', ws => {
-        ws.on('framereceived', event => {
+      playerPage.on("websocket", (ws) => {
+        ws.on("framereceived", (event) => {
           try {
             const data = JSON.parse(event.payload as string);
-            if (data.type === 'token_moved' && data.timestamp) {
+            if (data.type === "token_moved" && data.timestamp) {
               const latency = Date.now() - data.timestamp;
               updateLatencies.push(latency);
               updateCount++;
@@ -503,10 +503,7 @@ test.describe('Performance and Load Testing', () => {
       await authUtils.mockAuthentication(playerPage, player1);
 
       const sceneUrl = `/scenes/${gameSession.scene.id}`;
-      await Promise.all([
-        gmPage.goto(sceneUrl),
-        playerPage.goto(sceneUrl),
-      ]);
+      await Promise.all([gmPage.goto(sceneUrl), playerPage.goto(sceneUrl)]);
 
       await Promise.all([
         authUtils.waitForAuthReady(gmPage),
@@ -542,7 +539,7 @@ test.describe('Performance and Load Testing', () => {
       if (updateLatencies.length > 0) {
         const avgLatency = updateLatencies.reduce((_a, _b) => a + b, 0) / updateLatencies.length;
         const maxLatency = Math.max(...updateLatencies);
-        
+
         console.log(`Average update latency: ${avgLatency.toFixed(2)}ms`);
         console.log(`Max update latency: ${maxLatency}ms`);
 
@@ -552,7 +549,6 @@ test.describe('Performance and Load Testing', () => {
 
       // Verify system remains responsive
       expect(stressTime).toBeLessThan(10000); // Stress test under 10 seconds
-
     } finally {
       await gmContext.close();
       await playerContext.close();

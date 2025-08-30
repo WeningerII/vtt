@@ -2,15 +2,15 @@
  * Character Editor Page - Character creation and management interface
  */
 
-import React, { useState } from 'react';
-import { useRouter } from '../components/Router';
-import { CharacterSheet } from '../components/character/CharacterSheet';
-import { Button } from '../components/ui/Button';
-import { ArrowLeft, Users, Plus } from 'lucide-react';
-import type { Character } from '../components/character/CharacterSheet';
+import React, { useState } from "react";
+import { useRouter } from "../components/Router";
+import { CharacterSheet } from "../components/character/CharacterSheet";
+import { Button } from "../components/ui/Button";
+import { ArrowLeft, Users, Plus } from "lucide-react";
+import type { Character } from "../components/character/CharacterSheet";
 
 export function CharacterEditor() {
-  const { navigate,  params  } = useRouter();
+  const { navigate, params } = useRouter();
   const characterId = params?.characterId;
   const [character, setCharacter] = useState<Character | null>(null);
 
@@ -19,12 +19,12 @@ export function CharacterEditor() {
   };
 
   const handleBackToDashboard = () => {
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
   const handleViewInSession = () => {
     // Navigate to a game session where this character can be used
-    navigate('/session/demo');
+    navigate("/session/demo");
   };
 
   return (
@@ -44,7 +44,7 @@ export function CharacterEditor() {
               </Button>
               <div className="h-6 w-px bg-border-primary" />
               <h1 className="text-xl font-semibold text-text-primary">
-                {characterId ? 'Edit Character' : 'Create Character'}
+                {characterId ? "Edit Character" : "Create Character"}
               </h1>
             </div>
 
@@ -54,7 +54,7 @@ export function CharacterEditor() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate('/characters')}
+                    onClick={() => navigate("/characters")}
                     leftIcon={<Users className="h-4 w-4" />}
                   >
                     My Characters

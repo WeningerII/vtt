@@ -1,11 +1,11 @@
 /**
  * Scene Settings Modal - Configure grid, lighting, and fog settings
  */
-import React, { useState, useEffect } from 'react';
-import { logger } from '@vtt/logging';
-import { 
-  Settings, 
-  X, 
+import React, { useState, useEffect } from "react";
+import { logger } from "@vtt/logging";
+import {
+  Settings,
+  X,
   Grid3X3,
   Sun,
   Eye,
@@ -14,15 +14,15 @@ import {
   Ruler,
   RotateCcw,
   Save,
-  Loader2
-} from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/Tabs';
-import { Switch } from '../ui/Switch';
-import { Slider } from '../ui/Slider';
-import { _cn } from '../../lib/utils';
+  Loader2,
+} from "lucide-react";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs";
+import { Switch } from "../ui/Switch";
+import { Slider } from "../ui/Slider";
+import { _cn } from "../../lib/utils";
 
 interface SceneSettingsModalProps {
   isOpen: boolean;
@@ -37,7 +37,7 @@ interface GridSettings {
   size: number;
   color: string;
   opacity: number;
-  type: 'square' | 'hex';
+  type: "square" | "hex";
   snapToGrid: boolean;
   showLabels: boolean;
   offsetX: number;
@@ -48,14 +48,14 @@ interface LightingSettings {
   enabled: boolean;
   ambientLight: number;
   globalIllumination: boolean;
-  shadowQuality: 'low' | 'medium' | 'high';
+  shadowQuality: "low" | "medium" | "high";
   colorTemperature: number;
   contrast: number;
 }
 
 interface FogSettings {
   enabled: boolean;
-  type: 'static' | 'dynamic';
+  type: "static" | "dynamic";
   color: string;
   opacity: number;
   revealOnMove: boolean;
@@ -73,9 +73,9 @@ const DEFAULT_SETTINGS: SceneSettings = {
   grid: {
     enabled: true,
     size: 70,
-    color: '#000000',
+    color: "#000000",
     opacity: 0.3,
-    type: 'square',
+    type: "square",
     snapToGrid: true,
     showLabels: false,
     offsetX: 0,
@@ -85,14 +85,14 @@ const DEFAULT_SETTINGS: SceneSettings = {
     enabled: false,
     ambientLight: 0.3,
     globalIllumination: true,
-    shadowQuality: 'medium',
+    shadowQuality: "medium",
     colorTemperature: 5500,
     contrast: 1.0,
   },
   fog: {
     enabled: false,
-    type: 'static',
-    color: '#000000',
+    type: "static",
+    color: "#000000",
     opacity: 0.8,
     revealOnMove: true,
     persistReveal: true,
@@ -100,13 +100,15 @@ const DEFAULT_SETTINGS: SceneSettings = {
   },
 };
 
-export function SceneSettingsModal({ 
-  isOpen, _onClose, 
-  _sceneId, _initialSettings, 
-  _onSettingsUpdate 
+export function SceneSettingsModal({
+  isOpen,
+  _onClose,
+  _sceneId,
+  _initialSettings,
+  _onSettingsUpdate,
 }: SceneSettingsModalProps) {
   const [settings, setSettings] = useState<SceneSettings>(initialSettings || DEFAULT_SETTINGS);
-  const [activeTab, setActiveTab] = useState('grid');
+  const [activeTab, setActiveTab] = useState("grid");
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -120,25 +122,25 @@ export function SceneSettingsModal({
   if (!isOpen) return null;
 
   const updateGridSettings = (_updates: Partial<GridSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      grid: { ...prev.grid, ...updates }
+      grid: { ...prev.grid, ...updates },
     }));
     setHasChanges(true);
   };
 
   const updateLightingSettings = (_updates: Partial<LightingSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      lighting: { ...prev.lighting, ...updates }
+      lighting: { ...prev.lighting, ...updates },
     }));
     setHasChanges(true);
   };
 
   const updateFogSettings = (_updates: Partial<FogSettings>) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      fog: { ...prev.fog, ...updates }
+      fog: { ...prev.fog, ...updates },
     }));
     setHasChanges(true);
   };
@@ -148,22 +150,22 @@ export function SceneSettingsModal({
     try {
       // Call API to update scene settings
       const response = await fetch(`/api/scenes/${sceneId}/settings`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(settings),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save settings');
+        throw new Error("Failed to save settings");
       }
 
       onSettingsUpdate(settings);
       setHasChanges(false);
     } catch (error) {
-      logger.error('Error saving settings:', error);
+      logger.error("Error saving settings:", error);
     } finally {
       setSaving(false);
     }
@@ -176,7 +178,7 @@ export function SceneSettingsModal({
 
   const handleClose = () => {
     if (hasChanges) {
-      const confirm = window.confirm('You have unsaved changes. Are you sure you want to close?');
+      const confirm = window.confirm("You have unsaved changes. Are you sure you want to close?");
       if (!confirm) return;
     }
     onClose();
@@ -194,7 +196,7 @@ export function SceneSettingsModal({
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
-        
+
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <TabsList className="grid w-full grid-cols-3 mx-6 mb-4">
@@ -232,7 +234,9 @@ export function SceneSettingsModal({
                       <Input
                         type="number"
                         value={settings.grid.size}
-                        onChange={(e) => updateGridSettings({ size: parseInt(e.target.value) || 70 })}
+                        onChange={(e) =>
+                          updateGridSettings({ size: parseInt(e.target.value) || 70 })
+                        }
                         min="20"
                         max="200"
                         disabled={!settings.grid.enabled}
@@ -245,7 +249,9 @@ export function SceneSettingsModal({
                       </label>
                       <select
                         value={settings.grid.type}
-                        onChange={(e) => updateGridSettings({ type: e.target.value as 'square' | 'hex' })}
+                        onChange={(e) =>
+                          updateGridSettings({ type: e.target.value as "square" | "hex" })
+                        }
                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         disabled={!settings.grid.enabled}
                       >
@@ -319,7 +325,9 @@ export function SceneSettingsModal({
                         <Input
                           type="number"
                           value={settings.grid.offsetX}
-                          onChange={(e) => updateGridSettings({ offsetX: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            updateGridSettings({ offsetX: parseInt(e.target.value) || 0 })
+                          }
                           disabled={!settings.grid.enabled}
                         />
                       </div>
@@ -330,7 +338,9 @@ export function SceneSettingsModal({
                         <Input
                           type="number"
                           value={settings.grid.offsetY}
-                          onChange={(e) => updateGridSettings({ offsetY: parseInt(e.target.value) || 0 })}
+                          onChange={(e) =>
+                            updateGridSettings({ offsetY: parseInt(e.target.value) || 0 })
+                          }
                           disabled={!settings.grid.enabled}
                         />
                       </div>
@@ -357,7 +367,9 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.lighting.ambientLight]}
-                        onValueChange={([_ambientLight]) => updateLightingSettings({ ambientLight })}
+                        onValueChange={([_ambientLight]) =>
+                          updateLightingSettings({ ambientLight })
+                        }
                         min={0}
                         max={1}
                         step={0.1}
@@ -371,7 +383,11 @@ export function SceneSettingsModal({
                       </label>
                       <select
                         value={settings.lighting.shadowQuality}
-                        onChange={(e) => updateLightingSettings({ shadowQuality: e.target.value as 'low' | 'medium' | 'high' })}
+                        onChange={(e) =>
+                          updateLightingSettings({
+                            shadowQuality: e.target.value as "low" | "medium" | "high",
+                          })
+                        }
                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         disabled={!settings.lighting.enabled}
                       >
@@ -382,10 +398,14 @@ export function SceneSettingsModal({
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-neutral-700">Global Illumination</span>
+                      <span className="text-sm font-medium text-neutral-700">
+                        Global Illumination
+                      </span>
                       <Switch
                         checked={settings.lighting.globalIllumination}
-                        onCheckedChange={(_globalIllumination) => updateLightingSettings({ globalIllumination })}
+                        onCheckedChange={(_globalIllumination) =>
+                          updateLightingSettings({ globalIllumination })
+                        }
                         disabled={!settings.lighting.enabled}
                       />
                     </div>
@@ -398,7 +418,9 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.lighting.colorTemperature]}
-                        onValueChange={([_colorTemperature]) => updateLightingSettings({ colorTemperature })}
+                        onValueChange={([_colorTemperature]) =>
+                          updateLightingSettings({ colorTemperature })
+                        }
                         min={2000}
                         max={8000}
                         step={100}
@@ -441,7 +463,9 @@ export function SceneSettingsModal({
                       </label>
                       <select
                         value={settings.fog.type}
-                        onChange={(e) => updateFogSettings({ type: e.target.value as 'static' | 'dynamic' })}
+                        onChange={(e) =>
+                          updateFogSettings({ type: e.target.value as "static" | "dynamic" })
+                        }
                         className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                         disabled={!settings.fog.enabled}
                       >
@@ -531,16 +555,12 @@ export function SceneSettingsModal({
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset
               </Button>
-              
+
               <div className="flex gap-3">
                 <Button variant="outline" onClick={handleClose} disabled={saving}>
                   Cancel
                 </Button>
-                <Button 
-                  variant="primary" 
-                  onClick={handleSave}
-                  disabled={!hasChanges || saving}
-                >
+                <Button variant="primary" onClick={handleSave} disabled={!hasChanges || saving}>
                   {saving ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />

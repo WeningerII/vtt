@@ -259,17 +259,17 @@ export const SRDMonsters: Monster[] = [Goblin, Orc, Skeleton, Wolf];
 // === SPELLS ===
 
 // Legacy spell system exports (human-readable)
-export * from './spells';
-export * from './SpellSearchEngine';
-export * from './SpellcastingClasses';
-export * from './SpellScalingEngine';
-export * from './SpellCollectionManager';
+export * from "./spells";
+export * from "./SpellSearchEngine";
+export * from "./SpellcastingClasses";
+export * from "./SpellScalingEngine";
+export * from "./SpellCollectionManager";
 
 // Computational spell system exports (machine-executable)
-export * from './ComputationalSpellSystem';
-export * from './ComputationalSpells';
-export * from './SpellRuleEngine';
-export * from './SpellPhysicsIntegration';
+export * from "./ComputationalSpellSystem";
+export * from "./ComputationalSpells";
+export * from "./SpellRuleEngine";
+export * from "./SpellPhysicsIntegration";
 
 // Convenience exports for most common use cases
 export {
@@ -277,14 +277,14 @@ export {
   getAllSpells,
   getSpellsByLevel,
   getSpellsByClass,
-  getSpellsBySchool
-} from './spells';
+  getSpellsBySchool,
+} from "./spells";
 
 export {
   spellSearchEngine,
   type SpellSearchCriteria,
-  type SpellSearchResult
-} from './SpellSearchEngine';
+  type SpellSearchResult,
+} from "./SpellSearchEngine";
 
 export {
   SPELLCASTING_CLASSES,
@@ -292,20 +292,20 @@ export {
   getCantripsKnown,
   getSpellsKnown,
   getMaxSpellLevel,
-  getSpellcastingModifier
-} from './SpellcastingClasses';
+  getSpellcastingModifier,
+} from "./SpellcastingClasses";
 
 export {
   spellScalingEngine,
   type ScaledSpellEffect,
-  type SpellUpcastOptions
-} from './SpellScalingEngine';
+  type SpellUpcastOptions,
+} from "./SpellScalingEngine";
 
 export {
   spellCollectionManager,
   type SpellCollection,
-  type ExportedSpellCollection
-} from './SpellCollectionManager';
+  type ExportedSpellCollection,
+} from "./SpellCollectionManager";
 
 // Default export remains monsters for backward compatibility
 export default SRDMonsters;

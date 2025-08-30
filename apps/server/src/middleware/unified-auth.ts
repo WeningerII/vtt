@@ -3,10 +3,10 @@
  * Consolidates cookie-based and token-based authentication patterns
  */
 
-import { RouteHandler } from '../router/types';
-import { logger } from '@vtt/logging';
-import { AuthManager } from '@vtt/auth';
-import { _serverConfig } from '../config/environment';
+import { RouteHandler } from "../router/types";
+import { logger } from "@vtt/logging";
+import { AuthManager } from "@vtt/auth";
+import { _serverConfig } from "../config/environment";
 
 // Singleton auth manager with proper configuration
 let authManagerInstance: AuthManager | null = null;
@@ -15,14 +15,14 @@ function getAuthManager(): AuthManager {
   if (!authManagerInstance) {
     authManagerInstance = new AuthManager({
       jwtSecret: _serverConfig.jwtSecret,
-      jwtExpiration: '7d',
-      refreshTokenExpiration: '30d',
+      jwtExpiration: "7d",
+      refreshTokenExpiration: "30d",
       bcryptRounds: 12,
       rateLimits: {
         login: { windowMs: 15 * 60 * 1000, maxRequests: 5 },
         register: { windowMs: 60 * 60 * 1000, maxRequests: 3 },
         passwordReset: { windowMs: 60 * 60 * 1000, maxRequests: 3 },
-        general: { windowMs: 15 * 60 * 1000, maxRequests: 100 }
+        general: { windowMs: 15 * 60 * 1000, maxRequests: 100 },
       },
       security: {
         requireTwoFactor: false,
@@ -32,9 +32,9 @@ function getAuthManager(): AuthManager {
         requireEmailVerification: false,
         allowGuestAccess: true,
         enforcePasswordComplexity: true,
-        enableAuditLogging: true
+        enableAuditLogging: true,
       },
-      oauth: {}
+      oauth: {},
     });
   }
   return authManagerInstance;
@@ -46,12 +46,12 @@ function getAuthManager(): AuthManager {
 export const unifiedAuth: RouteHandler = async (ctx) => {
   try {
     const authManager = getAuthManager();
-    
+
     // Extract token from multiple sources (priority order)
     const token = extractAuthToken(ctx.req);
-    
+
     if (!token) {
-      respondUnauthorized(ctx.res, 'Authentication required');
+      respondUnauthorized(ctx.res, "Authentication required");
       return;
     }
 
@@ -59,11 +59,11 @@ export const unifiedAuth: RouteHandler = async (ctx) => {
     const securityContext = await authManager.validateToken(
       token.value,
       getClientIP(ctx.req),
-      ctx.req.headers['user-agent'] || 'unknown'
+      ctx.req.headers["user-agent"] || "unknown",
     );
-    
+
     if (!securityContext) {
-      respondUnauthorized(ctx.res, 'Invalid or expired token');
+      respondUnauthorized(ctx.res, "Invalid or expired token");
       return;
     }
 
@@ -71,10 +71,9 @@ export const unifiedAuth: RouteHandler = async (ctx) => {
     (ctx.req as any).user = securityContext.user;
     (ctx.req as any).session = securityContext.session;
     (ctx.req as any).authMethod = token.source;
-
   } catch (error) {
-    logger.error('Unified auth middleware error:', error as Error);
-    respondUnauthorized(ctx.res, 'Authentication failed');
+    logger.error("Unified auth middleware error:", error as Error);
+    respondUnauthorized(ctx.res, "Authentication failed");
   }
 };
 
@@ -85,26 +84,26 @@ export const optionalUnifiedAuth: RouteHandler = async (ctx) => {
   try {
     const authManager = getAuthManager();
     const token = extractAuthToken(ctx.req);
-    
+
     if (token) {
       try {
         const securityContext = await authManager.validateToken(
           token.value,
           getClientIP(ctx.req),
-          ctx.req.headers['user-agent'] || 'unknown'
+          ctx.req.headers["user-agent"] || "unknown",
         );
-        
+
         if (securityContext) {
           (ctx.req as any).user = securityContext.user;
           (ctx.req as any).session = securityContext.session;
           (ctx.req as any).authMethod = token.source;
         }
       } catch (error) {
-        logger.debug('Optional auth token validation failed:', error as Error);
+        logger.debug("Optional auth token validation failed:", error as Error);
       }
     }
   } catch (error) {
-    logger.debug('Optional unified auth failed:', error as Error);
+    logger.debug("Optional unified auth failed:", error as Error);
   }
 };
 
@@ -117,30 +116,30 @@ export const optionalUnifiedAuth: RouteHandler = async (ctx) => {
 function extractAuthToken(req: any): { value: string; source: string } | null {
   // Check Authorization header first (most secure)
   const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
+  if (authHeader?.startsWith("Bearer ")) {
     return {
       value: authHeader.slice(7),
-      source: 'bearer'
+      source: "bearer",
     };
   }
 
   // Check cookies
-  const cookies = parseCookies(req.headers.cookie || '');
+  const cookies = parseCookies(req.headers.cookie || "");
   if (cookies.sessionToken) {
     return {
       value: cookies.sessionToken,
-      source: 'cookie'
+      source: "cookie",
     };
   }
 
   // Check query parameters (for WebSocket connections)
   if (req.url) {
     const url = new URL(req.url, `http://${req.headers.host}`);
-    const queryToken = url.searchParams.get('access_token');
+    const queryToken = url.searchParams.get("access_token");
     if (queryToken) {
       return {
         value: queryToken,
-        source: 'query'
+        source: "query",
       };
     }
   }
@@ -153,11 +152,11 @@ function extractAuthToken(req: any): { value: string; source: string } | null {
  */
 function getClientIP(req: any): string {
   return (
-    req.headers['x-forwarded-for']?.split(',')[0] ||
-    req.headers['x-real-ip'] ||
+    req.headers["x-forwarded-for"]?.split(",")[0] ||
+    req.headers["x-real-ip"] ||
     req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
-    'unknown'
+    "unknown"
   );
 }
 
@@ -166,14 +165,14 @@ function getClientIP(req: any): string {
  */
 function parseCookies(cookieStr: string): Record<string, string> {
   const cookies: Record<string, string> = {};
-  
-  cookieStr.split(';').forEach(cookie => {
-    const [name, value] = cookie.trim().split('=');
+
+  cookieStr.split(";").forEach((cookie) => {
+    const [name, value] = cookie.trim().split("=");
     if (name && value) {
       cookies[name] = decodeURIComponent(value);
     }
   });
-  
+
   return cookies;
 }
 
@@ -181,15 +180,17 @@ function parseCookies(cookieStr: string): Record<string, string> {
  * Send standardized unauthorized response
  */
 function respondUnauthorized(res: any, message: string): void {
-  res.writeHead(401, { 
-    'Content-Type': 'application/json',
-    'WWW-Authenticate': 'Bearer realm="VTT API"'
+  res.writeHead(401, {
+    "Content-Type": "application/json",
+    "WWW-Authenticate": 'Bearer realm="VTT API"',
   });
-  res.end(JSON.stringify({ 
-    error: 'Unauthorized',
-    message,
-    timestamp: new Date().toISOString()
-  }));
+  res.end(
+    JSON.stringify({
+      error: "Unauthorized",
+      message,
+      timestamp: new Date().toISOString(),
+    }),
+  );
 }
 
 /**
@@ -205,7 +206,7 @@ export function getAuthenticatedUser(ctx: any): any | null {
 export function getAuthenticatedUserId(ctx: any): string {
   const user = getAuthenticatedUser(ctx);
   if (!user?.id) {
-    throw new Error('Authentication required - no authenticated user found');
+    throw new Error("Authentication required - no authenticated user found");
   }
   return user.id;
 }
@@ -215,7 +216,7 @@ export function getAuthenticatedUserId(ctx: any): string {
  */
 export function hasPermission(ctx: any, permission: string): boolean {
   const user = getAuthenticatedUser(ctx);
-  return user?.role === 'admin' || user?.permissions?.includes(permission) || false;
+  return user?.role === "admin" || user?.permissions?.includes(permission) || false;
 }
 
 /**
@@ -224,12 +225,14 @@ export function hasPermission(ctx: any, permission: string): boolean {
 export function requirePermission(permission: string): RouteHandler {
   return async (ctx) => {
     if (!hasPermission(ctx, permission)) {
-      ctx.res.writeHead(403, { 'Content-Type': 'application/json' });
-      ctx.res.end(JSON.stringify({ 
-        error: 'Forbidden',
-        message: `Permission required: ${permission}`,
-        timestamp: new Date().toISOString()
-      }));
+      ctx.res.writeHead(403, { "Content-Type": "application/json" });
+      ctx.res.end(
+        JSON.stringify({
+          error: "Forbidden",
+          message: `Permission required: ${permission}`,
+          timestamp: new Date().toISOString(),
+        }),
+      );
     }
   };
 }
@@ -239,13 +242,15 @@ export function requirePermission(permission: string): RouteHandler {
  */
 export const requireAdmin: RouteHandler = async (ctx) => {
   const user = getAuthenticatedUser(ctx);
-  
-  if (user?.role !== 'admin') {
-    ctx.res.writeHead(403, { 'Content-Type': 'application/json' });
-    ctx.res.end(JSON.stringify({ 
-      error: 'Forbidden',
-      message: 'Admin access required',
-      timestamp: new Date().toISOString()
-    }));
+
+  if (user?.role !== "admin") {
+    ctx.res.writeHead(403, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        error: "Forbidden",
+        message: "Admin access required",
+        timestamp: new Date().toISOString(),
+      }),
+    );
   }
 };

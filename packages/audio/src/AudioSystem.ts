@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Audio System
@@ -7,39 +7,39 @@ import { logger } from '@vtt/logging';
 
 export interface AudioSource {
   id: string;
-  type: 'music' | 'ambient' | 'effect' | 'voice';
+  type: "music" | "ambient" | "effect" | "voice";
   url: string;
   volume: number;
   loop: boolean;
   autoplay: boolean;
   fadeIn?: number; // ms
   fadeOut?: number; // ms
-  
+
   // Spatial audio properties
   is3D: boolean;
   position?: { x: number; y: number; z?: number };
   maxDistance: number;
   rolloffFactor: number;
-  
+
   // Playback state
   isPlaying: boolean;
   isPaused: boolean;
   currentTime: number;
   duration: number;
-  
+
   // Metadata
   title?: string;
   artist?: string;
   tags: string[];
-  
+
   // Conditions for auto-play
   conditions?: AudioCondition[];
 }
 
 export interface AudioCondition {
-  type: 'scene' | 'combat' | 'time' | 'weather' | 'token_proximity' | 'custom';
+  type: "scene" | "combat" | "time" | "weather" | "token_proximity" | "custom";
   value: any;
-  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains';
+  operator: "equals" | "not_equals" | "greater_than" | "less_than" | "contains";
 }
 
 export interface AudioPlaylist {
@@ -48,7 +48,7 @@ export interface AudioPlaylist {
   description?: string;
   tracks: string[]; // Audio source IDs
   shuffle: boolean;
-  repeat: 'none' | 'playlist' | 'track';
+  repeat: "none" | "playlist" | "track";
   crossfade: number; // ms
   currentTrack: number;
   isPlaying: boolean;
@@ -57,10 +57,13 @@ export interface AudioPlaylist {
 export interface SpatialAudioSettings {
   enabled: boolean;
   listenerPosition: { x: number; y: number; z: number };
-  listenerOrientation: { forward: { x: number; y: number; z: number }; up: { x: number; y: number; z: number } };
+  listenerOrientation: {
+    forward: { x: number; y: number; z: number };
+    up: { x: number; y: number; z: number };
+  };
   dopplerFactor: number;
   speedOfSound: number;
-  distanceModel: 'linear' | 'inverse' | 'exponential';
+  distanceModel: "linear" | "inverse" | "exponential";
 }
 
 export interface AudioSettings {
@@ -86,7 +89,7 @@ export class AudioSystem {
   private audioElements: Map<string, HTMLAudioElement> = new Map();
   private playlists: Map<string, AudioPlaylist> = new Map();
   private settings: AudioSettings;
-  
+
   // Web Audio API nodes
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
@@ -95,11 +98,11 @@ export class AudioSystem {
   private voiceGain: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
   private reverb: ConvolverNode | null = null;
-  
+
   // Spatial audio
   private listener: AudioListener | null = null;
   private pannerNodes: Map<string, PannerNode> = new Map();
-  
+
   private changeListeners: Array<(_event: AudioEvent) => void> = [];
   private fadeIntervals: Map<string, NodeJS.Timeout> = new Map();
 
@@ -116,20 +119,20 @@ export class AudioSystem {
         listenerPosition: { x: 0, y: 0, z: 0 },
         listenerOrientation: {
           forward: { x: 0, y: 0, z: -1 },
-          up: { x: 0, y: 1, z: 0 }
+          up: { x: 0, y: 1, z: 0 },
         },
         dopplerFactor: 1,
         speedOfSound: 343.3,
-        distanceModel: 'inverse'
+        distanceModel: "inverse",
       },
       enableCompressor: true,
       enableReverb: false,
       reverbSettings: {
         roomSize: 0.3,
         damping: 0.2,
-        wetness: 0.1
+        wetness: 0.1,
       },
-      ...settings
+      ...settings,
     };
 
     this.initializeAudioContext();
@@ -138,24 +141,24 @@ export class AudioSystem {
   private async initializeAudioContext(): Promise<void> {
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      if (this.audioContext.state === 'suspended') {
+
+      if (this.audioContext.state === "suspended") {
         // Wait for user interaction to resume context
         await this.audioContext.suspend();
       }
 
       this.setupAudioNodes();
       this.setupSpatialAudio();
-      
+
       this.emitEvent({
-        type: 'audio-context-initialized',
-        data: { sampleRate: this.audioContext.sampleRate }
+        type: "audio-context-initialized",
+        data: { sampleRate: this.audioContext.sampleRate },
       });
     } catch (error) {
-      logger.error('Failed to initialize audio context:', error);
+      logger.error("Failed to initialize audio context:", error);
       this.emitEvent({
-        type: 'audio-error',
-        data: { error: 'Failed to initialize audio context' }
+        type: "audio-error",
+        data: { error: "Failed to initialize audio context" },
       });
     }
   }
@@ -200,24 +203,24 @@ export class AudioSystem {
     if (!this.audioContext) return;
 
     this.reverb = this.audioContext.createConvolver();
-    
+
     // Create impulse response for reverb
     const impulseResponse = this.createImpulseResponse();
     this.reverb.buffer = impulseResponse;
   }
 
   private createImpulseResponse(): AudioBuffer {
-    if (!this.audioContext) throw new Error('Audio context not initialized');
+    if (!this.audioContext) throw new Error("Audio context not initialized");
 
     const sampleRate = this.audioContext.sampleRate;
     const length = sampleRate * 2; // 2 seconds
     const impulse = this.audioContext.createBuffer(2, length, sampleRate);
 
-    const { roomSize,  damping,  wetness  } = this.settings.reverbSettings;
+    const { roomSize, damping, wetness } = this.settings.reverbSettings;
 
     for (let channel = 0; channel < 2; channel++) {
       const channelData = impulse.getChannelData(channel);
-      
+
       for (let i = 0; i < length; i++) {
         const decay = Math.pow(1 - damping, i / sampleRate);
         const noise = (Math.random() * 2 - 1) * decay * roomSize;
@@ -258,17 +261,17 @@ export class AudioSystem {
     if (!this.audioContext || !this.settings.spatialAudio.enabled) return;
 
     this.listener = this.audioContext.listener;
-    
+
     if (this.listener.positionX) {
       // Modern AudioListener interface
       this.listener.positionX.value = this.settings.spatialAudio.listenerPosition.x;
       this.listener.positionY.value = this.settings.spatialAudio.listenerPosition.y;
       this.listener.positionZ.value = this.settings.spatialAudio.listenerPosition.z;
-      
+
       this.listener.forwardX.value = this.settings.spatialAudio.listenerOrientation.forward.x;
       this.listener.forwardY.value = this.settings.spatialAudio.listenerOrientation.forward.y;
       this.listener.forwardZ.value = this.settings.spatialAudio.listenerOrientation.forward.z;
-      
+
       this.listener.upX.value = this.settings.spatialAudio.listenerOrientation.up.x;
       this.listener.upY.value = this.settings.spatialAudio.listenerOrientation.up.y;
       this.listener.upZ.value = this.settings.spatialAudio.listenerOrientation.up.z;
@@ -277,16 +280,16 @@ export class AudioSystem {
       this.listener.setPosition(
         this.settings.spatialAudio.listenerPosition.x,
         this.settings.spatialAudio.listenerPosition.y,
-        this.settings.spatialAudio.listenerPosition.z
+        this.settings.spatialAudio.listenerPosition.z,
       );
-      
+
       this.listener.setOrientation(
         this.settings.spatialAudio.listenerOrientation.forward.x,
         this.settings.spatialAudio.listenerOrientation.forward.y,
         this.settings.spatialAudio.listenerOrientation.forward.z,
         this.settings.spatialAudio.listenerOrientation.up.x,
         this.settings.spatialAudio.listenerOrientation.up.y,
-        this.settings.spatialAudio.listenerOrientation.up.z
+        this.settings.spatialAudio.listenerOrientation.up.z,
       );
     }
   }
@@ -295,11 +298,11 @@ export class AudioSystem {
    * Resume audio context (required after user interaction)
    */
   async resumeAudioContext(): Promise<void> {
-    if (this.audioContext && this.audioContext.state === 'suspended') {
+    if (this.audioContext && this.audioContext.state === "suspended") {
       await this.audioContext.resume();
       this.emitEvent({
-        type: 'audio-context-resumed',
-        data: Record<string, any>
+        type: "audio-context-resumed",
+        data: Record<string, any>,
       });
     }
   }
@@ -315,40 +318,40 @@ export class AudioSystem {
     audio.src = source.url;
     audio.loop = source.loop;
     audio.volume = source.volume;
-    
+
     // Set up event listeners
-    audio.addEventListener('loadedmetadata', () => {
+    audio.addEventListener("loadedmetadata", () => {
       source.duration = audio.duration;
     });
-    
-    audio.addEventListener('timeupdate', () => {
+
+    audio.addEventListener("timeupdate", () => {
       source.currentTime = audio.currentTime;
     });
-    
-    audio.addEventListener('play', () => {
+
+    audio.addEventListener("play", () => {
       source.isPlaying = true;
       source.isPaused = false;
       this.emitEvent({
-        type: 'audio-play',
-        data: { sourceId: source.id }
+        type: "audio-play",
+        data: { sourceId: source.id },
       });
     });
-    
-    audio.addEventListener('pause', () => {
+
+    audio.addEventListener("pause", () => {
       source.isPlaying = false;
       source.isPaused = true;
       this.emitEvent({
-        type: 'audio-pause',
-        data: { sourceId: source.id }
+        type: "audio-pause",
+        data: { sourceId: source.id },
       });
     });
-    
-    audio.addEventListener('ended', () => {
+
+    audio.addEventListener("ended", () => {
       source.isPlaying = false;
       source.isPaused = false;
       this.emitEvent({
-        type: 'audio-ended',
-        data: { sourceId: source.id }
+        type: "audio-ended",
+        data: { sourceId: source.id },
       });
     });
 
@@ -365,8 +368,8 @@ export class AudioSystem {
     }
 
     this.emitEvent({
-      type: 'audio-source-added',
-      data: { sourceId: source.id, source }
+      type: "audio-source-added",
+      data: { sourceId: source.id, source },
     });
   }
 
@@ -375,20 +378,20 @@ export class AudioSystem {
 
     const source = this.audioSources.get(sourceId);
     const audioElement = this.audioElements.get(sourceId);
-    
+
     if (!source || !audioElement || !source.is3D || !source.position) return;
 
     try {
       // Create MediaElementSourceNode
       const mediaSource = this.audioContext.createMediaElementSource(audioElement);
-      
+
       // Create PannerNode for 3D positioning
       const panner = this.audioContext.createPanner();
-      panner.panningModel = 'HRTF';
+      panner.panningModel = "HRTF";
       panner.distanceModel = this.settings.spatialAudio.distanceModel;
       panner.maxDistance = source.maxDistance;
       panner.rolloffFactor = source.rolloffFactor;
-      
+
       // Set position
       if (panner.positionX) {
         panner.positionX.value = source.position.x;
@@ -397,27 +400,32 @@ export class AudioSystem {
       } else {
         panner.setPosition(source.position.x, source.position.y, source.position.z || 0);
       }
-      
+
       // Connect audio graph
       const gainNode = this.getGainNodeForType(source.type);
       if (gainNode) {
         mediaSource.connect(panner);
         panner.connect(gainNode);
       }
-      
+
       this.pannerNodes.set(sourceId, panner);
     } catch (error) {
       logger.error(`Failed to setup spatial audio for ${sourceId}:`, error);
     }
   }
 
-  private getGainNodeForType(type: AudioSource['type']): GainNode | null {
+  private getGainNodeForType(type: AudioSource["type"]): GainNode | null {
     switch (type) {
-      case 'music': return this.musicGain;
-      case 'ambient': return this.ambientGain;
-      case 'effect': return this.effectGain;
-      case 'voice': return this.voiceGain;
-      default: return this.masterGain;
+      case "music":
+        return this.musicGain;
+      case "ambient":
+        return this.ambientGain;
+      case "effect":
+        return this.effectGain;
+      case "voice":
+        return this.voiceGain;
+      default:
+        return this.masterGain;
     }
   }
 
@@ -427,12 +435,12 @@ export class AudioSystem {
   async playAudio(sourceId: string, fadeIn?: number): Promise<void> {
     const audio = this.audioElements.get(sourceId);
     const source = this.audioSources.get(sourceId);
-    
+
     if (!audio || !source) return;
 
     try {
       await this.resumeAudioContext();
-      
+
       if (fadeIn || source.fadeIn) {
         await this.fadeIn(sourceId, fadeIn || source.fadeIn!);
       } else {
@@ -441,8 +449,8 @@ export class AudioSystem {
     } catch (error) {
       logger.error(`Failed to play audio ${sourceId}:`, error);
       this.emitEvent({
-        type: 'audio-error',
-        data: { sourceId, error: 'Failed to play audio' }
+        type: "audio-error",
+        data: { sourceId, error: "Failed to play audio" },
       });
     }
   }
@@ -463,7 +471,7 @@ export class AudioSystem {
   async stopAudio(sourceId: string, fadeOut?: number): Promise<void> {
     const audio = this.audioElements.get(sourceId);
     const source = this.audioSources.get(sourceId);
-    
+
     if (!audio || !source) return;
 
     if (fadeOut || source.fadeOut) {
@@ -480,14 +488,14 @@ export class AudioSystem {
   setVolume(sourceId: string, volume: number): void {
     const audio = this.audioElements.get(sourceId);
     const source = this.audioSources.get(sourceId);
-    
+
     if (audio && source) {
       audio.volume = Math.max(0, Math.min(1, volume));
       source.volume = audio.volume;
-      
+
       this.emitEvent({
-        type: 'audio-volume-changed',
-        data: { sourceId, volume: audio.volume }
+        type: "audio-volume-changed",
+        data: { sourceId, volume: audio.volume },
       });
     }
   }
@@ -498,11 +506,11 @@ export class AudioSystem {
   updateSpatialPosition(sourceId: string, position: { x: number; y: number; z?: number }): void {
     const source = this.audioSources.get(sourceId);
     const panner = this.pannerNodes.get(sourceId);
-    
+
     if (!source || !panner || !source.is3D) return;
 
     source.position = position;
-    
+
     if (panner.positionX) {
       panner.positionX.value = position.x;
       panner.positionY.value = position.y;
@@ -519,7 +527,7 @@ export class AudioSystem {
     if (!this.listener) return;
 
     this.settings.spatialAudio.listenerPosition = position;
-    
+
     if (this.listener.positionX) {
       this.listener.positionX.value = position.x;
       this.listener.positionY.value = position.y;
@@ -535,25 +543,25 @@ export class AudioSystem {
 
     const originalVolume = audio.volume;
     audio.volume = 0;
-    
+
     await audio.play();
-    
+
     return new Promise<void>((_resolve) => {
       const steps = 20;
       const stepDuration = duration / steps;
       const volumeStep = originalVolume / steps;
       let currentStep = 0;
-      
+
       const interval = setInterval(() => {
         currentStep++;
         audio.volume = Math.min(originalVolume, volumeStep * currentStep);
-        
+
         if (currentStep >= steps) {
           clearInterval(interval);
           resolve();
         }
       }, stepDuration);
-      
+
       this.fadeIntervals.set(sourceId, interval);
     });
   }
@@ -563,17 +571,17 @@ export class AudioSystem {
     if (!audio) return;
 
     const originalVolume = audio.volume;
-    
+
     return new Promise<void>((_resolve) => {
       const steps = 20;
       const stepDuration = duration / steps;
       const volumeStep = originalVolume / steps;
       let currentStep = 0;
-      
+
       const interval = setInterval(() => {
         currentStep++;
-        audio.volume = Math.max(0, originalVolume - (volumeStep * currentStep));
-        
+        audio.volume = Math.max(0, originalVolume - volumeStep * currentStep);
+
         if (currentStep >= steps || audio.volume === 0) {
           clearInterval(interval);
           audio.pause();
@@ -582,7 +590,7 @@ export class AudioSystem {
           resolve();
         }
       }, stepDuration);
-      
+
       this.fadeIntervals.set(sourceId, interval);
     });
   }
@@ -592,10 +600,10 @@ export class AudioSystem {
    */
   createPlaylist(playlist: AudioPlaylist): void {
     this.playlists.set(playlist.id, playlist);
-    
+
     this.emitEvent({
-      type: 'playlist-created',
-      data: { playlistId: playlist.id, playlist }
+      type: "playlist-created",
+      data: { playlistId: playlist.id, playlist },
     });
   }
 
@@ -607,7 +615,7 @@ export class AudioSystem {
     if (!playlist || playlist.tracks.length === 0) return;
 
     playlist.isPlaying = true;
-    
+
     if (playlist.shuffle) {
       playlist.currentTrack = Math.floor(Math.random() * playlist.tracks.length);
     } else {
@@ -628,10 +636,10 @@ export class AudioSystem {
     const audio = this.audioElements.get(currentTrackId);
     if (audio) {
       const endedHandler = () => {
-        audio.removeEventListener('ended', endedHandler);
+        audio.removeEventListener("ended", endedHandler);
         this.advancePlaylist(playlistId);
       };
-      audio.addEventListener('ended', endedHandler);
+      audio.addEventListener("ended", endedHandler);
     }
 
     await this.playAudio(currentTrackId, playlist.crossfade);
@@ -648,7 +656,7 @@ export class AudioSystem {
     }
 
     // Check repeat settings
-    if (playlist.currentTrack === 0 && playlist.repeat === 'none') {
+    if (playlist.currentTrack === 0 && playlist.repeat === "none") {
       playlist.isPlaying = false;
       return;
     }
@@ -680,8 +688,8 @@ export class AudioSystem {
     }
 
     this.emitEvent({
-      type: 'settings-updated',
-      data: { settings: this.settings }
+      type: "settings-updated",
+      data: { settings: this.settings },
     });
   }
 
@@ -693,7 +701,7 @@ export class AudioSystem {
       if (!source.conditions) continue;
 
       const shouldPlay = this.evaluateConditions(source.conditions, gameState);
-      
+
       if (shouldPlay && !source.isPlaying && !source.isPaused) {
         this.playAudio(source.id);
       } else if (!shouldPlay && source.isPlaying) {
@@ -703,31 +711,47 @@ export class AudioSystem {
   }
 
   private evaluateConditions(conditions: AudioCondition[], gameState: any): boolean {
-    return conditions.every(condition => {
+    return conditions.every((condition) => {
       const contextValue = this.getContextValue(condition.type, gameState);
       return this.compareValues(contextValue, condition.value, condition.operator);
     });
   }
 
-  private getContextValue(type: AudioCondition['type'], gameState: any): any {
+  private getContextValue(type: AudioCondition["type"], gameState: any): any {
     switch (type) {
-      case 'scene': return gameState.currentSceneId;
-      case 'combat': return gameState.inCombat;
-      case 'time': return gameState.gameTime;
-      case 'weather': return gameState.weather;
-      case 'token_proximity': return gameState.tokenProximity;
-      default: return gameState[type];
+      case "scene":
+        return gameState.currentSceneId;
+      case "combat":
+        return gameState.inCombat;
+      case "time":
+        return gameState.gameTime;
+      case "weather":
+        return gameState.weather;
+      case "token_proximity":
+        return gameState.tokenProximity;
+      default:
+        return gameState[type];
     }
   }
 
-  private compareValues(contextValue: any, conditionValue: any, operator: AudioCondition['operator']): boolean {
+  private compareValues(
+    contextValue: any,
+    conditionValue: any,
+    operator: AudioCondition["operator"],
+  ): boolean {
     switch (operator) {
-      case 'equals': return contextValue === conditionValue;
-      case 'not_equals': return contextValue !== conditionValue;
-      case 'greater_than': return contextValue > conditionValue;
-      case 'less_than': return contextValue < conditionValue;
-      case 'contains': return String(contextValue).includes(String(conditionValue));
-      default: return false;
+      case "equals":
+        return contextValue === conditionValue;
+      case "not_equals":
+        return contextValue !== conditionValue;
+      case "greater_than":
+        return contextValue > conditionValue;
+      case "less_than":
+        return contextValue < conditionValue;
+      case "contains":
+        return String(contextValue).includes(String(conditionValue));
+      default:
+        return false;
     }
   }
 
@@ -750,13 +774,13 @@ export class AudioSystem {
    */
   dispose(): void {
     // Clear all fade intervals
-    this.fadeIntervals.forEach(interval => clearInterval(interval));
+    this.fadeIntervals.forEach((interval) => clearInterval(interval));
     this.fadeIntervals.clear();
 
     // Stop all audio
-    this.audioElements.forEach(audio => {
+    this.audioElements.forEach((audio) => {
       audio.pause();
-      audio.src = '';
+      audio.src = "";
     });
 
     // Clear collections
@@ -787,11 +811,11 @@ export class AudioSystem {
   }
 
   private emitEvent(event: AudioEvent): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Audio event listener error:', error);
+        logger.error("Audio event listener error:", error);
       }
     });
   }
@@ -799,13 +823,13 @@ export class AudioSystem {
 
 // Event types
 export type AudioEvent =
-  | { type: 'audio-context-initialized'; data: { sampleRate: number } }
-  | { type: 'audio-context-resumed'; data: Record<string, unknown>}
-  | { type: 'audio-source-added'; data: { sourceId: string; source: AudioSource } }
-  | { type: 'audio-play'; data: { sourceId: string } }
-  | { type: 'audio-pause'; data: { sourceId: string } }
-  | { type: 'audio-ended'; data: { sourceId: string } }
-  | { type: 'audio-volume-changed'; data: { sourceId: string; volume: number } }
-  | { type: 'playlist-created'; data: { playlistId: string; playlist: AudioPlaylist } }
-  | { type: 'settings-updated'; data: { settings: AudioSettings } }
-  | { type: 'audio-error'; data: { sourceId?: string; error: string } };
+  | { type: "audio-context-initialized"; data: { sampleRate: number } }
+  | { type: "audio-context-resumed"; data: Record<string, unknown> }
+  | { type: "audio-source-added"; data: { sourceId: string; source: AudioSource } }
+  | { type: "audio-play"; data: { sourceId: string } }
+  | { type: "audio-pause"; data: { sourceId: string } }
+  | { type: "audio-ended"; data: { sourceId: string } }
+  | { type: "audio-volume-changed"; data: { sourceId: string; volume: number } }
+  | { type: "playlist-created"; data: { playlistId: string; playlist: AudioPlaylist } }
+  | { type: "settings-updated"; data: { settings: AudioSettings } }
+  | { type: "audio-error"; data: { sourceId?: string; error: string } };

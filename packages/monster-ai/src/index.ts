@@ -3,16 +3,34 @@
  * Extends the base AI system with D&D 5e monster-specific intelligence
  */
 
-import { AIEntity, NPCPersonality, _NPCGoal, GameStateSnapshot, AIAction } from '@vtt/ai/src/npc/AIEntity';
-import { monsterAbilitiesEngine, MonsterTrait } from '@vtt/monster-abilities';
-import { socialEngine } from '@vtt/social-engine';
+import {
+  AIEntity,
+  NPCPersonality,
+  _NPCGoal,
+  GameStateSnapshot,
+  AIAction,
+} from "@vtt/ai/src/npc/AIEntity";
+import { monsterAbilitiesEngine, MonsterTrait } from "@vtt/monster-abilities";
+import { socialEngine } from "@vtt/social-engine";
 
 export interface MonsterAIProfile {
   monsterId: string;
-  creatureType: 'aberration' | 'beast' | 'celestial' | 'construct' | 'dragon' | 
-                'elemental' | 'fey' | 'fiend' | 'giant' | 'humanoid' | 
-                'monstrosity' | 'ooze' | 'plant' | 'undead';
-  intelligence: 'mindless' | 'animal' | 'low' | 'average' | 'high' | 'genius';
+  creatureType:
+    | "aberration"
+    | "beast"
+    | "celestial"
+    | "construct"
+    | "dragon"
+    | "elemental"
+    | "fey"
+    | "fiend"
+    | "giant"
+    | "humanoid"
+    | "monstrosity"
+    | "ooze"
+    | "plant"
+    | "undead";
+  intelligence: "mindless" | "animal" | "low" | "average" | "high" | "genius";
   alignment: string;
   personalityTraits: MonsterPersonalityTraits;
   tacticalPreferences: TacticalPreferences;
@@ -32,9 +50,9 @@ export interface MonsterPersonalityTraits {
 }
 
 export interface TacticalPreferences {
-  preferredRange: 'melee' | 'ranged' | 'mixed';
-  fightingStyle: 'aggressive' | 'defensive' | 'hit_and_run' | 'ambush' | 'support';
-  targetPriority: Array<'weakest' | 'strongest' | 'spellcaster' | 'healer' | 'nearest' | 'leader'>;
+  preferredRange: "melee" | "ranged" | "mixed";
+  fightingStyle: "aggressive" | "defensive" | "hit_and_run" | "ambush" | "support";
+  targetPriority: Array<"weakest" | "strongest" | "spellcaster" | "healer" | "nearest" | "leader">;
   retreatThreshold: number; // HP percentage when likely to retreat
   usesTerrain: boolean;
   coordinatesWithAllies: boolean;
@@ -43,15 +61,21 @@ export interface TacticalPreferences {
 export interface SpecialBehavior {
   id: string;
   name: string;
-  trigger: 'combat_start' | 'bloodied' | 'ally_dies' | 'outnumbered' | 'spell_cast_nearby' | 'custom';
+  trigger:
+    | "combat_start"
+    | "bloodied"
+    | "ally_dies"
+    | "outnumbered"
+    | "spell_cast_nearby"
+    | "custom";
   condition?: string;
-  action: 'use_ability' | 'change_tactics' | 'call_for_help' | 'retreat' | 'berserk';
+  action: "use_ability" | "change_tactics" | "call_for_help" | "retreat" | "berserk";
   parameters?: any;
 }
 
 export interface EnvironmentalFactors {
   preferredTerrain: string[];
-  lightSensitivity: 'none' | 'sunlight_sensitivity' | 'prefers_darkness';
+  lightSensitivity: "none" | "sunlight_sensitivity" | "prefers_darkness";
   territorialRadius: number; // distance from home they'll pursue
   homeTerrain?: { x: number; y: number; radius: number };
 }
@@ -67,17 +91,13 @@ export class MonsterAI extends AIEntity {
     grudgeTargets: Set<string>;
   };
 
-  constructor(
-    id: string,
-    monsterProfile: MonsterAIProfile,
-    abilities: MonsterTrait[] = []
-  ) {
+  constructor(id: string, monsterProfile: MonsterAIProfile, abilities: MonsterTrait[] = []) {
     // Convert monster personality to base NPCPersonality
     const basePersonality: NPCPersonality = {
       aggression: monsterProfile.personalityTraits.aggression,
       intelligence: MonsterAI.intelligenceToNumeric(monsterProfile.intelligence),
       caution: monsterProfile.personalityTraits.selfPreservation,
-      loyalty: monsterProfile.personalityTraits.packMentality
+      loyalty: monsterProfile.personalityTraits.packMentality,
     };
 
     super(id, basePersonality, [], 500); // Think every 500ms for monsters
@@ -88,20 +108,20 @@ export class MonsterAI extends AIEntity {
       isBloodied: false,
       hasUsedSpecialAbility: false,
       roundsInCombat: 0,
-      grudgeTargets: new Set()
+      grudgeTargets: new Set(),
     };
 
     this.initializeMonsterBehaviors();
   }
 
-  private static intelligenceToNumeric(intelligence: MonsterAIProfile['intelligence']): number {
+  private static intelligenceToNumeric(intelligence: MonsterAIProfile["intelligence"]): number {
     const mapping = {
-      'mindless': 0.1,
-      'animal': 0.3,
-      'low': 0.4,
-      'average': 0.5,
-      'high': 0.7,
-      'genius': 0.9
+      mindless: 0.1,
+      animal: 0.3,
+      low: 0.4,
+      average: 0.5,
+      high: 0.7,
+      genius: 0.9,
     };
     return mapping[intelligence];
   }
@@ -112,7 +132,7 @@ export class MonsterAI extends AIEntity {
       this.entityId,
       this.availableAbilities,
       this.getLegendaryActionsPerTurn(),
-      this.getLairActions()
+      this.getLairActions(),
     );
 
     // Initialize social engine for relationship tracking
@@ -124,7 +144,7 @@ export class MonsterAI extends AIEntity {
    */
   protected selectAction(gameState: GameStateSnapshot): AIAction | null {
     this.updateCombatState(gameState);
-    
+
     // Check for special behavior triggers
     const specialAction = this.checkSpecialBehaviors(gameState);
     if (specialAction) return specialAction;
@@ -137,10 +157,10 @@ export class MonsterAI extends AIEntity {
     // Update bloodied status
     const wasBloodied = this.combatState.isBloodied;
     this.combatState.isBloodied = gameState.healthPercentage <= 0.5;
-    
+
     // Trigger bloodied behavior if just became bloodied
     if (!wasBloodied && this.combatState.isBloodied) {
-      this.processSpecialBehavior('bloodied', gameState);
+      this.processSpecialBehavior("bloodied", gameState);
     }
 
     // Track combat rounds
@@ -151,7 +171,7 @@ export class MonsterAI extends AIEntity {
 
   private selectTacticalAction(gameState: GameStateSnapshot): AIAction | null {
     const _preferences = this.monsterProfile.tacticalPreferences;
-    
+
     // Check retreat conditions
     if (this.shouldRetreat(gameState)) {
       return this.createRetreatAction(gameState);
@@ -167,7 +187,7 @@ export class MonsterAI extends AIEntity {
 
   private shouldRetreat(gameState: GameStateSnapshot): boolean {
     const traits = this.monsterProfile.personalityTraits;
-    
+
     // Check HP threshold
     if (gameState.healthPercentage <= this.monsterProfile.tacticalPreferences.retreatThreshold) {
       return traits.selfPreservation > 0.5;
@@ -188,7 +208,7 @@ export class MonsterAI extends AIEntity {
     if (enemies.length === 0) return null;
 
     const priorities = this.monsterProfile.tacticalPreferences.targetPriority;
-    
+
     for (const priority of priorities) {
       const target = this.findTargetByPriority(enemies, priority);
       if (target) return target;
@@ -199,24 +219,20 @@ export class MonsterAI extends AIEntity {
 
   private findTargetByPriority(enemies: any[], priority: string): any {
     switch (priority) {
-      case 'weakest':
-        return enemies.reduce((_min, _enemy) => 
-          enemy.health < min.health ? enemy : min
-        );
-      
-      case 'strongest':
-        return enemies.reduce((_max, _enemy) => 
-          enemy.health > max.health ? enemy : max
-        );
-      
-      case 'nearest':
-        return enemies.reduce((_nearest, _enemy) => 
-          enemy.distance < nearest.distance ? enemy : nearest
+      case "weakest":
+        return enemies.reduce((_min, _enemy) => (enemy.health < min.health ? enemy : min));
+
+      case "strongest":
+        return enemies.reduce((_max, _enemy) => (enemy.health > max.health ? enemy : max));
+
+      case "nearest":
+        return enemies.reduce((_nearest, _enemy) =>
+          enemy.distance < nearest.distance ? enemy : nearest,
         );
 
-      case 'spellcaster':
+      case "spellcaster":
         // Would need additional data to identify spellcasters
-        return enemies.find(e => e.class === 'wizard' || e.class === 'sorcerer');
+        return enemies.find((e) => e.class === "wizard" || e.class === "sorcerer");
 
       default:
         return null;
@@ -225,28 +241,28 @@ export class MonsterAI extends AIEntity {
 
   private selectCombatAction(target: any, gameState: GameStateSnapshot): AIAction {
     const fightingStyle = this.monsterProfile.tacticalPreferences.fightingStyle;
-    
+
     // Check for special ability usage
     const specialAbility = this.selectSpecialAbility(target, gameState);
     if (specialAbility) return specialAbility;
 
     // Select action based on fighting style
     switch (fightingStyle) {
-      case 'aggressive':
+      case "aggressive":
         return this.createAggressiveAction(target);
-      
-      case 'defensive':
+
+      case "defensive":
         return this.createDefensiveAction(target);
-      
-      case 'hit_and_run':
+
+      case "hit_and_run":
         return this.createHitAndRunAction(target, gameState);
-      
-      case 'ambush':
+
+      case "ambush":
         return this.createAmbushAction(target, gameState);
-      
-      case 'support':
+
+      case "support":
         return this.createSupportAction(gameState);
-      
+
       default:
         return this.createBasicAttackAction(target);
     }
@@ -254,18 +270,18 @@ export class MonsterAI extends AIEntity {
 
   private selectSpecialAbility(target: any, gameState: GameStateSnapshot): AIAction | null {
     const availableAbilities = monsterAbilitiesEngine.getAvailableAbilities(this.entityId);
-    
+
     // Prioritize recharged abilities
     for (const ability of availableAbilities.traits) {
       if (this.shouldUseAbility(ability, target, gameState)) {
         return {
-          type: 'attack',
+          type: "attack",
           targetId: target.id,
           priority: 9,
-          data: { 
+          data: {
             abilityId: ability.id,
-            abilityType: 'special'
-          }
+            abilityType: "special",
+          },
         };
       }
     }
@@ -279,10 +295,14 @@ export class MonsterAI extends AIEntity {
     return null;
   }
 
-  private shouldUseAbility(ability: MonsterTrait, target: any, gameState: GameStateSnapshot): boolean {
+  private shouldUseAbility(
+    ability: MonsterTrait,
+    target: any,
+    gameState: GameStateSnapshot,
+  ): boolean {
     // Intelligent monsters use abilities more strategically
     const intelligence = this.monsterProfile.personalityTraits.cunning;
-    
+
     // Always use area abilities when multiple enemies present
     if (ability.area && gameState.nearbyEnemies.length >= 2) {
       return Math.random() < 0.8;
@@ -303,24 +323,24 @@ export class MonsterAI extends AIEntity {
 
   private createAggressiveAction(target: any): AIAction {
     return {
-      type: 'attack',
+      type: "attack",
       targetId: target.id,
       priority: 8,
-      data: { attackType: 'aggressive', modifiers: { damage: 2 } }
+      data: { attackType: "aggressive", modifiers: { damage: 2 } },
     };
   }
 
   private createHitAndRunAction(target: any, gameState: GameStateSnapshot): AIAction {
     // Attack then move to new position
     return {
-      type: 'attack',
+      type: "attack",
       targetId: target.id,
       priority: 7,
-      data: { 
-        attackType: 'hit_and_run',
-        followUpAction: 'move',
-        moveTarget: this.findTacticalPosition(gameState)
-      }
+      data: {
+        attackType: "hit_and_run",
+        followUpAction: "move",
+        moveTarget: this.findTacticalPosition(gameState),
+      },
     };
   }
 
@@ -336,7 +356,7 @@ export class MonsterAI extends AIEntity {
       const distance = 40; // Move 40 units
       const pos = {
         x: current.x + Math.cos(angle) * distance,
-        y: current.y + Math.sin(angle) * distance
+        y: current.y + Math.sin(angle) * distance,
       };
 
       const score = this.evaluatePosition(pos, gameState);
@@ -355,8 +375,7 @@ export class MonsterAI extends AIEntity {
     // Prefer positions away from enemies
     for (const enemy of gameState.nearbyEnemies) {
       const distance = Math.sqrt(
-        Math.pow(pos.x - enemy.id.x || 0, 2) + 
-        Math.pow(pos.y - enemy.id.y || 0, 2)
+        Math.pow(pos.x - enemy.id.x || 0, 2) + Math.pow(pos.y - enemy.id.y || 0, 2),
       );
       score += distance * 0.1; // Farther from enemies is better
     }
@@ -364,8 +383,7 @@ export class MonsterAI extends AIEntity {
     // Prefer positions near allies
     for (const ally of gameState.nearbyAllies) {
       const distance = Math.sqrt(
-        Math.pow(pos.x - ally.id.x || 0, 2) + 
-        Math.pow(pos.y - ally.id.y || 0, 2)
+        Math.pow(pos.x - ally.id.x || 0, 2) + Math.pow(pos.y - ally.id.y || 0, 2),
       );
       score -= distance * 0.05; // Closer to allies is better
     }
@@ -384,144 +402,148 @@ export class MonsterAI extends AIEntity {
 
   private checkBehaviorTrigger(behavior: SpecialBehavior, gameState: GameStateSnapshot): boolean {
     switch (behavior.trigger) {
-      case 'bloodied':
+      case "bloodied":
         return this.combatState.isBloodied && !this.combatState.hasUsedSpecialAbility;
-      
-      case 'outnumbered':
+
+      case "outnumbered":
         return gameState.nearbyEnemies.length > gameState.nearbyAllies.length + 1;
-      
-      case 'ally_dies':
+
+      case "ally_dies":
         // Would need additional context to detect ally deaths
         return false;
-      
+
       default:
         return false;
     }
   }
 
   private processSpecialBehavior(trigger: string, gameState: GameStateSnapshot): void {
-    const behavior = this.monsterProfile.specialBehaviors.find(b => b.trigger === trigger);
+    const behavior = this.monsterProfile.specialBehaviors.find((b) => b.trigger === trigger);
     if (behavior) {
       this.executeBehaviorAction(behavior, gameState);
     }
   }
 
-  private executeBehaviorAction(behavior: SpecialBehavior, gameState: GameStateSnapshot): AIAction | null {
+  private executeBehaviorAction(
+    behavior: SpecialBehavior,
+    gameState: GameStateSnapshot,
+  ): AIAction | null {
     switch (behavior.action) {
-      case 'berserk':
+      case "berserk":
         // Increase aggression and ignore defensive considerations
         this.updatePersonality({ aggression: 1.0 });
         return this.createAggressiveAction(gameState.nearbyEnemies[0]);
-      
-      case 'call_for_help':
+
+      case "call_for_help":
         return {
-          type: 'interact',
+          type: "interact",
           priority: 10,
-          data: { 
-            action: 'call_reinforcements',
-            range: behavior.parameters?.range || 100
-          }
+          data: {
+            action: "call_reinforcements",
+            range: behavior.parameters?.range || 100,
+          },
         };
-      
-      case 'retreat':
+
+      case "retreat":
         return this.createRetreatAction(gameState);
-      
-      case 'use_ability': {
-        const abilityId = behavior.parameters?.abilityId;
-        if (abilityId) {
-          return {
-            type: 'attack',
-            targetId: gameState.nearbyEnemies[0]?.id,
-            priority: 10,
-            data: { abilityId, abilityType: 'special' }
-          };
+
+      case "use_ability":
+        {
+          const abilityId = behavior.parameters?.abilityId;
+          if (abilityId) {
+            return {
+              type: "attack",
+              targetId: gameState.nearbyEnemies[0]?.id,
+              priority: 10,
+              data: { abilityId, abilityType: "special" },
+            };
+          }
         }
-    }
         break;
     }
-    
+
     return null;
   }
 
   private createRetreatAction(gameState: GameStateSnapshot): AIAction {
     // Move toward home territory or away from enemies
-    const retreatPos = this.monsterProfile.environmentalFactors.homeTerrain || 
-      this.findTacticalPosition(gameState);
-    
+    const retreatPos =
+      this.monsterProfile.environmentalFactors.homeTerrain || this.findTacticalPosition(gameState);
+
     return {
-      type: 'move',
+      type: "move",
       target: retreatPos,
       priority: 9,
-      data: { moveType: 'retreat', speed: 'dash' }
+      data: { moveType: "retreat", speed: "dash" },
     };
   }
 
   private createPatrolAction(): AIAction {
     const homeTerritory = this.monsterProfile.environmentalFactors.homeTerrain;
-    
+
     if (homeTerritory) {
       // Patrol around home territory
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * homeTerritory.radius;
-      
+
       return {
-        type: 'move',
+        type: "move",
         target: {
           x: homeTerritory.x + Math.cos(angle) * distance,
-          y: homeTerritory.y + Math.sin(angle) * distance
+          y: homeTerritory.y + Math.sin(angle) * distance,
         },
         priority: 2,
-        data: { moveType: 'patrol' }
+        data: { moveType: "patrol" },
       };
     }
-    
+
     return {
-      type: 'move',
+      type: "move",
       target: { x: Math.random() * 100, y: Math.random() * 100 },
       priority: 1,
-      data: { moveType: 'wander' }
+      data: { moveType: "wander" },
     };
   }
 
   private createBasicAttackAction(target: any): AIAction {
     return {
-      type: 'attack',
+      type: "attack",
       targetId: target.id,
       priority: 5,
-      data: { attackType: 'basic' }
+      data: { attackType: "basic" },
     };
   }
 
   private createDefensiveAction(target: any): AIAction {
     return {
-      type: 'defend',
+      type: "defend",
       priority: 6,
-      data: { 
+      data: {
         targetThreat: target.id,
-        defensiveBonus: 2
-      }
+        defensiveBonus: 2,
+      },
     };
   }
 
   private createSupportAction(gameState: GameStateSnapshot): AIAction {
     // Find wounded ally
-    const woundedAlly = gameState.nearbyAllies.find(ally => ally.health < 50);
-    
+    const woundedAlly = gameState.nearbyAllies.find((ally) => ally.health < 50);
+
     if (woundedAlly) {
       return {
-        type: 'support',
+        type: "support",
         targetId: woundedAlly.id,
         priority: 7,
-        data: { supportType: 'heal' }
+        data: { supportType: "heal" },
       };
     }
 
     // Default to buff nearest ally
     return {
-      type: 'support',
+      type: "support",
       targetId: gameState.nearbyAllies[0]?.id,
       priority: 4,
-      data: { supportType: 'buff' }
+      data: { supportType: "buff" },
     };
   }
 
@@ -529,53 +551,53 @@ export class MonsterAI extends AIEntity {
     if (legendaryActions.length === 0) return null;
 
     // Simple selection - prefer attack actions
-    const attackAction = legendaryActions.find(action => 
-      action.mechanicalEffect?.type === 'damage'
+    const attackAction = legendaryActions.find(
+      (action) => action.mechanicalEffect?.type === "damage",
     );
 
     if (attackAction) {
       return {
-        type: 'attack',
+        type: "attack",
         targetId: target.id,
         priority: 8,
-        data: { 
+        data: {
           abilityId: attackAction.id,
-          abilityType: 'legendary'
-        }
+          abilityType: "legendary",
+        },
       };
     }
 
     // Use first available legendary action
     return {
-      type: 'attack',
+      type: "attack",
       targetId: target.id,
       priority: 6,
-      data: { 
+      data: {
         abilityId: legendaryActions[0].id,
-        abilityType: 'legendary'
-      }
+        abilityType: "legendary",
+      },
     };
   }
 
   private getLegendaryActionsPerTurn(): number {
     // Most legendary creatures have 3 actions per turn
-    return this.availableAbilities.filter(a => a.type === 'legendary_action').length > 0 ? 3 : 0;
+    return this.availableAbilities.filter((a) => a.type === "legendary_action").length > 0 ? 3 : 0;
   }
 
   private getLairActions(): MonsterTrait[] {
-    return this.availableAbilities.filter(a => a.type === 'lair_action');
+    return this.availableAbilities.filter((a) => a.type === "lair_action");
   }
 
   private getReactions(): any[] {
     // Convert monster traits to social engine reactions
     return this.availableAbilities
-      .filter(a => a.type === 'reaction')
-      .map(trait => ({
+      .filter((a) => a.type === "reaction")
+      .map((trait) => ({
         id: trait.id,
         name: trait.name,
         description: trait.description,
-        trigger: { event: 'opportunity_attack' }, // Simplified
-        effect: { type: 'attack', target: 'triggering_entity' }
+        trigger: { event: "opportunity_attack" }, // Simplified
+        effect: { type: "attack", target: "triggering_entity" },
       }));
   }
 
@@ -585,7 +607,7 @@ export class MonsterAI extends AIEntity {
   addGrudge(targetId: string): void {
     this.combatState.grudgeTargets.add(targetId);
     // Increase focus on this target
-    socialEngine.modifyRelationship(this.entityId, targetId, -3, 'combat_grudge');
+    socialEngine.modifyRelationship(this.entityId, targetId, -3, "combat_grudge");
   }
 
   /**
@@ -599,10 +621,10 @@ export class MonsterAI extends AIEntity {
 // Monster AI Profile Templates
 export const MONSTER_AI_PROFILES: Record<string, MonsterAIProfile> = {
   goblin: {
-    monsterId: 'goblin',
-    creatureType: 'humanoid',
-    intelligence: 'low',
-    alignment: 'neutral evil',
+    monsterId: "goblin",
+    creatureType: "humanoid",
+    intelligence: "low",
+    alignment: "neutral evil",
     personalityTraits: {
       aggression: 0.6,
       cunning: 0.4,
@@ -611,37 +633,37 @@ export const MONSTER_AI_PROFILES: Record<string, MonsterAIProfile> = {
       selfPreservation: 0.7,
       curiosity: 0.5,
       patience: 0.2,
-      vindictive: 0.6
+      vindictive: 0.6,
     },
     tacticalPreferences: {
-      preferredRange: 'ranged',
-      fightingStyle: 'hit_and_run',
-      targetPriority: ['weakest', 'spellcaster', 'nearest'],
+      preferredRange: "ranged",
+      fightingStyle: "hit_and_run",
+      targetPriority: ["weakest", "spellcaster", "nearest"],
       retreatThreshold: 0.3,
       usesTerrain: true,
-      coordinatesWithAllies: true
+      coordinatesWithAllies: true,
     },
     specialBehaviors: [
       {
-        id: 'mob_tactics',
-        name: 'Mob Tactics',
-        trigger: 'outnumbered',
-        action: 'call_for_help',
-        parameters: { range: 60 }
-      }
+        id: "mob_tactics",
+        name: "Mob Tactics",
+        trigger: "outnumbered",
+        action: "call_for_help",
+        parameters: { range: 60 },
+      },
     ],
     environmentalFactors: {
-      preferredTerrain: ['forest', 'caves', 'ruins'],
-      lightSensitivity: 'none',
-      territorialRadius: 200
-    }
+      preferredTerrain: ["forest", "caves", "ruins"],
+      lightSensitivity: "none",
+      territorialRadius: 200,
+    },
   },
 
   dragon: {
-    monsterId: 'dragon',
-    creatureType: 'dragon',
-    intelligence: 'genius',
-    alignment: 'chaotic evil',
+    monsterId: "dragon",
+    creatureType: "dragon",
+    intelligence: "genius",
+    alignment: "chaotic evil",
     personalityTraits: {
       aggression: 0.8,
       cunning: 0.9,
@@ -650,51 +672,51 @@ export const MONSTER_AI_PROFILES: Record<string, MonsterAIProfile> = {
       selfPreservation: 0.6,
       curiosity: 0.3,
       patience: 0.8,
-      vindictive: 0.9
+      vindictive: 0.9,
     },
     tacticalPreferences: {
-      preferredRange: 'mixed',
-      fightingStyle: 'aggressive',
-      targetPriority: ['strongest', 'leader', 'spellcaster'],
+      preferredRange: "mixed",
+      fightingStyle: "aggressive",
+      targetPriority: ["strongest", "leader", "spellcaster"],
       retreatThreshold: 0.15,
       usesTerrain: true,
-      coordinatesWithAllies: false
+      coordinatesWithAllies: false,
     },
     specialBehaviors: [
       {
-        id: 'frightful_presence',
-        name: 'Frightful Presence',
-        trigger: 'combat_start',
-        action: 'use_ability',
-        parameters: { abilityId: 'frightful_presence' }
+        id: "frightful_presence",
+        name: "Frightful Presence",
+        trigger: "combat_start",
+        action: "use_ability",
+        parameters: { abilityId: "frightful_presence" },
       },
       {
-        id: 'desperate_breath',
-        name: 'Desperate Breath Weapon',
-        trigger: 'bloodied',
-        action: 'use_ability',
-        parameters: { abilityId: 'breath_weapon' }
-      }
+        id: "desperate_breath",
+        name: "Desperate Breath Weapon",
+        trigger: "bloodied",
+        action: "use_ability",
+        parameters: { abilityId: "breath_weapon" },
+      },
     ],
     environmentalFactors: {
-      preferredTerrain: ['mountain', 'cave', 'lair'],
-      lightSensitivity: 'none',
+      preferredTerrain: ["mountain", "cave", "lair"],
+      lightSensitivity: "none",
       territorialRadius: 1000,
-      homeTerrain: { x: 0, y: 0, radius: 500 }
-    }
-  }
+      homeTerrain: { x: 0, y: 0, radius: 500 },
+    },
+  },
 };
 
 export const _monsterAI = {
   createMonsterAI: (
-    id: string, 
-    profileName: keyof typeof MONSTER_AI_PROFILES, 
-    abilities: MonsterTrait[] = []
+    id: string,
+    profileName: keyof typeof MONSTER_AI_PROFILES,
+    abilities: MonsterTrait[] = [],
   ): MonsterAI => {
     const profile = MONSTER_AI_PROFILES[profileName];
     if (!profile) {
       throw new Error(`Unknown monster AI profile: ${profileName}`);
     }
     return new MonsterAI(id, profile, abilities);
-  }
+  },
 };

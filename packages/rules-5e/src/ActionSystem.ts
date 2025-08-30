@@ -2,13 +2,24 @@
  * D&D 5e Action System for handling combat actions
  */
 
-import { DiceRoller, RollResult } from './DiceRoller';
+import { DiceRoller, RollResult } from "./DiceRoller";
 
-export type ActionType = 'action' | 'bonus_action' | 'reaction' | 'free_action' | 'movement';
+export type ActionType = "action" | "bonus_action" | "reaction" | "free_action" | "movement";
 
-export type DamageType = 
-  | 'acid' | 'bludgeoning' | 'cold' | 'fire' | 'force' | 'lightning' 
-  | 'necrotic' | 'piercing' | 'poison' | 'psychic' | 'radiant' | 'slashing' | 'thunder';
+export type DamageType =
+  | "acid"
+  | "bludgeoning"
+  | "cold"
+  | "fire"
+  | "force"
+  | "lightning"
+  | "necrotic"
+  | "piercing"
+  | "poison"
+  | "psychic"
+  | "radiant"
+  | "slashing"
+  | "thunder";
 
 export interface ActionResource {
   type: ActionType;
@@ -40,7 +51,7 @@ export interface SpellAttackAction {
   actionType: ActionType;
   attackBonus: number;
   saveDC?: number;
-  saveAbility?: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
+  saveAbility?: "STR" | "DEX" | "CON" | "INT" | "WIS" | "CHA";
 }
 
 export interface MovementAction {
@@ -82,10 +93,10 @@ export class ActionSystem {
    */
   initializeTurnResources(entityId: string): void {
     const resources: ActionResource[] = [
-      { type: 'action', used: false },
-      { type: 'bonus_action', used: false },
-      { type: 'reaction', used: false, reactions: 1 },
-      { type: 'movement', used: false },
+      { type: "action", used: false },
+      { type: "bonus_action", used: false },
+      { type: "reaction", used: false, reactions: 1 },
+      { type: "movement", used: false },
     ];
 
     this.actionResources.set(entityId, resources);
@@ -98,7 +109,7 @@ export class ActionSystem {
     const resources = this.actionResources.get(entityId);
     if (!resources) return false;
 
-    const resource = resources.find(r => r.type === actionType);
+    const resource = resources.find((r) => r.type === actionType);
     return resource ? !resource.used : false;
   }
 
@@ -109,7 +120,7 @@ export class ActionSystem {
     const resources = this.actionResources.get(entityId);
     if (!resources) return false;
 
-    const resource = resources.find(r => r.type === actionType);
+    const resource = resources.find((r) => r.type === actionType);
     if (!resource || resource.used) return false;
 
     resource.used = true;
@@ -139,17 +150,17 @@ export class ActionSystem {
    * Execute a melee attack
    */
   executeMeleeAttack(
-    attackerId: string, 
-    targetId: string, 
-    action: AttackAction, 
-    advantage?: boolean, 
-    disadvantage?: boolean
+    attackerId: string,
+    targetId: string,
+    action: AttackAction,
+    advantage?: boolean,
+    disadvantage?: boolean,
   ): ActionResult {
     if (!this.canUseAction(attackerId, action.actionType)) {
       return {
         success: false,
         rolls: [],
-        description: `Cannot use ${action.actionType} - already used this turn`
+        description: `Cannot use ${action.actionType} - already used this turn`,
       };
     }
 
@@ -167,7 +178,7 @@ export class ActionSystem {
       return {
         success: true,
         rolls,
-        description: `${action.name} attack missed with ${attackRoll.total}`
+        description: `${action.name} attack missed with ${attackRoll.total}`,
       };
     }
 
@@ -183,11 +194,11 @@ export class ActionSystem {
       damage: {
         total: damageRoll.total,
         type: action.damage.damageType,
-        critical: isCritical
+        critical: isCritical,
       },
-      description: isCritical 
+      description: isCritical
         ? `Critical hit! ${action.name} deals ${damageRoll.total} ${action.damage.damageType} damage`
-        : `${action.name} hits for ${damageRoll.total} ${action.damage.damageType} damage`
+        : `${action.name} hits for ${damageRoll.total} ${action.damage.damageType} damage`,
     };
   }
 
@@ -200,13 +211,13 @@ export class ActionSystem {
     action: AttackAction,
     distance: number,
     advantage?: boolean,
-    disadvantage?: boolean
+    disadvantage?: boolean,
   ): ActionResult {
     if (!this.canUseAction(attackerId, action.actionType)) {
       return {
         success: false,
         rolls: [],
-        description: `Cannot use ${action.actionType} - already used this turn`
+        description: `Cannot use ${action.actionType} - already used this turn`,
       };
     }
 
@@ -218,7 +229,7 @@ export class ActionSystem {
       return {
         success: false,
         rolls: [],
-        description: `Target is out of range (${distance} ft > ${action.range.long || action.range.normal} ft)`
+        description: `Target is out of range (${distance} ft > ${action.range.long || action.range.normal} ft)`,
       };
     }
 
@@ -233,7 +244,7 @@ export class ActionSystem {
     abilityModifier: number,
     dc: number,
     advantage?: boolean,
-    disadvantage?: boolean
+    disadvantage?: boolean,
   ): ActionResult {
     const saveRoll = this.diceRoller.rollSavingThrow(abilityModifier, advantage, disadvantage);
     const success = saveRoll.total >= dc;
@@ -241,9 +252,9 @@ export class ActionSystem {
     return {
       success,
       rolls: [saveRoll],
-      description: success 
+      description: success
         ? `Saving throw succeeded (${saveRoll.total} vs DC ${dc})`
-        : `Saving throw failed (${saveRoll.total} vs DC ${dc})`
+        : `Saving throw failed (${saveRoll.total} vs DC ${dc})`,
     };
   }
 
@@ -251,27 +262,27 @@ export class ActionSystem {
    * Execute movement
    */
   executeMovement(entityId: string, movement: MovementAction): ActionResult {
-    if (!this.canUseAction(entityId, 'movement')) {
+    if (!this.canUseAction(entityId, "movement")) {
       return {
         success: false,
         rolls: [],
-        description: 'No movement remaining this turn'
+        description: "No movement remaining this turn",
       };
     }
 
     // Calculate distance moved
-    const distance = Math.sqrt(
-      Math.pow(movement.toX - movement.fromX, 2) + 
-      Math.pow(movement.toY - movement.fromY, 2)
-    ) * 5; // Assuming 5ft per grid square
+    const distance =
+      Math.sqrt(
+        Math.pow(movement.toX - movement.fromX, 2) + Math.pow(movement.toY - movement.fromY, 2),
+      ) * 5; // Assuming 5ft per grid square
 
-    this.useAction(entityId, 'movement');
+    this.useAction(entityId, "movement");
 
     return {
       success: true,
       rolls: [],
       description: `Moved ${distance} feet`,
-      effects: movement.isOpportunityAttackProvoking ? ['provokes_opportunity_attacks'] : []
+      effects: movement.isOpportunityAttackProvoking ? ["provokes_opportunity_attacks"] : [],
     };
   }
 
@@ -279,21 +290,21 @@ export class ActionSystem {
    * Execute a dash action (double movement)
    */
   executeDash(entityId: string): ActionResult {
-    if (!this.canUseAction(entityId, 'action')) {
+    if (!this.canUseAction(entityId, "action")) {
       return {
         success: false,
         rolls: [],
-        description: 'Cannot dash - action already used'
+        description: "Cannot dash - action already used",
       };
     }
 
-    this.useAction(entityId, 'action');
+    this.useAction(entityId, "action");
 
     return {
       success: true,
       rolls: [],
-      description: 'Movement speed doubled this turn',
-      effects: ['doubled_movement']
+      description: "Movement speed doubled this turn",
+      effects: ["doubled_movement"],
     };
   }
 
@@ -301,21 +312,21 @@ export class ActionSystem {
    * Execute dodge action
    */
   executeDodge(entityId: string): ActionResult {
-    if (!this.canUseAction(entityId, 'action')) {
+    if (!this.canUseAction(entityId, "action")) {
       return {
         success: false,
         rolls: [],
-        description: 'Cannot dodge - action already used'
+        description: "Cannot dodge - action already used",
       };
     }
 
-    this.useAction(entityId, 'action');
+    this.useAction(entityId, "action");
 
     return {
       success: true,
       rolls: [],
-      description: 'Taking the Dodge action - attacks against you have disadvantage',
-      effects: ['dodge_active']
+      description: "Taking the Dodge action - attacks against you have disadvantage",
+      effects: ["dodge_active"],
     };
   }
 
@@ -323,21 +334,21 @@ export class ActionSystem {
    * Execute help action
    */
   executeHelp(entityId: string, targetId: string): ActionResult {
-    if (!this.canUseAction(entityId, 'action')) {
+    if (!this.canUseAction(entityId, "action")) {
       return {
         success: false,
         rolls: [],
-        description: 'Cannot help - action already used'
+        description: "Cannot help - action already used",
       };
     }
 
-    this.useAction(entityId, 'action');
+    this.useAction(entityId, "action");
 
     return {
       success: true,
       rolls: [],
       description: `Helping ally - their next ability check or attack has advantage`,
-      effects: [`help_${targetId}`]
+      effects: [`help_${targetId}`],
     };
   }
 
@@ -371,7 +382,7 @@ export class ActionSystem {
     const resources = this.actionResources.get(entityId);
     if (!resources) return false;
 
-    const resource = resources.find(r => r.type === actionType);
+    const resource = resources.find((r) => r.type === actionType);
     return resource ? resource.used : false;
   }
 }

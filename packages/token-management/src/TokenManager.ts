@@ -1,18 +1,18 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Advanced Token Management System
  * Handles token properties, conditions, animations, and behaviors
  */
 
-export type TokenType = 'character' | 'npc' | 'object' | 'effect' | 'marker';
+export type TokenType = "character" | "npc" | "object" | "effect" | "marker";
 
 export interface TokenProperties {
   // Core Properties
   hp?: { current: number; max: number; temp?: number };
   ac?: number;
   speed?: number;
-  
+
   // D&D 5e Attributes
   attributes?: {
     strength?: number;
@@ -22,28 +22,28 @@ export interface TokenProperties {
     wisdom?: number;
     charisma?: number;
   };
-  
+
   // Saves and Skills
   savingThrows?: Record<string, number>;
   skills?: Record<string, number>;
   proficiencyBonus?: number;
-  
+
   // Combat
   initiative?: number;
   initiativeBonus?: number;
-  
+
   // Vision and Senses
   darkvision?: number;
   blindsight?: number;
   truesight?: number;
   passivePerception?: number;
-  
+
   // Resistances and Immunities
   damageResistances?: string[];
   damageImmunities?: string[];
   damageVulnerabilities?: string[];
   conditionImmunities?: string[];
-  
+
   // Custom Properties
   custom?: Record<string, any>;
 }
@@ -52,7 +52,7 @@ export interface TokenCondition {
   id: string;
   name: string;
   description: string;
-  type: 'buff' | 'debuff' | 'neutral';
+  type: "buff" | "debuff" | "neutral";
   duration?: number; // rounds, -1 for permanent
   concentration?: boolean;
   sourceId?: string; // ID of the token/spell that applied this
@@ -63,17 +63,17 @@ export interface TokenCondition {
 }
 
 export interface ConditionEffect {
-  type: 'attribute' | 'save' | 'skill' | 'damage' | 'ac' | 'speed' | 'custom';
+  type: "attribute" | "save" | "skill" | "damage" | "ac" | "speed" | "custom";
   target: string;
   modifier: number;
-  operation: 'add' | 'multiply' | 'set' | 'advantage' | 'disadvantage';
+  operation: "add" | "multiply" | "set" | "advantage" | "disadvantage";
 }
 
 export interface TokenAnimation {
   id: string;
-  type: 'move' | 'attack' | 'spell' | 'damage' | 'heal' | 'custom';
+  type: "move" | "attack" | "spell" | "damage" | "heal" | "custom";
   duration: number;
-  easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+  easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
   properties: AnimationKeyframe[];
   loop?: boolean;
   autoRemove?: boolean;
@@ -100,33 +100,33 @@ export interface Token {
   width: number;
   height: number;
   rotation?: number;
-  
+
   // Visual Properties
   imageUrl?: string;
   color?: string;
   opacity?: number;
   scaleX?: number;
   scaleY?: number;
-  
+
   // Type and Layer
   tokenType: TokenType;
   layer: string;
   zIndex?: number;
-  
+
   // State
   isVisible: boolean;
   isLocked?: boolean;
   isSelected?: boolean;
-  
+
   // Game Properties
   properties: TokenProperties;
   conditions: TokenCondition[];
-  
+
   // Ownership and Permissions
   ownerId?: string;
   controlledBy: string[];
   visibleTo: string[];
-  
+
   // Metadata
   notes?: string;
   tags?: string[];
@@ -137,17 +137,20 @@ export interface Token {
 export class TokenManager {
   private tokens: Map<string, Token> = new Map();
   private animations: Map<string, TokenAnimation> = new Map();
-  private activeAnimations: Map<string, { tokenId: string; animation: TokenAnimation; startTime: number }> = new Map();
+  private activeAnimations: Map<
+    string,
+    { tokenId: string; animation: TokenAnimation; startTime: number }
+  > = new Map();
   private changeListeners: Array<(_event: TokenChangeEvent) => void> = [];
-  
+
   // Token CRUD Operations
   addToken(token: Token): void {
     this.tokens.set(token.id, {
       ...token,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     });
-    this.emitChange({ type: 'token-added', data: token });
+    this.emitChange({ type: "token-added", data: token });
   }
 
   removeToken(tokenId: string): void {
@@ -156,7 +159,7 @@ export class TokenManager {
       this.tokens.delete(tokenId);
       // Remove any active animations for this token
       this.stopAnimations(tokenId);
-      this.emitChange({ type: 'token-removed', data: { id: tokenId, token } });
+      this.emitChange({ type: "token-removed", data: { id: tokenId, token } });
     }
   }
 
@@ -170,13 +173,13 @@ export class TokenManager {
       ...token,
       ...updates,
       id: tokenId, // Ensure ID doesn't change
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     this.tokens.set(tokenId, updatedToken);
-    this.emitChange({ 
-      type: 'token-updated', 
-      data: { id: tokenId, oldToken: token, newToken: updatedToken } 
+    this.emitChange({
+      type: "token-updated",
+      data: { id: tokenId, oldToken: token, newToken: updatedToken },
     });
   }
 
@@ -185,11 +188,11 @@ export class TokenManager {
   }
 
   getTokensInScene(sceneId: string): Token[] {
-    return Array.from(this.tokens.values()).filter(token => token.sceneId === sceneId);
+    return Array.from(this.tokens.values()).filter((token) => token.sceneId === sceneId);
   }
 
   getTokensByType(tokenType: TokenType): Token[] {
-    return Array.from(this.tokens.values()).filter(token => token.tokenType === tokenType);
+    return Array.from(this.tokens.values()).filter((token) => token.tokenType === tokenType);
   }
 
   // Position and Movement
@@ -206,17 +209,23 @@ export class TokenManager {
     this.updateToken(tokenId, { x, y });
   }
 
-  private animateTokenMovement(tokenId: string, fromX: number, fromY: number, toX: number, toY: number): void {
+  private animateTokenMovement(
+    tokenId: string,
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+  ): void {
     const animation: TokenAnimation = {
       id: `move-${tokenId}-${Date.now()}`,
-      type: 'move',
+      type: "move",
       duration: 500, // ms
-      easing: 'ease-out',
+      easing: "ease-out",
       properties: [
         { time: 0, x: fromX, y: fromY },
-        { time: 1, x: toX, y: toY }
+        { time: 1, x: toX, y: toY },
       ],
-      autoRemove: true
+      autoRemove: true,
     };
 
     this.playAnimation(tokenId, animation);
@@ -245,17 +254,17 @@ export class TokenManager {
     const token = this.tokens.get(tokenId);
     if (!token) return undefined;
 
-    const paths = propertyPath.split('.');
+    const paths = propertyPath.split(".");
     let value: any = token.properties;
-    
+
     for (const path of paths) {
-      if (value && typeof value === 'object') {
+      if (value && typeof value === "object") {
         value = value[path];
       } else {
         return undefined;
       }
     }
-    
+
     return value;
   }
 
@@ -265,14 +274,14 @@ export class TokenManager {
       throw new Error(`Token ${tokenId} not found`);
     }
 
-    const paths = propertyPath.split('.');
+    const paths = propertyPath.split(".");
     const properties = { ...token.properties };
     let current: any = properties;
 
     for (let i = 0; i < paths.length - 1; i++) {
       const path = paths[i];
       if (!path) continue; // Skip undefined paths
-      
+
       if (!(path in current)) {
         current[path] = {};
       }
@@ -294,10 +303,10 @@ export class TokenManager {
     }
 
     const conditions = [...token.conditions];
-    
+
     // Check if condition is stackable
     if (!condition.stackable) {
-      const existingIndex = conditions.findIndex(c => c.name === condition.name);
+      const existingIndex = conditions.findIndex((c) => c.name === condition.name);
       if (existingIndex !== -1) {
         conditions[existingIndex] = condition;
       } else {
@@ -308,7 +317,7 @@ export class TokenManager {
     }
 
     this.updateToken(tokenId, { conditions });
-    this.emitChange({ type: 'condition-added', data: { tokenId, condition } });
+    this.emitChange({ type: "condition-added", data: { tokenId, condition } });
   }
 
   removeCondition(tokenId: string, conditionId: string): void {
@@ -317,9 +326,9 @@ export class TokenManager {
       throw new Error(`Token ${tokenId} not found`);
     }
 
-    const conditions = token.conditions.filter(c => c.id !== conditionId);
+    const conditions = token.conditions.filter((c) => c.id !== conditionId);
     this.updateToken(tokenId, { conditions });
-    this.emitChange({ type: 'condition-removed', data: { tokenId, conditionId } });
+    this.emitChange({ type: "condition-removed", data: { tokenId, conditionId } });
   }
 
   updateCondition(tokenId: string, conditionId: string, updates: Partial<TokenCondition>): void {
@@ -328,23 +337,23 @@ export class TokenManager {
       throw new Error(`Token ${tokenId} not found`);
     }
 
-    const conditions = token.conditions.map(c => 
-      c.id === conditionId ? { ...c, ...updates } : c
+    const conditions = token.conditions.map((c) =>
+      c.id === conditionId ? { ...c, ...updates } : c,
     );
 
     this.updateToken(tokenId, { conditions });
-    this.emitChange({ type: 'condition-updated', data: { tokenId, conditionId, updates } });
+    this.emitChange({ type: "condition-updated", data: { tokenId, conditionId, updates } });
   }
 
   getActiveConditions(tokenId: string): TokenCondition[] {
     const token = this.tokens.get(tokenId);
     if (!token) return [];
 
-    return token.conditions.filter(condition => {
+    return token.conditions.filter((condition) => {
       // Check if condition is suppressed
       const suppressedBy = condition.suppressedBy || [];
-      const hasSuppressingCondition = suppressedBy.some(suppressorName =>
-        token.conditions.some(c => c.name === suppressorName)
+      const hasSuppressingCondition = suppressedBy.some((suppressorName) =>
+        token.conditions.some((c) => c.name === suppressorName),
       );
 
       return !hasSuppressingCondition;
@@ -368,17 +377,17 @@ export class TokenManager {
       for (const effect of condition.effects) {
         if (effect.target === propertyPath) {
           switch (effect.operation) {
-            case 'add':
-              if (typeof calculatedValue === 'number') {
+            case "add":
+              if (typeof calculatedValue === "number") {
                 calculatedValue += effect.modifier;
               }
               break;
-            case 'multiply':
-              if (typeof calculatedValue === 'number') {
+            case "multiply":
+              if (typeof calculatedValue === "number") {
                 calculatedValue *= effect.modifier;
               }
               break;
-            case 'set':
+            case "set":
               calculatedValue = effect.modifier;
               break;
           }
@@ -400,10 +409,10 @@ export class TokenManager {
     this.activeAnimations.set(animation.id, {
       tokenId,
       animation,
-      startTime: Date.now()
+      startTime: Date.now(),
     });
 
-    this.emitChange({ type: 'animation-started', data: { tokenId, animation } });
+    this.emitChange({ type: "animation-started", data: { tokenId, animation } });
 
     // Set up animation completion
     if (!animation.loop) {
@@ -418,10 +427,10 @@ export class TokenManager {
     if (activeAnimation) {
       this.activeAnimations.delete(animationId);
       this.animations.delete(animationId);
-      
-      this.emitChange({ 
-        type: 'animation-stopped', 
-        data: { tokenId: activeAnimation.tokenId, animationId } 
+
+      this.emitChange({
+        type: "animation-stopped",
+        data: { tokenId: activeAnimation.tokenId, animationId },
       });
     }
   }
@@ -431,13 +440,13 @@ export class TokenManager {
       .filter(([_, anim]) => anim.tokenId === tokenId)
       .map(([id]) => id);
 
-    animationsToStop.forEach(id => this.stopAnimation(id));
+    animationsToStop.forEach((id) => this.stopAnimation(id));
   }
 
   getActiveAnimations(tokenId: string): TokenAnimation[] {
     return Array.from(this.activeAnimations.values())
-      .filter(anim => anim.tokenId === tokenId)
-      .map(anim => anim.animation);
+      .filter((anim) => anim.tokenId === tokenId)
+      .map((anim) => anim.animation);
   }
 
   // Damage and Healing
@@ -461,9 +470,9 @@ export class TokenManager {
     }
 
     const newHP = Math.max(0, token.properties.hp.current - actualDamage);
-    
+
     this.updateTokenProperties(tokenId, {
-      hp: { ...token.properties.hp, current: newHP }
+      hp: { ...token.properties.hp, current: newHP },
     });
 
     // Play damage animation
@@ -471,9 +480,9 @@ export class TokenManager {
       this.playDamageAnimation(tokenId, actualDamage);
     }
 
-    this.emitChange({ 
-      type: 'damage-applied', 
-      data: { tokenId, amount: actualDamage, damageType: damageType || 'physical' } 
+    this.emitChange({
+      type: "damage-applied",
+      data: { tokenId, amount: actualDamage, damageType: damageType || "physical" },
     });
   }
 
@@ -484,32 +493,32 @@ export class TokenManager {
     }
 
     const newHP = Math.min(token.properties.hp.max, token.properties.hp.current + amount);
-    
+
     this.updateTokenProperties(tokenId, {
-      hp: { ...token.properties.hp, current: newHP }
+      hp: { ...token.properties.hp, current: newHP },
     });
 
     // Play healing animation
     this.playHealingAnimation(tokenId, amount);
 
-    this.emitChange({ 
-      type: 'healing-applied', 
-      data: { tokenId, amount } 
+    this.emitChange({
+      type: "healing-applied",
+      data: { tokenId, amount },
     });
   }
 
   private playDamageAnimation(tokenId: string, _damage: number): void {
     const animation: TokenAnimation = {
       id: `damage-${tokenId}-${Date.now()}`,
-      type: 'damage',
+      type: "damage",
       duration: 600,
-      easing: 'ease-out',
+      easing: "ease-out",
       properties: [
-        { time: 0, color: '#ff0000', scaleX: 1.1, scaleY: 1.1 },
-        { time: 0.3, color: '#ff4444', scaleX: 1.0, scaleY: 1.0 },
-        { time: 1, scaleX: 1.0, scaleY: 1.0 }
+        { time: 0, color: "#ff0000", scaleX: 1.1, scaleY: 1.1 },
+        { time: 0.3, color: "#ff4444", scaleX: 1.0, scaleY: 1.0 },
+        { time: 1, scaleX: 1.0, scaleY: 1.0 },
       ],
-      autoRemove: true
+      autoRemove: true,
     };
 
     this.playAnimation(tokenId, animation);
@@ -518,15 +527,15 @@ export class TokenManager {
   private playHealingAnimation(tokenId: string, _healing: number): void {
     const animation: TokenAnimation = {
       id: `heal-${tokenId}-${Date.now()}`,
-      type: 'heal',
+      type: "heal",
       duration: 800,
-      easing: 'ease-out',
+      easing: "ease-out",
       properties: [
-        { time: 0, color: '#00ff00', scaleX: 1.05, scaleY: 1.05 },
-        { time: 0.5, color: '#44ff44', scaleX: 1.0, scaleY: 1.0 },
-        { time: 1, scaleX: 1.0, scaleY: 1.0 }
+        { time: 0, color: "#00ff00", scaleX: 1.05, scaleY: 1.05 },
+        { time: 0.5, color: "#44ff44", scaleX: 1.0, scaleY: 1.0 },
+        { time: 1, scaleX: 1.0, scaleY: 1.0 },
       ],
-      autoRemove: true
+      autoRemove: true,
     };
 
     this.playAnimation(tokenId, animation);
@@ -545,11 +554,11 @@ export class TokenManager {
   }
 
   private emitChange(event: TokenChangeEvent): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Token change listener error:', error);
+        logger.error("Token change listener error:", error);
       }
     });
   }
@@ -565,10 +574,10 @@ export class TokenManager {
 
   clearScene(sceneId: string): void {
     const tokensToRemove = Array.from(this.tokens.values())
-      .filter(token => token.sceneId === sceneId)
-      .map(token => token.id);
+      .filter((token) => token.sceneId === sceneId)
+      .map((token) => token.id);
 
-    tokensToRemove.forEach(tokenId => this.removeToken(tokenId));
+    tokensToRemove.forEach((tokenId) => this.removeToken(tokenId));
   }
 
   // Export/Import
@@ -577,7 +586,7 @@ export class TokenManager {
   }
 
   importTokens(tokens: Token[]): void {
-    tokens.forEach(token => {
+    tokens.forEach((token) => {
       this.tokens.set(token.id, token);
     });
   }
@@ -585,13 +594,16 @@ export class TokenManager {
 
 // Event Types
 export type TokenChangeEvent =
-  | { type: 'token-added'; data: Token }
-  | { type: 'token-removed'; data: { id: string; token?: Token } }
-  | { type: 'token-updated'; data: { id: string; oldToken?: Token; newToken?: Token } }
-  | { type: 'condition-added'; data: { tokenId: string; condition: TokenCondition } }
-  | { type: 'condition-removed'; data: { tokenId: string; conditionId: string } }
-  | { type: 'condition-updated'; data: { tokenId: string; conditionId: string; updates: Partial<TokenCondition> } }
-  | { type: 'animation-started'; data: { tokenId: string; animation: TokenAnimation } }
-  | { type: 'animation-stopped'; data: { tokenId: string; animationId: string } }
-  | { type: 'damage-applied'; data: { tokenId: string; amount: number; damageType?: string } }
-  | { type: 'healing-applied'; data: { tokenId: string; amount: number } };
+  | { type: "token-added"; data: Token }
+  | { type: "token-removed"; data: { id: string; token?: Token } }
+  | { type: "token-updated"; data: { id: string; oldToken?: Token; newToken?: Token } }
+  | { type: "condition-added"; data: { tokenId: string; condition: TokenCondition } }
+  | { type: "condition-removed"; data: { tokenId: string; conditionId: string } }
+  | {
+      type: "condition-updated";
+      data: { tokenId: string; conditionId: string; updates: Partial<TokenCondition> };
+    }
+  | { type: "animation-started"; data: { tokenId: string; animation: TokenAnimation } }
+  | { type: "animation-stopped"; data: { tokenId: string; animationId: string } }
+  | { type: "damage-applied"; data: { tokenId: string; amount: number; damageType?: string } }
+  | { type: "healing-applied"; data: { tokenId: string; amount: number } };

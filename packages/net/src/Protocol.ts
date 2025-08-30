@@ -10,7 +10,7 @@ export enum MessageType {
   INTENT = 3,
   ACK = 4,
   CHAT = 5,
-  RESYNC = 6
+  RESYNC = 6,
 }
 
 /**
@@ -24,5 +24,5 @@ export const _Protocol = {
   },
   decode(data: string): { type: MessageType; payload: any } {
     return JSON.parse(data);
-  }
+  },
 };

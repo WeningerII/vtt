@@ -3,19 +3,19 @@
  * Contains standard D&D 5e conditions and custom condition templates
  */
 
-import { TokenCondition, ConditionEffect } from './TokenManager';
+import { TokenCondition, ConditionEffect } from "./TokenManager";
 
 export interface ConditionTemplate {
   name: string;
   description: string;
-  type: 'buff' | 'debuff' | 'neutral';
+  type: "buff" | "debuff" | "neutral";
   effects: ConditionEffect[];
   duration?: number;
   concentration?: boolean;
   stackable?: boolean;
   suppressedBy?: string[];
   icon?: string;
-  category: 'combat' | 'social' | 'exploration' | 'custom';
+  category: "combat" | "social" | "exploration" | "custom";
 }
 
 export class ConditionRegistry {
@@ -37,279 +37,277 @@ export class ConditionRegistry {
     // D&D 5e Standard Conditions
     const standardConditions: ConditionTemplate[] = [
       {
-        name: 'Blinded',
-        description: 'A blinded creature can\'t see and automatically fails any ability check that requires sight.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Blinded",
+        description:
+          "A blinded creature can't see and automatically fails any ability check that requires sight.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: -1, operation: 'disadvantage' },
-          { type: 'custom', target: 'abilityChecks', modifier: -1, operation: 'disadvantage' }
+          { type: "custom", target: "attackRolls", modifier: -1, operation: "disadvantage" },
+          { type: "custom", target: "abilityChecks", modifier: -1, operation: "disadvantage" },
         ],
-        icon: '👁️‍🗨️'
+        icon: "👁️‍🗨️",
       },
       {
-        name: 'Charmed',
-        description: 'A charmed creature can\'t attack the charmer or target the charmer with harmful abilities or magical effects.',
-        type: 'debuff',
-        category: 'social',
+        name: "Charmed",
+        description:
+          "A charmed creature can't attack the charmer or target the charmer with harmful abilities or magical effects.",
+        type: "debuff",
+        category: "social",
         effects: [],
-        icon: '💕'
+        icon: "💕",
       },
       {
-        name: 'Deafened',
-        description: 'A deafened creature can\'t hear and automatically fails any ability check that requires hearing.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Deafened",
+        description:
+          "A deafened creature can't hear and automatically fails any ability check that requires hearing.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'hearingChecks', modifier: -1, operation: 'disadvantage' }
+          { type: "custom", target: "hearingChecks", modifier: -1, operation: "disadvantage" },
         ],
-        icon: '🔇'
+        icon: "🔇",
       },
       {
-        name: 'Frightened',
-        description: 'A frightened creature has disadvantage on ability checks and attack rolls while the source of its fear is within line of sight.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Frightened",
+        description:
+          "A frightened creature has disadvantage on ability checks and attack rolls while the source of its fear is within line of sight.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: -1, operation: 'disadvantage' },
-          { type: 'custom', target: 'abilityChecks', modifier: -1, operation: 'disadvantage' }
+          { type: "custom", target: "attackRolls", modifier: -1, operation: "disadvantage" },
+          { type: "custom", target: "abilityChecks", modifier: -1, operation: "disadvantage" },
         ],
-        icon: '😰'
+        icon: "😰",
       },
       {
-        name: 'Grappled',
-        description: 'A grappled creature\'s speed becomes 0, and it can\'t benefit from any bonus to its speed.',
-        type: 'debuff',
-        category: 'combat',
-        effects: [
-          { type: 'speed', target: 'speed', modifier: 0, operation: 'set' }
-        ],
-        icon: '🤝'
+        name: "Grappled",
+        description:
+          "A grappled creature's speed becomes 0, and it can't benefit from any bonus to its speed.",
+        type: "debuff",
+        category: "combat",
+        effects: [{ type: "speed", target: "speed", modifier: 0, operation: "set" }],
+        icon: "🤝",
       },
       {
-        name: 'Incapacitated',
-        description: 'An incapacitated creature can\'t take actions or reactions.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Incapacitated",
+        description: "An incapacitated creature can't take actions or reactions.",
+        type: "debuff",
+        category: "combat",
         effects: [],
-        icon: '😵'
+        icon: "😵",
       },
       {
-        name: 'Invisible',
-        description: 'An invisible creature is impossible to see without the aid of magic or a special sense.',
-        type: 'buff',
-        category: 'combat',
+        name: "Invisible",
+        description:
+          "An invisible creature is impossible to see without the aid of magic or a special sense.",
+        type: "buff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: 1, operation: 'advantage' },
-          { type: 'custom', target: 'stealthChecks', modifier: 1, operation: 'advantage' }
+          { type: "custom", target: "attackRolls", modifier: 1, operation: "advantage" },
+          { type: "custom", target: "stealthChecks", modifier: 1, operation: "advantage" },
         ],
-        icon: '👻'
+        icon: "👻",
       },
       {
-        name: 'Paralyzed',
-        description: 'A paralyzed creature is incapacitated and can\'t move or speak.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Paralyzed",
+        description: "A paralyzed creature is incapacitated and can't move or speak.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'speed', target: 'speed', modifier: 0, operation: 'set' },
-          { type: 'save', target: 'dexterity', modifier: -1, operation: 'disadvantage' },
-          { type: 'save', target: 'strength', modifier: -1, operation: 'disadvantage' }
+          { type: "speed", target: "speed", modifier: 0, operation: "set" },
+          { type: "save", target: "dexterity", modifier: -1, operation: "disadvantage" },
+          { type: "save", target: "strength", modifier: -1, operation: "disadvantage" },
         ],
-        suppressedBy: ['Incapacitated'],
-        icon: '🥶'
+        suppressedBy: ["Incapacitated"],
+        icon: "🥶",
       },
       {
-        name: 'Petrified',
-        description: 'A petrified creature is transformed, along with any nonmagical object it is wearing or carrying, into a solid inanimate substance.',
-        type: 'debuff',
-        category: 'combat',
-        effects: [
-          { type: 'speed', target: 'speed', modifier: 0, operation: 'set' }
-        ],
-        suppressedBy: ['Incapacitated'],
-        icon: '🗿'
+        name: "Petrified",
+        description:
+          "A petrified creature is transformed, along with any nonmagical object it is wearing or carrying, into a solid inanimate substance.",
+        type: "debuff",
+        category: "combat",
+        effects: [{ type: "speed", target: "speed", modifier: 0, operation: "set" }],
+        suppressedBy: ["Incapacitated"],
+        icon: "🗿",
       },
       {
-        name: 'Poisoned',
-        description: 'A poisoned creature has disadvantage on attack rolls and ability checks.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Poisoned",
+        description: "A poisoned creature has disadvantage on attack rolls and ability checks.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: -1, operation: 'disadvantage' },
-          { type: 'custom', target: 'abilityChecks', modifier: -1, operation: 'disadvantage' }
+          { type: "custom", target: "attackRolls", modifier: -1, operation: "disadvantage" },
+          { type: "custom", target: "abilityChecks", modifier: -1, operation: "disadvantage" },
         ],
-        icon: '🤢'
+        icon: "🤢",
       },
       {
-        name: 'Prone',
-        description: 'A prone creature\'s only movement option is to crawl, unless it stands up and thereby ends the condition.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Prone",
+        description:
+          "A prone creature's only movement option is to crawl, unless it stands up and thereby ends the condition.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: -1, operation: 'disadvantage' },
-          { type: 'speed', target: 'speed', modifier: 0.5, operation: 'multiply' }
+          { type: "custom", target: "attackRolls", modifier: -1, operation: "disadvantage" },
+          { type: "speed", target: "speed", modifier: 0.5, operation: "multiply" },
         ],
-        icon: '🤕'
+        icon: "🤕",
       },
       {
-        name: 'Restrained',
-        description: 'A restrained creature\'s speed becomes 0, and it can\'t benefit from any bonus to its speed.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Restrained",
+        description:
+          "A restrained creature's speed becomes 0, and it can't benefit from any bonus to its speed.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'speed', target: 'speed', modifier: 0, operation: 'set' },
-          { type: 'custom', target: 'attackRolls', modifier: -1, operation: 'disadvantage' },
-          { type: 'save', target: 'dexterity', modifier: -1, operation: 'disadvantage' }
+          { type: "speed", target: "speed", modifier: 0, operation: "set" },
+          { type: "custom", target: "attackRolls", modifier: -1, operation: "disadvantage" },
+          { type: "save", target: "dexterity", modifier: -1, operation: "disadvantage" },
         ],
-        icon: '🕸️'
+        icon: "🕸️",
       },
       {
-        name: 'Stunned',
-        description: 'A stunned creature is incapacitated, can\'t move, and can speak only falteringly.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Stunned",
+        description:
+          "A stunned creature is incapacitated, can't move, and can speak only falteringly.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'speed', target: 'speed', modifier: 0, operation: 'set' },
-          { type: 'save', target: 'dexterity', modifier: -1, operation: 'disadvantage' }
+          { type: "speed", target: "speed", modifier: 0, operation: "set" },
+          { type: "save", target: "dexterity", modifier: -1, operation: "disadvantage" },
         ],
-        suppressedBy: ['Incapacitated'],
-        icon: '😵‍💫'
+        suppressedBy: ["Incapacitated"],
+        icon: "😵‍💫",
       },
       {
-        name: 'Unconscious',
-        description: 'An unconscious creature is incapacitated, can\'t move or speak, and is unaware of its surroundings.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Unconscious",
+        description:
+          "An unconscious creature is incapacitated, can't move or speak, and is unaware of its surroundings.",
+        type: "debuff",
+        category: "combat",
         effects: [
-          { type: 'speed', target: 'speed', modifier: 0, operation: 'set' },
-          { type: 'save', target: 'dexterity', modifier: -1, operation: 'disadvantage' },
-          { type: 'save', target: 'strength', modifier: -1, operation: 'disadvantage' }
+          { type: "speed", target: "speed", modifier: 0, operation: "set" },
+          { type: "save", target: "dexterity", modifier: -1, operation: "disadvantage" },
+          { type: "save", target: "strength", modifier: -1, operation: "disadvantage" },
         ],
-        suppressedBy: ['Incapacitated', 'Prone'],
-        icon: '😴'
-      }
+        suppressedBy: ["Incapacitated", "Prone"],
+        icon: "😴",
+      },
     ];
 
     // Buff Conditions
     const buffConditions: ConditionTemplate[] = [
       {
-        name: 'Blessed',
-        description: 'Blessed creatures add 1d4 to attack rolls and saving throws.',
-        type: 'buff',
-        category: 'combat',
+        name: "Blessed",
+        description: "Blessed creatures add 1d4 to attack rolls and saving throws.",
+        type: "buff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: 2, operation: 'add' }, // Average of 1d4
-          { type: 'save', target: 'all', modifier: 2, operation: 'add' }
+          { type: "custom", target: "attackRolls", modifier: 2, operation: "add" }, // Average of 1d4
+          { type: "save", target: "all", modifier: 2, operation: "add" },
         ],
         duration: 10,
         concentration: true,
-        icon: '✨'
+        icon: "✨",
       },
       {
-        name: 'Haste',
-        description: 'Target\'s speed is doubled, it gains +2 AC, advantage on Dex saves, and an additional action.',
-        type: 'buff',
-        category: 'combat',
+        name: "Haste",
+        description:
+          "Target's speed is doubled, it gains +2 AC, advantage on Dex saves, and an additional action.",
+        type: "buff",
+        category: "combat",
         effects: [
-          { type: 'speed', target: 'speed', modifier: 2, operation: 'multiply' },
-          { type: 'ac', target: 'ac', modifier: 2, operation: 'add' },
-          { type: 'save', target: 'dexterity', modifier: 1, operation: 'advantage' }
+          { type: "speed", target: "speed", modifier: 2, operation: "multiply" },
+          { type: "ac", target: "ac", modifier: 2, operation: "add" },
+          { type: "save", target: "dexterity", modifier: 1, operation: "advantage" },
         ],
         duration: 10,
         concentration: true,
-        icon: '⚡'
+        icon: "⚡",
       },
       {
-        name: 'Shield of Faith',
-        description: 'Target gains +2 AC.',
-        type: 'buff',
-        category: 'combat',
-        effects: [
-          { type: 'ac', target: 'ac', modifier: 2, operation: 'add' }
-        ],
+        name: "Shield of Faith",
+        description: "Target gains +2 AC.",
+        type: "buff",
+        category: "combat",
+        effects: [{ type: "ac", target: "ac", modifier: 2, operation: "add" }],
         duration: 10,
         concentration: true,
-        icon: '🛡️'
+        icon: "🛡️",
       },
       {
-        name: 'Bless',
-        description: 'Targets add 1d4 to attack rolls and saving throws.',
-        type: 'buff',
-        category: 'combat',
+        name: "Bless",
+        description: "Targets add 1d4 to attack rolls and saving throws.",
+        type: "buff",
+        category: "combat",
         effects: [
-          { type: 'custom', target: 'attackRolls', modifier: 2, operation: 'add' },
-          { type: 'save', target: 'all', modifier: 2, operation: 'add' }
+          { type: "custom", target: "attackRolls", modifier: 2, operation: "add" },
+          { type: "save", target: "all", modifier: 2, operation: "add" },
         ],
         duration: 10,
         concentration: true,
         stackable: false,
-        icon: '🙏'
+        icon: "🙏",
       },
       {
-        name: 'Guidance',
-        description: 'Target adds 1d4 to one ability check of their choice.',
-        type: 'buff',
-        category: 'exploration',
-        effects: [
-          { type: 'custom', target: 'abilityChecks', modifier: 2, operation: 'add' }
-        ],
+        name: "Guidance",
+        description: "Target adds 1d4 to one ability check of their choice.",
+        type: "buff",
+        category: "exploration",
+        effects: [{ type: "custom", target: "abilityChecks", modifier: 2, operation: "add" }],
         duration: 1,
-        icon: '🧭'
-      }
+        icon: "🧭",
+      },
     ];
 
     // Custom Conditions
     const customConditions: ConditionTemplate[] = [
       {
-        name: 'Burning',
-        description: 'Takes fire damage at the start of each turn.',
-        type: 'debuff',
-        category: 'combat',
-        effects: [
-          { type: 'damage', target: 'fire', modifier: 5, operation: 'add' }
-        ],
+        name: "Burning",
+        description: "Takes fire damage at the start of each turn.",
+        type: "debuff",
+        category: "combat",
+        effects: [{ type: "damage", target: "fire", modifier: 5, operation: "add" }],
         duration: 3,
         stackable: true,
-        icon: '🔥'
+        icon: "🔥",
       },
       {
-        name: 'Regenerating',
-        description: 'Regains hit points at the start of each turn.',
-        type: 'buff',
-        category: 'combat',
-        effects: [
-          { type: 'custom', target: 'healing', modifier: 3, operation: 'add' }
-        ],
+        name: "Regenerating",
+        description: "Regains hit points at the start of each turn.",
+        type: "buff",
+        category: "combat",
+        effects: [{ type: "custom", target: "healing", modifier: 3, operation: "add" }],
         duration: 10,
         stackable: false,
-        icon: '💚'
+        icon: "💚",
       },
       {
-        name: 'Marked',
-        description: 'Attacker has advantage against this target.',
-        type: 'debuff',
-        category: 'combat',
+        name: "Marked",
+        description: "Attacker has advantage against this target.",
+        type: "debuff",
+        category: "combat",
         effects: [],
         duration: 3,
         stackable: false,
-        icon: '🎯'
+        icon: "🎯",
       },
       {
-        name: 'Inspired',
-        description: 'Has advantage on the next ability check, attack roll, or saving throw.',
-        type: 'buff',
-        category: 'social',
-        effects: [
-          { type: 'custom', target: 'nextRoll', modifier: 1, operation: 'advantage' }
-        ],
+        name: "Inspired",
+        description: "Has advantage on the next ability check, attack roll, or saving throw.",
+        type: "buff",
+        category: "social",
+        effects: [{ type: "custom", target: "nextRoll", modifier: 1, operation: "advantage" }],
         duration: 1,
         stackable: false,
-        icon: '🎵'
-      }
+        icon: "🎵",
+      },
     ];
 
     // Register all conditions
-    [...standardConditions, ...buffConditions, ...customConditions].forEach(condition => {
+    [...standardConditions, ...buffConditions, ...customConditions].forEach((condition) => {
       this.conditions.set(condition.name.toLowerCase(), condition);
     });
   }
@@ -324,15 +322,19 @@ export class ConditionRegistry {
   /**
    * Get all conditions of a specific type
    */
-  getConditionsByType(type: 'buff' | 'debuff' | 'neutral'): ConditionTemplate[] {
-    return Array.from(this.conditions.values()).filter(condition => condition.type === type);
+  getConditionsByType(type: "buff" | "debuff" | "neutral"): ConditionTemplate[] {
+    return Array.from(this.conditions.values()).filter((condition) => condition.type === type);
   }
 
   /**
    * Get all conditions in a category
    */
-  getConditionsByCategory(category: 'combat' | 'social' | 'exploration' | 'custom'): ConditionTemplate[] {
-    return Array.from(this.conditions.values()).filter(condition => condition.category === category);
+  getConditionsByCategory(
+    category: "combat" | "social" | "exploration" | "custom",
+  ): ConditionTemplate[] {
+    return Array.from(this.conditions.values()).filter(
+      (condition) => condition.category === category,
+    );
   }
 
   /**
@@ -347,16 +349,20 @@ export class ConditionRegistry {
    */
   searchConditions(query: string): ConditionTemplate[] {
     const lowerQuery = query.toLowerCase();
-    return Array.from(this.conditions.values()).filter(condition =>
-      condition.name.toLowerCase().includes(lowerQuery) ||
-      condition.description.toLowerCase().includes(lowerQuery)
+    return Array.from(this.conditions.values()).filter(
+      (condition) =>
+        condition.name.toLowerCase().includes(lowerQuery) ||
+        condition.description.toLowerCase().includes(lowerQuery),
     );
   }
 
   /**
    * Create a condition instance from a template
    */
-  createCondition(templateName: string, overrides: Partial<TokenCondition> = {}): TokenCondition | null {
+  createCondition(
+    templateName: string,
+    overrides: Partial<TokenCondition> = {},
+  ): TokenCondition | null {
     const template = this.getCondition(templateName);
     if (!template) return null;
 
@@ -370,10 +376,10 @@ export class ConditionRegistry {
       concentration: template.concentration ?? false, // Default to false if undefined
       stackable: template.stackable ?? false, // Default to false if undefined
       suppressedBy: template.suppressedBy ?? [], // Default to empty array if undefined
-      icon: template.icon ?? 'default', // Default to 'default' if undefined
-      ...overrides
+      icon: template.icon ?? "default", // Default to 'default' if undefined
+      ...overrides,
     };
-    
+
     return condition;
   }
 
@@ -406,7 +412,7 @@ export class ConditionRegistry {
     if (!condition || !condition.suppressedBy) return [];
 
     return condition.suppressedBy
-      .map(name => this.getCondition(name))
+      .map((name) => this.getCondition(name))
       .filter((c): c is ConditionTemplate => c !== undefined);
   }
 
@@ -414,8 +420,8 @@ export class ConditionRegistry {
    * Get conditions that are suppressed by a given condition
    */
   getSuppressedConditions(conditionName: string): ConditionTemplate[] {
-    return Array.from(this.conditions.values()).filter(condition =>
-      condition.suppressedBy?.includes(conditionName)
+    return Array.from(this.conditions.values()).filter((condition) =>
+      condition.suppressedBy?.includes(conditionName),
     );
   }
 
@@ -435,7 +441,7 @@ export class ConditionRegistry {
       this.initializeStandardConditions();
     }
 
-    conditions.forEach(condition => {
+    conditions.forEach((condition) => {
       this.registerCondition(condition);
     });
   }

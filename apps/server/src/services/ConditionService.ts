@@ -37,7 +37,7 @@ export class ConditionService {
   constructor(private prisma: PrismaClient) {}
 
   async searchConditions(options: ConditionSearchOptions = {}) {
-    const { type,  limit = 50,  offset = 0  } = options;
+    const { type, limit = 50, offset = 0 } = options;
 
     const where: any = {};
     if (type) where.type = type;
@@ -172,7 +172,10 @@ export class ConditionService {
     });
   }
 
-  async applyConditionToEncounterParticipant(participantId: string, request: ApplyConditionRequest) {
+  async applyConditionToEncounterParticipant(
+    participantId: string,
+    request: ApplyConditionRequest,
+  ) {
     // Validate condition exists
     const condition = await this.prisma.condition.findUnique({
       where: { id: request.conditionId },
@@ -304,26 +307,26 @@ export class ConditionService {
 
   async cleanupExpiredConditions() {
     const now = new Date();
-    
+
     // Find conditions that have expired (duration-based)
     const expiredConditions = await this.prisma.appliedCondition.findMany({
       where: {
         duration: { not: null },
         appliedAt: {
-          lte: new Date(now.getTime() - (24 * 60 * 60 * 1000)), // Example: 24 hours ago
+          lte: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Example: 24 hours ago
         },
       },
     });
 
     // Delete expired conditions
-    const deletePromises = expiredConditions.map(condition =>
+    const deletePromises = expiredConditions.map((condition) =>
       this.prisma.appliedCondition.delete({
         where: { id: condition.id },
-      })
+      }),
     );
 
     await Promise.all(deletePromises);
-    
+
     return { removed: expiredConditions.length };
   }
 }

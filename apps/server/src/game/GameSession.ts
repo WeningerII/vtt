@@ -1,5 +1,5 @@
 import { World, EntityId, NetworkSyncSystem, MovementSystem } from "@vtt/core-ecs";
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 import { createDiceRollResult, DiceRollResult } from "./DiceRoller";
 
 export interface Player {
@@ -22,24 +22,24 @@ export class GameSession {
   public readonly gameId: string;
   public readonly world: World;
   public readonly netSync: NetworkSyncSystem;
-  
+
   private players = new Map<string, Player>();
   private phase: GamePhase = "exploration";
   private turnOrder: EntityId[] = [];
   private currentTurn: EntityId | undefined;
   private mapId: string | undefined;
-  
+
   private lastTick = Date.now();
   private tickHandle: ReturnType<typeof setInterval> | undefined;
-  
+
   constructor(config: GameConfig) {
     this.gameId = config.gameId;
     this.mapId = config.mapId;
-    
+
     // Initialize ECS world with reasonable capacity
     this.world = new World(1000);
     this.netSync = new NetworkSyncSystem();
-    
+
     // Start game simulation loop
     this.startTick(config.tickRate);
   }
@@ -67,7 +67,7 @@ export class GameSession {
   setPlayerConnected(userId: string, connected: boolean): boolean {
     const player = this.players.get(userId);
     if (!player) return false;
-    
+
     player.connected = connected;
     return true;
   }
@@ -81,21 +81,21 @@ export class GameSession {
   }
 
   getConnectedPlayers(): Player[] {
-    return this.getPlayers().filter(p => p.connected);
+    return this.getPlayers().filter((p) => p.connected);
   }
 
   // Entity Management
   createToken(x: number, y: number, ownerId?: string): EntityId {
     const entity = this.world.create();
-    
+
     // Set transform
     this.world.transforms.add(entity, { x, y, rot: 0, sx: 1, sy: 1, zIndex: 1 });
-    
+
     // Set appearance with default values
     this.world.appearance.add(entity, {
       sprite: 0,
       tintR: 1,
-      tintG: 1, 
+      tintG: 1,
       tintB: 1,
       alpha: 1,
       frame: 0,
@@ -116,18 +116,18 @@ export class GameSession {
       // Calculate velocity for smooth movement
       const currentX = this.world.transforms.x[entityId] ?? 0;
       const currentY = this.world.transforms.y[entityId] ?? 0;
-      
+
       const deltaX = x - currentX;
       const deltaY = y - currentY;
       const distance = Math.hypot(deltaX, deltaY);
-      
+
       if (distance > 0) {
         const speed = 200; // pixels per second
         const duration = Math.min(distance / speed, 2); // Max 2 seconds
-        
+
         this.world.movement.vx[entityId] = deltaX / duration;
         this.world.movement.vy[entityId] = deltaY / duration;
-        
+
         // Stop movement after duration
         const timeoutId = setTimeout(() => {
           if (this.world.movement.has(entityId)) {
@@ -137,7 +137,7 @@ export class GameSession {
             this.world.transforms.y[entityId] = y;
           }
         }, duration * 1000);
-        
+
         // Store timeout for potential cleanup
         (timeoutId as any).__entityId = entityId;
       }
@@ -175,10 +175,10 @@ export class GameSession {
 
   nextTurn(): EntityId | undefined {
     if (this.turnOrder.length === 0) return undefined;
-    
+
     const currentIndex = this.currentTurn ? this.turnOrder.indexOf(this.currentTurn) : -1;
     const nextIndex = (currentIndex + 1) % this.turnOrder.length;
-    
+
     this.currentTurn = this.turnOrder[nextIndex] ?? undefined;
     return this.currentTurn;
   }
@@ -195,7 +195,7 @@ export class GameSession {
       gameId: this.gameId,
       mapId: this.mapId,
       players: this.getPlayers(),
-      turnOrder: this.turnOrder.map(id => id.toString()),
+      turnOrder: this.turnOrder.map((id) => id.toString()),
       currentTurn: this.currentTurn?.toString(),
       phase: this.phase,
     };
@@ -204,7 +204,7 @@ export class GameSession {
   // Simulation Loop
   private startTick(tickRate: number): void {
     const interval = Math.max(1, Math.floor(1000 / tickRate));
-    
+
     this.tickHandle = setInterval(() => {
       try {
         this.tick();
@@ -221,7 +221,7 @@ export class GameSession {
 
     // Update movement system
     MovementSystem(this.world, dt);
-    
+
     // Update world simulation
     this.world.update(dt);
   }
@@ -241,9 +241,9 @@ export class GameSession {
       clearInterval(this.tickHandle);
       this.tickHandle = undefined;
     }
-    
+
     this.players.clear();
-    
+
     // Clear all entities
     for (const entityId of this.world.getEntities()) {
       this.world.destroyEntity(entityId);

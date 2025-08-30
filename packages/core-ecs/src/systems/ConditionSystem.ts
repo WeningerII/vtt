@@ -2,14 +2,14 @@
  * Condition system for managing status effects and their interactions
  */
 
-import { ConditionsStore } from '../components/Conditions';
-import { StatsStore } from '../components/Stats';
+import { ConditionsStore } from "../components/Conditions";
+import { StatsStore } from "../components/Stats";
 
 export interface ConditionEffect {
   entity: number;
   conditionType: string;
-  effect: 'advantage' | 'disadvantage' | 'modifier' | 'immunity' | 'resistance';
-  target: 'attack' | 'save' | 'skill' | 'damage' | 'speed';
+  effect: "advantage" | "disadvantage" | "modifier" | "immunity" | "resistance";
+  target: "attack" | "save" | "skill" | "damage" | "speed";
   value?: number;
 }
 
@@ -26,7 +26,7 @@ export class ConditionSystem {
   update(_deltaTime: number): void {
     // Process condition durations at end of each turn
     this.processConditionDurations();
-    
+
     // Handle saving throws for conditions
     this.processSavingThrows();
   }
@@ -39,13 +39,13 @@ export class ConditionSystem {
     this.conditionsStore.forEach((_entity, __conditions) => {
       for (const condition of conditions) {
         if (condition.saveEndOfTurn) {
-          const { ability,  dc  } = condition.saveEndOfTurn;
+          const { ability, dc } = condition.saveEndOfTurn;
           const modifier = this.statsStore.getSavingThrowModifier(entity, ability, false);
           const roll = this.rollD20() + modifier;
-          
+
           if (roll >= dc) {
             this.conditionsStore.remove(entity, condition.type);
-            this.emit('conditionSaved', {
+            this.emit("conditionSaved", {
               entity,
               condition: condition.type,
               roll,
@@ -58,7 +58,11 @@ export class ConditionSystem {
   }
 
   // Apply condition effects to rolls and calculations
-  getAttackModifiers(entity: number): { advantage: boolean; disadvantage: boolean; modifier: number } {
+  getAttackModifiers(entity: number): {
+    advantage: boolean;
+    disadvantage: boolean;
+    modifier: number;
+  } {
     const conditions = this.conditionsStore.get(entity);
     let advantage = false;
     let disadvantage = false;
@@ -66,21 +70,21 @@ export class ConditionSystem {
 
     for (const condition of conditions) {
       switch (condition.type) {
-        case 'blessed':
+        case "blessed":
           advantage = true;
           break;
-        case 'blinded':
-        case 'frightened':
-        case 'poisoned':
-        case 'prone':
+        case "blinded":
+        case "frightened":
+        case "poisoned":
+        case "prone":
           disadvantage = true;
           break;
-        case 'invisible':
+        case "invisible":
           advantage = true;
           break;
-        case 'paralyzed':
-        case 'stunned':
-        case 'unconscious':
+        case "paralyzed":
+        case "stunned":
+        case "unconscious":
           // These prevent attacks entirely
           return { advantage: false, disadvantage: true, modifier: -Infinity };
       }
@@ -89,7 +93,10 @@ export class ConditionSystem {
     return { advantage, disadvantage, modifier };
   }
 
-  getSavingThrowModifiers(entity: number, ability: string): { advantage: boolean; disadvantage: boolean; modifier: number } {
+  getSavingThrowModifiers(
+    entity: number,
+    ability: string,
+  ): { advantage: boolean; disadvantage: boolean; modifier: number } {
     const conditions = this.conditionsStore.get(entity);
     let advantage = false;
     let disadvantage = false;
@@ -97,25 +104,25 @@ export class ConditionSystem {
 
     for (const condition of conditions) {
       switch (condition.type) {
-        case 'blessed':
-          if (['wisdom', 'charisma'].includes(ability)) {
+        case "blessed":
+          if (["wisdom", "charisma"].includes(ability)) {
             advantage = true;
           }
           break;
-        case 'frightened':
-          if (['wisdom'].includes(ability)) {
+        case "frightened":
+          if (["wisdom"].includes(ability)) {
             disadvantage = true;
           }
           break;
-        case 'poisoned':
-          if (['constitution'].includes(ability)) {
+        case "poisoned":
+          if (["constitution"].includes(ability)) {
             disadvantage = true;
           }
           break;
-        case 'paralyzed':
-        case 'stunned':
-        case 'unconscious':
-          if (['strength', 'dexterity'].includes(ability)) {
+        case "paralyzed":
+        case "stunned":
+        case "unconscious":
+          if (["strength", "dexterity"].includes(ability)) {
             return { advantage: false, disadvantage: true, modifier: -Infinity };
           }
           break;
@@ -131,24 +138,25 @@ export class ConditionSystem {
 
     for (const condition of conditions) {
       switch (condition.type) {
-        case 'hasted':
+        case "hasted":
           speedMultiplier *= 2;
           break;
-        case 'slowed':
+        case "slowed":
           speedMultiplier *= 0.5;
           break;
-        case 'grappled':
-        case 'restrained':
+        case "grappled":
+        case "restrained":
           speedMultiplier = 0;
           break;
-        case 'prone':
+        case "prone":
           speedMultiplier *= 0.5;
           break;
-        case 'exhaustion': {
-          const exhaustionLevel = this.conditionsStore.getExhaustionLevel(entity);
-          if (exhaustionLevel >= 2) speedMultiplier *= 0.5;
-          if (exhaustionLevel >= 5) speedMultiplier = 0;
-    }
+        case "exhaustion":
+          {
+            const exhaustionLevel = this.conditionsStore.getExhaustionLevel(entity);
+            if (exhaustionLevel >= 2) speedMultiplier *= 0.5;
+            if (exhaustionLevel >= 5) speedMultiplier = 0;
+          }
           break;
       }
     }
@@ -162,8 +170,8 @@ export class ConditionSystem {
 
     for (const condition of conditions) {
       // Add condition-based resistances
-      if (condition.type === 'blessed') {
-        resistances.push('necrotic');
+      if (condition.type === "blessed") {
+        resistances.push("necrotic");
       }
     }
 
@@ -176,8 +184,8 @@ export class ConditionSystem {
 
     for (const condition of conditions) {
       // Add condition-based immunities
-      if (condition.type === 'petrified') {
-        immunities.push('poison', 'disease');
+      if (condition.type === "petrified") {
+        immunities.push("poison", "disease");
       }
     }
 
@@ -202,24 +210,26 @@ export class ConditionSystem {
   }
 
   canConcentrate(entity: number): boolean {
-    return !this.conditionsStore.isIncapacitated(entity) &&
-           !this.conditionsStore.has(entity, 'unconscious');
+    return (
+      !this.conditionsStore.isIncapacitated(entity) &&
+      !this.conditionsStore.has(entity, "unconscious")
+    );
   }
 
   // Concentration checks
   makeConcentrationCheck(entity: number, damage: number): boolean {
-    if (!this.conditionsStore.has(entity, 'concentration')) {
+    if (!this.conditionsStore.has(entity, "concentration")) {
       return true; // Not concentrating
     }
 
     const dc = Math.max(10, Math.floor(damage / 2));
-    const modifier = this.statsStore.getSavingThrowModifier(entity, 'constitution', false);
+    const modifier = this.statsStore.getSavingThrowModifier(entity, "constitution", false);
     const roll = this.rollD20() + modifier;
 
     const success = roll >= dc;
     if (!success) {
-      this.conditionsStore.remove(entity, 'concentration');
-      this.emit('concentrationBroken', { entity, roll, dc, damage });
+      this.conditionsStore.remove(entity, "concentration");
+      this.emit("concentrationBroken", { entity, roll, dc, damage });
     }
 
     return success;
@@ -251,7 +261,7 @@ export class ConditionSystem {
   private emit(event: string, data?: any): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
-      handlers.forEach(handler => handler(data));
+      handlers.forEach((handler) => handler(data));
     }
   }
 }

@@ -55,5 +55,6 @@ export const readinessHandler: RouteHandler = async (ctx) => {
       ok: ready,
       db: dbOk ? "up" : "down",
     },
-    status);
+    status,
+  );
 };

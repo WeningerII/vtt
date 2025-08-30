@@ -23,7 +23,10 @@ export function computeGridFov(origin: [number, number], _radius: number): Array
  * environment. In this stub we simply return the origin for
  * demonstration purposes.
  */
-export function computeVisibilityPolygon(origin: [number, number], _obstacles: number[][]): [number, number][] {
+export function computeVisibilityPolygon(
+  origin: [number, number],
+  _obstacles: number[][],
+): [number, number][] {
   void obstacles;
   return [origin];
 }

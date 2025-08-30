@@ -2,15 +2,15 @@
  * Spells Panel Component - Manage character spells and spell casting
  */
 
-import React, { useState, memo } from 'react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { cn } from '../../lib/utils';
-import { 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  Book, 
+import React, { useState, memo } from "react";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { cn } from "../../lib/utils";
+import {
+  Plus,
+  Trash2,
+  Edit3,
+  Book,
   Star,
   Search,
   Filter,
@@ -18,9 +18,9 @@ import {
   Clock,
   Target,
   Eye,
-  EyeOff
-} from 'lucide-react';
-import type { Character, Spell } from './CharacterSheet';
+  EyeOff,
+} from "lucide-react";
+import type { Character, Spell } from "./CharacterSheet";
 
 interface SpellsPanelProps {
   character: Character;
@@ -42,63 +42,67 @@ interface SpellFormData {
 }
 
 const SPELL_SCHOOLS = [
-  'Abjuration',
-  'Conjuration', 
-  'Divination',
-  'Enchantment',
-  'Evocation',
-  'Illusion',
-  'Necromancy',
-  'Transmutation'
+  "Abjuration",
+  "Conjuration",
+  "Divination",
+  "Enchantment",
+  "Evocation",
+  "Illusion",
+  "Necromancy",
+  "Transmutation",
 ];
 
-const SPELL_COMPONENTS = ['V', 'S', 'M'];
+const SPELL_COMPONENTS = ["V", "S", "M"];
 
 const SPELL_LEVELS = [
-  { value: 0, label: 'Cantrip' },
-  { value: 1, label: '1st Level' },
-  { value: 2, label: '2nd Level' },
-  { value: 3, label: '3rd Level' },
-  { value: 4, label: '4th Level' },
-  { value: 5, label: '5th Level' },
-  { value: 6, label: '6th Level' },
-  { value: 7, label: '7th Level' },
-  { value: 8, label: '8th Level' },
-  { value: 9, label: '9th Level' }
+  { value: 0, label: "Cantrip" },
+  { value: 1, label: "1st Level" },
+  { value: 2, label: "2nd Level" },
+  { value: 3, label: "3rd Level" },
+  { value: 4, label: "4th Level" },
+  { value: 5, label: "5th Level" },
+  { value: 6, label: "6th Level" },
+  { value: 7, label: "7th Level" },
+  { value: 8, label: "8th Level" },
+  { value: 9, label: "9th Level" },
 ];
 
-export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onUpdate }: SpellsPanelProps): JSX.Element {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterLevel, setFilterLevel] = useState<number | 'all'>('all');
-  const [filterSchool, setFilterSchool] = useState<string | 'all'>('all');
+export const SpellsPanel = memo(function SpellsPanel({
+  character,
+  isEditing,
+  onUpdate,
+}: SpellsPanelProps): JSX.Element {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterLevel, setFilterLevel] = useState<number | "all">("all");
+  const [filterSchool, setFilterSchool] = useState<string | "all">("all");
   const [showPreparedOnly, setShowPreparedOnly] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingSpell, setEditingSpell] = useState<Spell | null>(null);
   const [formData, setFormData] = useState<SpellFormData>({
-    name: '',
+    name: "",
     level: 0,
-    school: 'Evocation',
-    castingTime: '1 action',
-    range: '60 feet',
-    components: ['V', 'S'],
-    duration: 'Instantaneous',
-    description: '',
+    school: "Evocation",
+    castingTime: "1 action",
+    range: "60 feet",
+    components: ["V", "S"],
+    duration: "Instantaneous",
+    description: "",
     prepared: false,
-    known: true
+    known: true,
   });
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      name: "",
       level: 0,
-      school: 'Evocation',
-      castingTime: '1 action',
-      range: '60 feet',
-      components: ['V', 'S'],
-      duration: 'Instantaneous',
-      description: '',
+      school: "Evocation",
+      castingTime: "1 action",
+      range: "60 feet",
+      components: ["V", "S"],
+      duration: "Instantaneous",
+      description: "",
       prepared: false,
-      known: true
+      known: true,
     });
     setEditingSpell(null);
     setShowAddForm(false);
@@ -118,13 +122,13 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
       duration: formData.duration,
       description: formData.description.trim(),
       prepared: formData.prepared,
-      known: formData.known
+      known: formData.known,
     };
 
     let newSpells;
     if (editingSpell) {
-      newSpells = character.spells.map(spell => 
-        spell.id === editingSpell.id ? newSpell : spell
+      newSpells = character.spells.map((spell) =>
+        spell.id === editingSpell.id ? newSpell : spell,
       );
     } else {
       newSpells = [...character.spells, newSpell];
@@ -135,20 +139,20 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
   };
 
   const removeSpell = (id: string) => {
-    const newSpells = character.spells.filter(spell => spell.id !== id);
+    const newSpells = character.spells.filter((spell) => spell.id !== id);
     onUpdate({ spells: newSpells });
   };
 
   const togglePrepared = (id: string) => {
-    const newSpells = character.spells.map(spell =>
-      spell.id === id ? { ...spell, prepared: !spell.prepared } : spell
+    const newSpells = character.spells.map((spell) =>
+      spell.id === id ? { ...spell, prepared: !spell.prepared } : spell,
     );
     onUpdate({ spells: newSpells });
   };
 
   const toggleKnown = (id: string) => {
-    const newSpells = character.spells.map(spell =>
-      spell.id === id ? { ...spell, known: !spell.known } : spell
+    const newSpells = character.spells.map((spell) =>
+      spell.id === id ? { ...spell, known: !spell.known } : spell,
     );
     onUpdate({ spells: newSpells });
   };
@@ -164,29 +168,29 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
       duration: spell.duration,
       description: spell.description,
       prepared: spell.prepared,
-      known: spell.known
+      known: spell.known,
     });
     setEditingSpell(spell);
     setShowAddForm(true);
   };
 
   const toggleComponent = (component: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       components: prev.components.includes(component)
-        ? prev.components.filter(c => c !== component)
-        : [...prev.components, component]
+        ? prev.components.filter((c) => c !== component)
+        : [...prev.components, component],
     }));
   };
 
-  const filteredSpells = character.spells.filter(spell => {
+  const filteredSpells = character.spells.filter((spell) => {
     if (searchTerm && !spell.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
-    if (filterLevel !== 'all' && spell.level !== filterLevel) {
+    if (filterLevel !== "all" && spell.level !== filterLevel) {
       return false;
     }
-    if (filterSchool !== 'all' && spell.school !== filterSchool) {
+    if (filterSchool !== "all" && spell.school !== filterSchool) {
       return false;
     }
     if (showPreparedOnly && !spell.prepared) {
@@ -195,16 +199,19 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
     return true;
   });
 
-  const spellsByLevel = SPELL_LEVELS.reduce((acc, { value }) => {
-    acc[value] = filteredSpells.filter(spell => spell.level === value);
-    return acc;
-  }, {} as Record<number, Spell[]>);
+  const spellsByLevel = SPELL_LEVELS.reduce(
+    (acc, { value }) => {
+      acc[value] = filteredSpells.filter((spell) => spell.level === value);
+      return acc;
+    },
+    {} as Record<number, Spell[]>,
+  );
 
-  const preparedSpells = character.spells.filter(spell => spell.prepared);
-  const knownSpells = character.spells.filter(spell => spell.known);
+  const preparedSpells = character.spells.filter((spell) => spell.prepared);
+  const knownSpells = character.spells.filter((spell) => spell.known);
 
   const _getSpellLevelLabel = (level: number): string => {
-    return level === 0 ? 'Cantrip' : `Level ${level}`;
+    return level === 0 ? "Cantrip" : `Level ${level}`;
   };
 
   return (
@@ -216,25 +223,25 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
           <div className="text-lg font-bold text-text-primary">{knownSpells.length}</div>
           <div className="text-xs text-text-secondary">Known Spells</div>
         </div>
-        
+
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Star className="h-6 w-6 text-warning mx-auto mb-1" />
           <div className="text-lg font-bold text-text-primary">{preparedSpells.length}</div>
           <div className="text-xs text-text-secondary">Prepared</div>
         </div>
-        
+
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Zap className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
           <div className="text-lg font-bold text-text-primary">
-            {preparedSpells.filter(s => s.level === 0).length}
+            {preparedSpells.filter((s) => s.level === 0).length}
           </div>
           <div className="text-xs text-text-secondary">Cantrips</div>
         </div>
-        
+
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Filter className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
           <div className="text-lg font-bold text-text-primary">
-            {new Set(character.spells.map(s => s.school)).size}
+            {new Set(character.spells.map((s) => s.school)).size}
           </div>
           <div className="text-xs text-text-secondary">Schools</div>
         </div>
@@ -251,16 +258,20 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
             className="pl-9"
           />
         </div>
-        
+
         <div className="flex gap-2">
           <select
             value={filterLevel}
-            onChange={(e) => setFilterLevel(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+            onChange={(e) =>
+              setFilterLevel(e.target.value === "all" ? "all" : parseInt(e.target.value))
+            }
             className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary text-sm"
           >
             <option value="all">All Levels</option>
             {SPELL_LEVELS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
+              <option key={value} value={value}>
+                {label}
+              </option>
             ))}
           </select>
 
@@ -270,20 +281,22 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
             className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary text-sm"
           >
             <option value="all">All Schools</option>
-            {SPELL_SCHOOLS.map(school => (
-              <option key={school} value={school}>{school}</option>
+            {SPELL_SCHOOLS.map((school) => (
+              <option key={school} value={school}>
+                {school}
+              </option>
             ))}
           </select>
-          
+
           <Button
-            variant={showPreparedOnly ? 'primary' : 'ghost'}
+            variant={showPreparedOnly ? "primary" : "ghost"}
             size="sm"
             onClick={() => setShowPreparedOnly(!showPreparedOnly)}
             leftIcon={<Star className="h-4 w-4" />}
           >
             Prepared
           </Button>
-          
+
           {isEditing && (
             <Button
               variant="primary"
@@ -302,7 +315,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-text-primary">
-              {editingSpell ? 'Edit Spell' : 'Add Spell'}
+              {editingSpell ? "Edit Spell" : "Add Spell"}
             </h3>
             <Button variant="ghost" size="sm" onClick={resetForm}>
               Cancel
@@ -314,7 +327,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Spell name"
               />
             </div>
@@ -323,11 +336,15 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <label className="block text-sm font-medium text-text-primary mb-1">Level</label>
               <select
                 value={formData.level}
-                onChange={(e) => setFormData(prev => ({ ...prev, level: parseInt(e.target.value) }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, level: parseInt(e.target.value) }))
+                }
                 className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
               >
                 {SPELL_LEVELS.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -336,20 +353,24 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <label className="block text-sm font-medium text-text-primary mb-1">School</label>
               <select
                 value={formData.school}
-                onChange={(e) => setFormData(prev => ({ ...prev, school: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, school: e.target.value }))}
                 className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
               >
-                {SPELL_SCHOOLS.map(school => (
-                  <option key={school} value={school}>{school}</option>
+                {SPELL_SCHOOLS.map((school) => (
+                  <option key={school} value={school}>
+                    {school}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Casting Time</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">
+                Casting Time
+              </label>
               <Input
                 value={formData.castingTime}
-                onChange={(e) => setFormData(prev => ({ ...prev, castingTime: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, castingTime: e.target.value }))}
                 placeholder="1 action"
               />
             </div>
@@ -358,7 +379,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <label className="block text-sm font-medium text-text-primary mb-1">Range</label>
               <Input
                 value={formData.range}
-                onChange={(e) => setFormData(prev => ({ ...prev, range: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, range: e.target.value }))}
                 placeholder="60 feet"
               />
             </div>
@@ -367,7 +388,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <label className="block text-sm font-medium text-text-primary mb-1">Duration</label>
               <Input
                 value={formData.duration}
-                onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, duration: e.target.value }))}
                 placeholder="Instantaneous"
               />
             </div>
@@ -376,15 +397,15 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
           <div>
             <label className="block text-sm font-medium text-text-primary mb-2">Components</label>
             <div className="flex gap-2">
-              {SPELL_COMPONENTS.map(component => (
+              {SPELL_COMPONENTS.map((component) => (
                 <button
                   key={component}
                   onClick={() => toggleComponent(component)}
                   className={cn(
-                    'px-3 py-2 rounded border text-sm font-medium transition-colors',
+                    "px-3 py-2 rounded border text-sm font-medium transition-colors",
                     formData.components.includes(component)
-                      ? 'bg-accent-primary text-white border-accent-primary'
-                      : 'bg-bg-secondary text-text-primary border-border-primary hover:border-accent-primary'
+                      ? "bg-accent-primary text-white border-accent-primary"
+                      : "bg-bg-secondary text-text-primary border-border-primary hover:border-accent-primary",
                   )}
                 >
                   {component}
@@ -397,7 +418,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
             <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary resize-none"
               rows={4}
               placeholder="Spell description..."
@@ -409,7 +430,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <input
                 type="checkbox"
                 checked={formData.known}
-                onChange={(e) => setFormData(prev => ({ ...prev, known: e.target.checked }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, known: e.target.checked }))}
                 className="rounded border-border-primary"
               />
               <span className="text-sm text-text-primary">Known</span>
@@ -418,7 +439,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <input
                 type="checkbox"
                 checked={formData.prepared}
-                onChange={(e) => setFormData(prev => ({ ...prev, prepared: e.target.checked }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, prepared: e.target.checked }))}
                 className="rounded border-border-primary"
               />
               <span className="text-sm text-text-primary">Prepared</span>
@@ -427,7 +448,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
 
           <div className="flex gap-2">
             <Button variant="primary" onClick={addOrUpdateSpell}>
-              {editingSpell ? 'Update' : 'Add'} Spell
+              {editingSpell ? "Update" : "Add"} Spell
             </Button>
             <Button variant="ghost" onClick={resetForm}>
               Cancel
@@ -447,14 +468,14 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
               <h3 className="text-lg font-semibold text-text-primary border-b border-border-primary pb-2">
                 {label} ({levelSpells.length})
               </h3>
-              
+
               <div className="space-y-2">
                 {levelSpells.map((spell) => (
                   <div
                     key={spell.id}
                     className={cn(
-                      'bg-bg-tertiary rounded-lg border border-border-primary p-3 transition-colors',
-                      spell.prepared && 'bg-accent-light border-accent-primary'
+                      "bg-bg-tertiary rounded-lg border border-border-primary p-3 transition-colors",
+                      spell.prepared && "bg-accent-light border-accent-primary",
                     )}
                   >
                     <div className="flex items-start justify-between">
@@ -466,22 +487,26 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
                               <button
                                 onClick={() => toggleKnown(spell.id)}
                                 className={cn(
-                                  'w-4 h-4 transition-colors',
-                                  spell.known ? 'text-accent-primary' : 'text-text-tertiary'
+                                  "w-4 h-4 transition-colors",
+                                  spell.known ? "text-accent-primary" : "text-text-tertiary",
                                 )}
-                                title={spell.known ? 'Known' : 'Unknown'}
+                                title={spell.known ? "Known" : "Unknown"}
                               >
-                                {spell.known ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                                {spell.known ? (
+                                  <Eye className="h-4 w-4" />
+                                ) : (
+                                  <EyeOff className="h-4 w-4" />
+                                )}
                               </button>
                               <button
                                 onClick={() => togglePrepared(spell.id)}
                                 className={cn(
-                                  'w-4 h-4 transition-colors',
-                                  spell.prepared ? 'text-warning' : 'text-text-tertiary'
+                                  "w-4 h-4 transition-colors",
+                                  spell.prepared ? "text-warning" : "text-text-tertiary",
                                 )}
-                                title={spell.prepared ? 'Prepared' : 'Not Prepared'}
+                                title={spell.prepared ? "Prepared" : "Not Prepared"}
                               >
-                                <Star className={cn('h-4 w-4', spell.prepared && 'fill-current')} />
+                                <Star className={cn("h-4 w-4", spell.prepared && "fill-current")} />
                               </button>
                             </div>
                           )}
@@ -504,7 +529,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
                               {spell.school}
                             </span>
                           </div>
-                          
+
                           <div className="flex items-center gap-4 mt-1 text-sm text-text-secondary">
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
@@ -514,10 +539,10 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
                               <Target className="h-3 w-3" />
                               {spell.range}
                             </span>
-                            <span>{spell.components.join(', ')}</span>
+                            <span>{spell.components.join(", ")}</span>
                             <span>{spell.duration}</span>
                           </div>
-                          
+
                           {spell.description && (
                             <p className="text-sm text-text-secondary mt-2">{spell.description}</p>
                           )}
@@ -526,11 +551,7 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
 
                       {isEditing && (
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEdit(spell)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => startEdit(spell)}>
                             <Edit3 className="h-4 w-4" />
                           </Button>
                           <Button
@@ -555,18 +576,15 @@ export const SpellsPanel = memo(function SpellsPanel({ character, isEditing, onU
       {filteredSpells.length === 0 && (
         <div className="text-center py-8">
           <Book className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">
-            No Spells Found
-          </h3>
+          <h3 className="text-lg font-medium text-text-primary mb-2">No Spells Found</h3>
           <p className="text-text-secondary">
-            {searchTerm 
+            {searchTerm
               ? `No spells match "${searchTerm}"`
               : showPreparedOnly
-              ? 'No prepared spells found'
-              : isEditing
-              ? 'Add some spells to get started'
-              : 'This character has no spells'
-            }
+                ? "No prepared spells found"
+                : isEditing
+                  ? "Add some spells to get started"
+                  : "This character has no spells"}
           </p>
           {isEditing && !searchTerm && (
             <Button

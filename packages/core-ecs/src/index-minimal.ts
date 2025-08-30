@@ -28,7 +28,7 @@ export class World {
 
 export class NetworkSyncSystem {
   constructor(private world: World) {}
-  
+
   update(deltaTime: number): void {
     // Stub implementation
   }
@@ -36,7 +36,7 @@ export class NetworkSyncSystem {
 
 export class MovementSystem {
   constructor(private world: World) {}
-  
+
   update(deltaTime: number): void {
     // Stub implementation
   }

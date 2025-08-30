@@ -1,6 +1,6 @@
-import { WSClient } from '../net/ws';
-import { logger } from '@vtt/logging';
-import type { AnyServerMessage, AnyClientMessage } from '@vtt/core-schemas';
+import { WSClient } from "../net/ws";
+import { logger } from "@vtt/logging";
+import type { AnyServerMessage, AnyClientMessage } from "@vtt/core-schemas";
 
 export interface GameState {
   gameId: string;
@@ -12,7 +12,7 @@ export interface GameState {
   }>;
   turnOrder?: string[];
   currentTurn?: string;
-  phase: 'exploration' | 'combat' | 'downtime';
+  phase: "exploration" | "combat" | "downtime";
 }
 
 export interface Entity {
@@ -79,7 +79,7 @@ export class GameClient {
 
   private setupWebSocketHandlers(): void {
     this.wsClient.onState((_state) => {
-      const isConnected = state === 'open';
+      const isConnected = state === "open";
       if (this.connected !== isConnected) {
         this.connected = isConnected;
         this.handlers.onConnectionChange?.(isConnected);
@@ -93,12 +93,12 @@ export class GameClient {
 
   private handleServerMessage(message: AnyServerMessage): void {
     switch (message.type) {
-      case 'GAME_STATE':
+      case "GAME_STATE":
         this.gameState = message as GameState;
         this.handlers.onGameStateUpdate?.(this.gameState);
         break;
 
-      case 'SNAPSHOT':
+      case "SNAPSHOT":
         this.entities.clear();
         for (const entity of message.entities) {
           this.entities.set(entity.id, entity);
@@ -106,7 +106,7 @@ export class GameClient {
         this.handlers.onEntitiesSnapshot?.(message.entities);
         break;
 
-      case 'DELTA':
+      case "DELTA":
         // Apply created entities
         for (const entity of message.created) {
           this.entities.set(entity.id, entity);
@@ -122,42 +122,39 @@ export class GameClient {
         this.handlers.onEntitiesDelta?.(message.created, message.updated, message.removed);
         break;
 
-      case 'DICE_ROLL_RESULT':
+      case "DICE_ROLL_RESULT":
         this.handlers.onDiceRoll?.(message as DiceRollResult);
         break;
 
-      case 'CHAT_BROADCAST':
+      case "CHAT_BROADCAST":
         this.handlers.onChatMessage?.(message as ChatMessage);
         break;
 
-      case 'PLAYER_JOINED':
+      case "PLAYER_JOINED":
         this.handlers.onPlayerJoined?.(message.userId, message.displayName);
         break;
 
-      case 'PLAYER_LEFT':
+      case "PLAYER_LEFT":
         this.handlers.onPlayerLeft?.(message.userId);
         break;
 
-      case 'ERROR':
+      case "ERROR":
         this.handlers.onError?.(message.code, message.message);
         break;
 
-      case 'HELLO':
-      case 'PONG':
-      case 'ECHO':
+      case "HELLO":
+      case "PONG":
+      case "ECHO":
         // Ignore these for now
         break;
 
       default:
-        logger.warn('Unhandled server message:', message);
+        logger.warn("Unhandled server message:", message);
     }
   }
 
   // Event handler registration
-  on<K extends keyof GameClientEventHandlers>(
-    event: K,
-    handler: GameClientEventHandlers[K]
-  ): void {
+  on<K extends keyof GameClientEventHandlers>(event: K, handler: GameClientEventHandlers[K]): void {
     this.handlers[event] = handler;
   }
 
@@ -177,7 +174,7 @@ export class GameClient {
   // Game actions
   joinGame(gameId: string, userId: string, displayName: string): void {
     this.sendMessage({
-      type: 'JOIN_GAME',
+      type: "JOIN_GAME",
       gameId,
       userId,
       displayName,
@@ -186,14 +183,14 @@ export class GameClient {
 
   leaveGame(gameId: string): void {
     this.sendMessage({
-      type: 'LEAVE_GAME',
+      type: "LEAVE_GAME",
       gameId,
     });
   }
 
   moveToken(entityId: number, x: number, y: number, animate = true): void {
     this.sendMessage({
-      type: 'MOVE_TOKEN',
+      type: "MOVE_TOKEN",
       entityId,
       x,
       y,
@@ -203,16 +200,16 @@ export class GameClient {
 
   rollDice(dice: string, label?: string, isPrivate = false): void {
     this.sendMessage({
-      type: 'ROLL_DICE',
+      type: "ROLL_DICE",
       dice,
       label,
       private: isPrivate,
     });
   }
 
-  sendChatMessage(message: string, channel = 'general'): void {
+  sendChatMessage(message: string, channel = "general"): void {
     this.sendMessage({
-      type: 'CHAT_MESSAGE',
+      type: "CHAT_MESSAGE",
       message,
       channel,
     });
@@ -220,7 +217,7 @@ export class GameClient {
 
   private sendMessage(message: AnyClientMessage): void {
     if (!this.connected) {
-      logger.warn('Cannot send message: not connected');
+      logger.warn("Cannot send message: not connected");
       return;
     }
     this.wsClient.send(message);

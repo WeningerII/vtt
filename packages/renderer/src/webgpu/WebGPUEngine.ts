@@ -1,5 +1,16 @@
-import type { GPUDevice, GPUCanvasContext, GPUTexture, GPURenderPipeline, GPUBuffer, GPUBindGroup, GPUTextureUsage, GPUBufferUsage, GPUCommandEncoder, GPURenderPassEncoder } from '@webgpu/types';
-import { logger } from '@vtt/logging';
+import type {
+  GPUDevice,
+  GPUCanvasContext,
+  GPUTexture,
+  GPURenderPipeline,
+  GPUBuffer,
+  GPUBindGroup,
+  GPUTextureUsage,
+  GPUBufferUsage,
+  GPUCommandEncoder,
+  GPURenderPassEncoder,
+} from "@webgpu/types";
+import { logger } from "@vtt/logging";
 /**
  * Advanced WebGPU 3D Graphics Engine
  * Exceeds industry VTT standards with professional-grade rendering
@@ -20,7 +31,7 @@ export interface RenderObject3D {
 
 export interface Light {
   id: string;
-  type: 'directional' | 'point' | 'spot' | 'area';
+  type: "directional" | "point" | "spot" | "area";
   position: [number, number, number];
   direction: [number, number, number];
   color: [number, number, number];
@@ -68,33 +79,34 @@ export class WebGPUEngine {
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
   private canvas: HTMLCanvasElement;
-  
+
   // Render targets
   private colorTarget: GPUTexture | null = null;
   private depthTarget: GPUTexture | null = null;
   private shadowMapTarget: GPUTexture | null = null;
   private hdrTarget: GPUTexture | null = null;
-  
+
   // Pipelines
   private forwardPipeline: GPURenderPipeline | null = null;
   private shadowMapPipeline: GPURenderPipeline | null = null;
   private postProcessPipeline: GPURenderPipeline | null = null;
-  
+
   // Buffers
   private uniformBuffer: GPUBuffer | null = null;
   private lightBuffer: GPUBuffer | null = null;
   private instanceBuffer: GPUBuffer | null = null;
-  
+
   // Bind groups
   private globalBindGroup: GPUBindGroup | null = null;
-  
+
   // State
   private objects: Map<string, RenderObject3D> = new Map();
   private lights: Map<string, Light> = new Map();
   private materials: Map<string, Material> = new Map();
   private textures: Map<string, GPUTexture> = new Map();
-  private meshes: Map<string, { vertices: GPUBuffer; indices: GPUBuffer; indexCount: number }> = new Map();
-  
+  private meshes: Map<string, { vertices: GPUBuffer; indices: GPUBuffer; indexCount: number }> =
+    new Map();
+
   private settings: RenderSettings = {
     enableShadows: true,
     shadowMapSize: 2048,
@@ -106,7 +118,7 @@ export class WebGPUEngine {
     msaaSamples: 4,
     enableVSync: true,
   };
-  
+
   private stats = {
     frameTime: 0,
     drawCalls: 0,
@@ -120,34 +132,34 @@ export class WebGPUEngine {
 
   async initialize(): Promise<boolean> {
     if (!navigator.gpu) {
-      logger.error('WebGPU not supported');
+      logger.error("WebGPU not supported");
       return false;
     }
 
     const adapter = await navigator.gpu.requestAdapter({
-      powerPreference: 'high-performance',
+      powerPreference: "high-performance",
     });
 
     if (!adapter) {
-      logger.error('Failed to get WebGPU adapter');
+      logger.error("Failed to get WebGPU adapter");
       return false;
     }
 
     this.device = await adapter.requestDevice({
-      requiredFeatures: ['depth-clip-control', 'texture-compression-bc'],
+      requiredFeatures: ["depth-clip-control", "texture-compression-bc"],
       requiredLimits: {
         maxTextureDimension2D: 8192,
         maxBufferSize: 256 * 1024 * 1024, // 256MB
       },
     });
 
-    this.context = this.canvas.getContext('webgpu')!;
+    this.context = this.canvas.getContext("webgpu")!;
     const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-    
+
     this.context.configure({
       device: this.device,
       format: canvasFormat,
-      alphaMode: 'premultiplied',
+      alphaMode: "premultiplied",
     });
 
     await this.createRenderTargets();
@@ -166,7 +178,7 @@ export class WebGPUEngine {
     // Main color target (HDR)
     this.hdrTarget = this.device.createTexture({
       size: [width, height],
-      format: 'rgba16float',
+      format: "rgba16float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       sampleCount: this.settings.enableMSAA ? this.settings.msaaSamples : 1,
     });
@@ -174,7 +186,7 @@ export class WebGPUEngine {
     // Depth target
     this.depthTarget = this.device.createTexture({
       size: [width, height],
-      format: 'depth32float',
+      format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
       sampleCount: this.settings.enableMSAA ? this.settings.msaaSamples : 1,
     });
@@ -182,7 +194,7 @@ export class WebGPUEngine {
     // Shadow map
     this.shadowMapTarget = this.device.createTexture({
       size: [this.settings.shadowMapSize, this.settings.shadowMapSize],
-      format: 'depth32float',
+      format: "depth32float",
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
     });
   }
@@ -375,35 +387,35 @@ export class WebGPUEngine {
     });
 
     this.forwardPipeline = this.device.createRenderPipeline({
-      layout: 'auto',
+      layout: "auto",
       vertex: {
         module: forwardVertexShader,
-        entryPoint: 'vs_main',
+        entryPoint: "vs_main",
         buffers: [
           {
             arrayStride: 44, // position(12) + normal(12) + uv(8) + tangent(12)
             attributes: [
-              { format: 'float32x3', offset: 0, shaderLocation: 0 }, // position
-              { format: 'float32x3', offset: 12, shaderLocation: 1 }, // normal
-              { format: 'float32x2', offset: 24, shaderLocation: 2 }, // uv
-              { format: 'float32x3', offset: 32, shaderLocation: 3 }, // tangent
+              { format: "float32x3", offset: 0, shaderLocation: 0 }, // position
+              { format: "float32x3", offset: 12, shaderLocation: 1 }, // normal
+              { format: "float32x2", offset: 24, shaderLocation: 2 }, // uv
+              { format: "float32x3", offset: 32, shaderLocation: 3 }, // tangent
             ],
           },
         ],
       },
       fragment: {
         module: forwardFragmentShader,
-        entryPoint: 'fs_main',
-        targets: [{ format: 'rgba16float' }],
+        entryPoint: "fs_main",
+        targets: [{ format: "rgba16float" }],
       },
       primitive: {
-        topology: 'triangle-list',
-        cullMode: 'back',
+        topology: "triangle-list",
+        cullMode: "back",
       },
       depthStencil: {
-        format: 'depth32float',
+        format: "depth32float",
         depthWriteEnabled: true,
-        depthCompare: 'less',
+        depthCompare: "less",
       },
       multisample: {
         count: this.settings.enableMSAA ? this.settings.msaaSamples : 1,
@@ -470,7 +482,7 @@ export class WebGPUEngine {
     // Create view and projection matrices
     const viewMatrix = this.createViewMatrix(camera);
     const projectionMatrix = this.createProjectionMatrix(camera);
-    
+
     // Pack uniform data
     const uniformData = new Float32Array(64); // 16 floats per matrix
     uniformData.set(projectionMatrix, 0);
@@ -481,12 +493,19 @@ export class WebGPUEngine {
     this.device.queue.writeBuffer(this.uniformBuffer!, 0, uniformData);
   }
 
-  private renderShadowMap(_encoder: GPUCommandEncoder, _scene: { objects: RenderObject3D[]; lights: Light[] }): void {
+  private renderShadowMap(
+    _encoder: GPUCommandEncoder,
+    _scene: { objects: RenderObject3D[]; lights: Light[] },
+  ): void {
     // Implementation for shadow mapping
     this.stats.shadowMapPasses++;
   }
 
-  private renderMainPass(encoder: GPUCommandEncoder, scene: { objects: RenderObject3D[]; lights: Light[] }, _camera: Camera): void {
+  private renderMainPass(
+    encoder: GPUCommandEncoder,
+    scene: { objects: RenderObject3D[]; lights: Light[] },
+    _camera: Camera,
+  ): void {
     if (!this.hdrTarget || !this.depthTarget) return;
 
     const renderPass = encoder.beginRenderPass({
@@ -494,20 +513,20 @@ export class WebGPUEngine {
         {
           view: this.hdrTarget.createView(),
           clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
-          loadOp: 'clear',
-          storeOp: 'store',
+          loadOp: "clear",
+          storeOp: "store",
         },
       ],
       depthStencilAttachment: {
         view: this.depthTarget.createView(),
         depthClearValue: 1.0,
-        depthLoadOp: 'clear',
-        depthStoreOp: 'store',
+        depthLoadOp: "clear",
+        depthStoreOp: "store",
       },
     });
 
     renderPass.setPipeline(this.forwardPipeline!);
-    
+
     // Render objects
     for (const obj of scene.objects) {
       if (obj.visible) {
@@ -524,9 +543,9 @@ export class WebGPUEngine {
     if (!mesh) return;
 
     renderPass.setVertexBuffer(0, mesh.vertices);
-    renderPass.setIndexBuffer(mesh.indices, 'uint32');
+    renderPass.setIndexBuffer(mesh.indices, "uint32");
     renderPass.drawIndexed(mesh.indexCount, 1, 0, 0, 0);
-    
+
     this.stats.triangles += mesh.indexCount / 3;
   }
 

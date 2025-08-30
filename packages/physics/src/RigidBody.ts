@@ -25,11 +25,11 @@ export class RigidBody {
   public rotation: number;
   public angularVelocity: number;
   public config: RigidBodyConfig;
-  
+
   // Collision shape (AABB for simplicity)
   public width: number;
   public height: number;
-  
+
   // Force accumulator
   private forces: Vector2[];
   private torques: number[];
@@ -40,7 +40,7 @@ export class RigidBody {
     y: number = 0,
     width: number = 1,
     height: number = 1,
-    config: Partial<RigidBodyConfig> = {}
+    config: Partial<RigidBodyConfig> = {},
   ) {
     this.id = id;
     this.position = { x, y };
@@ -60,7 +60,7 @@ export class RigidBody {
       isStatic: config.isStatic ?? false,
       isTrigger: config.isTrigger ?? false,
       layer: config.layer ?? 1,
-      mask: config.mask ?? 0xFFFFFFFF
+      mask: config.mask ?? 0xffffffff,
     };
   }
 
@@ -95,12 +95,12 @@ export class RigidBody {
   getAABB(): { minX: number; minY: number; maxX: number; maxY: number } {
     const halfWidth = this.width * 0.5;
     const halfHeight = this.height * 0.5;
-    
+
     return {
       minX: this.position.x - halfWidth,
       minY: this.position.y - halfHeight,
       maxX: this.position.x + halfWidth,
-      maxY: this.position.y + halfHeight
+      maxY: this.position.y + halfHeight,
     };
   }
 
@@ -111,7 +111,7 @@ export class RigidBody {
     // Check layer mask
     const layerCheck = (this.config.mask & (1 << other.config.layer)) !== 0;
     const otherLayerCheck = (other.config.mask & (1 << this.config.layer)) !== 0;
-    
+
     return layerCheck && otherLayerCheck;
   }
 
@@ -131,8 +131,8 @@ export class RigidBody {
     }
 
     // Apply friction
-    this.velocity.x *= (1 - this.config.friction * deltaTime);
-    this.velocity.y *= (1 - this.config.friction * deltaTime);
+    this.velocity.x *= 1 - this.config.friction * deltaTime;
+    this.velocity.y *= 1 - this.config.friction * deltaTime;
 
     // Integrate velocity
     this.velocity.x += this.acceleration.x * deltaTime;
@@ -150,7 +150,7 @@ export class RigidBody {
 
     // Simple angular integration (moment of inertia = 1 for simplicity)
     this.angularVelocity += totalTorque * deltaTime;
-    this.angularVelocity *= (1 - this.config.friction * deltaTime);
+    this.angularVelocity *= 1 - this.config.friction * deltaTime;
     this.rotation += this.angularVelocity * deltaTime;
 
     // Clear force accumulators
@@ -168,7 +168,7 @@ export class RigidBody {
     // Calculate relative velocity
     const relativeVelocity = {
       x: this.velocity.x - other.velocity.x,
-      y: this.velocity.y - other.velocity.y
+      y: this.velocity.y - other.velocity.y,
     };
 
     // Calculate relative velocity in collision normal direction
@@ -182,40 +182,42 @@ export class RigidBody {
 
     // Calculate impulse scalar
     let impulseScalar = -(1 + restitution) * velAlongNormal;
-    const totalMass = this.config.isStatic ? other.config.mass :
-                     other.config.isStatic ? this.config.mass :
-                     this.config.mass + other.config.mass;
+    const totalMass = this.config.isStatic
+      ? other.config.mass
+      : other.config.isStatic
+        ? this.config.mass
+        : this.config.mass + other.config.mass;
     impulseScalar /= totalMass;
 
     // Apply impulse
     const impulse = {
       x: impulseScalar * normal.x,
-      y: impulseScalar * normal.y
+      y: impulseScalar * normal.y,
     };
 
     if (!this.config.isStatic) {
-      this.velocity.x += impulse.x * this.config.mass / totalMass;
-      this.velocity.y += impulse.y * this.config.mass / totalMass;
+      this.velocity.x += (impulse.x * this.config.mass) / totalMass;
+      this.velocity.y += (impulse.y * this.config.mass) / totalMass;
     }
 
     if (!other.config.isStatic) {
-      other.velocity.x -= impulse.x * other.config.mass / totalMass;
-      other.velocity.y -= impulse.y * other.config.mass / totalMass;
+      other.velocity.x -= (impulse.x * other.config.mass) / totalMass;
+      other.velocity.y -= (impulse.y * other.config.mass) / totalMass;
     }
 
     // Position correction to prevent sinking
     const correctionPercent = 0.8;
     const slop = 0.01;
-    const correction = Math.max(penetration - slop, 0) * correctionPercent / totalMass;
+    const correction = (Math.max(penetration - slop, 0) * correctionPercent) / totalMass;
 
     if (!this.config.isStatic) {
-      this.position.x += correction * normal.x * other.config.mass / totalMass;
-      this.position.y += correction * normal.y * other.config.mass / totalMass;
+      this.position.x += (correction * normal.x * other.config.mass) / totalMass;
+      this.position.y += (correction * normal.y * other.config.mass) / totalMass;
     }
 
     if (!other.config.isStatic) {
-      other.position.x -= correction * normal.x * this.config.mass / totalMass;
-      other.position.y -= correction * normal.y * this.config.mass / totalMass;
+      other.position.x -= (correction * normal.x * this.config.mass) / totalMass;
+      other.position.y -= (correction * normal.y * this.config.mass) / totalMass;
     }
   }
 
@@ -252,7 +254,7 @@ export class RigidBody {
     if (this.config.isStatic) return;
     this.addForce({
       x: gravity.x * this.config.mass,
-      y: gravity.y * this.config.mass
+      y: gravity.y * this.config.mass,
     });
   }
 }

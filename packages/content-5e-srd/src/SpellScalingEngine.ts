@@ -3,7 +3,7 @@
  * Handles automatic scaling of spell effects when cast at higher levels
  */
 
-import type { SRDSpell } from './spells';
+import type { SRDSpell } from "./spells";
 
 export interface ScaledSpellEffect {
   originalSpell: SRDSpell;
@@ -31,19 +31,20 @@ export interface SpellUpcastOptions {
 }
 
 export class SpellScalingEngine {
-  
   /**
    * Calculate scaled spell effects for upcasting
    */
   upcastSpell(spell: SRDSpell, castAtLevel: number, casterLevel?: number): ScaledSpellEffect {
     if (castAtLevel < spell.level && spell.level > 0) {
-      throw new Error(`Cannot cast ${spell.name} at level ${castAtLevel} (minimum level ${spell.level})`);
+      throw new Error(
+        `Cannot cast ${spell.name} at level ${castAtLevel} (minimum level ${spell.level})`,
+      );
     }
 
     const scaledEffect: ScaledSpellEffect = {
       originalSpell: spell,
       castAtLevel,
-      scalingDescription: this.generateScalingDescription(spell, castAtLevel, casterLevel)
+      scalingDescription: this.generateScalingDescription(spell, castAtLevel, casterLevel),
     };
 
     // Handle cantrip scaling (based on character level)
@@ -62,31 +63,35 @@ export class SpellScalingEngine {
   /**
    * Scale cantrips based on character level
    */
-  private scaleCantrip(spell: SRDSpell, casterLevel: number, effect: ScaledSpellEffect): ScaledSpellEffect {
+  private scaleCantrip(
+    spell: SRDSpell,
+    casterLevel: number,
+    effect: ScaledSpellEffect,
+  ): ScaledSpellEffect {
     const cantripScaleLevels = [5, 11, 17];
-    const scaleMultiplier = cantripScaleLevels.filter(level => casterLevel >= level).length + 1;
+    const scaleMultiplier = cantripScaleLevels.filter((level) => casterLevel >= level).length + 1;
 
     if (spell.damage?.scalingDice && scaleMultiplier > 1) {
       const baseDice = spell.damage.diceExpression;
       const scalingDice = spell.damage.scalingDice;
-      const bonusDice = scalingDice ? this.multiplyDice(scalingDice, scaleMultiplier - 1) : '';
-      
+      const bonusDice = scalingDice ? this.multiplyDice(scalingDice, scaleMultiplier - 1) : "";
+
       effect.scaledDamage = {
         originalDice: baseDice,
         scaledDice: this.addDice(baseDice, bonusDice),
-        bonusDamage: bonusDice
+        bonusDamage: bonusDice,
       };
     }
 
     if (spell.healing?.scalingDice && scaleMultiplier > 1) {
       const baseDice = spell.healing.diceExpression;
       const scalingDice = spell.healing.scalingDice;
-      const bonusDice = scalingDice ? this.multiplyDice(scalingDice, scaleMultiplier - 1) : '';
-      
+      const bonusDice = scalingDice ? this.multiplyDice(scalingDice, scaleMultiplier - 1) : "";
+
       effect.scaledHealing = {
         originalDice: baseDice,
         scaledDice: this.addDice(baseDice, bonusDice),
-        bonusHealing: bonusDice
+        bonusHealing: bonusDice,
       };
     }
 
@@ -96,18 +101,22 @@ export class SpellScalingEngine {
   /**
    * Upcast spell using higher level slot
    */
-  private upcastSpellSlot(spell: SRDSpell, castAtLevel: number, effect: ScaledSpellEffect): ScaledSpellEffect {
+  private upcastSpellSlot(
+    spell: SRDSpell,
+    castAtLevel: number,
+    effect: ScaledSpellEffect,
+  ): ScaledSpellEffect {
     const bonusLevels = castAtLevel - spell.level;
 
     // Handle damage scaling
     if (spell.damage?.scalingDice) {
       const baseDice = spell.damage.diceExpression;
       const bonusDice = this.multiplyDice(spell.damage.scalingDice, bonusLevels);
-      
+
       effect.scaledDamage = {
         originalDice: baseDice,
         scaledDice: this.addDice(baseDice, bonusDice),
-        bonusDamage: bonusDice
+        bonusDamage: bonusDice,
       };
     }
 
@@ -115,17 +124,17 @@ export class SpellScalingEngine {
     if (spell.healing?.scalingDice) {
       const baseDice = spell.healing.diceExpression;
       const bonusDice = this.multiplyDice(spell.healing.scalingDice, bonusLevels);
-      
+
       effect.scaledHealing = {
         originalDice: baseDice,
         scaledDice: this.addDice(baseDice, bonusDice),
-        bonusHealing: bonusDice
+        bonusHealing: bonusDice,
       };
     }
 
     // Handle special spell-specific scaling
     effect.enhancedEffects = this.getSpellSpecificScaling(spell, bonusLevels);
-    
+
     // Handle additional targets for certain spells
     effect.additionalTargets = this.getAdditionalTargets(spell, bonusLevels);
 
@@ -139,37 +148,41 @@ export class SpellScalingEngine {
     const effects: string[] = [];
 
     switch (spell.id) {
-      case 'magic_missile':
-        effects.push(`Creates ${bonusLevels} additional dart${bonusLevels > 1 ? 's' : ''}`);
-        break;
-      
-      case 'scorching_ray':
-        effects.push(`Creates ${bonusLevels} additional ray${bonusLevels > 1 ? 's' : ''}`);
-        break;
-      
-      case 'sleep': {
-        const additionalHitPoints = bonusLevels * 16; // 2d8 average
-        effects.push(`Affects an additional ${additionalHitPoints} hit points worth of creatures`);
-    }
-        break;
-      
-      case 'color_spray': {
-        const additionalHp = bonusLevels * 20; // 2d10 average
-        effects.push(`Affects an additional ${additionalHp} hit points worth of creatures`);
-    }
+      case "magic_missile":
+        effects.push(`Creates ${bonusLevels} additional dart${bonusLevels > 1 ? "s" : ""}`);
         break;
 
-      case 'bless':
-      case 'charm_person':
-      case 'command':
-      case 'hold_person':
-      case 'invisibility':
-        effects.push(`Can target ${bonusLevels} additional creature${bonusLevels > 1 ? 's' : ''}`);
+      case "scorching_ray":
+        effects.push(`Creates ${bonusLevels} additional ray${bonusLevels > 1 ? "s" : ""}`);
         break;
 
-      case 'cure_wounds':
-      case 'burning_hands':
-      case 'thunderwave':
+      case "sleep":
+        {
+          const additionalHitPoints = bonusLevels * 16; // 2d8 average
+          effects.push(
+            `Affects an additional ${additionalHitPoints} hit points worth of creatures`,
+          );
+        }
+        break;
+
+      case "color_spray":
+        {
+          const additionalHp = bonusLevels * 20; // 2d10 average
+          effects.push(`Affects an additional ${additionalHp} hit points worth of creatures`);
+        }
+        break;
+
+      case "bless":
+      case "charm_person":
+      case "command":
+      case "hold_person":
+      case "invisibility":
+        effects.push(`Can target ${bonusLevels} additional creature${bonusLevels > 1 ? "s" : ""}`);
+        break;
+
+      case "cure_wounds":
+      case "burning_hands":
+      case "thunderwave":
         // These just get dice scaling, already handled above
         break;
     }
@@ -182,8 +195,13 @@ export class SpellScalingEngine {
    */
   private getAdditionalTargets(spell: SRDSpell, bonusLevels: number): number {
     const multiTargetSpells = [
-      'bless', 'charm_person', 'command', 'hold_person', 
-      'invisibility', 'fly', 'haste'
+      "bless",
+      "charm_person",
+      "command",
+      "hold_person",
+      "invisibility",
+      "fly",
+      "haste",
     ];
 
     if (multiTargetSpells.includes(spell.id)) {
@@ -196,11 +214,17 @@ export class SpellScalingEngine {
   /**
    * Generate human-readable scaling description
    */
-  private generateScalingDescription(spell: SRDSpell, castAtLevel: number, casterLevel?: number): string {
+  private generateScalingDescription(
+    spell: SRDSpell,
+    castAtLevel: number,
+    casterLevel?: number,
+  ): string {
     if (spell.level === 0 && casterLevel) {
       const cantripScaleLevels = [5, 11, 17];
-      const scaleLevel = cantripScaleLevels.find(level => casterLevel >= level && casterLevel < level + 6);
-      
+      const scaleLevel = cantripScaleLevels.find(
+        (level) => casterLevel >= level && casterLevel < level + 6,
+      );
+
       if (scaleLevel) {
         return `Cantrip scaled for character level ${casterLevel} (tier ${Math.floor(casterLevel / 6) + 1})`;
       }
@@ -212,22 +236,22 @@ export class SpellScalingEngine {
     }
 
     const bonusLevels = castAtLevel - spell.level;
-    return `Cast at level ${castAtLevel} (+${bonusLevels} level${bonusLevels > 1 ? 's' : ''} higher)`;
+    return `Cast at level ${castAtLevel} (+${bonusLevels} level${bonusLevels > 1 ? "s" : ""} higher)`;
   }
 
   /**
    * Multiply dice expression by a factor
    */
   private multiplyDice(diceExpression: string, multiplier: number): string {
-    if (multiplier <= 0) return '';
+    if (multiplier <= 0) return "";
     if (multiplier === 1) return diceExpression;
 
     // Handle expressions like "1d6", "2d8+1", etc.
     const diceRegex = /(\d+)d(\d+)(\+\d+)?/g;
-    
+
     return diceExpression.replace(diceRegex, (match, _numDice, _diceSize, _bonus) => {
       const newNumDice = parseInt(numDice) * multiplier;
-      const bonusPart = bonus || '';
+      const bonusPart = bonus || "";
       return `${newNumDice}d${diceSize}${bonusPart}`;
     });
   }
@@ -238,7 +262,7 @@ export class SpellScalingEngine {
   private addDice(baseDice: string, bonusDice: string): string {
     if (!bonusDice) return baseDice;
     if (!baseDice) return bonusDice;
-    
+
     return `${baseDice}+${bonusDice}`;
   }
 
@@ -254,14 +278,14 @@ export class SpellScalingEngine {
       const numDice = parseInt(match[1]);
       const diceSize = parseInt(match[2]);
       const bonus = match[3] ? parseInt(match[3]) : 0;
-      
-      total += (numDice * (diceSize + 1) / 2) + bonus;
+
+      total += (numDice * (diceSize + 1)) / 2 + bonus;
     }
 
     // Handle standalone bonuses like "+5"
     const bonusRegex = /(?:^|\+)(\d+)(?!d)/g;
     while ((match = bonusRegex.exec(diceExpression)) !== null) {
-      if (!diceExpression.substring(0, match.index).includes('d')) {
+      if (!diceExpression.substring(0, match.index).includes("d")) {
         total += parseInt(match[1]);
       }
     }
@@ -276,7 +300,7 @@ export class SpellScalingEngine {
     if (spell.level === 0) return [0]; // Cantrips don't upcast with slots
 
     const levels: number[] = [];
-    
+
     for (let level = spell.level; level <= 9; level++) {
       if (availableSlots[level] && availableSlots[level] > 0) {
         levels.push(level);
@@ -289,18 +313,22 @@ export class SpellScalingEngine {
   /**
    * Predict spell effectiveness at different levels
    */
-  getUpcastingRecommendation(spell: SRDSpell, availableSlots: Record<number, number>): {
+  getUpcastingRecommendation(
+    spell: SRDSpell,
+    availableSlots: Record<number, number>,
+  ): {
     level: number;
     effectiveness: number;
     recommendation: string;
   }[] {
-    const recommendations: Array<{level: number; effectiveness: number; recommendation: string}> = [];
+    const recommendations: Array<{ level: number; effectiveness: number; recommendation: string }> =
+      [];
     const availableLevels = this.getAvailableUpcastLevels(spell, availableSlots);
 
     for (const level of availableLevels) {
       const scaledEffect = this.upcastSpell(spell, level);
       let effectiveness = level; // Base effectiveness is the slot level
-      let recommendation = '';
+      let recommendation = "";
 
       // Calculate effectiveness based on scaling
       if (scaledEffect.scaledDamage && spell.damage) {
@@ -313,16 +341,18 @@ export class SpellScalingEngine {
 
       if (scaledEffect.additionalTargets) {
         effectiveness += scaledEffect.additionalTargets * 2; // Additional targets are valuable
-        recommendation += (recommendation ? ', ' : '') + `+${scaledEffect.additionalTargets} target${scaledEffect.additionalTargets > 1 ? 's' : ''}`;
+        recommendation +=
+          (recommendation ? ", " : "") +
+          `+${scaledEffect.additionalTargets} target${scaledEffect.additionalTargets > 1 ? "s" : ""}`;
       }
 
       if (scaledEffect.enhancedEffects && scaledEffect.enhancedEffects.length > 0) {
         effectiveness += scaledEffect.enhancedEffects.length;
-        recommendation += (recommendation ? ', ' : '') + scaledEffect.enhancedEffects.join(', ');
+        recommendation += (recommendation ? ", " : "") + scaledEffect.enhancedEffects.join(", ");
       }
 
       if (!recommendation) {
-        recommendation = level === spell.level ? 'Base level' : 'Higher slot level';
+        recommendation = level === spell.level ? "Base level" : "Higher slot level";
       }
 
       recommendations.push({ level, effectiveness, recommendation });

@@ -3,19 +3,19 @@
  * Provides comprehensive search, filtering, and sorting capabilities for D&D 5e spells
  */
 
-import type { SRDSpell } from './spells';
-import { _SRD_SPELLS, getAllSpells } from './spells';
+import type { SRDSpell } from "./spells";
+import { _SRD_SPELLS, getAllSpells } from "./spells";
 
 export interface SpellSearchCriteria {
   // Text search
   name?: string;
   description?: string;
-  
+
   // Basic properties
   level?: number | number[];
   school?: string | string[];
   classes?: string | string[];
-  
+
   // Components and requirements
   components?: {
     verbal?: boolean;
@@ -24,30 +24,30 @@ export interface SpellSearchCriteria {
   };
   concentration?: boolean;
   ritual?: boolean;
-  
+
   // Casting properties
   castingTime?: string | string[];
   range?: string | string[];
   duration?: string | string[];
-  
+
   // Damage and effects
   damageType?: string | string[];
   savingThrow?: string | string[];
   hasHealing?: boolean;
   hasDamage?: boolean;
-  
+
   // Advanced filters
   tags?: string | string[];
   source?: string | string[];
   upcastable?: boolean;
-  
+
   // Custom filters
   customFilter?: (spell: SRDSpell) => boolean;
 }
 
 export interface SpellSortOptions {
-  field: 'name' | 'level' | 'school' | 'castingTime' | 'range' | 'duration';
-  direction: 'asc' | 'desc';
+  field: "name" | "level" | "school" | "castingTime" | "range" | "duration";
+  direction: "asc" | "desc";
 }
 
 export interface SpellSearchResult {
@@ -73,7 +73,11 @@ export class SpellSearchEngine {
   /**
    * Search spells with comprehensive filtering
    */
-  search(criteria: SpellSearchCriteria, sort?: SpellSortOptions, limit?: number): SpellSearchResult {
+  search(
+    criteria: SpellSearchCriteria,
+    sort?: SpellSortOptions,
+    limit?: number,
+  ): SpellSearchResult {
     let filteredSpells = [...this.spells];
 
     // Apply filters
@@ -97,7 +101,7 @@ export class SpellSearchEngine {
       spells: filteredSpells,
       totalCount,
       filters: criteria,
-      facets
+      facets,
     };
   }
 
@@ -106,16 +110,16 @@ export class SpellSearchEngine {
    */
   quickSearch(query: string, limit = 10): SRDSpell[] {
     const normalizedQuery = query.toLowerCase().trim();
-    
+
     return this.spells
-      .map(spell => ({
+      .map((spell) => ({
         spell,
-        score: this.calculateRelevanceScore(spell, normalizedQuery)
+        score: this.calculateRelevanceScore(spell, normalizedQuery),
       }))
-      .filter(item => item.score > 0)
+      .filter((item) => item.score > 0)
       .sort((_a, _b) => b.score - a.score)
       .slice(0, limit)
-      .map(item => item.spell);
+      .map((item) => item.spell);
   }
 
   /**
@@ -123,11 +127,11 @@ export class SpellSearchEngine {
    */
   getSpellsForClass(className: string, characterLevel: number, includeCantrips = true): SRDSpell[] {
     const maxSpellLevel = this.getMaxSpellLevelForCharacter(characterLevel);
-    
-    return this.spells.filter(spell => {
+
+    return this.spells.filter((spell) => {
       // Check if class can cast this spell
       if (!spell.classes.includes(className)) return false;
-      
+
       // Check spell level limits
       if (spell.level === 0) return includeCantrips;
       return spell.level <= maxSpellLevel;
@@ -141,46 +145,49 @@ export class SpellSearchEngine {
     characterClass: string,
     characterLevel: number,
     preferredSchools?: string[],
-    preferredTags?: string[]
+    preferredTags?: string[],
   ): SRDSpell[] {
     const availableSpells = this.getSpellsForClass(characterClass, characterLevel);
-    
+
     return availableSpells
-      .map(spell => ({
+      .map((spell) => ({
         spell,
-        score: this.calculateSuggestionScore(spell, preferredSchools, preferredTags)
+        score: this.calculateSuggestionScore(spell, preferredSchools, preferredTags),
       }))
       .sort((_a, _b) => b.score - a.score)
       .slice(0, 20)
-      .map(item => item.spell);
+      .map((item) => item.spell);
   }
 
   /**
    * Find similar spells based on mechanics and effects
    */
   findSimilarSpells(spellId: string, limit = 5): SRDSpell[] {
-    const targetSpell = this.spells.find(s => s.id === spellId);
+    const targetSpell = this.spells.find((s) => s.id === spellId);
     if (!targetSpell) return [];
 
     return this.spells
-      .filter(spell => spell.id !== spellId)
-      .map(spell => ({
+      .filter((spell) => spell.id !== spellId)
+      .map((spell) => ({
         spell,
-        similarity: this.calculateSimilarityScore(targetSpell, spell)
+        similarity: this.calculateSimilarityScore(targetSpell, spell),
       }))
       .sort((_a, _b) => b.similarity - a.similarity)
       .slice(0, limit)
-      .map(item => item.spell);
+      .map((item) => item.spell);
   }
 
   private applyFilters(spells: SRDSpell[], criteria: SpellSearchCriteria): SRDSpell[] {
-    return spells.filter(spell => {
+    return spells.filter((spell) => {
       // Text search
       if (criteria.name && !spell.name.toLowerCase().includes(criteria.name.toLowerCase())) {
         return false;
       }
 
-      if (criteria.description && !spell.description.toLowerCase().includes(criteria.description.toLowerCase())) {
+      if (
+        criteria.description &&
+        !spell.description.toLowerCase().includes(criteria.description.toLowerCase())
+      ) {
         return false;
       }
 
@@ -199,21 +206,21 @@ export class SpellSearchEngine {
       // Class filter
       if (criteria.classes !== undefined) {
         const classes = Array.isArray(criteria.classes) ? criteria.classes : [criteria.classes];
-        if (!classes.some(cls => spell.classes.includes(cls))) return false;
+        if (!classes.some((cls) => spell.classes.includes(cls))) return false;
       }
 
       // Component filters
       if (criteria.components) {
         if (criteria.components.verbal !== undefined) {
-          const hasVerbal = spell.components.includes('V');
+          const hasVerbal = spell.components.includes("V");
           if (criteria.components.verbal !== hasVerbal) return false;
         }
         if (criteria.components.somatic !== undefined) {
-          const hasSomatic = spell.components.includes('S');
+          const hasSomatic = spell.components.includes("S");
           if (criteria.components.somatic !== hasSomatic) return false;
         }
         if (criteria.components.material !== undefined) {
-          const hasMaterial = spell.components.includes('M');
+          const hasMaterial = spell.components.includes("M");
           if (criteria.components.material !== hasMaterial) return false;
         }
       }
@@ -230,13 +237,17 @@ export class SpellSearchEngine {
 
       // Damage type filter
       if (criteria.damageType !== undefined && spell.damage) {
-        const damageTypes = Array.isArray(criteria.damageType) ? criteria.damageType : [criteria.damageType];
+        const damageTypes = Array.isArray(criteria.damageType)
+          ? criteria.damageType
+          : [criteria.damageType];
         if (!damageTypes.includes(spell.damage.damageType)) return false;
       }
 
       // Saving throw filter
       if (criteria.savingThrow !== undefined && spell.savingThrow) {
-        const saves = Array.isArray(criteria.savingThrow) ? criteria.savingThrow : [criteria.savingThrow];
+        const saves = Array.isArray(criteria.savingThrow)
+          ? criteria.savingThrow
+          : [criteria.savingThrow];
         if (!saves.includes(spell.savingThrow.ability)) return false;
       }
 
@@ -255,7 +266,7 @@ export class SpellSearchEngine {
       // Tags filter
       if (criteria.tags !== undefined) {
         const tags = Array.isArray(criteria.tags) ? criteria.tags : [criteria.tags];
-        if (!tags.some(tag => spell.tags.includes(tag))) return false;
+        if (!tags.some((tag) => spell.tags.includes(tag))) return false;
       }
 
       // Upcastable filter
@@ -279,7 +290,7 @@ export class SpellSearchEngine {
       let bVal: any = b[sort.field];
 
       // Handle string comparisons
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
+      if (typeof aVal === "string" && typeof bVal === "string") {
         aVal = aVal.toLowerCase();
         bVal = bVal.toLowerCase();
       }
@@ -288,20 +299,20 @@ export class SpellSearchEngine {
       if (aVal < bVal) comparison = -1;
       else if (aVal > bVal) comparison = 1;
 
-      return sort.direction === 'desc' ? -comparison : comparison;
+      return sort.direction === "desc" ? -comparison : comparison;
     });
   }
 
-  private generateFacets(spells: SRDSpell[]): SpellSearchResult['facets'] {
-    const facets: SpellSearchResult['facets'] = {
+  private generateFacets(spells: SRDSpell[]): SpellSearchResult["facets"] {
+    const facets: SpellSearchResult["facets"] = {
       levels: Record<string, any>,
       schools: Record<string, any>,
       classes: Record<string, any>,
       tags: Record<string, any>,
-      damageTypes: Record<string, any>
+      damageTypes: Record<string, any>,
     };
 
-    spells.forEach(spell => {
+    spells.forEach((spell) => {
       // Level facets
       facets.levels[spell.level] = (facets.levels[spell.level] || 0) + 1;
 
@@ -309,12 +320,12 @@ export class SpellSearchEngine {
       facets.schools[spell.school] = (facets.schools[spell.school] || 0) + 1;
 
       // Class facets
-      spell.classes.forEach(cls => {
+      spell.classes.forEach((cls) => {
         facets.classes[cls] = (facets.classes[cls] || 0) + 1;
       });
 
       // Tag facets
-      spell.tags.forEach(tag => {
+      spell.tags.forEach((tag) => {
         facets.tags[tag] = (facets.tags[tag] || 0) + 1;
       });
 
@@ -333,10 +344,8 @@ export class SpellSearchEngine {
 
     // Exact name match gets highest score
     if (spell.name.toLowerCase() === query) score += 100;
-    
     // Name starts with query
     else if (spell.name.toLowerCase().startsWith(query)) score += 50;
-    
     // Name contains query
     else if (spell.name.toLowerCase().includes(query)) score += 25;
 
@@ -347,10 +356,10 @@ export class SpellSearchEngine {
     if (spell.school.toLowerCase().includes(query)) score += 15;
 
     // Class matches
-    if (spell.classes.some(cls => cls.toLowerCase().includes(query))) score += 15;
+    if (spell.classes.some((cls) => cls.toLowerCase().includes(query))) score += 15;
 
     // Tags match
-    if (spell.tags.some(tag => tag.toLowerCase().includes(query))) score += 10;
+    if (spell.tags.some((tag) => tag.toLowerCase().includes(query))) score += 10;
 
     return score;
   }
@@ -358,12 +367,12 @@ export class SpellSearchEngine {
   private calculateSuggestionScore(
     spell: SRDSpell,
     preferredSchools?: string[],
-    preferredTags?: string[]
+    preferredTags?: string[],
   ): number {
     let score = 0;
 
     // Base score by utility and popularity
-    const utilitySpells = ['shield', 'counterspell', 'fireball', 'healing_word', 'misty_step'];
+    const utilitySpells = ["shield", "counterspell", "fireball", "healing_word", "misty_step"];
     if (utilitySpells.includes(spell.id)) score += 20;
 
     // Preferred school bonus
@@ -373,7 +382,7 @@ export class SpellSearchEngine {
 
     // Preferred tags bonus
     if (preferredTags) {
-      const tagMatches = spell.tags.filter(tag => preferredTags.includes(tag)).length;
+      const tagMatches = spell.tags.filter((tag) => preferredTags.includes(tag)).length;
       score += tagMatches * 10;
     }
 
@@ -404,12 +413,16 @@ export class SpellSearchEngine {
     }
 
     // Similar saving throw
-    if (spell1.savingThrow && spell2.savingThrow && spell1.savingThrow.ability === spell2.savingThrow.ability) {
+    if (
+      spell1.savingThrow &&
+      spell2.savingThrow &&
+      spell1.savingThrow.ability === spell2.savingThrow.ability
+    ) {
       similarity += 15;
     }
 
     // Common tags
-    const commonTags = spell1.tags.filter(tag => spell2.tags.includes(tag));
+    const commonTags = spell1.tags.filter((tag) => spell2.tags.includes(tag));
     similarity += commonTags.length * 5;
 
     // Both concentration or both non-concentration

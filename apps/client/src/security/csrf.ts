@@ -5,8 +5,8 @@
 // CSRF token management
 class CSRFManager {
   private token: string | null = null;
-  private readonly tokenKey = 'vtt-csrf-token';
-  private readonly headerName = 'X-CSRF-Token';
+  private readonly tokenKey = "vtt-csrf-token";
+  private readonly headerName = "X-CSRF-Token";
 
   constructor() {
     this.loadToken();
@@ -29,8 +29,8 @@ class CSRFManager {
     // Generate cryptographically secure random token
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
-    this.token = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    
+    this.token = Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+
     // Store in sessionStorage (not localStorage for security)
     sessionStorage.setItem(this.tokenKey, this.token);
   }
@@ -55,7 +55,7 @@ class CSRFManager {
    */
   getHeaders(): Record<string, string> {
     return {
-      [this.headerName]: this.getToken()
+      [this.headerName]: this.getToken(),
     };
   }
 
@@ -74,33 +74,36 @@ export const csrfManager = new CSRFManager();
  */
 export async function secureFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers);
-  
+
   // Add CSRF token to all non-GET requests
-  if (options.method && options.method.toUpperCase() !== 'GET') {
+  if (options.method && options.method.toUpperCase() !== "GET") {
     Object.entries(csrfManager.getHeaders()).forEach(([key, value]) => {
       headers.set(key, value);
     });
   }
 
   // Ensure Content-Type is set for POST requests
-  if (options.method && ['POST', 'PUT', 'PATCH'].includes(options.method.toUpperCase())) {
-    if (!headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
+  if (options.method && ["POST", "PUT", "PATCH"].includes(options.method.toUpperCase())) {
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
     }
   }
 
   const secureOptions: RequestInit = {
     ...options,
     headers,
-    credentials: 'same-origin', // Include cookies for same-origin requests
+    credentials: "same-origin", // Include cookies for same-origin requests
   };
 
   const response = await fetch(url, secureOptions);
 
   // Handle CSRF token refresh
   if (response.status === 403) {
-    const errorData = await response.clone().json().catch(() => ({}));
-    if (errorData.error === 'CSRF_TOKEN_INVALID') {
+    const errorData = await response
+      .clone()
+      .json()
+      .catch(() => ({}));
+    if (errorData.error === "CSRF_TOKEN_INVALID") {
       csrfManager.clearToken();
       // Retry with new token
       return secureFetch(url, options);
@@ -121,9 +124,9 @@ export function addCSRFToForm(form: HTMLFormElement): void {
   }
 
   // Add new CSRF token input
-  const csrfInput = document.createElement('input');
-  csrfInput.type = 'hidden';
-  csrfInput.name = 'csrf_token';
+  const csrfInput = document.createElement("input");
+  csrfInput.type = "hidden";
+  csrfInput.name = "csrf_token";
   csrfInput.value = csrfManager.getToken();
   form.appendChild(csrfInput);
 }
@@ -147,6 +150,6 @@ export function useCSRF() {
     token,
     refreshToken,
     getSecureHeaders,
-    secureFetch
+    secureFetch,
   };
 }

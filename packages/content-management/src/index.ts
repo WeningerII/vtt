@@ -3,14 +3,14 @@
  * Comprehensive asset management, import/export, validation, and processing pipeline
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 // Core Asset Management
-export * from './AssetManager';
-export * from './ContentImporter';  
-export * from './ContentExporter';
-export * from './ContentValidator';
-export * from './AssetPipeline';
+export * from "./AssetManager";
+export * from "./ContentImporter";
+export * from "./ContentExporter";
+export * from "./ContentValidator";
+export * from "./AssetPipeline";
 
 // Re-export commonly used types and interfaces
 export type {
@@ -21,7 +21,7 @@ export type {
   AssetSearchResult,
   StorageProvider,
   AssetEvent,
-} from './AssetManager';
+} from "./AssetManager";
 
 export type {
   ImportOptions,
@@ -32,7 +32,7 @@ export type {
   PackageAssetEntry,
   ImportProgress,
   ContentProcessor,
-} from './ContentImporter';
+} from "./ContentImporter";
 
 export type {
   ExportOptions,
@@ -40,7 +40,7 @@ export type {
   ExportResult,
   ExportProgress,
   ExportPreset,
-} from './ContentExporter';
+} from "./ContentExporter";
 
 export type {
   ValidationRule,
@@ -48,7 +48,7 @@ export type {
   ValidationResult,
   ValidationIssue,
   ContentPolicy,
-} from './ContentValidator';
+} from "./ContentValidator";
 
 export type {
   PipelineStage,
@@ -56,21 +56,21 @@ export type {
   ProcessingResult,
   PipelineConfig,
   PipelineProgress,
-} from './AssetPipeline';
+} from "./AssetPipeline";
 
 // Default configurations and utilities
-export { DEFAULT_VTT_POLICY } from './ContentValidator';
-export { _DEFAULT_PIPELINE_CONFIGS } from './AssetPipeline';
+export { DEFAULT_VTT_POLICY } from "./ContentValidator";
+export { _DEFAULT_PIPELINE_CONFIGS } from "./AssetPipeline";
 
 /**
  * Content Management System
  * High-level orchestrator for all content management operations
  */
-import { AssetManager, StorageProvider, MemoryStorageProvider } from './AssetManager';
-import { ContentImporter } from './ContentImporter';
-import { ContentExporter } from './ContentExporter';
-import { ContentValidator, DEFAULT_VTT_POLICY, ContentPolicy } from './ContentValidator';
-import { AssetPipeline, _DEFAULT_PIPELINE_CONFIGS, PipelineConfig } from './AssetPipeline';
+import { AssetManager, StorageProvider, MemoryStorageProvider } from "./AssetManager";
+import { ContentImporter } from "./ContentImporter";
+import { ContentExporter } from "./ContentExporter";
+import { ContentValidator, DEFAULT_VTT_POLICY, ContentPolicy } from "./ContentValidator";
+import { AssetPipeline, _DEFAULT_PIPELINE_CONFIGS, PipelineConfig } from "./AssetPipeline";
 
 export interface ContentManagementConfig {
   storageProvider?: StorageProvider;
@@ -89,19 +89,19 @@ export class ContentManagementSystem extends EventEmitter {
 
   constructor(config: ContentManagementConfig = {}) {
     super();
-    
+
     // Initialize storage provider
     const storageProvider = config.storageProvider || new MemoryStorageProvider();
-    
+
     // Initialize core components
     this.assetManager = new AssetManager(storageProvider);
     this.importer = new ContentImporter(this.assetManager);
     this.exporter = new ContentExporter(this.assetManager);
-    
+
     // Initialize validation
     const contentPolicy = config.contentPolicy || DEFAULT_VTT_POLICY;
     this.validator = new ContentValidator(contentPolicy);
-    
+
     // Initialize processing pipeline
     const pipelineConfig = config.pipelineConfig || _DEFAULT_PIPELINE_CONFIGS.development;
     this.pipeline = new AssetPipeline(pipelineConfig);
@@ -115,7 +115,7 @@ export class ContentManagementSystem extends EventEmitter {
    */
   async importFiles(files: FileList, importOptions: any = {}, processAssets = true): Promise<any> {
     const importResult = await this.importer.importFiles(files, importOptions);
-    
+
     if (!processAssets) {
       return importResult;
     }
@@ -126,18 +126,20 @@ export class ContentManagementSystem extends EventEmitter {
       try {
         const data = await this.assetManager.getAssetData(asset.id);
         const processResult = await this.pipeline.processAsset(data, asset);
-        
+
         // Update asset with processed data and metadata
         if (processResult.data !== data) {
           await this.assetManager.updateAsset(asset.id, processResult.metadata);
         }
-        
+
         processedAssets.push({
           asset,
           processed: processResult,
         } as any);
       } catch (error) {
-        importResult.warnings.push(`Failed to process ${asset.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        importResult.warnings.push(
+          `Failed to process ${asset.name}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     }
 
@@ -157,10 +159,10 @@ export class ContentManagementSystem extends EventEmitter {
     }
 
     const data = await this.assetManager.getAssetData(assetId);
-    
+
     // Run validation
     const validationResult = await this.validator.validateAsset(asset, data);
-    
+
     // Run integrity check
     const integrityResult = await this.validator.validateIntegrity(asset, data);
 
@@ -187,11 +189,11 @@ export class ContentManagementSystem extends EventEmitter {
       storage: storageStats,
       validation: {
         totalRules: validationRules.length,
-        activeRules: validationRules.filter(r => r.type === 'error').length,
+        activeRules: validationRules.filter((r) => r.type === "error").length,
       },
       pipeline: {
         totalStages: pipelineConfig.stages.length,
-        enabledStages: pipelineConfig.stages.filter(s => s.enabled).length,
+        enabledStages: pipelineConfig.stages.filter((s) => s.enabled).length,
       },
     };
   }
@@ -218,12 +220,14 @@ export class ContentManagementSystem extends EventEmitter {
 
     // Validate all assets
     const allAssets = this.assetManager.searchAssets({}, 1, 10000).assets;
-    
+
     for (const asset of allAssets) {
       try {
         const validation = await this.validateAsset(asset.id);
         if (!validation.integrity.valid) {
-          result.integrityIssues.push(`${asset.name}: ${validation.integrity.issues[0]?.message || 'Integrity check failed'}`);
+          result.integrityIssues.push(
+            `${asset.name}: ${validation.integrity.issues[0]?.message || "Integrity check failed"}`,
+          );
         }
         result.assetsValidated++;
       } catch (_error) {
@@ -236,20 +240,20 @@ export class ContentManagementSystem extends EventEmitter {
 
   private setupEventForwarding(): void {
     // Forward asset manager events
-    this.assetManager.on('assetCreated', (event) => this.emit('asset:created', event));
-    this.assetManager.on('assetUpdated', (event) => this.emit('asset:updated', event));
-    this.assetManager.on('assetDeleted', (event) => this.emit('asset:deleted', event));
-    this.assetManager.on('assetDownloaded', (event) => this.emit('asset:downloaded', event));
+    this.assetManager.on("assetCreated", (event) => this.emit("asset:created", event));
+    this.assetManager.on("assetUpdated", (event) => this.emit("asset:updated", event));
+    this.assetManager.on("assetDeleted", (event) => this.emit("asset:deleted", event));
+    this.assetManager.on("assetDownloaded", (event) => this.emit("asset:downloaded", event));
 
     // Forward importer events
-    this.importer.on('progress', (progress) => this.emit('import:progress', progress));
+    this.importer.on("progress", (progress) => this.emit("import:progress", progress));
 
     // Forward exporter events
-    this.exporter.on('progress', (progress) => this.emit('export:progress', progress));
+    this.exporter.on("progress", (progress) => this.emit("export:progress", progress));
 
     // Forward pipeline events
-    this.pipeline.on('progress', (progress) => this.emit('pipeline:progress', progress));
-    this.pipeline.on('batchProgress', (progress) => this.emit('pipeline:batchProgress', progress));
+    this.pipeline.on("progress", (progress) => this.emit("pipeline:progress", progress));
+    this.pipeline.on("batchProgress", (progress) => this.emit("pipeline:batchProgress", progress));
   }
 
   // EventEmitter.emit is now inherited from parent class
@@ -259,7 +263,9 @@ export class ContentManagementSystem extends EventEmitter {
 /**
  * Create a content management system with sensible defaults
  */
-export function createContentManagementSystem(config: ContentManagementConfig = {}): ContentManagementSystem {
+export function createContentManagementSystem(
+  config: ContentManagementConfig = {},
+): ContentManagementSystem {
   return new ContentManagementSystem(config);
 }
 
@@ -271,48 +277,48 @@ export const _ContentUtils = {
    * Determine asset type from filename
    */
   getAssetTypeFromFilename(filename: string): any {
-    const ext = filename.split('.').pop()?.toLowerCase();
-    
+    const ext = filename.split(".").pop()?.toLowerCase();
+
     switch (ext) {
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-      case 'webp':
-      case 'svg':
-        return 'image';
-      
-      case 'mp3':
-      case 'wav':
-      case 'ogg':
-      case 'flac':
-        return 'audio';
-      
-      case 'obj':
-      case 'fbx':
-      case 'gltf':
-      case 'glb':
-        return 'model';
-      
-      case 'glsl':
-      case 'vert':
-      case 'frag':
-        return 'shader';
-      
-      case 'ttf':
-      case 'otf':
-      case 'woff':
-      case 'woff2':
-        return 'font';
-      
-      case 'json':
-      case 'xml':
-      case 'yaml':
-      case 'yml':
-        return 'data';
-      
+      case "jpg":
+      case "jpeg":
+      case "png":
+      case "gif":
+      case "webp":
+      case "svg":
+        return "image";
+
+      case "mp3":
+      case "wav":
+      case "ogg":
+      case "flac":
+        return "audio";
+
+      case "obj":
+      case "fbx":
+      case "gltf":
+      case "glb":
+        return "model";
+
+      case "glsl":
+      case "vert":
+      case "frag":
+        return "shader";
+
+      case "ttf":
+      case "otf":
+      case "woff":
+      case "woff2":
+        return "font";
+
+      case "json":
+      case "xml":
+      case "yaml":
+      case "yml":
+        return "data";
+
       default:
-        return 'data';
+        return "data";
     }
   },
 
@@ -320,24 +326,26 @@ export const _ContentUtils = {
    * Format file size in human-readable format
    */
   formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    
+    if (bytes === 0) return "0 B";
+
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   },
 
   /**
    * Generate safe filename from string
    */
   sanitizeFilename(filename: string): string {
-    return filename
-    // eslint-disable-next-line no-control-regex
-      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
-      .replace(/^\.+/, '')
-      .substring(0, 255);
+    return (
+      filename
+        // eslint-disable-next-line no-control-regex
+        .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+        .replace(/^\.+/, "")
+        .substring(0, 255)
+    );
   },
 
   /**
@@ -345,7 +353,7 @@ export const _ContentUtils = {
    */
   extractTags(filename: string, customProperties: Record<string, any> = {}): string[] {
     const tags: string[] = [];
-    
+
     // Extract from filename
     const nameParts = filename.toLowerCase().split(/[_\-\s\.]+/);
     for (const part of nameParts) {
@@ -358,8 +366,8 @@ export const _ContentUtils = {
     if (customProperties.keywords) {
       if (Array.isArray(customProperties.keywords)) {
         tags.push(...customProperties.keywords);
-      } else if (typeof customProperties.keywords === 'string') {
-        tags.push(...customProperties.keywords.split(',').map(k => k.trim()));
+      } else if (typeof customProperties.keywords === "string") {
+        tags.push(...customProperties.keywords.split(",").map((k) => k.trim()));
       }
     }
 

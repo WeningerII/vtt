@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Professional Content Creation Suite - Triple A Quality Content Tools
@@ -8,7 +8,17 @@ import { logger } from '@vtt/logging';
 export interface ContentAsset {
   id: string;
   name: string;
-  type: 'map' | 'character' | 'item' | 'spell' | 'monster' | 'environment' | 'audio' | 'image' | 'model' | 'animation';
+  type:
+    | "map"
+    | "character"
+    | "item"
+    | "spell"
+    | "monster"
+    | "environment"
+    | "audio"
+    | "image"
+    | "model"
+    | "animation";
   category: string;
   tags: string[];
   metadata: AssetMetadata;
@@ -31,7 +41,7 @@ export interface AssetMetadata {
   duration?: number;
   gameSystem?: string;
   sourceBook?: string;
-  rarity?: 'common' | 'uncommon' | 'rare' | 'very_rare' | 'legendary' | 'artifact';
+  rarity?: "common" | "uncommon" | "rare" | "very_rare" | "legendary" | "artifact";
   level?: number;
   keywords: string[];
   customProperties: Record<string, any>;
@@ -62,7 +72,7 @@ export interface MapAsset extends ContentAsset {
 export interface MapLayer {
   id: string;
   name: string;
-  type: 'background' | 'terrain' | 'objects' | 'lighting' | 'effects' | 'tokens' | 'fog' | 'grid';
+  type: "background" | "terrain" | "objects" | "lighting" | "effects" | "tokens" | "fog" | "grid";
   visible: boolean;
   locked: boolean;
   opacity: number;
@@ -73,7 +83,7 @@ export interface MapLayer {
 
 export interface LayerElement {
   id: string;
-  type: 'image' | 'shape' | 'text' | 'tile' | 'token' | 'effect';
+  type: "image" | "shape" | "text" | "tile" | "token" | "effect";
   position: [number, number];
   rotation: number;
   scale: [number, number];
@@ -97,21 +107,21 @@ export interface LightSource {
   color: [number, number, number];
   intensity: number;
   radius: number;
-  falloff: 'linear' | 'quadratic' | 'constant';
+  falloff: "linear" | "quadratic" | "constant";
   castsShadows: boolean;
   animated: boolean;
   animation?: LightAnimation;
 }
 
 export interface LightAnimation {
-  type: 'flicker' | 'pulse' | 'rotate' | 'color_cycle';
+  type: "flicker" | "pulse" | "rotate" | "color_cycle";
   speed: number;
   intensity: number;
   parameters: Record<string, number>;
 }
 
 export interface WeatherEffect {
-  type: 'rain' | 'snow' | 'fog' | 'wind' | 'storm' | 'sandstorm';
+  type: "rain" | "snow" | "fog" | "wind" | "storm" | "sandstorm";
   intensity: number;
   direction: [number, number];
   coverage: number;
@@ -153,14 +163,14 @@ export interface ReverbConfig {
 export interface MapRegion {
   id: string;
   name: string;
-  shape: 'rectangle' | 'circle' | 'polygon';
+  shape: "rectangle" | "circle" | "polygon";
   points: [number, number][];
   properties: RegionProperties;
   triggers: RegionTrigger[];
 }
 
 export interface RegionProperties {
-  type: 'combat' | 'exploration' | 'social' | 'hazard' | 'special';
+  type: "combat" | "exploration" | "social" | "hazard" | "special";
   effects: string[];
   lighting?: LightingOverride;
   weather?: WeatherOverride;
@@ -168,20 +178,20 @@ export interface RegionProperties {
 }
 
 export interface RegionTrigger {
-  event: 'enter' | 'exit' | 'stay' | 'interact';
+  event: "enter" | "exit" | "stay" | "interact";
   actions: TriggerAction[];
   conditions?: string[];
 }
 
 export interface TriggerAction {
-  type: 'message' | 'effect' | 'spawn' | 'teleport' | 'sound' | 'script';
+  type: "message" | "effect" | "spawn" | "teleport" | "sound" | "script";
   parameters: Record<string, any>;
 }
 
 export interface SpawnPoint {
   id: string;
   position: [number, number];
-  type: 'player' | 'npc' | 'monster' | 'item';
+  type: "player" | "npc" | "monster" | "item";
   quantity: [number, number];
   respawn: boolean;
   conditions?: string[];
@@ -201,8 +211,8 @@ export interface MapTrigger {
 export interface MapProperties {
   gameSystem: string;
   environment: string;
-  timeOfDay: 'dawn' | 'day' | 'dusk' | 'night';
-  season: 'spring' | 'summer' | 'autumn' | 'winter';
+  timeOfDay: "dawn" | "day" | "dusk" | "night";
+  season: "spring" | "summer" | "autumn" | "winter";
   climate: string;
   elevation: number;
   temperature: number;
@@ -248,7 +258,7 @@ export interface StatValue {
 export interface StatSource {
   name: string;
   value: number;
-  type: 'base' | 'racial' | 'class' | 'item' | 'spell' | 'feat' | 'temporary';
+  type: "base" | "racial" | "class" | "item" | "spell" | "feat" | "temporary";
 }
 
 export interface SkillValue extends StatValue {
@@ -270,7 +280,7 @@ export interface CharacterAppearance {
   token: string;
   model?: string;
   animations?: string[];
-  size: 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
+  size: "tiny" | "small" | "medium" | "large" | "huge" | "gargantuan";
   height: string;
   weight: string;
   age: number;
@@ -282,7 +292,7 @@ export interface CharacterAppearance {
 }
 
 export interface PhysicalFeature {
-  category: 'hair' | 'eyes' | 'skin' | 'build' | 'clothing' | 'accessories' | 'scars' | 'tattoos';
+  category: "hair" | "eyes" | "skin" | "build" | "clothing" | "accessories" | "scars" | "tattoos";
   description: string;
   prominent: boolean;
 }
@@ -297,7 +307,7 @@ export interface Equipment {
 }
 
 export interface ItemCustomization {
-  type: 'enchantment' | 'material' | 'appearance' | 'inscription';
+  type: "enchantment" | "material" | "appearance" | "inscription";
   name: string;
   description: string;
   effects: string[];
@@ -306,7 +316,7 @@ export interface ItemCustomization {
 export interface Ability {
   id: string;
   name: string;
-  type: 'action' | 'bonus_action' | 'reaction' | 'passive' | 'legendary' | 'lair';
+  type: "action" | "bonus_action" | "reaction" | "passive" | "legendary" | "lair";
   description: string;
   range: string;
   duration: string;
@@ -318,13 +328,21 @@ export interface Ability {
 }
 
 export interface UsageLimit {
-  type: 'at_will' | 'per_turn' | 'per_round' | 'per_encounter' | 'per_short_rest' | 'per_long_rest' | 'per_day' | 'charges';
+  type:
+    | "at_will"
+    | "per_turn"
+    | "per_round"
+    | "per_encounter"
+    | "per_short_rest"
+    | "per_long_rest"
+    | "per_day"
+    | "charges";
   amount: number;
   current: number;
 }
 
 export interface RechargeCondition {
-  type: 'dice' | 'time' | 'event';
+  type: "dice" | "time" | "event";
   value: string;
 }
 
@@ -355,7 +373,7 @@ export interface SpellComponents {
 }
 
 export interface SpellCustomization {
-  type: 'metamagic' | 'enhancement' | 'variant';
+  type: "metamagic" | "enhancement" | "variant";
   name: string;
   effects: string[];
   cost?: number;
@@ -401,7 +419,7 @@ export interface VoiceProfile {
 
 export interface Relationship {
   character: string;
-  type: 'ally' | 'friend' | 'neutral' | 'rival' | 'enemy' | 'family' | 'romantic';
+  type: "ally" | "friend" | "neutral" | "rival" | "enemy" | "family" | "romantic";
   disposition: number; // -100 to 100
   history: string;
   notes: string;
@@ -417,7 +435,7 @@ export interface ProgressionData {
 }
 
 export interface ProgressionGoal {
-  type: 'level' | 'story' | 'item' | 'ability' | 'relationship';
+  type: "level" | "story" | "item" | "ability" | "relationship";
   description: string;
   progress: number;
   target: number;
@@ -435,7 +453,7 @@ export interface Achievement {
 export interface StoryBeat {
   session: string;
   description: string;
-  impact: 'minor' | 'major' | 'critical';
+  impact: "minor" | "major" | "critical";
   characters: string[];
   locations: string[];
   consequences: string[];
@@ -445,27 +463,27 @@ export class ProfessionalContentSuite {
   private assets: Map<string, ContentAsset> = new Map();
   private templates: Map<string, ContentTemplate> = new Map();
   private generators: Map<string, ContentGenerator> = new Map();
-  
+
   // Creation tools
   private mapEditor: MapEditor;
   private characterBuilder: CharacterBuilder;
   private itemForge: ItemForge;
   private spellCrafter: SpellCrafter;
   private encounterDesigner: EncounterDesigner;
-  
+
   // AI-powered assistance
   private aiAssistant: ContentAI;
   private imageGenerator: ImageGenerator;
   private audioGenerator: AudioGenerator;
-  
+
   // Import/Export
   private importers: Map<string, ContentImporter> = new Map();
   private exporters: Map<string, ContentExporter> = new Map();
-  
+
   // Collaboration
   private versionControl: VersionControl;
   private collaboration: CollaborationEngine;
-  
+
   // Statistics
   private stats = {
     assetsCreated: 0,
@@ -486,32 +504,32 @@ export class ProfessionalContentSuite {
     this.audioGenerator = new AudioGenerator();
     this.versionControl = new VersionControl();
     this.collaboration = new CollaborationEngine();
-    
+
     this.setupImportersExporters();
     this.loadDefaultTemplates();
   }
 
   private setupImportersExporters(): void {
     // Support for major VTT formats
-    this.importers.set('foundry', new FoundryImporter());
-    this.importers.set('roll20', new Roll20Importer());
-    this.importers.set('fg', new FantasyGroundsImporter());
-    this.importers.set('dndbeyond', new DnDBeyondImporter());
-    this.importers.set('json', new JSONImporter());
-    this.importers.set('xml', new XMLImporter());
-    
-    this.exporters.set('foundry', new FoundryExporter());
-    this.exporters.set('roll20', new Roll20Exporter());
-    this.exporters.set('fg', new FantasyGroundsExporter());
-    this.exporters.set('json', new JSONExporter());
-    this.exporters.set('pdf', new PDFExporter());
-    this.exporters.set('image', new ImageExporter());
+    this.importers.set("foundry", new FoundryImporter());
+    this.importers.set("roll20", new Roll20Importer());
+    this.importers.set("fg", new FantasyGroundsImporter());
+    this.importers.set("dndbeyond", new DnDBeyondImporter());
+    this.importers.set("json", new JSONImporter());
+    this.importers.set("xml", new XMLImporter());
+
+    this.exporters.set("foundry", new FoundryExporter());
+    this.exporters.set("roll20", new Roll20Exporter());
+    this.exporters.set("fg", new FantasyGroundsExporter());
+    this.exporters.set("json", new JSONExporter());
+    this.exporters.set("pdf", new PDFExporter());
+    this.exporters.set("image", new ImageExporter());
   }
 
   private async loadDefaultTemplates(): Promise<void> {
     // Load built-in templates for common content types
-    const templateTypes = ['dungeon', 'city', 'wilderness', 'npc', 'monster', 'treasure'];
-    
+    const templateTypes = ["dungeon", "city", "wilderness", "npc", "monster", "treasure"];
+
     for (const type of templateTypes) {
       try {
         const template = await this.loadTemplate(`/templates/${type}.json`);
@@ -525,9 +543,9 @@ export class ProfessionalContentSuite {
   private async loadTemplate(_path: string): Promise<ContentTemplate> {
     // Implementation would load template from file
     return {
-      id: '',
-      name: '',
-      type: 'map',
+      id: "",
+      name: "",
+      type: "map",
       structure: Record<string, any>,
       defaults: Record<string, any>,
       validation: Record<string, any>,
@@ -539,38 +557,38 @@ export class ProfessionalContentSuite {
   createAsset(type: string, data: any): ContentAsset {
     const asset: ContentAsset = {
       id: this.generateId(),
-      name: data.name || 'Untitled',
+      name: data.name || "Untitled",
       type: type as any,
-      category: data.category || 'uncategorized',
+      category: data.category || "uncategorized",
       tags: data.tags || [],
       metadata: data.metadata || {},
       content: data.content || {},
       version: 1,
       created: new Date(),
       modified: new Date(),
-      author: data.author || 'Anonymous',
-      license: data.license || 'All Rights Reserved',
+      author: data.author || "Anonymous",
+      license: data.license || "All Rights Reserved",
       dependencies: data.dependencies || [],
       variants: data.variants || [],
     };
 
     this.assets.set(asset.id, asset);
     this.stats.assetsCreated++;
-    
+
     return asset;
   }
 
   updateAsset(id: string, updates: Partial<ContentAsset>): ContentAsset | null {
     const asset = this.assets.get(id);
     if (!asset) return null;
-    
+
     Object.assign(asset, updates);
     asset.modified = new Date();
     asset.version++;
-    
+
     this.versionControl.saveVersion(asset);
     this.collaboration.notifyChange(id, updates);
-    
+
     return asset;
   }
 
@@ -580,13 +598,13 @@ export class ProfessionalContentSuite {
 
   searchAssets(query: SearchQuery): ContentAsset[] {
     const results: ContentAsset[] = [];
-    
+
     for (const asset of this.assets.values()) {
       if (this.matchesQuery(asset, query)) {
         results.push(asset);
       }
     }
-    
+
     return this.sortResults(results, query.sort);
   }
 
@@ -594,60 +612,62 @@ export class ProfessionalContentSuite {
     // Text search
     if (query.text) {
       const searchText = query.text.toLowerCase();
-      if (!asset.name.toLowerCase().includes(searchText) &&
-          !asset.metadata.description?.toLowerCase().includes(searchText) &&
-          !asset.tags.some(tag => tag.toLowerCase().includes(searchText))) {
+      if (
+        !asset.name.toLowerCase().includes(searchText) &&
+        !asset.metadata.description?.toLowerCase().includes(searchText) &&
+        !asset.tags.some((tag) => tag.toLowerCase().includes(searchText))
+      ) {
         return false;
       }
     }
-    
+
     // Type filter
     if (query.type && asset.type !== query.type) {
       return false;
     }
-    
+
     // Tag filter
-    if (query.tags && !query.tags.every(tag => asset.tags.includes(tag))) {
+    if (query.tags && !query.tags.every((tag) => asset.tags.includes(tag))) {
       return false;
     }
-    
+
     // Category filter
     if (query.category && asset.category !== query.category) {
       return false;
     }
-    
+
     // Author filter
     if (query.author && asset.author !== query.author) {
       return false;
     }
-    
+
     return true;
   }
 
   private sortResults(results: ContentAsset[], sort?: SortOption): ContentAsset[] {
     if (!sort) return results;
-    
+
     return results.sort((_a, _b) => {
       let comparison = 0;
-      
+
       switch (sort.field) {
-        case 'name':
+        case "name":
           comparison = a.name.localeCompare(b.name);
           break;
-        case 'created':
+        case "created":
           comparison = a.created.getTime() - b.created.getTime();
           break;
-        case 'modified':
+        case "modified":
           comparison = a.modified.getTime() - b.modified.getTime();
           break;
-        case 'type':
+        case "type":
           comparison = a.type.localeCompare(b.type);
           break;
         default:
           return 0;
       }
-      
-      return sort.order === 'desc' ? -comparison : comparison;
+
+      return sort.order === "desc" ? -comparison : comparison;
     });
   }
 
@@ -657,12 +677,12 @@ export class ProfessionalContentSuite {
     if (!template) {
       throw new Error(`Template ${templateId} not found`);
     }
-    
+
     const mergedData = this.mergeTemplateData(template, data);
     const asset = this.createAsset(template.type, mergedData);
-    
+
     this.stats.templatesUsed++;
-    
+
     return asset;
   }
 
@@ -672,9 +692,13 @@ export class ProfessionalContentSuite {
   }
 
   // AI-powered generation
-  async generateWithAI(prompt: string, type: string, options?: GenerationOptions): Promise<ContentAsset> {
+  async generateWithAI(
+    prompt: string,
+    type: string,
+    options?: GenerationOptions,
+  ): Promise<ContentAsset> {
     this.stats.aiGenerations++;
-    
+
     const generated = await this.aiAssistant.generate(prompt, type, options);
     return this.createAsset(type, generated);
   }
@@ -682,7 +706,7 @@ export class ProfessionalContentSuite {
   async enhanceWithAI(assetId: string, enhancement: string): Promise<ContentAsset | null> {
     const asset = this.getAsset(assetId);
     if (!asset) return null;
-    
+
     const enhanced = await this.aiAssistant.enhance(asset, enhancement);
     return this.updateAsset(assetId, { content: enhanced });
   }
@@ -714,12 +738,12 @@ export class ProfessionalContentSuite {
     if (!importer) {
       throw new Error(`Importer for ${format} not found`);
     }
-    
+
     const imported = await importer.import(data);
     const asset = this.createAsset(imported.type, imported);
-    
+
     this.stats.importsExports++;
-    
+
     return asset;
   }
 
@@ -728,14 +752,14 @@ export class ProfessionalContentSuite {
     if (!asset) {
       throw new Error(`Asset ${assetId} not found`);
     }
-    
+
     const exporter = this.exporters.get(format);
     if (!exporter) {
       throw new Error(`Exporter for ${format} not found`);
     }
-    
+
     this.stats.importsExports++;
-    
+
     return await exporter.export(asset);
   }
 
@@ -794,13 +818,13 @@ interface SearchQuery {
 }
 
 interface SortOption {
-  field: 'name' | 'created' | 'modified' | 'type';
-  order: 'asc' | 'desc';
+  field: "name" | "created" | "modified" | "type";
+  order: "asc" | "desc";
 }
 
 interface GenerationOptions {
   style?: string;
-  complexity?: 'simple' | 'moderate' | 'complex';
+  complexity?: "simple" | "moderate" | "complex";
   seed?: number;
   references?: string[];
 }
@@ -860,49 +884,60 @@ interface CollaborationSession {
 class MapGenerator {
   generateDungeon(width: number, height: number, complexity: number): MapLayer[] {
     const layers: MapLayer[] = [];
-    
+
     // Generate base structure using cellular automata
     const wallMap = this.generateCellularAutomata(width, height, 0.45, 5);
     const rooms = this.generateRooms(width, height, complexity);
     const corridors = this.connectRooms(rooms);
-    
+
     // Background layer
     layers.push({
-      id: 'background',
-      name: 'Background',
-      type: 'background',
+      id: "background",
+      name: "Background",
+      type: "background",
       visible: true,
       locked: false,
       opacity: 1,
-      blendMode: 'normal',
+      blendMode: "normal",
       elements: this.createBackgroundElements(width, height),
-      order: 0
+      order: 0,
     });
-    
+
     // Terrain layer with walls and floors
     layers.push({
-      id: 'terrain',
-      name: 'Terrain',
-      type: 'terrain',
+      id: "terrain",
+      name: "Terrain",
+      type: "terrain",
       visible: true,
       locked: false,
       opacity: 1,
-      blendMode: 'normal',
+      blendMode: "normal",
       elements: this.createTerrainElements(wallMap, rooms, corridors),
-      order: 1
+      order: 1,
     });
-    
+
     return layers;
   }
-  
-  private generateCellularAutomata(width: number, height: number, density: number, iterations: number): boolean[][] {
-    let grid = Array(height).fill(null).map(() => 
-      Array(width).fill(null).map(() => Math.random() < density)
-    );
-    
+
+  private generateCellularAutomata(
+    width: number,
+    height: number,
+    density: number,
+    iterations: number,
+  ): boolean[][] {
+    let grid = Array(height)
+      .fill(null)
+      .map(() =>
+        Array(width)
+          .fill(null)
+          .map(() => Math.random() < density),
+      );
+
     for (let i = 0; i < iterations; i++) {
-      const newGrid = Array(height).fill(null).map(() => Array(width).fill(false));
-      
+      const newGrid = Array(height)
+        .fill(null)
+        .map(() => Array(width).fill(false));
+
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const neighbors = this.countNeighbors(grid, x, y);
@@ -911,16 +946,17 @@ class MapGenerator {
       }
       grid = newGrid;
     }
-    
+
     return grid;
   }
-  
+
   private countNeighbors(grid: boolean[][], x: number, y: number): number {
     let count = 0;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         if (dx === 0 && dy === 0) continue;
-        const nx = x + dx, ny = y + dy;
+        const nx = x + dx,
+          ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= grid[0].length || ny >= grid.length || grid[ny][nx]) {
           count++;
         }
@@ -928,115 +964,179 @@ class MapGenerator {
     }
     return count;
   }
-  
-  private generateRooms(width: number, height: number, complexity: number): Array<{x: number, y: number, w: number, h: number}> {
+
+  private generateRooms(
+    width: number,
+    height: number,
+    complexity: number,
+  ): Array<{ x: number; y: number; w: number; h: number }> {
     const rooms = [];
     const roomCount = Math.floor(complexity * 8) + 4;
-    
+
     for (let i = 0; i < roomCount; i++) {
       const w = Math.floor(Math.random() * 8) + 4;
       const h = Math.floor(Math.random() * 8) + 4;
       const x = Math.floor(Math.random() * (width - w - 2)) + 1;
       const y = Math.floor(Math.random() * (height - h - 2)) + 1;
-      
+
       rooms.push({ x, y, w, h });
     }
-    
+
     return rooms;
   }
-  
-  private connectRooms(rooms: Array<{x: number, y: number, w: number, h: number}>): Array<{x1: number, y1: number, x2: number, y2: number}> {
+
+  private connectRooms(
+    rooms: Array<{ x: number; y: number; w: number; h: number }>,
+  ): Array<{ x1: number; y1: number; x2: number; y2: number }> {
     const corridors = [];
-    
+
     for (let i = 0; i < rooms.length - 1; i++) {
       const room1 = rooms[i];
       const room2 = rooms[i + 1];
-      
+
       const x1 = room1.x + Math.floor(room1.w / 2);
       const y1 = room1.y + Math.floor(room1.h / 2);
       const x2 = room2.x + Math.floor(room2.w / 2);
       const y2 = room2.y + Math.floor(room2.h / 2);
-      
+
       corridors.push({ x1, y1, x2, y2 });
     }
-    
+
     return corridors;
   }
-  
+
   private createBackgroundElements(width: number, height: number): LayerElement[] {
-    return [{
-      id: 'bg-fill',
-      type: 'shape',
-      position: [0, 0],
-      rotation: 0,
-      scale: [width, height],
-      properties: { color: '#2d2d2d', shape: 'rectangle' },
-      interactive: false,
-      collision: false
-    }];
+    return [
+      {
+        id: "bg-fill",
+        type: "shape",
+        position: [0, 0],
+        rotation: 0,
+        scale: [width, height],
+        properties: { color: "#2d2d2d", shape: "rectangle" },
+        interactive: false,
+        collision: false,
+      },
+    ];
   }
-  
-  private createTerrainElements(wallMap: boolean[][], rooms: any[], _corridors: any[]): LayerElement[] {
+
+  private createTerrainElements(
+    wallMap: boolean[][],
+    rooms: any[],
+    _corridors: any[],
+  ): LayerElement[] {
     const elements: LayerElement[] = [];
     let id = 0;
-    
+
     // Add walls
     for (let y = 0; y < wallMap.length; y++) {
       for (let x = 0; x < wallMap[y].length; x++) {
         if (wallMap[y][x]) {
           elements.push({
             id: `wall-${id++}`,
-            type: 'tile',
+            type: "tile",
             position: [x * 32, y * 32],
             rotation: 0,
             scale: [1, 1],
-            properties: { tileType: 'wall', texture: 'stone_wall' },
+            properties: { tileType: "wall", texture: "stone_wall" },
             interactive: false,
-            collision: true
+            collision: true,
           });
         }
       }
     }
-    
+
     // Add room floors
     rooms.forEach((_room, __roomIndex) => {
       for (let y = room.y; y < room.y + room.h; y++) {
         for (let x = room.x; x < room.x + room.w; x++) {
           elements.push({
             id: `floor-${roomIndex}-${x}-${y}`,
-            type: 'tile',
+            type: "tile",
             position: [x * 32, y * 32],
             rotation: 0,
             scale: [1, 1],
-            properties: { tileType: 'floor', texture: 'stone_floor' },
+            properties: { tileType: "floor", texture: "stone_floor" },
             interactive: false,
-            collision: false
+            collision: false,
           });
         }
       }
     });
-    
+
     return elements;
   }
 }
 
 // Importer/Exporter interfaces
-interface ContentImporter { import(data: any): Promise<any>; }
-interface ContentExporter { export(asset: ContentAsset): Promise<any>; }
+interface ContentImporter {
+  import(data: any): Promise<any>;
+}
+interface ContentExporter {
+  export(asset: ContentAsset): Promise<any>;
+}
 
-class FoundryImporter implements ContentImporter { async import(_data: any): Promise<any> { return {}; } }
-class Roll20Importer implements ContentImporter { async import(_data: any): Promise<any> { return {}; } }
-class FantasyGroundsImporter implements ContentImporter { async import(_data: any): Promise<any> { return {}; } }
-class DnDBeyondImporter implements ContentImporter { async import(_data: any): Promise<any> { return {}; } }
-class JSONImporter implements ContentImporter { async import(_data: any): Promise<any> { return {}; } }
-class XMLImporter implements ContentImporter { async import(_data: any): Promise<any> { return {}; } }
+class FoundryImporter implements ContentImporter {
+  async import(_data: any): Promise<any> {
+    return {};
+  }
+}
+class Roll20Importer implements ContentImporter {
+  async import(_data: any): Promise<any> {
+    return {};
+  }
+}
+class FantasyGroundsImporter implements ContentImporter {
+  async import(_data: any): Promise<any> {
+    return {};
+  }
+}
+class DnDBeyondImporter implements ContentImporter {
+  async import(_data: any): Promise<any> {
+    return {};
+  }
+}
+class JSONImporter implements ContentImporter {
+  async import(_data: any): Promise<any> {
+    return {};
+  }
+}
+class XMLImporter implements ContentImporter {
+  async import(_data: any): Promise<any> {
+    return {};
+  }
+}
 
-class FoundryExporter implements ContentExporter { async export(_asset: ContentAsset): Promise<any> { return {}; } }
-class Roll20Exporter implements ContentExporter { async export(_asset: ContentAsset): Promise<any> { return {}; } }
-class FantasyGroundsExporter implements ContentExporter { async export(_asset: ContentAsset): Promise<any> { return {}; } }
-class JSONExporter implements ContentExporter { async export(_asset: ContentAsset): Promise<any> { return {}; } }
-class PDFExporter implements ContentExporter { async export(_asset: ContentAsset): Promise<any> { return {}; } }
-class ImageExporter implements ContentExporter { async export(_asset: ContentAsset): Promise<any> { return {}; } }
+class FoundryExporter implements ContentExporter {
+  async export(_asset: ContentAsset): Promise<any> {
+    return {};
+  }
+}
+class Roll20Exporter implements ContentExporter {
+  async export(_asset: ContentAsset): Promise<any> {
+    return {};
+  }
+}
+class FantasyGroundsExporter implements ContentExporter {
+  async export(_asset: ContentAsset): Promise<any> {
+    return {};
+  }
+}
+class JSONExporter implements ContentExporter {
+  async export(_asset: ContentAsset): Promise<any> {
+    return {};
+  }
+}
+class PDFExporter implements ContentExporter {
+  async export(_asset: ContentAsset): Promise<any> {
+    return {};
+  }
+}
+class ImageExporter implements ContentExporter {
+  async export(_asset: ContentAsset): Promise<any> {
+    return {};
+  }
+}
 
 // Additional interfaces
 interface LightingOverride {

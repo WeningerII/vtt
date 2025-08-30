@@ -21,10 +21,10 @@ export class RateLimiter {
   isAllowed(identifier: string): boolean {
     const now = Date.now();
     const requests = this.requests.get(identifier) || [];
-    
+
     // Remove old requests outside the window
-    const validRequests = requests.filter(time => now - time < this.windowMs);
-    
+    const validRequests = requests.filter((time) => now - time < this.windowMs);
+
     if (validRequests.length >= this.maxRequests) {
       return false;
     }
@@ -32,7 +32,7 @@ export class RateLimiter {
     // Add current request
     validRequests.push(now);
     this.requests.set(identifier, validRequests);
-    
+
     return true;
   }
 
@@ -42,8 +42,8 @@ export class RateLimiter {
   getRemaining(identifier: string): number {
     const now = Date.now();
     const requests = this.requests.get(identifier) || [];
-    const validRequests = requests.filter(time => now - time < this.windowMs);
-    
+    const validRequests = requests.filter((time) => now - time < this.windowMs);
+
     return Math.max(0, this.maxRequests - validRequests.length);
   }
 
@@ -61,7 +61,7 @@ export class RateLimiter {
 export function generateSecureToken(length: number = 32): string {
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -78,50 +78,50 @@ export function validatePasswordStrength(password: string): PasswordStrength {
   let score = 0;
 
   if (password.length < 8) {
-    feedback.push('Password must be at least 8 characters long');
+    feedback.push("Password must be at least 8 characters long");
   } else if (password.length >= 12) {
     score += 1;
   }
 
   if (!/[a-z]/.test(password)) {
-    feedback.push('Password must contain lowercase letters');
+    feedback.push("Password must contain lowercase letters");
   } else {
     score += 1;
   }
 
   if (!/[A-Z]/.test(password)) {
-    feedback.push('Password must contain uppercase letters');
+    feedback.push("Password must contain uppercase letters");
   } else {
     score += 1;
   }
 
   if (!/[0-9]/.test(password)) {
-    feedback.push('Password must contain numbers');
+    feedback.push("Password must contain numbers");
   } else {
     score += 1;
   }
 
   if (!/[^a-zA-Z0-9]/.test(password)) {
-    feedback.push('Password must contain special characters');
+    feedback.push("Password must contain special characters");
   } else {
     score += 1;
   }
 
   // Check for common patterns
   if (/(.)\1{2,}/.test(password)) {
-    feedback.push('Avoid repeated characters');
+    feedback.push("Avoid repeated characters");
     score = Math.max(0, score - 1);
   }
 
   if (/123|abc|qwe/i.test(password)) {
-    feedback.push('Avoid common sequences');
+    feedback.push("Avoid common sequences");
     score = Math.max(0, score - 1);
   }
 
   return {
     score: Math.min(4, score),
     feedback,
-    isStrong: score >= 3 && feedback.length === 0
+    isStrong: score >= 3 && feedback.length === 0,
   };
 }
 
@@ -132,7 +132,7 @@ export class SecureStorage {
   private readonly prefix: string;
   private readonly encryptionKey?: CryptoKey;
 
-  constructor(prefix: string = 'vtt_secure_') {
+  constructor(prefix: string = "vtt_secure_") {
     this.prefix = prefix;
   }
 
@@ -142,11 +142,11 @@ export class SecureStorage {
   async setItem(key: string, value: any): Promise<void> {
     const serialized = JSON.stringify(value);
     const prefixedKey = this.prefix + key;
-    
+
     try {
       sessionStorage.setItem(prefixedKey, serialized);
     } catch (error) {
-      console.warn('Failed to store secure data:', error);
+      console.warn("Failed to store secure data:", error);
     }
   }
 
@@ -155,12 +155,12 @@ export class SecureStorage {
    */
   async getItem<T>(key: string): Promise<T | null> {
     const prefixedKey = this.prefix + key;
-    
+
     try {
       const stored = sessionStorage.getItem(prefixedKey);
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
-      console.warn('Failed to retrieve secure data:', error);
+      console.warn("Failed to retrieve secure data:", error);
       return null;
     }
   }
@@ -178,7 +178,7 @@ export class SecureStorage {
    */
   clear(): void {
     const keys = Object.keys(sessionStorage);
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (key.startsWith(this.prefix)) {
         sessionStorage.removeItem(key);
       }
@@ -190,15 +190,15 @@ export class SecureStorage {
  * XSS protection utilities
  */
 export function escapeHTML(text: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
 }
 
 export function unescapeHTML(html: string): string {
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.innerHTML = html;
-  return div.textContent || div.innerText || '';
+  return div.textContent || div.innerText || "";
 }
 
 /**
@@ -221,11 +221,11 @@ export function constantTimeCompare(a: string, b: string): boolean {
  * Security headers validation
  */
 export interface SecurityHeaders {
-  'Content-Security-Policy'?: string;
-  'X-Frame-Options'?: string;
-  'X-Content-Type-Options'?: string;
-  'Referrer-Policy'?: string;
-  'Permissions-Policy'?: string;
+  "Content-Security-Policy"?: string;
+  "X-Frame-Options"?: string;
+  "X-Content-Type-Options"?: string;
+  "Referrer-Policy"?: string;
+  "Permissions-Policy"?: string;
 }
 
 export function validateSecurityHeaders(headers: Headers): SecurityHeaders {
@@ -233,14 +233,14 @@ export function validateSecurityHeaders(headers: Headers): SecurityHeaders {
 
   // Check for important security headers
   const headerNames = [
-    'Content-Security-Policy',
-    'X-Frame-Options',
-    'X-Content-Type-Options',
-    'Referrer-Policy',
-    'Permissions-Policy'
+    "Content-Security-Policy",
+    "X-Frame-Options",
+    "X-Content-Type-Options",
+    "Referrer-Policy",
+    "Permissions-Policy",
   ];
 
-  headerNames.forEach(name => {
+  headerNames.forEach((name) => {
     const value = headers.get(name);
     if (value) {
       securityHeaders[name as keyof SecurityHeaders] = value;
@@ -254,11 +254,12 @@ export function validateSecurityHeaders(headers: Headers): SecurityHeaders {
  * Content type validation
  */
 export function isValidContentType(contentType: string, allowedTypes: string[]): boolean {
-  const normalizedType = contentType.toLowerCase().split(';')[0].trim();
-  return allowedTypes.some(allowed => 
-    allowed === '*/*' || 
-    normalizedType === allowed.toLowerCase() ||
-    (allowed.endsWith('/*') && normalizedType.startsWith(allowed.slice(0, -1)))
+  const normalizedType = contentType.toLowerCase().split(";")[0].trim();
+  return allowedTypes.some(
+    (allowed) =>
+      allowed === "*/*" ||
+      normalizedType === allowed.toLowerCase() ||
+      (allowed.endsWith("/*") && normalizedType.startsWith(allowed.slice(0, -1))),
   );
 }
 
@@ -272,7 +273,10 @@ export interface FileValidationOptions {
   scanForMalware?: boolean;
 }
 
-export function validateFileUpload(file: File, options: FileValidationOptions): { valid: boolean; errors: string[] } {
+export function validateFileUpload(
+  file: File,
+  options: FileValidationOptions,
+): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Check file size
@@ -286,19 +290,19 @@ export function validateFileUpload(file: File, options: FileValidationOptions): 
   }
 
   // Check file extension
-  const extension = file.name.split('.').pop()?.toLowerCase();
+  const extension = file.name.split(".").pop()?.toLowerCase();
   if (!extension || !options.allowedExtensions.includes(extension)) {
     errors.push(`File extension .${extension} is not allowed`);
   }
 
   // Check for suspicious file names
   if (/[<>:"/\\|?*\x00-\x1f]/.test(file.name)) {
-    errors.push('File name contains invalid characters');
+    errors.push("File name contains invalid characters");
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
@@ -308,18 +312,18 @@ export function validateFileUpload(file: File, options: FileValidationOptions): 
 export const securityConfig = {
   rateLimiter: new RateLimiter(60000, 100), // 100 requests per minute
   secureStorage: new SecureStorage(),
-  
+
   // File upload limits
   fileUpload: {
     maxSize: 10 * 1024 * 1024, // 10MB
-    allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-    allowedDocumentTypes: ['application/pdf', 'text/plain'],
-    allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'txt']
+    allowedImageTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+    allowedDocumentTypes: ["application/pdf", "text/plain"],
+    allowedExtensions: ["jpg", "jpeg", "png", "gif", "webp", "pdf", "txt"],
   },
 
   // Session configuration
   session: {
     timeout: 30 * 60 * 1000, // 30 minutes
-    renewThreshold: 5 * 60 * 1000 // Renew if less than 5 minutes remaining
-  }
+    renewThreshold: 5 * 60 * 1000, // Renew if less than 5 minutes remaining
+  },
 };

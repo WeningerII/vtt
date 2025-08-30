@@ -2,28 +2,28 @@
  * Map and grid management service with database persistence
  */
 
-import { logger } from '@vtt/logging';
-import { 
-  MapScene, 
-  GridSettings, 
-  LightSource, 
-  FogArea, 
-  TokenPosition, 
-  MeasurementTool, 
-  CombatGrid, 
+import { logger } from "@vtt/logging";
+import {
+  MapScene,
+  GridSettings,
+  LightSource,
+  FogArea,
+  TokenPosition,
+  MeasurementTool,
+  CombatGrid,
   GridEffect,
   MapUpdateEvent,
   LineOfSightResult,
-  GridType
-} from './types';
-import { PrismaClient } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
-import { GameEventBridge } from '../integration/GameEventBridge';
+  GridType,
+} from "./types";
+import { PrismaClient } from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
+import { GameEventBridge } from "../integration/GameEventBridge";
 // Re-enabling spell engine imports after successful build
 // import { SpellEngine } from '@vtt/spell-engine'; // Temporarily disabled for e2e tests
 // import { DiceEngine } from '@vtt/dice-engine'; // Temporarily disabled for e2e tests
 // import { ConditionsEngine } from '@vtt/conditions-engine'; // Temporarily disabled for e2e tests
-import { WebSocketManager } from '../websocket/WebSocketManager';
+import { WebSocketManager } from "../websocket/WebSocketManager";
 // import { PhysicsWorld, RigidBody } from '@vtt/physics'; // Temporarily disabled for e2e tests
 
 export class MapService {
@@ -44,7 +44,7 @@ export class MapService {
 
   constructor(
     private prisma: PrismaClient,
-    private webSocketManager?: WebSocketManager
+    private webSocketManager?: WebSocketManager,
   ) {
     // Initialize stubbed physics world for build compatibility
     this.physicsWorld = {
@@ -52,18 +52,16 @@ export class MapService {
       removeBody: () => true,
       updateBody: () => true,
       checkCollisions: () => [],
-      step: () => {}
+      step: () => {},
     }; // Temporarily disabled for e2e tests
-    
+
     // Initialize spell engines
     // this.spellEngine = new SpellEngine(); // Temporarily disabled
     // this.diceEngine = new DiceEngine(); // Temporarily disabled for e2e tests
     // this.conditionsEngine = new ConditionsEngine(); // Temporarily disabled for e2e tests
-    
+
     this.initializeSpatialIndexing();
   }
-
-
 
   /**
    * Set the game event bridge for automation integration
@@ -76,25 +74,25 @@ export class MapService {
    * Create a new map scene with database persistence
    */
   async createScene(
-    name: string, 
-    width: number, 
-    height: number, 
+    name: string,
+    width: number,
+    height: number,
     campaignId: string,
     mapId?: string,
     gridSettings?: Partial<GridSettings>,
     lightingSettings?: any,
-    fogSettings?: any
+    fogSettings?: any,
   ): Promise<MapScene> {
     const defaultGrid: GridSettings = {
-      type: 'square',
+      type: "square",
       size: 50,
       offsetX: 0,
       offsetY: 0,
-      snapMode: 'center',
+      snapMode: "center",
       visible: true,
-      color: '#000000',
+      color: "#000000",
       opacity: 0.3,
-      ...gridSettings
+      ...gridSettings,
     };
 
     const _defaultLighting = {
@@ -102,14 +100,14 @@ export class MapService {
       ambientLight: 0.2,
       darkvisionRange: 60,
       lightSources: [],
-      ...lightingSettings
+      ...lightingSettings,
     };
 
     const _defaultFog = {
       enabled: false,
       areas: [],
       exploredAreas: [],
-      ...fogSettings
+      ...fogSettings,
     };
 
     // Create scene in database
@@ -129,10 +127,10 @@ export class MapService {
         tokens: {
           include: {
             actor: true,
-            asset: true
-          }
-        }
-      }
+            asset: true,
+          },
+        },
+      },
     });
 
     const scene: MapScene = {
@@ -146,54 +144,54 @@ export class MapService {
       layers: [
         {
           id: uuidv4(),
-          name: 'Background',
-          type: 'background',
+          name: "Background",
+          type: "background",
           visible: true,
           locked: false,
           opacity: 1,
-          zIndex: 0
+          zIndex: 0,
         },
         {
           id: uuidv4(),
-          name: 'Tokens',
-          type: 'tokens',
+          name: "Tokens",
+          type: "tokens",
           visible: true,
           locked: false,
           opacity: 1,
-          zIndex: 100
+          zIndex: 100,
         },
         {
           id: uuidv4(),
-          name: 'Effects',
-          type: 'effects',
+          name: "Effects",
+          type: "effects",
           visible: true,
           locked: false,
           opacity: 0.8,
-          zIndex: 200
+          zIndex: 200,
         },
         {
           id: uuidv4(),
-          name: 'Fog of War',
-          type: 'fog',
+          name: "Fog of War",
+          type: "fog",
           visible: true,
           locked: false,
           opacity: 0.8,
-          zIndex: 300
-        }
+          zIndex: 300,
+        },
       ],
       lighting: {
         enabled: false,
         globalIllumination: 0.3,
         darkvision: false,
-        lightSources: []
+        lightSources: [],
       },
       fog: {
         enabled: false,
-        mode: 'exploration',
+        mode: "exploration",
         exploredAreas: [],
         hiddenAreas: [],
         lineOfSight: false,
-        sightRadius: 30
+        sightRadius: 30,
       },
       tokens: (dbScene.tokens || []).map((token: any) => ({
         x: token.x,
@@ -210,8 +208,8 @@ export class MapService {
         isLocked: token.isLocked,
         layer: token.layer,
         actorId: token.actorId,
-        assetId: token.assetId
-      }))
+        assetId: token.assetId,
+      })),
     };
 
     this.scenes.set(dbScene.id, scene);
@@ -235,10 +233,10 @@ export class MapService {
         tokens: {
           include: {
             actor: true,
-            asset: true
-          }
-        }
-      }
+            asset: true,
+          },
+        },
+      },
     });
 
     if (!dbScene) return null;
@@ -246,7 +244,7 @@ export class MapService {
     // Get dimensions from map or use defaults
     let sceneWidth = 1920;
     let sceneHeight = 1080;
-    
+
     if (dbScene.map) {
       sceneWidth = dbScene.map.widthPx || 1920;
       sceneHeight = dbScene.map.heightPx || 1080;
@@ -265,29 +263,34 @@ export class MapService {
           // Type assertion for metadata field (may need to be added to Prisma schema)
           const sceneWithMetadata = dbScene as any;
           if (sceneWithMetadata.metadata) {
-            const metadata = typeof sceneWithMetadata.metadata === 'string' ? JSON.parse(sceneWithMetadata.metadata) : sceneWithMetadata.metadata;
-            return metadata.gridSettings || {
-              type: 'square',
-              size: 50,
-              offsetX: 0,
-              offsetY: 0,
-              snapMode: 'center',
-              visible: true,
-              color: '#000000',
-              opacity: 0.3,
-            };
+            const metadata =
+              typeof sceneWithMetadata.metadata === "string"
+                ? JSON.parse(sceneWithMetadata.metadata)
+                : sceneWithMetadata.metadata;
+            return (
+              metadata.gridSettings || {
+                type: "square",
+                size: 50,
+                offsetX: 0,
+                offsetY: 0,
+                snapMode: "center",
+                visible: true,
+                color: "#000000",
+                opacity: 0.3,
+              }
+            );
           }
         } catch (error) {
-          logger.warn('Failed to parse scene metadata:', error as Error);
+          logger.warn("Failed to parse scene metadata:", error as Error);
         }
         return {
-          type: 'square',
+          type: "square",
           size: 50,
           offsetX: 0,
           offsetY: 0,
-          snapMode: 'center',
+          snapMode: "center",
           visible: true,
-          color: '#000000',
+          color: "#000000",
           opacity: 0.3,
         };
       })(),
@@ -295,35 +298,35 @@ export class MapService {
         enabled: false,
         globalIllumination: 0.3,
         darkvision: false,
-        lightSources: []
+        lightSources: [],
       },
       fog: {
         enabled: false,
-        mode: 'exploration',
+        mode: "exploration",
         exploredAreas: [],
         hiddenAreas: [],
         lineOfSight: false,
-        sightRadius: 30
+        sightRadius: 30,
       },
       layers: [
         {
-          id: 'bg',
-          name: 'Background',
-          type: 'background',
+          id: "bg",
+          name: "Background",
+          type: "background",
           visible: true,
           locked: false,
           opacity: 1,
-          zIndex: 0
+          zIndex: 0,
         },
         {
-          id: 'tokens',
-          name: 'Tokens',
-          type: 'tokens',
+          id: "tokens",
+          name: "Tokens",
+          type: "tokens",
           visible: true,
           locked: false,
           opacity: 1,
-          zIndex: 100
-        }
+          zIndex: 100,
+        },
       ],
       tokens: (dbScene.tokens || []).map((token: any) => ({
         x: token.x,
@@ -340,8 +343,8 @@ export class MapService {
         isLocked: token.isLocked,
         layer: token.layer,
         actorId: token.actorId,
-        assetId: token.assetId
-      }))
+        assetId: token.assetId,
+      })),
     };
 
     this.scenes.set(dbScene.id, scene);
@@ -352,22 +355,24 @@ export class MapService {
    * Calculate distance between two points
    */
   private calculateDistance(
-    x1: number, y1: number, 
-    x2: number, y2: number, 
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
     gridSettings: any,
-    unit: 'feet' | 'meters' | 'pixels'
+    unit: "feet" | "meters" | "pixels",
   ): number {
     const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    
-    if (unit === 'pixels') return pixelDistance;
-    
+
+    if (unit === "pixels") return pixelDistance;
+
     const gridSize = gridSettings?.size || 50;
     const gridDistance = pixelDistance / gridSize;
-    
+
     // Convert to feet (assuming 5 feet per grid square in D&D)
-    if (unit === 'feet') return gridDistance * 5;
-    if (unit === 'meters') return gridDistance * 1.5;
-    
+    if (unit === "feet") return gridDistance * 5;
+    if (unit === "meters") return gridDistance * 1.5;
+
     return pixelDistance;
   }
 
@@ -392,13 +397,13 @@ export class MapService {
    */
   async createMeasurement(
     sceneId: string,
-    type: 'distance' | 'area',
+    type: "distance" | "area",
     points: Array<{ x: number; y: number }>,
-    ownerId: string
+    ownerId: string,
   ): Promise<any> {
     const scene = await this.getScene(sceneId);
     if (!scene) {
-      throw new Error('Scene not found');
+      throw new Error("Scene not found");
     }
 
     let distance = 0;
@@ -407,20 +412,22 @@ export class MapService {
     // Calculate measurements
     if (points.length >= 2) {
       for (let i = 1; i < points.length; i++) {
-        const prevPoint = points[i-1];
+        const prevPoint = points[i - 1];
         const currentPoint = points[i];
         if (prevPoint && currentPoint) {
           distance += this.calculateDistance(
-            prevPoint.x, prevPoint.y,
-            currentPoint.x, currentPoint.y,
+            prevPoint.x,
+            prevPoint.y,
+            currentPoint.x,
+            currentPoint.y,
             scene.grid,
-            'feet'
+            "feet",
           );
         }
       }
     }
 
-    if (type === 'area' && points.length >= 3) {
+    if (type === "area" && points.length >= 3) {
       // Calculate polygon area using shoelace formula
       let sum = 0;
       for (let i = 0; i < points.length; i++) {
@@ -442,268 +449,282 @@ export class MapService {
       id: uuidv4(),
       type,
       points,
-      color: '#ff0000',
+      color: "#ff0000",
       visible: true,
       ownerId,
       measurements: {
         distance,
         ...(area > 0 && { area }),
-        units: 'feet'
-      }
+        units: "feet",
+      },
     };
 
     return measurement;
   }
 
-/**
- * Add a token to a scene with database persistence
- */
-async addToken(
-  sceneId: string, 
-  tokenData: {
-    name: string;
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-    disposition?: 'FRIENDLY' | 'NEUTRAL' | 'HOSTILE' | 'UNKNOWN';
-    actorId?: string;
-    assetId?: string;
-  }
-): Promise<string | null> {
-  try {
-    const scene = await this.getScene(sceneId);
-    if (!scene) return null;
-
-    // Snap token position to grid
-    const alignedPosition = this.snapToGrid(tokenData.x, tokenData.y, scene.grid);
-    const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
-
-    const tokenId = uuidv4();
-    const token = await this.prisma.token.create({
-      data: {
-        ...tokenData,
-        id: tokenId,
-        sceneId,
-        x: alignedPosition.x,
-        y: alignedPosition.y,
-        width: tokenData.width || 1,
-        height: tokenData.height || 1,
-        rotation: 0,
-        scale: 1,
-        disposition: tokenData.disposition || 'UNKNOWN',
-        isVisible: true,
-        isLocked: false,
-        layer: 0
-      }
-    });
-
-    const bodySize = Math.min(gridBounds.cellWidth, gridBounds.cellHeight) * 0.8;
+  /**
+   * Add a token to a scene with database persistence
+   */
+  async addToken(
+    sceneId: string,
+    tokenData: {
+      name: string;
+      x: number;
+      y: number;
+      width?: number;
+      height?: number;
+      disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
+      actorId?: string;
+      assetId?: string;
+    },
+  ): Promise<string | null> {
     try {
-      const numericId = this.generateNumericId(tokenId);
-      const rigidBody = {
-        id: numericId,
-        x: alignedPosition.x,
-        y: alignedPosition.y,
-        width: bodySize,
-        height: bodySize,
-        mass: 1,
-        friction: 0.8,
-        restitution: 0.3,
-        isStatic: false,
-        isTrigger: false,
-        layer: 1,
-        mask: 0xFFFFFFFF
-      };
-      this.physicsWorld.addBody?.(rigidBody);
+      const scene = await this.getScene(sceneId);
+      if (!scene) return null;
+
+      // Snap token position to grid
+      const alignedPosition = this.snapToGrid(tokenData.x, tokenData.y, scene.grid);
+      const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
+
+      const tokenId = uuidv4();
+      const token = await this.prisma.token.create({
+        data: {
+          ...tokenData,
+          id: tokenId,
+          sceneId,
+          x: alignedPosition.x,
+          y: alignedPosition.y,
+          width: tokenData.width || 1,
+          height: tokenData.height || 1,
+          rotation: 0,
+          scale: 1,
+          disposition: tokenData.disposition || "UNKNOWN",
+          isVisible: true,
+          isLocked: false,
+          layer: 0,
+        },
+      });
+
+      const bodySize = Math.min(gridBounds.cellWidth, gridBounds.cellHeight) * 0.8;
+      try {
+        const numericId = this.generateNumericId(tokenId);
+        const rigidBody = {
+          id: numericId,
+          x: alignedPosition.x,
+          y: alignedPosition.y,
+          width: bodySize,
+          height: bodySize,
+          mass: 1,
+          friction: 0.8,
+          restitution: 0.3,
+          isStatic: false,
+          isTrigger: false,
+          layer: 1,
+          mask: 0xffffffff,
+        };
+        this.physicsWorld.addBody?.(rigidBody);
+      } catch (error) {
+        logger.warn(`Failed to create physics body for token: ${tokenId}`, error as Error);
+      }
+
+      // Update spatial index for new token
+      const tokenWidth = tokenData.width || 1;
+      const tokenHeight = tokenData.height || 1;
+      this.updateSpatialIndex(
+        sceneId,
+        tokenId,
+        alignedPosition.x,
+        alignedPosition.y,
+        tokenWidth * 50,
+        tokenHeight * 50,
+      );
+
+      // Emit real-time update
+      this.emitMapUpdate(sceneId, {
+        type: "token_add",
+        token,
+        timestamp: Date.now(),
+      });
+
+      return token.id;
     } catch (error) {
-      logger.warn(`Failed to create physics body for token: ${tokenId}`, error as Error);
+      logger.error("Failed to add token:", error as Error);
+      return null;
     }
-
-    // Update spatial index for new token
-    const tokenWidth = tokenData.width || 1;
-    const tokenHeight = tokenData.height || 1;
-    this.updateSpatialIndex(sceneId, tokenId, alignedPosition.x, alignedPosition.y, tokenWidth * 50, tokenHeight * 50);
-
-    // Emit real-time update
-    this.emitMapUpdate(sceneId, {
-      type: 'token_add',
-      token,
-      timestamp: Date.now()
-    });
-
-    return token.id;
-  } catch (error) {
-    logger.error('Failed to add token:', error as Error);
-    return null;
-  }
   }
 
   /**
    * Update grid settings for a scene with database persistence
    */
   async updateGridSettings(sceneId: string, settings: Partial<GridSettings>): Promise<boolean> {
-  const scene = this.scenes.get(sceneId);
-  if (!scene) return false;
+    const scene = this.scenes.get(sceneId);
+    if (!scene) return false;
 
-  Object.assign(scene.grid, settings);
-  
-  // Update in database
-  try {
-    await this.prisma.scene.update({
-      where: { id: sceneId },
-      data: { 
-        // Note: metadata field may need to be added to Prisma schema
-        ...(scene.grid && { 
-          // Store grid settings in a compatible way until metadata field is added
-        }) 
-      }
+    Object.assign(scene.grid, settings);
+
+    // Update in database
+    try {
+      await this.prisma.scene.update({
+        where: { id: sceneId },
+        data: {
+          // Note: metadata field may need to be added to Prisma schema
+          ...(scene.grid &&
+            {
+              // Store grid settings in a compatible way until metadata field is added
+            }),
+        },
+      });
+    } catch (error) {
+      logger.error("Failed to update grid settings in database:", error as Error);
+      return false;
+    }
+
+    // Emit update event for real-time sync
+    this.emitMapUpdate(sceneId, {
+      type: "grid_settings_changed",
+      sceneId,
+      settings: scene.grid,
+      timestamp: Date.now(),
     });
-  } catch (error) {
-    logger.error('Failed to update grid settings in database:', error as Error);
-    return false;
-  }
-  
-  // Emit update event for real-time sync
-  this.emitMapUpdate(sceneId, {
-    type: 'grid_settings_changed',
-    sceneId,
-    settings: scene.grid,
-    timestamp: Date.now()
-  });
 
-  return true;
+    return true;
   }
 
   /**
    * Remove a token from scene
    */
   async removeToken(sceneId: string, tokenId: string): Promise<boolean> {
-  try {
-    await this.prisma.token.delete({
-      where: { id: tokenId }
-    });
-
-    // Remove corresponding physics body
     try {
-      const numericId = this.generateNumericId(tokenId);
-      this.physicsWorld.removeBody?.(numericId);
+      await this.prisma.token.delete({
+        where: { id: tokenId },
+      });
+
+      // Remove corresponding physics body
+      try {
+        const numericId = this.generateNumericId(tokenId);
+        this.physicsWorld.removeBody?.(numericId);
+      } catch (error) {
+        logger.warn(`Failed to remove physics body for token: ${tokenId}`, error as Error);
+      }
+
+      // Emit real-time update
+      this.emitMapUpdate(sceneId, {
+        type: "token_remove",
+        tokenId,
+        timestamp: Date.now(),
+      });
+
+      return true;
     } catch (error) {
-      logger.warn(`Failed to remove physics body for token: ${tokenId}`, error as Error);
+      logger.error("Failed to remove token:", error as Error);
+      return false;
     }
-
-    // Emit real-time update
-    this.emitMapUpdate(sceneId, {
-      type: 'token_remove',
-      tokenId,
-      timestamp: Date.now()
-    });
-
-    return true;
-  } catch (error) {
-    logger.error('Failed to remove token:', error as Error);
-    return false;
-  }
   }
 
   /**
    * Move a token to new position with automation hooks
    */
-async moveToken(
-  sceneId: string, 
-  tokenId: string, 
-  x: number, 
-  y: number
-): Promise<boolean> {
-  try {
-    const scene = await this.getScene(sceneId);
-    if (!scene) return false;
-
-    const token = scene.tokens?.find(t => t.id === tokenId);
-    if (!token) return false;
-
-    // Snap to grid for consistent positioning
-    const alignedPosition = this.snapToGrid(x, y, scene.grid);
-
-    // Update token position
-    await this.prisma.token.update({
-      where: { id: tokenId },
-      data: { 
-        x: alignedPosition.x, 
-        y: alignedPosition.y 
-      }
-    });
-
-    // Update physics body position
+  async moveToken(sceneId: string, tokenId: string, x: number, y: number): Promise<boolean> {
     try {
-      const numericId = this.generateNumericId(tokenId);
-      const physicsBody = this.physicsWorld.getBody(numericId);
-      if (physicsBody) {
-        this.physicsWorld.updateBody?.(numericId, alignedPosition.x, alignedPosition.y);
+      const scene = await this.getScene(sceneId);
+      if (!scene) return false;
+
+      const token = scene.tokens?.find((t) => t.id === tokenId);
+      if (!token) return false;
+
+      // Snap to grid for consistent positioning
+      const alignedPosition = this.snapToGrid(x, y, scene.grid);
+
+      // Update token position
+      await this.prisma.token.update({
+        where: { id: tokenId },
+        data: {
+          x: alignedPosition.x,
+          y: alignedPosition.y,
+        },
+      });
+
+      // Update physics body position
+      try {
+        const numericId = this.generateNumericId(tokenId);
+        const physicsBody = this.physicsWorld.getBody(numericId);
+        if (physicsBody) {
+          this.physicsWorld.updateBody?.(numericId, alignedPosition.x, alignedPosition.y);
+        }
+      } catch (error) {
+        logger.warn(`Failed to update physics body for token: ${tokenId}`, error as Error);
       }
+
+      // Update spatial index for optimized collision detection
+      const tokenWidth = token.width || 50;
+      const tokenHeight = token.height || 50;
+      this.updateSpatialIndex(
+        sceneId,
+        tokenId,
+        alignedPosition.x,
+        alignedPosition.y,
+        tokenWidth * 50,
+        tokenHeight * 50,
+      );
+
+      // Update in-memory scene
+      if (scene.tokens) {
+        const tokenIndex = scene.tokens.findIndex((t) => t.id === tokenId);
+        if (tokenIndex >= 0) {
+          scene.tokens[tokenIndex] = { ...token, x: alignedPosition.x, y: alignedPosition.y };
+        }
+      }
+
+      // Emit real-time update
+      this.emitMapUpdate(sceneId, {
+        type: "token_move",
+        tokenId,
+        x: alignedPosition.x,
+        y: alignedPosition.y,
+        timestamp: Date.now(),
+      });
+
+      return true;
     } catch (error) {
-      logger.warn(`Failed to update physics body for token: ${tokenId}`, error as Error);
+      logger.error("Failed to move token:", error as Error);
+      return false;
     }
-
-    // Update spatial index for optimized collision detection
-    const tokenWidth = token.width || 50;
-    const tokenHeight = token.height || 50;
-    this.updateSpatialIndex(sceneId, tokenId, alignedPosition.x, alignedPosition.y, tokenWidth * 50, tokenHeight * 50);
-
-    // Update in-memory scene
-    if (scene.tokens) {
-      const tokenIndex = scene.tokens.findIndex(t => t.id === tokenId);
-      if (tokenIndex >= 0) {
-        scene.tokens[tokenIndex] = { ...token, x: alignedPosition.x, y: alignedPosition.y };
-      }
-    }
-
-    // Emit real-time update
-    this.emitMapUpdate(sceneId, {
-      type: 'token_move',
-      tokenId,
-      x: alignedPosition.x,
-      y: alignedPosition.y,
-      timestamp: Date.now()
-    });
-
-    return true;
-  } catch (error) {
-    logger.error('Failed to move token:', error as Error);
-    return false;
-  }
   }
 
   /**
    * Update token properties
    */
-async updateToken(sceneId: string, tokenId: string, updates: Partial<Omit<TokenPosition, 'id'>>): Promise<boolean> {
-  const scene = await this.getScene(sceneId);
-  if (!scene) return false;
+  async updateToken(
+    sceneId: string,
+    tokenId: string,
+    updates: Partial<Omit<TokenPosition, "id">>,
+  ): Promise<boolean> {
+    const scene = await this.getScene(sceneId);
+    if (!scene) return false;
 
-  // Update database
-  await this.prisma.token.update({
-    where: { id: tokenId },
-    data: updates
-  });
+    // Update database
+    await this.prisma.token.update({
+      where: { id: tokenId },
+      data: updates,
+    });
 
-  // Update cached scene
-  if (scene.tokens) {
-    const tokenIndex = scene.tokens.findIndex(t => t.id === tokenId);
-    if (tokenIndex >= 0 && scene.tokens[tokenIndex]) {
-      Object.assign(scene.tokens[tokenIndex], updates);
+    // Update cached scene
+    if (scene.tokens) {
+      const tokenIndex = scene.tokens.findIndex((t) => t.id === tokenId);
+      if (tokenIndex >= 0 && scene.tokens[tokenIndex]) {
+        Object.assign(scene.tokens[tokenIndex], updates);
+      }
     }
-  }
 
-  return true;
+    return true;
   }
 
   /**
    * Setup physics integration
    */
-private setupPhysicsIntegration(): void {
-  // TODO: Re-enable after spell engine packages are built
-  /*
+  private setupPhysicsIntegration(): void {
+    // TODO: Re-enable after spell engine packages are built
+    /*
   this.physicsSpellBridge.on('spell_projectile_hit', (data) => {
     this.handleSpellProjectileHit(data);
   });
@@ -721,146 +742,150 @@ private setupPhysicsIntegration(): void {
   /**
    * Get targets in spell area using physics-based detection
    */
-private getTargetsInSpellArea(
-  center: { x: number; y: number },
-  radius: number,
-  tokens: TokenPosition[],
-  areaType: 'sphere' | 'cube' | 'cylinder' | 'line' | 'cone'
-): string[] {
-  const targets: string[] = [];
+  private getTargetsInSpellArea(
+    center: { x: number; y: number },
+    radius: number,
+    tokens: TokenPosition[],
+    areaType: "sphere" | "cube" | "cylinder" | "line" | "cone",
+  ): string[] {
+    const targets: string[] = [];
 
-  for (const token of tokens) {
-    if (this.isTokenInSpellArea(token, center, radius, areaType)) {
-      // Check line of sight using physics raycasting
-      const hasLineOfSight = this.physicsWorld.raycast(
-        center,
-        { x: token.x - center.x, y: token.y - center.y },
-        radius
-      );
+    for (const token of tokens) {
+      if (this.isTokenInSpellArea(token, center, radius, areaType)) {
+        // Check line of sight using physics raycasting
+        const hasLineOfSight = this.physicsWorld.raycast(
+          center,
+          { x: token.x - center.x, y: token.y - center.y },
+          radius,
+        );
 
-      if (!hasLineOfSight.hit || (hasLineOfSight.distance && hasLineOfSight.distance >= radius)) {
-        targets.push(token.id);
+        if (!hasLineOfSight.hit || (hasLineOfSight.distance && hasLineOfSight.distance >= radius)) {
+          targets.push(token.id);
+        }
       }
     }
-  }
 
-  return targets;
+    return targets;
   }
 
   /**
    * Check if token is in spell area
    */
-private isTokenInSpellArea(
-  token: TokenPosition,
-  center: { x: number; y: number },
-  size: number,
-  areaType: 'sphere' | 'cube' | 'cylinder' | 'line' | 'cone'
-): boolean {
-  const distance = Math.sqrt(
-    Math.pow(token.x - center.x, 2) + Math.pow(token.y - center.y, 2)
-  );
+  private isTokenInSpellArea(
+    token: TokenPosition,
+    center: { x: number; y: number },
+    size: number,
+    areaType: "sphere" | "cube" | "cylinder" | "line" | "cone",
+  ): boolean {
+    const distance = Math.sqrt(Math.pow(token.x - center.x, 2) + Math.pow(token.y - center.y, 2));
 
-  switch (areaType) {
-    case 'sphere':
-    case 'cylinder':
-      return distance <= size;
-    case 'cube':
-      return Math.abs(token.x - center.x) <= size/2 && Math.abs(token.y - center.y) <= size/2;
-    case 'line':
-      // Simplified line area check
-      return distance <= size && this.isTokenInLine(token, center, size);
-    case 'cone':
-      // Simplified cone area check
-      return distance <= size && this.isTokenInCone(token, center, size);
-    default:
-      return distance <= size;
-  }
+    switch (areaType) {
+      case "sphere":
+      case "cylinder":
+        return distance <= size;
+      case "cube":
+        return Math.abs(token.x - center.x) <= size / 2 && Math.abs(token.y - center.y) <= size / 2;
+      case "line":
+        // Simplified line area check
+        return distance <= size && this.isTokenInLine(token, center, size);
+      case "cone":
+        // Simplified cone area check
+        return distance <= size && this.isTokenInCone(token, center, size);
+      default:
+        return distance <= size;
+    }
   }
 
-  private isTokenInLine(token: TokenPosition, center: { x: number; y: number }, _length: number): boolean {
+  private isTokenInLine(
+    token: TokenPosition,
+    center: { x: number; y: number },
+    _length: number,
+  ): boolean {
     // Simplified line check - would need direction vector in real implementation
     return Math.abs(token.y - center.y) <= 2.5; // 5-foot wide line
   }
 
-  private isTokenInCone(token: TokenPosition, center: { x: number; y: number }, _range: number): boolean {
+  private isTokenInCone(
+    token: TokenPosition,
+    center: { x: number; y: number },
+    _range: number,
+  ): boolean {
     // Simplified cone check - would need direction and angle in real implementation
     const angle = Math.atan2(token.y - center.y, token.x - center.x);
     return Math.abs(angle) <= Math.PI / 6; // 60-degree cone
   }
 
+  // Synchronize physics bodies with grid-aligned token positions
+  private async synchronizePhysicsWithGrid(sceneId: string): Promise<void> {
+    const scene = await this.getScene(sceneId);
+    if (!scene || !scene.tokens) return;
 
+    const _gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
-// Synchronize physics bodies with grid-aligned token positions
-private async synchronizePhysicsWithGrid(sceneId: string): Promise<void> {
-  const scene = await this.getScene(sceneId);
-  if (!scene || !scene.tokens) return;
+    for (const token of scene.tokens) {
+      // Ensure token is grid-aligned
+      const alignedPosition = this.snapToGrid(token.x, token.y, scene.grid);
+      // Update physics body position if misaligned
+      const numericId = this.generateNumericId(token.id);
+      const physicsBody = this.physicsWorld.getBody(numericId);
+      if (physicsBody) {
+        physicsBody.setPosition(alignedPosition.x, alignedPosition.y);
+      }
 
-  const _gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
-  
-  for (const token of scene.tokens) {
-    // Ensure token is grid-aligned
-    const alignedPosition = this.snapToGrid(token.x, token.y, scene.grid);
-    // Update physics body position if misaligned
-    const numericId = this.generateNumericId(token.id);
-    const physicsBody = this.physicsWorld.getBody(numericId);
-    if (physicsBody) {
-      physicsBody.setPosition(alignedPosition.x, alignedPosition.y);
+      // Update token position if it was misaligned
+      if (token.x !== alignedPosition.x || token.y !== alignedPosition.y) {
+        await this.updateToken(sceneId, token.id, {
+          x: alignedPosition.x,
+          y: alignedPosition.y,
+        });
+      }
     }
-    
-    // Update token position if it was misaligned
-    if (token.x !== alignedPosition.x || token.y !== alignedPosition.y) {
-      await this.updateToken(sceneId, token.id, {
-        x: alignedPosition.x,
-        y: alignedPosition.y
-      });
-    }
-  }
   }
 
   /**
    * Initialize physics world for a scene with grid alignment
    */
-private async initializePhysicsForScene(sceneId: string): Promise<void> {
-  const scene = await this.getScene(sceneId);
-  if (!scene || !scene.tokens) return;
+  private async initializePhysicsForScene(sceneId: string): Promise<void> {
+    const scene = await this.getScene(sceneId);
+    if (!scene || !scene.tokens) return;
 
-  const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
+    const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
-  // Clear existing physics bodies for this scene
-  scene.tokens.forEach(token => {
-    const numericId = this.generateNumericId(token.id);
-    this.physicsWorld.removeBody?.(numericId);
-  });
-
-  // Add physics bodies for all tokens with proper grid alignment
-  scene.tokens.forEach(token => {
-    const alignedPosition = this.snapToGrid(token.x, token.y, scene.grid);
-    const bodySize = Math.min(gridBounds.cellWidth, gridBounds.cellHeight) * token.scale * 0.8;
-    
-    try {
+    // Clear existing physics bodies for this scene
+    scene.tokens.forEach((token) => {
       const numericId = this.generateNumericId(token.id);
-      const rigidBody = {
-        id: numericId,
-        x: alignedPosition.x,
-        y: alignedPosition.y,
-        width: bodySize,
-        height: bodySize,
-        mass: 1,
-        friction: 0.8,
-        restitution: 0.3,
-        isStatic: false,
-        isTrigger: false,
-        layer: 1,
-        mask: 0xFFFFFFFF
-      };
-      this.physicsWorld.addBody?.(rigidBody);
-    } catch (error) {
-      logger.warn(`Failed to create physics body for token: ${token.id}`, error as Error);
-    }
-  });
+      this.physicsWorld.removeBody?.(numericId);
+    });
 
-  // Synchronize any misaligned tokens
-  await this.synchronizePhysicsWithGrid(sceneId);
+    // Add physics bodies for all tokens with proper grid alignment
+    scene.tokens.forEach((token) => {
+      const alignedPosition = this.snapToGrid(token.x, token.y, scene.grid);
+      const bodySize = Math.min(gridBounds.cellWidth, gridBounds.cellHeight) * token.scale * 0.8;
+
+      try {
+        const numericId = this.generateNumericId(token.id);
+        const rigidBody = {
+          id: numericId,
+          x: alignedPosition.x,
+          y: alignedPosition.y,
+          width: bodySize,
+          height: bodySize,
+          mass: 1,
+          friction: 0.8,
+          restitution: 0.3,
+          isStatic: false,
+          isTrigger: false,
+          layer: 1,
+          mask: 0xffffffff,
+        };
+        this.physicsWorld.addBody?.(rigidBody);
+      } catch (error) {
+        logger.warn(`Failed to create physics body for token: ${token.id}`, error as Error);
+      }
+    });
+
+    // Synchronize any misaligned tokens
+    await this.synchronizePhysicsWithGrid(sceneId);
   }
 
   /**
@@ -884,16 +909,18 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
    * Get active spell effects for scene
    */
   private getActiveSpellEffects(sceneId: string): any[] {
-    return Array.from(this.activeSpellEffects.values())
-      .filter(effect => effect.sceneId === sceneId);
+    return Array.from(this.activeSpellEffects.values()).filter(
+      (effect) => effect.sceneId === sceneId,
+    );
   }
 
   /**
    * Get spell projectiles for scene
    */
   private getSpellProjectiles(sceneId: string): any[] {
-    return Array.from(this.spellProjectiles.values())
-      .filter(projectile => projectile.sceneId === sceneId);
+    return Array.from(this.spellProjectiles.values()).filter(
+      (projectile) => projectile.sceneId === sceneId,
+    );
   }
 
   /**
@@ -903,11 +930,11 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     // Process projectile impact
     if (data.sceneId && data.targetId) {
       this.emitMapUpdate(data.sceneId, {
-        type: 'spell_projectile_hit',
+        type: "spell_projectile_hit",
         projectileId: data.projectileId,
         targetId: data.targetId,
         damage: data.damage,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -919,12 +946,12 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     // Clean up expired spell effects
     if (data.effectId) {
       this.activeSpellEffects.delete(data.effectId);
-      
+
       if (data.sceneId) {
         this.emitMapUpdate(data.sceneId, {
-          type: 'spell_effect_expired',
+          type: "spell_effect_expired",
           effectId: data.effectId,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
     }
@@ -937,11 +964,11 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     // Process token collisions
     if (data.sceneId && data.tokenAId && data.tokenBId) {
       this.emitMapUpdate(data.sceneId, {
-        type: 'token_collision',
+        type: "token_collision",
         tokenAId: data.tokenAId,
         tokenBId: data.tokenBId,
         position: data.position,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
   }
@@ -953,26 +980,26 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     // Broadcast to all connected clients in the scene
     if (this.webSocketManager) {
       try {
-        this.webSocketManager.broadcast('map_update', {
+        this.webSocketManager.broadcast("map_update", {
           sceneId,
           ...data,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       } catch (error) {
-        logger.error('Failed to broadcast map update:', error as Error);
+        logger.error("Failed to broadcast map update:", error as Error);
       }
     }
-    
+
     // Trigger automation if event bridge is available
     if (this.eventBridge) {
       try {
         this.eventBridge.processGameEvent({
           ...data,
           sceneId,
-          source: 'map_service'
+          source: "map_service",
         });
       } catch (error) {
-        logger.error('Failed to trigger automation:', error as Error);
+        logger.error("Failed to trigger automation:", error as Error);
       }
     }
   }
@@ -984,10 +1011,10 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     const gridSize = gridSettings.size || 50;
     const offsetX = gridSettings.offsetX || 0;
     const offsetY = gridSettings.offsetY || 0;
-    
+
     const alignedX = Math.round((x - offsetX) / gridSize) * gridSize + offsetX;
     const alignedY = Math.round((y - offsetY) / gridSize) * gridSize + offsetY;
-    
+
     return { x: alignedX, y: alignedY };
   }
 
@@ -1002,14 +1029,21 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   /**
    * Update spatial index when tokens move
    */
-  private updateSpatialIndex(sceneId: string, tokenId: string, x: number, y: number, width: number = 50, height: number = 50): void {
+  private updateSpatialIndex(
+    sceneId: string,
+    tokenId: string,
+    x: number,
+    y: number,
+    width: number = 50,
+    height: number = 50,
+  ): void {
     if (!this.spatialIndex.has(sceneId)) {
       this.spatialIndex.set(sceneId, new Map());
     }
 
     const sceneIndex = this.spatialIndex.get(sceneId)!;
     const gridSize = 100; // Spatial grid cell size
-    
+
     // Calculate grid cells this token occupies
     const minX = Math.floor(x / gridSize);
     const minY = Math.floor(y / gridSize);
@@ -1039,7 +1073,12 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   /**
    * Get nearby tokens using spatial index for collision detection
    */
-  private getNearbyTokens(sceneId: string, x: number, y: number, radius: number = 100): Set<string> {
+  private getNearbyTokens(
+    sceneId: string,
+    x: number,
+    y: number,
+    radius: number = 100,
+  ): Set<string> {
     const nearbyTokens = new Set<string>();
     const sceneIndex = this.spatialIndex.get(sceneId);
     if (!sceneIndex) return nearbyTokens;
@@ -1055,7 +1094,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         const cellKey = `${gx},${gy}`;
         const cellTokens = sceneIndex.get(cellKey);
         if (cellTokens) {
-          cellTokens.forEach(tokenId => nearbyTokens.add(tokenId));
+          cellTokens.forEach((tokenId) => nearbyTokens.add(tokenId));
         }
       }
     }
@@ -1066,12 +1105,17 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   /**
    * Apply damage to an entity
    */
-  async applyDamage(sceneId: string, targetId: string, damage: number, damageType: string = 'untyped'): Promise<boolean> {
+  async applyDamage(
+    sceneId: string,
+    targetId: string,
+    damage: number,
+    damageType: string = "untyped",
+  ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
       if (!scene) return false;
 
-      const token = scene.tokens?.find(t => t.id === targetId);
+      const token = scene.tokens?.find((t) => t.id === targetId);
       if (!token) return false;
 
       // Update token health in database
@@ -1079,30 +1123,33 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         where: { id: targetId },
         data: {
           // Assuming hitPoints field exists or will be added
-          hitPoints: Math.max(0, (token as any).hitPoints - damage)
-        }
+          hitPoints: Math.max(0, (token as any).hitPoints - damage),
+        },
       });
 
       // Update cached scene
       if (scene.tokens) {
-        const tokenIndex = scene.tokens.findIndex(t => t.id === targetId);
+        const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
         if (tokenIndex >= 0) {
-          (scene.tokens[tokenIndex] as any).hitPoints = Math.max(0, ((scene.tokens[tokenIndex] as any).hitPoints || 100) - damage);
+          (scene.tokens[tokenIndex] as any).hitPoints = Math.max(
+            0,
+            ((scene.tokens[tokenIndex] as any).hitPoints || 100) - damage,
+          );
         }
       }
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'damage_applied',
+        type: "damage_applied",
         targetId,
         damage,
         damageType,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return true;
     } catch (error) {
-      logger.error('Failed to apply damage:', error as Error);
+      logger.error("Failed to apply damage:", error as Error);
       return false;
     }
   }
@@ -1115,7 +1162,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       const scene = await this.getScene(sceneId);
       if (!scene) return false;
 
-      const token = scene.tokens?.find(t => t.id === targetId);
+      const token = scene.tokens?.find((t) => t.id === targetId);
       if (!token) return false;
 
       const currentHP = (token as any).hitPoints || 100;
@@ -1126,13 +1173,13 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       await this.prisma.token.update({
         where: { id: targetId },
         data: {
-          hitPoints: newHP
-        }
+          hitPoints: newHP,
+        },
       });
 
       // Update cached scene
       if (scene.tokens) {
-        const tokenIndex = scene.tokens.findIndex(t => t.id === targetId);
+        const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
         if (tokenIndex >= 0) {
           (scene.tokens[tokenIndex] as any).hitPoints = newHP;
         }
@@ -1140,16 +1187,16 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'healing_applied',
+        type: "healing_applied",
         targetId,
         healing,
         newHitPoints: newHP,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return true;
     } catch (error) {
-      logger.error('Failed to apply healing:', error as Error);
+      logger.error("Failed to apply healing:", error as Error);
       return false;
     }
   }
@@ -1157,12 +1204,17 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   /**
    * Apply condition to an entity
    */
-  async applyCondition(sceneId: string, targetId: string, condition: string, duration?: number): Promise<boolean> {
+  async applyCondition(
+    sceneId: string,
+    targetId: string,
+    condition: string,
+    duration?: number,
+  ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
       if (!scene) return false;
 
-      const token = scene.tokens?.find(t => t.id === targetId);
+      const token = scene.tokens?.find((t) => t.id === targetId);
       if (!token) return false;
 
       // Add condition to token (assuming conditions field exists or will be added)
@@ -1171,7 +1223,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         id: uuidv4(),
         name: condition,
         duration: duration || -1, // -1 for permanent
-        appliedAt: Date.now()
+        appliedAt: Date.now(),
       };
 
       conditions.push(newCondition);
@@ -1181,13 +1233,13 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         where: { id: targetId },
         data: {
           // Store conditions as JSON
-          conditions: JSON.stringify(conditions)
-        }
+          conditions: JSON.stringify(conditions),
+        },
       });
 
       // Update cached scene
       if (scene.tokens) {
-        const tokenIndex = scene.tokens.findIndex(t => t.id === targetId);
+        const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
         if (tokenIndex >= 0) {
           (scene.tokens[tokenIndex] as any).conditions = conditions;
         }
@@ -1195,15 +1247,15 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'condition_applied',
+        type: "condition_applied",
         targetId,
         condition: newCondition,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return true;
     } catch (error) {
-      logger.error('Failed to apply condition:', error as Error);
+      logger.error("Failed to apply condition:", error as Error);
       return false;
     }
   }
@@ -1212,10 +1264,10 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
    * Execute attack action
    */
   async executeAttack(
-    sceneId: string, 
-    attackerId: string, 
-    targetId: string, 
-    weaponId?: string
+    sceneId: string,
+    attackerId: string,
+    targetId: string,
+    weaponId?: string,
   ): Promise<{
     success: boolean;
     hit: boolean;
@@ -1225,13 +1277,13 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   }> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return { success: false, hit: false, details: { error: 'Scene not found' } };
+      if (!scene) return { success: false, hit: false, details: { error: "Scene not found" } };
 
-      const attacker = scene.tokens?.find(t => t.id === attackerId);
-      const target = scene.tokens?.find(t => t.id === targetId);
-      
+      const attacker = scene.tokens?.find((t) => t.id === attackerId);
+      const target = scene.tokens?.find((t) => t.id === targetId);
+
       if (!attacker || !target) {
-        return { success: false, hit: false, details: { error: 'Attacker or target not found' } };
+        return { success: false, hit: false, details: { error: "Attacker or target not found" } };
       }
 
       // Basic attack calculation (would integrate with ActionSystem for full implementation)
@@ -1239,7 +1291,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       const attackBonus = (attacker as any).attackBonus || 5;
       const totalAttack = attackRoll + attackBonus;
       const targetAC = (target as any).armorClass || 15;
-      
+
       const hit = totalAttack >= targetAC;
       const critical = attackRoll === 20;
       let damage = 0;
@@ -1249,11 +1301,11 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         const baseDamage = Math.floor(Math.random() * 8) + 1; // 1d8
         const damageBonus = (attacker as any).damageBonus || 3;
         damage = baseDamage + damageBonus;
-        
+
         if (critical) {
           damage *= 2;
         }
-        
+
         // Apply damage
         await this.applyDamage(sceneId, targetId, damage);
       }
@@ -1274,22 +1326,22 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
           attackBonus,
           totalAttack,
           targetAC,
-          weaponId
-        }
+          weaponId,
+        },
       };
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'attack_executed',
+        type: "attack_executed",
         attackerId,
         targetId,
         result,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return result;
     } catch (error) {
-      logger.error('Failed to execute attack:', error as Error);
+      logger.error("Failed to execute attack:", error as Error);
       return { success: false, hit: false, details: { error: (error as Error).message } };
     }
   }
@@ -1298,11 +1350,11 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
    * Cast spell with full integration
    */
   async castSpell(
-    sceneId: string, 
-    casterId: string, 
-    spellId: string, 
+    sceneId: string,
+    casterId: string,
+    spellId: string,
     targetId?: string,
-    position?: { x: number; y: number }
+    position?: { x: number; y: number },
   ): Promise<{
     success: boolean;
     effects: any[];
@@ -1310,20 +1362,20 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   }> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return { success: false, effects: [], details: { error: 'Scene not found' } };
+      if (!scene) return { success: false, effects: [], details: { error: "Scene not found" } };
 
-      const caster = scene.tokens?.find(t => t.id === casterId);
+      const caster = scene.tokens?.find((t) => t.id === casterId);
       if (!caster) {
-        return { success: false, effects: [], details: { error: 'Caster not found' } };
+        return { success: false, effects: [], details: { error: "Caster not found" } };
       }
 
       // Use actual SpellEngine for spell casting
       const effects: any[] = [];
-      
+
       // Get spell data (in a real implementation, this would come from a spell database)
       const spell = this.getSpellData(spellId);
       if (!spell) {
-        return { success: false, effects: [], details: { error: 'Spell not found' } };
+        return { success: false, effects: [], details: { error: "Spell not found" } };
       }
 
       // Cast spell using SpellEngine
@@ -1332,7 +1384,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         caster,
         targetId ? [targetId] : [],
         undefined,
-        position
+        position,
       );
 
       if (!castingResult.success) {
@@ -1342,32 +1394,37 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       // Apply spell effects using existing methods
       for (const effect of castingResult.effects || []) {
         switch (effect.type) {
-          case 'damage':
+          case "damage":
             if (effect.target) {
               const damage = effect.result?.damage || 0;
-              const damageType = effect.result?.damageType || 'force';
+              const damageType = effect.result?.damageType || "force";
               await this.applyDamage(sceneId, effect.target, damage, damageType);
               effects.push(effect);
             }
             break;
-          case 'healing':
+          case "healing":
             if (effect.target) {
               const healing = effect.result?.healing || 0;
               await this.applyHealing(sceneId, effect.target, healing);
               effects.push(effect);
             }
             break;
-          case 'condition':
+          case "condition":
             if (effect.target) {
-              const condition = effect.result?.condition || 'unknown';
+              const condition = effect.result?.condition || "unknown";
               const duration = effect.result?.duration;
               await this.applyCondition(sceneId, effect.target, condition, duration);
               effects.push(effect);
             }
             break;
-          case 'movement':
+          case "movement":
             if (effect.target && effect.result?.position) {
-              await this.moveToken(sceneId, effect.target, effect.result.position.x, effect.result.position.y);
+              await this.moveToken(
+                sceneId,
+                effect.target,
+                effect.result.position.x,
+                effect.result.position.y,
+              );
               effects.push(effect);
             }
             break;
@@ -1383,24 +1440,24 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
           spellId,
           casterId,
           targetId,
-          position
-        }
+          position,
+        },
       };
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'spell_cast',
+        type: "spell_cast",
         casterId,
         spellId,
         targetId,
         position,
         effects,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return result;
     } catch (error) {
-      logger.error('Failed to cast spell:', error as Error);
+      logger.error("Failed to cast spell:", error as Error);
       return { success: false, effects: [], details: { error: (error as Error).message } };
     }
   }
@@ -1411,106 +1468,113 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   private getSpellData(spellId: string): any {
     // Basic spell database - in production this would come from a proper spell database
     const spells: Record<string, any> = {
-      'fireball': {
-        id: 'fireball',
-        name: 'Fireball',
+      fireball: {
+        id: "fireball",
+        name: "Fireball",
         level: 3,
-        school: 'evocation',
-        castingTime: '1 action',
+        school: "evocation",
+        castingTime: "1 action",
         range: 150,
-        components: ['V', 'S', 'M'],
-        duration: 'instantaneous',
-        description: 'A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.',
-        damage: { dice: '8d6', type: 'fire' },
-        area: { type: 'sphere', radius: 20 },
-        savingThrow: { ability: 'dexterity', dc: 15 }
+        components: ["V", "S", "M"],
+        duration: "instantaneous",
+        description:
+          "A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.",
+        damage: { dice: "8d6", type: "fire" },
+        area: { type: "sphere", radius: 20 },
+        savingThrow: { ability: "dexterity", dc: 15 },
       },
-      'cure_wounds': {
-        id: 'cure_wounds',
-        name: 'Cure Wounds',
+      cure_wounds: {
+        id: "cure_wounds",
+        name: "Cure Wounds",
         level: 1,
-        school: 'evocation',
-        castingTime: '1 action',
-        range: 'touch',
-        components: ['V', 'S'],
-        duration: 'instantaneous',
-        description: 'A creature you touch regains a number of hit points.',
-        healing: { dice: '1d8', modifier: 3 }
+        school: "evocation",
+        castingTime: "1 action",
+        range: "touch",
+        components: ["V", "S"],
+        duration: "instantaneous",
+        description: "A creature you touch regains a number of hit points.",
+        healing: { dice: "1d8", modifier: 3 },
       },
-      'hold_person': {
-        id: 'hold_person',
-        name: 'Hold Person',
+      hold_person: {
+        id: "hold_person",
+        name: "Hold Person",
         level: 2,
-        school: 'enchantment',
-        castingTime: '1 action',
+        school: "enchantment",
+        castingTime: "1 action",
         range: 60,
-        components: ['V', 'S', 'M'],
-        duration: 'concentration, up to 1 minute',
-        description: 'Choose a humanoid that you can see within range. The target must succeed on a Wisdom saving throw or be paralyzed for the duration.',
-        condition: 'paralyzed',
-        savingThrow: { ability: 'wisdom', dc: 15 },
-        concentration: true
+        components: ["V", "S", "M"],
+        duration: "concentration, up to 1 minute",
+        description:
+          "Choose a humanoid that you can see within range. The target must succeed on a Wisdom saving throw or be paralyzed for the duration.",
+        condition: "paralyzed",
+        savingThrow: { ability: "wisdom", dc: 15 },
+        concentration: true,
       },
-      'misty_step': {
-        id: 'misty_step',
-        name: 'Misty Step',
+      misty_step: {
+        id: "misty_step",
+        name: "Misty Step",
         level: 2,
-        school: 'conjuration',
-        castingTime: '1 bonus action',
-        range: 'self',
-        components: ['V'],
-        duration: 'instantaneous',
-        description: 'Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.',
-        teleport: { range: 30 }
-      }
+        school: "conjuration",
+        castingTime: "1 bonus action",
+        range: "self",
+        components: ["V"],
+        duration: "instantaneous",
+        description:
+          "Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.",
+        teleport: { range: 30 },
+      },
     };
-    
+
     return spells[spellId] || null;
   }
 
   /**
    * Get basic spell effects (placeholder for full SpellEngine integration)
    */
-  private getBasicSpellEffects(spellId: string, targetId?: string, position?: { x: number; y: number }): any[] {
+  private getBasicSpellEffects(
+    spellId: string,
+    targetId?: string,
+    position?: { x: number; y: number },
+  ): any[] {
     const effects: any[] = [];
-    
+
     switch (spellId) {
-      case 'fireball':
+      case "fireball":
         if (position) {
           // Area damage effect
           effects.push({
-            type: 'damage',
+            type: "damage",
             value: Math.floor(Math.random() * 6 * 8) + 8, // 8d6
-            damageType: 'fire',
-            area: { center: position, radius: 20 }
+            damageType: "fire",
+            area: { center: position, radius: 20 },
           });
         }
         break;
-      case 'cure_wounds':
+      case "cure_wounds":
         if (targetId) {
           effects.push({
-            type: 'healing',
+            type: "healing",
             targetId,
-            value: Math.floor(Math.random() * 8) + 1 + 3 // 1d8 + 3
+            value: Math.floor(Math.random() * 8) + 1 + 3, // 1d8 + 3
           });
         }
         break;
-      case 'hold_person':
+      case "hold_person":
         if (targetId) {
           effects.push({
-            type: 'condition',
+            type: "condition",
             targetId,
-            condition: 'paralyzed',
-            duration: 60000 // 1 minute
+            condition: "paralyzed",
+            duration: 60000, // 1 minute
           });
         }
         break;
-      case 'misty_step':
+      case "misty_step":
         if (targetId && position) {
           effects.push({
-            type: 'movement',
+            type: "movement",
             targetId,
-            position
+            position,
           });
         }
         break;
@@ -1518,14 +1582,14 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         // Generic spell effect
         if (targetId) {
           effects.push({
-            type: 'damage',
+            type: "damage",
             targetId,
             value: Math.floor(Math.random() * 6) + 1, // 1d6
-            damageType: 'force'
+            damageType: "force",
           });
         }
     }
-    
+
     return effects;
   }
 
@@ -1536,27 +1600,27 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     try {
       // Add encounter tokens to scene
       const addedTokens: any[] = [];
-      
+
       if (encounterData.monsters) {
         for (const monster of encounterData.monsters) {
           const tokenId = await this.addToken(sceneId, {
             name: monster.name,
             x: monster.position?.x || Math.random() * 1000,
             y: monster.position?.y || Math.random() * 1000,
-            disposition: 'HOSTILE',
+            disposition: "HOSTILE",
             width: monster.size || 1,
-            height: monster.size || 1
+            height: monster.size || 1,
           });
-          
+
           if (tokenId) {
             addedTokens.push({ id: tokenId, ...monster });
           }
         }
       }
-      
+
       return { id: uuidv4(), monsters: addedTokens, ...encounterData };
     } catch (error) {
-      logger.error('Failed to add encounter:', error as Error);
+      logger.error("Failed to add encounter:", error as Error);
       return null;
     }
   }
@@ -1570,14 +1634,14 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         name: npcData.name,
         x: npcData.position?.x || Math.random() * 1000,
         y: npcData.position?.y || Math.random() * 1000,
-        disposition: npcData.disposition || 'NEUTRAL',
+        disposition: npcData.disposition || "NEUTRAL",
         width: 1,
-        height: 1
+        height: 1,
       });
-      
+
       return { id: tokenId, ...npcData };
     } catch (error) {
-      logger.error('Failed to add NPC:', error as Error);
+      logger.error("Failed to add NPC:", error as Error);
       return null;
     }
   }
@@ -1588,17 +1652,17 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   async addTreasure(sceneId: string, treasureData: any): Promise<any> {
     try {
       const tokenId = await this.addToken(sceneId, {
-        name: treasureData.name || 'Treasure',
+        name: treasureData.name || "Treasure",
         x: treasureData.position?.x || Math.random() * 1000,
         y: treasureData.position?.y || Math.random() * 1000,
-        disposition: 'NEUTRAL',
+        disposition: "NEUTRAL",
         width: 0.5,
-        height: 0.5
+        height: 0.5,
       });
-      
+
       return { id: tokenId, ...treasureData };
     } catch (error) {
-      logger.error('Failed to add treasure:', error as Error);
+      logger.error("Failed to add treasure:", error as Error);
       return null;
     }
   }
@@ -1610,26 +1674,26 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     try {
       const effect = {
         id: uuidv4(),
-        type: 'hazard',
+        type: "hazard",
         name: hazardData.name,
         position: hazardData.position || { x: Math.random() * 1000, y: Math.random() * 1000 },
         area: hazardData.area || { radius: 10 },
-        damage: hazardData.damage || { dice: '1d6', type: 'fire' },
-        ...hazardData
+        damage: hazardData.damage || { dice: "1d6", type: "fire" },
+        ...hazardData,
       };
-      
+
       this.activeSpellEffects.set(effect.id, effect);
-      
+
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'hazard_added',
+        type: "hazard_added",
         hazard: effect,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-      
+
       return effect;
     } catch (error) {
-      logger.error('Failed to add hazard:', error as Error);
+      logger.error("Failed to add hazard:", error as Error);
       return null;
     }
   }
@@ -1642,22 +1706,24 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       // Basic combat status - would integrate with combat engine
       const scene = await this.getScene(sceneId);
       if (!scene || !scene.tokens) return null;
-      
+
       return {
         inCombat: false,
         round: 0,
         turn: 0,
-        order: scene.tokens.map(t => ({
-          id: t.id,
-          name: (t as any).name || 'Unknown',
-          initiative: (t as any).initiative || 10
-        })).sort((a, b) => b.initiative - a.initiative),
+        order: scene.tokens
+          .map((t) => ({
+            id: t.id,
+            name: (t as any).name || "Unknown",
+            initiative: (t as any).initiative || 10,
+          }))
+          .sort((a, b) => b.initiative - a.initiative),
         current: 0,
         delayed: [],
-        surprised: []
+        surprised: [],
       };
     } catch (error) {
-      logger.error('Failed to get combat status:', error as Error);
+      logger.error("Failed to get combat status:", error as Error);
       return null;
     }
   }
@@ -1670,7 +1736,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     let hash = 0;
     for (let i = 0; i < tokenId.length; i++) {
       const char = tokenId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     // Ensure positive number
@@ -1680,7 +1746,11 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   /**
    * Get grid bounds for scene
    */
-  private getGridBounds(gridSettings: GridSettings, sceneWidth: number, sceneHeight: number): {
+  private getGridBounds(
+    gridSettings: GridSettings,
+    sceneWidth: number,
+    sceneHeight: number,
+  ): {
     cellWidth: number;
     cellHeight: number;
     columns: number;
@@ -1692,14 +1762,14 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     const cellHeight = gridSettings.size || 50;
     const columns = Math.ceil(sceneWidth / cellWidth);
     const rows = Math.ceil(sceneHeight / cellHeight);
-    
+
     return {
       cellWidth,
       cellHeight,
       columns,
       rows,
       totalWidth: columns * cellWidth,
-      totalHeight: rows * cellHeight
+      totalHeight: rows * cellHeight,
     };
   }
 
@@ -1710,7 +1780,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     sceneId: string,
     spellEffect: any,
     position: { x: number; y: number },
-    size?: { width?: number; height?: number; radius?: number }
+    size?: { width?: number; height?: number; radius?: number },
   ): Promise<number | null> {
     try {
       const bodyConfig = {
@@ -1720,42 +1790,42 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         isStatic: true,
         isSensor: true, // Allows overlap detection without collision response
         userData: {
-          type: 'spell_effect',
+          type: "spell_effect",
           spellId: spellEffect.id,
           effectType: spellEffect.type,
-          sceneId
-        }
+          sceneId,
+        },
       };
 
       // Determine body shape based on spell effect
       let bodyShape;
       if (size?.radius) {
-        bodyShape = { type: 'circle', radius: size.radius };
+        bodyShape = { type: "circle", radius: size.radius };
       } else {
         bodyShape = {
-          type: 'rectangle',
+          type: "rectangle",
           width: size?.width || 50,
-          height: size?.height || 50
+          height: size?.height || 50,
         };
       }
 
       const physicsBody = this.physicsWorld.createBody?.({
         ...bodyConfig,
-        shape: bodyShape
+        shape: bodyShape,
       });
 
       if (physicsBody) {
         // Store mapping for cleanup
         this.spellEffectPhysicsBodies.set(spellEffect.id, physicsBody.id);
-        
+
         // Emit physics body created event
         this.emitMapUpdate(sceneId, {
-          type: 'spell_effect_physics_created',
+          type: "spell_effect_physics_created",
           spellEffectId: spellEffect.id,
           physicsBodyId: physicsBody.id,
           position,
           shape: bodyShape,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
 
         return physicsBody.id;
@@ -1763,7 +1833,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       return null;
     } catch (error) {
-      logger.error('Failed to create spell effect physics body:', error as Error);
+      logger.error("Failed to create spell effect physics body:", error as Error);
       return null;
     }
   }
@@ -1774,7 +1844,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   async updateSpellEffectPhysicsBody(
     spellEffectId: string,
     position?: { x: number; y: number },
-    size?: { width?: number; height?: number; radius?: number }
+    size?: { width?: number; height?: number; radius?: number },
   ): Promise<boolean> {
     try {
       const physicsBodyId = this.spellEffectPhysicsBodies.get(spellEffectId);
@@ -1791,12 +1861,12 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       if (size && physicsBody.updateShape) {
         let newShape;
         if (size.radius) {
-          newShape = { type: 'circle', radius: size.radius };
+          newShape = { type: "circle", radius: size.radius };
         } else {
           newShape = {
-            type: 'rectangle',
+            type: "rectangle",
             width: size.width || 50,
-            height: size.height || 50
+            height: size.height || 50,
           };
         }
         physicsBody.updateShape(newShape);
@@ -1804,7 +1874,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       return true;
     } catch (error) {
-      logger.error('Failed to update spell effect physics body:', error as Error);
+      logger.error("Failed to update spell effect physics body:", error as Error);
       return false;
     }
   }
@@ -1824,7 +1894,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       return removed;
     } catch (error) {
-      logger.error('Failed to remove spell effect physics body:', error as Error);
+      logger.error("Failed to remove spell effect physics body:", error as Error);
       return false;
     }
   }
@@ -1832,11 +1902,13 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   /**
    * Check token collisions with spell effects
    */
-  async checkTokenSpellCollisions(sceneId: string): Promise<Array<{
-    tokenId: string;
-    spellEffectId: string;
-    collision: any;
-  }>> {
+  async checkTokenSpellCollisions(sceneId: string): Promise<
+    Array<{
+      tokenId: string;
+      spellEffectId: string;
+      collision: any;
+    }>
+  > {
     try {
       const collisions: Array<{
         tokenId: string;
@@ -1851,7 +1923,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       for (const token of scene.tokens) {
         const tokenPhysicsId = this.generateNumericId(token.id);
         const tokenPhysicsBody = this.physicsWorld.getBody(tokenPhysicsId);
-        
+
         if (!tokenPhysicsBody) continue;
 
         // Check collisions with all spell effect bodies
@@ -1865,7 +1937,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
             collisions.push({
               tokenId: token.id,
               spellEffectId,
-              collision
+              collision,
             });
           }
         }
@@ -1873,7 +1945,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       return collisions;
     } catch (error) {
-      logger.error('Failed to check token spell collisions:', error as Error);
+      logger.error("Failed to check token spell collisions:", error as Error);
       return [];
     }
   }
@@ -1884,8 +1956,15 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   async calculateSpellAffectedTokens(
     sceneId: string,
     spellPosition: { x: number; y: number },
-    spellArea: { type: 'circle' | 'cone' | 'rectangle' | 'line'; radius?: number; width?: number; height?: number; length?: number; angle?: number },
-    casterPosition?: { x: number; y: number }
+    spellArea: {
+      type: "circle" | "cone" | "rectangle" | "line";
+      radius?: number;
+      width?: number;
+      height?: number;
+      length?: number;
+      angle?: number;
+    },
+    casterPosition?: { x: number; y: number },
   ): Promise<string[]> {
     try {
       const scene = await this.getScene(sceneId);
@@ -1898,83 +1977,83 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         let isAffected = false;
 
         switch (spellArea.type) {
-          case 'circle':
+          case "circle":
             if (spellArea.radius) {
               const distance = Math.sqrt(
                 Math.pow(tokenPos.x - spellPosition.x, 2) +
-                Math.pow(tokenPos.y - spellPosition.y, 2)
+                  Math.pow(tokenPos.y - spellPosition.y, 2),
               );
               isAffected = distance <= spellArea.radius;
             }
             break;
 
-          case 'rectangle':
+          case "rectangle":
             if (spellArea.width && spellArea.height) {
               const halfWidth = spellArea.width / 2;
               const halfHeight = spellArea.height / 2;
-              isAffected = (
+              isAffected =
                 tokenPos.x >= spellPosition.x - halfWidth &&
                 tokenPos.x <= spellPosition.x + halfWidth &&
                 tokenPos.y >= spellPosition.y - halfHeight &&
-                tokenPos.y <= spellPosition.y + halfHeight
-              );
+                tokenPos.y <= spellPosition.y + halfHeight;
             }
             break;
 
-          case 'cone':
+          case "cone":
             if (spellArea.radius && spellArea.angle && casterPosition) {
               const distance = Math.sqrt(
                 Math.pow(tokenPos.x - spellPosition.x, 2) +
-                Math.pow(tokenPos.y - spellPosition.y, 2)
+                  Math.pow(tokenPos.y - spellPosition.y, 2),
               );
-              
+
               if (distance <= spellArea.radius) {
                 const casterToSpell = Math.atan2(
                   spellPosition.y - casterPosition.y,
-                  spellPosition.x - casterPosition.x
+                  spellPosition.x - casterPosition.x,
                 );
                 const casterToToken = Math.atan2(
                   tokenPos.y - casterPosition.y,
-                  tokenPos.x - casterPosition.x
+                  tokenPos.x - casterPosition.x,
                 );
-                
+
                 let angleDiff = Math.abs(casterToToken - casterToSpell);
                 if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
-                
-                isAffected = angleDiff <= (spellArea.angle * Math.PI / 180) / 2;
+
+                isAffected = angleDiff <= (spellArea.angle * Math.PI) / 180 / 2;
               }
             }
             break;
 
-          case 'line':
+          case "line":
             if (spellArea.length && spellArea.width && casterPosition) {
               // Calculate if token is within line area
               const lineVector = {
                 x: spellPosition.x - casterPosition.x,
-                y: spellPosition.y - casterPosition.y
+                y: spellPosition.y - casterPosition.y,
               };
               const lineLength = Math.sqrt(lineVector.x ** 2 + lineVector.y ** 2);
-              
+
               if (lineLength > 0) {
                 const normalizedLine = {
                   x: lineVector.x / lineLength,
-                  y: lineVector.y / lineLength
+                  y: lineVector.y / lineLength,
                 };
-                
+
                 const tokenVector = {
                   x: tokenPos.x - casterPosition.x,
-                  y: tokenPos.y - casterPosition.y
+                  y: tokenPos.y - casterPosition.y,
                 };
-                
+
                 // Project token position onto line
-                const projection = normalizedLine.x * tokenVector.x + normalizedLine.y * tokenVector.y;
-                
+                const projection =
+                  normalizedLine.x * tokenVector.x + normalizedLine.y * tokenVector.y;
+
                 if (projection >= 0 && projection <= spellArea.length) {
                   // Calculate perpendicular distance
                   const perpDistance = Math.abs(
-                    normalizedLine.y * tokenVector.x - normalizedLine.x * tokenVector.y
+                    normalizedLine.y * tokenVector.x - normalizedLine.x * tokenVector.y,
                   );
-                  
+
                   isAffected = perpDistance <= (spellArea.width || 5) / 2;
                 }
               }
@@ -1989,7 +2068,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       return affectedTokens;
     } catch (error) {
-      logger.error('Failed to calculate spell affected tokens:', error as Error);
+      logger.error("Failed to calculate spell affected tokens:", error as Error);
       return [];
     }
   }
@@ -2011,17 +2090,18 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         }
 
         // Update physics-based properties
-        if (effect.type === 'area_effect' && effect.expanding) {
+        if (effect.type === "area_effect" && effect.expanding) {
           const elapsed = now - effect.createdAt;
           const progress = Math.min(1, elapsed / (effect.expansionDuration || 1000));
-          const currentRadius = effect.initialRadius + (effect.finalRadius - effect.initialRadius) * progress;
-          
+          const currentRadius =
+            effect.initialRadius + (effect.finalRadius - effect.initialRadius) * progress;
+
           // Update physics body size
           await this.updateSpellEffectPhysicsBody(effectId, undefined, { radius: currentRadius });
-          
+
           // Update effect data
           effect.currentRadius = currentRadius;
-          
+
           if (progress >= 1) {
             effect.expanding = false;
           }
@@ -2031,9 +2111,9 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         if (effect.velocity && (effect.velocity.x !== 0 || effect.velocity.y !== 0)) {
           const newPosition = {
             x: effect.position.x + effect.velocity.x * deltaTime,
-            y: effect.position.y + effect.velocity.y * deltaTime
+            y: effect.position.y + effect.velocity.y * deltaTime,
           };
-          
+
           await this.updateSpellEffectPhysicsBody(effectId, newPosition);
           effect.position = newPosition;
         }
@@ -2041,28 +2121,27 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       // Clean up expired effects
       for (const effectId of expiredEffects) {
-         // this.removeSpellEffect(spellEffectId); // Method not implemented
+        // this.removeSpellEffect(spellEffectId); // Method not implemented
       }
 
       // Step physics simulation
       this.physicsWorld.step(deltaTime);
 
       // Check for collisions after physics step
-      const collisions = await this.checkTokenSpellCollisions('current'); // Would need current scene ID
-      
+      const collisions = await this.checkTokenSpellCollisions("current"); // Would need current scene ID
+
       // Emit collision events
       for (const collision of collisions) {
-        this.emitMapUpdate('current', {
-          type: 'spell_token_collision',
+        this.emitMapUpdate("current", {
+          type: "spell_token_collision",
           tokenId: collision.tokenId,
           spellEffectId: collision.spellEffectId,
           collision: collision.collision,
-          timestamp: now
+          timestamp: now,
         });
       }
-
     } catch (error) {
-      logger.error('Failed to update spell effect physics:', error as Error);
+      logger.error("Failed to update spell effect physics:", error as Error);
     }
   }
 
@@ -2075,7 +2154,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     }
 
     let lastTime = Date.now();
-    
+
     this.physicsUpdateInterval = setInterval(async () => {
       const currentTime = Date.now();
       const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
@@ -2102,7 +2181,7 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     sceneId: string,
     spellData: any,
     casterPosition: { x: number; y: number },
-    targetPosition?: { x: number; y: number }
+    targetPosition?: { x: number; y: number },
   ): Promise<{
     spellEffectId: string;
     physicsBodyId: number | null;
@@ -2111,53 +2190,53 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
     try {
       // Create spell effect (stubbed for build compatibility)
       const spellEffect = { id: uuidv4(), ...spellData };
-      if (!spellEffect) throw new Error('Failed to create spell effect');
+      if (!spellEffect) throw new Error("Failed to create spell effect");
 
       // Create physics body
       const physicsBodyId = await this.createSpellEffectPhysicsBody(
         sceneId,
         spellEffect,
         targetPosition || casterPosition,
-        spellData.area
+        spellData.area,
       );
 
       // Create visual effects (would integrate with PhysicsVisualBridge)
       const visualEffectIds: string[] = [];
-      
+
       if (this.visualEffectsBridge) {
         const visualIds = this.visualEffectsBridge.createSpellVisualEffect(
           spellData.id,
           spellData.name,
-          spellData.school || 'evocation',
+          spellData.school || "evocation",
           casterPosition,
-          targetPosition
+          targetPosition,
         );
         visualEffectIds.push(...visualIds);
       }
 
       // Emit comprehensive spell creation event
       this.emitMapUpdate(sceneId, {
-        type: 'spell_with_physics_created',
+        type: "spell_with_physics_created",
         spellEffectId: spellEffect.id,
         physicsBodyId,
         visualEffectIds,
         casterPosition,
         targetPosition,
         spellData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return {
         spellEffectId: spellEffect.id,
         physicsBodyId,
-        visualEffectIds
+        visualEffectIds,
       };
     } catch (error) {
-      logger.error('Failed to create spell with visual effects:', error as Error);
+      logger.error("Failed to create spell with visual effects:", error as Error);
       return {
-        spellEffectId: '',
+        spellEffectId: "",
         physicsBodyId: null,
-        visualEffectIds: []
+        visualEffectIds: [],
       };
     }
   }
@@ -2168,13 +2247,13 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
   initializePhysicsIntegration(visualEffectsBridge?: any): void {
     this.visualEffectsBridge = visualEffectsBridge;
     this.startSpellPhysicsLoop();
-    
+
     // Setup physics event handlers
-    this.physicsWorld.on('collision', (bodyA: any, bodyB: any, collision: any) => {
+    this.physicsWorld.on("collision", (bodyA: any, bodyB: any, collision: any) => {
       this.handlePhysicsCollision(bodyA, bodyB, collision);
     });
 
-    logger.info('MapService physics integration initialized');
+    logger.info("MapService physics integration initialized");
   }
 
   /**
@@ -2187,34 +2266,34 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
       const typeB = bodyB.userData?.type;
 
       // Token vs Spell Effect collision
-      if ((typeA === 'token' && typeB === 'spell_effect') ||
-          (typeA === 'spell_effect' && typeB === 'token')) {
-        
-        const tokenBody = typeA === 'token' ? bodyA : bodyB;
-        const spellBody = typeA === 'spell_effect' ? bodyA : bodyB;
+      if (
+        (typeA === "token" && typeB === "spell_effect") ||
+        (typeA === "spell_effect" && typeB === "token")
+      ) {
+        const tokenBody = typeA === "token" ? bodyA : bodyB;
+        const spellBody = typeA === "spell_effect" ? bodyA : bodyB;
 
         this.emitMapUpdate(spellBody.userData.sceneId, {
-          type: 'token_spell_collision',
+          type: "token_spell_collision",
           tokenId: tokenBody.userData.tokenId,
           spellEffectId: spellBody.userData.spellId,
           collision,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
 
       // Spell Effect vs Spell Effect collision
-      if (typeA === 'spell_effect' && typeB === 'spell_effect') {
+      if (typeA === "spell_effect" && typeB === "spell_effect") {
         this.emitMapUpdate(bodyA.userData.sceneId, {
-          type: 'spell_spell_collision',
+          type: "spell_spell_collision",
           spellEffectAId: bodyA.userData.spellId,
           spellEffectBId: bodyB.userData.spellId,
           collision,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         });
       }
-
     } catch (error) {
-      logger.error('Failed to handle physics collision:', error as Error);
+      logger.error("Failed to handle physics collision:", error as Error);
     }
   }
 
@@ -2231,26 +2310,26 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
         where: { id: sceneId },
         data: {
           ...(updates.name && { name: updates.name }),
-          ...(updates.grid && { 
+          ...(updates.grid && {
             // Store grid settings in metadata field if available
-            metadata: JSON.stringify({ gridSettings: updates.grid })
+            metadata: JSON.stringify({ gridSettings: updates.grid }),
           }),
-          ...(updates.lighting && { 
-            // Store lighting settings in metadata field if available  
-            metadata: JSON.stringify({ 
+          ...(updates.lighting && {
+            // Store lighting settings in metadata field if available
+            metadata: JSON.stringify({
               ...((scene as any).metadata ? JSON.parse((scene as any).metadata) : {}),
-              lightingSettings: updates.lighting 
-            })
+              lightingSettings: updates.lighting,
+            }),
           }),
-          ...(updates.fog && { 
+          ...(updates.fog && {
             // Store fog settings in metadata field if available
-            metadata: JSON.stringify({ 
+            metadata: JSON.stringify({
               ...((scene as any).metadata ? JSON.parse((scene as any).metadata) : {}),
-              fogSettings: updates.fog 
-            })
+              fogSettings: updates.fog,
+            }),
           }),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       // Update cached scene
@@ -2261,15 +2340,15 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
-        type: 'scene_updated',
+        type: "scene_updated",
         sceneId,
         updates,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
 
       return true;
     } catch (error) {
-      logger.error('Failed to update scene:', error as Error);
+      logger.error("Failed to update scene:", error as Error);
       return false;
     }
   }
@@ -2279,13 +2358,13 @@ private async initializePhysicsForScene(sceneId: string): Promise<void> {
    */
   cleanup(): void {
     this.stopSpellPhysicsLoop();
-    
+
     // Clean up all spell effect physics bodies
     for (const [_spellEffectId, physicsBodyId] of this.spellEffectPhysicsBodies) {
       this.physicsWorld.removeBody(physicsBodyId);
     }
     this.spellEffectPhysicsBodies.clear();
 
-    logger.info('MapService physics integration cleaned up');
+    logger.info("MapService physics integration cleaned up");
   }
 }

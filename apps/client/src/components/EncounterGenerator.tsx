@@ -2,14 +2,14 @@
  * AI-driven encounter generator component
  */
 
-import React, { useState } from 'react';
-import './EncounterGenerator.css';
+import React, { useState } from "react";
+import "./EncounterGenerator.css";
 
 export interface EncounterRequest {
   playerLevel: number;
   partySize: number;
   setting: string;
-  difficulty: 'easy' | 'medium' | 'hard' | 'deadly';
+  difficulty: "easy" | "medium" | "hard" | "deadly";
   theme?: string;
   environment?: string;
 }
@@ -49,16 +49,20 @@ export interface EncounterGeneratorProps {
   onClose?: () => void;
 }
 
-export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignId, onEncounterGenerated, onClose}) => {
+export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({
+  campaignId,
+  onEncounterGenerated,
+  onClose,
+}) => {
   const [request, setRequest] = useState<EncounterRequest>({
     playerLevel: 5,
     partySize: 4,
-    setting: 'fantasy',
-    difficulty: 'medium',
-    theme: '',
-    environment: '',
+    setting: "fantasy",
+    difficulty: "medium",
+    theme: "",
+    environment: "",
   });
-  
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedEncounter, setGeneratedEncounter] = useState<GeneratedEncounter | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,12 +70,12 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
-    
+
     try {
-      const response = await fetch('/api/content/encounter', {
-        method: 'POST',
+      const response = await fetch("/api/content/encounter", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...request,
@@ -80,23 +84,23 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate encounter');
+        throw new Error("Failed to generate encounter");
       }
 
       const result = await response.json();
-      
+
       // Parse the AI-generated content
       const encounter: GeneratedEncounter = {
         id: result.id,
-        title: result.content.title || 'Generated Encounter',
-        description: result.content.description || '',
+        title: result.content.title || "Generated Encounter",
+        description: result.content.description || "",
         enemies: result.content.enemies || [],
-        environment: result.content.environment || { description: '', features: [] },
+        environment: result.content.environment || { description: "", features: [] },
         rewards: result.content.rewards || { xp: 0 },
-        scalingNotes: result.content.scalingNotes || '',
+        scalingNotes: result.content.scalingNotes || "",
         metadata: result.metadata,
       };
-      
+
       setGeneratedEncounter(encounter);
       onEncounterGenerated?.(encounter);
     } catch (err: any) {
@@ -114,10 +118,10 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
   };
 
   const difficultyDescriptions = {
-    easy: 'Easy encounter - should not be deadly',
-    medium: 'Medium encounter - may be challenging',
-    hard: 'Hard encounter - likely to be challenging',
-    deadly: 'Deadly encounter - could be lethal'
+    easy: "Easy encounter - should not be deadly",
+    medium: "Medium encounter - may be challenging",
+    hard: "Hard encounter - likely to be challenging",
+    deadly: "Deadly encounter - could be lethal",
   };
 
   return (
@@ -125,7 +129,9 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
       <div className="generator-header">
         <h3>AI Encounter Generator</h3>
         {onClose && (
-          <button className="close-btn" onClick={onClose} >×</button>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         )}
       </div>
 
@@ -137,7 +143,9 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
             min="1"
             max="20"
             value={request.playerLevel}
-            onChange={(e) => setRequest(prev => ({ ...prev, playerLevel: parseInt(e.target.value) }))}
+            onChange={(e) =>
+              setRequest((prev) => ({ ...prev, playerLevel: parseInt(e.target.value) }))
+            }
           />
         </div>
 
@@ -148,7 +156,9 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
             min="1"
             max="8"
             value={request.partySize}
-            onChange={(e) => setRequest(prev => ({ ...prev, partySize: parseInt(e.target.value) }))}
+            onChange={(e) =>
+              setRequest((prev) => ({ ...prev, partySize: parseInt(e.target.value) }))
+            }
           />
         </div>
 
@@ -156,7 +166,7 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
           <label>Setting:</label>
           <select
             value={request.setting}
-            onChange={(e) => setRequest(prev => ({ ...prev, setting: e.target.value }))}
+            onChange={(e) => setRequest((prev) => ({ ...prev, setting: e.target.value }))}
           >
             <option value="fantasy">Fantasy</option>
             <option value="urban">Urban</option>
@@ -171,7 +181,7 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
           <label>Difficulty:</label>
           <select
             value={request.difficulty}
-            onChange={(e) => setRequest(prev => ({ ...prev, difficulty: e.target.value as any }))}
+            onChange={(e) => setRequest((prev) => ({ ...prev, difficulty: e.target.value as any }))}
           >
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
@@ -187,7 +197,7 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
             type="text"
             placeholder="e.g., undead, bandits, elemental..."
             value={request.theme}
-            onChange={(e) => setRequest(prev => ({ ...prev, theme: e.target.value }))}
+            onChange={(e) => setRequest((prev) => ({ ...prev, theme: e.target.value }))}
           />
         </div>
 
@@ -197,16 +207,12 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
             type="text"
             placeholder="e.g., ancient ruins, dense forest, tavern..."
             value={request.environment}
-            onChange={(e) => setRequest(prev => ({ ...prev, environment: e.target.value }))}
+            onChange={(e) => setRequest((prev) => ({ ...prev, environment: e.target.value }))}
           />
         </div>
 
-        <button
-          className="generate-btn"
-          onClick={handleGenerate}
-          disabled={isGenerating}
->
-          {isGenerating ? 'Generating Encounter...' : 'Generate Encounter'}
+        <button className="generate-btn" onClick={handleGenerate} disabled={isGenerating}>
+          {isGenerating ? "Generating Encounter..." : "Generate Encounter"}
         </button>
       </div>
 
@@ -236,7 +242,10 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
               <ul>
                 {generatedEncounter.enemies.map((enemy, index) => (
                   <li key={index}>
-                    <strong>{enemy.count}x {enemy.name}</strong> (CR {enemy.cr})
+                    <strong>
+                      {enemy.count}x {enemy.name}
+                    </strong>{" "}
+                    (CR {enemy.cr})
                     {enemy.tactics && <div className="tactics">Tactics: {enemy.tactics}</div>}
                   </li>
                 ))}
@@ -257,23 +266,28 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
                 </ul>
               </div>
             )}
-            {generatedEncounter.environment.hazards && generatedEncounter.environment.hazards.length > 0 && (
-              <div>
-                <strong>Hazards:</strong>
-                <ul>
-                  {generatedEncounter.environment.hazards.map((hazard, index) => (
-                    <li key={index}>{hazard}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {generatedEncounter.environment.hazards &&
+              generatedEncounter.environment.hazards.length > 0 && (
+                <div>
+                  <strong>Hazards:</strong>
+                  <ul>
+                    {generatedEncounter.environment.hazards.map((hazard, index) => (
+                      <li key={index}>{hazard}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
           </div>
 
           <div className="encounter-rewards">
             <h5>Rewards</h5>
-            <p><strong>XP:</strong> {generatedEncounter.rewards.xp}</p>
+            <p>
+              <strong>XP:</strong> {generatedEncounter.rewards.xp}
+            </p>
             {generatedEncounter.rewards.treasure && (
-              <p><strong>Treasure:</strong> {generatedEncounter.rewards.treasure}</p>
+              <p>
+                <strong>Treasure:</strong> {generatedEncounter.rewards.treasure}
+              </p>
             )}
             {generatedEncounter.rewards.items && generatedEncounter.rewards.items.length > 0 && (
               <div>
@@ -295,19 +309,19 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({campaignI
           )}
 
           <div className="encounter-actions">
-            <button className="use-encounter-btn" onClick={handleUseEncounter} >
+            <button className="use-encounter-btn" onClick={handleUseEncounter}>
               Use This Encounter
             </button>
-            <button className="regenerate-btn" onClick={handleGenerate} disabled={isGenerating} >
+            <button className="regenerate-btn" onClick={handleGenerate} disabled={isGenerating}>
               Generate Another
             </button>
           </div>
 
           <div className="generation-meta">
             <small>
-              Generated by {generatedEncounter.metadata.provider} • 
-              {generatedEncounter.metadata.latencyMs}ms • 
-              ${generatedEncounter.metadata.costUSD.toFixed(4)}
+              Generated by {generatedEncounter.metadata.provider} •
+              {generatedEncounter.metadata.latencyMs}ms • $
+              {generatedEncounter.metadata.costUSD.toFixed(4)}
             </small>
           </div>
         </div>

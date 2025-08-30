@@ -3,11 +3,11 @@
  * Connects equipment effects to ECS components and combat systems
  */
 
-import { EntityId } from '../components/Combat';
-import { StatsStore } from '../components/Stats';
-import { HealthStore } from '../components/Health';
-import { CombatStore } from '../components/Combat';
-import { equipmentEffectsEngine, type Equipment } from '@vtt/equipment-effects';
+import { EntityId } from "../components/Combat";
+import { StatsStore } from "../components/Stats";
+import { HealthStore } from "../components/Health";
+import { CombatStore } from "../components/Combat";
+import { equipmentEffectsEngine, type Equipment } from "@vtt/equipment-effects";
 
 export interface CharacterEquipmentState {
   characterId: string;
@@ -22,11 +22,7 @@ export class EquipmentIntegrationService {
   private healthStore: HealthStore;
   private combatStore: CombatStore;
 
-  constructor(
-    statsStore: StatsStore,
-    healthStore: HealthStore,
-    combatStore: CombatStore
-  ) {
+  constructor(statsStore: StatsStore, healthStore: HealthStore, combatStore: CombatStore) {
     this.statsStore = statsStore;
     this.healthStore = healthStore;
     this.combatStore = combatStore;
@@ -38,18 +34,18 @@ export class EquipmentIntegrationService {
   initializeCharacterEquipment(
     characterId: string,
     entityId: EntityId,
-    equipment: Equipment[]
+    equipment: Equipment[],
   ): void {
     const state: CharacterEquipmentState = {
       characterId,
       entityId,
       equipment,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     };
 
     this.characterStates.set(characterId, state);
     equipmentEffectsEngine.initializeCharacterEquipment(characterId, equipment);
-    
+
     // Apply initial equipment bonuses
     this.updateCharacterBonuses(characterId);
   }
@@ -63,7 +59,7 @@ export class EquipmentIntegrationService {
 
     state.equipment = equipment;
     state.lastUpdated = Date.now();
-    
+
     equipmentEffectsEngine.initializeCharacterEquipment(characterId, equipment);
     this.updateCharacterBonuses(characterId);
   }
@@ -75,12 +71,12 @@ export class EquipmentIntegrationService {
     const state = this.characterStates.get(characterId);
     if (!state) return false;
 
-    const item = state.equipment.find(e => e.id === itemId);
+    const item = state.equipment.find((e) => e.id === itemId);
     if (!item) return false;
 
     item.equipped = equipped;
     state.lastUpdated = Date.now();
-    
+
     this.updateCharacterBonuses(characterId);
     return true;
   }
@@ -92,16 +88,16 @@ export class EquipmentIntegrationService {
     const state = this.characterStates.get(characterId);
     if (!state) return false;
 
-    const item = state.equipment.find(e => e.id === itemId);
+    const item = state.equipment.find((e) => e.id === itemId);
     if (!item || !item.requiresAttunement) return false;
 
     // Check attunement limits (typically 3 items)
-    const currentlyAttuned = state.equipment.filter(e => e.attuned).length;
+    const currentlyAttuned = state.equipment.filter((e) => e.attuned).length;
     if (currentlyAttuned >= 3) return false;
 
     item.attuned = true;
     state.lastUpdated = Date.now();
-    
+
     this.updateCharacterBonuses(characterId);
     return true;
   }
@@ -109,11 +105,7 @@ export class EquipmentIntegrationService {
   /**
    * Process equipment triggers during combat events
    */
-  processCombatTriggers(
-    characterId: string,
-    event: string,
-    context?: any
-  ): any[] {
+  processCombatTriggers(characterId: string, event: string, context?: any): any[] {
     const character = this.getCharacterData(characterId);
     if (!character) return [];
 
@@ -127,7 +119,7 @@ export class EquipmentIntegrationService {
     characterId: string,
     weaponId: string,
     targetId: string,
-    context: any
+    context: any,
   ): {
     attackBonus: number;
     damageBonus: string;
@@ -135,7 +127,7 @@ export class EquipmentIntegrationService {
   } {
     const character = this.getCharacterData(characterId);
     if (!character) {
-      return { attackBonus: 0, damageBonus: '', effects: [] };
+      return { attackBonus: 0, damageBonus: "", effects: [] };
     }
 
     return equipmentEffectsEngine.processWeaponAttack(
@@ -143,7 +135,7 @@ export class EquipmentIntegrationService {
       weaponId,
       character,
       targetId,
-      context
+      context,
     );
   }
 
@@ -198,7 +190,7 @@ export class EquipmentIntegrationService {
       hitPoints: {
         current: healthData.currentHitPoints,
         max: healthData.maxHitPoints,
-        temporary: healthData.temporaryHitPoints
+        temporary: healthData.temporaryHitPoints,
       },
       abilities: statsData.abilities,
       armorClass: statsData.armorClass,
@@ -207,16 +199,16 @@ export class EquipmentIntegrationService {
       class: statsData.characterClass,
       alignment: statsData.alignment,
       initiative: combatData?.initiative || 0,
-      isInCombat: combatData?.isActive || false
+      isInCombat: combatData?.isActive || false,
     };
   }
 
   /**
    * Recharge magic items at specified times
    */
-  rechargeItems(characterId: string, timeOfDay: 'dawn' | 'dusk' | 'midnight'): void {
+  rechargeItems(characterId: string, timeOfDay: "dawn" | "dusk" | "midnight"): void {
     equipmentEffectsEngine.rechargeItems(characterId, timeOfDay);
-    
+
     const state = this.characterStates.get(characterId);
     if (state) {
       state.lastUpdated = Date.now();

@@ -1,6 +1,6 @@
-import { Reporter, TestCase, TestResult, FullResult } from '@playwright/test/reporter';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { Reporter, TestCase, TestResult, FullResult } from "@playwright/test/reporter";
+import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { join } from "path";
 
 /**
  * Custom E2E Test Reporter
@@ -18,7 +18,7 @@ export class E2ETestReporter implements Reporter {
 
   onBegin() {
     this.startTime = Date.now();
-    console.log('🚀 Starting E2E Test Suite...');
+    console.log("🚀 Starting E2E Test Suite...");
   }
 
   onTestEnd(test: TestCase, result: TestResult) {
@@ -26,23 +26,23 @@ export class E2ETestReporter implements Reporter {
 
     // Collect performance metrics
     if (result.attachments) {
-      result.attachments.forEach(attachment => {
-        if (attachment.name === 'performance-metrics') {
+      result.attachments.forEach((attachment) => {
+        if (attachment.name === "performance-metrics") {
           try {
-            const metrics = JSON.parse(attachment.body?.toString() || '{}');
+            const metrics = JSON.parse(attachment.body?.toString() || "{}");
             this.performanceMetrics.push({
               testTitle: test.title,
               ...metrics,
             });
           } catch (e) {
-            console.warn('Failed to parse performance metrics:', e);
+            console.warn("Failed to parse performance metrics:", e);
           }
         }
       });
     }
 
     // Analyze failures
-    if (result.status === 'failed') {
+    if (result.status === "failed") {
       this.failureAnalysis.push({
         testTitle: test.title,
         testFile: test.location.file,
@@ -50,7 +50,7 @@ export class E2ETestReporter implements Reporter {
         stack: result.error?.stack,
         duration: result.duration,
         retry: result.retry,
-        attachments: result.attachments.map(a => ({
+        attachments: result.attachments.map((a) => ({
           name: a.name,
           contentType: a.contentType,
           path: a.path,
@@ -59,21 +59,28 @@ export class E2ETestReporter implements Reporter {
     }
 
     // Log test completion
-    const status = result.status === 'passed' ? '✅' : 
-                  result.status === 'failed' ? '❌' : 
-                  result.status === 'skipped' ? '⏭️' : '⚠️';
-    
+    const status =
+      result.status === "passed"
+        ? "✅"
+        : result.status === "failed"
+          ? "❌"
+          : result.status === "skipped"
+            ? "⏭️"
+            : "⚠️";
+
     console.log(`${status} ${test.title} (${result.duration}ms)`);
   }
 
   // Suppress noisy Playwright internal stderr: "Internal error: step id not found: fixture@..."
   // Keep other stderr visible to avoid masking legitimate issues.
   onStdErr(chunk: string | Buffer, _test?: TestCase, _result?: TestResult) {
-    const text = typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+    const text = typeof chunk === "string" ? chunk : chunk.toString("utf8");
     const line = text.trim();
     // Allow override via env for experimentation; default targets fixture step ids only.
     const patternEnv = process.env.PW_SUPPRESS_STEPID_PATTERN;
-    const pattern = patternEnv ? new RegExp(patternEnv) : /^Internal error: step id not found: fixture@/;
+    const pattern = patternEnv
+      ? new RegExp(patternEnv)
+      : /^Internal error: step id not found: fixture@/;
     if (pattern.test(line)) {
       this.suppressedStepIdWarnings++;
       if (this.suppressedStepIdSamples.length < 5) this.suppressedStepIdSamples.push(line);
@@ -81,7 +88,7 @@ export class E2ETestReporter implements Reporter {
     }
     // Pass through any other stderr
     // Ensure trailing newline
-    if (!line.endsWith('\n')) {
+    if (!line.endsWith("\n")) {
       console.error(text);
     } else {
       process.stderr.write(text);
@@ -94,7 +101,7 @@ export class E2ETestReporter implements Reporter {
 
     // Generate comprehensive report
     const report = this.generateReport(result, totalDuration);
-    
+
     // Write reports to files
     this.writeReports(report);
 
@@ -103,10 +110,10 @@ export class E2ETestReporter implements Reporter {
   }
 
   private generateReport(result: FullResult, totalDuration: number) {
-    const passedTests = this.testResults.filter(r => r.status === 'passed').length;
-    const failedTests = this.testResults.filter(r => r.status === 'failed').length;
-    const skippedTests = this.testResults.filter(r => r.status === 'skipped').length;
-    const flakyTests = this.testResults.filter(r => r.status === 'passed' && r.retry > 0).length;
+    const passedTests = this.testResults.filter((r) => r.status === "passed").length;
+    const failedTests = this.testResults.filter((r) => r.status === "failed").length;
+    const skippedTests = this.testResults.filter((r) => r.status === "skipped").length;
+    const flakyTests = this.testResults.filter((r) => r.status === "passed" && r.retry > 0).length;
 
     return {
       summary: {
@@ -133,7 +140,7 @@ export class E2ETestReporter implements Reporter {
       },
       coverage: this.coverageData,
       environment: {
-        ci: process.env.CI === 'true',
+        ci: process.env.CI === "true",
         nodeVersion: process.version,
         platform: process.platform,
         arch: process.arch,
@@ -141,9 +148,13 @@ export class E2ETestReporter implements Reporter {
         branch: process.env.GITHUB_REF_NAME,
       },
       artifacts: {
-        videos: this.testResults.filter(r => r.attachments.some(a => a.name === 'video')).length,
-        traces: this.testResults.filter(r => r.attachments.some(a => a.name === 'trace')).length,
-        screenshots: this.testResults.filter(r => r.attachments.some(a => a.name === 'screenshot')).length,
+        videos: this.testResults.filter((r) => r.attachments.some((a) => a.name === "video"))
+          .length,
+        traces: this.testResults.filter((r) => r.attachments.some((a) => a.name === "trace"))
+          .length,
+        screenshots: this.testResults.filter((r) =>
+          r.attachments.some((a) => a.name === "screenshot"),
+        ).length,
       },
       diagnostics: {
         suppressedStepIdNotFound: {
@@ -159,11 +170,11 @@ export class E2ETestReporter implements Reporter {
 
     const metrics = this.performanceMetrics;
     return {
-      pageLoadTime: this.average(metrics.map(m => m.pageLoadTime).filter(Boolean)),
-      apiResponseTime: this.average(metrics.map(m => m.apiResponseTime).filter(Boolean)),
-      websocketLatency: this.average(metrics.map(m => m.websocketLatency).filter(Boolean)),
-      memoryUsage: this.average(metrics.map(m => m.memoryUsage).filter(Boolean)),
-      networkBandwidth: this.average(metrics.map(m => m.networkBandwidth).filter(Boolean)),
+      pageLoadTime: this.average(metrics.map((m) => m.pageLoadTime).filter(Boolean)),
+      apiResponseTime: this.average(metrics.map((m) => m.apiResponseTime).filter(Boolean)),
+      websocketLatency: this.average(metrics.map((m) => m.websocketLatency).filter(Boolean)),
+      memoryUsage: this.average(metrics.map((m) => m.memoryUsage).filter(Boolean)),
+      networkBandwidth: this.average(metrics.map((m) => m.networkBandwidth).filter(Boolean)),
     };
   }
 
@@ -178,15 +189,15 @@ export class E2ETestReporter implements Reporter {
     };
 
     const violations: any[] = [];
-    
+
     Object.entries(averages).forEach(([metric, value]) => {
       const threshold = thresholds[metric as keyof typeof thresholds];
-      if (typeof value === 'number' && typeof threshold === 'number' && value > threshold) {
+      if (typeof value === "number" && typeof threshold === "number" && value > threshold) {
         violations.push({
           metric,
           value,
           threshold,
-          exceeded: (((value - threshold) / threshold) * 100).toFixed(2) + '%',
+          exceeded: (((value - threshold) / threshold) * 100).toFixed(2) + "%",
         });
       }
     });
@@ -200,8 +211,8 @@ export class E2ETestReporter implements Reporter {
 
   private analyzeFailurePatterns() {
     const patterns: any = {};
-    
-    this.failureAnalysis.forEach(failure => {
+
+    this.failureAnalysis.forEach((failure) => {
       // Group by error type
       const errorType = this.categorizeError(failure.error);
       if (!patterns[errorType]) {
@@ -213,61 +224,59 @@ export class E2ETestReporter implements Reporter {
     return Object.entries(patterns).map(([type, failures]) => ({
       type,
       count: (failures as any[]).length,
-      percentage: (((failures as any[]).length / Math.max(this.failureAnalysis.length, 1)) * 100).toFixed(2),
+      percentage: (
+        ((failures as any[]).length / Math.max(this.failureAnalysis.length, 1)) *
+        100
+      ).toFixed(2),
       examples: (failures as any[]).slice(0, 3).map((f: any) => f.testTitle),
     }));
   }
 
   private categorizeError(error?: string): string {
-    if (!error) return 'Unknown';
-    
-    if (error.includes('timeout')) return 'Timeout';
-    if (error.includes('network') || error.includes('fetch')) return 'Network';
-    if (error.includes('element') || error.includes('selector')) return 'Element Not Found';
-    if (error.includes('assertion') || error.includes('expect')) return 'Assertion';
-    if (error.includes('websocket') || error.includes('ws')) return 'WebSocket';
-    if (error.includes('database') || error.includes('prisma')) return 'Database';
-    if (error.includes('auth')) return 'Authentication';
-    
-    return 'Other';
+    if (!error) return "Unknown";
+
+    if (error.includes("timeout")) return "Timeout";
+    if (error.includes("network") || error.includes("fetch")) return "Network";
+    if (error.includes("element") || error.includes("selector")) return "Element Not Found";
+    if (error.includes("assertion") || error.includes("expect")) return "Assertion";
+    if (error.includes("websocket") || error.includes("ws")) return "WebSocket";
+    if (error.includes("database") || error.includes("prisma")) return "Database";
+    if (error.includes("auth")) return "Authentication";
+
+    return "Other";
   }
 
   private writeReports(report: any) {
-    const reportsDir = join(process.cwd(), 'test-results', 'reports');
-    
+    const reportsDir = join(process.cwd(), "test-results", "reports");
+
     if (!existsSync(reportsDir)) {
       mkdirSync(reportsDir, { recursive: true });
     }
 
     // Write JSON report
-    writeFileSync(
-      join(reportsDir, 'e2e-report.json'),
-      JSON.stringify(report, null, 2)
-    );
+    writeFileSync(join(reportsDir, "e2e-report.json"), JSON.stringify(report, null, 2));
 
     // Write HTML report
     const htmlReport = this.generateHTMLReport(report);
-    writeFileSync(
-      join(reportsDir, 'e2e-report.html'),
-      htmlReport
-    );
+    writeFileSync(join(reportsDir, "e2e-report.html"), htmlReport);
 
     // Write CI summary
     const ciSummary = this.generateCISummary(report);
-    writeFileSync(
-      join(reportsDir, 'ci-summary.md'),
-      ciSummary
-    );
+    writeFileSync(join(reportsDir, "ci-summary.md"), ciSummary);
 
     // Write performance report
     if (this.performanceMetrics.length > 0) {
       writeFileSync(
-        join(reportsDir, 'performance-report.json'),
-        JSON.stringify({
-          metrics: this.performanceMetrics,
-          averages: report.performance.averages,
-          thresholds: report.performance.thresholds,
-        }, null, 2)
+        join(reportsDir, "performance-report.json"),
+        JSON.stringify(
+          {
+            metrics: this.performanceMetrics,
+            averages: report.performance.averages,
+            thresholds: report.performance.thresholds,
+          },
+          null,
+          2,
+        ),
       );
     }
   }
@@ -296,7 +305,7 @@ export class E2ETestReporter implements Reporter {
 <body>
     <div class="header">
         <h1>E2E Test Report</h1>
-        <p><strong>Status:</strong> <span class="${report.summary.status === 'passed' ? 'passed' : 'failed'}">${report.summary.status.toUpperCase()}</span></p>
+        <p><strong>Status:</strong> <span class="${report.summary.status === "passed" ? "passed" : "failed"}">${report.summary.status.toUpperCase()}</span></p>
         <p><strong>Duration:</strong> ${(report.summary.duration / 1000).toFixed(2)}s</p>
         <p><strong>Generated:</strong> ${report.summary.endTime}</p>
     </div>
@@ -320,40 +329,56 @@ export class E2ETestReporter implements Reporter {
         </div>
     </div>
 
-    ${report.performance.violations.length > 0 ? `
+    ${
+      report.performance.violations.length > 0
+        ? `
     <div class="section">
         <h2>⚠️ Performance Threshold Violations</h2>
         <table>
             <tr><th>Metric</th><th>Value</th><th>Threshold</th><th>Exceeded By</th></tr>
-            ${report.performance.violations.map((v: any) => `
+            ${report.performance.violations
+              .map(
+                (v: any) => `
                 <tr>
                     <td>${v.metric}</td>
                     <td>${v.value}</td>
                     <td>${v.threshold}</td>
                     <td class="warning">${v.exceeded}</td>
                 </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
         </table>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
-    ${report.failures.count > 0 ? `
+    ${
+      report.failures.count > 0
+        ? `
     <div class="section">
         <h2>❌ Failure Analysis</h2>
         <h3>Failure Patterns</h3>
         <table>
             <tr><th>Error Type</th><th>Count</th><th>Percentage</th><th>Examples</th></tr>
-            ${report.failures.patterns.map((p: any) => `
+            ${report.failures.patterns
+              .map(
+                (p: any) => `
                 <tr>
                     <td>${p.type}</td>
                     <td>${p.count}</td>
                     <td>${p.percentage}%</td>
-                    <td>${p.examples.join(', ')}</td>
+                    <td>${p.examples.join(", ")}</td>
                 </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
         </table>
     </div>
-    ` : ''}
+    `
+        : ""
+    }
 
     <div class="section">
         <h2>📊 Test Artifacts</h2>
@@ -367,8 +392,8 @@ export class E2ETestReporter implements Reporter {
   }
 
   private generateCISummary(report: any): string {
-    const status = report.summary.status === 'passed' ? '✅' : '❌';
-    
+    const status = report.summary.status === "passed" ? "✅" : "❌";
+
     return `# E2E Test Results ${status}
 
 ## Summary
@@ -379,21 +404,29 @@ export class E2ETestReporter implements Reporter {
 - **Pass Rate:** ${report.summary.passRate}%
 - **Duration:** ${(report.summary.duration / 1000).toFixed(2)}s
 
-${report.performance.violations.length > 0 ? `
+${
+  report.performance.violations.length > 0
+    ? `
 ## ⚠️ Performance Issues
-${report.performance.violations.map((v: any) => `- **${v.metric}:** ${v.value} (exceeded threshold by ${v.exceeded})`).join('\n')}
-` : ''}
+${report.performance.violations.map((v: any) => `- **${v.metric}:** ${v.value} (exceeded threshold by ${v.exceeded})`).join("\n")}
+`
+    : ""
+}
 
-${report.failures.count > 0 ? `
+${
+  report.failures.count > 0
+    ? `
 ## ❌ Failures
-${report.failures.patterns.map((p: any) => `- **${p.type}:** ${p.count} failures (${p.percentage}%)`).join('\n')}
-` : ''}
+${report.failures.patterns.map((p: any) => `- **${p.type}:** ${p.count} failures (${p.percentage}%)`).join("\n")}
+`
+    : ""
+}
 
 ## Environment
 - **CI:** ${report.environment.ci}
 - **Node:** ${report.environment.nodeVersion}
 - **Platform:** ${report.environment.platform}
-- **Commit:** ${report.environment.commit || 'N/A'}
+- **Commit:** ${report.environment.commit || "N/A"}
 `;
   }
 
@@ -403,23 +436,25 @@ ${report.failures.patterns.map((p: any) => `- **${p.type}:** ${p.count} failures
   }
 
   private logSummary(result: FullResult, totalDuration: number) {
-    const passed = this.testResults.filter(r => r.status === 'passed').length;
-    const failed = this.testResults.filter(r => r.status === 'failed').length;
+    const passed = this.testResults.filter((r) => r.status === "passed").length;
+    const failed = this.testResults.filter((r) => r.status === "failed").length;
     const passRate = ((passed / (passed + failed)) * 100).toFixed(2);
 
-    console.log('\n📊 E2E Test Summary:');
-    console.log(`   Status: ${result.status === 'passed' ? '✅ PASSED' : '❌ FAILED'}`);
+    console.log("\n📊 E2E Test Summary:");
+    console.log(`   Status: ${result.status === "passed" ? "✅ PASSED" : "❌ FAILED"}`);
     console.log(`   Duration: ${(totalDuration / 1000).toFixed(2)}s`);
     console.log(`   Tests: ${this.testResults.length} total, ${passed} passed, ${failed} failed`);
     console.log(`   Pass Rate: ${passRate}%`);
-    
+
     if (this.performanceMetrics.length > 0) {
       console.log(`   Performance Metrics: ${this.performanceMetrics.length} collected`);
     }
     if (this.suppressedStepIdWarnings > 0) {
-      console.log(`   Suppressed noisy internal messages: ${this.suppressedStepIdWarnings} (pattern: ${process.env.PW_SUPPRESS_STEPID_PATTERN || '^Internal error: step id not found: fixture@'})`);
+      console.log(
+        `   Suppressed noisy internal messages: ${this.suppressedStepIdWarnings} (pattern: ${process.env.PW_SUPPRESS_STEPID_PATTERN || "^Internal error: step id not found: fixture@"})`,
+      );
     }
-    
+
     console.log(`   Reports: test-results/reports/`);
   }
 }

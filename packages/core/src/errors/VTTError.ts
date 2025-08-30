@@ -4,70 +4,70 @@
 
 export enum ErrorCode {
   // Authentication & Authorization
-  AUTH_INVALID_CREDENTIALS = 'AUTH_INVALID_CREDENTIALS',
-  AUTH_TOKEN_EXPIRED = 'AUTH_TOKEN_EXPIRED',
-  AUTH_TOKEN_INVALID = 'AUTH_TOKEN_INVALID',
-  AUTH_ACCESS_DENIED = 'AUTH_ACCESS_DENIED',
-  AUTH_USER_NOT_FOUND = 'AUTH_USER_NOT_FOUND',
-  AUTH_USER_ALREADY_EXISTS = 'AUTH_USER_ALREADY_EXISTS',
-  AUTH_PASSWORD_TOO_WEAK = 'AUTH_PASSWORD_TOO_WEAK',
-  AUTH_EMAIL_NOT_VERIFIED = 'AUTH_EMAIL_NOT_VERIFIED',
+  AUTH_INVALID_CREDENTIALS = "AUTH_INVALID_CREDENTIALS",
+  AUTH_TOKEN_EXPIRED = "AUTH_TOKEN_EXPIRED",
+  AUTH_TOKEN_INVALID = "AUTH_TOKEN_INVALID",
+  AUTH_ACCESS_DENIED = "AUTH_ACCESS_DENIED",
+  AUTH_USER_NOT_FOUND = "AUTH_USER_NOT_FOUND",
+  AUTH_USER_ALREADY_EXISTS = "AUTH_USER_ALREADY_EXISTS",
+  AUTH_PASSWORD_TOO_WEAK = "AUTH_PASSWORD_TOO_WEAK",
+  AUTH_EMAIL_NOT_VERIFIED = "AUTH_EMAIL_NOT_VERIFIED",
 
   // Game Session
-  GAME_NOT_FOUND = 'GAME_NOT_FOUND',
-  GAME_FULL = 'GAME_FULL',
-  GAME_ALREADY_STARTED = 'GAME_ALREADY_STARTED',
-  GAME_INVALID_STATE = 'GAME_INVALID_STATE',
-  GAME_PLAYER_NOT_FOUND = 'GAME_PLAYER_NOT_FOUND',
-  GAME_INVALID_ACTION = 'GAME_INVALID_ACTION',
-  GAME_PERMISSION_DENIED = 'GAME_PERMISSION_DENIED',
+  GAME_NOT_FOUND = "GAME_NOT_FOUND",
+  GAME_FULL = "GAME_FULL",
+  GAME_ALREADY_STARTED = "GAME_ALREADY_STARTED",
+  GAME_INVALID_STATE = "GAME_INVALID_STATE",
+  GAME_PLAYER_NOT_FOUND = "GAME_PLAYER_NOT_FOUND",
+  GAME_INVALID_ACTION = "GAME_INVALID_ACTION",
+  GAME_PERMISSION_DENIED = "GAME_PERMISSION_DENIED",
 
   // Combat System
-  COMBAT_NOT_ACTIVE = 'COMBAT_NOT_ACTIVE',
-  COMBAT_INVALID_TURN = 'COMBAT_INVALID_TURN',
-  COMBAT_INVALID_TARGET = 'COMBAT_INVALID_TARGET',
-  COMBAT_INSUFFICIENT_RESOURCES = 'COMBAT_INSUFFICIENT_RESOURCES',
-  COMBAT_INVALID_SPELL = 'COMBAT_INVALID_SPELL',
-  COMBAT_INVALID_ABILITY = 'COMBAT_INVALID_ABILITY',
+  COMBAT_NOT_ACTIVE = "COMBAT_NOT_ACTIVE",
+  COMBAT_INVALID_TURN = "COMBAT_INVALID_TURN",
+  COMBAT_INVALID_TARGET = "COMBAT_INVALID_TARGET",
+  COMBAT_INSUFFICIENT_RESOURCES = "COMBAT_INSUFFICIENT_RESOURCES",
+  COMBAT_INVALID_SPELL = "COMBAT_INVALID_SPELL",
+  COMBAT_INVALID_ABILITY = "COMBAT_INVALID_ABILITY",
 
   // Asset Management
-  ASSET_NOT_FOUND = 'ASSET_NOT_FOUND',
-  ASSET_UPLOAD_FAILED = 'ASSET_UPLOAD_FAILED',
-  ASSET_INVALID_TYPE = 'ASSET_INVALID_TYPE',
-  ASSET_TOO_LARGE = 'ASSET_TOO_LARGE',
-  ASSET_ACCESS_DENIED = 'ASSET_ACCESS_DENIED',
-  ASSET_STORAGE_ERROR = 'ASSET_STORAGE_ERROR',
+  ASSET_NOT_FOUND = "ASSET_NOT_FOUND",
+  ASSET_UPLOAD_FAILED = "ASSET_UPLOAD_FAILED",
+  ASSET_INVALID_TYPE = "ASSET_INVALID_TYPE",
+  ASSET_TOO_LARGE = "ASSET_TOO_LARGE",
+  ASSET_ACCESS_DENIED = "ASSET_ACCESS_DENIED",
+  ASSET_STORAGE_ERROR = "ASSET_STORAGE_ERROR",
 
   // Network & Connection
-  NETWORK_CONNECTION_LOST = 'NETWORK_CONNECTION_LOST',
-  NETWORK_TIMEOUT = 'NETWORK_TIMEOUT',
-  NETWORK_INVALID_MESSAGE = 'NETWORK_INVALID_MESSAGE',
-  NETWORK_RATE_LIMITED = 'NETWORK_RATE_LIMITED',
+  NETWORK_CONNECTION_LOST = "NETWORK_CONNECTION_LOST",
+  NETWORK_TIMEOUT = "NETWORK_TIMEOUT",
+  NETWORK_INVALID_MESSAGE = "NETWORK_INVALID_MESSAGE",
+  NETWORK_RATE_LIMITED = "NETWORK_RATE_LIMITED",
 
   // Validation
-  VALIDATION_REQUIRED_FIELD = 'VALIDATION_REQUIRED_FIELD',
-  VALIDATION_INVALID_FORMAT = 'VALIDATION_INVALID_FORMAT',
-  VALIDATION_OUT_OF_RANGE = 'VALIDATION_OUT_OF_RANGE',
-  VALIDATION_INVALID_ENUM = 'VALIDATION_INVALID_ENUM',
+  VALIDATION_REQUIRED_FIELD = "VALIDATION_REQUIRED_FIELD",
+  VALIDATION_INVALID_FORMAT = "VALIDATION_INVALID_FORMAT",
+  VALIDATION_OUT_OF_RANGE = "VALIDATION_OUT_OF_RANGE",
+  VALIDATION_INVALID_ENUM = "VALIDATION_INVALID_ENUM",
 
   // System
-  SYSTEM_INTERNAL_ERROR = 'SYSTEM_INTERNAL_ERROR',
-  SYSTEM_SERVICE_UNAVAILABLE = 'SYSTEM_SERVICE_UNAVAILABLE',
-  SYSTEM_CONFIGURATION_ERROR = 'SYSTEM_CONFIGURATION_ERROR',
-  SYSTEM_RESOURCE_EXHAUSTED = 'SYSTEM_RESOURCE_EXHAUSTED',
+  SYSTEM_INTERNAL_ERROR = "SYSTEM_INTERNAL_ERROR",
+  SYSTEM_SERVICE_UNAVAILABLE = "SYSTEM_SERVICE_UNAVAILABLE",
+  SYSTEM_CONFIGURATION_ERROR = "SYSTEM_CONFIGURATION_ERROR",
+  SYSTEM_RESOURCE_EXHAUSTED = "SYSTEM_RESOURCE_EXHAUSTED",
 
   // AI Provider
-  AI_PROVIDER_ERROR = 'AI_PROVIDER_ERROR',
-  AI_QUOTA_EXCEEDED = 'AI_QUOTA_EXCEEDED',
-  AI_INVALID_REQUEST = 'AI_INVALID_REQUEST',
-  AI_MODEL_UNAVAILABLE = 'AI_MODEL_UNAVAILABLE',
+  AI_PROVIDER_ERROR = "AI_PROVIDER_ERROR",
+  AI_QUOTA_EXCEEDED = "AI_QUOTA_EXCEEDED",
+  AI_INVALID_REQUEST = "AI_INVALID_REQUEST",
+  AI_MODEL_UNAVAILABLE = "AI_MODEL_UNAVAILABLE",
 }
 
 export enum ErrorSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
+  LOW = "low",
+  MEDIUM = "medium",
+  HIGH = "high",
+  CRITICAL = "critical",
 }
 
 export interface ErrorContext {
@@ -98,10 +98,10 @@ export class VTTError extends Error {
       isRetryable?: boolean;
       statusCode?: number;
       originalError?: Error | undefined;
-    } = {}
+    } = {},
   ) {
     super(message);
-    this.name = 'VTTError';
+    this.name = "VTTError";
     this.code = code;
     this.severity = options.severity || this.getDefaultSeverity(code);
     this.context = { timestamp: new Date(), ...options.context };
@@ -222,12 +222,7 @@ export class VTTError extends Error {
 
 // Specialized error classes
 export class AuthenticationError extends VTTError {
-  constructor(
-    code: ErrorCode,
-    message: string,
-    context?: ErrorContext,
-    originalError?: Error
-  ) {
+  constructor(code: ErrorCode, message: string, context?: ErrorContext, originalError?: Error) {
     super(code, message, {
       severity: ErrorSeverity.HIGH,
       ...(context && { context }),
@@ -241,12 +236,7 @@ export class ValidationError extends VTTError {
   public readonly field?: string;
   public readonly value?: any;
 
-  constructor(
-    field: string,
-    message: string,
-    value?: any,
-    context?: ErrorContext
-  ) {
+  constructor(field: string, message: string, value?: any, context?: ErrorContext) {
     super(ErrorCode.VALIDATION_REQUIRED_FIELD, message, {
       severity: ErrorSeverity.LOW,
       context: { field, value, ...context },
@@ -259,12 +249,7 @@ export class ValidationError extends VTTError {
 }
 
 export class GameError extends VTTError {
-  constructor(
-    code: ErrorCode,
-    message: string,
-    gameId?: string,
-    context?: ErrorContext
-  ) {
+  constructor(code: ErrorCode, message: string, gameId?: string, context?: ErrorContext) {
     const finalContext = gameId ? { gameId, ...context } : context;
     super(code, message, {
       severity: ErrorSeverity.MEDIUM,
@@ -275,12 +260,7 @@ export class GameError extends VTTError {
 }
 
 export class NetworkError extends VTTError {
-  constructor(
-    code: ErrorCode,
-    message: string,
-    context?: ErrorContext,
-    originalError?: Error
-  ) {
+  constructor(code: ErrorCode, message: string, context?: ErrorContext, originalError?: Error) {
     super(code, message, {
       severity: ErrorSeverity.HIGH,
       ...(context && { context }),
@@ -295,7 +275,7 @@ export const _createAuthError = (
   code: ErrorCode,
   message: string,
   context?: ErrorContext,
-  originalError?: Error
+  originalError?: Error,
 ): AuthenticationError => {
   return new AuthenticationError(code, message, context, originalError);
 };
@@ -304,7 +284,7 @@ export const _createValidationError = (
   field: string,
   message: string,
   value?: any,
-  context?: ErrorContext
+  context?: ErrorContext,
 ): ValidationError => {
   return new ValidationError(field, message, value, context);
 };
@@ -313,7 +293,7 @@ export const _createGameError = (
   code: ErrorCode,
   message: string,
   gameId?: string,
-  context?: ErrorContext
+  context?: ErrorContext,
 ): GameError => {
   return new GameError(code, message, gameId, context);
 };
@@ -322,7 +302,7 @@ export const _createNetworkError = (
   code: ErrorCode,
   message: string,
   context?: ErrorContext,
-  originalError?: Error
+  originalError?: Error,
 ): NetworkError => {
   return new NetworkError(code, message, context, originalError);
 };

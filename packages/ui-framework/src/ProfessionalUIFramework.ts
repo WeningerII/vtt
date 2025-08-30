@@ -19,12 +19,36 @@ export interface UIComponent {
   animation: AnimationConfig;
 }
 
-export type ComponentType = 
-  | 'container' | 'panel' | 'window' | 'dialog' | 'toolbar' | 'menu' | 'tabs'
-  | 'button' | 'input' | 'slider' | 'dropdown' | 'checkbox' | 'radio'
-  | 'table' | 'list' | 'tree' | 'grid' | 'chart' | 'canvas' | 'viewport'
-  | 'character_sheet' | 'dice_roller' | 'chat' | 'map_controls' | 'inventory'
-  | 'spell_book' | 'combat_tracker' | 'initiative_tracker' | 'custom';
+export type ComponentType =
+  | "container"
+  | "panel"
+  | "window"
+  | "dialog"
+  | "toolbar"
+  | "menu"
+  | "tabs"
+  | "button"
+  | "input"
+  | "slider"
+  | "dropdown"
+  | "checkbox"
+  | "radio"
+  | "table"
+  | "list"
+  | "tree"
+  | "grid"
+  | "chart"
+  | "canvas"
+  | "viewport"
+  | "character_sheet"
+  | "dice_roller"
+  | "chat"
+  | "map_controls"
+  | "inventory"
+  | "spell_book"
+  | "combat_tracker"
+  | "initiative_tracker"
+  | "custom";
 
 export interface ComponentState {
   visible: boolean;
@@ -60,19 +84,19 @@ export interface ComponentStyle {
   transition: Transition;
   zIndex: number;
   opacity: number;
-  overflow: 'visible' | 'hidden' | 'scroll' | 'auto';
+  overflow: "visible" | "hidden" | "scroll" | "auto";
 }
 
 export interface Position {
-  type: 'static' | 'relative' | 'absolute' | 'fixed' | 'sticky';
+  type: "static" | "relative" | "absolute" | "fixed" | "sticky";
   x: number;
   y: number;
   anchor: AnchorPoint;
 }
 
 export interface Size {
-  width: number | 'auto' | 'fill' | string;
-  height: number | 'auto' | 'fill' | string;
+  width: number | "auto" | "fill" | string;
+  height: number | "auto" | "fill" | string;
   minWidth?: number;
   maxWidth?: number;
   minHeight?: number;
@@ -89,7 +113,7 @@ export interface Spacing {
 
 export interface Border {
   width: number;
-  style: 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge';
+  style: "solid" | "dashed" | "dotted" | "double" | "groove" | "ridge";
   color: Color;
   radius: number;
 }
@@ -105,12 +129,12 @@ export interface Typography {
   fontFamily: string;
   fontSize: number;
   fontWeight: number | string;
-  fontStyle: 'normal' | 'italic' | 'oblique';
+  fontStyle: "normal" | "italic" | "oblique";
   lineHeight: number;
   letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right' | 'justify';
+  textAlign: "left" | "center" | "right" | "justify";
   textDecoration: string;
-  textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textTransform: "none" | "uppercase" | "lowercase" | "capitalize";
 }
 
 export interface ColorPalette {
@@ -165,9 +189,16 @@ export interface Transition {
   delay: number;
 }
 
-export type EasingFunction = 
-  | 'linear' | 'ease' | 'ease-in' | 'ease-out' | 'ease-in-out'
-  | 'cubic-bezier' | 'spring' | 'bounce' | 'elastic';
+export type EasingFunction =
+  | "linear"
+  | "ease"
+  | "ease-in"
+  | "ease-out"
+  | "ease-in-out"
+  | "cubic-bezier"
+  | "spring"
+  | "bounce"
+  | "elastic";
 
 export interface EventHandler {
   event: UIEvent;
@@ -175,10 +206,26 @@ export interface EventHandler {
   options?: EventOptions;
 }
 
-export type UIEvent = 
-  | 'click' | 'dblclick' | 'hover' | 'focus' | 'blur' | 'keydown' | 'keyup'
-  | 'drag' | 'drop' | 'resize' | 'scroll' | 'wheel' | 'contextmenu'
-  | 'mount' | 'unmount' | 'update' | 'validate' | 'submit' | 'change';
+export type UIEvent =
+  | "click"
+  | "dblclick"
+  | "hover"
+  | "focus"
+  | "blur"
+  | "keydown"
+  | "keyup"
+  | "drag"
+  | "drop"
+  | "resize"
+  | "scroll"
+  | "wheel"
+  | "contextmenu"
+  | "mount"
+  | "unmount"
+  | "update"
+  | "validate"
+  | "submit"
+  | "change";
 
 export interface UIEventData {
   type: UIEvent;
@@ -231,17 +278,17 @@ export interface Breakpoint {
 }
 
 export interface LayoutConfig {
-  type: 'flex' | 'grid' | 'absolute' | 'flow';
-  direction?: 'row' | 'column';
-  justify?: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
-  align?: 'start' | 'center' | 'end' | 'stretch' | 'baseline';
+  type: "flex" | "grid" | "absolute" | "flow";
+  direction?: "row" | "column";
+  justify?: "start" | "center" | "end" | "space-between" | "space-around";
+  align?: "start" | "center" | "end" | "stretch" | "baseline";
   wrap?: boolean;
   gap?: number;
   columns?: number;
   rows?: number;
 }
 
-export type ResponsiveBehavior = 'hide' | 'collapse' | 'stack' | 'scroll' | 'adapt';
+export type ResponsiveBehavior = "hide" | "collapse" | "stack" | "scroll" | "adapt";
 
 export interface A11yConfig {
   role?: string;
@@ -271,12 +318,19 @@ export interface Animation {
   easing: EasingFunction;
   delay?: number;
   repeat?: number;
-  direction?: 'normal' | 'reverse' | 'alternate';
-  fillMode?: 'none' | 'forwards' | 'backwards' | 'both';
+  direction?: "normal" | "reverse" | "alternate";
+  fillMode?: "none" | "forwards" | "backwards" | "both";
 }
 
-export type AnimationType = 
-  | 'fade' | 'slide' | 'scale' | 'rotate' | 'bounce' | 'shake' | 'pulse' | 'custom';
+export type AnimationType =
+  | "fade"
+  | "slide"
+  | "scale"
+  | "rotate"
+  | "bounce"
+  | "shake"
+  | "pulse"
+  | "custom";
 
 export interface AnimationTransition {
   from: ComponentState;
@@ -361,13 +415,19 @@ export interface WindowState extends ComponentState {
   lastSize?: Size;
 }
 
-export type AnchorPoint = 
-  | 'top-left' | 'top-center' | 'top-right'
-  | 'center-left' | 'center' | 'center-right'
-  | 'bottom-left' | 'bottom-center' | 'bottom-right';
+export type AnchorPoint =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "center-left"
+  | "center"
+  | "center-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
 
 export interface Gradient {
-  type: 'linear' | 'radial' | 'conic';
+  type: "linear" | "radial" | "conic";
   direction?: number;
   stops: GradientStop[];
 }
@@ -379,13 +439,13 @@ export interface GradientStop {
 
 export interface BackgroundImage {
   url: string;
-  repeat: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
+  repeat: "no-repeat" | "repeat" | "repeat-x" | "repeat-y";
   position: string;
-  size: 'auto' | 'cover' | 'contain' | string;
+  size: "auto" | "cover" | "contain" | string;
 }
 
 export interface BackgroundPattern {
-  type: 'dots' | 'grid' | 'stripes' | 'checkerboard' | 'custom';
+  type: "dots" | "grid" | "stripes" | "checkerboard" | "custom";
   size: number;
   color: Color;
   opacity: number;
@@ -396,7 +456,7 @@ export class ProfessionalUIFramework {
   private themes: Map<string, Theme> = new Map();
   private layouts: Map<string, Layout> = new Map();
   private windowManager: WindowManager;
-  
+
   // Core systems
   private renderer: UIRenderer;
   private eventSystem: UIEventSystem;
@@ -404,25 +464,25 @@ export class ProfessionalUIFramework {
   private animationEngine: UIAnimationEngine;
   private responsiveManager: ResponsiveManager;
   private a11yManager: AccessibilityManager;
-  
+
   // Theme and styling
   private themeEngine: ThemeEngine;
   private styleEngine: StyleEngine;
   private cssGenerator: CSSGenerator;
-  
+
   // Component factory
   private componentFactory: ComponentFactory;
   private templateEngine: TemplateEngine;
-  
+
   // Performance optimization
   private virtualizer: UIVirtualizer;
   private memoization: ComponentMemoizer;
-  
+
   // Current state
-  private activeTheme: string = 'default';
-  private currentLayout: string = 'main';
+  private activeTheme: string = "default";
+  private currentLayout: string = "main";
   private globalState: Record<string, any> = {};
-  
+
   // Statistics
   private stats = {
     componentsRendered: 0,
@@ -460,26 +520,92 @@ export class ProfessionalUIFramework {
 
   private setupDefaultTheme(): void {
     const defaultTheme: Theme = {
-      id: 'default',
-      name: 'Default Theme',
+      id: "default",
+      name: "Default Theme",
       colors: {
-        primary: { hex: '#007bff', rgb: [0, 123, 255], rgba: [0, 123, 255, 1], hsl: [211, 100, 50], alpha: 1 },
-        secondary: { hex: '#6c757d', rgb: [108, 117, 125], rgba: [108, 117, 125, 1], hsl: [210, 7, 46], alpha: 1 },
-        accent: { hex: '#ffc107', rgb: [255, 193, 7], rgba: [255, 193, 7, 1], hsl: [45, 100, 51], alpha: 1 },
-        background: { hex: '#ffffff', rgb: [255, 255, 255], rgba: [255, 255, 255, 1], hsl: [0, 0, 100], alpha: 1 },
-        surface: { hex: '#f8f9fa', rgb: [248, 249, 250], rgba: [248, 249, 250, 1], hsl: [210, 17, 98], alpha: 1 },
-        text: { hex: '#212529', rgb: [33, 37, 41], rgba: [33, 37, 41, 1], hsl: [210, 11, 15], alpha: 1 },
-        textSecondary: { hex: '#6c757d', rgb: [108, 117, 125], rgba: [108, 117, 125, 1], hsl: [210, 7, 46], alpha: 1 },
-        success: { hex: '#28a745', rgb: [40, 167, 69], rgba: [40, 167, 69, 1], hsl: [134, 61, 41], alpha: 1 },
-        warning: { hex: '#ffc107', rgb: [255, 193, 7], rgba: [255, 193, 7, 1], hsl: [45, 100, 51], alpha: 1 },
-        error: { hex: '#dc3545', rgb: [220, 53, 69], rgba: [220, 53, 69, 1], hsl: [354, 70, 54], alpha: 1 },
-        info: { hex: '#17a2b8', rgb: [23, 162, 184], rgba: [23, 162, 184, 1], hsl: [188, 78, 41], alpha: 1 },
+        primary: {
+          hex: "#007bff",
+          rgb: [0, 123, 255],
+          rgba: [0, 123, 255, 1],
+          hsl: [211, 100, 50],
+          alpha: 1,
+        },
+        secondary: {
+          hex: "#6c757d",
+          rgb: [108, 117, 125],
+          rgba: [108, 117, 125, 1],
+          hsl: [210, 7, 46],
+          alpha: 1,
+        },
+        accent: {
+          hex: "#ffc107",
+          rgb: [255, 193, 7],
+          rgba: [255, 193, 7, 1],
+          hsl: [45, 100, 51],
+          alpha: 1,
+        },
+        background: {
+          hex: "#ffffff",
+          rgb: [255, 255, 255],
+          rgba: [255, 255, 255, 1],
+          hsl: [0, 0, 100],
+          alpha: 1,
+        },
+        surface: {
+          hex: "#f8f9fa",
+          rgb: [248, 249, 250],
+          rgba: [248, 249, 250, 1],
+          hsl: [210, 17, 98],
+          alpha: 1,
+        },
+        text: {
+          hex: "#212529",
+          rgb: [33, 37, 41],
+          rgba: [33, 37, 41, 1],
+          hsl: [210, 11, 15],
+          alpha: 1,
+        },
+        textSecondary: {
+          hex: "#6c757d",
+          rgb: [108, 117, 125],
+          rgba: [108, 117, 125, 1],
+          hsl: [210, 7, 46],
+          alpha: 1,
+        },
+        success: {
+          hex: "#28a745",
+          rgb: [40, 167, 69],
+          rgba: [40, 167, 69, 1],
+          hsl: [134, 61, 41],
+          alpha: 1,
+        },
+        warning: {
+          hex: "#ffc107",
+          rgb: [255, 193, 7],
+          rgba: [255, 193, 7, 1],
+          hsl: [45, 100, 51],
+          alpha: 1,
+        },
+        error: {
+          hex: "#dc3545",
+          rgb: [220, 53, 69],
+          rgba: [220, 53, 69, 1],
+          hsl: [354, 70, 54],
+          alpha: 1,
+        },
+        info: {
+          hex: "#17a2b8",
+          rgb: [23, 162, 184],
+          rgba: [23, 162, 184, 1],
+          hsl: [188, 78, 41],
+          alpha: 1,
+        },
       },
       typography: {
         fontFamilies: {
-          body: 'system-ui, -apple-system, sans-serif',
-          heading: 'system-ui, -apple-system, sans-serif',
-          monospace: 'Monaco, Consolas, monospace',
+          body: "system-ui, -apple-system, sans-serif",
+          heading: "system-ui, -apple-system, sans-serif",
+          monospace: "Monaco, Consolas, monospace",
         },
         fontSizes: { xs: 12, sm: 14, md: 16, lg: 18, xl: 20, xxl: 24 },
         fontWeights: { light: 300, normal: 400, medium: 500, bold: 700 },
@@ -488,26 +614,55 @@ export class ProfessionalUIFramework {
       spacing: { unit: 8, scale: [0, 4, 8, 12, 16, 24, 32, 48, 64] },
       shadows: {
         elevation: [
-          { offsetX: 0, offsetY: 1, blur: 3, spread: 0, color: { hex: '#000000', rgb: [0, 0, 0], rgba: [0, 0, 0, 0.12], hsl: [0, 0, 0], alpha: 0.12 }, inset: false },
-          { offsetX: 0, offsetY: 4, blur: 6, spread: 0, color: { hex: '#000000', rgb: [0, 0, 0], rgba: [0, 0, 0, 0.16], hsl: [0, 0, 0], alpha: 0.16 }, inset: false },
+          {
+            offsetX: 0,
+            offsetY: 1,
+            blur: 3,
+            spread: 0,
+            color: {
+              hex: "#000000",
+              rgb: [0, 0, 0],
+              rgba: [0, 0, 0, 0.12],
+              hsl: [0, 0, 0],
+              alpha: 0.12,
+            },
+            inset: false,
+          },
+          {
+            offsetX: 0,
+            offsetY: 4,
+            blur: 6,
+            spread: 0,
+            color: {
+              hex: "#000000",
+              rgb: [0, 0, 0],
+              rgba: [0, 0, 0, 0.16],
+              hsl: [0, 0, 0],
+              alpha: 0.16,
+            },
+            inset: false,
+          },
         ],
         glow: [],
       },
-      borders: { radius: { sm: 4, md: 8, lg: 12, xl: 16 }, widths: { thin: 1, medium: 2, thick: 4 } },
+      borders: {
+        radius: { sm: 4, md: 8, lg: 12, xl: 16 },
+        widths: { thin: 1, medium: 2, thick: 4 },
+      },
       animations: {
         durations: { fast: 150, normal: 300, slow: 500 },
-        easings: { ease: 'ease', linear: 'linear', 'ease-in': 'ease-in', 'ease-out': 'ease-out' },
+        easings: { ease: "ease", linear: "linear", "ease-in": "ease-in", "ease-out": "ease-out" },
       },
       components: Record<string, any>,
     };
 
-    this.themes.set('default', defaultTheme);
+    this.themes.set("default", defaultTheme);
   }
 
   private setupEventHandlers(): void {
-    this.eventSystem.on('component:click', this.handleComponentClick.bind(this));
-    this.eventSystem.on('window:resize', this.handleWindowResize.bind(this));
-    this.eventSystem.on('theme:change', this.handleThemeChange.bind(this));
+    this.eventSystem.on("component:click", this.handleComponentClick.bind(this));
+    this.eventSystem.on("window:resize", this.handleWindowResize.bind(this));
+    this.eventSystem.on("theme:change", this.handleThemeChange.bind(this));
   }
 
   // Component management
@@ -534,45 +689,64 @@ export class ProfessionalUIFramework {
         created: new Date(),
         hooks: Record<string, any>,
       },
-      responsive: { breakpoints: [], behavior: 'adapt', priority: 0 },
+      responsive: { breakpoints: [], behavior: "adapt", priority: 0 },
       accessibility: { focusable: true, keyboardNav: true, screenReader: true },
       animation: { transitions: [] },
     };
 
     this.components.set(component.id, component);
     this.stats.componentsRendered++;
-    
+
     return component;
   }
 
   private getDefaultStyle(_type: ComponentType): ComponentStyle {
     const theme = this.themes.get(this.activeTheme)!;
-    
+
     return {
-      position: { type: 'relative', x: 0, y: 0, anchor: 'top-left' },
-      size: { width: 'auto', height: 'auto' },
+      position: { type: "relative", x: 0, y: 0, anchor: "top-left" },
+      size: { width: "auto", height: "auto" },
       padding: { top: 8, right: 8, bottom: 8, left: 8 },
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
-      border: { width: 0, style: 'solid', color: theme.colors.primary, radius: 4 },
+      border: { width: 0, style: "solid", color: theme.colors.primary, radius: 4 },
       background: { color: theme.colors.background },
       typography: {
         fontFamily: theme.typography.fontFamilies.body,
         fontSize: theme.typography.fontSizes.md,
         fontWeight: theme.typography.fontWeights.normal,
-        fontStyle: 'normal',
+        fontStyle: "normal",
         lineHeight: theme.typography.lineHeights.normal,
         letterSpacing: 0,
-        textAlign: 'left',
-        textDecoration: 'none',
-        textTransform: 'none',
+        textAlign: "left",
+        textDecoration: "none",
+        textTransform: "none",
       },
       colors: theme.colors,
-      shadow: { offsetX: 0, offsetY: 0, blur: 0, spread: 0, color: theme.colors.primary, inset: false },
-      transform: { translateX: 0, translateY: 0, translateZ: 0, rotateX: 0, rotateY: 0, rotateZ: 0, scaleX: 1, scaleY: 1, scaleZ: 1, skewX: 0, skewY: 0 },
-      transition: { property: 'all', duration: 300, easing: 'ease', delay: 0 },
+      shadow: {
+        offsetX: 0,
+        offsetY: 0,
+        blur: 0,
+        spread: 0,
+        color: theme.colors.primary,
+        inset: false,
+      },
+      transform: {
+        translateX: 0,
+        translateY: 0,
+        translateZ: 0,
+        rotateX: 0,
+        rotateY: 0,
+        rotateZ: 0,
+        scaleX: 1,
+        scaleY: 1,
+        scaleZ: 1,
+        skewX: 0,
+        skewY: 0,
+      },
+      transition: { property: "all", duration: 300, easing: "ease", delay: 0 },
       zIndex: 0,
       opacity: 1,
-      overflow: 'visible',
+      overflow: "visible",
     };
   }
 
@@ -580,7 +754,7 @@ export class ProfessionalUIFramework {
   addChild(parentId: string, childId: string): void {
     const parent = this.components.get(parentId);
     const child = this.components.get(childId);
-    
+
     if (parent && child) {
       parent.children.push(child);
       child.parent = parent;
@@ -590,9 +764,9 @@ export class ProfessionalUIFramework {
   removeChild(parentId: string, childId: string): void {
     const parent = this.components.get(parentId);
     if (parent) {
-      parent.children = parent.children.filter(c => c.id !== childId);
+      parent.children = parent.children.filter((c) => c.id !== childId);
     }
-    
+
     const child = this.components.get(childId);
     if (child) {
       child.parent = undefined;
@@ -600,17 +774,26 @@ export class ProfessionalUIFramework {
   }
 
   // Event handling
-  addEventListener(_componentId: string, _event: UIEvent, _handler: (event: UIEventData) => void, options?: EventOptions): void {
+  addEventListener(
+    _componentId: string,
+    _event: UIEvent,
+    _handler: (event: UIEventData) => void,
+    options?: EventOptions,
+  ): void {
     const component = this.components.get(componentId);
     if (component) {
       component.events.push({ event, handler, options });
     }
   }
 
-  removeEventListener(_componentId: string, _event: UIEvent, _handler: (event: UIEventData) => void): void {
+  removeEventListener(
+    _componentId: string,
+    _event: UIEvent,
+    _handler: (event: UIEventData) => void,
+  ): void {
     const component = this.components.get(componentId);
     if (component) {
-      component.events = component.events.filter(e => e.event !== event || e.handler !== handler);
+      component.events = component.events.filter((e) => e.event !== event || e.handler !== handler);
     }
   }
 
@@ -700,7 +883,7 @@ export class ProfessionalUIFramework {
   // Window management
   createWindow(title: string, content: UIComponent, options?: Partial<UIWindow>): UIWindow {
     const window: UIWindow = {
-      ...this.createComponent('window'),
+      ...this.createComponent("window"),
       title,
       icon: options?.icon,
       resizable: options?.resizable ?? true,
@@ -711,10 +894,10 @@ export class ProfessionalUIFramework {
       alwaysOnTop: options?.alwaysOnTop ?? false,
       modal: options?.modal ?? false,
       state: {
-        ...this.createComponent('window').state,
+        ...this.createComponent("window").state,
         minimized: false,
         maximized: false,
-        position: { type: 'absolute', x: 100, y: 100, anchor: 'top-left' },
+        position: { type: "absolute", x: 100, y: 100, anchor: "top-left" },
         size: { width: 400, height: 300 },
       },
       children: [content],
@@ -729,8 +912,8 @@ export class ProfessionalUIFramework {
 
   closeWindow(windowId: string): void {
     this.windowManager.windows.delete(windowId);
-    this.windowManager.zIndexStack = this.windowManager.zIndexStack.filter(id => id !== windowId);
-    this.windowManager.focusOrder = this.windowManager.focusOrder.filter(id => id !== windowId);
+    this.windowManager.zIndexStack = this.windowManager.zIndexStack.filter((id) => id !== windowId);
+    this.windowManager.focusOrder = this.windowManager.focusOrder.filter((id) => id !== windowId);
   }
 
   // Animation
@@ -787,21 +970,25 @@ export class ProfessionalUIFramework {
 }
 
 // Helper classes
-class UIRenderer { 
+class UIRenderer {
   render(_components: UIComponent[], _container: HTMLElement): void {}
   updateComponent(_component: UIComponent): void {}
 }
-class UIEventSystem { 
+class UIEventSystem {
   on(_event: string, _callback: (...args: any[]) => any): void {}
   emit(_event: string, _data: any): void {}
 }
 class UIStateManager {}
-class UIAnimationEngine { 
+class UIAnimationEngine {
   async animate(_component: UIComponent, _animation: Animation): Promise<void> {}
 }
-class ResponsiveManager { handleResize(): void {} }
+class ResponsiveManager {
+  handleResize(): void {}
+}
 class AccessibilityManager {}
-class ThemeEngine { applyTheme(_theme: Theme): void {} }
+class ThemeEngine {
+  applyTheme(_theme: Theme): void {}
+}
 class StyleEngine {}
 class CSSGenerator {}
 class ComponentFactory {}

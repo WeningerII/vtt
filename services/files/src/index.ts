@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * A very simple static file service. In a real deployment this would
@@ -6,7 +6,7 @@ import { logger } from '@vtt/logging';
  * demonstration we simply log that the service would start.
  */
 function main() {
-  logger.info('Files service stub – serve static assets here');
+  logger.info("Files service stub – serve static assets here");
 }
 
 main();

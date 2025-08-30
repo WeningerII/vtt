@@ -3,11 +3,11 @@
  * Integrates spell effects with physics simulation for realistic magical interactions
  */
 
-import type { PhysicsWorld, _RigidBody, Vector2 } from '../../../packages/physics/src';
-import type { SpellEngine, SpellEffect, CastingResult } from '../../../packages/spell-engine/src';
-import { EventEmitter } from 'events';
+import type { PhysicsWorld, _RigidBody, Vector2 } from "../../../packages/physics/src";
+import type { SpellEngine, SpellEffect, CastingResult } from "../../../packages/spell-engine/src";
+import { EventEmitter } from "events";
 
-export interface PhysicsSpellEffect extends Omit<SpellEffect, 'type' | 'target'> {
+export interface PhysicsSpellEffect extends Omit<SpellEffect, "type" | "target"> {
   id?: string;
   name?: string;
   level?: number;
@@ -21,10 +21,30 @@ export interface PhysicsSpellEffect extends Omit<SpellEffect, 'type' | 'target'>
   concentration?: boolean;
   scaling?: any;
   ritual?: boolean;
-  type?: "damage" | "healing" | "condition" | "teleport" | "summon" | "buff" | "debuff" | "utility" | "custom" | string;
+  type?:
+    | "damage"
+    | "healing"
+    | "condition"
+    | "teleport"
+    | "summon"
+    | "buff"
+    | "debuff"
+    | "utility"
+    | "custom"
+    | string;
   target?: "area" | "self" | "single" | "multiple" | "line" | "cone" | "sphere" | string;
   physics?: {
-    type: 'force' | 'teleport' | 'constraint' | 'projectile' | 'area_barrier' | 'movement_modifier' | 'area_effect' | 'persistent_effect' | 'melee_effect' | 'mental_effect';
+    type:
+      | "force"
+      | "teleport"
+      | "constraint"
+      | "projectile"
+      | "area_barrier"
+      | "movement_modifier"
+      | "area_effect"
+      | "persistent_effect"
+      | "melee_effect"
+      | "mental_effect";
     force?: {
       magnitude: number;
       direction?: Vector2;
@@ -35,7 +55,7 @@ export interface PhysicsSpellEffect extends Omit<SpellEffect, 'type' | 'target'>
       requiresLineOfSight: boolean;
     };
     constraint?: {
-      type: 'immobilize' | 'slow' | 'entangle';
+      type: "immobilize" | "slow" | "entangle";
       strength: number;
       duration: number;
     };
@@ -63,7 +83,7 @@ export interface PhysicsSpellEffect extends Omit<SpellEffect, 'type' | 'target'>
       magnitude?: number;
     };
     area?: {
-      type: 'circle' | 'cone' | 'cylinder';
+      type: "circle" | "cone" | "cylinder";
       radius: number;
       height?: string | number;
       angle?: number;
@@ -124,7 +144,7 @@ export interface PhysicsAwareToken {
 
 export interface PhysicsConstraint {
   id: string;
-  type: 'immobilize' | 'slow' | 'entangle' | 'web';
+  type: "immobilize" | "slow" | "entangle" | "web";
   strength: number;
   duration: number;
   sourceSpell?: string;
@@ -162,7 +182,7 @@ export class PhysicsSpellBridge extends EventEmitter {
   registerToken(tokenId: string, position: Vector2, size: Vector2): void {
     const body = this.physicsWorld.createBody({
       position,
-      type: 'dynamic'
+      type: "dynamic",
     });
 
     const token: PhysicsAwareToken = {
@@ -172,11 +192,11 @@ export class PhysicsSpellBridge extends EventEmitter {
       size,
       canMove: true,
       movementSpeed: 30, // feet per round
-      constraints: []
+      constraints: [],
     };
 
     this.tokens.set(tokenId, token);
-    this.emit('tokenRegistered', tokenId);
+    this.emit("tokenRegistered", tokenId);
   }
 
   /**
@@ -187,13 +207,19 @@ export class PhysicsSpellBridge extends EventEmitter {
     caster: any,
     targets: string[],
     spellLevel?: number,
-    position?: Vector2
+    position?: Vector2,
   ): Promise<CastingResult & { physicsEffects: any[] }> {
     // Cast spell normally first
-    const spellId = spell.id || 'unknown_spell';
+    const spellId = spell.id || "unknown_spell";
     const spellForEngine = { ...spell, id: spellId, ritual: spell.ritual || false };
-    const result = this.spellEngine.castSpell(spellForEngine, caster, targets, spellLevel, position);
-    
+    const result = this.spellEngine.castSpell(
+      spellForEngine,
+      caster,
+      targets,
+      spellLevel,
+      position,
+    );
+
     if (!result.success) {
       return { ...result, physicsEffects: [] };
     }
@@ -203,23 +229,27 @@ export class PhysicsSpellBridge extends EventEmitter {
     // Apply physics effects
     if (spell.physics) {
       switch (spell.physics.type) {
-        case 'force':
+        case "force":
           physicsEffects.push(...this.applyForceEffect(spell.physics.force!, targets));
           break;
-        case 'teleport':
-          physicsEffects.push(...this.applyTeleportEffect(spell.physics.teleport!, targets, position!));
+        case "teleport":
+          physicsEffects.push(
+            ...this.applyTeleportEffect(spell.physics.teleport!, targets, position!),
+          );
           break;
-        case 'constraint':
+        case "constraint":
           physicsEffects.push(...this.applyConstraintEffect(spell.physics.constraint!, targets));
           break;
-        case 'projectile':
+        case "projectile":
           physicsEffects.push(this.createProjectile(spell, caster, targets, position!));
           break;
-        case 'area_barrier':
+        case "area_barrier":
           physicsEffects.push(this.createAreaBarrier(spell.physics.barrier!, position!));
           break;
-        case 'movement_modifier':
-          physicsEffects.push(...this.applyMovementModifier(spell.physics.movementModifier!, targets));
+        case "movement_modifier":
+          physicsEffects.push(
+            ...this.applyMovementModifier(spell.physics.movementModifier!, targets),
+          );
           break;
       }
     }
@@ -249,12 +279,12 @@ export class PhysicsSpellBridge extends EventEmitter {
       body.velocity.y += forceVector.y * magnitude;
 
       effects.push({
-        type: 'force_applied',
+        type: "force_applied",
         targetId,
-        force: { x: forceVector.x * magnitude, y: forceVector.y * magnitude }
+        force: { x: forceVector.x * magnitude, y: forceVector.y * magnitude },
       });
 
-      this.emit('forceApplied', targetId, forceVector, magnitude);
+      this.emit("forceApplied", targetId, forceVector, magnitude);
     }
 
     return effects;
@@ -278,7 +308,7 @@ export class PhysicsSpellBridge extends EventEmitter {
         const raycast = this.physicsWorld.raycast(
           token.position,
           { x: position.x - token.position.x, y: position.y - token.position.y },
-          teleport.range
+          teleport.range,
         );
 
         if (raycast.hit && raycast.body) {
@@ -292,13 +322,13 @@ export class PhysicsSpellBridge extends EventEmitter {
       token.position = position;
 
       effects.push({
-        type: 'teleported',
+        type: "teleported",
         targetId,
         fromPosition: token.position,
-        toPosition: position
+        toPosition: position,
       });
 
-      this.emit('tokenTeleported', targetId, token.position, position);
+      this.emit("tokenTeleported", targetId, token.position, position);
     }
 
     return effects;
@@ -319,12 +349,12 @@ export class PhysicsSpellBridge extends EventEmitter {
         type: constraint.type,
         strength: constraint.strength,
         duration: constraint.duration,
-        expiresAt: Date.now() + (constraint.duration * 1000)
+        expiresAt: Date.now() + constraint.duration * 1000,
       };
 
       // Add constraint to token
       token.constraints.push(physicsConstraint);
-      
+
       // Store in active constraints
       if (!this.activeConstraints.has(targetId)) {
         this.activeConstraints.set(targetId, []);
@@ -335,27 +365,27 @@ export class PhysicsSpellBridge extends EventEmitter {
       const body = this.physicsWorld.getBody(token.physicsBodyId);
       if (body) {
         switch (constraint.type) {
-          case 'immobilize':
+          case "immobilize":
             body.velocity.x = 0;
             body.velocity.y = 0;
             token.canMove = false;
             break;
-          case 'slow':
-            token.movementSpeed *= (1 - constraint.strength);
+          case "slow":
+            token.movementSpeed *= 1 - constraint.strength;
             break;
-          case 'entangle':
+          case "entangle":
             body.config.friction = Math.min(1.0, body.config.friction + constraint.strength);
             break;
         }
       }
 
       effects.push({
-        type: 'constraint_applied',
+        type: "constraint_applied",
         targetId,
-        constraint: physicsConstraint
+        constraint: physicsConstraint,
       });
 
-      this.emit('constraintApplied', targetId, physicsConstraint);
+      this.emit("constraintApplied", targetId, physicsConstraint);
     }
 
     return effects;
@@ -364,7 +394,12 @@ export class PhysicsSpellBridge extends EventEmitter {
   /**
    * Create spell projectile (e.g., Magic Missile, Firebolt)
    */
-  private createProjectile(spell: PhysicsSpellEffect, caster: any, targets: string[], position: Vector2): any {
+  private createProjectile(
+    spell: PhysicsSpellEffect,
+    caster: any,
+    targets: string[],
+    position: Vector2,
+  ): any {
     const projectileId = `proj_${Date.now()}_${Math.random()}`;
     const physics = spell.physics!.projectile!;
 
@@ -377,20 +412,20 @@ export class PhysicsSpellBridge extends EventEmitter {
       mass: 0.1,
       restitution: physics.maxBounces ? 0.8 : 0.0,
       friction: 0.1,
-      isTrigger: true
+      isTrigger: true,
     });
 
     // Calculate initial velocity towards first target
     const firstTarget = targets[0];
     const targetToken = this.tokens.get(firstTarget);
-    
+
     if (targetToken) {
       const direction = {
         x: targetToken.position.x - position.x,
-        y: targetToken.position.y - position.y
+        y: targetToken.position.y - position.y,
       };
       const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-      
+
       if (length > 0) {
         projectileBody.velocity.x = (direction.x / length) * physics.speed;
         projectileBody.velocity.y = (direction.y / length) * physics.speed;
@@ -408,16 +443,17 @@ export class PhysicsSpellBridge extends EventEmitter {
       },
       onExpire: () => {
         this.cleanupProjectile(projectileId);
-      }
+      },
     };
 
     this.projectiles.set(projectileId, projectile);
 
     // Set up collision detection
-    this.physicsWorld.on('collision', (collision: any) => {
+    this.physicsWorld.on("collision", (collision: any) => {
       if (collision.bodyA.id === projectileBody.id || collision.bodyB.id === projectileBody.id) {
-        const otherBodyId = collision.bodyA.id === projectileBody.id ? collision.bodyB.id : collision.bodyA.id;
-        
+        const otherBodyId =
+          collision.bodyA.id === projectileBody.id ? collision.bodyB.id : collision.bodyA.id;
+
         // Find token by physics body
         for (const [tokenId, token] of this.tokens.entries()) {
           if (token.physicsBodyId === otherBodyId && targets.includes(tokenId)) {
@@ -428,12 +464,12 @@ export class PhysicsSpellBridge extends EventEmitter {
       }
     });
 
-    this.emit('projectileCreated', projectileId, spell);
+    this.emit("projectileCreated", projectileId, spell);
 
     return {
-      type: 'projectile_created',
+      type: "projectile_created",
       projectileId,
-      spellId: spell.id
+      spellId: spell.id,
     };
   }
 
@@ -446,34 +482,34 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     // Create multiple physics bodies to form a wall
     const segments = Math.ceil(barrier.thickness / 2); // 2 foot segments
-    
+
     for (let i = 0; i < segments; i++) {
       const segmentBody = this.physicsWorld.createBody({
         position: {
-          x: position.x + (i * 2),
-          y: position.y
+          x: position.x + i * 2,
+          y: position.y,
         },
         width: 2,
         height: barrier.height,
         isStatic: true,
         mass: Infinity,
-        isTrigger: !barrier.passable
+        isTrigger: !barrier.passable,
       });
-      
+
       bodyIds.push(segmentBody.id);
     }
 
     this.barriers.set(barrierId, {
       bodyIds,
-      expiresAt: Date.now() + (barrier.duration * 1000)
+      expiresAt: Date.now() + barrier.duration * 1000,
     });
 
-    this.emit('barrierCreated', barrierId, barrier);
+    this.emit("barrierCreated", barrierId, barrier);
 
     return {
-      type: 'barrier_created',
+      type: "barrier_created",
       barrierId,
-      bodyIds
+      bodyIds,
     };
   }
 
@@ -491,22 +527,22 @@ export class PhysicsSpellBridge extends EventEmitter {
       token.movementSpeed *= modifier.speedMultiplier;
 
       effects.push({
-        type: 'movement_modified',
+        type: "movement_modified",
         targetId,
         originalSpeed,
         newSpeed: token.movementSpeed,
-        duration: modifier.duration
+        duration: modifier.duration,
       });
 
       // Schedule restoration
       setTimeout(() => {
         if (this.tokens.has(targetId)) {
           token.movementSpeed = originalSpeed;
-          this.emit('movementModifierExpired', targetId);
+          this.emit("movementModifierExpired", targetId);
         }
       }, modifier.duration * 1000);
 
-      this.emit('movementModified', targetId, modifier);
+      this.emit("movementModified", targetId, modifier);
     }
 
     return effects;
@@ -515,14 +551,18 @@ export class PhysicsSpellBridge extends EventEmitter {
   /**
    * Handle projectile collision
    */
-  private handleProjectileHit(projectileId: string, targetId: string, spell: PhysicsSpellEffect): void {
+  private handleProjectileHit(
+    projectileId: string,
+    targetId: string,
+    spell: PhysicsSpellEffect,
+  ): void {
     const projectile = this.projectiles.get(projectileId);
     if (!projectile) return;
 
     // Apply spell effects to target
     this.spellEngine.castSpell(spell, { id: projectile.casterId }, [targetId]);
 
-    this.emit('projectileHit', projectileId, targetId);
+    this.emit("projectileHit", projectileId, targetId);
     this.cleanupProjectile(projectileId);
   }
 
@@ -534,7 +574,7 @@ export class PhysicsSpellBridge extends EventEmitter {
     if (projectile) {
       this.physicsWorld.removeBody(projectile.physicsBodyId);
       this.projectiles.delete(projectileId);
-      this.emit('projectileDestroyed', projectileId);
+      this.emit("projectileDestroyed", projectileId);
     }
   }
 
@@ -553,7 +593,7 @@ export class PhysicsSpellBridge extends EventEmitter {
       }
 
       // Clean up expired constraints
-      token.constraints = token.constraints.filter(constraint => {
+      token.constraints = token.constraints.filter((constraint) => {
         if (now > constraint.expiresAt) {
           this.removeConstraint(tokenId, constraint);
           return false;
@@ -569,7 +609,7 @@ export class PhysicsSpellBridge extends EventEmitter {
           this.physicsWorld.removeBody(bodyId);
         }
         this.barriers.delete(barrierId);
-        this.emit('barrierExpired', barrierId);
+        this.emit("barrierExpired", barrierId);
       }
     }
   }
@@ -586,18 +626,18 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     // Restore original properties based on constraint type
     switch (constraint.type) {
-      case 'immobilize':
+      case "immobilize":
         token.canMove = true;
         break;
-      case 'slow':
+      case "slow":
         // This would need more sophisticated tracking to restore properly
         break;
-      case 'entangle':
+      case "entangle":
         body.config.friction = Math.max(0, body.config.friction - constraint.strength);
         break;
     }
 
-    this.emit('constraintRemoved', tokenId, constraint);
+    this.emit("constraintRemoved", tokenId, constraint);
   }
 
   /**
@@ -605,7 +645,7 @@ export class PhysicsSpellBridge extends EventEmitter {
    */
   private setupPhysicsIntegration(): void {
     // Listen for physics collisions
-    this.physicsWorld.on('collision', (collision: any) => {
+    this.physicsWorld.on("collision", (collision: any) => {
       this.handlePhysicsCollision(collision);
     });
   }
@@ -619,7 +659,7 @@ export class PhysicsSpellBridge extends EventEmitter {
     const tokenB = this.findTokenByBodyId(collision.bodyB.id);
 
     if (tokenA && tokenB) {
-      this.emit('tokenCollision', tokenA.id, tokenB.id, collision);
+      this.emit("tokenCollision", tokenA.id, tokenB.id, collision);
     }
   }
 
@@ -650,19 +690,18 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     for (const [tokenId, token] of this.tokens.entries()) {
       const distance = Math.sqrt(
-        Math.pow(token.position.x - center.x, 2) + 
-        Math.pow(token.position.y - center.y, 2)
+        Math.pow(token.position.x - center.x, 2) + Math.pow(token.position.y - center.y, 2),
       );
 
       if (distance <= radius) {
         // Check line of sight using physics raycast
         const raycast = this.physicsWorld.raycast(
           center,
-          { 
-            x: token.position.x - center.x, 
-            y: token.position.y - center.y 
+          {
+            x: token.position.x - center.x,
+            y: token.position.y - center.y,
           },
-          distance
+          distance,
         );
 
         // If raycast hits the token or nothing, target is valid
@@ -676,6 +715,9 @@ export class PhysicsSpellBridge extends EventEmitter {
   }
 }
 
-export const _createPhysicsSpellBridge = (physicsWorld: PhysicsWorld, spellEngine: SpellEngine): PhysicsSpellBridge => {
+export const _createPhysicsSpellBridge = (
+  physicsWorld: PhysicsWorld,
+  spellEngine: SpellEngine,
+): PhysicsSpellBridge => {
   return new PhysicsSpellBridge(physicsWorld, spellEngine);
 };

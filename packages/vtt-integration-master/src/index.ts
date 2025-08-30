@@ -3,15 +3,18 @@
  * Coordinates all physics, spell casting, visual effects, and persistence systems
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import type { PhysicsWorld } from '../../../packages/physics/src';
-import type { SpellEngine } from '../../../packages/spell-engine/src';
-import { PhysicsSpellBridge } from '../../../packages/physics-spell-bridge/src';
-import { SpellVisualEffectsManager } from '../../../packages/spell-visual-effects/src';
-import { ConcentrationManager, PhysicsConcentrationIntegration } from '../../../packages/concentration-manager/src';
-import { WebSocketManager } from '../../../apps/server/src/websocket/WebSocketManager';
-import { PrismaClient } from '@prisma/client';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import type { PhysicsWorld } from "../../../packages/physics/src";
+import type { SpellEngine } from "../../../packages/spell-engine/src";
+import { PhysicsSpellBridge } from "../../../packages/physics-spell-bridge/src";
+import { SpellVisualEffectsManager } from "../../../packages/spell-visual-effects/src";
+import {
+  ConcentrationManager,
+  PhysicsConcentrationIntegration,
+} from "../../../packages/concentration-manager/src";
+import { WebSocketManager } from "../../../apps/server/src/websocket/WebSocketManager";
+import { PrismaClient } from "@prisma/client";
 
 export interface VTTIntegrationConfig {
   physics: {
@@ -38,7 +41,7 @@ export interface VTTIntegrationConfig {
 
 export interface GameEntity {
   id: string;
-  type: 'token' | 'projectile' | 'barrier' | 'effect';
+  type: "token" | "projectile" | "barrier" | "effect";
   position: { x: number; y: number; z?: number };
   size: { x: number; y: number; z?: number };
   properties: Record<string, any>;
@@ -74,7 +77,7 @@ export class VTTIntegrationMaster extends EventEmitter {
     spellEngine: SpellEngine,
     wsManager: WebSocketManager,
     prisma: PrismaClient,
-    config: Partial<VTTIntegrationConfig> = {}
+    config: Partial<VTTIntegrationConfig> = {},
   ) {
     super();
 
@@ -83,26 +86,26 @@ export class VTTIntegrationMaster extends EventEmitter {
         gravity: { x: 0, y: 0 },
         cellSize: 100,
         maxVelocity: 1000,
-        ...config.physics
+        ...config.physics,
       },
       spells: {
         autoVisualEffects: true,
         autoConcentrationChecks: true,
         persistEffects: true,
-        ...config.spells
+        ...config.spells,
       },
       networking: {
         broadcastPhysicsUpdates: true,
         broadcastSpellEffects: true,
         updateInterval: 100,
-        ...config.networking
+        ...config.networking,
       },
       persistence: {
         savePhysicsState: true,
         saveSpellEffects: true,
         cleanupInterval: 60000,
-        ...config.persistence
-      }
+        ...config.persistence,
+      },
     };
 
     this.physicsWorld = physicsWorld;
@@ -115,7 +118,7 @@ export class VTTIntegrationMaster extends EventEmitter {
     this.visualEffectsManager = new SpellVisualEffectsManager();
     this.concentrationManager = new ConcentrationManager();
     this.physicsConcentrationIntegration = new PhysicsConcentrationIntegration(
-      this.concentrationManager
+      this.concentrationManager,
     );
 
     this.setupIntegrations();
@@ -127,71 +130,71 @@ export class VTTIntegrationMaster extends EventEmitter {
    */
   private setupIntegrations(): void {
     // Physics-Spell Bridge Events
-    this.physicsSpellBridge.on('forceApplied', (tokenId, _force, _magnitude) => {
+    this.physicsSpellBridge.on("forceApplied", (tokenId, _force, _magnitude) => {
       this.handleForceApplication(tokenId, { magnitude, direction: force });
       if (this.config.networking.broadcastPhysicsUpdates) {
-        this.broadcastPhysicsEvent('force_applied', { tokenId, force, magnitude });
+        this.broadcastPhysicsEvent("force_applied", { tokenId, force, magnitude });
       }
     });
 
-    this.physicsSpellBridge.on('tokenTeleported', (tokenId, _fromPos, _toPos) => {
+    this.physicsSpellBridge.on("tokenTeleported", (tokenId, _fromPos, _toPos) => {
       this.handleTeleportEvent(tokenId, fromPos, toPos);
       if (this.config.networking.broadcastSpellEffects) {
-        this.broadcastSpellEvent('teleport_effect', { tokenId, fromPos, toPos });
+        this.broadcastSpellEvent("teleport_effect", { tokenId, fromPos, toPos });
       }
     });
 
-    this.physicsSpellBridge.on('constraintApplied', (tokenId, _constraint) => {
+    this.physicsSpellBridge.on("constraintApplied", (tokenId, _constraint) => {
       this.handleConstraintApplication(tokenId, constraint);
       if (this.config.networking.broadcastSpellEffects) {
-        this.broadcastSpellEvent('constraint_applied', { tokenId, constraint });
+        this.broadcastSpellEvent("constraint_applied", { tokenId, constraint });
       }
     });
 
-    this.physicsSpellBridge.on('projectileCreated', (projectileId, spell) => {
+    this.physicsSpellBridge.on("projectileCreated", (projectileId, spell) => {
       this.handleProjectileCreation(projectileId, spell);
       if (this.config.networking.broadcastSpellEffects) {
-        this.broadcastSpellEvent('projectile_launch', { projectileId, spell });
+        this.broadcastSpellEvent("projectile_launch", { projectileId, spell });
       }
     });
 
-    this.physicsSpellBridge.on('barrierCreated', (barrierId, _barrier) => {
+    this.physicsSpellBridge.on("barrierCreated", (barrierId, _barrier) => {
       this.handleBarrierCreation(barrierId, barrier);
       if (this.config.networking.broadcastSpellEffects) {
-        this.broadcastSpellEvent('barrier_created', { barrierId, barrier });
+        this.broadcastSpellEvent("barrier_created", { barrierId, barrier });
       }
     });
 
-    this.physicsSpellBridge.on('projectileHit', (projectileId, _targetId) => {
+    this.physicsSpellBridge.on("projectileHit", (projectileId, _targetId) => {
       this.handleProjectileImpact(projectileId, targetId);
     });
 
     // Concentration Manager Events
-    this.concentrationManager.on('concentrationStarted', (concentration) => {
+    this.concentrationManager.on("concentrationStarted", (concentration) => {
       this.handleConcentrationStart(concentration);
     });
 
-    this.concentrationManager.on('concentrationBroken', (check) => {
+    this.concentrationManager.on("concentrationBroken", (check) => {
       this.handleConcentrationBroken(check);
     });
 
     // Physics Events
-    this.physicsWorld.on('collision', (collision) => {
+    this.physicsWorld.on("collision", (collision) => {
       this.physicsConcentrationIntegration.handleCollision(collision);
       this.handlePhysicsCollision(collision);
     });
 
     // WebSocket Events
-    this.wsManager.on('gameEvent', (message) => {
+    this.wsManager.on("gameEvent", (message) => {
       this.handleWebSocketGameEvent(message);
     });
 
-    // Visual Effects Events  
-    this.visualEffectsManager.on('effectCreated', (effect) => {
+    // Visual Effects Events
+    this.visualEffectsManager.on("effectCreated", (effect) => {
       if (this.config.networking.broadcastSpellEffects) {
-        this.broadcastSpellEvent('spell_effect', { 
-          type: 'visual_effect_created', 
-          effect 
+        this.broadcastSpellEvent("spell_effect", {
+          type: "visual_effect_created",
+          effect,
         });
       }
     });
@@ -201,7 +204,7 @@ export class VTTIntegrationMaster extends EventEmitter {
    * Cast spell with full integration
    */
   async castSpell(context: SpellCastingContext): Promise<any> {
-    const { casterId, _sessionId,  spell,  targets,  position,  upcastLevel  } = context;
+    const { casterId, _sessionId, spell, targets, position, upcastLevel } = context;
 
     try {
       // 1. Cast spell with physics integration
@@ -210,15 +213,15 @@ export class VTTIntegrationMaster extends EventEmitter {
         { id: casterId },
         targets,
         upcastLevel,
-        position
+        position,
       );
 
       if (!result.success) {
-        this.broadcastSpellEvent('spell_cast', { 
-          casterId, 
-          spell: spell.id, 
-          success: false, 
-          error: result.error 
+        this.broadcastSpellEvent("spell_cast", {
+          casterId,
+          spell: spell.id,
+          success: false,
+          error: result.error,
         });
         return result;
       }
@@ -231,7 +234,7 @@ export class VTTIntegrationMaster extends EventEmitter {
           spell.id,
           spell.name,
           caster.constitutionMod,
-          caster.proficiencyBonus
+          caster.proficiencyBonus,
         );
       }
 
@@ -241,19 +244,15 @@ export class VTTIntegrationMaster extends EventEmitter {
         this.visualEffectsManager.triggerSpellCasting(
           spell.id,
           casterId,
-          position || { x: 0, y: 0 }
+          position || { x: 0, y: 0 },
         );
 
-        // Impact effects  
+        // Impact effects
         if (targets.length > 0) {
           for (const targetId of targets) {
             const targetPos = await this.getEntityPosition(targetId);
             if (targetPos) {
-              this.visualEffectsManager.triggerSpellImpact(
-                spell.id,
-                targetPos,
-                [targetId]
-              );
+              this.visualEffectsManager.triggerSpellImpact(spell.id, targetPos, [targetId]);
             }
           }
         }
@@ -268,26 +267,25 @@ export class VTTIntegrationMaster extends EventEmitter {
       }
 
       // 5. Broadcast to clients
-      this.broadcastSpellEvent('spell_cast', {
+      this.broadcastSpellEvent("spell_cast", {
         casterId,
         spell: spell.id,
         success: true,
         targets,
         position,
         effects: result.effects,
-        physicsEffects: result.physicsEffects
+        physicsEffects: result.physicsEffects,
       });
 
-      this.emit('spellCast', { context, result });
+      this.emit("spellCast", { context, result });
       return result;
-
     } catch (error) {
-      logger.error('Spell casting error:', error);
-      this.broadcastSpellEvent('spell_cast', { 
-        casterId, 
-        spell: spell.id, 
-        success: false, 
-        error: (error as Error).message 
+      logger.error("Spell casting error:", error);
+      this.broadcastSpellEvent("spell_cast", {
+        casterId,
+        spell: spell.id,
+        success: false,
+        error: (error as Error).message,
       });
       throw error;
     }
@@ -300,11 +298,11 @@ export class VTTIntegrationMaster extends EventEmitter {
     this.entities.set(entity.id, entity);
 
     // Register with physics-spell bridge if it's a token
-    if (entity.type === 'token') {
+    if (entity.type === "token") {
       this.physicsSpellBridge.registerToken(
         entity.id,
         { x: entity.position.x, y: entity.position.y },
-        { x: entity.size.x, y: entity.size.y }
+        { x: entity.size.x, y: entity.size.y },
       );
     }
 
@@ -313,15 +311,15 @@ export class VTTIntegrationMaster extends EventEmitter {
       await this.persistPhysicsBody(entity);
     }
 
-    this.emit('entityRegistered', entity);
+    this.emit("entityRegistered", entity);
   }
 
   /**
    * Update entity position
    */
   async updateEntityPosition(
-    entityId: string, 
-    position: { x: number; y: number; z?: number }
+    entityId: string,
+    position: { x: number; y: number; z?: number },
   ): Promise<void> {
     const entity = this.entities.get(entityId);
     if (!entity) return;
@@ -333,11 +331,11 @@ export class VTTIntegrationMaster extends EventEmitter {
 
     // Broadcast position update
     if (this.config.networking.broadcastPhysicsUpdates) {
-      this.broadcastPhysicsEvent('token_move', { 
-        tokenId: entityId, 
-        x: position.x, 
-        y: position.y, 
-        z: position.z 
+      this.broadcastPhysicsEvent("token_move", {
+        tokenId: entityId,
+        x: position.x,
+        y: position.y,
+        z: position.z,
       });
     }
 
@@ -346,31 +344,27 @@ export class VTTIntegrationMaster extends EventEmitter {
       await this.updatePhysicsBodyPosition(entityId, position);
     }
 
-    this.emit('entityPositionUpdated', { entityId, position });
+    this.emit("entityPositionUpdated", { entityId, position });
   }
 
   /**
    * Handle damage to entity (triggers concentration checks)
    */
-  async handleEntityDamage(
-    entityId: string, 
-    damage: number, 
-    sourceSpell?: string
-  ): Promise<void> {
+  async handleEntityDamage(entityId: string, damage: number, sourceSpell?: string): Promise<void> {
     // Check for concentration
     if (this.concentrationManager.isConcentrating(entityId)) {
       const concentration = this.concentrationManager.getConcentrationState(entityId)!;
       const check = this.concentrationManager.makeConcentrationCheck(concentration, damage);
-      
-      this.broadcastSpellEvent('concentration_check', {
+
+      this.broadcastSpellEvent("concentration_check", {
         entityId,
         damage,
         check,
-        sourceSpell
+        sourceSpell,
       });
     }
 
-    this.emit('entityDamaged', { entityId, damage, sourceSpell });
+    this.emit("entityDamaged", { entityId, damage, sourceSpell });
   }
 
   /**
@@ -379,7 +373,7 @@ export class VTTIntegrationMaster extends EventEmitter {
   getTargetsInSpellArea(
     center: { x: number; y: number },
     radius: number,
-    height?: number
+    height?: number,
   ): string[] {
     return this.physicsSpellBridge.getTargetsInArea(center, radius, height);
   }
@@ -396,28 +390,28 @@ export class VTTIntegrationMaster extends EventEmitter {
         this.prisma.activeSpellEffect.deleteMany({
           where: {
             isActive: true,
-            expiresAt: { lt: new Date(now) }
-          }
+            expiresAt: { lt: new Date(now) },
+          },
         }),
         this.prisma.physicsConstraintState.deleteMany({
           where: {
             isActive: true,
-            expiresAt: { lt: new Date(now) }
-          }
+            expiresAt: { lt: new Date(now) },
+          },
         }),
         this.prisma.spellBarrier.deleteMany({
           where: {
             isActive: true,
-            expiresAt: { lt: new Date(now) }
-          }
-        })
+            expiresAt: { lt: new Date(now) },
+          },
+        }),
       ]);
     }
 
     // Clean up visual effects
     this.visualEffectsManager.update(now);
 
-    this.emit('effectsCleanedUp', { timestamp: now });
+    this.emit("effectsCleanedUp", { timestamp: now });
   }
 
   /**
@@ -427,15 +421,15 @@ export class VTTIntegrationMaster extends EventEmitter {
     return {
       entities: {
         total: this.entities.size,
-        byType: this.getEntityCountsByType()
+        byType: this.getEntityCountsByType(),
       },
       physics: this.physicsWorld.getStats?.() || {},
       concentration: this.concentrationManager.getStatistics(),
       visualEffects: {
-        active: this.visualEffectsManager.getActiveEffects().length
+        active: this.visualEffectsManager.getActiveEffects().length,
       },
       activeSpells: this.activeSpells.size,
-      uptime: process.uptime()
+      uptime: process.uptime(),
     };
   }
 
@@ -461,18 +455,20 @@ export class VTTIntegrationMaster extends EventEmitter {
     // Update visual effects
     this.visualEffectsManager.update(Date.now());
 
-    this.emit('systemUpdated');
+    this.emit("systemUpdated");
   }
 
   private async getCasterData(_casterId: string): Promise<any> {
     // This would typically fetch from database or cache
     return {
       constitutionMod: 2,
-      proficiencyBonus: 3
+      proficiencyBonus: 3,
     };
   }
 
-  private async getEntityPosition(entityId: string): Promise<{ x: number; y: number; z?: number } | null> {
+  private async getEntityPosition(
+    entityId: string,
+  ): Promise<{ x: number; y: number; z?: number } | null> {
     const entity = this.entities.get(entityId);
     return entity?.position || null;
   }
@@ -488,19 +484,18 @@ export class VTTIntegrationMaster extends EventEmitter {
   private async persistSpellEffect(context: SpellCastingContext, result: any): Promise<void> {
     if (!this.config.persistence.saveSpellEffects) return;
 
-    const expiresAt = context.spell.duration > 0 
-      ? new Date(Date.now() + context.spell.duration * 1000)
-      : null;
+    const expiresAt =
+      context.spell.duration > 0 ? new Date(Date.now() + context.spell.duration * 1000) : null;
 
     await this.prisma.activeSpellEffect.create({
       data: {
         spellId: context.spell.id,
         spellName: context.spell.name,
         casterId: context.casterId,
-        casterName: 'Unknown', // Would fetch from database
-        effectType: 'mixed',
+        casterName: "Unknown", // Would fetch from database
+        effectType: "mixed",
         effectData: result,
-        targetType: context.targets.length > 1 ? 'multiple' : 'single',
+        targetType: context.targets.length > 1 ? "multiple" : "single",
         targetIds: context.targets,
         centerX: context.position?.x,
         centerY: context.position?.y,
@@ -508,8 +503,8 @@ export class VTTIntegrationMaster extends EventEmitter {
         expiresAt,
         concentration: context.spell.concentration || false,
         hasPhysicsEffects: result.physicsEffects?.length > 0 || false,
-        physicsData: result.physicsEffects
-      }
+        physicsData: result.physicsEffects,
+      },
     });
   }
 
@@ -522,7 +517,7 @@ export class VTTIntegrationMaster extends EventEmitter {
         positionX: entity.position.x,
         positionY: entity.position.y,
         width: entity.size.x,
-        height: entity.size.y
+        height: entity.size.y,
       },
       create: {
         entityId: entity.id,
@@ -530,21 +525,21 @@ export class VTTIntegrationMaster extends EventEmitter {
         positionX: entity.position.x,
         positionY: entity.position.y,
         width: entity.size.x,
-        height: entity.size.y
-      }
+        height: entity.size.y,
+      },
     });
   }
 
   private async updatePhysicsBodyPosition(
-    entityId: string, 
-    position: { x: number; y: number; z?: number }
+    entityId: string,
+    position: { x: number; y: number; z?: number },
   ): Promise<void> {
     await this.prisma.physicsBody.updateMany({
       where: { entityId, isActive: true },
       data: {
         positionX: position.x,
-        positionY: position.y
-      }
+        positionY: position.y,
+      },
     });
   }
 
@@ -565,10 +560,10 @@ export class VTTIntegrationMaster extends EventEmitter {
     // Register projectile as entity
     this.registerEntity({
       id: projectileId,
-      type: 'projectile',
+      type: "projectile",
       position: { x: 0, y: 0 }, // Will be updated by physics
       size: { x: 0.5, y: 0.5 },
-      properties: { spellId: spell.id }
+      properties: { spellId: spell.id },
     });
   }
 
@@ -582,29 +577,29 @@ export class VTTIntegrationMaster extends EventEmitter {
   }
 
   private handleConcentrationStart(concentration: any): void {
-    this.broadcastSpellEvent('concentration_check', {
-      type: 'started',
-      concentration
+    this.broadcastSpellEvent("concentration_check", {
+      type: "started",
+      concentration,
     });
   }
 
   private handleConcentrationBroken(check: any): void {
-    this.broadcastSpellEvent('concentration_check', {
-      type: 'broken',
-      check
+    this.broadcastSpellEvent("concentration_check", {
+      type: "broken",
+      check,
     });
   }
 
   private handlePhysicsCollision(collision: any): void {
     if (this.config.networking.broadcastPhysicsUpdates) {
-      this.broadcastPhysicsEvent('physics_collision', { collision });
+      this.broadcastPhysicsEvent("physics_collision", { collision });
     }
   }
 
   private handleWebSocketGameEvent(message: any): void {
     // Handle incoming WebSocket game events
     switch (message.type) {
-      case 'spell_cast':
+      case "spell_cast":
         if (message.payload.spellContext) {
           this.castSpell(message.payload.spellContext);
         }
@@ -615,12 +610,12 @@ export class VTTIntegrationMaster extends EventEmitter {
 
   private broadcastPhysicsEvent(type: string, payload: any): void {
     // Broadcast to all sessions - this would need session context
-    this.emit('physicsEvent', { type, payload });
+    this.emit("physicsEvent", { type, payload });
   }
 
   private broadcastSpellEvent(type: string, payload: any): void {
-    // Broadcast to all sessions - this would need session context  
-    this.emit('spellEvent', { type, payload });
+    // Broadcast to all sessions - this would need session context
+    this.emit("spellEvent", { type, payload });
   }
 
   /**
@@ -638,7 +633,7 @@ export const _createVTTIntegrationMaster = (
   spellEngine: SpellEngine,
   wsManager: WebSocketManager,
   prisma: PrismaClient,
-  config?: Partial<VTTIntegrationConfig>
+  config?: Partial<VTTIntegrationConfig>,
 ): VTTIntegrationMaster => {
   return new VTTIntegrationMaster(physicsWorld, spellEngine, wsManager, prisma, config);
 };

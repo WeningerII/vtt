@@ -2,26 +2,26 @@
  * Character Sheet Component - Main character management interface
  */
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react'
-import { logger } from '@vtt/logging';
-import { Download, Save, Settings, User } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { logger } from "@vtt/logging";
+import { Download, Save, Settings, User } from "lucide-react";
 
-import { useAuth } from '../../providers/AuthProvider';
-import { useWebSocket } from '../../providers/WebSocketProvider';
-import { AbilityScores } from './AbilityScores';
-import { SkillsPanel } from './SkillsPanel';
-import { EquipmentPanel } from './EquipmentPanel';
-import { SpellsPanel } from './SpellsPanel';
-import { NotesPanel } from './NotesPanel';
-import { Button } from '../ui/Button';
-import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { useAuth } from "../../providers/AuthProvider";
+import { useWebSocket } from "../../providers/WebSocketProvider";
+import { AbilityScores } from "./AbilityScores";
+import { SkillsPanel } from "./SkillsPanel";
+import { EquipmentPanel } from "./EquipmentPanel";
+import { SpellsPanel } from "./SpellsPanel";
+import { NotesPanel } from "./NotesPanel";
+import { Button } from "../ui/Button";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
 // Additional icons not in lucide-react
 const Shield = () => <span>🛡️</span>;
 const Sword = () => <span>⚔️</span>;
 const Book = () => <span>📚</span>;
 const Backpack = () => <span>🎒</span>;
 const FileText = () => <span>📄</span>;
-import { cn } from '../../lib/utils';
+import { cn } from "../../lib/utils";
 
 export interface Character {
   id: string;
@@ -68,7 +68,7 @@ export interface Character {
 export interface Equipment {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'tool' | 'consumable' | 'treasure' | 'other';
+  type: "weapon" | "armor" | "tool" | "consumable" | "treasure" | "other";
   quantity: number;
   weight: number;
   value: number;
@@ -96,11 +96,11 @@ export interface Feature {
   name: string;
   source: string;
   description: string;
-  type: 'class' | 'race' | 'background' | 'feat' | 'other';
+  type: "class" | "race" | "background" | "feat" | "other";
   uses?: {
     current: number;
     max: number;
-    resetOn: 'short' | 'long' | 'other';
+    resetOn: "short" | "long" | "other";
   };
 }
 
@@ -110,15 +110,19 @@ interface CharacterSheetProps {
   onCharacterUpdate?: (character: Character) => void;
 }
 
-type TabType = 'stats' | 'skills' | 'equipment' | 'spells' | 'notes';
+type TabType = "stats" | "skills" | "equipment" | "spells" | "notes";
 
-export const CharacterSheet = memo(function CharacterSheet({ characterId, className, onCharacterUpdate }: CharacterSheetProps) {
-  const { user  } = useAuth();
-  const { send  } = useWebSocket();
+export const CharacterSheet = memo(function CharacterSheet({
+  characterId,
+  className,
+  onCharacterUpdate,
+}: CharacterSheetProps) {
+  const { user } = useAuth();
+  const { send } = useWebSocket();
   const [character, setCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('stats');
+  const [activeTab, setActiveTab] = useState<TabType>("stats");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Load character data
@@ -136,11 +140,11 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
       setIsLoading(true);
       try {
         // Mock character data for now
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
         const mockCharacter = _createMockCharacter(characterId);
         setCharacter(mockCharacter);
       } catch (error) {
-        logger.error('Failed to load character:', error);
+        logger.error("Failed to load character:", error);
       } finally {
         setIsLoading(false);
       }
@@ -152,11 +156,11 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
   const createDefaultCharacter = (): Character => {
     return {
       id: `char_${Date.now()}`,
-      userId: user?.id || '',
-      name: 'New Character',
-      class: 'Fighter',
-      race: 'Human',
-      background: 'Folk Hero',
+      userId: user?.id || "",
+      name: "New Character",
+      class: "Fighter",
+      race: "Human",
+      background: "Folk Hero",
       level: 1,
       experience: 0,
       hitPoints: 10,
@@ -172,7 +176,7 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
         constitution: 13,
         intelligence: 12,
         wisdom: 10,
-        charisma: 8
+        charisma: 8,
       },
       savingThrows: {
         strength: { proficient: true, value: 4 },
@@ -180,20 +184,20 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
         constitution: { proficient: true, value: 3 },
         intelligence: { proficient: false, value: 1 },
         wisdom: { proficient: false, value: 0 },
-        charisma: { proficient: false, value: -1 }
+        charisma: { proficient: false, value: -1 },
       },
       skills: {
-        'Animal Handling': { proficient: true, expertise: false, value: 2 },
-        'Athletics': { proficient: true, expertise: false, value: 4 },
-        'Intimidation': { proficient: false, expertise: false, value: -1 },
-        'Perception': { proficient: false, expertise: false, value: 0 }
+        "Animal Handling": { proficient: true, expertise: false, value: 2 },
+        Athletics: { proficient: true, expertise: false, value: 4 },
+        Intimidation: { proficient: false, expertise: false, value: -1 },
+        Perception: { proficient: false, expertise: false, value: 0 },
       },
       equipment: [],
       spells: [],
       features: [],
-      notes: '',
+      notes: "",
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
   };
 
@@ -202,10 +206,10 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
     return {
       ...base,
       id,
-      name: 'Thorin Ironbeard',
-      class: 'Fighter',
-      race: 'Dwarf',
-      background: 'Soldier',
+      name: "Thorin Ironbeard",
+      class: "Fighter",
+      race: "Dwarf",
+      background: "Soldier",
       level: 3,
       experience: 900,
       hitPoints: 28,
@@ -213,62 +217,65 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
       armorClass: 16,
       equipment: [
         {
-          id: 'eq1',
-          name: 'Longsword',
-          type: 'weapon',
+          id: "eq1",
+          name: "Longsword",
+          type: "weapon",
           quantity: 1,
           weight: 3,
           value: 15,
-          description: 'A versatile martial weapon',
+          description: "A versatile martial weapon",
           equipped: true,
-          properties: ['Versatile (1d10)']
+          properties: ["Versatile (1d10)"],
         },
         {
-          id: 'eq2',
-          name: 'Chain Mail',
-          type: 'armor',
+          id: "eq2",
+          name: "Chain Mail",
+          type: "armor",
           quantity: 1,
           weight: 55,
           value: 75,
-          description: 'Heavy armor made of interlocking metal rings',
+          description: "Heavy armor made of interlocking metal rings",
           equipped: true,
-          properties: ['AC 16', 'Disadvantage on Stealth']
-        }
+          properties: ["AC 16", "Disadvantage on Stealth"],
+        },
       ],
       features: [
         {
-          id: 'f1',
-          name: 'Second Wind',
-          source: 'Fighter Class',
-          description: 'Regain hit points equal to 1d10 + fighter level',
-          type: 'class',
-          uses: { current: 1, max: 1, resetOn: 'short' }
+          id: "f1",
+          name: "Second Wind",
+          source: "Fighter Class",
+          description: "Regain hit points equal to 1d10 + fighter level",
+          type: "class",
+          uses: { current: 1, max: 1, resetOn: "short" },
         },
         {
-          id: 'f2',
-          name: 'Action Surge',
-          source: 'Fighter Class',
-          description: 'Take an additional action on your turn',
-          type: 'class',
-          uses: { current: 1, max: 1, resetOn: 'short' }
-        }
-      ]
+          id: "f2",
+          name: "Action Surge",
+          source: "Fighter Class",
+          description: "Take an additional action on your turn",
+          type: "class",
+          uses: { current: 1, max: 1, resetOn: "short" },
+        },
+      ],
     };
   };
 
-  const updateCharacter = useCallback((updates: Partial<Character>) => {
-    if (!character) return;
-    
-    const updatedCharacter = {
-      ...character,
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-    
-    setCharacter(updatedCharacter);
-    setHasUnsavedChanges(true);
-    onCharacterUpdate?.(updatedCharacter);
-  }, [character, onCharacterUpdate]);
+  const updateCharacter = useCallback(
+    (updates: Partial<Character>) => {
+      if (!character) return;
+
+      const updatedCharacter = {
+        ...character,
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setCharacter(updatedCharacter);
+      setHasUnsavedChanges(true);
+      onCharacterUpdate?.(updatedCharacter);
+    },
+    [character, onCharacterUpdate],
+  );
 
   const saveCharacter = useCallback(async () => {
     if (!character) return;
@@ -276,30 +283,30 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
     try {
       // Send character data to server
       send({
-        type: 'CHARACTER_UPDATE' as const,
+        type: "CHARACTER_UPDATE" as const,
         message: `Character ${character.name} updated`,
-        channel: 'system'
+        channel: "system",
       });
-      
+
       setHasUnsavedChanges(false);
       setIsEditing(false);
     } catch (error) {
-      logger.error('Failed to save character:', error);
+      logger.error("Failed to save character:", error);
     }
   }, [character, send]);
 
   const exportCharacter = useCallback(() => {
     if (!character) return;
-    
+
     const dataStr = JSON.stringify(character, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
+
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `${character.name.replace(/\s+/g, '')}_character.json`;
+    link.download = `${character.name.replace(/\s+/g, "")}_character.json`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
   }, [character]);
 
@@ -307,45 +314,25 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
     if (!character) return null;
 
     switch (activeTab) {
-      case 'stats':
+      case "stats":
         return (
-          <AbilityScores
-            character={character}
-            isEditing={isEditing}
-            onUpdate={updateCharacter}
-          />
+          <AbilityScores character={character} isEditing={isEditing} onUpdate={updateCharacter} />
         );
-      case 'skills':
+      case "skills":
         return (
-          <SkillsPanel
-            character={character}
-            isEditing={isEditing}
-            onUpdate={updateCharacter}
-          />
+          <SkillsPanel character={character} isEditing={isEditing} onUpdate={updateCharacter} />
         );
-      case 'equipment':
+      case "equipment":
         return (
-          <EquipmentPanel
-            character={character}
-            isEditing={isEditing}
-            onUpdate={updateCharacter}
-          />
+          <EquipmentPanel character={character} isEditing={isEditing} onUpdate={updateCharacter} />
         );
-      case 'spells':
+      case "spells":
         return (
-          <SpellsPanel
-            character={character}
-            isEditing={isEditing}
-            onUpdate={updateCharacter}
-          />
+          <SpellsPanel character={character} isEditing={isEditing} onUpdate={updateCharacter} />
         );
-      case 'notes':
+      case "notes":
         return (
-          <NotesPanel
-            character={character}
-            isEditing={isEditing}
-            onUpdate={updateCharacter}
-          />
+          <NotesPanel character={character} isEditing={isEditing} onUpdate={updateCharacter} />
         );
       default:
         return null;
@@ -354,7 +341,7 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
 
   if (isLoading) {
     return (
-      <div className={cn('flex items-center justify-center p-8', className)}>
+      <div className={cn("flex items-center justify-center p-8", className)}>
         <LoadingSpinner showLabel label="Loading character..." />
       </div>
     );
@@ -362,30 +349,33 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
 
   if (!character) {
     return (
-      <div className={cn('flex items-center justify-center p-8', className)}>
+      <div className={cn("flex items-center justify-center p-8", className)}>
         <div className="text-center">
-          <span className="h-12 w-12 text-text-tertiary mx-auto mb-4 block"><User /></span>
-          <h3 className="text-lg font-medium text-text-primary mb-2">
-            Character Not Found
-          </h3>
-          <p className="text-text-secondary">
-            The requested character could not be loaded.
-          </p>
+          <span className="h-12 w-12 text-text-tertiary mx-auto mb-4 block">
+            <User />
+          </span>
+          <h3 className="text-lg font-medium text-text-primary mb-2">Character Not Found</h3>
+          <p className="text-text-secondary">The requested character could not be loaded.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-bg-secondary rounded-lg border border-border-primary flex flex-col', className)}>
+    <div
+      className={cn(
+        "bg-bg-secondary rounded-lg border border-border-primary flex flex-col",
+        className,
+      )}
+    >
       {/* Character Header */}
       <div className="p-4 border-b border-border-primary">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-accent-primary flex items-center justify-center text-white font-bold text-lg">
               {character.avatar ? (
-                <img 
-                  src={character.avatar} 
+                <img
+                  src={character.avatar}
                   alt={character.name}
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -393,11 +383,9 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
                 character.name.charAt(0).toUpperCase()
               )}
             </div>
-            
+
             <div>
-              <h2 className="text-xl font-bold text-text-primary">
-                {character.name}
-              </h2>
+              <h2 className="text-xl font-bold text-text-primary">{character.name}</h2>
               <p className="text-text-secondary">
                 Level {character.level} {character.race} {character.class}
               </p>
@@ -408,24 +396,23 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
           </div>
 
           <div className="flex items-center gap-2">
-            {hasUnsavedChanges && (
-              <span className="text-warning text-sm">Unsaved changes</span>
-            )}
-            
-            <Button
-              className="px-2 py-1 hover:bg-neutral-100 rounded"
-              onClick={exportCharacter}
-            >
-              <span className="h-4 w-4 mr-1 inline-block"><Download /></span>
+            {hasUnsavedChanges && <span className="text-warning text-sm">Unsaved changes</span>}
+
+            <Button className="px-2 py-1 hover:bg-neutral-100 rounded" onClick={exportCharacter}>
+              <span className="h-4 w-4 mr-1 inline-block">
+                <Download />
+              </span>
               Export
             </Button>
-            
+
             {isEditing ? (
               <Button
                 className="px-2 py-1 bg-primary-500 text-white hover:bg-primary-600 rounded"
                 onClick={saveCharacter}
               >
-                <span className="h-4 w-4 mr-1 inline-block"><Save /></span>
+                <span className="h-4 w-4 mr-1 inline-block">
+                  <Save />
+                </span>
                 Save
               </Button>
             ) : (
@@ -433,7 +420,9 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
                 className="px-2 py-1 border border-neutral-300 hover:bg-neutral-50 rounded"
                 onClick={() => setIsEditing(true)}
               >
-                <span className="h-4 w-4 mr-1 inline-block"><Settings /></span>
+                <span className="h-4 w-4 mr-1 inline-block">
+                  <Settings />
+                </span>
                 Edit
               </Button>
             )}
@@ -445,23 +434,25 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
       <div className="border-b border-border-primary">
         <div className="flex">
           {[
-            { key: 'stats', label: 'Stats', icon: Shield },
-            { key: 'skills', label: 'Skills', icon: Sword },
-            { key: 'equipment', label: 'Equipment', icon: Backpack },
-            { key: 'spells', label: 'Spells', icon: Book },
-            { key: 'notes', label: 'Notes', icon: FileText }
+            { key: "stats", label: "Stats", icon: Shield },
+            { key: "skills", label: "Skills", icon: Sword },
+            { key: "equipment", label: "Equipment", icon: Backpack },
+            { key: "spells", label: "Spells", icon: Book },
+            { key: "notes", label: "Notes", icon: FileText },
           ].map(({ key, label: _label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => setActiveTab(key as TabType)}
               className={cn(
-                'flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2',
+                "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2",
                 activeTab === key
-                  ? 'text-accent-primary border-accent-primary bg-accent-light'
-                  : 'text-text-secondary border-transparent hover:text-text-primary hover:bg-bg-tertiary'
+                  ? "text-accent-primary border-accent-primary bg-accent-light"
+                  : "text-text-secondary border-transparent hover:text-text-primary hover:bg-bg-tertiary",
               )}
             >
-              <span className="h-4 w-4"><Icon /></span>
+              <span className="h-4 w-4">
+                <Icon />
+              </span>
               {_label}
             </button>
           ))}
@@ -469,9 +460,7 @@ export const CharacterSheet = memo(function CharacterSheet({ characterId, classN
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">
-        {renderTabContent()}
-      </div>
+      <div className="flex-1 overflow-hidden">{renderTabContent()}</div>
     </div>
   );
 });

@@ -1,4 +1,11 @@
-import type { GPUTexture, GPUDevice, GPUBuffer, GPUComputePipeline, GPUTextureUsage, GPUBufferUsage } from '@webgpu/types';
+import type {
+  GPUTexture,
+  GPUDevice,
+  GPUBuffer,
+  GPUComputePipeline,
+  GPUTextureUsage,
+  GPUBufferUsage,
+} from "@webgpu/types";
 /**
  * Professional Animation System - Triple A Quality
  * Advanced skeletal animation, morphing, physics-based animation, and cinematic tools
@@ -12,7 +19,7 @@ export interface AnimationClip {
   loop: boolean;
   tracks: AnimationTrack[];
   events?: AnimationEvent[];
-  blendMode: 'replace' | 'additive' | 'overlay';
+  blendMode: "replace" | "additive" | "overlay";
   weight: number;
 }
 
@@ -20,7 +27,7 @@ export interface AnimationTrack {
   id: string;
   targetNodeId: string;
   propertyPath: string; // e.g., "transform.position.x", "material.albedo"
-  interpolation: 'linear' | 'step' | 'cubic' | 'bezier';
+  interpolation: "linear" | "step" | "cubic" | "bezier";
   keyframes: Keyframe[];
 }
 
@@ -96,7 +103,7 @@ export interface BlendTree {
 
 export interface BlendNode {
   id: string;
-  type: 'clip' | 'blend1d' | 'blend2d' | 'additive' | 'override';
+  type: "clip" | "blend1d" | "blend2d" | "additive" | "override";
   position: [number, number];
   inputs: string[];
   outputs: string[];
@@ -136,32 +143,42 @@ export interface ClothConstraint {
   stiffness: number;
 }
 
-export type EasingFunction = 
-  | 'linear'
-  | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad'
-  | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic'
-  | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart'
-  | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic'
-  | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce';
+export type EasingFunction =
+  | "linear"
+  | "easeInQuad"
+  | "easeOutQuad"
+  | "easeInOutQuad"
+  | "easeInCubic"
+  | "easeOutCubic"
+  | "easeInOutCubic"
+  | "easeInQuart"
+  | "easeOutQuart"
+  | "easeInOutQuart"
+  | "easeInElastic"
+  | "easeOutElastic"
+  | "easeInOutElastic"
+  | "easeInBounce"
+  | "easeOutBounce"
+  | "easeInOutBounce";
 
 export class ProfessionalAnimationSystem {
   private device: GPUDevice;
-  
+
   // Animation state
   private animationClips: Map<string, AnimationClip> = new Map();
   private activeAnimations: Map<string, AnimationState> = new Map();
   private skeletalAnimations: Map<string, SkeletalAnimation> = new Map();
   private morphTargets: Map<string, MorphTarget[]> = new Map();
   private blendTrees: Map<string, BlendTree> = new Map();
-  
+
   // GPU resources for skeletal animation
   private boneTextureBuffer: GPUBuffer | null = null;
   private boneTexture: GPUTexture | null = null;
   private skinningPipeline: GPUComputePipeline | null = null;
-  
+
   // Physics integration
   private physicsAnimations: Map<string, PhysicsAnimation> = new Map();
-  
+
   // Performance tracking
   private stats = {
     activeAnimations: 0,
@@ -184,7 +201,7 @@ export class ProfessionalAnimationSystem {
     // Bone texture for GPU skinning (supports up to 256 bones)
     this.boneTexture = this.device.createTexture({
       size: [256, 4], // 4 rows per bone matrix
-      format: 'rgba32float',
+      format: "rgba32float",
       usage: GPUTextureUsage.STORAGE_BINDING | GPUTextureUsage.COPY_DST,
     });
 
@@ -251,10 +268,10 @@ export class ProfessionalAnimationSystem {
     });
 
     this.skinningPipeline = this.device.createComputePipeline({
-      layout: 'auto',
+      layout: "auto",
       compute: {
         module: skinningShader,
-        entryPoint: 'cs_main',
+        entryPoint: "cs_main",
       },
     });
   }
@@ -269,12 +286,16 @@ export class ProfessionalAnimationSystem {
     this.activeAnimations.delete(id);
   }
 
-  playAnimation(clipId: string, objectId: string, options?: {
-    fadeInDuration?: number;
-    speed?: number;
-    weight?: number;
-    startTime?: number;
-  }): void {
+  playAnimation(
+    clipId: string,
+    objectId: string,
+    options?: {
+      fadeInDuration?: number;
+      speed?: number;
+      weight?: number;
+      startTime?: number;
+    },
+  ): void {
     const clip = this.animationClips.get(clipId);
     if (!clip) return;
 
@@ -295,7 +316,7 @@ export class ProfessionalAnimationSystem {
   stopAnimation(clipId: string, objectId: string, fadeOutDuration?: number): void {
     const key = `${objectId}_${clipId}`;
     const animation = this.activeAnimations.get(key);
-    
+
     if (animation && fadeOutDuration) {
       animation.fadeDuration = fadeOutDuration;
       animation.fadeTime = 0;
@@ -332,7 +353,7 @@ export class ProfessionalAnimationSystem {
   setMorphTargetWeight(objectId: string, targetId: string, weight: number): void {
     const targets = this.morphTargets.get(objectId);
     if (targets) {
-      const target = targets.find(t => t.id === targetId);
+      const target = targets.find((t) => t.id === targetId);
       if (target) {
         target.weight = Math.max(0, Math.min(1, weight));
       }
@@ -385,7 +406,7 @@ export class ProfessionalAnimationSystem {
       if (animation.fadeDuration > 0) {
         animation.fadeTime += deltaTime;
         const fadeProgress = Math.min(animation.fadeTime / animation.fadeDuration, 1);
-        
+
         if (animation.playing) {
           animation.weight = fadeProgress;
         } else {
@@ -414,7 +435,7 @@ export class ProfessionalAnimationSystem {
     if (!animation.clip.events) return;
 
     const previousTime = animation.time - deltaTime * animation.speed;
-    
+
     for (const event of animation.clip.events) {
       if (previousTime < event.time && animation.time >= event.time) {
         event.callback?.(event);
@@ -423,7 +444,7 @@ export class ProfessionalAnimationSystem {
   }
 
   private applyAnimation(animation: AnimationState): void {
-    const { clip,  time,  weight  } = animation;
+    const { clip, time, weight } = animation;
 
     for (const track of clip.tracks) {
       const value = this.evaluateTrack(track, time);
@@ -467,31 +488,42 @@ export class ProfessionalAnimationSystem {
 
   private applyEasing(t: number, easing: EasingFunction): number {
     switch (easing) {
-      case 'linear': return t;
-      case 'easeInQuad': return t * t;
-      case 'easeOutQuad': return t * (2 - t);
-      case 'easeInOutQuad': return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-      case 'easeInCubic': return t * t * t;
-      case 'easeOutCubic': return (--t) * t * t + 1;
-      case 'easeInOutCubic': return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
-      case 'easeInElastic': return Math.sin(13 * Math.PI / 2 * t) * Math.pow(2, 10 * (t - 1));
-      case 'easeOutElastic': return Math.sin(-13 * Math.PI / 2 * (t + 1)) * Math.pow(2, -10 * t) + 1;
-      case 'easeInBounce': return 1 - this.applyEasing(1 - t, 'easeOutBounce');
-      case 'easeOutBounce': {
+      case "linear":
+        return t;
+      case "easeInQuad":
+        return t * t;
+      case "easeOutQuad":
+        return t * (2 - t);
+      case "easeInOutQuad":
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+      case "easeInCubic":
+        return t * t * t;
+      case "easeOutCubic":
+        return --t * t * t + 1;
+      case "easeInOutCubic":
+        return t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+      case "easeInElastic":
+        return Math.sin(((13 * Math.PI) / 2) * t) * Math.pow(2, 10 * (t - 1));
+      case "easeOutElastic":
+        return Math.sin(((-13 * Math.PI) / 2) * (t + 1)) * Math.pow(2, -10 * t) + 1;
+      case "easeInBounce":
+        return 1 - this.applyEasing(1 - t, "easeOutBounce");
+      case "easeOutBounce": {
         if (t < 1 / 2.75) return 7.5625 * t * t;
         else if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
         else if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
         else return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
       }
-      default: return t;
+      default:
+        return t;
     }
   }
 
   private interpolateValues(from: any, to: any, t: number, mode: string): any {
-    if (typeof from === 'number' && typeof to === 'number') {
+    if (typeof from === "number" && typeof to === "number") {
       return from + (to - from) * t;
     }
-    
+
     if (Array.isArray(from) && Array.isArray(to)) {
       return from.map((_f, __i) => f + (to[i] - f) * t);
     }
@@ -501,18 +533,18 @@ export class ProfessionalAnimationSystem {
       return this.slerpQuaternion(from, to, t);
     }
 
-    return mode === 'step' ? (t < 1 ? from : to) : from;
+    return mode === "step" ? (t < 1 ? from : to) : from;
   }
 
   private slerpQuaternion(q1: Float32Array, q2: Float32Array, t: number): Float32Array {
     const result = new Float32Array(4);
     let dot = q1[0] * q2[0] + q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3];
-    
+
     if (dot < 0) {
       dot = -dot;
       q2 = new Float32Array([-q2[0], -q2[1], -q2[2], -q2[3]]);
     }
-    
+
     if (dot > 0.9995) {
       // Linear interpolation for very close quaternions
       result[0] = q1[0] + t * (q2[0] - q1[0]);
@@ -525,24 +557,32 @@ export class ProfessionalAnimationSystem {
       const sinTheta = Math.sin(theta);
       const w1 = Math.sin((1 - t) * theta) / sinTheta;
       const w2 = Math.sin(t * theta) / sinTheta;
-      
+
       result[0] = w1 * q1[0] + w2 * q2[0];
       result[1] = w1 * q1[1] + w2 * q2[1];
       result[2] = w1 * q1[2] + w2 * q2[2];
       result[3] = w1 * q1[3] + w2 * q2[3];
     }
-    
+
     // Normalize
-    const length = Math.sqrt(result[0] * result[0] + result[1] * result[1] + result[2] * result[2] + result[3] * result[3]);
+    const length = Math.sqrt(
+      result[0] * result[0] + result[1] * result[1] + result[2] * result[2] + result[3] * result[3],
+    );
     result[0] /= length;
     result[1] /= length;
     result[2] /= length;
     result[3] /= length;
-    
+
     return result;
   }
 
-  private applyTrackValue(_nodeId: string, _propertyPath: string, _value: any, _weight: number, _blendMode: string): void {
+  private applyTrackValue(
+    _nodeId: string,
+    _propertyPath: string,
+    _value: any,
+    _weight: number,
+    _blendMode: string,
+  ): void {
     // Apply animated value to scene node property
     // Implementation would depend on scene graph structure
   }
@@ -565,7 +605,7 @@ export class ProfessionalAnimationSystem {
         { texture: this.boneTexture },
         skelAnim.currentPose,
         { bytesPerRow: 256 * 16 },
-        { width: 256, height: 4 }
+        { width: 256, height: 4 },
       );
     }
   }
@@ -587,7 +627,7 @@ export class ProfessionalAnimationSystem {
 
   private updateClothSimulation(cloth: ClothAnimation | undefined, _deltaTime: number): void {
     if (!cloth) return;
-    
+
     // Verlet integration for cloth simulation
     // Implementation would update particle positions and constraints
   }
@@ -600,7 +640,10 @@ export class ProfessionalAnimationSystem {
   private updateStats(): void {
     this.stats.activeAnimations = this.activeAnimations.size;
     this.stats.skeletalAnimations = this.skeletalAnimations.size;
-    this.stats.morphTargets = Array.from(this.morphTargets.values()).reduce((_sum, _targets) => sum + targets.length, 0);
+    this.stats.morphTargets = Array.from(this.morphTargets.values()).reduce(
+      (_sum, _targets) => sum + targets.length,
+      0,
+    );
     this.stats.physicsAnimations = this.physicsAnimations.size;
   }
 
@@ -611,15 +654,15 @@ export class ProfessionalAnimationSystem {
     const startTime = performance.now();
     const encoder = this.device.createCommandEncoder();
     const computePass = encoder.beginComputePass();
-    
+
     computePass.setPipeline(this.skinningPipeline);
-    
+
     const workgroups = Math.ceil(vertexCount / 64);
     computePass.dispatchWorkgroups(workgroups);
-    
+
     computePass.end();
     this.device.queue.submit([encoder.finish()]);
-    
+
     this.stats.gpuSkinningTime = performance.now() - startTime;
   }
 

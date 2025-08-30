@@ -2,15 +2,15 @@
  * @vtt/logging - Structured logging with Pino and OpenTelemetry
  */
 
-import pino from 'pino';
-import { trace, context, SpanStatusCode } from '@opentelemetry/api';
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import type { NodeSDKConfiguration } from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import os from 'node:os';
+import pino from "pino";
+import { trace, context, SpanStatusCode } from "@opentelemetry/api";
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import type { NodeSDKConfiguration } from "@opentelemetry/sdk-node";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { Resource } from "@opentelemetry/resources";
+import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import os from "node:os";
 
 // Logger configuration
 export interface LoggerConfig {
@@ -25,13 +25,13 @@ export interface LoggerConfig {
 // Create Pino logger instance
 export function createLogger(config: LoggerConfig = {}) {
   const options: pino.LoggerOptions = {
-    level: config.level || process.env.LOG_LEVEL || 'info',
+    level: config.level || process.env.LOG_LEVEL || "info",
     formatters: {
       level: (label) => ({ level: label }),
       bindings: () => ({
-        service: config.service || 'vtt',
-        version: config.version || '0.0.0',
-        environment: config.environment || process.env.NODE_ENV || 'development',
+        service: config.service || "vtt",
+        version: config.version || "0.0.0",
+        environment: config.environment || process.env.NODE_ENV || "development",
         pid: process.pid,
         hostname: os.hostname(),
       }),
@@ -46,15 +46,15 @@ export function createLogger(config: LoggerConfig = {}) {
   };
 
   // Add pretty printing in development
-  if (config.pretty || process.env.NODE_ENV === 'development') {
+  if (config.pretty || process.env.NODE_ENV === "development") {
     return pino({
       ...options,
       transport: {
-        target: 'pino-pretty',
+        target: "pino-pretty",
         options: {
           colorize: true,
-          translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname',
+          translateTime: "HH:MM:ss Z",
+          ignore: "pid,hostname",
         },
       },
     });
@@ -66,9 +66,10 @@ export function createLogger(config: LoggerConfig = {}) {
 // Initialize OpenTelemetry
 export function initTelemetry(config: LoggerConfig = {}) {
   const resource = new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: config.service || 'vtt',
-    [SemanticResourceAttributes.SERVICE_VERSION]: config.version || '0.0.0',
-    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: config.environment || process.env.NODE_ENV || 'development',
+    [SemanticResourceAttributes.SERVICE_NAME]: config.service || "vtt",
+    [SemanticResourceAttributes.SERVICE_VERSION]: config.version || "0.0.0",
+    [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]:
+      config.environment || process.env.NODE_ENV || "development",
   });
 
   const traceExporter = config.otlpEndpoint
@@ -79,7 +80,7 @@ export function initTelemetry(config: LoggerConfig = {}) {
     : undefined;
 
   const instrumentations = getNodeAutoInstrumentations({
-    '@opentelemetry/instrumentation-fs': {
+    "@opentelemetry/instrumentation-fs": {
       enabled: false, // Disable fs instrumentation to reduce noise
     },
   });
@@ -101,12 +102,10 @@ export function initTelemetry(config: LoggerConfig = {}) {
 export async function withTrace<T>(
   name: string,
   fn: () => Promise<T>,
-  attributes?: Record<string, any>
+  attributes?: Record<string, any>,
 ): Promise<T> {
-  const tracer = trace.getTracer('vtt');
-  const span = attributes
-    ? tracer.startSpan(name, { attributes })
-    : tracer.startSpan(name);
+  const tracer = trace.getTracer("vtt");
+  const span = attributes ? tracer.startSpan(name, { attributes }) : tracer.startSpan(name);
 
   try {
     const result = await context.with(trace.setSpan(context.active(), span), fn);
@@ -115,7 +114,7 @@ export async function withTrace<T>(
   } catch (error) {
     span.setStatus({
       code: SpanStatusCode.ERROR,
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : "Unknown error",
     });
     span.recordException(error as Error);
     throw error;
@@ -139,99 +138,133 @@ export class StructuredLogger {
 
   // Performance logging
   logPerformance(operation: string, duration: number, metadata?: Record<string, any>) {
-    this.logger.info({
-      type: 'performance',
-      operation,
-      duration,
-      ...metadata,
-    }, `Performance: ${operation} took ${duration}ms`);
+    this.logger.info(
+      {
+        type: "performance",
+        operation,
+        duration,
+        ...metadata,
+      },
+      `Performance: ${operation} took ${duration}ms`,
+    );
   }
 
   // Error logging with stack trace
   logError(error: Error, context?: Record<string, any>) {
-    this.logger.error({
-      type: 'error',
-      error: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
+    this.logger.error(
+      {
+        type: "error",
+        error: {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        },
+        ...context,
       },
-      ...context,
-    }, error.message);
+      error.message,
+    );
   }
 
   // Audit logging
   logAudit(action: string, userId: string, metadata?: Record<string, any>) {
-    this.logger.info({
-      type: 'audit',
-      action,
-      userId,
-      timestamp: new Date().toISOString(),
-      ...metadata,
-    }, `Audit: ${action} by ${userId}`);
+    this.logger.info(
+      {
+        type: "audit",
+        action,
+        userId,
+        timestamp: new Date().toISOString(),
+        ...metadata,
+      },
+      `Audit: ${action} by ${userId}`,
+    );
   }
 
   // Security event logging
-  logSecurity(event: string, severity: 'low' | 'medium' | 'high' | 'critical', details?: Record<string, any>) {
-    const level = severity === 'critical' ? 'error' : severity === 'high' ? 'warn' : 'info';
-    this.logger[level]({
-      type: 'security',
-      event,
-      severity,
-      ...details,
-    }, `Security event: ${event}`);
+  logSecurity(
+    event: string,
+    severity: "low" | "medium" | "high" | "critical",
+    details?: Record<string, any>,
+  ) {
+    const level = severity === "critical" ? "error" : severity === "high" ? "warn" : "info";
+    this.logger[level](
+      {
+        type: "security",
+        event,
+        severity,
+        ...details,
+      },
+      `Security event: ${event}`,
+    );
   }
 
   // Request logging
-  logRequest(method: string, path: string, statusCode: number, duration: number, metadata?: Record<string, any>) {
-    this.logger.info({
-      type: 'request',
-      method,
-      path,
-      statusCode,
-      duration,
-      ...metadata,
-    }, `${method} ${path} ${statusCode} ${duration}ms`);
+  logRequest(
+    method: string,
+    path: string,
+    statusCode: number,
+    duration: number,
+    metadata?: Record<string, any>,
+  ) {
+    this.logger.info(
+      {
+        type: "request",
+        method,
+        path,
+        statusCode,
+        duration,
+        ...metadata,
+      },
+      `${method} ${path} ${statusCode} ${duration}ms`,
+    );
   }
 
   // Business metrics logging
   logMetric(name: string, value: number, unit: string, tags?: Record<string, any>) {
-    this.logger.info({
-      type: 'metric',
-      name,
-      value,
-      unit,
-      tags,
-    }, `Metric: ${name}=${value}${unit}`);
+    this.logger.info(
+      {
+        type: "metric",
+        name,
+        value,
+        unit,
+        tags,
+      },
+      `Metric: ${name}=${value}${unit}`,
+    );
   }
 
   // Direct access to logger methods
-  trace(msg: string, obj?: Record<string, any>) { this.logger.trace(obj, msg); }
-  debug(msg: string, obj?: Record<string, any>) { this.logger.debug(obj, msg); }
-  info(msg: string, obj?: Record<string, any>) { this.logger.info(obj, msg); }
-  warn(msg: string, obj?: Record<string, any>) { this.logger.warn(obj, msg); }
-  error(msg: string, obj?: Record<string, any>) { this.logger.error(obj, msg); }
-  fatal(msg: string, obj?: Record<string, any>) { this.logger.fatal(obj, msg); }
+  trace(msg: string, obj?: Record<string, any>) {
+    this.logger.trace(obj, msg);
+  }
+  debug(msg: string, obj?: Record<string, any>) {
+    this.logger.debug(obj, msg);
+  }
+  info(msg: string, obj?: Record<string, any>) {
+    this.logger.info(obj, msg);
+  }
+  warn(msg: string, obj?: Record<string, any>) {
+    this.logger.warn(obj, msg);
+  }
+  error(msg: string, obj?: Record<string, any>) {
+    this.logger.error(obj, msg);
+  }
+  fatal(msg: string, obj?: Record<string, any>) {
+    this.logger.fatal(obj, msg);
+  }
 }
 
 // Express middleware for request logging
 export function requestLoggingMiddleware(logger: StructuredLogger) {
   return (req: any, res: any, next: any) => {
     const start = Date.now();
-    
-    res.on('finish', () => {
+
+    res.on("finish", () => {
       const duration = Date.now() - start;
-      logger.logRequest(
-        req.method,
-        req.path,
-        res.statusCode,
-        duration,
-        {
-          ip: req.ip,
-          userAgent: req.get('user-agent'),
-          referer: req.get('referer'),
-        }
-      );
+      logger.logRequest(req.method, req.path, res.statusCode, duration, {
+        ip: req.ip,
+        userAgent: req.get("user-agent"),
+        referer: req.get("referer"),
+      });
     });
 
     next();
@@ -243,4 +276,4 @@ export const logger = new StructuredLogger();
 
 // Re-export types
 export { pino };
-export type { Logger } from 'pino';
+export type { Logger } from "pino";

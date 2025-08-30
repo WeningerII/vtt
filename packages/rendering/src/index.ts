@@ -3,8 +3,8 @@
  * Exports all rendering-related components
  */
 
-export * from './LightingSystem';
-export * from './EffectsSystem';
+export * from "./LightingSystem";
+export * from "./EffectsSystem";
 
 // Re-export commonly used types for convenience
 export type {
@@ -13,8 +13,8 @@ export type {
   LightingSettings,
   VisionSource,
   LightingResult,
-  LightingEvent
-} from './LightingSystem';
+  LightingEvent,
+} from "./LightingSystem";
 
 export type {
   Effect,
@@ -24,5 +24,5 @@ export type {
   OverlayEffect,
   EffectAnimation,
   EffectTemplate,
-  EffectsEvent
-} from './EffectsSystem';
+  EffectsEvent,
+} from "./EffectsSystem";

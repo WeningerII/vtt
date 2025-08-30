@@ -1,8 +1,8 @@
 /**
  * API Client - Configured axios instance for VTT Platform API
  */
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { logger } from '@vtt/logging';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { logger } from "@vtt/logging";
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -16,11 +16,11 @@ class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1",
       timeout: 10000,
       withCredentials: true, // Include cookies for session management
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
@@ -34,22 +34,22 @@ class ApiClient {
         // Add timestamp to prevent caching
         config.headers = {
           ...(config.headers || {}),
-          'X-Request-Time': new Date().toISOString(),
+          "X-Request-Time": new Date().toISOString(),
         } as any;
 
         // Add CSRF token if available
-        if (typeof document !== 'undefined') {
+        if (typeof document !== "undefined") {
           const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
-            ?.getAttribute('content');
+            ?.getAttribute("content");
           if (csrfToken) {
-            (config.headers as any)['X-CSRF-Token'] = csrfToken;
+            (config.headers as any)["X-CSRF-Token"] = csrfToken;
           }
         }
 
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     // Response interceptor for error handling
@@ -58,36 +58,36 @@ class ApiClient {
       (error) => {
         // Handle network errors
         if (!error.response) {
-          logger.error('Network error:', error.message);
-          return Promise.reject(new Error('Network error. Please check your connection.'));
+          logger.error("Network error:", error.message);
+          return Promise.reject(new Error("Network error. Please check your connection."));
         }
 
         // Handle specific HTTP status codes
         const { status, data } = error.response;
-        
+
         switch (status) {
           case 401:
             // Unauthorized - redirect to login or refresh token
-            if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth')) {
-              window.location.href = '/auth/login';
+            if (typeof window !== "undefined" && !window.location.pathname.includes("/auth")) {
+              window.location.href = "/auth/login";
             }
             break;
           case 403:
             // Forbidden - show permission error
-            logger.error('Permission denied:', data?.error || 'Access forbidden');
+            logger.error("Permission denied:", data?.error || "Access forbidden");
             break;
           case 429:
             // Rate limited
-            logger.error('Rate limit exceeded:', data?.error || 'Too many requests');
+            logger.error("Rate limit exceeded:", data?.error || "Too many requests");
             break;
           case 500:
             // Server error
-            logger.error('Server error:', data?.error || 'Internal server error');
+            logger.error("Server error:", data?.error || "Internal server error");
             break;
         }
 
         return Promise.reject(error);
-      }
+      },
     );
   }
 
@@ -102,33 +102,52 @@ class ApiClient {
   }
 
   // POST request
-  async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  async post<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<ApiResponse<T>>> {
     return this.client.post(url, data, config);
   }
 
   // PUT request
-  async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  async put<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<ApiResponse<T>>> {
     return this.client.put(url, data, config);
   }
 
   // PATCH request
-  async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  async patch<T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<ApiResponse<T>>> {
     return this.client.patch(url, data, config);
   }
 
   // DELETE request
-  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<ApiResponse<T>>> {
+  async delete<T>(
+    url: string,
+    config?: AxiosRequestConfig,
+  ): Promise<AxiosResponse<ApiResponse<T>>> {
     return this.client.delete(url, config);
   }
 
   // Upload file
-  async upload<T>(url: string, file: File, onProgress?: (progress: number) => void): Promise<AxiosResponse<ApiResponse<T>>> {
+  async upload<T>(
+    url: string,
+    file: File,
+    onProgress?: (progress: number) => void,
+  ): Promise<AxiosResponse<ApiResponse<T>>> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     return this.client.post(url, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
@@ -142,35 +161,35 @@ class ApiClient {
   // Download file
   async download(url: string, filename?: string): Promise<void> {
     const response = await this.client.get(url, {
-      responseType: 'blob',
+      responseType: "blob",
     });
 
     const blob = new Blob([response.data]);
     const downloadUrl = window.URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
+
+    const link = document.createElement("a");
     link.href = downloadUrl;
-    link.download = filename || 'download';
+    link.download = filename || "download";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     window.URL.revokeObjectURL(downloadUrl);
   }
 
   // Set authorization header
   setAuthToken(token: string) {
-    this.client.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    this.client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
   }
 
   // Remove authorization header
   clearAuthToken() {
-    delete this.client.defaults.headers.common['Authorization'];
+    delete this.client.defaults.headers.common["Authorization"];
   }
 
   // Get base URL
   getBaseURL(): string {
-    return this.client.defaults.baseURL || '';
+    return this.client.defaults.baseURL || "";
   }
 }
 

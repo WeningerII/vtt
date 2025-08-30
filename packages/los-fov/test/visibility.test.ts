@@ -19,8 +19,8 @@ describe("computeVisibilityPolygon", () => {
       expect(Number.isFinite(y)).toBe(true);
     }
 
-    const near = (_ax: number, _ay: number, _tol = 1e-2) =>
-      poly.some(_([x, _y]) => Math.hypot(x - ax, y - ay) < tol);
+    const near = (ax: number, ay: number, tol = 1e-2) =>
+      poly.some(([x, y]) => Math.hypot(x - ax, y - ay) < tol);
     // The visibility from center of a square will include the four corners
     expect(near(1, 1)).toBe(true);
     expect(near(-1, 1)).toBe(true);

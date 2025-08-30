@@ -1,13 +1,13 @@
 import { Monster, MonsterSchema, ChallengeRating } from "@vtt/core-schemas";
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 // Export additional systems
-export { DiceRoller, diceRoller } from './DiceRoller';
-export { SpellSystem } from './SpellSystem';
-export { ActionSystem } from './ActionSystem';
-export type { DiceRoll, RollResult } from './DiceRoller';
-export type { Spell, SpellSlot, SchoolOfMagic, SpellcastingAbility } from './SpellSystem';
-export type { AttackAction, ActionResult, ActionType, DamageType } from './ActionSystem';
+export { DiceRoller, diceRoller } from "./DiceRoller";
+export { SpellSystem } from "./SpellSystem";
+export { ActionSystem } from "./ActionSystem";
+export type { DiceRoll, RollResult } from "./DiceRoller";
+export type { Spell, SpellSlot, SchoolOfMagic, SpellcastingAbility } from "./SpellSystem";
+export type { AttackAction, ActionResult, ActionType, DamageType } from "./ActionSystem";
 
 export type CompiledMonster = Monster & {
   xp: number;
@@ -158,8 +158,8 @@ export class CombatEngine extends EventEmitter {
   }
 
   removeCombatant(id: string): void {
-    this.combatants = this.combatants.filter(c => c.id !== id);
-    this.turnOrder = this.turnOrder.filter(id => id !== id);
+    this.combatants = this.combatants.filter((c) => c.id !== id);
+    this.turnOrder = this.turnOrder.filter((id) => id !== id);
   }
 
   startCombat(): void {
@@ -177,7 +177,7 @@ export class CombatEngine extends EventEmitter {
 
   nextTurn(): void {
     if (!this.isActive) return;
-    
+
     this.currentTurnIndex++;
     if (this.currentTurnIndex >= this.turnOrder.length) {
       this.currentTurnIndex = 0;
@@ -188,7 +188,7 @@ export class CombatEngine extends EventEmitter {
   getCurrentCombatant(): Combatant | null {
     if (!this.isActive || this.turnOrder.length === 0) return null;
     const id = this.turnOrder[this.currentTurnIndex];
-    return this.combatants.find(c => c.id === id) || null;
+    return this.combatants.find((c) => c.id === id) || null;
   }
 
   getCombatants(): Combatant[] {
@@ -213,7 +213,6 @@ export class CombatEngine extends EventEmitter {
 
   private sortInitiative(): void {
     this.combatants.sort((_a, _b) => b.initiative - a.initiative);
-    this.turnOrder = this.combatants.map(c => c.id);
+    this.turnOrder = this.combatants.map((c) => c.id);
   }
-
 }

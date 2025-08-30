@@ -1,24 +1,24 @@
-import { _TextureManager } from '../engine/TextureManager';
-import { _GeometryManager } from '../engine/GeometryManager';
+import { _TextureManager } from "../engine/TextureManager";
+import { _GeometryManager } from "../engine/GeometryManager";
 
 export enum AssetType {
-  TEXTURE = 'texture',
-  MODEL = 'model',
-  AUDIO = 'audio',
-  MATERIAL = 'material',
-  SHADER = 'shader',
-  ANIMATION = 'animation',
-  FONT = 'font',
-  JSON = 'json',
-  BINARY = 'binary'
+  TEXTURE = "texture",
+  MODEL = "model",
+  AUDIO = "audio",
+  MATERIAL = "material",
+  SHADER = "shader",
+  ANIMATION = "animation",
+  FONT = "font",
+  JSON = "json",
+  BINARY = "binary",
 }
 
 export enum AssetState {
-  UNLOADED = 'unloaded',
-  LOADING = 'loading',
-  LOADED = 'loaded',
-  ERROR = 'error',
-  UNLOADING = 'unloading'
+  UNLOADED = "unloaded",
+  LOADING = "loading",
+  LOADED = "loaded",
+  ERROR = "error",
+  UNLOADING = "unloading",
 }
 
 export interface AssetMetadata {
@@ -67,13 +67,13 @@ export class AssetManager {
   private loadingPromises = new Map<string, Promise<any>>();
   private dependencies = new Map<string, Set<string>>();
   private dependents = new Map<string, Set<string>>();
-  
+
   // Configuration
   private maxCacheSize = 1024 * 1024 * 512; // 512MB default
   private maxConcurrentLoads = 8;
   private currentLoads = 0;
   private gcThreshold = 0.9; // Trigger GC when 90% full
-  
+
   // Statistics
   private stats = {
     totalLoads: 0,
@@ -81,7 +81,7 @@ export class AssetManager {
     cacheHits: 0,
     cacheMisses: 0,
     errors: 0,
-    currentMemoryUsage: 0
+    currentMemoryUsage: 0,
   };
 
   constructor() {
@@ -107,11 +107,11 @@ export class AssetManager {
   }
 
   async loadAsset<T = any>(
-    metadata: AssetMetadata, 
-    options: AssetLoadOptions = {}
+    metadata: AssetMetadata,
+    options: AssetLoadOptions = {},
   ): Promise<LoadedAsset<T>> {
-    const { id, _type} = metadata;
-    
+    const { id, _type } = metadata;
+
     // Check if already loaded
     if (this.assets.has(id)) {
       const asset = this.assets.get(id)! as LoadedAsset<T>;
@@ -120,18 +120,18 @@ export class AssetManager {
       this.stats.cacheHits++;
       return asset;
     }
-    
+
     // Check if already loading
     if (this.loadingPromises.has(id)) {
       return this.loadingPromises.get(id)!;
     }
-    
+
     this.stats.cacheMisses++;
-    
+
     // Create loading promise
     const loadingPromise = this._loadAsset<T>(metadata, options);
     this.loadingPromises.set(id, loadingPromise);
-    
+
     try {
       const asset = await loadingPromise;
       this.loadingPromises.delete(id);
@@ -144,30 +144,30 @@ export class AssetManager {
 
   private async _loadAsset<T>(
     metadata: AssetMetadata,
-    options: AssetLoadOptions
+    options: AssetLoadOptions,
   ): Promise<LoadedAsset<T>> {
-    const { id,  type  } = metadata;
-    
+    const { id, type } = metadata;
+
     // Wait for available slot if at max concurrent loads
     while (this.currentLoads >= this.maxConcurrentLoads) {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
     }
-    
+
     this.currentLoads++;
-    
+
     try {
       // Load dependencies first
       if (options.dependencies !== false && metadata.dependencies) {
         await this.loadDependencies(metadata.dependencies, options);
         this.trackDependencies(id, metadata.dependencies);
       }
-      
+
       // Get appropriate loader
       const loader = this.loaders.get(type);
       if (!loader) {
         throw new Error(`No loader registered for asset type: ${type}`);
       }
-      
+
       // Create asset entry
       const asset: LoadedAsset<T> = {
         metadata,
@@ -175,70 +175,63 @@ export class AssetManager {
         state: AssetState.LOADING,
         loadTime: 0,
         lastAccessed: Date.now(),
-        referenceCount: 1
+        referenceCount: 1,
       };
-      
+
       this.assets.set(id, asset);
-      
+
       const startTime = Date.now();
-      
+
       // Load asset data
-      const data = await this.withTimeout(
-        loader.load(metadata, options),
-        options.timeout || 30000
-      );
-      
+      const data = await this.withTimeout(loader.load(metadata, options), options.timeout || 30000);
+
       // Validate if loader supports validation
       if (loader.validate && !loader.validate(data)) {
         throw new Error(`Asset validation failed: ${id}`);
       }
-      
+
       const loadTime = Date.now() - startTime;
-      
+
       // Update asset
       asset.data = data;
       asset.state = AssetState.LOADED;
       asset.loadTime = loadTime;
-      
+
       // Update statistics
       this.stats.totalLoads++;
       this.stats.totalLoadTime += loadTime;
       this.updateMemoryUsage();
-      
+
       // Trigger garbage collection if needed
       if (this.stats.currentMemoryUsage > this.maxCacheSize * this.gcThreshold) {
         this.runGarbageCollection();
       }
-      
+
       return asset;
-      
     } catch (error) {
       this.stats.errors++;
-      
+
       // Update asset state if it exists
       const asset = this.assets.get(id);
       if (asset) {
         asset.state = AssetState.ERROR;
         asset.error = error as Error;
       }
-      
+
       throw error;
     } finally {
       this.currentLoads--;
     }
   }
 
-  private async loadDependencies(
-    dependencies: string[],
-    options: AssetLoadOptions
-  ): Promise<void> {
+  private async loadDependencies(dependencies: string[], options: AssetLoadOptions): Promise<void> {
     const depPromises = dependencies.map(async (depId) => {
       // Try to resolve dependency metadata
       // In a real implementation, you'd have a registry or discovery mechanism
       const depMetadata = await this.resolveDependencyMetadata(depId);
       return this.loadAsset(depMetadata, { ...options, dependencies: true });
     });
-    
+
     await Promise.all(depPromises);
   }
 
@@ -248,13 +241,13 @@ export class AssetManager {
     return {
       id,
       path: `/assets/${id}`,
-      type: AssetType.TEXTURE // Default assumption
+      type: AssetType.TEXTURE, // Default assumption
     };
   }
 
   private trackDependencies(assetId: string, dependencies: string[]): void {
     this.dependencies.set(assetId, new Set(dependencies));
-    
+
     for (const depId of dependencies) {
       if (!this.dependents.has(depId)) {
         this.dependents.set(depId, new Set());
@@ -264,20 +257,20 @@ export class AssetManager {
   }
 
   private withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-    return Promise.race([_
+    return Promise.race([
       promise,
-      _new Promise<T>((_, _reject) => {
-        setTimeout(() => reject(new Error('Asset load timeout')), timeoutMs);
-      })
+      new Promise<T>((_, reject) => {
+        setTimeout(() => reject(new Error("Asset load timeout")), timeoutMs);
+      }),
     ]);
   }
 
   unloadAsset(id: string): void {
     const asset = this.assets.get(id);
     if (!asset) return;
-    
+
     asset.referenceCount--;
-    
+
     // Only unload if no more references
     if (asset.referenceCount <= 0) {
       this._unloadAsset(id);
@@ -287,15 +280,15 @@ export class AssetManager {
   private _unloadAsset(id: string): void {
     const asset = this.assets.get(id);
     if (!asset) return;
-    
+
     asset.state = AssetState.UNLOADING;
-    
+
     // Call loader's unload method if available
     const loader = this.loaders.get(asset.metadata.type);
     if (loader?.unload) {
       loader.unload(asset);
     }
-    
+
     // Unload dependents first
     const dependents = this.dependents.get(id);
     if (dependents) {
@@ -303,12 +296,12 @@ export class AssetManager {
         this._unloadAsset(dependentId);
       }
     }
-    
+
     // Remove from maps
     this.assets.delete(id);
     this.dependencies.delete(id);
     this.dependents.delete(id);
-    
+
     // Update memory usage
     this.updateMemoryUsage();
   }
@@ -337,23 +330,23 @@ export class AssetManager {
   }
 
   preloadAssets(metadataList: AssetMetadata[], options: AssetLoadOptions = {}): Promise<void> {
-    const promises = metadataList.map(metadata => 
-      this.loadAsset(metadata, { ...options, cache: true })
+    const promises = metadataList.map((metadata) =>
+      this.loadAsset(metadata, { ...options, cache: true }),
     );
-    
+
     return Promise.allSettled(promises).then(() => {});
   }
 
   // Memory management
   private updateMemoryUsage(): void {
     let totalMemory = 0;
-    
+
     for (const asset of this.assets.values()) {
       if (asset.state === AssetState.LOADED) {
         totalMemory += this.estimateAssetSize(asset);
       }
     }
-    
+
     this.stats.currentMemoryUsage = totalMemory;
   }
 
@@ -362,7 +355,7 @@ export class AssetManager {
     if (asset.metadata.size) {
       return asset.metadata.size;
     }
-    
+
     // Default estimates by type
     switch (asset.metadata.type) {
       case AssetType.TEXTURE:
@@ -378,17 +371,17 @@ export class AssetManager {
 
   private runGarbageCollection(): void {
     const assets = Array.from(this.assets.entries())
-      .filter(_([_, _asset]) => asset.referenceCount === 0)
+      .filter(([_, asset]) => asset.referenceCount === 0)
       .sort((_a, _b) => a[1].lastAccessed - b[1].lastAccessed);
-    
+
     let freedMemory = 0;
     const targetMemory = this.maxCacheSize * 0.7; // Free to 70%
-    
+
     for (const [id, asset] of assets) {
       if (this.stats.currentMemoryUsage - freedMemory <= targetMemory) {
         break;
       }
-      
+
       freedMemory += this.estimateAssetSize(asset);
       this._unloadAsset(id);
     }
@@ -409,8 +402,10 @@ export class AssetManager {
       memoryUsage: this.stats.currentMemoryUsage,
       memoryLimit: this.maxCacheSize,
       memoryUtilization: this.stats.currentMemoryUsage / this.maxCacheSize,
-      averageLoadTime: this.stats.totalLoads > 0 ? this.stats.totalLoadTime / this.stats.totalLoads : 0,
-      cacheHitRate: this.stats.cacheHits / Math.max(1, this.stats.cacheHits + this.stats.cacheMisses)
+      averageLoadTime:
+        this.stats.totalLoads > 0 ? this.stats.totalLoadTime / this.stats.totalLoads : 0,
+      cacheHitRate:
+        this.stats.cacheHits / Math.max(1, this.stats.cacheHits + this.stats.cacheMisses),
     };
   }
 
@@ -423,14 +418,14 @@ export class AssetManager {
     for (const id of this.assets.keys()) {
       this._unloadAsset(id);
     }
-    
+
     // Clear all maps
     this.assets.clear();
     this.dependencies.clear();
     this.dependents.clear();
     this.loadingPromises.clear();
     this.loadingQueue.length = 0;
-    
+
     // Reset statistics
     this.stats.currentMemoryUsage = 0;
   }
@@ -443,58 +438,58 @@ export class AssetManager {
 // Default asset loaders
 class TextureLoader implements AssetLoader<WebGLTexture> {
   supportedTypes = [AssetType.TEXTURE];
-  
+
   async load(_metadata: AssetMetadata): Promise<WebGLTexture> {
     // This would integrate with TextureManager
-    throw new Error('TextureLoader requires WebGL context integration');
+    throw new Error("TextureLoader requires WebGL context integration");
   }
 }
 
 class ModelLoader implements AssetLoader {
   supportedTypes = [AssetType.MODEL];
-  
+
   async load(metadata: AssetMetadata): Promise<any> {
     const response = await fetch(metadata.path);
     const data = await response.arrayBuffer();
-    
+
     // Parse based on file extension
-    const ext = metadata.path.split('.').pop()?.toLowerCase();
+    const ext = metadata.path.split(".").pop()?.toLowerCase();
     switch (ext) {
-      case 'gltf':
-      case 'glb':
+      case "gltf":
+      case "glb":
         return this.parseGLTF(data);
-      case 'obj':
+      case "obj":
         return this.parseOBJ(new TextDecoder().decode(data));
       default:
         throw new Error(`Unsupported model format: ${ext}`);
     }
   }
-  
+
   private parseGLTF(data: ArrayBuffer): any {
     // GLTF parsing logic
-    return { format: 'gltf', data };
+    return { format: "gltf", data };
   }
-  
+
   private parseOBJ(text: string): any {
     // OBJ parsing logic
-    return { format: 'obj', data: text };
+    return { format: "obj", data: text };
   }
 }
 
 class AudioLoader implements AssetLoader<AudioBuffer> {
   supportedTypes = [AssetType.AUDIO];
   private audioContext: AudioContext | null = null;
-  
+
   async load(metadata: AssetMetadata): Promise<AudioBuffer> {
     if (!this.audioContext) {
       this.audioContext = new AudioContext();
     }
-    
+
     const response = await fetch(metadata.path);
     const arrayBuffer = await response.arrayBuffer();
     return this.audioContext.decodeAudioData(arrayBuffer);
   }
-  
+
   unload(_asset: LoadedAsset<AudioBuffer>): void {
     // AudioBuffer doesn't need explicit cleanup
   }
@@ -502,7 +497,7 @@ class AudioLoader implements AssetLoader<AudioBuffer> {
 
 class JSONLoader implements AssetLoader<any> {
   supportedTypes = [AssetType.JSON];
-  
+
   async load(metadata: AssetMetadata): Promise<any> {
     const response = await fetch(metadata.path);
     return response.json();
@@ -511,7 +506,7 @@ class JSONLoader implements AssetLoader<any> {
 
 class BinaryLoader implements AssetLoader<ArrayBuffer> {
   supportedTypes = [AssetType.BINARY];
-  
+
   async load(metadata: AssetMetadata): Promise<ArrayBuffer> {
     const response = await fetch(metadata.path);
     return response.arrayBuffer();
@@ -520,7 +515,7 @@ class BinaryLoader implements AssetLoader<ArrayBuffer> {
 
 class MaterialLoader implements AssetLoader<any> {
   supportedTypes = [AssetType.MATERIAL];
-  
+
   async load(metadata: AssetMetadata): Promise<any> {
     const response = await fetch(metadata.path);
     return response.json();
@@ -529,15 +524,15 @@ class MaterialLoader implements AssetLoader<any> {
 
 class ShaderLoader implements AssetLoader<{ vertex: string; fragment: string }> {
   supportedTypes = [AssetType.SHADER];
-  
+
   async load(metadata: AssetMetadata): Promise<{ vertex: string; fragment: string }> {
     // Load vertex and fragment shaders
     const vertexResponse = await fetch(`${metadata.path}.vert`);
     const fragmentResponse = await fetch(`${metadata.path}.frag`);
-    
+
     return {
       vertex: await vertexResponse.text(),
-      fragment: await fragmentResponse.text()
+      fragment: await fragmentResponse.text(),
     };
   }
 }

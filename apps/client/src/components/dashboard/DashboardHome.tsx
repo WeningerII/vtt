@@ -1,112 +1,121 @@
 /**
  * Dashboard Home - Main dashboard with stats, recent activity, and quick actions
  */
-import React from 'react';
-import { 
-  Users, 
-  Gamepad2, 
-  Clock, 
+import React from "react";
+import {
+  Users,
+  Gamepad2,
+  Clock,
   Calendar,
   TrendingUp,
   Plus,
   ArrowRight,
   Star,
   MapPin,
-  Activity
-} from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { useAuth } from '../../providers/AuthProvider';
-import { formatDate, formatRelativeTime } from '../../lib/format';
+  Activity,
+} from "lucide-react";
+import { Button } from "../ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import { useAuth } from "../../providers/AuthProvider";
+import { formatDate, formatRelativeTime } from "../../lib/format";
 
 // Mock data - in real app, this would come from API
 const mockStats = {
   totalCampaigns: 3,
   activePlayers: 12,
   hoursPlayed: 47,
-  nextSession: new Date('2024-01-15T19:00:00'),
+  nextSession: new Date("2024-01-15T19:00:00"),
 };
 
 const mockRecentCampaigns = [
   {
-    id: '1',
-    name: 'The Lost Mines of Phandelver',
-    system: 'D&D 5e',
+    id: "1",
+    name: "The Lost Mines of Phandelver",
+    system: "D&D 5e",
     players: 4,
-    lastPlayed: new Date('2024-01-10T20:30:00'),
-    status: 'active',
-    image: '/api/placeholder/campaign1.jpg'
+    lastPlayed: new Date("2024-01-10T20:30:00"),
+    status: "active",
+    image: "/api/placeholder/campaign1.jpg",
   },
   {
-    id: '2', 
-    name: 'Curse of Strahd',
-    system: 'D&D 5e',
+    id: "2",
+    name: "Curse of Strahd",
+    system: "D&D 5e",
     players: 6,
-    lastPlayed: new Date('2024-01-08T19:00:00'),
-    status: 'active',
-    image: '/api/placeholder/campaign2.jpg'
+    lastPlayed: new Date("2024-01-08T19:00:00"),
+    status: "active",
+    image: "/api/placeholder/campaign2.jpg",
   },
   {
-    id: '3',
-    name: 'Cyberpunk Red Campaign',
-    system: 'Cyberpunk Red',
+    id: "3",
+    name: "Cyberpunk Red Campaign",
+    system: "Cyberpunk Red",
     players: 3,
-    lastPlayed: new Date('2024-01-05T21:00:00'),
-    status: 'paused',
-    image: '/api/placeholder/campaign3.jpg'
-  }
+    lastPlayed: new Date("2024-01-05T21:00:00"),
+    status: "paused",
+    image: "/api/placeholder/campaign3.jpg",
+  },
 ];
 
 const mockRecentActivity = [
   {
-    id: '1',
-    type: 'session',
-    message: 'Completed session in The Lost Mines of Phandelver',
-    time: new Date('2024-01-10T20:30:00'),
-    icon: Gamepad2
+    id: "1",
+    type: "session",
+    message: "Completed session in The Lost Mines of Phandelver",
+    time: new Date("2024-01-10T20:30:00"),
+    icon: Gamepad2,
   },
   {
-    id: '2',
-    type: 'player',
-    message: 'Alice joined Curse of Strahd campaign',
-    time: new Date('2024-01-09T14:15:00'),
-    icon: Users
+    id: "2",
+    type: "player",
+    message: "Alice joined Curse of Strahd campaign",
+    time: new Date("2024-01-09T14:15:00"),
+    icon: Users,
   },
   {
-    id: '3',
-    type: 'campaign',
-    message: 'Created new campaign: Cyberpunk Red Campaign',
-    time: new Date('2024-01-07T10:20:00'),
-    icon: Plus
+    id: "3",
+    type: "campaign",
+    message: "Created new campaign: Cyberpunk Red Campaign",
+    time: new Date("2024-01-07T10:20:00"),
+    icon: Plus,
   },
   {
-    id: '4',
-    type: 'achievement',
-    message: 'Reached 50 hours of gameplay milestone',
-    time: new Date('2024-01-05T18:45:00'),
-    icon: Star
-  }
+    id: "4",
+    type: "achievement",
+    message: "Reached 50 hours of gameplay milestone",
+    time: new Date("2024-01-05T18:45:00"),
+    icon: Star,
+  },
 ];
 
 export function DashboardHome() {
-  const { user  } = useAuth();
+  const { user } = useAuth();
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-success-100 text-success-800';
-      case 'paused': return 'bg-warning-100 text-warning-800';
-      case 'completed': return 'bg-neutral-100 text-neutral-800';
-      default: return 'bg-neutral-100 text-neutral-800';
+      case "active":
+        return "bg-success-100 text-success-800";
+      case "paused":
+        return "bg-warning-100 text-warning-800";
+      case "completed":
+        return "bg-neutral-100 text-neutral-800";
+      default:
+        return "bg-neutral-100 text-neutral-800";
     }
   };
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'session': return Gamepad2;
-      case 'player': return Users;
-      case 'campaign': return Plus;
-      case 'achievement': return Star;
-      default: return Activity;
+      case "session":
+        return Gamepad2;
+      case "player":
+        return Users;
+      case "campaign":
+        return Plus;
+      case "achievement":
+        return Star;
+      default:
+        return Activity;
     }
   };
 
@@ -114,11 +123,10 @@ export function DashboardHome() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">
-          Welcome back, {user?.firstName}! 🎲
-        </h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.firstName}! 🎲</h1>
         <p className="text-primary-100">
-          Ready to continue your adventures? Your next session is {formatRelativeTime(mockStats.nextSession)}.
+          Ready to continue your adventures? Your next session is{" "}
+          {formatRelativeTime(mockStats.nextSession)}.
         </p>
       </div>
 
@@ -184,7 +192,7 @@ export function DashboardHome() {
               <div>
                 <p className="text-sm font-medium text-neutral-600">Next Session</p>
                 <p className="text-lg font-semibold text-neutral-900">
-                  {formatDate(mockStats.nextSession, 'MMM d, h:mm a')}
+                  {formatDate(mockStats.nextSession, "MMM d, h:mm a")}
                 </p>
               </div>
               <div className="h-12 w-12 bg-info-100 rounded-lg flex items-center justify-center">
@@ -211,7 +219,10 @@ export function DashboardHome() {
             </CardHeader>
             <CardContent className="space-y-4">
               {mockRecentCampaigns.map((campaign) => (
-                <div key={campaign.id} className="flex items-center space-x-4 p-4 rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors cursor-pointer">
+                <div
+                  key={campaign.id}
+                  className="flex items-center space-x-4 p-4 rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors cursor-pointer"
+                >
                   <div className="h-12 w-12 rounded-lg bg-neutral-200 flex items-center justify-center">
                     <Gamepad2 className="h-6 w-6 text-neutral-600" />
                   </div>
@@ -220,7 +231,9 @@ export function DashboardHome() {
                       <h4 className="text-sm font-medium text-neutral-900 truncate">
                         {campaign.name}
                       </h4>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(campaign.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(campaign.status)}`}
+                      >
                         {campaign.status}
                       </span>
                     </div>
@@ -286,9 +299,7 @@ export function DashboardHome() {
               <Plus className="h-6 w-6 text-primary-600" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">Start New Campaign</h3>
-            <p className="text-sm text-neutral-600 mb-4">
-              Create a new adventure for your players
-            </p>
+            <p className="text-sm text-neutral-600 mb-4">Create a new adventure for your players</p>
             <Button variant="primary" fullWidth>
               Get Started
             </Button>
@@ -301,9 +312,7 @@ export function DashboardHome() {
               <Users className="h-6 w-6 text-success-600" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">Invite Players</h3>
-            <p className="text-sm text-neutral-600 mb-4">
-              Grow your gaming community
-            </p>
+            <p className="text-sm text-neutral-600 mb-4">Grow your gaming community</p>
             <Button variant="secondary" fullWidth>
               Send Invites
             </Button>
@@ -316,9 +325,7 @@ export function DashboardHome() {
               <Calendar className="h-6 w-6 text-warning-600" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">Schedule Session</h3>
-            <p className="text-sm text-neutral-600 mb-4">
-              Coordinate your next game night
-            </p>
+            <p className="text-sm text-neutral-600 mb-4">Coordinate your next game night</p>
             <Button variant="secondary" fullWidth>
               Schedule Now
             </Button>

@@ -3,12 +3,12 @@
  * Handles spell components, spell foci, and component pouches
  */
 
-import { MaterialComponent, SpellFocus, ItemCost } from './index.js';
-import { 
-  MATERIAL_COMPONENTS, 
+import { MaterialComponent, SpellFocus, ItemCost } from "./index.js";
+import {
+  MATERIAL_COMPONENTS,
   SPELL_MATERIAL_REQUIREMENTS,
-  MaterialComponentValidator 
-} from '../MaterialComponentDatabase.js';
+  MaterialComponentValidator,
+} from "../MaterialComponentDatabase.js";
 
 export interface ComponentPouch {
   id: string;
@@ -56,11 +56,11 @@ export class MaterialComponentSystem {
     characterComponents: string[],
     characterFoci: string[],
     characterClass: string,
-    availableGold: number = 0
+    availableGold: number = 0,
   ): ComponentCheck {
     const requiredComponents = this.getSpellComponents(spellId);
     const availableComponents = characterComponents
-      .map(id => this.components.get(id))
+      .map((id) => this.components.get(id))
       .filter(Boolean) as MaterialComponent[];
 
     const missing: MaterialComponent[] = [];
@@ -69,8 +69,8 @@ export class MaterialComponentSystem {
 
     // Check each required component
     for (const required of requiredComponents) {
-      const hasComponent = availableComponents.some(comp => comp.id === required.id);
-      
+      const hasComponent = availableComponents.some((comp) => comp.id === required.id);
+
       if (!hasComponent) {
         // Check if spell focus can replace it
         const canUseFocus = this.canFocusReplaceComponent(required, characterFoci, characterClass);
@@ -101,7 +101,7 @@ export class MaterialComponentSystem {
       pouchCanReplace,
       totalCost,
       affordableCost,
-      missingCost
+      missingCost,
     };
   }
 
@@ -110,7 +110,7 @@ export class MaterialComponentSystem {
    */
   consumeComponents(
     spellId: string,
-    characterComponents: string[]
+    characterComponents: string[],
   ): { consumed: string[]; remaining: string[] } {
     const requiredComponents = this.getSpellComponents(spellId);
     const consumed: string[] = [];
@@ -118,7 +118,7 @@ export class MaterialComponentSystem {
 
     for (const required of requiredComponents) {
       if (required.consumed) {
-        const index = remaining.findIndex(id => id === required.id);
+        const index = remaining.findIndex((id) => id === required.id);
         if (index !== -1) {
           consumed.push(remaining.splice(index, 1)[0]!);
         }
@@ -133,13 +133,13 @@ export class MaterialComponentSystem {
    */
   getSpellComponents(spellId: string): MaterialComponent[] {
     const components: MaterialComponent[] = [];
-    
+
     for (const component of this.components.values()) {
       if (component.spells.includes(spellId)) {
         components.push(component);
       }
     }
-    
+
     return components;
   }
 
@@ -149,7 +149,7 @@ export class MaterialComponentSystem {
   private canFocusReplaceComponent(
     component: MaterialComponent,
     characterFoci: string[],
-    characterClass: string
+    characterClass: string,
   ): boolean {
     if (!component.replaceable || component.consumed) {
       return false;
@@ -158,7 +158,7 @@ export class MaterialComponentSystem {
     for (const focusId of characterFoci) {
       const focus = this.spellFoci.get(focusId);
       if (focus && focus.classes.includes(characterClass)) {
-        return focus.replaces.includes(component.id) || focus.replaces.includes('material');
+        return focus.replaces.includes(component.id) || focus.replaces.includes("material");
       }
     }
 
@@ -170,20 +170,20 @@ export class MaterialComponentSystem {
    */
   private canPouchReplaceComponent(
     component: MaterialComponent,
-    characterComponents: string[]
+    characterComponents: string[],
   ): boolean {
     if (!component.replaceable || component.consumed) {
       return false;
     }
 
     // Check if character has component pouch
-    const hasPouch = characterComponents.includes('component_pouch');
+    const hasPouch = characterComponents.includes("component_pouch");
     if (!hasPouch) {
       return false;
     }
 
     // Component pouch can replace components under 1gp
-    if (component.cost && component.cost.currency === 'gp' && component.cost.amount >= 1) {
+    if (component.cost && component.cost.currency === "gp" && component.cost.amount >= 1) {
       return false;
     }
 
@@ -208,8 +208,9 @@ export class MaterialComponentSystem {
    * Get spell foci for a specific class
    */
   getSpellFociForClass(characterClass: string): SpellFocus[] {
-    return Array.from(this.spellFoci.values())
-      .filter(focus => focus.classes.includes(characterClass));
+    return Array.from(this.spellFoci.values()).filter((focus) =>
+      focus.classes.includes(characterClass),
+    );
   }
 
   /**
@@ -230,76 +231,76 @@ export class MaterialComponentSystem {
     // Common spell components
     const components: MaterialComponent[] = [
       {
-        id: 'diamond_300gp',
-        name: 'Diamond (300 gp)',
-        description: 'A clear gemstone worth at least 300 gp',
-        cost: { amount: 300, currency: 'gp' },
+        id: "diamond_300gp",
+        name: "Diamond (300 gp)",
+        description: "A clear gemstone worth at least 300 gp",
+        cost: { amount: 300, currency: "gp" },
         consumed: true,
         replaceable: false,
-        spells: ['revivify'],
-        rarity: 'rare'
+        spells: ["revivify"],
+        rarity: "rare",
       },
       {
-        id: 'diamond_1000gp',
-        name: 'Diamond (1,000 gp)',
-        description: 'A clear gemstone worth at least 1,000 gp',
-        cost: { amount: 1000, currency: 'gp' },
+        id: "diamond_1000gp",
+        name: "Diamond (1,000 gp)",
+        description: "A clear gemstone worth at least 1,000 gp",
+        cost: { amount: 1000, currency: "gp" },
         consumed: true,
         replaceable: false,
-        spells: ['raise_dead'],
-        rarity: 'very_rare'
+        spells: ["raise_dead"],
+        rarity: "very_rare",
       },
       {
-        id: 'ruby_1500gp',
-        name: 'Ruby (1,500 gp)',
-        description: 'A red gemstone worth at least 1,500 gp',
-        cost: { amount: 1500, currency: 'gp' },
+        id: "ruby_1500gp",
+        name: "Ruby (1,500 gp)",
+        description: "A red gemstone worth at least 1,500 gp",
+        cost: { amount: 1500, currency: "gp" },
         consumed: true,
         replaceable: false,
-        spells: ['resurrection'],
-        rarity: 'very_rare'
+        spells: ["resurrection"],
+        rarity: "very_rare",
       },
       {
-        id: 'diamond_25000gp',
-        name: 'Diamond (25,000 gp)',
-        description: 'A flawless diamond worth at least 25,000 gp',
-        cost: { amount: 25000, currency: 'gp' },
+        id: "diamond_25000gp",
+        name: "Diamond (25,000 gp)",
+        description: "A flawless diamond worth at least 25,000 gp",
+        cost: { amount: 25000, currency: "gp" },
         consumed: true,
         replaceable: false,
-        spells: ['true_resurrection'],
-        rarity: 'very_rare'
+        spells: ["true_resurrection"],
+        rarity: "very_rare",
       },
       {
-        id: 'bat_fur',
-        name: 'Bat Fur',
-        description: 'A bit of fur from a bat',
+        id: "bat_fur",
+        name: "Bat Fur",
+        description: "A bit of fur from a bat",
         consumed: false,
         replaceable: true,
-        spells: ['fireball'],
-        rarity: 'common'
+        spells: ["fireball"],
+        rarity: "common",
       },
       {
-        id: 'sulfur',
-        name: 'Sulfur',
-        description: 'A pinch of sulfur',
+        id: "sulfur",
+        name: "Sulfur",
+        description: "A pinch of sulfur",
         consumed: false,
         replaceable: true,
-        spells: ['fireball'],
-        rarity: 'common'
+        spells: ["fireball"],
+        rarity: "common",
       },
       {
-        id: 'pearl_100gp',
-        name: 'Pearl (100 gp)',
-        description: 'A pearl worth at least 100 gp',
-        cost: { amount: 100, currency: 'gp' },
+        id: "pearl_100gp",
+        name: "Pearl (100 gp)",
+        description: "A pearl worth at least 100 gp",
+        cost: { amount: 100, currency: "gp" },
         consumed: true,
         replaceable: false,
-        spells: ['identify'],
-        rarity: 'uncommon'
-      }
+        spells: ["identify"],
+        rarity: "uncommon",
+      },
     ];
 
-    components.forEach(component => {
+    components.forEach((component) => {
       this.components.set(component.id, component);
     });
   }
@@ -307,107 +308,107 @@ export class MaterialComponentSystem {
   private initializeSpellFoci(): void {
     const foci: SpellFocus[] = [
       {
-        id: 'arcane_focus',
-        name: 'Arcane Focus',
-        type: 'arcane',
-        classes: ['wizard', 'sorcerer', 'warlock', 'eldritch_knight', 'arcane_trickster'],
-        cost: { amount: 20, currency: 'gp' },
+        id: "arcane_focus",
+        name: "Arcane Focus",
+        type: "arcane",
+        classes: ["wizard", "sorcerer", "warlock", "eldritch_knight", "arcane_trickster"],
+        cost: { amount: 20, currency: "gp" },
         weight: 1,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'crystal',
-        name: 'Crystal',
-        type: 'arcane',
-        classes: ['wizard', 'sorcerer', 'warlock', 'eldritch_knight', 'arcane_trickster'],
-        cost: { amount: 10, currency: 'gp' },
+        id: "crystal",
+        name: "Crystal",
+        type: "arcane",
+        classes: ["wizard", "sorcerer", "warlock", "eldritch_knight", "arcane_trickster"],
+        cost: { amount: 10, currency: "gp" },
         weight: 1,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'orb',
-        name: 'Orb',
-        type: 'arcane',
-        classes: ['wizard', 'sorcerer', 'warlock', 'eldritch_knight', 'arcane_trickster'],
-        cost: { amount: 20, currency: 'gp' },
+        id: "orb",
+        name: "Orb",
+        type: "arcane",
+        classes: ["wizard", "sorcerer", "warlock", "eldritch_knight", "arcane_trickster"],
+        cost: { amount: 20, currency: "gp" },
         weight: 3,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'rod',
-        name: 'Rod',
-        type: 'arcane',
-        classes: ['wizard', 'sorcerer', 'warlock', 'eldritch_knight', 'arcane_trickster'],
-        cost: { amount: 10, currency: 'gp' },
+        id: "rod",
+        name: "Rod",
+        type: "arcane",
+        classes: ["wizard", "sorcerer", "warlock", "eldritch_knight", "arcane_trickster"],
+        cost: { amount: 10, currency: "gp" },
         weight: 2,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'staff',
-        name: 'Staff',
-        type: 'arcane',
-        classes: ['wizard', 'sorcerer', 'warlock', 'eldritch_knight', 'arcane_trickster'],
-        cost: { amount: 5, currency: 'gp' },
+        id: "staff",
+        name: "Staff",
+        type: "arcane",
+        classes: ["wizard", "sorcerer", "warlock", "eldritch_knight", "arcane_trickster"],
+        cost: { amount: 5, currency: "gp" },
         weight: 4,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'wand',
-        name: 'Wand',
-        type: 'arcane',
-        classes: ['wizard', 'sorcerer', 'warlock', 'eldritch_knight', 'arcane_trickster'],
-        cost: { amount: 10, currency: 'gp' },
+        id: "wand",
+        name: "Wand",
+        type: "arcane",
+        classes: ["wizard", "sorcerer", "warlock", "eldritch_knight", "arcane_trickster"],
+        cost: { amount: 10, currency: "gp" },
         weight: 1,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'holy_symbol',
-        name: 'Holy Symbol',
-        type: 'divine',
-        classes: ['cleric', 'paladin'],
-        cost: { amount: 5, currency: 'gp' },
+        id: "holy_symbol",
+        name: "Holy Symbol",
+        type: "divine",
+        classes: ["cleric", "paladin"],
+        cost: { amount: 5, currency: "gp" },
         weight: 1,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'amulet',
-        name: 'Amulet',
-        type: 'divine',
-        classes: ['cleric', 'paladin'],
-        cost: { amount: 5, currency: 'gp' },
+        id: "amulet",
+        name: "Amulet",
+        type: "divine",
+        classes: ["cleric", "paladin"],
+        cost: { amount: 5, currency: "gp" },
         weight: 1,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'emblem',
-        name: 'Emblem',
-        type: 'divine',
-        classes: ['cleric', 'paladin'],
-        cost: { amount: 5, currency: 'gp' },
+        id: "emblem",
+        name: "Emblem",
+        type: "divine",
+        classes: ["cleric", "paladin"],
+        cost: { amount: 5, currency: "gp" },
         weight: 0,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'reliquary',
-        name: 'Reliquary',
-        type: 'divine',
-        classes: ['cleric', 'paladin'],
-        cost: { amount: 5, currency: 'gp' },
+        id: "reliquary",
+        name: "Reliquary",
+        type: "divine",
+        classes: ["cleric", "paladin"],
+        cost: { amount: 5, currency: "gp" },
         weight: 2,
-        replaces: ['material']
+        replaces: ["material"],
       },
       {
-        id: 'druidcraft_focus',
-        name: 'Druidcraft Focus',
-        type: 'druidic',
-        classes: ['druid', 'ranger'],
-        cost: { amount: 0, currency: 'gp' },
+        id: "druidcraft_focus",
+        name: "Druidcraft Focus",
+        type: "druidic",
+        classes: ["druid", "ranger"],
+        cost: { amount: 0, currency: "gp" },
         weight: 0,
-        replaces: ['material']
-      }
+        replaces: ["material"],
+      },
     ];
 
-    foci.forEach(focus => {
+    foci.forEach((focus) => {
       this.spellFoci.set(focus.id, focus);
     });
   }
@@ -415,15 +416,15 @@ export class MaterialComponentSystem {
   private initializeComponentPouches(): void {
     const pouches: ComponentPouch[] = [
       {
-        id: 'component_pouch',
-        name: 'Component Pouch',
-        cost: { amount: 25, currency: 'gp' },
+        id: "component_pouch",
+        name: "Component Pouch",
+        cost: { amount: 25, currency: "gp" },
         weight: 2,
-        canReplace: ['material_common'] // Can replace common material components under 1gp
-      }
+        canReplace: ["material_common"], // Can replace common material components under 1gp
+      },
     ];
 
-    pouches.forEach(pouch => {
+    pouches.forEach((pouch) => {
       this.componentPouches.set(pouch.id, pouch);
     });
   }

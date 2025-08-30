@@ -3,11 +3,11 @@
  * Handles real-time synchronization of all entity states across clients
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface EntityState {
   id: string;
-  type: 'character' | 'monster' | 'npc' | 'token';
+  type: "character" | "monster" | "npc" | "token";
   position: { x: number; y: number; z?: number };
   health: {
     current: number;
@@ -30,7 +30,7 @@ export interface EntityState {
     isActive: boolean;
     hasActed: boolean;
     actionPoints: number;
-    reactions: Array<{ id: string; used: boolean; }>;
+    reactions: Array<{ id: string; used: boolean }>;
   };
   equipment: Array<{
     id: string;
@@ -38,7 +38,7 @@ export interface EntityState {
     attuned?: boolean;
   }>;
   spells: {
-    slots: Record<number, { current: number; max: number; }>;
+    slots: Record<number, { current: number; max: number }>;
     prepared: string[];
     concentrating?: {
       spellId: string;
@@ -46,10 +46,13 @@ export interface EntityState {
     };
   };
   social: {
-    relationships: Record<string, {
-      attitude: string;
-      value: number;
-    }>;
+    relationships: Record<
+      string,
+      {
+        attitude: string;
+        value: number;
+      }
+    >;
   };
   ai?: {
     personality: Record<string, number>;
@@ -61,7 +64,7 @@ export interface EntityState {
 }
 
 export interface SyncMessage {
-  type: 'full_sync' | 'delta_sync' | 'state_request' | 'state_response' | 'conflict_resolution';
+  type: "full_sync" | "delta_sync" | "state_request" | "state_response" | "conflict_resolution";
   entityId: string;
   timestamp: number;
   clientId: string;
@@ -76,13 +79,16 @@ export interface SyncConflict {
   clientBValue: any;
   timestampA: number;
   timestampB: number;
-  resolution: 'timestamp' | 'server_authoritative' | 'manual';
+  resolution: "timestamp" | "server_authoritative" | "manual";
 }
 
 export class NetworkSyncEngine extends EventEmitter {
   private entityStates = new Map<string, EntityState>();
   private clientStates = new Map<string, Set<string>>(); // clientId -> entityIds they're tracking
-  private syncHistory = new Map<string, Array<{ timestamp: number; state: Partial<EntityState> }>>();
+  private syncHistory = new Map<
+    string,
+    Array<{ timestamp: number; state: Partial<EntityState> }>
+  >();
   private conflictResolver = new ConflictResolver();
   private broadcastCallback?: (message: SyncMessage) => void;
 
@@ -103,17 +109,17 @@ export class NetworkSyncEngine extends EventEmitter {
    */
   registerClient(clientId: string, trackedEntityIds: string[] = []): void {
     this.clientStates.set(clientId, new Set(trackedEntityIds));
-    
+
     // Send initial state for tracked entities
     for (const entityId of trackedEntityIds) {
       const state = this.entityStates.get(entityId);
       if (state) {
         this.sendToClient(clientId, {
-          type: 'full_sync',
+          type: "full_sync",
           entityId,
           timestamp: Date.now(),
-          clientId: 'server',
-          data: state
+          clientId: "server",
+          data: state,
         });
       }
     }
@@ -130,9 +136,9 @@ export class NetworkSyncEngine extends EventEmitter {
    * Update entity state and sync to relevant clients
    */
   updateEntityState(
-    entityId: string, 
-    updates: Partial<EntityState>, 
-    sourceClientId: string = 'server'
+    entityId: string,
+    updates: Partial<EntityState>,
+    sourceClientId: string = "server",
   ): void {
     const currentState = this.entityStates.get(entityId);
     const timestamp = Date.now();
@@ -141,7 +147,7 @@ export class NetworkSyncEngine extends EventEmitter {
       // New entity
       const newState: EntityState = {
         id: entityId,
-        type: 'character',
+        type: "character",
         position: { x: 0, y: 0 },
         health: { current: 100, max: 100, temporary: 0 },
         stats: { abilities: Record<string, any>, armorClass: 10, speed: 30, proficiencyBonus: 2 },
@@ -149,12 +155,12 @@ export class NetworkSyncEngine extends EventEmitter {
         combat: { initiative: 0, isActive: false, hasActed: false, actionPoints: 1, reactions: [] },
         equipment: [],
         spells: { slots: Record<string, any>, prepared: [] },
-        social: { relationships: Record<string, unknown>},
+        social: { relationships: Record<string, unknown> },
         lastUpdate: timestamp,
         version: 1,
-        ...updates
+        ...updates,
       };
-      
+
       this.entityStates.set(entityId, newState);
       this.broadcastFullSync(entityId, newState, sourceClientId);
     } else {
@@ -175,12 +181,12 @@ export class NetworkSyncEngine extends EventEmitter {
         ...currentState,
         ...updates,
         lastUpdate: timestamp,
-        version: currentState.version + 1
+        version: currentState.version + 1,
       };
 
       this.entityStates.set(entityId, updatedState);
       this.addToSyncHistory(entityId, updates, timestamp);
-      
+
       // Broadcast delta sync to other clients
       this.broadcastDeltaSync(entityId, updates, sourceClientId);
     }
@@ -198,16 +204,16 @@ export class NetworkSyncEngine extends EventEmitter {
    */
   handleSyncMessage(message: SyncMessage): void {
     switch (message.type) {
-      case 'full_sync':
+      case "full_sync":
         this.handleFullSync(message);
         break;
-      case 'delta_sync':
+      case "delta_sync":
         this.handleDeltaSync(message);
         break;
-      case 'state_request':
+      case "state_request":
         this.handleStateRequest(message);
         break;
-      case 'conflict_resolution':
+      case "conflict_resolution":
         this.handleConflictResolution(message);
         break;
     }
@@ -227,11 +233,11 @@ export class NetworkSyncEngine extends EventEmitter {
     const state = this.entityStates.get(message.entityId);
     if (state) {
       this.sendToClient(message.clientId, {
-        type: 'state_response',
+        type: "state_response",
         entityId: message.entityId,
         timestamp: Date.now(),
-        clientId: 'server',
-        data: state
+        clientId: "server",
+        data: state,
       });
     }
   }
@@ -246,10 +252,10 @@ export class NetworkSyncEngine extends EventEmitter {
   }
 
   private detectConflict(
-    entityId: string, 
-    updates: Partial<EntityState>, 
-    clientId: string, 
-    timestamp: number
+    entityId: string,
+    updates: Partial<EntityState>,
+    clientId: string,
+    timestamp: number,
   ): SyncConflict | null {
     const currentState = this.entityStates.get(entityId);
     if (!currentState) return null;
@@ -260,19 +266,20 @@ export class NetworkSyncEngine extends EventEmitter {
       // Client update is older than current state
       return {
         entityId,
-        field: 'timestamp',
+        field: "timestamp",
         clientAValue: updates,
         clientBValue: currentState,
         timestampA: timestamp,
         timestampB: currentState.lastUpdate,
-        resolution: 'timestamp'
+        resolution: "timestamp",
       };
     }
 
     // Check for concurrent modifications of critical fields
-    const criticalFields = ['health', 'position', 'combat'];
+    const criticalFields = ["health", "position", "combat"];
     for (const field of criticalFields) {
-      if (updates[field as keyof EntityState] && timeDiff < 1000) { // 1 second window
+      if (updates[field as keyof EntityState] && timeDiff < 1000) {
+        // 1 second window
         return {
           entityId,
           field,
@@ -280,7 +287,7 @@ export class NetworkSyncEngine extends EventEmitter {
           clientBValue: currentState[field as keyof EntityState],
           timestampA: timestamp,
           timestampB: currentState.lastUpdate,
-          resolution: 'server_authoritative'
+          resolution: "server_authoritative",
         };
       }
     }
@@ -290,37 +297,37 @@ export class NetworkSyncEngine extends EventEmitter {
 
   private broadcastFullSync(entityId: string, state: EntityState, excludeClient?: string): void {
     const message: SyncMessage = {
-      type: 'full_sync',
+      type: "full_sync",
       entityId,
       timestamp: Date.now(),
-      clientId: 'server',
+      clientId: "server",
       data: state,
-      version: state.version
+      version: state.version,
     };
 
     this.broadcastToRelevantClients(entityId, message, excludeClient);
   }
 
   private broadcastDeltaSync(
-    entityId: string, 
-    updates: Partial<EntityState>, 
-    excludeClient?: string
+    entityId: string,
+    updates: Partial<EntityState>,
+    excludeClient?: string,
   ): void {
     const message: SyncMessage = {
-      type: 'delta_sync',
+      type: "delta_sync",
       entityId,
       timestamp: Date.now(),
-      clientId: 'server',
-      data: updates
+      clientId: "server",
+      data: updates,
     };
 
     this.broadcastToRelevantClients(entityId, message, excludeClient);
   }
 
   private broadcastToRelevantClients(
-    entityId: string, 
-    message: SyncMessage, 
-    excludeClient?: string
+    entityId: string,
+    message: SyncMessage,
+    excludeClient?: string,
   ): void {
     for (const [clientId, trackedEntities] of this.clientStates) {
       if (clientId !== excludeClient && trackedEntities.has(entityId)) {
@@ -335,32 +342,28 @@ export class NetworkSyncEngine extends EventEmitter {
     }
   }
 
-  private sendConflictResolution(
-    clientId: string, 
-    entityId: string, 
-    resolution: any
-  ): void {
+  private sendConflictResolution(clientId: string, entityId: string, resolution: any): void {
     this.sendToClient(clientId, {
-      type: 'conflict_resolution',
+      type: "conflict_resolution",
       entityId,
       timestamp: Date.now(),
-      clientId: 'server',
-      data: resolution
+      clientId: "server",
+      data: resolution,
     });
   }
 
   private addToSyncHistory(
-    entityId: string, 
-    updates: Partial<EntityState>, 
-    timestamp: number
+    entityId: string,
+    updates: Partial<EntityState>,
+    timestamp: number,
   ): void {
     if (!this.syncHistory.has(entityId)) {
       this.syncHistory.set(entityId, []);
     }
-    
+
     const history = this.syncHistory.get(entityId)!;
     history.push({ timestamp, state: updates });
-    
+
     // Keep only last 100 updates
     if (history.length > 100) {
       history.splice(0, history.length - 100);
@@ -369,18 +372,21 @@ export class NetworkSyncEngine extends EventEmitter {
 
   private setupCleanupInterval(): void {
     // Clean up old sync history every 5 minutes
-    setInterval(() => {
-      const cutoff = Date.now() - (5 * 60 * 1000); // 5 minutes ago
-      
-      for (const [entityId, history] of this.syncHistory) {
-        const filteredHistory = history.filter(entry => entry.timestamp > cutoff);
-        if (filteredHistory.length === 0) {
-          this.syncHistory.delete(entityId);
-        } else {
-          this.syncHistory.set(entityId, filteredHistory);
+    setInterval(
+      () => {
+        const cutoff = Date.now() - 5 * 60 * 1000; // 5 minutes ago
+
+        for (const [entityId, history] of this.syncHistory) {
+          const filteredHistory = history.filter((entry) => entry.timestamp > cutoff);
+          if (filteredHistory.length === 0) {
+            this.syncHistory.delete(entityId);
+          } else {
+            this.syncHistory.set(entityId, filteredHistory);
+          }
         }
-      }
-    }, 5 * 60 * 1000);
+      },
+      5 * 60 * 1000,
+    );
   }
 
   /**
@@ -396,18 +402,18 @@ export class NetworkSyncEngine extends EventEmitter {
       totalEntities: this.entityStates.size,
       activeClients: this.clientStates.size,
       avgUpdatesPerMinute: this.calculateUpdateRate(),
-      conflictsResolved: this.conflictResolver.getResolvedCount()
+      conflictsResolved: this.conflictResolver.getResolvedCount(),
     };
   }
 
   private calculateUpdateRate(): number {
     let totalUpdates = 0;
     const oneMinuteAgo = Date.now() - 60000;
-    
+
     for (const history of this.syncHistory.values()) {
-      totalUpdates += history.filter(entry => entry.timestamp > oneMinuteAgo).length;
+      totalUpdates += history.filter((entry) => entry.timestamp > oneMinuteAgo).length;
     }
-    
+
     return totalUpdates;
   }
 }
@@ -419,7 +425,7 @@ class ConflictResolver {
     this.resolvedCount++;
 
     switch (conflict.resolution) {
-      case 'timestamp':
+      case "timestamp":
         // Newer timestamp wins
         if (conflict.timestampA > conflict.timestampB) {
           return { rejected: false, resolvedState: conflict.clientAValue };
@@ -427,11 +433,11 @@ class ConflictResolver {
           return { rejected: true };
         }
 
-      case 'server_authoritative':
+      case "server_authoritative":
         // Server state wins
         return { rejected: true };
 
-      case 'manual':
+      case "manual":
         // Requires manual intervention - for now, server wins
         return { rejected: true };
 
@@ -461,8 +467,8 @@ export class CombatSyncManager {
           isActive: false,
           hasActed: false,
           actionPoints: 1,
-          reactions: []
-        }
+          reactions: [],
+        },
       });
     }
   }
@@ -470,7 +476,7 @@ export class CombatSyncManager {
   syncTurnChange(activeEntityId: string): void {
     // Deactivate all entities first
     const _allStates = new Map();
-    
+
     // Then activate the current entity
     this.syncEngine.updateEntityState(activeEntityId, {
       combat: {
@@ -478,8 +484,8 @@ export class CombatSyncManager {
         isActive: true,
         hasActed: false,
         actionPoints: 1,
-        reactions: []
-      }
+        reactions: [],
+      },
     });
   }
 
@@ -490,8 +496,8 @@ export class CombatSyncManager {
         combat: {
           ...currentState.combat,
           hasActed: true,
-          actionPoints: Math.max(0, currentState.combat.actionPoints - 1)
-        }
+          actionPoints: Math.max(0, currentState.combat.actionPoints - 1),
+        },
       });
     }
   }
@@ -508,25 +514,25 @@ export class HealthSyncManager {
     const currentState = this.syncEngine.getEntityState(entityId);
     if (currentState) {
       let newHP = currentState.health.current - damage;
-      
+
       // Apply temporary HP first
       if (currentState.health.temporary > 0) {
         const tempReduction = Math.min(currentState.health.temporary, damage);
         newHP = currentState.health.current - (damage - tempReduction);
-        
+
         this.syncEngine.updateEntityState(entityId, {
           health: {
             current: Math.max(0, newHP),
             max: currentState.health.max,
-            temporary: currentState.health.temporary - tempReduction
-          }
+            temporary: currentState.health.temporary - tempReduction,
+          },
         });
       } else {
         this.syncEngine.updateEntityState(entityId, {
           health: {
             ...currentState.health,
-            current: Math.max(0, newHP)
-          }
+            current: Math.max(0, newHP),
+          },
         });
       }
     }
@@ -538,8 +544,8 @@ export class HealthSyncManager {
       this.syncEngine.updateEntityState(entityId, {
         health: {
           ...currentState.health,
-          current: Math.min(currentState.health.max, currentState.health.current + healing)
-        }
+          current: Math.min(currentState.health.max, currentState.health.current + healing),
+        },
       });
     }
   }
@@ -550,8 +556,8 @@ export class HealthSyncManager {
       this.syncEngine.updateEntityState(entityId, {
         health: {
           ...currentState.health,
-          temporary: Math.max(currentState.health.temporary, tempHP) // Temp HP doesn't stack
-        }
+          temporary: Math.max(currentState.health.temporary, tempHP), // Temp HP doesn't stack
+        },
       });
     }
   }

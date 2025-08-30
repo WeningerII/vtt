@@ -1,9 +1,9 @@
 /**
  * Authentication middleware for API routes
  */
-import { Request, Response, NextFunction } from 'express';
-import { logger } from '@vtt/logging';
-import { UserManager } from '../../UserManager';
+import { Request, Response, NextFunction } from "express";
+import { logger } from "@vtt/logging";
+import { UserManager } from "../../UserManager";
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -17,26 +17,28 @@ export function authenticateUser(userManager: UserManager) {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       // Get token from cookie or Authorization header
-      const token = req.cookies.sessionToken || 
-        (req.headers.authorization?.startsWith('Bearer ') ? 
-          req.headers.authorization.substring(7) : null);
+      const token =
+        req.cookies.sessionToken ||
+        (req.headers.authorization?.startsWith("Bearer ")
+          ? req.headers.authorization.substring(7)
+          : null);
 
       if (!token) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: "Authentication required" });
         return;
       }
 
       // Validate session
       const result = await userManager.validateSession(token);
-      
+
       if (!result.success || !result.user || !result.session) {
-        res.status(401).json({ error: 'Invalid or expired session' });
+        res.status(401).json({ error: "Invalid or expired session" });
         return;
       }
 
       // Check if user is active
-      if (result.user.status !== 'active') {
-        res.status(403).json({ error: 'Account is suspended or inactive' });
+      if (result.user.status !== "active") {
+        res.status(403).json({ error: "Account is suspended or inactive" });
         return;
       }
 
@@ -49,8 +51,8 @@ export function authenticateUser(userManager: UserManager) {
 
       next();
     } catch (error) {
-      logger.error('Authentication middleware error:', error);
-      res.status(500).json({ error: 'Internal server error' });
+      logger.error("Authentication middleware error:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   };
 }
@@ -63,12 +65,12 @@ export function requireRole(...roles: string[]) {
     const user = req.user;
 
     if (!user) {
-      res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: "Authentication required" });
       return;
     }
 
     if (!roles.includes(user.role)) {
-      res.status(403).json({ error: 'Insufficient permissions' });
+      res.status(403).json({ error: "Insufficient permissions" });
       return;
     }
 
@@ -84,14 +86,14 @@ export function requireEmailVerification() {
     const user = req.user;
 
     if (!user) {
-      res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: "Authentication required" });
       return;
     }
 
     if (!user.emailVerified) {
-      res.status(403).json({ 
-        error: 'Email verification required',
-        code: 'EMAIL_VERIFICATION_REQUIRED'
+      res.status(403).json({
+        error: "Email verification required",
+        code: "EMAIL_VERIFICATION_REQUIRED",
       });
       return;
     }
@@ -108,15 +110,15 @@ export function requireSubscription(_minTier?: string) {
     const user = req.user;
 
     if (!user) {
-      res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: "Authentication required" });
       return;
     }
 
     // Check if user has active subscription
-    if (!user.subscription || user.subscription.status !== 'active') {
-      res.status(403).json({ 
-        error: 'Active subscription required',
-        code: 'SUBSCRIPTION_REQUIRED'
+    if (!user.subscription || user.subscription.status !== "active") {
+      res.status(403).json({
+        error: "Active subscription required",
+        code: "SUBSCRIPTION_REQUIRED",
       });
       return;
     }
@@ -124,19 +126,19 @@ export function requireSubscription(_minTier?: string) {
     // Check minimum tier if specified
     if (minTier) {
       const tierLevels = {
-        'free': 0,
-        'basic': 1,
-        'premium': 2,
-        'enterprise': 3
+        free: 0,
+        basic: 1,
+        premium: 2,
+        enterprise: 3,
       };
 
       const userTierLevel = tierLevels[user.subscription.tier as keyof typeof tierLevels] || 0;
       const requiredTierLevel = tierLevels[minTier as keyof typeof tierLevels] || 0;
 
       if (userTierLevel < requiredTierLevel) {
-        res.status(403).json({ 
+        res.status(403).json({
           error: `${minTier} subscription or higher required`,
-          code: 'INSUFFICIENT_SUBSCRIPTION_TIER'
+          code: "INSUFFICIENT_SUBSCRIPTION_TIER",
         });
         return;
       }
@@ -152,13 +154,15 @@ export function requireSubscription(_minTier?: string) {
 export function optionalAuth(userManager: UserManager) {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const token = req.cookies.sessionToken || 
-        (req.headers.authorization?.startsWith('Bearer ') ? 
-          req.headers.authorization.substring(7) : null);
+      const token =
+        req.cookies.sessionToken ||
+        (req.headers.authorization?.startsWith("Bearer ")
+          ? req.headers.authorization.substring(7)
+          : null);
 
       if (token) {
         const result = await userManager.validateSession(token);
-        
+
         if (result.success && result.user && result.session) {
           req.user = result.user;
           req.session = result.session;

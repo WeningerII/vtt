@@ -3,7 +3,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 import { CharacterService } from "../character/CharacterService";
 import { MonsterService } from "./MonsterService";
 import { Character } from "../character/types";
@@ -11,8 +11,8 @@ import { Character } from "../character/types";
 export interface CombatActor {
   id: string;
   name: string;
-  type: 'character' | 'monster';
-  
+  type: "character" | "monster";
+
   // Combat stats
   hitPoints: {
     current: number;
@@ -22,7 +22,7 @@ export interface CombatActor {
   armorClass: number;
   initiative: number;
   speed: number;
-  
+
   // Abilities for modifiers
   abilities: {
     STR: { value: number; modifier: number };
@@ -32,19 +32,19 @@ export interface CombatActor {
     WIS: { value: number; modifier: number };
     CHA: { value: number; modifier: number };
   };
-  
+
   // Combat state
   conditions: Array<{
     type: string;
     duration: number;
     source?: string;
   }>;
-  
+
   // Actions available
   actions: Array<{
     id: string;
     name: string;
-    type: 'action' | 'bonus_action' | 'reaction';
+    type: "action" | "bonus_action" | "reaction";
     description: string;
     attackBonus?: number;
     damage?: {
@@ -54,7 +54,7 @@ export interface CombatActor {
     saveDC?: number;
     saveAbility?: string;
   }>;
-  
+
   // Source references
   sourceId: string; // character or monster ID
   isPlayer: boolean;
@@ -74,7 +74,7 @@ export class ActorIntegrationService {
   constructor(
     private prisma: PrismaClient,
     private characterService: CharacterService,
-    private monsterService: MonsterService
+    private monsterService: MonsterService,
   ) {}
 
   /**
@@ -89,11 +89,11 @@ export class ActorIntegrationService {
     return {
       id: `char_${character.id}`,
       name: character.name,
-      type: 'character',
+      type: "character",
       hitPoints: {
         current: character.hitPoints.current,
         max: character.hitPoints.max,
-        temporary: character.hitPoints.temporary || 0
+        temporary: character.hitPoints.temporary || 0,
       },
       armorClass: character.armorClass,
       initiative: character.initiative || 0,
@@ -102,7 +102,7 @@ export class ActorIntegrationService {
       conditions: [],
       actions: this.generateCharacterActions(character),
       sourceId: character.id,
-      isPlayer: true
+      isPlayer: true,
     };
   }
 
@@ -117,32 +117,56 @@ export class ActorIntegrationService {
 
     const statblock = monster.statblock as any;
     const name = instanceName || monster.name;
-    const maxHP = typeof statblock.hitPoints === 'number' ? statblock.hitPoints : this.parseHitPoints(statblock.hitPoints);
+    const maxHP =
+      typeof statblock.hitPoints === "number"
+        ? statblock.hitPoints
+        : this.parseHitPoints(statblock.hitPoints);
 
     return {
       id: `monster_${monster.id}_${Date.now()}`,
       name,
-      type: 'monster',
+      type: "monster",
       hitPoints: {
         current: maxHP,
         max: maxHP,
-        temporary: 0
+        temporary: 0,
       },
-      armorClass: typeof statblock.armorClass === 'number' ? statblock.armorClass : statblock.armorClass?.value || 10,
+      armorClass:
+        typeof statblock.armorClass === "number"
+          ? statblock.armorClass
+          : statblock.armorClass?.value || 10,
       initiative: 0,
       speed: statblock.speed?.walk || 30,
       abilities: {
-        STR: { value: statblock.abilities?.STR || 10, modifier: Math.floor(((statblock.abilities?.STR || 10) - 10) / 2) },
-        DEX: { value: statblock.abilities?.DEX || 10, modifier: Math.floor(((statblock.abilities?.DEX || 10) - 10) / 2) },
-        CON: { value: statblock.abilities?.CON || 10, modifier: Math.floor(((statblock.abilities?.CON || 10) - 10) / 2) },
-        INT: { value: statblock.abilities?.INT || 10, modifier: Math.floor(((statblock.abilities?.INT || 10) - 10) / 2) },
-        WIS: { value: statblock.abilities?.WIS || 10, modifier: Math.floor(((statblock.abilities?.WIS || 10) - 10) / 2) },
-        CHA: { value: statblock.abilities?.CHA || 10, modifier: Math.floor(((statblock.abilities?.CHA || 10) - 10) / 2) }
+        STR: {
+          value: statblock.abilities?.STR || 10,
+          modifier: Math.floor(((statblock.abilities?.STR || 10) - 10) / 2),
+        },
+        DEX: {
+          value: statblock.abilities?.DEX || 10,
+          modifier: Math.floor(((statblock.abilities?.DEX || 10) - 10) / 2),
+        },
+        CON: {
+          value: statblock.abilities?.CON || 10,
+          modifier: Math.floor(((statblock.abilities?.CON || 10) - 10) / 2),
+        },
+        INT: {
+          value: statblock.abilities?.INT || 10,
+          modifier: Math.floor(((statblock.abilities?.INT || 10) - 10) / 2),
+        },
+        WIS: {
+          value: statblock.abilities?.WIS || 10,
+          modifier: Math.floor(((statblock.abilities?.WIS || 10) - 10) / 2),
+        },
+        CHA: {
+          value: statblock.abilities?.CHA || 10,
+          modifier: Math.floor(((statblock.abilities?.CHA || 10) - 10) / 2),
+        },
       },
       conditions: [],
       actions: this.generateMonsterActions(statblock),
       sourceId: monster.id,
-      isPlayer: false
+      isPlayer: false,
     };
   }
 
@@ -153,17 +177,22 @@ export class ActorIntegrationService {
     const actor = await this.prisma.actor.create({
       data: {
         name: combatActor.name,
-        kind: combatActor.type === 'character' ? 'PC' : combatActor.type === 'monster' ? 'MONSTER' : 'NPC',
-        userId: 'system', // Would need proper user context
+        kind:
+          combatActor.type === "character"
+            ? "PC"
+            : combatActor.type === "monster"
+              ? "MONSTER"
+              : "NPC",
+        userId: "system", // Would need proper user context
         campaignId,
-        characterId: combatActor.type === 'character' ? combatActor.sourceId : null,
-        monsterId: combatActor.type === 'monster' ? combatActor.sourceId : null,
+        characterId: combatActor.type === "character" ? combatActor.sourceId : null,
+        monsterId: combatActor.type === "monster" ? combatActor.sourceId : null,
         currentHp: combatActor.hitPoints.current,
         maxHp: combatActor.hitPoints.max,
         tempHp: combatActor.hitPoints.temporary,
         ac: combatActor.armorClass,
-        initiative: combatActor.initiative
-      }
+        initiative: combatActor.initiative,
+      },
     });
 
     return actor.id;
@@ -172,29 +201,32 @@ export class ActorIntegrationService {
   /**
    * Update actor health in database
    */
-  async updateActorHealth(actorId: string, hitPoints: { current: number; max: number; temporary: number }): Promise<void> {
+  async updateActorHealth(
+    actorId: string,
+    hitPoints: { current: number; max: number; temporary: number },
+  ): Promise<void> {
     await this.prisma.actor.update({
       where: { id: actorId },
       data: {
         currentHp: hitPoints.current,
         maxHp: hitPoints.max,
-        tempHp: hitPoints.temporary
-      }
+        tempHp: hitPoints.temporary,
+      },
     });
 
     // Sync back to character service if it's a character
     const actor = await this.prisma.actor.findUnique({
       where: { id: actorId },
-      include: { character: true }
+      include: { character: true },
     });
 
     if (actor?.character && actor.characterId) {
-      await this.characterService.updateCharacter(actor.characterId, 'system', {
+      await this.characterService.updateCharacter(actor.characterId, "system", {
         hitPoints: {
           current: hitPoints.current,
           max: hitPoints.max,
-          temporary: hitPoints.temporary
-        }
+          temporary: hitPoints.temporary,
+        },
       });
     }
   }
@@ -203,10 +235,10 @@ export class ActorIntegrationService {
    * Create encounter with actors
    */
   async createEncounter(
-    name: string, 
-    campaignId: string, 
-    characterIds: string[] = [], 
-    monsterConfigs: Array<{ monsterId: string; instanceName?: string }> = []
+    name: string,
+    campaignId: string,
+    characterIds: string[] = [],
+    monsterConfigs: Array<{ monsterId: string; instanceName?: string }> = [],
   ): Promise<EncounterSetup> {
     // Create encounter in database
     const encounter = await this.prisma.encounter.create({
@@ -215,8 +247,8 @@ export class ActorIntegrationService {
         campaignId,
         currentRound: 1,
         currentTurn: 0,
-        isActive: false
-      }
+        isActive: false,
+      },
     });
 
     const actors: CombatActor[] = [];
@@ -227,15 +259,15 @@ export class ActorIntegrationService {
       try {
         const actor = await this.createCharacterActor(characterId);
         const dbActorId = await this.createDatabaseActor(actor, campaignId);
-        
+
         participants.push({
           encounterId: encounter.id,
           actorId: dbActorId,
           initiative: 10 + actor.abilities.DEX.modifier, // Default initiative
           isActive: true,
-          hasActed: false
+          hasActed: false,
         });
-        
+
         actors.push(actor);
       } catch (error) {
         logger.error(`Failed to add character ${characterId} to encounter:`, error);
@@ -247,15 +279,15 @@ export class ActorIntegrationService {
       try {
         const actor = await this.createMonsterActor(config.monsterId, config.instanceName);
         const dbActorId = await this.createDatabaseActor(actor, campaignId);
-        
+
         participants.push({
           encounterId: encounter.id,
           actorId: dbActorId,
           initiative: 10 + actor.abilities.DEX.modifier, // Default initiative
           isActive: true,
-          hasActed: false
+          hasActed: false,
         });
-        
+
         actors.push(actor);
       } catch (error) {
         logger.error(`Failed to add monster ${config.monsterId} to encounter:`, error);
@@ -265,7 +297,7 @@ export class ActorIntegrationService {
     // Create participants in database
     if (participants.length > 0) {
       await this.prisma.encounterParticipant.createMany({
-        data: participants
+        data: participants,
       });
     }
 
@@ -276,7 +308,7 @@ export class ActorIntegrationService {
       actors,
       currentRound: encounter.currentRound,
       currentTurn: encounter.currentTurn,
-      isActive: encounter.isActive
+      isActive: encounter.isActive,
     };
   }
 
@@ -292,13 +324,13 @@ export class ActorIntegrationService {
             actor: {
               include: {
                 character: true,
-                monster: true
-              }
-            }
+                monster: true,
+              },
+            },
           },
-          orderBy: { initiative: 'desc' }
-        }
-      }
+          orderBy: { initiative: "desc" },
+        },
+      },
     });
 
     if (!encounter) return null;
@@ -320,11 +352,11 @@ export class ActorIntegrationService {
         combatActor = {
           id: `actor_${actor.id}`,
           name: actor.name,
-          type: 'monster', // Default for NPCs
+          type: "monster", // Default for NPCs
           hitPoints: {
             current: actor.currentHp,
             max: actor.maxHp,
-            temporary: actor.tempHp
+            temporary: actor.tempHp,
           },
           armorClass: actor.ac,
           initiative: actor.initiative,
@@ -335,12 +367,12 @@ export class ActorIntegrationService {
             CON: { value: 10, modifier: 0 },
             INT: { value: 10, modifier: 0 },
             WIS: { value: 10, modifier: 0 },
-            CHA: { value: 10, modifier: 0 }
+            CHA: { value: 10, modifier: 0 },
           },
           conditions: [],
           actions: [],
           sourceId: actor.id,
-          isPlayer: actor.kind === 'PC'
+          isPlayer: actor.kind === "PC",
         };
       }
 
@@ -360,7 +392,7 @@ export class ActorIntegrationService {
       actors,
       currentRound: encounter.currentRound,
       currentTurn: encounter.currentTurn,
-      isActive: encounter.isActive
+      isActive: encounter.isActive,
     };
   }
 
@@ -373,8 +405,8 @@ export class ActorIntegrationService {
       data: {
         isActive: true,
         currentRound: 1,
-        currentTurn: 0
-      }
+        currentTurn: 0,
+      },
     });
   }
 
@@ -385,51 +417,54 @@ export class ActorIntegrationService {
     await this.prisma.encounter.update({
       where: { id: encounterId },
       data: {
-        isActive: false
-      }
+        isActive: false,
+      },
     });
   }
 
   /**
    * Generate character actions from character data
    */
-  private generateCharacterActions(character: Character): CombatActor['actions'] {
-    const actions: CombatActor['actions'] = [
+  private generateCharacterActions(character: Character): CombatActor["actions"] {
+    const actions: CombatActor["actions"] = [
       {
-        id: 'attack',
-        name: 'Attack',
-        type: 'action',
-        description: 'Make a weapon or spell attack'
+        id: "attack",
+        name: "Attack",
+        type: "action",
+        description: "Make a weapon or spell attack",
       },
       {
-        id: 'dodge',
-        name: 'Dodge',
-        type: 'action',
-        description: 'Focus entirely on avoiding attacks'
+        id: "dodge",
+        name: "Dodge",
+        type: "action",
+        description: "Focus entirely on avoiding attacks",
       },
       {
-        id: 'dash',
-        name: 'Dash',
-        type: 'action',
-        description: 'Double your movement speed'
+        id: "dash",
+        name: "Dash",
+        type: "action",
+        description: "Double your movement speed",
       },
       {
-        id: 'help',
-        name: 'Help',
-        type: 'action',
-        description: 'Help an ally with their next task'
-      }
+        id: "help",
+        name: "Help",
+        type: "action",
+        description: "Help an ally with their next task",
+      },
     ];
 
     // Add equipment-based actions
     for (const item of character.equipment || []) {
-      if (item.type === 'weapon' && item.equipped) {
+      if (item.type === "weapon" && item.equipped) {
         actions.push({
           id: `weapon_${item.id}`,
           name: `Attack with ${item.name}`,
-          type: 'action',
+          type: "action",
           description: item.description || `Attack with ${item.name}`,
-          attackBonus: (item.properties as any)?.attackBonus || character.proficiencyBonus + character.abilities.STR?.modifier || 0
+          attackBonus:
+            (item.properties as any)?.attackBonus ||
+            character.proficiencyBonus + character.abilities.STR?.modifier ||
+            0,
         });
       }
     }
@@ -440,8 +475,8 @@ export class ActorIntegrationService {
         actions.push({
           id: `feature_${feature.id}`,
           name: feature.name,
-          type: 'action',
-          description: feature.description
+          type: "action",
+          description: feature.description,
         });
       }
     }
@@ -452,40 +487,44 @@ export class ActorIntegrationService {
   /**
    * Generate monster actions from statblock
    */
-  private generateMonsterActions(statblock: any): CombatActor['actions'] {
-    const actions: CombatActor['actions'] = [];
+  private generateMonsterActions(statblock: any): CombatActor["actions"] {
+    const actions: CombatActor["actions"] = [];
 
     // Add default actions
     actions.push(
       {
-        id: 'attack',
-        name: 'Attack',
-        type: 'action',
-        description: 'Make a basic attack'
+        id: "attack",
+        name: "Attack",
+        type: "action",
+        description: "Make a basic attack",
       },
       {
-        id: 'dodge',
-        name: 'Dodge',
-        type: 'action',
-        description: 'Focus entirely on avoiding attacks'
-      }
+        id: "dodge",
+        name: "Dodge",
+        type: "action",
+        description: "Focus entirely on avoiding attacks",
+      },
     );
 
     // Add specific actions from statblock
     if (statblock.actions) {
       for (const action of statblock.actions) {
         actions.push({
-          id: `action_${action.name.toLowerCase().replace(/\s+/g, '')}`,
+          id: `action_${action.name.toLowerCase().replace(/\s+/g, "")}`,
           name: action.name,
-          type: 'action',
-          description: action.description || action.desc || '',
+          type: "action",
+          description: action.description || action.desc || "",
           attackBonus: action.attackBonus || action.attack_bonus,
-          damage: action.damage || (action.damage_dice ? {
-            diceExpression: action.damage_dice,
-            damageType: action.damage_type || 'bludgeoning'
-          } : undefined),
+          damage:
+            action.damage ||
+            (action.damage_dice
+              ? {
+                  diceExpression: action.damage_dice,
+                  damageType: action.damage_type || "bludgeoning",
+                }
+              : undefined),
           saveDC: action.saveDC || action.save?.dc,
-          saveAbility: action.saveAbility || action.save?.ability_type
+          saveAbility: action.saveAbility || action.save?.ability_type,
         });
       }
     }
@@ -497,8 +536,8 @@ export class ActorIntegrationService {
    * Parse hit points from various formats
    */
   private parseHitPoints(hp: any): number {
-    if (typeof hp === 'number') return hp;
-    if (typeof hp === 'string') {
+    if (typeof hp === "number") return hp;
+    if (typeof hp === "string") {
       const match = hp.match(/(\d+)/);
       return match ? parseInt(match[1]) : 10;
     }

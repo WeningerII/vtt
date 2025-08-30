@@ -5,31 +5,31 @@
  * Configures TypeScript for incremental compilation and optimizes Turbo caching
  */
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+const fs = require("fs");
+const path = require("path");
+const { execSync } = require("child_process");
 
 // Enable TypeScript incremental compilation for all packages
 function enableIncrementalCompilation() {
-  const packagesDir = path.join(__dirname, '..', 'packages');
+  const packagesDir = path.join(__dirname, "..", "packages");
   const packages = fs.readdirSync(packagesDir);
-  
-  packages.forEach(pkg => {
-    const tsconfigPath = path.join(packagesDir, pkg, 'tsconfig.json');
+
+  packages.forEach((pkg) => {
+    const tsconfigPath = path.join(packagesDir, pkg, "tsconfig.json");
     if (fs.existsSync(tsconfigPath)) {
-      const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf8'));
-      
+      const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
+
       // Enable incremental compilation
       if (!tsconfig.compilerOptions) {
         tsconfig.compilerOptions = {};
       }
-      
+
       tsconfig.compilerOptions.incremental = true;
       tsconfig.compilerOptions.tsBuildInfoFile = `./${pkg}.tsbuildinfo`;
-      
+
       // Enable composite for project references
       tsconfig.compilerOptions.composite = true;
-      
+
       fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2));
       console.log(`✅ Enabled incremental compilation for @vtt/${pkg}`);
     }
@@ -39,17 +39,17 @@ function enableIncrementalCompilation() {
 // Clear Turbo cache to ensure fresh builds
 function clearTurboCache() {
   try {
-    execSync('pnpm turbo daemon stop', { stdio: 'inherit' });
-    execSync('rm -rf .turbo node_modules/.cache/turbo', { stdio: 'inherit' });
-    console.log('✅ Cleared Turbo cache');
+    execSync("pnpm turbo daemon stop", { stdio: "inherit" });
+    execSync("rm -rf .turbo node_modules/.cache/turbo", { stdio: "inherit" });
+    console.log("✅ Cleared Turbo cache");
   } catch (error) {
-    console.warn('⚠️  Could not clear Turbo cache:', error.message);
+    console.warn("⚠️  Could not clear Turbo cache:", error.message);
   }
 }
 
 // Optimize pnpm settings for faster installs
 function optimizePnpm() {
-  const npmrcPath = path.join(__dirname, '..', '.npmrc');
+  const npmrcPath = path.join(__dirname, "..", ".npmrc");
   const npmrcContent = `
 # Performance optimizations
 shamefully-hoist=true
@@ -75,12 +75,12 @@ fetch-retry-maxtimeout=60000
 `;
 
   fs.writeFileSync(npmrcPath, npmrcContent.trim());
-  console.log('✅ Optimized pnpm configuration');
+  console.log("✅ Optimized pnpm configuration");
 }
 
 // Create build cache warming script
 function createCacheWarmingScript() {
-  const scriptPath = path.join(__dirname, 'warm-cache.sh');
+  const scriptPath = path.join(__dirname, "warm-cache.sh");
   const scriptContent = `#!/bin/bash
 
 # Warm build cache for frequently changed packages
@@ -96,18 +96,18 @@ echo "✅ Cache warmed successfully"
 `;
 
   fs.writeFileSync(scriptPath, scriptContent);
-  fs.chmodSync(scriptPath, '755');
-  console.log('✅ Created cache warming script');
+  fs.chmodSync(scriptPath, "755");
+  console.log("✅ Created cache warming script");
 }
 
 // Main execution
-console.log('🚀 Starting build optimization...\n');
+console.log("🚀 Starting build optimization...\n");
 
 enableIncrementalCompilation();
 clearTurboCache();
 optimizePnpm();
 createCacheWarmingScript();
 
-console.log('\n✨ Build optimization complete!');
+console.log("\n✨ Build optimization complete!");
 console.log('Run "pnpm install" to apply pnpm optimizations');
 console.log('Run "./scripts/warm-cache.sh" to pre-warm the build cache');

@@ -1,9 +1,9 @@
-import { describe, test, expect, beforeEach } from 'vitest';
-import { CombatStore } from '../components/Combat';
-import { CombatSystem } from '../systems/CombatSystem';
-import { World } from '../World';
+import { describe, test, expect, beforeEach } from "vitest";
+import { CombatStore } from "../components/Combat";
+import { CombatSystem } from "../systems/CombatSystem";
+import { World } from "../World";
 
-describe('CombatSystem Performance Benchmarks', () => {
+describe("CombatSystem Performance Benchmarks", () => {
   let combatStore: CombatStore;
   let combatSystem: CombatSystem;
   let world: World;
@@ -14,7 +14,7 @@ describe('CombatSystem Performance Benchmarks', () => {
     combatSystem = new CombatSystem(world, combatStore);
   });
 
-  test('CombatStore object pooling performance', () => {
+  test("CombatStore object pooling performance", () => {
     const iterations = 1000;
     const startTime = performance.now();
 
@@ -36,7 +36,7 @@ describe('CombatSystem Performance Benchmarks', () => {
     const duration = endTime - startTime;
 
     console.log(`Pool performance: ${iterations * 2} operations in ${duration.toFixed(2)}ms`);
-    
+
     // Should complete within reasonable time (adjust threshold as needed)
     expect(duration).toBeLessThan(100);
 
@@ -46,7 +46,7 @@ describe('CombatSystem Performance Benchmarks', () => {
     expect(stats.totalEntities).toBe(iterations);
   });
 
-  test('Initiative order caching performance', () => {
+  test("Initiative order caching performance", () => {
     const entityCount = 100;
     const iterations = 1000;
 
@@ -66,8 +66,10 @@ describe('CombatSystem Performance Benchmarks', () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
-    console.log(`Initiative caching: ${iterations} calls with ${entityCount} entities in ${duration.toFixed(2)}ms`);
-    
+    console.log(
+      `Initiative caching: ${iterations} calls with ${entityCount} entities in ${duration.toFixed(2)}ms`,
+    );
+
     // Cached calls should be very fast
     expect(duration).toBeLessThan(50);
 
@@ -76,7 +78,7 @@ describe('CombatSystem Performance Benchmarks', () => {
     expect(stats.cacheValid).toBe(true);
   });
 
-  test('Large scale combat simulation', () => {
+  test("Large scale combat simulation", () => {
     const entityCount = 500;
     const participants: number[] = [];
 
@@ -99,10 +101,10 @@ describe('CombatSystem Performance Benchmarks', () => {
           const success = combatSystem.takeAction({
             actorId: currentActor,
             entityId: currentActor,
-            type: 'attack',
-            targetId: (currentActor + 1) % entityCount
+            type: "attack",
+            targetId: (currentActor + 1) % entityCount,
           });
-          
+
           if (success || Math.random() > 0.5) {
             combatSystem.nextTurn();
           }
@@ -115,14 +117,16 @@ describe('CombatSystem Performance Benchmarks', () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
-    console.log(`Large combat simulation: ${entityCount} entities, 10 rounds in ${duration.toFixed(2)}ms`);
-    
+    console.log(
+      `Large combat simulation: ${entityCount} entities, 10 rounds in ${duration.toFixed(2)}ms`,
+    );
+
     // Should handle large combat efficiently
     expect(duration).toBeLessThan(1000); // 1 second max
     expect(combatSystem.isInCombat()).toBe(true);
   });
 
-  test('Memory usage stability test', () => {
+  test("Memory usage stability test", () => {
     const iterations = 100;
     const entitiesPerIteration = 50;
 
@@ -131,30 +135,30 @@ describe('CombatSystem Performance Benchmarks', () => {
       const entities: number[] = [];
       for (let j = 0; j < entitiesPerIteration; j++) {
         const entityId = i * entitiesPerIteration + j;
-        combatStore.add(entityId, { 
+        combatStore.add(entityId, {
           initiative: Math.random() * 20,
-          actionPoints: Math.floor(Math.random() * 3) + 1
+          actionPoints: Math.floor(Math.random() * 3) + 1,
         });
         entities.push(entityId);
       }
 
       // Perform operations
       combatStore.getInitiativeOrder();
-      
+
       // Remove entities
-      entities.forEach(id => combatStore.remove(id));
+      entities.forEach((id) => combatStore.remove(id));
     }
 
     const stats = combatStore.getPerformanceStats();
-    
+
     // Pool should be efficiently reused
     expect(stats.poolUtilization).toBeLessThan(1.0); // Not exhausted
     expect(stats.recycledEntities).toBeGreaterThan(0); // Some recycling occurred
-    
-    console.log('Memory stability stats:', stats);
+
+    console.log("Memory stability stats:", stats);
   });
 
-  test('Concurrent operations performance', async () => {
+  test("Concurrent operations performance", async () => {
     const entityCount = 200;
     const operationsPerBatch = 10;
 
@@ -181,7 +185,7 @@ describe('CombatSystem Performance Benchmarks', () => {
             }
             resolve();
           }, Math.random() * 10);
-        })
+        }),
       );
     }
 
@@ -191,43 +195,43 @@ describe('CombatSystem Performance Benchmarks', () => {
     const duration = endTime - startTime;
 
     console.log(`Concurrent operations: 50 batches in ${duration.toFixed(2)}ms`);
-    
+
     // Should handle concurrent operations reasonably well
     expect(duration).toBeLessThan(500);
   });
 
-  test('Performance regression detection', () => {
+  test("Performance regression detection", () => {
     const baselineMs = 50; // Acceptable baseline for 1000 operations
     const _operations = 10000;
-    
+
     const startTime = performance.now();
-    
+
     for (let i = 0; i < _operations; i++) {
-      combatStore.add(i, { 
+      combatStore.add(i, {
         initiative: Math.random() * 20,
         actionPoints: Math.floor(Math.random() * 3) + 1,
-        concentrating: Math.random() > 0.8
+        concentrating: Math.random() > 0.8,
       });
-      
+
       if (i % 10 === 0) {
         combatStore.getInitiativeOrder();
       }
-      
+
       if (i % 5 === 0) {
         combatStore.setInitiative(i, Math.random() * 20);
       }
     }
-    
+
     const endTime = performance.now();
     const duration = endTime - startTime;
-    
+
     console.log(`Regression test: ${_operations} mixed operations in ${duration.toFixed(2)}ms`);
-    
+
     // Alert if performance degrades significantly
     if (duration > baselineMs * 2) {
       console.warn(`Performance regression detected: ${duration}ms > ${baselineMs * 2}ms baseline`);
     }
-    
+
     expect(duration).toBeLessThan(baselineMs * 3); // Hard limit
   });
 });
@@ -239,7 +243,7 @@ export function profileCombatOperations(combatStore: CombatStore, _operations: n
     removeEntity: 0,
     getInitiative: 0,
     setInitiative: 0,
-    getOrder: 0
+    getOrder: 0,
   };
 
   // Profile add operations

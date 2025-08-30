@@ -34,7 +34,7 @@ export class VisionStore {
       lightSensitivity: data.lightSensitivity ?? 1,
       fogOfWarEnabled: data.fogOfWarEnabled ?? true,
       revealedAreas: data.revealedAreas ?? new Set(),
-      currentVisibleAreas: data.currentVisibleAreas ?? new Set()
+      currentVisibleAreas: data.currentVisibleAreas ?? new Set(),
     });
   }
 
@@ -91,7 +91,7 @@ export class VisionStore {
       vision.currentVisibleAreas = new Set(areas);
       // Add to revealed areas if fog of war is enabled
       if (vision.fogOfWarEnabled) {
-        areas.forEach(area => vision.revealedAreas.add(area));
+        areas.forEach((area) => vision.revealedAreas.add(area));
       }
     }
   }
@@ -106,7 +106,12 @@ export class VisionStore {
     return vision ? vision.currentVisibleAreas.has(gridCoord) : false;
   }
 
-  canSeeEntity(observerId: EntityId, targetId: EntityId, distance: number, lightLevel: number): boolean {
+  canSeeEntity(
+    observerId: EntityId,
+    targetId: EntityId,
+    distance: number,
+    lightLevel: number,
+  ): boolean {
     const vision = this.data.get(observerId);
     if (!vision) return false;
 
@@ -121,7 +126,8 @@ export class VisionStore {
 
     // Normal sight and darkvision
     let effectiveRange = vision.sightRange;
-    if (lightLevel < 0.5) { // Dim light or darkness
+    if (lightLevel < 0.5) {
+      // Dim light or darkness
       effectiveRange = Math.max(effectiveRange, vision.darkvisionRange);
     }
 

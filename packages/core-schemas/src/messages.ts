@@ -102,11 +102,13 @@ export const GameStateMessageSchema = z.object({
   type: z.literal("GAME_STATE"),
   gameId: z.string(),
   mapId: z.string().optional(),
-  players: z.array(z.object({
-    userId: z.string(),
-    displayName: z.string(),
-    connected: z.boolean(),
-  })),
+  players: z.array(
+    z.object({
+      userId: z.string(),
+      displayName: z.string(),
+      connected: z.boolean(),
+    }),
+  ),
   turnOrder: z.array(z.string()).optional(), // entity IDs
   currentTurn: z.string().optional(), // entity ID
   phase: z.enum(["exploration", "combat", "downtime"]).default("exploration"),

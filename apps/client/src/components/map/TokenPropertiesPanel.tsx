@@ -2,14 +2,14 @@
  * Token Properties Panel - Manage token details, conditions, and stats
  */
 
-import React, { useState, memo } from 'react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { cn } from '../../lib/utils';
-import { 
-  X, 
-  Save, 
-  Trash2, 
+import React, { useState, memo } from "react";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { cn } from "../../lib/utils";
+import {
+  X,
+  Save,
+  Trash2,
   Plus,
   Eye,
   EyeOff,
@@ -21,9 +21,9 @@ import {
   Clock,
   Skull,
   AlertTriangle,
-  CheckCircle
-} from 'lucide-react';
-import type { Token } from './BattleMap';
+  CheckCircle,
+} from "lucide-react";
+import type { Token } from "./BattleMap";
 
 interface TokenPropertiesPanelProps {
   token: Token | null;
@@ -34,33 +34,125 @@ interface TokenPropertiesPanelProps {
 }
 
 const CONDITION_TYPES = [
-  { id: 'blinded', name: 'Blinded', icon: Eye, color: '#6b7280', description: 'Cannot see and automatically fails sight-based checks' },
-  { id: 'charmed', name: 'Charmed', icon: Heart, color: '#ec4899', description: 'Cannot attack the charmer or target them with harmful abilities' },
-  { id: 'deafened', name: 'Deafened', icon: AlertTriangle, color: '#f59e0b', description: 'Cannot hear and automatically fails hearing-based checks' },
-  { id: 'frightened', name: 'Frightened', icon: Skull, color: '#7c3aed', description: 'Disadvantage on ability checks and attack rolls while source of fear is in sight' },
-  { id: 'grappled', name: 'Grappled', icon: Zap, color: '#059669', description: 'Speed becomes 0 and cannot benefit from bonuses to speed' },
-  { id: 'incapacitated', name: 'Incapacitated', icon: Clock, color: '#dc2626', description: 'Cannot take actions or reactions' },
-  { id: 'invisible', name: 'Invisible', icon: EyeOff, color: '#6366f1', description: 'Cannot be seen without magical means, heavily obscured for hiding' },
-  { id: 'paralyzed', name: 'Paralyzed', icon: X, color: '#991b1b', description: 'Incapacitated and cannot move or speak, fails Strength and Dexterity saves' },
-  { id: 'petrified', name: 'Petrified', icon: Shield, color: '#78716c', description: 'Transformed into solid inanimate substance, incapacitated' },
-  { id: 'poisoned', name: 'Poisoned', icon: Skull, color: '#16a34a', description: 'Disadvantage on attack rolls and ability checks' },
-  { id: 'prone', name: 'Prone', icon: RotateCw, color: '#ea580c', description: 'Disadvantage on attack rolls, attacks against have advantage if within 5 feet' },
-  { id: 'restrained', name: 'Restrained', icon: Zap, color: '#b91c1c', description: 'Speed becomes 0, disadvantage on Dexterity saves, attacks against have advantage' },
-  { id: 'stunned', name: 'Stunned', icon: AlertTriangle, color: '#fbbf24', description: 'Incapacitated, cannot move, and can speak only falteringly' },
-  { id: 'unconscious', name: 'Unconscious', icon: Clock, color: '#374151', description: 'Incapacitated, cannot move or speak, and is unaware of surroundings' }
+  {
+    id: "blinded",
+    name: "Blinded",
+    icon: Eye,
+    color: "#6b7280",
+    description: "Cannot see and automatically fails sight-based checks",
+  },
+  {
+    id: "charmed",
+    name: "Charmed",
+    icon: Heart,
+    color: "#ec4899",
+    description: "Cannot attack the charmer or target them with harmful abilities",
+  },
+  {
+    id: "deafened",
+    name: "Deafened",
+    icon: AlertTriangle,
+    color: "#f59e0b",
+    description: "Cannot hear and automatically fails hearing-based checks",
+  },
+  {
+    id: "frightened",
+    name: "Frightened",
+    icon: Skull,
+    color: "#7c3aed",
+    description: "Disadvantage on ability checks and attack rolls while source of fear is in sight",
+  },
+  {
+    id: "grappled",
+    name: "Grappled",
+    icon: Zap,
+    color: "#059669",
+    description: "Speed becomes 0 and cannot benefit from bonuses to speed",
+  },
+  {
+    id: "incapacitated",
+    name: "Incapacitated",
+    icon: Clock,
+    color: "#dc2626",
+    description: "Cannot take actions or reactions",
+  },
+  {
+    id: "invisible",
+    name: "Invisible",
+    icon: EyeOff,
+    color: "#6366f1",
+    description: "Cannot be seen without magical means, heavily obscured for hiding",
+  },
+  {
+    id: "paralyzed",
+    name: "Paralyzed",
+    icon: X,
+    color: "#991b1b",
+    description: "Incapacitated and cannot move or speak, fails Strength and Dexterity saves",
+  },
+  {
+    id: "petrified",
+    name: "Petrified",
+    icon: Shield,
+    color: "#78716c",
+    description: "Transformed into solid inanimate substance, incapacitated",
+  },
+  {
+    id: "poisoned",
+    name: "Poisoned",
+    icon: Skull,
+    color: "#16a34a",
+    description: "Disadvantage on attack rolls and ability checks",
+  },
+  {
+    id: "prone",
+    name: "Prone",
+    icon: RotateCw,
+    color: "#ea580c",
+    description: "Disadvantage on attack rolls, attacks against have advantage if within 5 feet",
+  },
+  {
+    id: "restrained",
+    name: "Restrained",
+    icon: Zap,
+    color: "#b91c1c",
+    description: "Speed becomes 0, disadvantage on Dexterity saves, attacks against have advantage",
+  },
+  {
+    id: "stunned",
+    name: "Stunned",
+    icon: AlertTriangle,
+    color: "#fbbf24",
+    description: "Incapacitated, cannot move, and can speak only falteringly",
+  },
+  {
+    id: "unconscious",
+    name: "Unconscious",
+    icon: Clock,
+    color: "#374151",
+    description: "Incapacitated, cannot move or speak, and is unaware of surroundings",
+  },
 ];
 
 const TOKEN_SIZES = [
-  { value: 0.5, label: 'Tiny' },
-  { value: 1, label: 'Small/Medium' },
-  { value: 2, label: 'Large' },
-  { value: 3, label: 'Huge' },
-  { value: 4, label: 'Gargantuan' }
+  { value: 0.5, label: "Tiny" },
+  { value: 1, label: "Small/Medium" },
+  { value: 2, label: "Large" },
+  { value: 3, label: "Huge" },
+  { value: 4, label: "Gargantuan" },
 ];
 
 const PRESET_COLORS = [
-  '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
-  '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'
+  "#3b82f6",
+  "#ef4444",
+  "#10b981",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#84cc16",
+  "#f97316",
+  "#6366f1",
 ];
 
 export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
@@ -88,26 +180,29 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
   };
 
   const updateField = (field: keyof Token, value: any) => {
-    setEditedToken(prev => (prev ? { ...prev, [field]: value } : prev));
+    setEditedToken((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
   const addCondition = (conditionId: string) => {
     if (!editedToken.conditions.includes(conditionId)) {
-      updateField('conditions', [...editedToken.conditions, conditionId]);
+      updateField("conditions", [...editedToken.conditions, conditionId]);
     }
   };
 
   const removeCondition = (conditionId: string) => {
-    updateField('conditions', editedToken.conditions.filter(id => id !== conditionId));
+    updateField(
+      "conditions",
+      editedToken.conditions.filter((id) => id !== conditionId),
+    );
   };
 
-  const updateHitPoints = (field: 'current' | 'max', value: number) => {
+  const updateHitPoints = (field: "current" | "max", value: number) => {
     const hp = editedToken.hitPoints || { current: 1, max: 1 };
-    updateField('hitPoints', { ...hp, [field]: Math.max(0, value) });
+    updateField("hitPoints", { ...hp, [field]: Math.max(0, value) });
   };
 
   const getConditionInfo = (conditionId: string) => {
-    return CONDITION_TYPES.find(c => c.id === conditionId);
+    return CONDITION_TYPES.find((c) => c.id === conditionId);
   };
 
   return (
@@ -129,7 +224,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
               <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
               <Input
                 value={editedToken.name}
-                onChange={(e) => updateField('name', e.target.value)}
+                onChange={(e) => updateField("name", e.target.value)}
                 placeholder="Token name"
               />
             </div>
@@ -139,10 +234,10 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                 <label className="block text-sm font-medium text-text-primary mb-1">Size</label>
                 <select
                   value={editedToken.size}
-                  onChange={(e) => updateField('size', parseFloat(e.target.value))}
+                  onChange={(e) => updateField("size", parseFloat(e.target.value))}
                   className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-text-primary text-sm"
                 >
-                  {TOKEN_SIZES.map(size => (
+                  {TOKEN_SIZES.map((size) => (
                     <option key={size.value} value={size.value}>
                       {size.label}
                     </option>
@@ -158,7 +253,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                   max="360"
                   step="15"
                   value={editedToken.rotation}
-                  onChange={(e) => updateField('rotation', parseInt(e.target.value) || 0)}
+                  onChange={(e) => updateField("rotation", parseInt(e.target.value) || 0)}
                 />
               </div>
             </div>
@@ -166,15 +261,15 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Color</label>
               <div className="flex gap-2 mb-2">
-                {PRESET_COLORS.map(color => (
+                {PRESET_COLORS.map((color) => (
                   <button
                     key={color}
-                    onClick={() => updateField('color', color)}
+                    onClick={() => updateField("color", color)}
                     className={cn(
-                      'w-8 h-8 rounded border-2 transition-all',
-                      editedToken.color === color 
-                        ? 'border-accent-primary scale-110' 
-                        : 'border-border-primary hover:scale-105'
+                      "w-8 h-8 rounded border-2 transition-all",
+                      editedToken.color === color
+                        ? "border-accent-primary scale-110"
+                        : "border-border-primary hover:scale-105",
                     )}
                     style={{ backgroundColor: color }}
                   />
@@ -183,7 +278,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
               <Input
                 type="color"
                 value={editedToken.color}
-                onChange={(e) => updateField('color', e.target.value)}
+                onChange={(e) => updateField("color", e.target.value)}
                 className="w-full h-10"
               />
             </div>
@@ -194,11 +289,18 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                   type="checkbox"
                   id="visible"
                   checked={editedToken.isVisible}
-                  onChange={(e) => updateField('isVisible', e.target.checked)}
+                  onChange={(e) => updateField("isVisible", e.target.checked)}
                   className="rounded border-border-primary"
                 />
-                <label htmlFor="visible" className="text-sm text-text-primary flex items-center gap-1">
-                  {editedToken.isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                <label
+                  htmlFor="visible"
+                  className="text-sm text-text-primary flex items-center gap-1"
+                >
+                  {editedToken.isVisible ? (
+                    <Eye className="h-4 w-4" />
+                  ) : (
+                    <EyeOff className="h-4 w-4" />
+                  )}
                   Visible to Players
                 </label>
               </div>
@@ -210,12 +312,14 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
             <h3 className="text-md font-semibold text-text-primary">Health</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Current HP</label>
+                <label className="block text-sm font-medium text-text-primary mb-1">
+                  Current HP
+                </label>
                 <Input
                   type="number"
                   min="0"
                   value={editedToken.hitPoints?.current || 0}
-                  onChange={(e) => updateHitPoints('current', parseInt(e.target.value) || 0)}
+                  onChange={(e) => updateHitPoints("current", parseInt(e.target.value) || 0)}
                 />
               </div>
               <div>
@@ -224,7 +328,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                   type="number"
                   min="1"
                   value={editedToken.hitPoints?.max || 1}
-                  onChange={(e) => updateHitPoints('max', parseInt(e.target.value) || 1)}
+                  onChange={(e) => updateHitPoints("max", parseInt(e.target.value) || 1)}
                 />
               </div>
             </div>
@@ -233,20 +337,22 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
               <div className="bg-bg-tertiary rounded p-2">
                 <div className="flex justify-between text-sm text-text-secondary mb-1">
                   <span>Health</span>
-                  <span>{editedToken.hitPoints.current}/{editedToken.hitPoints.max}</span>
+                  <span>
+                    {editedToken.hitPoints.current}/{editedToken.hitPoints.max}
+                  </span>
                 </div>
                 <div className="w-full bg-bg-primary rounded-full h-2">
-                  <div 
+                  <div
                     className={cn(
-                      'h-2 rounded-full transition-all',
-                      editedToken.hitPoints.current <= editedToken.hitPoints.max * 0.25 
-                        ? 'bg-red-500'
+                      "h-2 rounded-full transition-all",
+                      editedToken.hitPoints.current <= editedToken.hitPoints.max * 0.25
+                        ? "bg-red-500"
                         : editedToken.hitPoints.current <= editedToken.hitPoints.max * 0.5
-                        ? 'bg-yellow-500'
-                        : 'bg-green-500'
+                          ? "bg-yellow-500"
+                          : "bg-green-500",
                     )}
-                    style={{ 
-                      width: `${Math.max(0, (editedToken.hitPoints.current / editedToken.hitPoints.max) * 100)}%` 
+                    style={{
+                      width: `${Math.max(0, (editedToken.hitPoints.current / editedToken.hitPoints.max) * 100)}%`,
                     }}
                   />
                 </div>
@@ -258,40 +364,29 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-md font-semibold text-text-primary">Conditions</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowConditions(!showConditions)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowConditions(!showConditions)}>
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
 
             {/* Applied Conditions */}
             <div className="space-y-2">
-              {editedToken.conditions.map(conditionId => {
+              {editedToken.conditions.map((conditionId) => {
                 const condition = getConditionInfo(conditionId);
                 if (!condition) return null;
 
                 return (
-                  <div 
+                  <div
                     key={conditionId}
                     className="flex items-center justify-between p-2 bg-bg-tertiary rounded border"
                   >
                     <div className="flex items-center gap-2">
-                      <condition.icon 
-                        className="h-4 w-4" 
-                        style={{ color: condition.color }} 
-                      />
+                      <condition.icon className="h-4 w-4" style={{ color: condition.color }} />
                       <span className="text-sm font-medium text-text-primary">
                         {condition.name}
                       </span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeCondition(conditionId)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => removeCondition(conditionId)}>
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
@@ -308,31 +403,24 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
             {/* Available Conditions */}
             {showConditions && (
               <div className="border border-border-primary rounded p-2 space-y-1 max-h-40 overflow-y-auto">
-                {CONDITION_TYPES
-                  .filter(condition => !editedToken.conditions.includes(condition.id))
-                  .map(condition => (
-                    <button
-                      key={condition.id}
-                      onClick={() => {
-                        addCondition(condition.id);
-                        setShowConditions(false);
-                      }}
-                      className="w-full flex items-center gap-2 p-2 text-left hover:bg-bg-secondary rounded transition-colors"
-                    >
-                      <condition.icon 
-                        className="h-4 w-4" 
-                        style={{ color: condition.color }} 
-                      />
-                      <div>
-                        <div className="text-sm font-medium text-text-primary">
-                          {condition.name}
-                        </div>
-                        <div className="text-xs text-text-secondary">
-                          {condition.description}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                {CONDITION_TYPES.filter(
+                  (condition) => !editedToken.conditions.includes(condition.id),
+                ).map((condition) => (
+                  <button
+                    key={condition.id}
+                    onClick={() => {
+                      addCondition(condition.id);
+                      setShowConditions(false);
+                    }}
+                    className="w-full flex items-center gap-2 p-2 text-left hover:bg-bg-secondary rounded transition-colors"
+                  >
+                    <condition.icon className="h-4 w-4" style={{ color: condition.color }} />
+                    <div>
+                      <div className="text-sm font-medium text-text-primary">{condition.name}</div>
+                      <div className="text-xs text-text-secondary">{condition.description}</div>
+                    </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -341,18 +429,20 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
           <div className="space-y-3">
             <h3 className="text-md font-semibold text-text-primary">Character Info</h3>
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Character ID</label>
+              <label className="block text-sm font-medium text-text-primary mb-1">
+                Character ID
+              </label>
               <Input
-                value={editedToken.characterId || ''}
-                onChange={(e) => updateField('characterId', e.target.value)}
+                value={editedToken.characterId || ""}
+                onChange={(e) => updateField("characterId", e.target.value)}
                 placeholder="Link to character sheet"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-primary mb-1">Player ID</label>
               <Input
-                value={editedToken.playerId || ''}
-                onChange={(e) => updateField('playerId', e.target.value)}
+                value={editedToken.playerId || ""}
+                onChange={(e) => updateField("playerId", e.target.value)}
                 placeholder="Player owner"
               />
             </div>

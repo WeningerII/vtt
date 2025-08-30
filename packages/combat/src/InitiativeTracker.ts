@@ -3,8 +3,8 @@
  * Visual and functional component for managing combat initiative order
  */
 
-import { _Combatant, CombatState } from './CombatManager';
-import { logger } from '@vtt/logging';
+import { _Combatant, CombatState } from "./CombatManager";
+import { logger } from "@vtt/logging";
 
 export interface InitiativeEntry {
   id: string;
@@ -55,7 +55,7 @@ export class InitiativeTracker {
       allowReordering: true,
       showHiddenCombatants: false,
       colorCoding: true,
-      ...settings
+      ...settings,
     };
   }
 
@@ -70,21 +70,21 @@ export class InitiativeTracker {
       initiative: combatant.initiative,
       isActive: combatant.isActive,
       isVisible: combatant.isVisible,
-      isPlayer: combatant.type === 'pc',
+      isPlayer: combatant.type === "pc",
       conditions: [...combatant.conditions],
       hitPoints: {
         current: combatant.currentHitPoints,
         max: combatant.maxHitPoints,
-        temp: combatant.temporaryHitPoints
+        temp: combatant.temporaryHitPoints,
       },
-      actions: { ...combatant.actions }
+      actions: { ...combatant.actions },
     }));
 
     this.currentTurn = combatState.currentTurn;
 
     this.emitChange({
-      type: 'tracker-updated',
-      data: { entries: this.getVisibleEntries() }
+      type: "tracker-updated",
+      data: { entries: this.getVisibleEntries() },
     });
   }
 
@@ -92,16 +92,14 @@ export class InitiativeTracker {
    * Get entries visible to current user
    */
   getVisibleEntries(): InitiativeEntry[] {
-    return this.entries.filter(entry => 
-      entry.isVisible || this.settings.showHiddenCombatants
-    );
+    return this.entries.filter((entry) => entry.isVisible || this.settings.showHiddenCombatants);
   }
 
   /**
    * Get current active entry
    */
   getCurrentEntry(): InitiativeEntry | null {
-    return this.entries.find(entry => entry.isActive) || null;
+    return this.entries.find((entry) => entry.isActive) || null;
   }
 
   /**
@@ -110,7 +108,7 @@ export class InitiativeTracker {
   reorderEntry(entryId: string, newPosition: number): boolean {
     if (!this.settings.allowReordering) return false;
 
-    const entryIndex = this.entries.findIndex(e => e.id === entryId);
+    const entryIndex = this.entries.findIndex((e) => e.id === entryId);
     if (entryIndex === -1 || newPosition < 0 || newPosition >= this.entries.length) {
       return false;
     }
@@ -121,8 +119,8 @@ export class InitiativeTracker {
     }
 
     this.emitChange({
-      type: 'order-changed',
-      data: { entryId, oldPosition: entryIndex, newPosition }
+      type: "order-changed",
+      data: { entryId, oldPosition: entryIndex, newPosition },
     });
 
     return true;
@@ -132,14 +130,14 @@ export class InitiativeTracker {
    * Toggle entry visibility
    */
   toggleVisibility(entryId: string): boolean {
-    const entry = this.entries.find(e => e.id === entryId);
+    const entry = this.entries.find((e) => e.id === entryId);
     if (!entry) return false;
 
     entry.isVisible = !entry.isVisible;
 
     this.emitChange({
-      type: 'visibility-changed',
-      data: { entryId, visible: entry.isVisible }
+      type: "visibility-changed",
+      data: { entryId, visible: entry.isVisible },
     });
 
     return true;
@@ -149,14 +147,14 @@ export class InitiativeTracker {
    * Update entry health display
    */
   updateHealth(entryId: string, current: number, max: number, temp: number = 0): void {
-    const entry = this.entries.find(e => e.id === entryId);
+    const entry = this.entries.find((e) => e.id === entryId);
     if (!entry) return;
 
     entry.hitPoints = { current, max, temp };
 
     this.emitChange({
-      type: 'health-updated',
-      data: { entryId, hitPoints: entry.hitPoints }
+      type: "health-updated",
+      data: { entryId, hitPoints: entry.hitPoints },
     });
   }
 
@@ -164,29 +162,29 @@ export class InitiativeTracker {
    * Update entry conditions
    */
   updateConditions(entryId: string, conditions: string[]): void {
-    const entry = this.entries.find(e => e.id === entryId);
+    const entry = this.entries.find((e) => e.id === entryId);
     if (!entry) return;
 
     entry.conditions = [...conditions];
 
     this.emitChange({
-      type: 'conditions-updated',
-      data: { entryId, conditions: entry.conditions }
+      type: "conditions-updated",
+      data: { entryId, conditions: entry.conditions },
     });
   }
 
   /**
    * Update entry actions
    */
-  updateActions(entryId: string, actions: InitiativeEntry['actions']): void {
-    const entry = this.entries.find(e => e.id === entryId);
+  updateActions(entryId: string, actions: InitiativeEntry["actions"]): void {
+    const entry = this.entries.find((e) => e.id === entryId);
     if (!entry) return;
 
     entry.actions = { ...actions };
 
     this.emitChange({
-      type: 'actions-updated',
-      data: { entryId, actions: entry.actions }
+      type: "actions-updated",
+      data: { entryId, actions: entry.actions },
     });
   }
 
@@ -194,7 +192,7 @@ export class InitiativeTracker {
    * Get entry health percentage
    */
   getHealthPercentage(entryId: string): number {
-    const entry = this.entries.find(e => e.id === entryId);
+    const entry = this.entries.find((e) => e.id === entryId);
     if (!entry || entry.hitPoints.max === 0) return 0;
 
     return Math.max(0, (entry.hitPoints.current / entry.hitPoints.max) * 100);
@@ -203,31 +201,33 @@ export class InitiativeTracker {
   /**
    * Get entry health status
    */
-  getHealthStatus(entryId: string): 'healthy' | 'injured' | 'bloodied' | 'critical' | 'unconscious' | 'dead' {
+  getHealthStatus(
+    entryId: string,
+  ): "healthy" | "injured" | "bloodied" | "critical" | "unconscious" | "dead" {
     const percentage = this.getHealthPercentage(entryId);
-    const entry = this.entries.find(e => e.id === entryId);
+    const entry = this.entries.find((e) => e.id === entryId);
 
-    if (!entry) return 'dead';
-    if (entry.hitPoints.current <= 0) return entry.hitPoints.current < 0 ? 'dead' : 'unconscious';
-    if (percentage <= 10) return 'critical';
-    if (percentage <= 50) return 'bloodied';
-    if (percentage < 100) return 'injured';
-    return 'healthy';
+    if (!entry) return "dead";
+    if (entry.hitPoints.current <= 0) return entry.hitPoints.current < 0 ? "dead" : "unconscious";
+    if (percentage <= 10) return "critical";
+    if (percentage <= 50) return "bloodied";
+    if (percentage < 100) return "injured";
+    return "healthy";
   }
 
   /**
    * Get condition severity
    */
-  getConditionSeverity(entryId: string): 'none' | 'minor' | 'major' | 'severe' {
-    const entry = this.entries.find(e => e.id === entryId);
-    if (!entry || entry.conditions.length === 0) return 'none';
+  getConditionSeverity(entryId: string): "none" | "minor" | "major" | "severe" {
+    const entry = this.entries.find((e) => e.id === entryId);
+    if (!entry || entry.conditions.length === 0) return "none";
 
-    const severeConditions = ['unconscious', 'paralyzed', 'petrified', 'stunned'];
-    const majorConditions = ['blinded', 'charmed', 'frightened', 'incapacitated', 'restrained'];
+    const severeConditions = ["unconscious", "paralyzed", "petrified", "stunned"];
+    const majorConditions = ["blinded", "charmed", "frightened", "incapacitated", "restrained"];
 
-    if (entry.conditions.some(c => severeConditions.includes(c.toLowerCase()))) return 'severe';
-    if (entry.conditions.some(c => majorConditions.includes(c.toLowerCase()))) return 'major';
-    return 'minor';
+    if (entry.conditions.some((c) => severeConditions.includes(c.toLowerCase()))) return "severe";
+    if (entry.conditions.some((c) => majorConditions.includes(c.toLowerCase()))) return "major";
+    return "minor";
   }
 
   /**
@@ -244,20 +244,22 @@ export class InitiativeTracker {
       return { highest: 0, lowest: 0, average: 0, playerAverage: 0, npcAverage: 0 };
     }
 
-    const initiatives = this.entries.map(e => e.initiative);
-    const playerInitiatives = this.entries.filter(e => e.isPlayer).map(e => e.initiative);
-    const npcInitiatives = this.entries.filter(e => !e.isPlayer).map(e => e.initiative);
+    const initiatives = this.entries.map((e) => e.initiative);
+    const playerInitiatives = this.entries.filter((e) => e.isPlayer).map((e) => e.initiative);
+    const npcInitiatives = this.entries.filter((e) => !e.isPlayer).map((e) => e.initiative);
 
     return {
       highest: Math.max(...initiatives),
       lowest: Math.min(...initiatives),
       average: initiatives.reduce((_sum, __init) => sum + init, 0) / initiatives.length,
-      playerAverage: playerInitiatives.length > 0 
-        ? playerInitiatives.reduce((_sum, __init) => sum + init, 0) / playerInitiatives.length 
-        : 0,
-      npcAverage: npcInitiatives.length > 0 
-        ? npcInitiatives.reduce((_sum, __init) => sum + init, 0) / npcInitiatives.length 
-        : 0
+      playerAverage:
+        playerInitiatives.length > 0
+          ? playerInitiatives.reduce((_sum, __init) => sum + init, 0) / playerInitiatives.length
+          : 0,
+      npcAverage:
+        npcInitiatives.length > 0
+          ? npcInitiatives.reduce((_sum, __init) => sum + init, 0) / npcInitiatives.length
+          : 0,
     };
   }
 
@@ -272,14 +274,14 @@ export class InitiativeTracker {
     activeCombatants: number;
     defeatedCombatants: number;
   } {
-    const activeEntries = this.entries.filter(e => this.getHealthStatus(e.id) !== 'dead');
-    const defeatedEntries = this.entries.filter(e => this.getHealthStatus(e.id) === 'dead');
-    
+    const activeEntries = this.entries.filter((e) => this.getHealthStatus(e.id) !== "dead");
+    const defeatedEntries = this.entries.filter((e) => this.getHealthStatus(e.id) === "dead");
+
     const currentEntry = this.getCurrentEntry();
     let nextEntry: InitiativeEntry | null = null;
-    
+
     if (currentEntry) {
-      const currentIndex = this.entries.findIndex(e => e.isActive);
+      const currentIndex = this.entries.findIndex((e) => e.isActive);
       const nextIndex = (currentIndex + 1) % this.entries.length;
       nextEntry = this.entries[nextIndex] || null;
     }
@@ -290,7 +292,7 @@ export class InitiativeTracker {
       roundNumber: Math.floor(this.currentTurn / this.entries.length) + 1,
       totalCombatants: this.entries.length,
       activeCombatants: activeEntries.length,
-      defeatedCombatants: defeatedEntries.length
+      defeatedCombatants: defeatedEntries.length,
     };
   }
 
@@ -305,7 +307,7 @@ export class InitiativeTracker {
     return {
       entries: [...this.entries],
       settings: { ...this.settings },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -317,14 +319,14 @@ export class InitiativeTracker {
     settings?: Partial<InitiativeTrackerSettings>;
   }): void {
     this.entries = [...data.entries];
-    
+
     if (data.settings) {
       this.settings = { ...this.settings, ...data.settings };
     }
 
     this.emitChange({
-      type: 'tracker-imported',
-      data: { entries: this.getVisibleEntries() }
+      type: "tracker-imported",
+      data: { entries: this.getVisibleEntries() },
     });
   }
 
@@ -336,8 +338,8 @@ export class InitiativeTracker {
     this.currentTurn = 0;
 
     this.emitChange({
-      type: 'tracker-cleared',
-      data: Record<string, any>
+      type: "tracker-cleared",
+      data: Record<string, any>,
     });
   }
 
@@ -348,8 +350,8 @@ export class InitiativeTracker {
     this.settings = { ...this.settings, ...newSettings };
 
     this.emitChange({
-      type: 'settings-updated',
-      data: { settings: this.settings }
+      type: "settings-updated",
+      data: { settings: this.settings },
     });
   }
 
@@ -373,11 +375,11 @@ export class InitiativeTracker {
   }
 
   private emitChange(event: InitiativeTrackerEvent): void {
-    this.changeListeners.forEach(listener => {
+    this.changeListeners.forEach((listener) => {
       try {
         listener(event);
       } catch (error) {
-        logger.error('Initiative tracker event listener error:', error);
+        logger.error("Initiative tracker event listener error:", error);
       }
     });
   }
@@ -385,12 +387,12 @@ export class InitiativeTracker {
 
 // Event types
 export type InitiativeTrackerEvent =
-  | { type: 'tracker-updated'; data: { entries: InitiativeEntry[] } }
-  | { type: 'order-changed'; data: { entryId: string; oldPosition: number; newPosition: number } }
-  | { type: 'visibility-changed'; data: { entryId: string; visible: boolean } }
-  | { type: 'health-updated'; data: { entryId: string; hitPoints: InitiativeEntry['hitPoints'] } }
-  | { type: 'conditions-updated'; data: { entryId: string; conditions: string[] } }
-  | { type: 'actions-updated'; data: { entryId: string; actions: InitiativeEntry['actions'] } }
-  | { type: 'settings-updated'; data: { settings: InitiativeTrackerSettings } }
-  | { type: 'tracker-cleared'; data: Record<string, unknown>}
-  | { type: 'tracker-imported'; data: { entries: InitiativeEntry[] } };
+  | { type: "tracker-updated"; data: { entries: InitiativeEntry[] } }
+  | { type: "order-changed"; data: { entryId: string; oldPosition: number; newPosition: number } }
+  | { type: "visibility-changed"; data: { entryId: string; visible: boolean } }
+  | { type: "health-updated"; data: { entryId: string; hitPoints: InitiativeEntry["hitPoints"] } }
+  | { type: "conditions-updated"; data: { entryId: string; conditions: string[] } }
+  | { type: "actions-updated"; data: { entryId: string; actions: InitiativeEntry["actions"] } }
+  | { type: "settings-updated"; data: { settings: InitiativeTrackerSettings } }
+  | { type: "tracker-cleared"; data: Record<string, unknown> }
+  | { type: "tracker-imported"; data: { entries: InitiativeEntry[] } };

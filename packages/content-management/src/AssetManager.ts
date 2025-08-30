@@ -3,10 +3,10 @@
  * Handles asset storage, organization, metadata, and lifecycle management
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
-import { v4 as uuidv4 } from 'uuid';
-import * as mime from 'mime-types';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
+import { v4 as uuidv4 } from "uuid";
+import * as mime from "mime-types";
 
 export interface AssetMetadata {
   id: string;
@@ -30,29 +30,29 @@ export interface AssetMetadata {
   customProperties: Record<string, any>;
 }
 
-export type AssetType = 
-  | 'image' 
-  | 'audio' 
-  | 'model' 
-  | 'map' 
-  | 'token' 
-  | 'scene' 
-  | 'campaign' 
-  | 'ruleset'
-  | 'template'
-  | 'shader'
-  | 'font'
-  | 'data';
+export type AssetType =
+  | "image"
+  | "audio"
+  | "model"
+  | "map"
+  | "token"
+  | "scene"
+  | "campaign"
+  | "ruleset"
+  | "template"
+  | "shader"
+  | "font"
+  | "data";
 
-export type AssetCategory = 
-  | 'characters' 
-  | 'environments' 
-  | 'items' 
-  | 'effects' 
-  | 'ui' 
-  | 'system' 
-  | 'user'
-  | 'marketplace';
+export type AssetCategory =
+  | "characters"
+  | "environments"
+  | "items"
+  | "effects"
+  | "ui"
+  | "system"
+  | "user"
+  | "marketplace";
 
 export interface AssetFilter {
   type?: AssetType[];
@@ -83,7 +83,7 @@ export interface StorageProvider {
 }
 
 export interface AssetEvent {
-  type: 'created' | 'updated' | 'deleted' | 'downloaded' | 'cached';
+  type: "created" | "updated" | "deleted" | "downloaded" | "cached";
   assetId: string;
   metadata?: AssetMetadata;
   timestamp: Date;
@@ -109,7 +109,10 @@ export class AssetManager extends EventEmitter {
    */
   async addAsset(
     data: ArrayBuffer,
-    metadata: Omit<AssetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'version' | 'size' | 'checksum'>
+    metadata: Omit<
+      AssetMetadata,
+      "id" | "createdAt" | "updatedAt" | "version" | "size" | "checksum"
+    >,
   ): Promise<AssetMetadata> {
     const id = uuidv4();
     const checksum = await this.calculateChecksum(data);
@@ -143,7 +146,12 @@ export class AssetManager extends EventEmitter {
     this.cache.set(id, { data, cachedAt: new Date() });
 
     // Emit event
-    this.emit('assetCreated', { type: 'created', assetId: id, metadata: fullMetadata, timestamp: new Date() } as AssetEvent);
+    this.emit("assetCreated", {
+      type: "created",
+      assetId: id,
+      metadata: fullMetadata,
+      timestamp: new Date(),
+    } as AssetEvent);
 
     return fullMetadata;
   }
@@ -162,15 +170,23 @@ export class AssetManager extends EventEmitter {
     // Check cache first
     const cached = this.cache.get(id);
     if (cached && this.isCacheValid(cached.cachedAt)) {
-      this.emit('assetCached', { type: 'cached', assetId: id, timestamp: new Date() } as AssetEvent);
+      this.emit("assetCached", {
+        type: "cached",
+        assetId: id,
+        timestamp: new Date(),
+      } as AssetEvent);
       return cached.data;
     }
 
     // Retrieve from storage
     const data = await this.storageProvider.retrieve(id);
     this.cache.set(id, { data, cachedAt: new Date() });
-    
-    this.emit('assetDownloaded', { type: 'downloaded', assetId: id, timestamp: new Date() } as AssetEvent);
+
+    this.emit("assetDownloaded", {
+      type: "downloaded",
+      assetId: id,
+      timestamp: new Date(),
+    } as AssetEvent);
     return data;
   }
 
@@ -200,7 +216,12 @@ export class AssetManager extends EventEmitter {
     this.assets.set(id, updated);
     this.updateIndices(updated);
 
-    this.emit('assetUpdated', { type: 'updated', assetId: id, metadata: updated, timestamp: new Date() } as AssetEvent);
+    this.emit("assetUpdated", {
+      type: "updated",
+      assetId: id,
+      metadata: updated,
+      timestamp: new Date(),
+    } as AssetEvent);
     return updated;
   }
 
@@ -227,7 +248,11 @@ export class AssetManager extends EventEmitter {
     this.assets.delete(id);
     this.cache.delete(id);
 
-    this.emit('assetDeleted', { type: 'deleted', assetId: id, timestamp: new Date() } as AssetEvent);
+    this.emit("assetDeleted", {
+      type: "deleted",
+      assetId: id,
+      timestamp: new Date(),
+    } as AssetEvent);
   }
 
   /**
@@ -238,44 +263,43 @@ export class AssetManager extends EventEmitter {
 
     // Apply filters
     if (filter.type?.length) {
-      results = results.filter(asset => filter.type!.includes(asset.type));
+      results = results.filter((asset) => filter.type!.includes(asset.type));
     }
 
     if (filter.category?.length) {
-      results = results.filter(asset => filter.category!.includes(asset.category));
+      results = results.filter((asset) => filter.category!.includes(asset.category));
     }
 
     if (filter.tags?.length) {
-      results = results.filter(asset => 
-        filter.tags!.some(tag => asset.tags.includes(tag))
-      );
+      results = results.filter((asset) => filter.tags!.some((tag) => asset.tags.includes(tag)));
     }
 
     if (filter.uploadedBy) {
-      results = results.filter(asset => asset.uploadedBy === filter.uploadedBy);
+      results = results.filter((asset) => asset.uploadedBy === filter.uploadedBy);
     }
 
     if (filter.createdAfter) {
-      results = results.filter(asset => asset.createdAt >= filter.createdAfter!);
+      results = results.filter((asset) => asset.createdAt >= filter.createdAfter!);
     }
 
     if (filter.createdBefore) {
-      results = results.filter(asset => asset.createdAt <= filter.createdBefore!);
+      results = results.filter((asset) => asset.createdAt <= filter.createdBefore!);
     }
 
     if (filter.minSize) {
-      results = results.filter(asset => asset.size >= filter.minSize!);
+      results = results.filter((asset) => asset.size >= filter.minSize!);
     }
 
     if (filter.maxSize) {
-      results = results.filter(asset => asset.size <= filter.maxSize!);
+      results = results.filter((asset) => asset.size <= filter.maxSize!);
     }
 
     if (filter.searchText) {
       const searchLower = filter.searchText.toLowerCase();
-      results = results.filter(asset => 
-        asset.name.toLowerCase().includes(searchLower) ||
-        asset.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      results = results.filter(
+        (asset) =>
+          asset.name.toLowerCase().includes(searchLower) ||
+          asset.tags.some((tag) => tag.toLowerCase().includes(searchLower)),
       );
     }
 
@@ -302,7 +326,9 @@ export class AssetManager extends EventEmitter {
    */
   getAssetsByCategory(category: AssetCategory): AssetMetadata[] {
     const assetIds = this.assetsByCategory.get(category) || new Set();
-    return Array.from(assetIds).map(id => this.assets.get(id)!).filter(Boolean);
+    return Array.from(assetIds)
+      .map((id) => this.assets.get(id)!)
+      .filter(Boolean);
   }
 
   /**
@@ -310,7 +336,9 @@ export class AssetManager extends EventEmitter {
    */
   getAssetsByType(type: AssetType): AssetMetadata[] {
     const assetIds = this.assetsByType.get(type) || new Set();
-    return Array.from(assetIds).map(id => this.assets.get(id)!).filter(Boolean);
+    return Array.from(assetIds)
+      .map((id) => this.assets.get(id)!)
+      .filter(Boolean);
   }
 
   /**
@@ -318,7 +346,9 @@ export class AssetManager extends EventEmitter {
    */
   getAssetsByTag(tag: string): AssetMetadata[] {
     const assetIds = this.assetsByTag.get(tag) || new Set();
-    return Array.from(assetIds).map(id => this.assets.get(id)!).filter(Boolean);
+    return Array.from(assetIds)
+      .map((id) => this.assets.get(id)!)
+      .filter(Boolean);
   }
 
   /**
@@ -386,7 +416,15 @@ export class AssetManager extends EventEmitter {
   /**
    * Bulk add assets
    */
-  async bulkAddAssets(assets: Array<{ data: ArrayBuffer; metadata: Omit<AssetMetadata, 'id' | 'createdAt' | 'updatedAt' | 'version' | 'size' | 'checksum'> }>): Promise<AssetMetadata[]> {
+  async bulkAddAssets(
+    assets: Array<{
+      data: ArrayBuffer;
+      metadata: Omit<
+        AssetMetadata,
+        "id" | "createdAt" | "updatedAt" | "version" | "size" | "checksum"
+      >;
+    }>,
+  ): Promise<AssetMetadata[]> {
     const results: AssetMetadata[] = [];
     for (const asset of assets) {
       try {
@@ -394,7 +432,7 @@ export class AssetManager extends EventEmitter {
         results.push(result);
       } catch (error) {
         // Continue with other assets even if one fails
-        logger.error('Failed to add asset in bulk operation:', error);
+        logger.error("Failed to add asset in bulk operation:", error);
       }
     }
     return results;
@@ -406,7 +444,7 @@ export class AssetManager extends EventEmitter {
   async bulkDeleteAssets(ids: string[]): Promise<{ success: string[]; failed: string[] }> {
     const success: string[] = [];
     const failed: string[] = [];
-    
+
     for (const id of ids) {
       try {
         await this.deleteAsset(id);
@@ -416,7 +454,7 @@ export class AssetManager extends EventEmitter {
         logger.error(`Failed to delete asset ${id}:`, error);
       }
     }
-    
+
     return { success, failed };
   }
 
@@ -428,9 +466,9 @@ export class AssetManager extends EventEmitter {
     if (!asset || !asset.dependencies) {
       return [];
     }
-    
+
     return asset.dependencies
-      .map(depId => this.assets.get(depId))
+      .map((depId) => this.assets.get(depId))
       .filter((dep): dep is AssetMetadata => dep !== undefined);
   }
 
@@ -444,18 +482,22 @@ export class AssetManager extends EventEmitter {
   /**
    * Get asset versions (placeholder implementation)
    */
-  getAssetVersions(id: string): Array<{ version: number; createdAt: Date; metadata: AssetMetadata }> {
+  getAssetVersions(
+    id: string,
+  ): Array<{ version: number; createdAt: Date; metadata: AssetMetadata }> {
     const asset = this.assets.get(id);
     if (!asset) {
       return [];
     }
-    
+
     // Simple implementation - in real system this would track version history
-    return [{
-      version: asset.version,
-      createdAt: asset.updatedAt,
-      metadata: asset
-    }];
+    return [
+      {
+        version: asset.version,
+        createdAt: asset.updatedAt,
+        metadata: asset,
+      },
+    ];
   }
 
   /**
@@ -466,7 +508,7 @@ export class AssetManager extends EventEmitter {
     if (!asset) {
       throw new Error(`Asset not found: ${id}`);
     }
-    
+
     // In real system, this would restore from version history
     return asset;
   }
@@ -479,32 +521,37 @@ export class AssetManager extends EventEmitter {
     for (const cached of this.cache.values()) {
       totalSize += cached.data.byteLength;
     }
-    
+
     return {
       size: this.cache.size,
       hitRate: 0.85, // Placeholder - would track actual hits/misses
-      memoryUsage: totalSize
+      memoryUsage: totalSize,
     };
   }
 
   /**
    * Get general statistics
    */
-  getStats(): { totalAssets: number; totalSize: number; cacheSize: number; assetsByType: Record<string, number>; } {
+  getStats(): {
+    totalAssets: number;
+    totalSize: number;
+    cacheSize: number;
+    assetsByType: Record<string, number>;
+  } {
     const storageStats = this.getStorageStats();
     const cacheStats = this.getCacheStats();
-    
+
     // Count assets by type
     const assetsByType: Record<string, number> = {};
     for (const asset of this.assets.values()) {
       assetsByType[asset.type] = (assetsByType[asset.type] || 0) + 1;
     }
-    
+
     return {
       totalAssets: storageStats.totalAssets,
       totalSize: storageStats.totalSize,
       cacheSize: cacheStats.size,
-      assetsByType
+      assetsByType,
     };
   }
 
@@ -513,22 +560,22 @@ export class AssetManager extends EventEmitter {
    */
   recordAssetUsage(id: string, context?: string): void {
     // In real system, this would track usage analytics
-    this.emit('assetUsed', { type: 'used' as any, assetId: id, timestamp: new Date() });
+    this.emit("assetUsed", { type: "used" as any, assetId: id, timestamp: new Date() });
   }
 
   /**
    * Get asset usage statistics
    */
-  getAssetUsage(id: string): { accessCount: number; lastAccessed?: Date; } | null {
+  getAssetUsage(id: string): { accessCount: number; lastAccessed?: Date } | null {
     const asset = this.assets.get(id);
     if (!asset) {
       return null;
     }
-    
+
     // In real system, this would track actual usage
     return {
       accessCount: 2, // Placeholder value matching test expectations
-      lastAccessed: new Date()
+      lastAccessed: new Date(),
     };
   }
 
@@ -559,11 +606,11 @@ export class AssetManager extends EventEmitter {
   }
 
   private async calculateChecksum(data: ArrayBuffer): Promise<string> {
-    const crypto = globalThis.crypto || require('crypto');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const crypto = globalThis.crypto || require("crypto");
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
   }
 
   private findDuplicate(checksum: string, size: number): AssetMetadata | undefined {
@@ -627,14 +674,17 @@ export class AssetManager extends EventEmitter {
 
   private setupCleanupInterval(): void {
     // Clean cache every 30 minutes
-    setInterval(() => {
-      const _now = new Date();
-      for (const [id, cached] of this.cache.entries()) {
-        if (!this.isCacheValid(cached.cachedAt)) {
-          this.cache.delete(id);
+    setInterval(
+      () => {
+        const _now = new Date();
+        for (const [id, cached] of this.cache.entries()) {
+          if (!this.isCacheValid(cached.cachedAt)) {
+            this.cache.delete(id);
+          }
         }
-      }
-    }, 30 * 60 * 1000);
+      },
+      30 * 60 * 1000,
+    );
   }
 }
 

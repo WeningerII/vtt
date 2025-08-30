@@ -2,11 +2,11 @@
  * AI-driven NPC entity that integrates with the ECS system
  */
 
-import { AIBehaviorEngine, NPCPersonality, NPCGoal, BehaviorTreeNode } from '../index';
-import { logger } from '@vtt/logging';
+import { AIBehaviorEngine, NPCPersonality, NPCGoal, BehaviorTreeNode } from "../index";
+import { logger } from "@vtt/logging";
 
 export interface AIAction {
-  type: 'move' | 'attack' | 'defend' | 'support' | 'interact';
+  type: "move" | "attack" | "defend" | "support" | "interact";
   target?: { x: number; y: number };
   targetId?: string;
   priority: number;
@@ -48,14 +48,14 @@ export class AIEntity {
     id: string,
     personality: NPCPersonality,
     initialGoals: NPCGoal[] = [],
-    thinkInterval: number = 1000
+    thinkInterval: number = 1000,
   ) {
     this.entityId = id;
     this.state = {
       id,
       personality,
       goals: initialGoals,
-      currentAction: 'patrol',
+      currentAction: "patrol",
       lastThinkTime: 0,
       thinkInterval,
       position: { x: 0, y: 0 },
@@ -71,7 +71,7 @@ export class AIEntity {
    */
   update(gameState: GameStateSnapshot, _deltaTime: number): void {
     const now = Date.now();
-    
+
     // Only think at specified intervals to avoid excessive computation
     if (now - this.state.lastThinkTime >= this.state.thinkInterval) {
       this.think(gameState);
@@ -95,7 +95,7 @@ export class AIEntity {
 
     // Execute behavior tree (simplified for now)
     const action = this.selectAction(gameState);
-    
+
     // Queue any actions that resulted from behavior execution
     if (action) {
       this.queueAction(action);
@@ -111,26 +111,26 @@ export class AIEntity {
       const enemy = gameState.nearbyEnemies[0];
       if (enemy && this.state.personality.aggression > 0.5) {
         return {
-          type: 'attack',
+          type: "attack",
           targetId: enemy.id,
           priority: 10,
-          data: { weapon: 'melee' }
+          data: { weapon: "melee" },
         };
       } else {
         return {
-          type: 'defend',
+          type: "defend",
           priority: 8,
-          data: Record<string, any>
+          data: Record<string, any>,
         };
       }
     }
-    
+
     // Default patrol behavior
     return {
-      type: 'move',
+      type: "move",
       target: { x: Math.random() * 100, y: Math.random() * 100 },
       priority: 1,
-      data: Record<string, any>
+      data: Record<string, any>,
     };
   }
 
@@ -140,9 +140,9 @@ export class AIEntity {
   private evaluateGoals(gameState: GameStateSnapshot): void {
     // Update goals based on game state
     if (gameState.isUnderThreat) {
-      this.setGoal({ type: 'defend', priority: 10, target: 'self' });
+      this.setGoal({ type: "defend", priority: 10, target: "self" });
     } else if (gameState.healthPercentage < 0.3) {
-      this.setGoal({ type: 'support', priority: 8, target: 'self' });
+      this.setGoal({ type: "support", priority: 8, target: "self" });
     }
   }
 
@@ -159,19 +159,19 @@ export class AIEntity {
    */
   executeAction(action: AIAction, gameSession: any): void {
     switch (action.type) {
-      case 'move':
+      case "move":
         this.executeMovement(action, gameSession);
         break;
-      case 'attack':
+      case "attack":
         this.executeAttack(action, gameSession);
         break;
-      case 'defend':
+      case "defend":
         this.executeDefense(action, gameSession);
         break;
-      case 'support':
+      case "support":
         this.executeSupport(action, gameSession);
         break;
-      case 'interact':
+      case "interact":
         this.executeInteraction(action, gameSession);
         break;
       default:
@@ -181,24 +181,24 @@ export class AIEntity {
 
   private executeMovement(action: AIAction, gameSession: any): void {
     if (!action.target) return;
-    
+
     // Calculate path to target position
     const targetPos = action.target;
     const currentPos = { x: this.state.position.x, y: this.state.position.y };
-    
+
     // Simple movement toward target (could be enhanced with pathfinding)
     const dx = targetPos.x - currentPos.x;
     const dy = targetPos.y - currentPos.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
+
     if (distance > 0) {
       const moveSpeed = 30; // pixels per update
       const moveX = (dx / distance) * moveSpeed;
       const moveY = (dy / distance) * moveSpeed;
-      
+
       this.state.position.x += moveX;
       this.state.position.y += moveY;
-      
+
       // Update entity in game world
       gameSession.updateEntityPosition(this.entityId, this.state.position);
     }
@@ -206,57 +206,57 @@ export class AIEntity {
 
   private executeAttack(action: AIAction, gameSession: any): void {
     if (!action.targetId) return;
-    
+
     // Queue combat action
     gameSession.queueCombatAction({
       sourceId: this.entityId,
       targetId: action.targetId,
-      type: 'attack',
-      weapon: action.data?.weapon || 'melee',
-      damage: this.calculateDamage(action.data?.weapon)
+      type: "attack",
+      weapon: action.data?.weapon || "melee",
+      damage: this.calculateDamage(action.data?.weapon),
     });
   }
 
   private executeDefense(action: AIAction, gameSession: any): void {
     // Set defensive stance
     this.state.isDefending = true;
-    
+
     // Apply defensive modifiers
     gameSession.applyEntityEffect(this.entityId, {
-      type: 'defense_bonus',
+      type: "defense_bonus",
       value: 2,
-      duration: 1 // 1 turn
+      duration: 1, // 1 turn
     });
   }
 
   private executeSupport(action: AIAction, gameSession: any): void {
     if (!action.targetId) return;
-    
+
     // Cast support spell or ability
     gameSession.queueCombatAction({
       sourceId: this.entityId,
       targetId: action.targetId,
-      type: 'support',
-      ability: action.data?.ability || 'heal',
-      value: action.data?.value || 10
+      type: "support",
+      ability: action.data?.ability || "heal",
+      value: action.data?.value || 10,
     });
   }
 
   private executeInteraction(action: AIAction, gameSession: any): void {
     if (!action.targetId) return;
-    
+
     // Interact with object or character
     gameSession.queueInteraction({
       sourceId: this.entityId,
       targetId: action.targetId,
-      type: action.data?.interactionType || 'talk',
-      message: action.data?.message
+      type: action.data?.interactionType || "talk",
+      message: action.data?.message,
     });
   }
 
   private calculateDamage(weapon?: string): number {
     // Simple damage calculation based on weapon and personality
-    const baseDamage = weapon === 'ranged' ? 8 : 6;
+    const baseDamage = weapon === "ranged" ? 8 : 6;
     const aggressionBonus = Math.floor(this.state.personality.aggression * 4);
     return baseDamage + aggressionBonus + Math.floor(Math.random() * 4);
   }
@@ -265,7 +265,7 @@ export class AIEntity {
    * Add or update a goal for this AI entity
    */
   setGoal(goal: NPCGoal): void {
-    const existingIndex = this.state.goals.findIndex(g => g.type === goal.type);
+    const existingIndex = this.state.goals.findIndex((g) => g.type === goal.type);
     if (existingIndex >= 0) {
       this.state.goals[existingIndex] = goal;
     } else {
@@ -276,8 +276,8 @@ export class AIEntity {
   /**
    * Remove a goal
    */
-  removeGoal(goalType: NPCGoal['type']): void {
-    this.state.goals = this.state.goals.filter(g => g.type !== goalType);
+  removeGoal(goalType: NPCGoal["type"]): void {
+    this.state.goals = this.state.goals.filter((g) => g.type !== goalType);
   }
 
   /**

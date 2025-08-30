@@ -108,7 +108,8 @@ export class AIBehaviorEngine {
     npcId: string,
     personality: NPCPersonality,
     goals: NPCGoal[],
-    gameState: any): string {
+    gameState: any,
+  ): string {
     const options: Record<string, number> = {};
 
     // Evaluate attack actions
@@ -297,7 +298,8 @@ export type RoutingPolicy = {
 export class AIRouter {
   constructor(
     private registry: AIRegistry,
-    private policy: RoutingPolicy = {}) {}
+    private policy: RoutingPolicy = {},
+  ) {}
 
   private pick(cap: "textToImage" | "depth" | "segmentation"): AIProvider {
     const candidates = this.registry
@@ -306,13 +308,14 @@ export class AIRouter {
     if (candidates.length === 0) throw new Error(`No providers registered with capability ${cap}`);
 
     const preferred = (this.policy.preferred ?? []).find((_n) =>
-      candidates.some((_c) => c.name === n));
+      candidates.some((_c) => c.name === n),
+    );
     if (preferred) return candidates.find((_c) => c.name === preferred)!;
 
     const weights = candidates.map((_c) => ({ p: c, w: this.policy.weights?.[c.name] ?? 1 }));
     const total = weights.reduce((_s, _x) => s + x.w, 0);
     let r = Math.random() * total;
-    for (const { p,  w  } of weights) {
+    for (const { p, w } of weights) {
       r -= w;
       if (r <= 0) return p;
     }

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 /**
  * Sets up component library structure and utilities
  * to resolve missing imports identified in audit
  */
 
-console.log('🎨 Setting up component library structure...\n');
+console.log("🎨 Setting up component library structure...\n");
 
 // Create cn utility function in all app directories
 const cnUtilityCode = `import { clsx, type ClassValue } from 'clsx';
@@ -346,21 +346,21 @@ export {
 
 // Create directory structure
 const directories = [
-  'apps/client/src/lib',
-  'apps/client/src/hooks',
-  'apps/client/src/components/ui',
-  'apps/editor/src/lib', 
-  'apps/editor/src/hooks',
-  'apps/editor/src/components/ui',
-  'apps/server/src/lib',
-  'packages/ui/src',
-  'packages/ui/src/hooks',
-  'packages/ui/src/icons',
-  'packages/ui/src/utils'
+  "apps/client/src/lib",
+  "apps/client/src/hooks",
+  "apps/client/src/components/ui",
+  "apps/editor/src/lib",
+  "apps/editor/src/hooks",
+  "apps/editor/src/components/ui",
+  "apps/server/src/lib",
+  "packages/ui/src",
+  "packages/ui/src/hooks",
+  "packages/ui/src/icons",
+  "packages/ui/src/utils",
 ];
 
-directories.forEach(dir => {
-  const fullPath = path.join('/home/weningerii/vtt', dir);
+directories.forEach((dir) => {
+  const fullPath = path.join("/home/weningerii/vtt", dir);
   if (!fs.existsSync(fullPath)) {
     fs.mkdirSync(fullPath, { recursive: true });
     console.log(`✅ Created directory: ${dir}`);
@@ -370,72 +370,72 @@ directories.forEach(dir => {
 // Write utility files
 const files = [
   // CN utility for each app
-  { path: 'apps/client/src/lib/utils.ts', content: cnUtilityCode },
-  { path: 'apps/editor/src/lib/utils.ts', content: cnUtilityCode },
-  { path: 'packages/ui/src/utils/cn.ts', content: cnUtilityCode },
-  
+  { path: "apps/client/src/lib/utils.ts", content: cnUtilityCode },
+  { path: "apps/editor/src/lib/utils.ts", content: cnUtilityCode },
+  { path: "packages/ui/src/utils/cn.ts", content: cnUtilityCode },
+
   // Format utilities
-  { path: 'apps/client/src/lib/format.ts', content: formatUtilsCode },
-  { path: 'apps/editor/src/lib/format.ts', content: formatUtilsCode },
-  { path: 'packages/ui/src/utils/format.ts', content: formatUtilsCode },
-  
+  { path: "apps/client/src/lib/format.ts", content: formatUtilsCode },
+  { path: "apps/editor/src/lib/format.ts", content: formatUtilsCode },
+  { path: "packages/ui/src/utils/format.ts", content: formatUtilsCode },
+
   // Hooks
-  { path: 'apps/client/src/hooks/index.ts', content: commonHooksCode },
-  { path: 'apps/editor/src/hooks/index.ts', content: commonHooksCode },
-  { path: 'packages/ui/src/hooks/react-hooks.ts', content: commonHooksCode },
-  
+  { path: "apps/client/src/hooks/index.ts", content: commonHooksCode },
+  { path: "apps/editor/src/hooks/index.ts", content: commonHooksCode },
+  { path: "packages/ui/src/hooks/react-hooks.ts", content: commonHooksCode },
+
   // Custom hooks
-  { path: 'apps/client/src/hooks/custom.ts', content: customHooksCode },
-  { path: 'apps/editor/src/hooks/custom.ts', content: customHooksCode },
-  { path: 'packages/ui/src/hooks/custom-hooks.ts', content: customHooksCode },
-  
+  { path: "apps/client/src/hooks/custom.ts", content: customHooksCode },
+  { path: "apps/editor/src/hooks/custom.ts", content: customHooksCode },
+  { path: "packages/ui/src/hooks/custom-hooks.ts", content: customHooksCode },
+
   // Icons
-  { path: 'packages/ui/src/icons/index.ts', content: iconExportsCode }
+  { path: "packages/ui/src/icons/index.ts", content: iconExportsCode },
 ];
 
 files.forEach(({ path: filePath, content }) => {
-  const fullPath = path.join('/home/weningerii/vtt', filePath);
-  fs.writeFileSync(fullPath, content, 'utf8');
+  const fullPath = path.join("/home/weningerii/vtt", filePath);
+  fs.writeFileSync(fullPath, content, "utf8");
   console.log(`✅ Created: ${filePath}`);
 });
 
 // Create package.json for UI package if it doesn't exist
 const uiPackageJson = {
-  name: '@vtt/ui',
-  version: '1.0.0',
+  name: "@vtt/ui",
+  version: "1.0.0",
   private: true,
-  main: './src/index.ts',
-  types: './src/index.ts',
+  main: "./src/index.ts",
+  types: "./src/index.ts",
   scripts: {
-    typecheck: 'tsc --noEmit'
+    typecheck: "tsc --noEmit",
   },
   dependencies: {
-    'clsx': '^2.1.0',
-    'tailwind-merge': '^2.2.0',
-    'lucide-react': '^0.294.0',
-    'class-variance-authority': 'latest',
-    'date-fns': 'latest',
-    '@radix-ui/react-alert-dialog': 'latest',
-    '@radix-ui/react-dialog': 'latest',
-    '@radix-ui/react-dropdown-menu': 'latest',
-    '@radix-ui/react-label': 'latest',
-    '@radix-ui/react-popover': 'latest',
-    '@radix-ui/react-select': 'latest',
-    '@radix-ui/react-tabs': 'latest',
-    '@radix-ui/react-toast': 'latest',
-    'react': '18',
-    'react-dom': '18'
+    clsx: "^2.1.0",
+    "tailwind-merge": "^2.2.0",
+    "lucide-react": "^0.294.0",
+    "class-variance-authority": "latest",
+    "date-fns": "latest",
+    "@radix-ui/react-alert-dialog": "latest",
+    "@radix-ui/react-dialog": "latest",
+    "@radix-ui/react-dropdown-menu": "latest",
+    "@radix-ui/react-label": "latest",
+    "@radix-ui/react-popover": "latest",
+    "@radix-ui/react-select": "latest",
+    "@radix-ui/react-tabs": "latest",
+    "@radix-ui/react-toast": "latest",
+    react: "18",
+    "react-dom": "18",
   },
   devDependencies: {
-    '@types/react': '18',
-    '@types/react-dom': '18',
-    'typescript': '^5.0.0'
-  }
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    typescript: "^5.0.0",
+  },
 };
 
-const uiPackagePath = '/home/weningerii/vtt/packages/ui/package.json';
+const uiPackagePath = "/home/weningerii/vtt/packages/ui/package.json";
 fs.writeFileSync(uiPackagePath, JSON.stringify(uiPackageJson, null, 2));
-console.log('✅ Created packages/ui/package.json');
+console.log("✅ Created packages/ui/package.json");
 
 // Create main UI export file
 const uiIndexCode = `// Main UI package exports
@@ -449,35 +449,35 @@ export * from './icons';
 export type { ClassValue } from 'clsx';
 `;
 
-fs.writeFileSync('/home/weningerii/vtt/packages/ui/src/index.ts', uiIndexCode);
-console.log('✅ Created packages/ui/src/index.ts');
+fs.writeFileSync("/home/weningerii/vtt/packages/ui/src/index.ts", uiIndexCode);
+console.log("✅ Created packages/ui/src/index.ts");
 
 // Create tsconfig for UI package
 const uiTsConfig = {
-  extends: '../../tsconfig.base.json',
+  extends: "../../tsconfig.base.json",
   compilerOptions: {
-    jsx: 'react-jsx',
-    lib: ['ES2020', 'DOM', 'DOM.Iterable'],
-    module: 'ESNext',
-    target: 'ES2020',
-    moduleResolution: 'node',
+    jsx: "react-jsx",
+    lib: ["ES2020", "DOM", "DOM.Iterable"],
+    module: "ESNext",
+    target: "ES2020",
+    moduleResolution: "node",
     resolveJsonModule: true,
     allowSyntheticDefaultImports: true,
-    esModuleInterop: true
+    esModuleInterop: true,
   },
-  include: ['src/**/*'],
-  exclude: ['node_modules', 'dist']
+  include: ["src/**/*"],
+  exclude: ["node_modules", "dist"],
 };
 
 fs.writeFileSync(
-  '/home/weningerii/vtt/packages/ui/tsconfig.json',
-  JSON.stringify(uiTsConfig, null, 2)
+  "/home/weningerii/vtt/packages/ui/tsconfig.json",
+  JSON.stringify(uiTsConfig, null, 2),
 );
-console.log('✅ Created packages/ui/tsconfig.json');
+console.log("✅ Created packages/ui/tsconfig.json");
 
-console.log('\n✅ Component library structure setup complete!');
-console.log('\n📝 Next steps:');
-console.log('1. Run: node configure-paths.js');
-console.log('2. Update pnpm-workspace.yaml to include packages/ui');
-console.log('3. Run: pnpm install');
+console.log("\n✅ Component library structure setup complete!");
+console.log("\n📝 Next steps:");
+console.log("1. Run: node configure-paths.js");
+console.log("2. Update pnpm-workspace.yaml to include packages/ui");
+console.log("3. Run: pnpm install");
 console.log('4. Start using imports like: import { cn } from "@vtt/ui"');

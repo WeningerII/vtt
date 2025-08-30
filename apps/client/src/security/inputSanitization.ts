@@ -2,7 +2,7 @@
  * Input sanitization and validation utilities for the VTT application
  */
 
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 // Input validation patterns
 const VALIDATION_PATTERNS = {
@@ -13,7 +13,7 @@ const VALIDATION_PATTERNS = {
   diceExpression: /^[0-9d+\-*\/\s()khlr!<>=]+$/i,
   hexColor: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
   url: /^https?:\/\/[^\s<>"']+$/,
-  uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
 };
 
 // Dangerous patterns to block
@@ -30,28 +30,31 @@ const DANGEROUS_PATTERNS = [
   /<meta/gi,
   /expression\s*\(/gi,
   /url\s*\(/gi,
-  /@import/gi
+  /@import/gi,
 ];
 
 /**
  * Sanitize HTML content using DOMPurify
  */
-export function sanitizeHTML(input: string, options: {
-  allowedTags?: string[];
-  allowedAttributes?: string[];
-  stripTags?: boolean;
-} = {}): string {
-  if (typeof input !== 'string') {
-    return '';
+export function sanitizeHTML(
+  input: string,
+  options: {
+    allowedTags?: string[];
+    allowedAttributes?: string[];
+    stripTags?: boolean;
+  } = {},
+): string {
+  if (typeof input !== "string") {
+    return "";
   }
 
   const config: any = {
-    ALLOWED_TAGS: options.allowedTags || ['b', 'i', 'em', 'strong', 'u', 'br', 'p'],
-    ALLOWED_ATTR: options.allowedAttributes || ['class'],
+    ALLOWED_TAGS: options.allowedTags || ["b", "i", "em", "strong", "u", "br", "p"],
+    ALLOWED_ATTR: options.allowedAttributes || ["class"],
     KEEP_CONTENT: !options.stripTags,
     RETURN_DOM: false,
     RETURN_DOM_FRAGMENT: false,
-    RETURN_DOM_IMPORT: false
+    RETURN_DOM_IMPORT: false,
   };
 
   return DOMPurify.sanitize(input, config);
@@ -61,21 +64,21 @@ export function sanitizeHTML(input: string, options: {
  * Sanitize plain text input
  */
 export function sanitizeText(input: string, maxLength: number = 1000): string {
-  if (typeof input !== 'string') {
-    return '';
+  if (typeof input !== "string") {
+    return "";
   }
 
   // Remove null bytes and control characters
-  let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-  
+  let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+
   // Trim whitespace
   sanitized = sanitized.trim();
-  
+
   // Limit length
   if (sanitized.length > maxLength) {
     sanitized = sanitized.substring(0, maxLength);
   }
-  
+
   return sanitized;
 }
 
@@ -83,7 +86,7 @@ export function sanitizeText(input: string, maxLength: number = 1000): string {
  * Validate input against patterns
  */
 export function validateInput(input: string, type: keyof typeof VALIDATION_PATTERNS): boolean {
-  if (typeof input !== 'string') {
+  if (typeof input !== "string") {
     return false;
   }
 
@@ -95,43 +98,46 @@ export function validateInput(input: string, type: keyof typeof VALIDATION_PATTE
  * Check for dangerous content
  */
 export function containsDangerousContent(input: string): boolean {
-  if (typeof input !== 'string') {
+  if (typeof input !== "string") {
     return false;
   }
 
-  return DANGEROUS_PATTERNS.some(pattern => pattern.test(input));
+  return DANGEROUS_PATTERNS.some((pattern) => pattern.test(input));
 }
 
 /**
  * Sanitize user-generated content for display
  */
-export function sanitizeUserContent(input: string, contentType: 'chat' | 'description' | 'name' = 'chat'): string {
-  if (typeof input !== 'string') {
-    return '';
+export function sanitizeUserContent(
+  input: string,
+  contentType: "chat" | "description" | "name" = "chat",
+): string {
+  if (typeof input !== "string") {
+    return "";
   }
 
   // Check for dangerous content first
   if (containsDangerousContent(input)) {
-    console.warn('Dangerous content detected and blocked:', input.substring(0, 100));
-    return '[Content blocked for security reasons]';
+    console.warn("Dangerous content detected and blocked:", input.substring(0, 100));
+    return "[Content blocked for security reasons]";
   }
 
   switch (contentType) {
-    case 'chat':
+    case "chat":
       return sanitizeHTML(input, {
-        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'br'],
-        allowedAttributes: []
+        allowedTags: ["b", "i", "em", "strong", "u", "br"],
+        allowedAttributes: [],
       });
-    
-    case 'description':
+
+    case "description":
       return sanitizeHTML(input, {
-        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'br', 'p', 'ul', 'ol', 'li'],
-        allowedAttributes: ['class']
+        allowedTags: ["b", "i", "em", "strong", "u", "br", "p", "ul", "ol", "li"],
+        allowedAttributes: ["class"],
       });
-    
-    case 'name':
+
+    case "name":
       return sanitizeText(input, 50);
-    
+
     default:
       return sanitizeText(input);
   }
@@ -141,22 +147,22 @@ export function sanitizeUserContent(input: string, contentType: 'chat' | 'descri
  * Sanitize dice expressions
  */
 export function sanitizeDiceExpression(input: string): string {
-  if (typeof input !== 'string') {
-    return '';
+  if (typeof input !== "string") {
+    return "";
   }
 
   // Remove any non-dice characters
-  const sanitized = input.replace(/[^0-9d+\-*\/\s()khlr!<>=]/gi, '');
-  
+  const sanitized = input.replace(/[^0-9d+\-*\/\s()khlr!<>=]/gi, "");
+
   // Validate the expression
-  if (!validateInput(sanitized, 'diceExpression')) {
-    throw new Error('Invalid dice expression');
+  if (!validateInput(sanitized, "diceExpression")) {
+    throw new Error("Invalid dice expression");
   }
 
   // Limit complexity to prevent DoS
   const diceCount = (sanitized.match(/\d+d/gi) || []).length;
   if (diceCount > 10) {
-    throw new Error('Too many dice in expression');
+    throw new Error("Too many dice in expression");
   }
 
   return sanitized;
@@ -166,28 +172,28 @@ export function sanitizeDiceExpression(input: string): string {
  * Sanitize file names
  */
 export function sanitizeFileName(input: string): string {
-  if (typeof input !== 'string') {
-    return '';
+  if (typeof input !== "string") {
+    return "";
   }
 
   // Remove dangerous characters
-  let sanitized = input.replace(/[<>:"/\\|?*\x00-\x1f]/g, '');
-  
+  let sanitized = input.replace(/[<>:"/\\|?*\x00-\x1f]/g, "");
+
   // Remove leading/trailing dots and spaces
-  sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, '');
-  
+  sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, "");
+
   // Limit length
   if (sanitized.length > 255) {
-    const ext = sanitized.split('.').pop();
+    const ext = sanitized.split(".").pop();
     const name = sanitized.substring(0, 255 - (ext ? ext.length + 1 : 0));
     sanitized = ext ? `${name}.${ext}` : name;
   }
-  
+
   // Ensure not empty
   if (!sanitized) {
-    sanitized = 'untitled';
+    sanitized = "untitled";
   }
-  
+
   return sanitized;
 }
 
@@ -195,38 +201,40 @@ export function sanitizeFileName(input: string): string {
  * Sanitize URLs
  */
 export function sanitizeURL(input: string): string {
-  if (typeof input !== 'string') {
-    return '';
+  if (typeof input !== "string") {
+    return "";
   }
 
   // Only allow HTTP/HTTPS URLs
-  if (!validateInput(input, 'url')) {
-    throw new Error('Invalid URL format');
+  if (!validateInput(input, "url")) {
+    throw new Error("Invalid URL format");
   }
 
   try {
     const url = new URL(input);
-    
+
     // Block dangerous protocols
-    if (!['http:', 'https:'].includes(url.protocol)) {
-      throw new Error('Unsupported protocol');
+    if (!["http:", "https:"].includes(url.protocol)) {
+      throw new Error("Unsupported protocol");
     }
-    
+
     // Block localhost and private IPs in production
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       const hostname = url.hostname.toLowerCase();
-      if (hostname === 'localhost' || 
-          hostname.startsWith('127.') ||
-          hostname.startsWith('192.168.') ||
-          hostname.startsWith('10.') ||
-          hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./)) {
-        throw new Error('Private network URLs not allowed');
+      if (
+        hostname === "localhost" ||
+        hostname.startsWith("127.") ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("10.") ||
+        hostname.match(/^172\.(1[6-9]|2[0-9]|3[01])\./)
+      ) {
+        throw new Error("Private network URLs not allowed");
       }
     }
-    
+
     return url.toString();
   } catch (error) {
-    throw new Error('Invalid URL');
+    throw new Error("Invalid URL");
   }
 }
 
@@ -250,11 +258,11 @@ export class InputSanitizer {
           sanitized[key] = rule(value);
         } catch (error) {
           console.warn(`Sanitization failed for field ${key}:`, error);
-          sanitized[key] = '';
+          sanitized[key] = "";
         }
       } else {
         // Default sanitization for unknown fields
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
           sanitized[key] = sanitizeText(value);
         } else {
           sanitized[key] = value;
@@ -272,71 +280,77 @@ export class InputSanitizer {
 export const vttSanitizer = new InputSanitizer();
 
 // Add common rules
-vttSanitizer.addRule('email', (value: string) => {
+vttSanitizer.addRule("email", (value: string) => {
   const sanitized = sanitizeText(value, 254);
-  if (!validateInput(sanitized, 'email')) {
-    throw new Error('Invalid email format');
+  if (!validateInput(sanitized, "email")) {
+    throw new Error("Invalid email format");
   }
   return sanitized.toLowerCase();
 });
 
-vttSanitizer.addRule('username', (value: string) => {
+vttSanitizer.addRule("username", (value: string) => {
   const sanitized = sanitizeText(value, 20);
-  if (!validateInput(sanitized, 'username')) {
-    throw new Error('Invalid username format');
+  if (!validateInput(sanitized, "username")) {
+    throw new Error("Invalid username format");
   }
   return sanitized;
 });
 
-vttSanitizer.addRule('campaignName', (value: string) => {
+vttSanitizer.addRule("campaignName", (value: string) => {
   const sanitized = sanitizeText(value, 50);
-  if (!validateInput(sanitized, 'campaignName')) {
-    throw new Error('Invalid campaign name');
+  if (!validateInput(sanitized, "campaignName")) {
+    throw new Error("Invalid campaign name");
   }
   return sanitized;
 });
 
-vttSanitizer.addRule('characterName', (value: string) => {
+vttSanitizer.addRule("characterName", (value: string) => {
   const sanitized = sanitizeText(value, 30);
-  if (!validateInput(sanitized, 'characterName')) {
-    throw new Error('Invalid character name');
+  if (!validateInput(sanitized, "characterName")) {
+    throw new Error("Invalid character name");
   }
   return sanitized;
 });
 
-vttSanitizer.addRule('description', (value: string) => {
-  return sanitizeUserContent(value, 'description');
+vttSanitizer.addRule("description", (value: string) => {
+  return sanitizeUserContent(value, "description");
 });
 
-vttSanitizer.addRule('chatMessage', (value: string) => {
-  return sanitizeUserContent(value, 'chat');
+vttSanitizer.addRule("chatMessage", (value: string) => {
+  return sanitizeUserContent(value, "chat");
 });
 
-vttSanitizer.addRule('diceExpression', sanitizeDiceExpression);
+vttSanitizer.addRule("diceExpression", sanitizeDiceExpression);
 
-vttSanitizer.addRule('url', sanitizeURL);
+vttSanitizer.addRule("url", sanitizeURL);
 
 /**
  * React hook for input sanitization
  */
-export function useSanitizedInput(initialValue: string = '', sanitizer: (value: string) => string = sanitizeText) {
+export function useSanitizedInput(
+  initialValue: string = "",
+  sanitizer: (value: string) => string = sanitizeText,
+) {
   const [value, setValue] = React.useState(initialValue);
   const [sanitizedValue, setSanitizedValue] = React.useState(sanitizer(initialValue));
 
-  const handleChange = React.useCallback((newValue: string) => {
-    setValue(newValue);
-    try {
-      setSanitizedValue(sanitizer(newValue));
-    } catch (error) {
-      console.warn('Sanitization error:', error);
-      setSanitizedValue('');
-    }
-  }, [sanitizer]);
+  const handleChange = React.useCallback(
+    (newValue: string) => {
+      setValue(newValue);
+      try {
+        setSanitizedValue(sanitizer(newValue));
+      } catch (error) {
+        console.warn("Sanitization error:", error);
+        setSanitizedValue("");
+      }
+    },
+    [sanitizer],
+  );
 
   return {
     value,
     sanitizedValue,
     onChange: handleChange,
-    isValid: value === sanitizedValue
+    isValid: value === sanitizedValue,
   };
 }

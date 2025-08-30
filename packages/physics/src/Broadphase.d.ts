@@ -4,8 +4,8 @@
  * counts.
  */
 export declare class Broadphase {
-    private objects;
-    add(obj: unknown): void;
-    query(): Array<[unknown, unknown]>;
+  private objects;
+  add(obj: unknown): void;
+  query(): Array<[unknown, unknown]>;
 }
 //# sourceMappingURL=Broadphase.d.ts.map

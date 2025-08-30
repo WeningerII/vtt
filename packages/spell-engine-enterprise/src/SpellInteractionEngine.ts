@@ -3,7 +3,7 @@
  * Handles complex spell interactions, combinations, and emergent behaviors
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export class SpellInteractionEngine extends EventEmitter {
   private activeSpells = new Map<string, ActiveSpell>();
@@ -22,108 +22,108 @@ export class SpellInteractionEngine extends EventEmitter {
 
   private initializeInteractionRules(): void {
     // Elemental interaction rules
-    this.addInteractionRule('fire', 'ice', {
-      type: 'neutralization',
+    this.addInteractionRule("fire", "ice", {
+      type: "neutralization",
       priority: 10,
-      effect: 'steam_explosion',
+      effect: "steam_explosion",
       magnitude: 1.5,
-      radius: 3.0
+      radius: 3.0,
     });
 
-    this.addInteractionRule('fire', 'water', {
-      type: 'neutralization',
+    this.addInteractionRule("fire", "water", {
+      type: "neutralization",
       priority: 8,
-      effect: 'steam_cloud',
+      effect: "steam_cloud",
       magnitude: 1.2,
-      radius: 2.5
+      radius: 2.5,
     });
 
-    this.addInteractionRule('lightning', 'water', {
-      type: 'amplification',
+    this.addInteractionRule("lightning", "water", {
+      type: "amplification",
       priority: 9,
-      effect: 'chain_lightning',
+      effect: "chain_lightning",
       magnitude: 2.0,
-      radius: 5.0
+      radius: 5.0,
     });
 
-    this.addInteractionRule('fire', 'poison', {
-      type: 'transformation',
+    this.addInteractionRule("fire", "poison", {
+      type: "transformation",
       priority: 7,
-      effect: 'toxic_flames',
+      effect: "toxic_flames",
       magnitude: 1.8,
-      radius: 4.0
+      radius: 4.0,
     });
 
-    this.addInteractionRule('ice', 'earth', {
-      type: 'enhancement',
+    this.addInteractionRule("ice", "earth", {
+      type: "enhancement",
       priority: 6,
-      effect: 'crystal_spikes',
+      effect: "crystal_spikes",
       magnitude: 1.3,
-      radius: 3.5
+      radius: 3.5,
     });
 
     // School-based interactions
-    this.addInteractionRule('enchantment', 'illusion', {
-      type: 'synergy',
+    this.addInteractionRule("enchantment", "illusion", {
+      type: "synergy",
       priority: 8,
-      effect: 'enhanced_deception',
+      effect: "enhanced_deception",
       magnitude: 1.4,
-      radius: 0
+      radius: 0,
     });
 
-    this.addInteractionRule('necromancy', 'evocation', {
-      type: 'corruption',
+    this.addInteractionRule("necromancy", "evocation", {
+      type: "corruption",
       priority: 9,
-      effect: 'death_magic_amplification',
+      effect: "death_magic_amplification",
       magnitude: 2.2,
-      radius: 6.0
+      radius: 6.0,
     });
 
     // Concentration spell interactions
-    this.addInteractionRule('concentration', 'concentration', {
-      type: 'conflict',
+    this.addInteractionRule("concentration", "concentration", {
+      type: "conflict",
       priority: 10,
-      effect: 'concentration_break',
+      effect: "concentration_break",
       magnitude: 0,
-      radius: 0
+      radius: 0,
     });
   }
 
   private initializeCombinationMatrix(): void {
     // Fire + Ice combinations
-    this.setCombination(['fire', 'ice'], {
-      resultType: 'steam_explosion',
+    this.setCombination(["fire", "ice"], {
+      resultType: "steam_explosion",
       damageMultiplier: 1.5,
       areaMultiplier: 2.0,
       duration: 3000,
-      secondaryEffects: ['visibility_reduction', 'heat_damage']
+      secondaryEffects: ["visibility_reduction", "heat_damage"],
     });
 
     // Lightning + Water combinations
-    this.setCombination(['lightning', 'water'], {
-      resultType: 'electrified_water',
+    this.setCombination(["lightning", "water"], {
+      resultType: "electrified_water",
       damageMultiplier: 2.0,
       areaMultiplier: 1.5,
       duration: 5000,
-      secondaryEffects: ['paralysis', 'chain_reaction']
+      secondaryEffects: ["paralysis", "chain_reaction"],
     });
 
     // Multiple element combinations
-    this.setCombination(['fire', 'earth', 'air'], {
-      resultType: 'volcanic_eruption',
+    this.setCombination(["fire", "earth", "air"], {
+      resultType: "volcanic_eruption",
       damageMultiplier: 3.0,
       areaMultiplier: 4.0,
       duration: 10000,
-      secondaryEffects: ['lava_flow', 'ash_cloud', 'seismic_activity']
+      secondaryEffects: ["lava_flow", "ash_cloud", "seismic_activity"],
     });
 
     // Utility spell combinations
-    this.setCombination(['mage_hand', 'minor_illusion'], {
-      resultType: 'phantom_manipulation',
+    this.setCombination(["mage_hand", "minor_illusion"], {
+      resultType: "phantom_manipulation",
       damageMultiplier: 0,
       areaMultiplier: 1.0,
       duration: 60000,
-      secondaryEffects: ['invisible_interaction', 'enhanced_stealth']
+      secondaryEffects: ["invisible_interaction", "enhanced_stealth"],
     });
   }
 
@@ -136,7 +136,7 @@ export class SpellInteractionEngine extends EventEmitter {
       startTime: Date.now(),
       lastUpdate: Date.now(),
       spatialBounds: this.calculateSpellBounds(spell, position),
-      interactionHistory: []
+      interactionHistory: [],
     };
 
     this.activeSpells.set(activeSpell.id, activeSpell);
@@ -146,7 +146,7 @@ export class SpellInteractionEngine extends EventEmitter {
     // Check for immediate interactions
     await this.checkForInteractions(activeSpell);
 
-    this.emit('spell_registered', activeSpell);
+    this.emit("spell_registered", activeSpell);
     return activeSpell.id;
   }
 
@@ -156,11 +156,11 @@ export class SpellInteractionEngine extends EventEmitter {
 
     for (const [_id1, spell1] of this.activeSpells) {
       const nearbySpells = this.spatialIndex.query(spell1.spatialBounds);
-      
+
       for (const spell2 of nearbySpells) {
         if (spell1.id === spell2.id) continue;
-        
-        const pairKey = [spell1.id, spell2.id].sort().join(':');
+
+        const pairKey = [spell1.id, spell2.id].sort().join(":");
         if (processedPairs.has(pairKey)) continue;
         processedPairs.add(pairKey);
 
@@ -175,13 +175,14 @@ export class SpellInteractionEngine extends EventEmitter {
     return results;
   }
 
-  private async evaluateInteraction(spell1: ActiveSpell, spell2: ActiveSpell): Promise<InteractionResult | null> {
+  private async evaluateInteraction(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+  ): Promise<InteractionResult | null> {
     // Check spatial proximity
     const distance = this.calculateDistance(spell1.position, spell2.position);
-    const maxInteractionRange = Math.max(
-      this.getSpellRadius(spell1.spell),
-      this.getSpellRadius(spell2.spell)
-    ) + 5.0; // 5-foot interaction buffer
+    const maxInteractionRange =
+      Math.max(this.getSpellRadius(spell1.spell), this.getSpellRadius(spell2.spell)) + 5.0; // 5-foot interaction buffer
 
     if (distance > maxInteractionRange) return null;
 
@@ -206,7 +207,7 @@ export class SpellInteractionEngine extends EventEmitter {
       rule,
       strength: interactionStrength,
       position: this.calculateInteractionCenter(spell1, spell2),
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 
@@ -219,117 +220,150 @@ export class SpellInteractionEngine extends EventEmitter {
     spell2.interactionHistory.push(interaction);
 
     switch (interaction.rule.type) {
-      case 'neutralization':
+      case "neutralization":
         await this.handleNeutralization(spell1, spell2, interaction);
         break;
-      case 'amplification':
+      case "amplification":
         await this.handleAmplification(spell1, spell2, interaction);
         break;
-      case 'transformation':
+      case "transformation":
         await this.handleTransformation(spell1, spell2, interaction);
         break;
-      case 'enhancement':
+      case "enhancement":
         await this.handleEnhancement(spell1, spell2, interaction);
         break;
-      case 'synergy':
+      case "synergy":
         await this.handleSynergy(spell1, spell2, interaction);
         break;
-      case 'corruption':
+      case "corruption":
         await this.handleCorruption(spell1, spell2, interaction);
         break;
-      case 'conflict':
+      case "conflict":
         await this.handleConflict(spell1, spell2, interaction);
         break;
     }
 
-    this.emit('interaction_executed', interaction);
+    this.emit("interaction_executed", interaction);
   }
 
-  private async handleNeutralization(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<void> {
+  private async handleNeutralization(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<void> {
     // Create neutralization effect
     const effect = await this.createNeutralizationEffect(spell1, spell2, interaction);
-    
+
     // Reduce or cancel both spells
     await this.reduceSpellPotency(spell1, 0.5);
     await this.reduceSpellPotency(spell2, 0.5);
-    
-    this.emit('neutralization_effect', effect);
+
+    this.emit("neutralization_effect", effect);
   }
 
-  private async handleAmplification(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<void> {
+  private async handleAmplification(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<void> {
     // Amplify the primary spell (usually the first one)
     const amplificationFactor = interaction.rule.magnitude * interaction.strength;
-    
+
     await this.amplifySpell(spell1, amplificationFactor);
-    
+
     // Secondary spell may be consumed or reduced
-    if (interaction.rule.effect === 'chain_lightning') {
+    if (interaction.rule.effect === "chain_lightning") {
       await this.createChainLightningEffect(spell1, spell2, interaction);
     }
-    
-    this.emit('amplification_effect', { spell1, spell2, factor: amplificationFactor });
+
+    this.emit("amplification_effect", { spell1, spell2, factor: amplificationFactor });
   }
 
-  private async handleTransformation(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<void> {
+  private async handleTransformation(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<void> {
     // Transform both spells into a new combined effect
     const transformedEffect = await this.createTransformedEffect(spell1, spell2, interaction);
-    
+
     // Remove original spells
     this.removeSpell(spell1.id);
     this.removeSpell(spell2.id);
-    
+
     // Register new transformed spell
     await this.registerTransformedSpell(transformedEffect);
-    
-    this.emit('transformation_effect', transformedEffect);
+
+    this.emit("transformation_effect", transformedEffect);
   }
 
-  private async handleEnhancement(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<void> {
+  private async handleEnhancement(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<void> {
     // Enhance spell properties without changing core nature
     const enhancement = {
       duration: spell1.spell.duration * interaction.rule.magnitude,
-      potency: (spell1.spell.damage?.diceExpression || '1d4') + '+' + Math.floor(interaction.strength * 10),
-      radius: this.getSpellRadius(spell1.spell) * 1.2
+      potency:
+        (spell1.spell.damage?.diceExpression || "1d4") +
+        "+" +
+        Math.floor(interaction.strength * 10),
+      radius: this.getSpellRadius(spell1.spell) * 1.2,
     };
-    
+
     await this.applyEnhancement(spell1, enhancement);
-    
-    this.emit('enhancement_effect', { spell: spell1, enhancement });
+
+    this.emit("enhancement_effect", { spell: spell1, enhancement });
   }
 
-  private async handleSynergy(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<void> {
+  private async handleSynergy(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<void> {
     // Create synergistic effects that benefit from both spells
     const synergyEffect = await this.createSynergyEffect(spell1, spell2, interaction);
-    
+
     // Both spells continue but with enhanced properties
     await this.applySynergyBonus(spell1, synergyEffect.bonus1);
     await this.applySynergyBonus(spell2, synergyEffect.bonus2);
-    
-    this.emit('synergy_effect', synergyEffect);
+
+    this.emit("synergy_effect", synergyEffect);
   }
 
-  private async handleCorruption(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<void> {
+  private async handleCorruption(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<void> {
     // Create corrupted version with enhanced but dangerous effects
     const corruptedEffect = await this.createCorruptedEffect(spell1, spell2, interaction);
-    
+
     // Apply corruption to both spells
     await this.applyCorruption(spell1, corruptedEffect.corruption1);
     await this.applyCorruption(spell2, corruptedEffect.corruption2);
-    
-    this.emit('corruption_effect', corruptedEffect);
+
+    this.emit("corruption_effect", corruptedEffect);
   }
 
-  private async handleConflict(spell1: ActiveSpell, spell2: ActiveSpell, _interaction: InteractionResult): Promise<void> {
+  private async handleConflict(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    _interaction: InteractionResult,
+  ): Promise<void> {
     // Handle conflicting spells (e.g., concentration conflicts)
-    if (spell1.caster.id === spell2.caster.id && 
-        spell1.spell.concentration && spell2.spell.concentration) {
-      
+    if (
+      spell1.caster.id === spell2.caster.id &&
+      spell1.spell.concentration &&
+      spell2.spell.concentration
+    ) {
       // Break concentration on older spell
       const olderSpell = spell1.startTime < spell2.startTime ? spell1 : spell2;
       await this.breakConcentration(olderSpell);
     }
-    
-    this.emit('conflict_resolved', { spell1, spell2, resolution: 'concentration_broken' });
+
+    this.emit("conflict_resolved", { spell1, spell2, resolution: "concentration_broken" });
   }
 
   async detectSpellCombinations(): Promise<CombinationDetection[]> {
@@ -339,17 +373,17 @@ export class SpellInteractionEngine extends EventEmitter {
     for (const group of spellGroups) {
       if (group.length < 2) continue;
 
-      const elementTypes = group.map(s => this.getSpellElement(s.spell));
-      const combinationKey = elementTypes.sort().join(',');
+      const elementTypes = group.map((s) => this.getSpellElement(s.spell));
+      const combinationKey = elementTypes.sort().join(",");
 
       if (this.combinationMatrix.has(combinationKey)) {
         const combination = this.combinationMatrix.get(combinationKey)!;
         combinations.push({
           id: crypto.randomUUID(),
-          spells: group.map(s => s.id),
+          spells: group.map((s) => s.id),
           combination,
           centerPoint: this.calculateGroupCenter(group),
-          detectionTime: Date.now()
+          detectionTime: Date.now(),
         });
       }
     }
@@ -358,7 +392,7 @@ export class SpellInteractionEngine extends EventEmitter {
   }
 
   async executeCombination(detection: CombinationDetection): Promise<CombinationResult> {
-    const spells = detection.spells.map(id => this.activeSpells.get(id)!);
+    const spells = detection.spells.map((id) => this.activeSpells.get(id)!);
     const combination = detection.combination;
 
     // Calculate combined effect magnitude
@@ -367,7 +401,8 @@ export class SpellInteractionEngine extends EventEmitter {
     }, 0);
 
     const combinedDamage = baseDamage * combination.damageMultiplier;
-    const combinedRadius = Math.max(...spells.map(s => this.getSpellRadius(s.spell))) * combination.areaMultiplier;
+    const combinedRadius =
+      Math.max(...spells.map((s) => this.getSpellRadius(s.spell))) * combination.areaMultiplier;
 
     // Create combination effect
     const result: CombinationResult = {
@@ -378,7 +413,7 @@ export class SpellInteractionEngine extends EventEmitter {
       radius: combinedRadius,
       duration: combination.duration,
       secondaryEffects: combination.secondaryEffects,
-      participatingSpells: spells.map(s => s.id)
+      participatingSpells: spells.map((s) => s.id),
     };
 
     // Remove or modify participating spells
@@ -392,7 +427,7 @@ export class SpellInteractionEngine extends EventEmitter {
       }
     }
 
-    this.emit('combination_executed', result);
+    this.emit("combination_executed", result);
     return result;
   }
 
@@ -402,7 +437,7 @@ export class SpellInteractionEngine extends EventEmitter {
       this.spatialIndex.remove(spell);
       this.temporalTracker.untrack(spell);
       this.activeSpells.delete(spellId);
-      this.emit('spell_removed', spellId);
+      this.emit("spell_removed", spellId);
     }
   }
 
@@ -410,16 +445,16 @@ export class SpellInteractionEngine extends EventEmitter {
   private addInteractionRule(element1: string, element2: string, rule: InteractionRule): void {
     const key1 = `${element1}:${element2}`;
     const key2 = `${element2}:${element1}`;
-    
+
     if (!this.interactionRules.has(key1)) this.interactionRules.set(key1, []);
     if (!this.interactionRules.has(key2)) this.interactionRules.set(key2, []);
-    
+
     this.interactionRules.get(key1)!.push(rule);
     this.interactionRules.get(key2)!.push(rule);
   }
 
   private setCombination(elements: string[], effect: CombinationEffect): void {
-    const key = elements.sort().join(',');
+    const key = elements.sort().join(",");
     this.combinationMatrix.set(key, effect);
   }
 
@@ -427,15 +462,15 @@ export class SpellInteractionEngine extends EventEmitter {
     const element1 = this.getSpellElement(spell1);
     const element2 = this.getSpellElement(spell2);
     const key = `${element1}:${element2}`;
-    
+
     return this.interactionRules.get(key) || [];
   }
 
   private getSpellElement(spell: SpellEffect): string {
     if (spell.damage?.damageType) return spell.damage.damageType;
     if (spell.school) return spell.school;
-    if (spell.concentration) return 'concentration';
-    return 'neutral';
+    if (spell.concentration) return "concentration";
+    return "neutral";
   }
 
   private calculateDistance(pos1: Vector3, pos2: Vector3): number {
@@ -447,24 +482,24 @@ export class SpellInteractionEngine extends EventEmitter {
 
   private getSpellRadius(spell: SpellEffect): number {
     if (spell.areaOfEffect?.radius) return spell.areaOfEffect.radius;
-    if (spell.range === 'Touch') return 1.5;
-    if (spell.range === 'Self') return 0;
-    
+    if (spell.range === "Touch") return 1.5;
+    if (spell.range === "Self") return 0;
+
     const rangeMatch = spell.range.match(/(\d+) feet/);
     return rangeMatch ? parseInt(rangeMatch[1]) : 5;
   }
 
   private getSpellDamage(spell: SpellEffect): number {
     if (!spell.damage?.diceExpression) return 0;
-    
+
     const match = spell.damage.diceExpression.match(/(\d+)d(\d+)(?:\+(\d+))?/);
     if (match) {
       const numDice = parseInt(match[1]);
       const dieSize = parseInt(match[2]);
-      const bonus = parseInt(match[3] || '0');
+      const bonus = parseInt(match[3] || "0");
       return numDice * (dieSize / 2 + 0.5) + bonus; // Average damage
     }
-    
+
     return 0;
   }
 
@@ -472,7 +507,7 @@ export class SpellInteractionEngine extends EventEmitter {
     const radius = this.getSpellRadius(spell);
     return {
       min: { x: position.x - radius, y: position.y - radius, z: position.z - radius },
-      max: { x: position.x + radius, y: position.y + radius, z: position.z + radius }
+      max: { x: position.x + radius, y: position.y + radius, z: position.z + radius },
     };
   }
 
@@ -481,10 +516,10 @@ export class SpellInteractionEngine extends EventEmitter {
     const distance = this.calculateDistance(spell1.position, spell2.position);
     const radius1 = this.getSpellRadius(spell1.spell);
     const radius2 = this.getSpellRadius(spell2.spell);
-    
+
     if (distance >= radius1 + radius2) return 0;
     if (distance <= Math.abs(radius1 - radius2)) return Math.PI * Math.min(radius1, radius2) ** 2;
-    
+
     // Approximate overlap for intersecting circles
     const overlap = (radius1 + radius2 - distance) / (radius1 + radius2);
     return overlap * Math.PI * Math.min(radius1, radius2) ** 2;
@@ -494,7 +529,7 @@ export class SpellInteractionEngine extends EventEmitter {
     return {
       x: (spell1.position.x + spell2.position.x) / 2,
       y: (spell1.position.y + spell2.position.y) / 2,
-      z: (spell1.position.z + spell2.position.z) / 2
+      z: (spell1.position.z + spell2.position.z) / 2,
     };
   }
 
@@ -510,8 +545,10 @@ export class SpellInteractionEngine extends EventEmitter {
 
       const nearby = this.spatialIndex.query(spell.spatialBounds);
       for (const nearbySpell of nearby) {
-        if (!processed.has(nearbySpell.id) && 
-            this.calculateDistance(spell.position, nearbySpell.position) <= 10) {
+        if (
+          !processed.has(nearbySpell.id) &&
+          this.calculateDistance(spell.position, nearbySpell.position) <= 10
+        ) {
           group.push(nearbySpell);
           processed.add(nearbySpell.id);
         }
@@ -524,45 +561,68 @@ export class SpellInteractionEngine extends EventEmitter {
   }
 
   private calculateGroupCenter(group: ActiveSpell[]): Vector3 {
-    const sum = group.reduce((_acc, _spell) => ({
-      x: acc.x + spell.position.x,
-      y: acc.y + spell.position.y,
-      z: acc.z + spell.position.z
-    }), { x: 0, y: 0, z: 0 });
+    const sum = group.reduce(
+      (_acc, _spell) => ({
+        x: acc.x + spell.position.x,
+        y: acc.y + spell.position.y,
+        z: acc.z + spell.position.z,
+      }),
+      { x: 0, y: 0, z: 0 },
+    );
 
     return {
       x: sum.x / group.length,
       y: sum.y / group.length,
-      z: sum.z / group.length
+      z: sum.z / group.length,
     };
   }
 
   // Placeholder implementations for effect creation methods
-  private async createNeutralizationEffect(spell1: ActiveSpell, spell2: ActiveSpell, _interaction: InteractionResult): Promise<any> {
-    return { type: 'neutralization', spells: [spell1.id, spell2.id] };
+  private async createNeutralizationEffect(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    _interaction: InteractionResult,
+  ): Promise<any> {
+    return { type: "neutralization", spells: [spell1.id, spell2.id] };
   }
 
-  private async createChainLightningEffect(spell1: ActiveSpell, spell2: ActiveSpell, _interaction: InteractionResult): Promise<any> {
-    return { type: 'chain_lightning', origin: spell1.id, amplifier: spell2.id };
+  private async createChainLightningEffect(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    _interaction: InteractionResult,
+  ): Promise<any> {
+    return { type: "chain_lightning", origin: spell1.id, amplifier: spell2.id };
   }
 
-  private async createTransformedEffect(spell1: ActiveSpell, spell2: ActiveSpell, interaction: InteractionResult): Promise<any> {
+  private async createTransformedEffect(
+    spell1: ActiveSpell,
+    spell2: ActiveSpell,
+    interaction: InteractionResult,
+  ): Promise<any> {
     return { type: interaction.rule.effect, originalSpells: [spell1.id, spell2.id] };
   }
 
-  private async createSynergyEffect(_spell1: ActiveSpell, _spell2: ActiveSpell, _interaction: InteractionResult): Promise<any> {
-    return { 
-      type: 'synergy', 
+  private async createSynergyEffect(
+    _spell1: ActiveSpell,
+    _spell2: ActiveSpell,
+    _interaction: InteractionResult,
+  ): Promise<any> {
+    return {
+      type: "synergy",
       bonus1: { potency: 1.2, duration: 1.1 },
-      bonus2: { potency: 1.2, duration: 1.1 }
+      bonus2: { potency: 1.2, duration: 1.1 },
     };
   }
 
-  private async createCorruptedEffect(_spell1: ActiveSpell, _spell2: ActiveSpell, _interaction: InteractionResult): Promise<any> {
+  private async createCorruptedEffect(
+    _spell1: ActiveSpell,
+    _spell2: ActiveSpell,
+    _interaction: InteractionResult,
+  ): Promise<any> {
     return {
-      type: 'corruption',
+      type: "corruption",
       corruption1: { damageIncrease: 1.5, unpredictability: 0.3 },
-      corruption2: { damageIncrease: 1.5, unpredictability: 0.3 }
+      corruption2: { damageIncrease: 1.5, unpredictability: 0.3 },
     };
   }
 
@@ -588,7 +648,7 @@ export class SpellInteractionEngine extends EventEmitter {
 
   private async breakConcentration(spell: ActiveSpell): Promise<void> {
     this.removeSpell(spell.id);
-    this.emit('concentration_broken', spell);
+    this.emit("concentration_broken", spell);
   }
 
   private async registerTransformedSpell(_effect: any): Promise<void> {
@@ -618,7 +678,7 @@ class SpatialIndex {
     for (const cell of cells) {
       const spells = this.grid.get(cell);
       if (spells) {
-        const index = spells.findIndex(s => s.id === spell.id);
+        const index = spells.findIndex((s) => s.id === spell.id);
         if (index >= 0) spells.splice(index, 1);
       }
     }
@@ -627,12 +687,12 @@ class SpatialIndex {
   query(bounds: BoundingBox): ActiveSpell[] {
     const cells = this.getCells(bounds);
     const results = new Set<ActiveSpell>();
-    
+
     for (const cell of cells) {
       const spells = this.grid.get(cell) || [];
-      spells.forEach(spell => results.add(spell));
+      spells.forEach((spell) => results.add(spell));
     }
-    
+
     return Array.from(results);
   }
 
@@ -665,7 +725,7 @@ class TemporalTracker {
       spellId: spell.id,
       startTime: spell.startTime,
       duration: this.getSpellDuration(spell.spell),
-      lastInteraction: spell.startTime
+      lastInteraction: spell.startTime,
     });
   }
 
@@ -676,7 +736,7 @@ class TemporalTracker {
   areTemporallyCompatible(spell1: ActiveSpell, spell2: ActiveSpell): boolean {
     const timeline1 = this.spellTimelines.get(spell1.id);
     const timeline2 = this.spellTimelines.get(spell2.id);
-    
+
     if (!timeline1 || !timeline2) return false;
 
     const now = Date.now();
@@ -687,27 +747,30 @@ class TemporalTracker {
   }
 
   private getSpellDuration(spell: SpellEffect): number {
-    if (spell.duration === 'Instantaneous') return 100; // 100ms for instantaneous
-    if (spell.duration.includes('Concentration')) {
+    if (spell.duration === "Instantaneous") return 100; // 100ms for instantaneous
+    if (spell.duration.includes("Concentration")) {
       const match = spell.duration.match(/(\d+) (minute|hour)/);
       if (match) {
         const value = parseInt(match[1]);
         const unit = match[2];
-        return value * (unit === 'minute' ? 60000 : 3600000);
+        return value * (unit === "minute" ? 60000 : 3600000);
       }
     }
-    
+
     const match = spell.duration.match(/(\d+) (round|minute|hour)/);
     if (match) {
       const value = parseInt(match[1]);
       const unit = match[2];
       switch (unit) {
-        case 'round': return value * 6000; // 6 seconds per round
-        case 'minute': return value * 60000;
-        case 'hour': return value * 3600000;
+        case "round":
+          return value * 6000; // 6 seconds per round
+        case "minute":
+          return value * 60000;
+        case "hour":
+          return value * 3600000;
       }
     }
-    
+
     return 60000; // Default 1 minute
   }
 }
@@ -754,7 +817,14 @@ interface ActiveSpell {
 }
 
 interface InteractionRule {
-  type: 'neutralization' | 'amplification' | 'transformation' | 'enhancement' | 'synergy' | 'corruption' | 'conflict';
+  type:
+    | "neutralization"
+    | "amplification"
+    | "transformation"
+    | "enhancement"
+    | "synergy"
+    | "corruption"
+    | "conflict";
   priority: number;
   effect: string;
   magnitude: number;

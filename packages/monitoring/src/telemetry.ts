@@ -2,23 +2,23 @@
  * OpenTelemetry integration for distributed tracing and metrics
  */
 
-import { NodeSDK } from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import { Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { PeriodicExportingMetricReader, ConsoleMetricExporter } from '@opentelemetry/sdk-metrics';
-import { 
-  trace, 
-  context, 
-  SpanStatusCode, 
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { Resource } from "@opentelemetry/resources";
+import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
+import { PeriodicExportingMetricReader, ConsoleMetricExporter } from "@opentelemetry/sdk-metrics";
+import {
+  trace,
+  context,
+  SpanStatusCode,
   metrics,
   DiagConsoleLogger,
   DiagLogLevel,
-  diag
-} from '@opentelemetry/api';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
+  diag,
+} from "@opentelemetry/api";
+import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 
 export interface TelemetryConfig {
   serviceName: string;
@@ -37,7 +37,7 @@ export class TelemetryService {
 
   constructor(config: TelemetryConfig) {
     this.config = config;
-    
+
     if (config.enableDebugLogging) {
       diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
     }
@@ -51,7 +51,7 @@ export class TelemetryService {
       [SemanticResourceAttributes.SERVICE_NAME]: this.config.serviceName,
       [SemanticResourceAttributes.SERVICE_VERSION]: this.config.serviceVersion,
       [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: this.config.environment,
-      [SemanticResourceAttributes.SERVICE_INSTANCE_ID]: process.env.HOSTNAME || 'unknown',
+      [SemanticResourceAttributes.SERVICE_INSTANCE_ID]: process.env.HOSTNAME || "unknown",
     });
 
     // Configure trace exporter
@@ -80,15 +80,15 @@ export class TelemetryService {
       metricReader,
       instrumentations: [
         getNodeAutoInstrumentations({
-          '@opentelemetry/instrumentation-fs': {
+          "@opentelemetry/instrumentation-fs": {
             enabled: false, // Reduce noise
           },
-          '@opentelemetry/instrumentation-http': {
+          "@opentelemetry/instrumentation-http": {
             requestHook: (span, request) => {
-              span.setAttribute('http.request.body.size', request.headers['content-length'] || 0);
+              span.setAttribute("http.request.body.size", request.headers["content-length"] || 0);
             },
             responseHook: (span, response) => {
-              span.setAttribute('http.response.body.size', response.headers['content-length'] || 0);
+              span.setAttribute("http.response.body.size", response.headers["content-length"] || 0);
             },
           },
         }),
@@ -96,7 +96,7 @@ export class TelemetryService {
     });
 
     await this.sdk.start();
-    
+
     // Get tracer and meter instances
     this.tracer = trace.getTracer(this.config.serviceName, this.config.serviceVersion);
     this.meter = metrics.getMeter(this.config.serviceName, this.config.serviceVersion);
@@ -110,85 +110,86 @@ export class TelemetryService {
    */
   private registerCustomMetrics(): void {
     // Request counter
-    this.meter.createCounter('vtt.requests', {
-      description: 'Total number of requests',
+    this.meter.createCounter("vtt.requests", {
+      description: "Total number of requests",
     });
 
     // Request duration histogram
-    this.meter.createHistogram('vtt.request.duration', {
-      description: 'Request duration in milliseconds',
-      unit: 'ms',
+    this.meter.createHistogram("vtt.request.duration", {
+      description: "Request duration in milliseconds",
+      unit: "ms",
     });
 
     // Active connections gauge
-    this.meter.createUpDownCounter('vtt.connections.active', {
-      description: 'Number of active connections',
+    this.meter.createUpDownCounter("vtt.connections.active", {
+      description: "Number of active connections",
     });
 
     // Game session metrics
-    this.meter.createUpDownCounter('vtt.sessions.active', {
-      description: 'Number of active game sessions',
+    this.meter.createUpDownCounter("vtt.sessions.active", {
+      description: "Number of active game sessions",
     });
 
     // Player metrics
-    this.meter.createUpDownCounter('vtt.players.online', {
-      description: 'Number of online players',
+    this.meter.createUpDownCounter("vtt.players.online", {
+      description: "Number of online players",
     });
 
     // Error counter
-    this.meter.createCounter('vtt.errors', {
-      description: 'Total number of errors',
+    this.meter.createCounter("vtt.errors", {
+      description: "Total number of errors",
     });
 
     // Performance metrics
-    this.meter.createHistogram('vtt.operation.duration', {
-      description: 'Operation duration',
-      unit: 'ms',
+    this.meter.createHistogram("vtt.operation.duration", {
+      description: "Operation duration",
+      unit: "ms",
     });
 
     // Memory usage gauge
-    this.meter.createObservableGauge('vtt.memory.usage', {
-      description: 'Memory usage in bytes',
-    }, async (observableResult) => {
-      const memUsage = process.memoryUsage();
-      observableResult.observe(memUsage.heapUsed, { type: 'heap_used' });
-      observableResult.observe(memUsage.heapTotal, { type: 'heap_total' });
-      observableResult.observe(memUsage.rss, { type: 'rss' });
-      observableResult.observe(memUsage.external, { type: 'external' });
-    });
+    this.meter.createObservableGauge(
+      "vtt.memory.usage",
+      {
+        description: "Memory usage in bytes",
+      },
+      async (observableResult) => {
+        const memUsage = process.memoryUsage();
+        observableResult.observe(memUsage.heapUsed, { type: "heap_used" });
+        observableResult.observe(memUsage.heapTotal, { type: "heap_total" });
+        observableResult.observe(memUsage.rss, { type: "rss" });
+        observableResult.observe(memUsage.external, { type: "external" });
+      },
+    );
 
     // CPU usage gauge
-    this.meter.createObservableGauge('vtt.cpu.usage', {
-      description: 'CPU usage percentage',
-      unit: '%',
-    }, async (observableResult) => {
-      const cpuUsage = process.cpuUsage();
-      const totalCpu = cpuUsage.user + cpuUsage.system;
-      observableResult.observe(totalCpu / 1000000); // Convert to percentage
-    });
+    this.meter.createObservableGauge(
+      "vtt.cpu.usage",
+      {
+        description: "CPU usage percentage",
+        unit: "%",
+      },
+      async (observableResult) => {
+        const cpuUsage = process.cpuUsage();
+        const totalCpu = cpuUsage.user + cpuUsage.system;
+        observableResult.observe(totalCpu / 1000000); // Convert to percentage
+      },
+    );
   }
 
   /**
    * Create a traced operation
    */
-  async trace<T>(
-    name: string,
-    fn: () => Promise<T>,
-    attributes?: Record<string, any>
-  ): Promise<T> {
+  async trace<T>(name: string, fn: () => Promise<T>, attributes?: Record<string, any>): Promise<T> {
     const span = this.tracer.startSpan(name, { attributes });
 
     try {
-      const result = await context.with(
-        trace.setSpan(context.active(), span),
-        fn
-      );
+      const result = await context.with(trace.setSpan(context.active(), span), fn);
       span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {
       span.setStatus({
         code: SpanStatusCode.ERROR,
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : "Unknown error",
       });
       span.recordException(error as Error);
       throw error;
@@ -200,11 +201,7 @@ export class TelemetryService {
   /**
    * Record a metric value
    */
-  recordMetric(
-    name: string,
-    value: number,
-    attributes?: Record<string, any>
-  ): void {
+  recordMetric(name: string, value: number, attributes?: Record<string, any>): void {
     const counter = this.meter.createCounter(name);
     counter.add(value, attributes);
   }
@@ -212,11 +209,7 @@ export class TelemetryService {
   /**
    * Record a histogram value
    */
-  recordHistogram(
-    name: string,
-    value: number,
-    attributes?: Record<string, any>
-  ): void {
+  recordHistogram(name: string, value: number, attributes?: Record<string, any>): void {
     const histogram = this.meter.createHistogram(name);
     histogram.record(value, attributes);
   }
@@ -271,14 +264,14 @@ export class TelemetryService {
 export function tracingMiddleware(telemetry: TelemetryService) {
   return async (req: any, res: any, next: any) => {
     const span = telemetry.startSpan(`${req.method} ${req.path}`, {
-      'http.method': req.method,
-      'http.url': req.url,
-      'http.target': req.path,
-      'http.host': req.hostname,
-      'http.scheme': req.protocol,
-      'http.user_agent': req.get('user-agent'),
-      'http.request_content_length': req.get('content-length'),
-      'net.peer.ip': req.ip,
+      "http.method": req.method,
+      "http.url": req.url,
+      "http.target": req.path,
+      "http.host": req.hostname,
+      "http.scheme": req.protocol,
+      "http.user_agent": req.get("user-agent"),
+      "http.request_content_length": req.get("content-length"),
+      "net.peer.ip": req.ip,
     });
 
     // Store span in request for later use
@@ -286,10 +279,10 @@ export function tracingMiddleware(telemetry: TelemetryService) {
 
     // Track response
     const originalSend = res.send;
-    res.send = function(data: any) {
-      span.setAttribute('http.status_code', res.statusCode);
-      span.setAttribute('http.response_content_length', res.get('content-length'));
-      
+    res.send = function (data: any) {
+      span.setAttribute("http.status_code", res.statusCode);
+      span.setAttribute("http.response_content_length", res.get("content-length"));
+
       if (res.statusCode >= 400) {
         span.setStatus({
           code: SpanStatusCode.ERROR,
@@ -298,7 +291,7 @@ export function tracingMiddleware(telemetry: TelemetryService) {
       } else {
         span.setStatus({ code: SpanStatusCode.OK });
       }
-      
+
       span.end();
       return originalSend.call(this, data);
     };
@@ -311,24 +304,24 @@ export function tracingMiddleware(telemetry: TelemetryService) {
 
 // WebSocket tracing helper
 export function traceWebSocketConnection(telemetry: TelemetryService, ws: any, userId?: string) {
-  const span = telemetry.startSpan('websocket.connection', {
-    'ws.user_id': userId,
-    'ws.protocol': ws.protocol,
+  const span = telemetry.startSpan("websocket.connection", {
+    "ws.user_id": userId,
+    "ws.protocol": ws.protocol,
   });
 
-  ws.on('message', (data: any) => {
-    telemetry.addSpanEvent('message.received', {
-      'message.size': data.length,
+  ws.on("message", (data: any) => {
+    telemetry.addSpanEvent("message.received", {
+      "message.size": data.length,
     });
   });
 
-  ws.on('close', (code: number, reason: string) => {
-    span.setAttribute('ws.close_code', code);
-    span.setAttribute('ws.close_reason', reason);
+  ws.on("close", (code: number, reason: string) => {
+    span.setAttribute("ws.close_code", code);
+    span.setAttribute("ws.close_reason", reason);
     span.end();
   });
 
-  ws.on('error', (error: Error) => {
+  ws.on("error", (error: Error) => {
     span.recordException(error);
     span.setStatus({
       code: SpanStatusCode.ERROR,
@@ -348,35 +341,27 @@ export async function traceQuery<T>(
     table?: string;
     operation?: string;
     database?: string;
-  }
+  },
 ): Promise<T> {
-  return telemetry.trace(
-    `db.${queryName}`,
-    query,
-    {
-      'db.system': 'postgresql',
-      'db.operation': metadata?.operation,
-      'db.table': metadata?.table,
-      'db.name': metadata?.database,
-    }
-  );
+  return telemetry.trace(`db.${queryName}`, query, {
+    "db.system": "postgresql",
+    "db.operation": metadata?.operation,
+    "db.table": metadata?.table,
+    "db.name": metadata?.database,
+  });
 }
 
 // Cache operation tracing helper
 export async function traceCacheOperation<T>(
   telemetry: TelemetryService,
-  operation: 'get' | 'set' | 'delete',
+  operation: "get" | "set" | "delete",
   key: string,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
 ): Promise<T> {
-  return telemetry.trace(
-    `cache.${operation}`,
-    fn,
-    {
-      'cache.key': key,
-      'cache.operation': operation,
-    }
-  );
+  return telemetry.trace(`cache.${operation}`, fn, {
+    "cache.key": key,
+    "cache.operation": operation,
+  });
 }
 
 // Export singleton instance

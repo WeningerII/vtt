@@ -45,7 +45,7 @@ export interface Currency {
 export interface Equipment {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'shield' | 'tool' | 'consumable' | 'treasure' | 'other';
+  type: "weapon" | "armor" | "shield" | "tool" | "consumable" | "treasure" | "other";
   quantity: number;
   weight: number;
   value: number; // in gold pieces
@@ -94,12 +94,12 @@ export interface Feature {
   name: string;
   source: string;
   description: string;
-  type: 'class' | 'race' | 'background' | 'feat' | 'other';
+  type: "class" | "race" | "background" | "feat" | "other";
   level?: number;
   uses?: {
     current: number;
     max: number;
-    resetOn: 'short' | 'long' | 'other';
+    resetOn: "short" | "long" | "other";
   };
 }
 
@@ -115,7 +115,7 @@ export interface Character {
   id: string;
   userId: string;
   campaignId?: string;
-  
+
   // Basic Information
   name: string;
   race: string;
@@ -123,43 +123,43 @@ export interface Character {
   level: number;
   background: string;
   alignment: string;
-  
+
   // Experience and Progression
   experience: number;
-  
+
   // Core Combat Stats
   hitPoints: HitPoints;
   armorClass: number;
   proficiencyBonus: number;
   speed: number;
   initiative: number;
-  
+
   // Hit Dice for resting
   hitDice: HitDice;
-  
+
   // Core Abilities
   abilities: Record<string, Ability>; // STR, DEX, CON, INT, WIS, CHA
-  
+
   // Skills and Saves
   skills: Record<string, Skill>;
   savingThrows: Record<string, SavingThrow>;
-  
+
   // Equipment and Wealth
   equipment: Equipment[];
   currency: Currency;
-  
+
   // Magic
   spellcasting?: Spellcasting;
-  
+
   // Features and Traits
   features: Feature[];
   traits: string[]; // Racial traits
-  
+
   // Roleplay
   personality: Personality;
   notes: string;
   avatar?: string;
-  
+
   // Meta
   createdAt: Date;
   updatedAt: Date;
@@ -236,9 +236,14 @@ export interface CombatCharacter {
 
 // Type guards
 export function isCharacter(obj: any): obj is Character {
-  return obj && typeof obj.id === 'string' && typeof obj.name === 'string';
+  return obj && typeof obj.id === "string" && typeof obj.name === "string";
 }
 
 export function isCreateCharacterRequest(obj: any): obj is CreateCharacterRequest {
-  return obj && typeof obj.name === 'string' && typeof obj.race === 'string' && typeof obj.class === 'string';
+  return (
+    obj &&
+    typeof obj.name === "string" &&
+    typeof obj.race === "string" &&
+    typeof obj.class === "string"
+  );
 }

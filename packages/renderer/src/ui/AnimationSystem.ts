@@ -22,7 +22,7 @@ export interface Keyframe {
 export interface AnimationTrack {
   property: string;
   keyframes: Keyframe[];
-  interpolation?: 'linear' | 'step' | 'bezier' | 'hermite';
+  interpolation?: "linear" | "step" | "bezier" | "hermite";
 }
 
 export interface Timeline {
@@ -49,51 +49,52 @@ export class AnimationSystem {
   // Built-in easing functions
   static readonly Easing = {
     linear: (t: number) => t,
-    
+
     // Quad
     easeInQuad: (t: number) => t * t,
     easeOutQuad: (t: number) => t * (2 - t),
-    easeInOutQuad: (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
-    
+    easeInOutQuad: (t: number) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+
     // Cubic
     easeInCubic: (t: number) => t * t * t,
-    easeOutCubic: (t: number) => (--t) * t * t + 1,
-    easeInOutCubic: (t: number) => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
-    
+    easeOutCubic: (t: number) => --t * t * t + 1,
+    easeInOutCubic: (t: number) =>
+      t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
+
     // Quart
     easeInQuart: (t: number) => t * t * t * t,
-    easeOutQuart: (t: number) => 1 - (--t) * t * t * t,
-    easeInOutQuart: (t: number) => t < 0.5 ? 8 * t * t * t * t : 1 - 8 * (--t) * t * t * t,
-    
+    easeOutQuart: (t: number) => 1 - --t * t * t * t,
+    easeInOutQuart: (t: number) => (t < 0.5 ? 8 * t * t * t * t : 1 - 8 * --t * t * t * t),
+
     // Elastic
     easeInElastic: (t: number) => {
       if (t === 0) return 0;
       if (t === 1) return 1;
       const p = 0.3;
       const s = p / 4;
-      return -(Math.pow(2, 10 * (t -= 1)) * Math.sin((t - s) * (2 * Math.PI) / p));
+      return -(Math.pow(2, 10 * (t -= 1)) * Math.sin(((t - s) * (2 * Math.PI)) / p));
     },
     easeOutElastic: (t: number) => {
       if (t === 0) return 0;
       if (t === 1) return 1;
       const p = 0.3;
       const s = p / 4;
-      return Math.pow(2, -10 * t) * Math.sin((t - s) * (2 * Math.PI) / p) + 1;
+      return Math.pow(2, -10 * t) * Math.sin(((t - s) * (2 * Math.PI)) / p) + 1;
     },
-    
+
     // Bounce
     easeOutBounce: (t: number) => {
-      if (t < (1 / 2.75)) {
+      if (t < 1 / 2.75) {
         return 7.5625 * t * t;
-      } else if (t < (2 / 2.75)) {
-        return 7.5625 * (t -= (1.5 / 2.75)) * t + 0.75;
-      } else if (t < (2.5 / 2.75)) {
-        return 7.5625 * (t -= (2.25 / 2.75)) * t + 0.9375;
+      } else if (t < 2 / 2.75) {
+        return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
+      } else if (t < 2.5 / 2.75) {
+        return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
       } else {
-        return 7.5625 * (t -= (2.625 / 2.75)) * t + 0.984375;
+        return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
       }
     },
-    
+
     // Back
     easeInBack: (t: number) => {
       const s = 1.70158;
@@ -102,7 +103,7 @@ export class AnimationSystem {
     easeOutBack: (t: number) => {
       const s = 1.70158;
       return --t * t * ((s + 1) * t + s) + 1;
-    }
+    },
   };
 
   constructor() {
@@ -132,14 +133,14 @@ export class AnimationSystem {
       if (animation.currentTime >= animation.config.delay) {
         const progress = Math.min(
           (animation.currentTime - animation.config.delay) / animation.config.duration,
-          1
+          1,
         );
 
         const easedProgress = animation.easingFunction(progress);
         const currentValue = this.interpolateValues(
           animation.fromValue,
           animation.toValue,
-          easedProgress
+          easedProgress,
         );
 
         if (animation.config.onUpdate) {
@@ -210,7 +211,7 @@ export class AnimationSystem {
     // Interpolate between keyframes
     const duration = keyframe2.time - keyframe1.time;
     const progress = duration > 0 ? (time - keyframe1.time) / duration : 0;
-    
+
     const easing = keyframe1.easing || AnimationSystem.Easing.linear;
     const easedProgress = easing(progress);
 
@@ -219,7 +220,7 @@ export class AnimationSystem {
 
   private completeAnimation(id: string, animation: Animation): void {
     if (animation.config.loop) {
-      if (typeof animation.config.loop === 'number') {
+      if (typeof animation.config.loop === "number") {
         animation.loopCount++;
         if (animation.loopCount >= animation.config.loop) {
           this.finishAnimation(id, animation);
@@ -229,7 +230,7 @@ export class AnimationSystem {
 
       // Reset for loop
       animation.currentTime = 0;
-      
+
       if (animation.config.yoyo) {
         [animation.fromValue, animation.toValue] = [animation.toValue, animation.fromValue];
       }
@@ -257,15 +258,15 @@ export class AnimationSystem {
   }
 
   private interpolateValues(from: any, to: any, t: number): any {
-    if (typeof from === 'number' && typeof to === 'number') {
+    if (typeof from === "number" && typeof to === "number") {
       return from + (to - from) * t;
     }
-    
+
     if (Array.isArray(from) && Array.isArray(to) && from.length === to.length) {
       return from.map((_val, __i) => this.interpolateValues(val, to[i], t));
     }
-    
-    if (typeof from === 'object' && typeof to === 'object') {
+
+    if (typeof from === "object" && typeof to === "object") {
       const result: any = {};
       for (const key in from) {
         if (key in to) {
@@ -281,26 +282,26 @@ export class AnimationSystem {
   }
 
   private setProperty(target: any, property: string, value: any): void {
-    const props = property.split('.');
+    const props = property.split(".");
     let obj = target;
-    
+
     for (let i = 0; i < props.length - 1; i++) {
       obj = obj[props[i]];
       if (!obj) return;
     }
-    
+
     obj[props[props.length - 1]] = value;
   }
 
   private resolveEasing(easing: EasingFunction | string): EasingFunction {
-    if (typeof easing === 'function') {
+    if (typeof easing === "function") {
       return easing;
     }
-    
-    if (typeof easing === 'string') {
+
+    if (typeof easing === "string") {
       return (AnimationSystem.Easing as any)[easing] || AnimationSystem.Easing.linear;
     }
-    
+
     return AnimationSystem.Easing.linear;
   }
 
@@ -310,10 +311,10 @@ export class AnimationSystem {
     property: string,
     fromValue: any,
     toValue: any,
-    config: AnimationConfig
+    config: AnimationConfig,
   ): string {
     const id = `anim_${this.animationId++}`;
-    const easingFunction = this.resolveEasing(config.easing || 'linear');
+    const easingFunction = this.resolveEasing(config.easing || "linear");
 
     const animation: Animation = {
       id,
@@ -326,7 +327,7 @@ export class AnimationSystem {
       currentTime: 0,
       isPlaying: config.autoStart !== false,
       isPaused: false,
-      loopCount: 0
+      loopCount: 0,
     };
 
     // Set initial value
@@ -345,43 +346,43 @@ export class AnimationSystem {
 
   to(target: any, properties: { [key: string]: any }, config: AnimationConfig): string[] {
     const animationIds: string[] = [];
-    
+
     for (const [property, toValue] of Object.entries(properties)) {
       const fromValue = this.getProperty(target, property);
       const id = this.animate(target, property, fromValue, toValue, config);
       animationIds.push(id);
     }
-    
+
     return animationIds;
   }
 
   from(target: any, properties: { [key: string]: any }, config: AnimationConfig): string[] {
     const animationIds: string[] = [];
-    
+
     for (const [property, fromValue] of Object.entries(properties)) {
       const toValue = this.getProperty(target, property);
       const id = this.animate(target, property, fromValue, toValue, config);
       animationIds.push(id);
     }
-    
+
     return animationIds;
   }
 
   fromTo(
-    target: any, 
-    from: { [key: string]: any }, 
-    to: { [key: string]: any }, 
-    config: AnimationConfig
+    target: any,
+    from: { [key: string]: any },
+    to: { [key: string]: any },
+    config: AnimationConfig,
   ): string[] {
     const animationIds: string[] = [];
-    
+
     for (const property in from) {
       if (property in to) {
         const id = this.animate(target, property, from[property], to[property], config);
         animationIds.push(id);
       }
     }
-    
+
     return animationIds;
   }
 
@@ -394,9 +395,9 @@ export class AnimationSystem {
       loop,
       currentTime: 0,
       isPlaying: false,
-      isPaused: false
+      isPaused: false,
     };
-    
+
     this.timelines.set(id, timeline);
     return id;
   }
@@ -462,33 +463,33 @@ export class AnimationSystem {
   }
 
   private getProperty(target: any, property: string): any {
-    const props = property.split('.');
+    const props = property.split(".");
     let obj = target;
-    
+
     for (const prop of props) {
       obj = obj[prop];
       if (obj === undefined) return undefined;
     }
-    
+
     return obj;
   }
 
   // Advanced animation methods
   sequence(animations: Array<() => string | string[]>, config?: { onComplete?: () => void }): void {
     let currentIndex = 0;
-    
+
     const runNext = () => {
       if (currentIndex >= animations.length) {
         if (config?.onComplete) config.onComplete();
         return;
       }
-      
+
       const result = animations[currentIndex]();
       const animIds = Array.isArray(result) ? result : [result];
-      
+
       // Wait for all animations to complete
       const checkComplete = () => {
-        const allComplete = animIds.every(id => !this.animations.has(id));
+        const allComplete = animIds.every((id) => !this.animations.has(id));
         if (allComplete) {
           currentIndex++;
           runNext();
@@ -496,53 +497,53 @@ export class AnimationSystem {
           setTimeout(checkComplete, 16);
         }
       };
-      
+
       checkComplete();
     };
-    
+
     runNext();
   }
 
   parallel(animations: Array<() => string | string[]>, config?: { onComplete?: () => void }): void {
     const allAnimIds: string[] = [];
-    
+
     for (const animFn of animations) {
       const result = animFn();
       const animIds = Array.isArray(result) ? result : [result];
       allAnimIds.push(...animIds);
     }
-    
+
     // Wait for all animations to complete
     const checkComplete = () => {
-      const allComplete = allAnimIds.every(id => !this.animations.has(id));
+      const allComplete = allAnimIds.every((id) => !this.animations.has(id));
       if (allComplete && config?.onComplete) {
         config.onComplete();
       } else if (!allComplete) {
         setTimeout(checkComplete, 16);
       }
     };
-    
+
     checkComplete();
   }
 
   stagger(
     targets: any[],
     properties: { [key: string]: any },
-    config: AnimationConfig & { stagger?: number }
+    config: AnimationConfig & { stagger?: number },
   ): string[] {
     const staggerTime = config.stagger || 0.1;
     const animIds: string[] = [];
-    
+
     targets.forEach((_target, __index) => {
       const staggeredConfig = {
         ...config,
-        delay: (config.delay || 0) + index * staggerTime
+        delay: (config.delay || 0) + index * staggerTime,
       };
-      
+
       const ids = this.to(target, properties, staggeredConfig);
       animIds.push(...ids);
     });
-    
+
     return animIds;
   }
 
@@ -550,7 +551,7 @@ export class AnimationSystem {
     return {
       activeAnimations: this.animations.size,
       activeTimelines: this.timelines.size,
-      isRunning: this.isRunning
+      isRunning: this.isRunning,
     };
   }
 

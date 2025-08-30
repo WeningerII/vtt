@@ -3,7 +3,7 @@
  * Handles character inventories, encumbrance, containers, and currency
  */
 
-import { _BaseItem, _ItemCost} from './index.js';
+import { _BaseItem, _ItemCost } from "./index.js";
 
 export interface InventoryItem {
   itemId: string;
@@ -16,12 +16,12 @@ export interface InventoryItem {
   notes?: string;
 }
 
-export type ItemCondition = 'pristine' | 'good' | 'worn' | 'damaged' | 'broken';
+export type ItemCondition = "pristine" | "good" | "worn" | "damaged" | "broken";
 
 export interface Container {
   id: string;
   name: string;
-  type: 'backpack' | 'bag' | 'pouch' | 'chest' | 'other';
+  type: "backpack" | "bag" | "pouch" | "chest" | "other";
   capacity: {
     weight: number; // max weight in pounds
     volume?: number; // max volume in cubic feet
@@ -32,7 +32,7 @@ export interface Container {
   properties: ContainerProperty[];
 }
 
-export type ContainerProperty = 'waterproof' | 'fireproof' | 'magical' | 'extradimensional';
+export type ContainerProperty = "waterproof" | "fireproof" | "magical" | "extradimensional";
 
 export interface Currency {
   cp: number; // copper pieces
@@ -48,7 +48,7 @@ export interface EncumbranceInfo {
   mediumLoad: number;
   heavyLoad: number;
   maxLoad: number;
-  encumbranceLevel: 'unencumbered' | 'lightly_encumbered' | 'heavily_encumbered' | 'overloaded';
+  encumbranceLevel: "unencumbered" | "lightly_encumbered" | "heavily_encumbered" | "overloaded";
   speedPenalty: number;
   hasDisadvantage: boolean;
 }
@@ -56,7 +56,7 @@ export interface EncumbranceInfo {
 export interface InventoryTransaction {
   id: string;
   timestamp: Date;
-  type: 'add' | 'remove' | 'move' | 'equip' | 'unequip' | 'consume' | 'craft' | 'trade';
+  type: "add" | "remove" | "move" | "equip" | "unequip" | "consume" | "craft" | "trade";
   itemId: string;
   quantity: number;
   fromContainer?: string | undefined;
@@ -83,10 +83,10 @@ export class InventorySystem {
     itemId: string,
     quantity: number = 1,
     containerId?: string,
-    condition: ItemCondition = 'good'
+    condition: ItemCondition = "good",
   ): boolean {
     const existingItem = this.items.get(itemId);
-    
+
     if (existingItem && !containerId) {
       // Stack with existing item if no specific container
       existingItem.quantity += quantity;
@@ -97,9 +97,9 @@ export class InventorySystem {
         quantity,
         containerId,
         condition,
-        equipped: false
+        equipped: false,
       };
-      
+
       const key = containerId ? `${itemId}_${containerId}` : itemId;
       this.items.set(key, inventoryItem);
     }
@@ -116,7 +116,14 @@ export class InventorySystem {
       }
     }
 
-    this.addTransaction('add', itemId, quantity, undefined, containerId, `Added ${quantity}x ${itemId}`);
+    this.addTransaction(
+      "add",
+      itemId,
+      quantity,
+      undefined,
+      containerId,
+      `Added ${quantity}x ${itemId}`,
+    );
     return true;
   }
 
@@ -126,16 +133,16 @@ export class InventorySystem {
   removeItem(itemId: string, quantity: number = 1, containerId?: string): boolean {
     const key = containerId ? `${itemId}_${containerId}` : itemId;
     const item = this.items.get(key);
-    
+
     if (!item || item.quantity < quantity) {
       return false;
     }
 
     item.quantity -= quantity;
-    
+
     if (item.quantity <= 0) {
       this.items.delete(key);
-      
+
       // Remove from container
       if (containerId) {
         const container = this.containers.get(containerId);
@@ -149,17 +156,29 @@ export class InventorySystem {
       }
     }
 
-    this.addTransaction('remove', itemId, quantity, containerId, undefined, `Removed ${quantity}x ${itemId}`);
+    this.addTransaction(
+      "remove",
+      itemId,
+      quantity,
+      containerId,
+      undefined,
+      `Removed ${quantity}x ${itemId}`,
+    );
     return true;
   }
 
   /**
    * Move item between containers
    */
-  moveItem(itemId: string, fromContainer?: string, toContainer?: string, quantity?: number): boolean {
+  moveItem(
+    itemId: string,
+    fromContainer?: string,
+    toContainer?: string,
+    quantity?: number,
+  ): boolean {
     const fromKey = fromContainer ? `${itemId}_${fromContainer}` : itemId;
     const item = this.items.get(fromKey);
-    
+
     if (!item) return false;
 
     const moveQuantity = quantity || item.quantity;
@@ -177,9 +196,15 @@ export class InventorySystem {
       return false;
     }
 
-    this.addTransaction('move', itemId, moveQuantity, fromContainer, toContainer, 
-      `Moved ${moveQuantity}x ${itemId} from ${fromContainer || 'inventory'} to ${toContainer || 'inventory'}`);
-    
+    this.addTransaction(
+      "move",
+      itemId,
+      moveQuantity,
+      fromContainer,
+      toContainer,
+      `Moved ${moveQuantity}x ${itemId} from ${fromContainer || "inventory"} to ${toContainer || "inventory"}`,
+    );
+
     return true;
   }
 
@@ -189,17 +214,20 @@ export class InventorySystem {
   equipItem(itemId: string, containerId?: string): boolean {
     const key = containerId ? `${itemId}_${containerId}` : itemId;
     const item = this.items.get(key);
-    
+
     if (!item) return false;
 
     item.equipped = !item.equipped;
-    
+
     this.addTransaction(
-      item.equipped ? 'equip' : 'unequip',
-      itemId, 1, containerId, containerId,
-      `${item.equipped ? 'Equipped' : 'Unequipped'} ${itemId}`
+      item.equipped ? "equip" : "unequip",
+      itemId,
+      1,
+      containerId,
+      containerId,
+      `${item.equipped ? "Equipped" : "Unequipped"} ${itemId}`,
     );
-    
+
     return true;
   }
 
@@ -218,7 +246,7 @@ export class InventorySystem {
     if (!container) return [];
 
     return container.items
-      .map(itemKey => this.items.get(itemKey))
+      .map((itemKey) => this.items.get(itemKey))
       .filter(Boolean) as InventoryItem[];
   }
 
@@ -226,7 +254,7 @@ export class InventorySystem {
    * Get equipped items
    */
   getEquippedItems(): InventoryItem[] {
-    return Array.from(this.items.values()).filter(item => item.equipped);
+    return Array.from(this.items.values()).filter((item) => item.equipped);
   }
 
   /**
@@ -244,8 +272,13 @@ export class InventorySystem {
     }
 
     // Add currency weight (50 coins = 1 pound)
-    const currencyWeight = (this.currency.cp + this.currency.sp + this.currency.ep + 
-                           this.currency.gp + this.currency.pp) / 50;
+    const currencyWeight =
+      (this.currency.cp +
+        this.currency.sp +
+        this.currency.ep +
+        this.currency.gp +
+        this.currency.pp) /
+      50;
     totalWeight += currencyWeight;
 
     // Calculate encumbrance thresholds
@@ -255,20 +288,20 @@ export class InventorySystem {
     const heavyLoad = strength * 15;
     const maxLoad = strength * 30;
 
-    let encumbranceLevel: EncumbranceInfo['encumbranceLevel'] = 'unencumbered';
+    let encumbranceLevel: EncumbranceInfo["encumbranceLevel"] = "unencumbered";
     let speedPenalty = 0;
     let hasDisadvantage = false;
 
     if (totalWeight > maxLoad) {
-      encumbranceLevel = 'overloaded';
+      encumbranceLevel = "overloaded";
       speedPenalty = -20;
       hasDisadvantage = true;
     } else if (totalWeight > heavyLoad) {
-      encumbranceLevel = 'heavily_encumbered';
+      encumbranceLevel = "heavily_encumbered";
       speedPenalty = -20;
       hasDisadvantage = true;
     } else if (totalWeight > mediumLoad) {
-      encumbranceLevel = 'lightly_encumbered';
+      encumbranceLevel = "lightly_encumbered";
       speedPenalty = -10;
     }
 
@@ -280,7 +313,7 @@ export class InventorySystem {
       maxLoad,
       encumbranceLevel,
       speedPenalty,
-      hasDisadvantage
+      hasDisadvantage,
     };
   }
 
@@ -306,7 +339,7 @@ export class InventorySystem {
 
     // Remove currency (simple implementation - could be optimized)
     let remaining = totalCopperNeeded;
-    
+
     // Remove from highest denomination first
     const ppToRemove = Math.min(Math.floor(remaining / 1000), this.currency.pp);
     this.currency.pp -= ppToRemove;
@@ -342,11 +375,12 @@ export class InventorySystem {
 
     for (const item of this.items.values()) {
       const baseItem = itemDatabase.getItem(item.itemId);
-      if (baseItem && (
-        baseItem.name.toLowerCase().includes(lowercaseQuery) ||
-        baseItem.description.toLowerCase().includes(lowercaseQuery) ||
-        baseItem.tags.some((_tag: string) => tag.toLowerCase().includes(lowercaseQuery))
-      )) {
+      if (
+        baseItem &&
+        (baseItem.name.toLowerCase().includes(lowercaseQuery) ||
+          baseItem.description.toLowerCase().includes(lowercaseQuery) ||
+          baseItem.tags.some((_tag: string) => tag.toLowerCase().includes(lowercaseQuery)))
+      ) {
         results.push(item);
       }
     }
@@ -358,16 +392,20 @@ export class InventorySystem {
    * Get transaction history
    */
   getTransactionHistory(limit?: number): InventoryTransaction[] {
-    const sorted = [...this.transactions].sort((_a, _b) => b.timestamp.getTime() - a.timestamp.getTime());
+    const sorted = [...this.transactions].sort(
+      (_a, _b) => b.timestamp.getTime() - a.timestamp.getTime(),
+    );
     return limit ? sorted.slice(0, limit) : sorted;
   }
 
   private convertToCopper(currency: Partial<Currency>): number {
-    return (currency.cp || 0) +
-           (currency.sp || 0) * 10 +
-           (currency.ep || 0) * 50 +
-           (currency.gp || 0) * 100 +
-           (currency.pp || 0) * 1000;
+    return (
+      (currency.cp || 0) +
+      (currency.sp || 0) * 10 +
+      (currency.ep || 0) * 50 +
+      (currency.gp || 0) * 100 +
+      (currency.pp || 0) * 1000
+    );
   }
 
   private updateContainerWeight(containerId: string): void {
@@ -380,12 +418,12 @@ export class InventorySystem {
   }
 
   private addTransaction(
-    type: InventoryTransaction['type'],
+    type: InventoryTransaction["type"],
     itemId: string,
     quantity: number,
     fromContainer?: string,
     toContainer?: string,
-    description?: string
+    description?: string,
   ): void {
     const transaction: InventoryTransaction = {
       id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -395,11 +433,11 @@ export class InventorySystem {
       quantity,
       fromContainer,
       toContainer,
-      description: description || `${type} ${quantity}x ${itemId}`
+      description: description || `${type} ${quantity}x ${itemId}`,
     };
 
     this.transactions.push(transaction);
-    
+
     // Keep only last 1000 transactions
     if (this.transactions.length > 1000) {
       this.transactions = this.transactions.slice(-1000);
@@ -409,16 +447,16 @@ export class InventorySystem {
   private initializeDefaultContainers(): void {
     // Default backpack
     const backpack: Container = {
-      id: 'backpack',
-      name: 'Backpack',
-      type: 'backpack',
+      id: "backpack",
+      name: "Backpack",
+      type: "backpack",
       capacity: { weight: 30, volume: 1 },
       currentWeight: 0,
       items: [],
-      properties: []
+      properties: [],
     };
 
-    this.containers.set('backpack', backpack);
+    this.containers.set("backpack", backpack);
   }
 
   /**

@@ -3,7 +3,7 @@
  * Advanced rate limiting with sliding windows, token buckets, and adaptive limits
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -61,7 +61,7 @@ export class RateLimiter extends EventEmitter {
   checkLimit(identifier: string): RateLimitResult {
     const key = this.config.keyGenerator ? this.config.keyGenerator(identifier) : identifier;
     const now = Date.now();
-    
+
     // Get or create window
     let window = this.windows.get(key);
     if (!window || now >= window.resetTime) {
@@ -91,10 +91,10 @@ export class RateLimiter extends EventEmitter {
     const result: RateLimitResult = {
       allowed,
       info,
-      ...(allowed ? {} : { reason: this.config.message || 'Rate limit exceeded' }),
+      ...(allowed ? {} : { reason: this.config.message || "Rate limit exceeded" }),
     };
 
-    this.emit(allowed ? 'request' : 'rateLimited', { key, identifier, result });
+    this.emit(allowed ? "request" : "rateLimited", { key, identifier, result });
 
     return result;
   }
@@ -105,7 +105,7 @@ export class RateLimiter extends EventEmitter {
   reset(identifier: string): void {
     const key = this.config.keyGenerator ? this.config.keyGenerator(identifier) : identifier;
     this.windows.delete(key);
-    this.emit('reset', { key, identifier });
+    this.emit("reset", { key, identifier });
   }
 
   /**
@@ -155,7 +155,7 @@ export class RateLimiter extends EventEmitter {
         this.windows.delete(key);
       }
 
-      this.emit('cleanup', { removedWindows: keysToDelete.length });
+      this.emit("cleanup", { removedWindows: keysToDelete.length });
     }, this.config.windowMs / 2); // Cleanup twice per window
   }
 
@@ -208,7 +208,7 @@ export class TokenBucketRateLimiter extends EventEmitter {
       totalRequests: this.config.capacity - bucket.tokens,
       remainingRequests: Math.floor(bucket.tokens),
       resetTime: new Date(
-        Date.now() + ((this.config.capacity - bucket.tokens) / this.config.refillRate) * 1000
+        Date.now() + ((this.config.capacity - bucket.tokens) / this.config.refillRate) * 1000,
       ),
     };
     if (!allowed) {
@@ -219,7 +219,12 @@ export class TokenBucketRateLimiter extends EventEmitter {
       info,
     };
 
-    this.emit(allowed ? 'consumed' : 'rateLimited', { identifier, tokens, bucket: { ...bucket }, result });
+    this.emit(allowed ? "consumed" : "rateLimited", {
+      identifier,
+      tokens,
+      bucket: { ...bucket },
+      result,
+    });
 
     return result;
   }
@@ -238,17 +243,17 @@ export class TokenBucketRateLimiter extends EventEmitter {
     }
 
     bucket.tokens = Math.min(this.config.capacity, bucket.tokens + tokens);
-    this.emit('tokensAdded', { identifier, tokens, newTotal: bucket.tokens });
+    this.emit("tokensAdded", { identifier, tokens, newTotal: bucket.tokens });
   }
 
   private startRefill(): void {
     this.refillInterval = setInterval(() => {
       const now = Date.now();
-      
+
       for (const [, bucket] of this.buckets) {
         const timeSinceRefill = (now - bucket.lastRefill) / 1000;
         const tokensToAdd = timeSinceRefill * this.config.refillRate;
-        
+
         if (tokensToAdd >= 1) {
           bucket.tokens = Math.min(this.config.capacity, bucket.tokens + Math.floor(tokensToAdd));
           bucket.lastRefill = now;
@@ -306,27 +311,31 @@ export class AdaptiveRateLimiter extends RateLimiter {
       if (!this.systemLoadMonitor) return;
 
       const systemLoad = this.systemLoadMonitor();
-      
+
       if (systemLoad > this.adaptiveConfig.loadThreshold) {
         // High load - decrease limit
-        const reduction = (systemLoad - this.adaptiveConfig.loadThreshold) * this.adaptiveConfig.adaptationFactor;
+        const reduction =
+          (systemLoad - this.adaptiveConfig.loadThreshold) * this.adaptiveConfig.adaptationFactor;
         this.currentLimit = Math.max(
           this.adaptiveConfig.minLimit,
-          this.currentLimit - (this.adaptiveConfig.baseLimit * reduction)
+          this.currentLimit - this.adaptiveConfig.baseLimit * reduction,
         );
       } else {
         // Normal/low load - increase limit toward base
-        const increase = (this.adaptiveConfig.loadThreshold - systemLoad) * this.adaptiveConfig.adaptationFactor * 0.5;
+        const increase =
+          (this.adaptiveConfig.loadThreshold - systemLoad) *
+          this.adaptiveConfig.adaptationFactor *
+          0.5;
         this.currentLimit = Math.min(
           this.adaptiveConfig.maxLimit,
-          this.currentLimit + (this.adaptiveConfig.baseLimit * increase)
+          this.currentLimit + this.adaptiveConfig.baseLimit * increase,
         );
       }
 
-      this.emit('limitAdapted', { 
-        systemLoad, 
-        oldLimit: this.config.max, 
-        newLimit: this.currentLimit 
+      this.emit("limitAdapted", {
+        systemLoad,
+        oldLimit: this.config.max,
+        newLimit: this.currentLimit,
       });
     }, 5000); // Adapt every 5 seconds
   }
@@ -375,10 +384,13 @@ export class RateLimiterManager {
   /**
    * Check if any rate limit is exceeded
    */
-  isRateLimited(identifier: string, resource?: string): { limited: boolean; results: RateLimitResult[] } {
+  isRateLimited(
+    identifier: string,
+    resource?: string,
+  ): { limited: boolean; results: RateLimitResult[] } {
     const results = this.checkLimits(identifier, resource);
-    const limited = results.some(result => !result.allowed);
-    
+    const limited = results.some((result) => !result.allowed);
+
     return { limited, results };
   }
 
@@ -436,34 +448,34 @@ export const RATE_LIMIT_PRESETS = {
   strict: {
     windowMs: 60 * 1000, // 1 minute
     max: 5,
-    message: 'Too many requests, please try again later',
+    message: "Too many requests, please try again later",
   },
 
   // Moderate limits for general API usage
   moderate: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100,
-    message: 'Rate limit exceeded, please slow down',
+    message: "Rate limit exceeded, please slow down",
   },
 
   // Generous limits for regular users
   generous: {
     windowMs: 60 * 1000, // 1 minute
     max: 1000,
-    message: 'Rate limit exceeded',
+    message: "Rate limit exceeded",
   },
 
   // File upload limits
   upload: {
     windowMs: 60 * 1000, // 1 minute
     max: 10,
-    message: 'Too many file uploads, please wait',
+    message: "Too many file uploads, please wait",
   },
 
   // Authentication limits
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10,
-    message: 'Too many authentication attempts',
+    message: "Too many authentication attempts",
   },
 };

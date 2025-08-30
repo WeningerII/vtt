@@ -2,29 +2,29 @@
  * Keyboard Navigation Component for accessible grid/list navigation
  */
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { KeyboardNavigation } from '../utils/accessibility';
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { KeyboardNavigation } from "../utils/accessibility";
 
 interface KeyboardNavigableProps {
   children: React.ReactNode;
-  orientation?: 'horizontal' | 'vertical' | 'grid';
+  orientation?: "horizontal" | "vertical" | "grid";
   columns?: number;
   wrap?: boolean;
   className?: string;
   onSelectionChange?: (index: number) => void;
   initialFocus?: number;
-  role?: 'grid' | 'listbox' | 'menu' | 'tablist';
+  role?: "grid" | "listbox" | "menu" | "tablist";
 }
 
 export const KeyboardNavigable: React.FC<KeyboardNavigableProps> = ({
   children,
-  orientation = 'vertical',
+  orientation = "vertical",
   columns = 1,
   wrap = true,
-  className = '',
+  className = "",
   onSelectionChange,
   initialFocus = 0,
-  role = 'grid'
+  role = "grid",
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(initialFocus);
@@ -34,44 +34,46 @@ export const KeyboardNavigable: React.FC<KeyboardNavigableProps> = ({
   useEffect(() => {
     if (containerRef.current) {
       const focusableItems = Array.from(
-        containerRef.current.querySelectorAll('[data-keyboard-item]')
+        containerRef.current.querySelectorAll("[data-keyboard-item]"),
       ) as HTMLElement[];
       setItems(focusableItems);
-      
+
       // Set initial tabindex values
       focusableItems.forEach((item, index) => {
-        item.setAttribute('tabindex', index === currentIndex ? '0' : '-1');
+        item.setAttribute("tabindex", index === currentIndex ? "0" : "-1");
       });
     }
   }, [children, currentIndex]);
 
   // Handle keyboard navigation
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (items.length === 0) return;
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (items.length === 0) return;
 
-    const newIndex = KeyboardNavigation.handleArrowKeys(
-      event,
-      items,
-      currentIndex,
-      { orientation, columns, wrap }
-    );
+      const newIndex = KeyboardNavigation.handleArrowKeys(event, items, currentIndex, {
+        orientation,
+        columns,
+        wrap,
+      });
 
-    if (newIndex !== currentIndex) {
-      // Update tabindex values
-      items[currentIndex]?.setAttribute('tabindex', '-1');
-      items[newIndex]?.setAttribute('tabindex', '0');
-      
-      setCurrentIndex(newIndex);
-      onSelectionChange?.(newIndex);
-    }
-  }, [items, currentIndex, orientation, columns, wrap, onSelectionChange]);
+      if (newIndex !== currentIndex) {
+        // Update tabindex values
+        items[currentIndex]?.setAttribute("tabindex", "-1");
+        items[newIndex]?.setAttribute("tabindex", "0");
+
+        setCurrentIndex(newIndex);
+        onSelectionChange?.(newIndex);
+      }
+    },
+    [items, currentIndex, orientation, columns, wrap, onSelectionChange],
+  );
 
   // Set up keyboard event listeners
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
-      container.addEventListener('keydown', handleKeyDown);
-      return () => container.removeEventListener('keydown', handleKeyDown);
+      container.addEventListener("keydown", handleKeyDown);
+      return () => container.removeEventListener("keydown", handleKeyDown);
     }
   }, [handleKeyDown]);
 
@@ -79,20 +81,20 @@ export const KeyboardNavigable: React.FC<KeyboardNavigableProps> = ({
   const getAriaAttributes = () => {
     const baseAttrs = {
       role,
-      'aria-activedescendant': items[currentIndex]?.id
+      "aria-activedescendant": items[currentIndex]?.id,
     };
 
     switch (role) {
-      case 'grid':
+      case "grid":
         return {
           ...baseAttrs,
-          'aria-rowcount': Math.ceil(items.length / columns),
-          'aria-colcount': columns
+          "aria-rowcount": Math.ceil(items.length / columns),
+          "aria-colcount": columns,
         };
-      case 'listbox':
+      case "listbox":
         return {
           ...baseAttrs,
-          'aria-multiselectable': false
+          "aria-multiselectable": false,
         };
       default:
         return baseAttrs;
@@ -100,11 +102,7 @@ export const KeyboardNavigable: React.FC<KeyboardNavigableProps> = ({
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={`keyboard-navigable ${className}`}
-      {...getAriaAttributes()}
-    >
+    <div ref={containerRef} className={`keyboard-navigable ${className}`} {...getAriaAttributes()}>
       {children}
     </div>
   );
@@ -125,12 +123,12 @@ interface KeyboardNavigableItemProps {
 export const KeyboardNavigableItem: React.FC<KeyboardNavigableItemProps> = ({
   children,
   index,
-  className = '',
+  className = "",
   onClick,
   onEnter,
   onSpace,
-  role = 'gridcell',
-  id
+  role = "gridcell",
+  id,
 }) => {
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -138,12 +136,17 @@ export const KeyboardNavigableItem: React.FC<KeyboardNavigableItemProps> = ({
     const item = itemRef.current;
     if (!item) return;
 
-    const keyboardOptions: { onEnter?: () => void; onSpace?: () => void; onEscape?: () => void; onArrowKeys?: (key: string) => void } = {};
+    const keyboardOptions: {
+      onEnter?: () => void;
+      onSpace?: () => void;
+      onEscape?: () => void;
+      onArrowKeys?: (key: string) => void;
+    } = {};
     const enterHandler = onEnter || onClick;
     const spaceHandler = onSpace || onClick;
     if (enterHandler) keyboardOptions.onEnter = enterHandler;
     if (spaceHandler) keyboardOptions.onSpace = spaceHandler;
-    
+
     const cleanup = KeyboardNavigation.addKeyboardSupport(item, keyboardOptions);
 
     return cleanup;

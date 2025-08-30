@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Advanced P2P Networking System - Triple A Quality Multiplayer
@@ -8,12 +8,12 @@ import { logger } from '@vtt/logging';
 export interface NetworkPeer {
   id: string;
   userId: string;
-  role: 'host' | 'player' | 'spectator';
+  role: "host" | "player" | "spectator";
   connection: RTCPeerConnection;
   dataChannel: RTCDataChannel;
   latency: number;
   bandwidth: NetworkBandwidth;
-  status: 'connecting' | 'connected' | 'disconnected' | 'error';
+  status: "connecting" | "connected" | "disconnected" | "error";
   capabilities: PeerCapabilities;
   lastSeen: Date;
 }
@@ -21,7 +21,7 @@ export interface NetworkPeer {
 export interface NetworkBandwidth {
   upstream: number;
   downstream: number;
-  quality: 'poor' | 'fair' | 'good' | 'excellent';
+  quality: "poor" | "fair" | "good" | "excellent";
 }
 
 export interface PeerCapabilities {
@@ -54,12 +54,23 @@ export interface NetworkMessage {
   channel?: string;
 }
 
-export type MessageType = 
-  | 'game_state' | 'player_action' | 'chat' | 'dice_roll' | 'map_update'
-  | 'character_update' | 'scene_change' | 'audio' | 'video' | 'file_transfer'
-  | 'handshake' | 'heartbeat' | 'sync' | 'error';
+export type MessageType =
+  | "game_state"
+  | "player_action"
+  | "chat"
+  | "dice_roll"
+  | "map_update"
+  | "character_update"
+  | "scene_change"
+  | "audio"
+  | "video"
+  | "file_transfer"
+  | "handshake"
+  | "heartbeat"
+  | "sync"
+  | "error";
 
-export type MessagePriority = 'low' | 'normal' | 'high' | 'critical';
+export type MessagePriority = "low" | "normal" | "high" | "critical";
 
 export interface NetworkState {
   sessionId: string;
@@ -71,7 +82,7 @@ export interface NetworkState {
 }
 
 export interface NetworkTopology {
-  type: 'star' | 'mesh' | 'hybrid';
+  type: "star" | "mesh" | "hybrid";
   relayNodes: string[];
   connectionGraph: ConnectionGraph;
 }
@@ -85,7 +96,7 @@ export interface NetworkEdge {
   from: string;
   to: string;
   weight: number;
-  type: 'direct' | 'relay' | 'fallback';
+  type: "direct" | "relay" | "fallback";
 }
 
 export interface SyncState {
@@ -114,8 +125,8 @@ export interface NetworkQuality {
 
 export interface VoiceChatConfig {
   enabled: boolean;
-  codec: 'opus' | 'pcm' | 'g711';
-  quality: 'low' | 'medium' | 'high';
+  codec: "opus" | "pcm" | "g711";
+  quality: "low" | "medium" | "high";
   noiseSuppression: boolean;
   echoCancellation: boolean;
   spatialAudio: boolean;
@@ -135,7 +146,7 @@ export interface FileTransfer {
   speed: number;
   chunks: Map<number, ArrayBuffer>;
   checksum: string;
-  status: 'pending' | 'transferring' | 'completed' | 'failed' | 'cancelled';
+  status: "pending" | "transferring" | "completed" | "failed" | "cancelled";
 }
 
 export interface NetworkConfig {
@@ -154,38 +165,38 @@ export class AdvancedP2PNetworking {
   private config: NetworkConfig;
   private state: NetworkState;
   private eventEmitter: EventEmitter;
-  
+
   // Connection management
   private signalServer: SignalServerConnection;
   private connectionPool: Map<string, RTCPeerConnection> = new Map();
   private dataChannels: Map<string, RTCDataChannel> = new Map();
-  
+
   // Message handling
   private messageQueue: PriorityQueue<NetworkMessage>;
   private messageHandlers: Map<MessageType, MessageHandler[]> = new Map();
   private reliabilityManager: ReliabilityManager;
-  
+
   // Synchronization
   private synchronizer: GameStateSynchronizer;
   private rollbackManager: RollbackManager;
   private predictionEngine: PredictionEngine;
-  
+
   // Quality management
   private qualityMonitor: NetworkQualityMonitor;
   private adaptiveManager: AdaptiveQualityManager;
   private bandwidthManager: BandwidthManager;
-  
+
   // Voice/Video
   private voiceChat: VoiceChatManager;
   private videoStreaming: VideoStreamManager;
-  
+
   // File transfer
   private fileTransferManager: FileTransferManager;
-  
+
   // Security
   private encryption: NetworkEncryption;
   private authentication: PeerAuthentication;
-  
+
   // Statistics
   private stats = {
     messagesPerSecond: 0,
@@ -199,8 +210,8 @@ export class AdvancedP2PNetworking {
   constructor(config: Partial<NetworkConfig> = {}) {
     this.config = {
       iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'turn:relay.metered.ca:80', username: 'user', credential: 'pass' },
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "turn:relay.metered.ca:80", username: "user", credential: "pass" },
       ],
       maxPeers: 8,
       connectionTimeout: 30000,
@@ -215,9 +226,9 @@ export class AdvancedP2PNetworking {
 
     this.state = {
       sessionId: this.generateSessionId(),
-      hostId: '',
+      hostId: "",
       peers: new Map(),
-      topology: { type: 'star', relayNodes: [], connectionGraph: { nodes: [], edges: [] } },
+      topology: { type: "star", relayNodes: [], connectionGraph: { nodes: [], edges: [] } },
       synchronization: {
         gameTime: 0,
         tickRate: 60,
@@ -254,11 +265,11 @@ export class AdvancedP2PNetworking {
 
   async initialize(isHost: boolean = false): Promise<void> {
     await this.signalServer.connect();
-    
+
     if (isHost) {
       await this.becomeHost();
     }
-    
+
     this.startHeartbeat();
     this.startSynchronization();
     this.startQualityMonitoring();
@@ -272,7 +283,7 @@ export class AdvancedP2PNetworking {
   async joinSession(sessionId: string): Promise<void> {
     this.state.sessionId = sessionId;
     const roomInfo = await this.signalServer.joinRoom(sessionId);
-    
+
     // Connect to existing peers
     for (const peerId of roomInfo.peers) {
       await this.connectToPeer(peerId, false);
@@ -284,19 +295,19 @@ export class AdvancedP2PNetworking {
       iceServers: this.config.iceServers,
     });
 
-    const dataChannel = isInitiator 
-      ? connection.createDataChannel('game', { ordered: false })
+    const dataChannel = isInitiator
+      ? connection.createDataChannel("game", { ordered: false })
       : await this.waitForDataChannel(connection);
 
     const peer: NetworkPeer = {
       id: peerId,
-      userId: '',
-      role: 'player',
+      userId: "",
+      role: "player",
       connection,
       dataChannel,
       latency: 0,
-      bandwidth: { upstream: 0, downstream: 0, quality: 'good' },
-      status: 'connecting',
+      bandwidth: { upstream: 0, downstream: 0, quality: "good" },
+      status: "connecting",
       capabilities: await this.detectPeerCapabilities(),
       lastSeen: new Date(),
     };
@@ -327,13 +338,13 @@ export class AdvancedP2PNetworking {
       supportsRelay: true,
       supportsVoice: true,
       supportsVideo: false,
-      supportedCodecs: ['opus', 'pcm'],
+      supportedCodecs: ["opus", "pcm"],
       platformInfo: {
         browser: navigator.userAgent,
-        version: '1.0',
+        version: "1.0",
         os: navigator.platform,
         mobile: /Mobi|Android/i.test(navigator.userAgent),
-        webrtcSupport: 'RTCPeerConnection' in window,
+        webrtcSupport: "RTCPeerConnection" in window,
       },
     };
   }
@@ -350,8 +361,8 @@ export class AdvancedP2PNetworking {
     };
 
     peer.dataChannel.onopen = () => {
-      peer.status = 'connected';
-      this.eventEmitter.emit('peer:connected', peer);
+      peer.status = "connected";
+      this.eventEmitter.emit("peer:connected", peer);
     };
 
     peer.dataChannel.onmessage = (event) => {
@@ -359,22 +370,22 @@ export class AdvancedP2PNetworking {
     };
 
     peer.dataChannel.onclose = () => {
-      peer.status = 'disconnected';
-      this.eventEmitter.emit('peer:disconnected', peer);
+      peer.status = "disconnected";
+      this.eventEmitter.emit("peer:disconnected", peer);
     };
   }
 
   private handleConnectionStateChange(peer: NetworkPeer): void {
     const state = peer.connection.connectionState;
-    
+
     switch (state) {
-      case 'connected':
-        peer.status = 'connected';
+      case "connected":
+        peer.status = "connected";
         this.stats.peersConnected++;
         break;
-      case 'disconnected':
-      case 'failed':
-        peer.status = 'disconnected';
+      case "disconnected":
+      case "failed":
+        peer.status = "disconnected";
         this.stats.peersConnected--;
         this.attemptReconnection(peer);
         break;
@@ -384,10 +395,10 @@ export class AdvancedP2PNetworking {
   private async attemptReconnection(peer: NetworkPeer): Promise<void> {
     // Implement reconnection logic with exponential backoff
     let attempts = 0;
-    
+
     while (attempts < this.config.maxReconnectAttempts) {
       await this.delay(Math.pow(2, attempts) * 1000);
-      
+
       try {
         await this.connectToPeer(peer.id, true);
         break;
@@ -398,7 +409,7 @@ export class AdvancedP2PNetworking {
     }
   }
 
-  sendMessage(message: Omit<NetworkMessage, 'id' | 'timestamp'>): void {
+  sendMessage(message: Omit<NetworkMessage, "id" | "timestamp">): void {
     const fullMessage: NetworkMessage = {
       id: this.generateMessageId(),
       timestamp: Date.now(),
@@ -414,14 +425,14 @@ export class AdvancedP2PNetworking {
 
   private sendToSpecificPeer(message: NetworkMessage): void {
     const peer = this.state.peers.get(message.recipient!);
-    if (!peer || peer.status !== 'connected') return;
+    if (!peer || peer.status !== "connected") return;
 
     this.transmitMessage(peer, message);
   }
 
   private broadcast(message: NetworkMessage): void {
     for (const peer of this.state.peers.values()) {
-      if (peer.status === 'connected') {
+      if (peer.status === "connected") {
         this.transmitMessage(peer, message);
       }
     }
@@ -429,7 +440,7 @@ export class AdvancedP2PNetworking {
 
   private transmitMessage(peer: NetworkPeer, message: NetworkMessage): void {
     const serialized = this.serializeMessage(message);
-    
+
     if (message.reliable) {
       this.reliabilityManager.sendReliable(peer.id, serialized);
     } else {
@@ -450,11 +461,11 @@ export class AdvancedP2PNetworking {
     try {
       const decrypted = this.encryption.decrypt(data);
       const message: NetworkMessage = JSON.parse(decrypted);
-      
+
       message.sender = senderId;
       this.processMessage(message);
     } catch (error) {
-      logger.error('Failed to process message:', error);
+      logger.error("Failed to process message:", error);
       this.stats.errors++;
     }
   }
@@ -467,19 +478,19 @@ export class AdvancedP2PNetworking {
     }
 
     // Handle system messages
-    if (message.type === 'heartbeat') {
+    if (message.type === "heartbeat") {
       this.handleHeartbeat(message);
       return;
     }
 
-    if (message.type === 'sync') {
+    if (message.type === "sync") {
       this.handleSyncMessage(message);
       return;
     }
 
     // Dispatch to registered handlers
     const handlers = this.messageHandlers.get(message.type) || [];
-    handlers.forEach(handler => {
+    handlers.forEach((handler) => {
       try {
         handler(message);
       } catch (error) {
@@ -487,7 +498,7 @@ export class AdvancedP2PNetworking {
       }
     });
 
-    this.eventEmitter.emit('message', message);
+    this.eventEmitter.emit("message", message);
   }
 
   onMessage(type: MessageType, handler: MessageHandler): void {
@@ -510,10 +521,10 @@ export class AdvancedP2PNetworking {
   private startHeartbeat(): void {
     setInterval(() => {
       this.sendMessage({
-        type: 'heartbeat',
+        type: "heartbeat",
         sender: this.state.hostId,
         data: { timestamp: Date.now() },
-        priority: 'low',
+        priority: "low",
         reliable: false,
         ordered: false,
       });
@@ -538,12 +549,12 @@ export class AdvancedP2PNetworking {
 
   private sendSyncMessage(): void {
     const syncData = this.synchronizer.generateSyncData();
-    
+
     this.sendMessage({
-      type: 'sync',
+      type: "sync",
       sender: this.state.hostId,
       data: syncData,
-      priority: 'high',
+      priority: "high",
       reliable: true,
       ordered: true,
     });
@@ -588,7 +599,7 @@ export class AdvancedP2PNetworking {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   getStats() {
@@ -600,7 +611,7 @@ export class AdvancedP2PNetworking {
   }
 
   destroy(): void {
-    this.state.peers.forEach(peer => {
+    this.state.peers.forEach((peer) => {
       peer.connection.close();
     });
     this.signalServer.disconnect();
@@ -619,9 +630,11 @@ class EventEmitter {
   }
   emit(event: string, data: any): void {
     const callbacks = this.listeners.get(event) || [];
-    callbacks.forEach(callback => callback(data));
+    callbacks.forEach((callback) => callback(data));
   }
-  removeAllListeners(): void { this.listeners.clear(); }
+  removeAllListeners(): void {
+    this.listeners.clear();
+  }
 }
 
 class PriorityQueue<T> {
@@ -636,23 +649,52 @@ class PriorityQueue<T> {
 }
 
 // Helper classes (simplified implementations)
-class SignalServerConnection { 
-  async connect(): Promise<void> {} 
-  async createRoom(_id: string): Promise<void> {} 
-  async joinRoom(_id: string): Promise<any> { return { peers: [] }; }
+class SignalServerConnection {
+  async connect(): Promise<void> {}
+  async createRoom(_id: string): Promise<void> {}
+  async joinRoom(_id: string): Promise<any> {
+    return { peers: [] };
+  }
   async sendOffer(_peerId: string, _offer: RTCSessionDescriptionInit): Promise<void> {}
   async sendIceCandidate(_peerId: string, _candidate: RTCIceCandidate): Promise<void> {}
   disconnect(): void {}
 }
-class ReliabilityManager { sendReliable(_peerId: string, _data: ArrayBuffer): void {} }
-class GameStateSynchronizer { tick(): void {} generateSyncData(): any { return {}; } processSyncData(_data: any): void {} }
+class ReliabilityManager {
+  sendReliable(_peerId: string, _data: ArrayBuffer): void {}
+}
+class GameStateSynchronizer {
+  tick(): void {}
+  generateSyncData(): any {
+    return {};
+  }
+  processSyncData(_data: any): void {}
+}
 class RollbackManager {}
 class PredictionEngine {}
-class NetworkQualityMonitor { recordLatency(_peerId: string, _latency: number): void {} update(): void {} }
-class AdaptiveQualityManager { adjustQuality(_quality: NetworkQuality): void {} }
+class NetworkQualityMonitor {
+  recordLatency(_peerId: string, _latency: number): void {}
+  update(): void {}
+}
+class AdaptiveQualityManager {
+  adjustQuality(_quality: NetworkQuality): void {}
+}
 class BandwidthManager {}
-class VoiceChatManager { async enable(_config: VoiceChatConfig): Promise<void> {} mute(_playerId: string): void {} }
+class VoiceChatManager {
+  async enable(_config: VoiceChatConfig): Promise<void> {}
+  mute(_playerId: string): void {}
+}
 class VideoStreamManager {}
-class FileTransferManager { async send(_filename: string, _data: ArrayBuffer, recipients?: string[]): Promise<string> { return ''; } }
-class NetworkEncryption { encrypt(data: string): string { return data; } decrypt(data: any): string { return data; } }
+class FileTransferManager {
+  async send(_filename: string, _data: ArrayBuffer, recipients?: string[]): Promise<string> {
+    return "";
+  }
+}
+class NetworkEncryption {
+  encrypt(data: string): string {
+    return data;
+  }
+  decrypt(data: any): string {
+    return data;
+  }
+}
 class PeerAuthentication {}

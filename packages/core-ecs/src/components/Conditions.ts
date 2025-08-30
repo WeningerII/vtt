@@ -2,18 +2,34 @@
  * Conditions component for tracking status effects
  */
 
-export type ConditionType = 
-  | 'blinded' | 'charmed' | 'deafened' | 'frightened' | 'grappled' 
-  | 'incapacitated' | 'invisible' | 'paralyzed' | 'petrified' | 'poisoned'
-  | 'prone' | 'restrained' | 'stunned' | 'unconscious' | 'exhaustion'
-  | 'concentration' | 'blessed' | 'cursed' | 'hasted' | 'slowed';
+export type ConditionType =
+  | "blinded"
+  | "charmed"
+  | "deafened"
+  | "frightened"
+  | "grappled"
+  | "incapacitated"
+  | "invisible"
+  | "paralyzed"
+  | "petrified"
+  | "poisoned"
+  | "prone"
+  | "restrained"
+  | "stunned"
+  | "unconscious"
+  | "exhaustion"
+  | "concentration"
+  | "blessed"
+  | "cursed"
+  | "hasted"
+  | "slowed";
 
 export interface Condition {
   type: ConditionType;
   duration: number; // rounds remaining, -1 for permanent
   source?: string; // what caused this condition
   saveEndOfTurn?: {
-    ability: 'strength' | 'dexterity' | 'constitution' | 'intelligence' | 'wisdom' | 'charisma';
+    ability: "strength" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma";
     dc: number;
   };
 }
@@ -33,16 +49,16 @@ export class ConditionsStore {
   add(entity: number, condition: Condition): void {
     if (!this.conditions.has(entity)) {
       if (this.count >= this.capacity) {
-        throw new Error('ConditionsStore capacity exceeded');
+        throw new Error("ConditionsStore capacity exceeded");
       }
       this.entities[this.count++] = entity;
       this.conditions.set(entity, []);
     }
 
     const entityConditions = this.conditions.get(entity)!;
-    
+
     // Check if condition already exists
-    const existingIndex = entityConditions.findIndex(c => c.type === condition.type);
+    const existingIndex = entityConditions.findIndex((c) => c.type === condition.type);
     if (existingIndex !== -1) {
       // Update existing condition (take longer duration)
       const existing = entityConditions[existingIndex];
@@ -60,7 +76,7 @@ export class ConditionsStore {
 
     if (conditionType) {
       // Remove specific condition
-      const index = entityConditions.findIndex(c => c.type === conditionType);
+      const index = entityConditions.findIndex((c) => c.type === conditionType);
       if (index !== -1) {
         entityConditions.splice(index, 1);
       }
@@ -96,7 +112,7 @@ export class ConditionsStore {
     if (!entityConditions) return false;
 
     if (conditionType) {
-      return entityConditions.some(c => c.type === conditionType);
+      return entityConditions.some((c) => c.type === conditionType);
     }
     return entityConditions.length > 0;
   }
@@ -109,7 +125,7 @@ export class ConditionsStore {
     const entityConditions = this.conditions.get(entity);
     if (!entityConditions) return null;
 
-    return entityConditions.find(c => c.type === conditionType) || null;
+    return entityConditions.find((c) => c.type === conditionType) || null;
   }
 
   updateDurations(): void {
@@ -141,11 +157,13 @@ export class ConditionsStore {
 
   // Check if entity is affected by specific condition effects
   isIncapacitated(entity: number): boolean {
-    return this.has(entity, 'incapacitated') || 
-           this.has(entity, 'paralyzed') || 
-           this.has(entity, 'petrified') || 
-           this.has(entity, 'stunned') || 
-           this.has(entity, 'unconscious');
+    return (
+      this.has(entity, "incapacitated") ||
+      this.has(entity, "paralyzed") ||
+      this.has(entity, "petrified") ||
+      this.has(entity, "stunned") ||
+      this.has(entity, "unconscious")
+    );
   }
 
   canAct(entity: number): boolean {
@@ -153,42 +171,49 @@ export class ConditionsStore {
   }
 
   canMove(entity: number): boolean {
-    return !this.has(entity, 'paralyzed') && 
-           !this.has(entity, 'petrified') && 
-           !this.has(entity, 'stunned') && 
-           !this.has(entity, 'unconscious') &&
-           !this.has(entity, 'grappled') &&
-           !this.has(entity, 'restrained');
+    return (
+      !this.has(entity, "paralyzed") &&
+      !this.has(entity, "petrified") &&
+      !this.has(entity, "stunned") &&
+      !this.has(entity, "unconscious") &&
+      !this.has(entity, "grappled") &&
+      !this.has(entity, "restrained")
+    );
   }
 
   canSee(entity: number): boolean {
-    return !this.has(entity, 'blinded') && 
-           !this.has(entity, 'unconscious');
+    return !this.has(entity, "blinded") && !this.has(entity, "unconscious");
   }
 
   canHear(entity: number): boolean {
-    return !this.has(entity, 'deafened') && 
-           !this.has(entity, 'unconscious');
+    return !this.has(entity, "deafened") && !this.has(entity, "unconscious");
   }
 
   hasAdvantageOnAttacks(entity: number): boolean {
-    return this.has(entity, 'invisible') || this.has(entity, 'blessed');
+    return this.has(entity, "invisible") || this.has(entity, "blessed");
   }
 
   hasDisadvantageOnAttacks(entity: number): boolean {
-    return this.has(entity, 'blinded') || 
-           this.has(entity, 'frightened') || 
-           this.has(entity, 'poisoned') ||
-           this.has(entity, 'prone');
+    return (
+      this.has(entity, "blinded") ||
+      this.has(entity, "frightened") ||
+      this.has(entity, "poisoned") ||
+      this.has(entity, "prone")
+    );
   }
 
   getExhaustionLevel(entity: number): number {
-    const exhaustion = this.getCondition(entity, 'exhaustion');
+    const exhaustion = this.getCondition(entity, "exhaustion");
     return exhaustion?.duration || 0;
   }
 
   // Apply condition immunity/resistance based on creature type
-  applyCondition(entity: number, condition: Condition, immunities: ConditionType[] = [], resistances: ConditionType[] = []): boolean {
+  applyCondition(
+    entity: number,
+    condition: Condition,
+    immunities: ConditionType[] = [],
+    resistances: ConditionType[] = [],
+  ): boolean {
     if (immunities.includes(condition.type)) {
       return false; // Immune to this condition
     }

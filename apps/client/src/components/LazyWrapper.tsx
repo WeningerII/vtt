@@ -2,8 +2,8 @@
  * Lazy Wrapper Component - Provides consistent loading states for lazy-loaded components
  */
 
-import React, { Suspense, ComponentType } from 'react';
-import { LoadingSpinner } from './ui/LoadingSpinner';
+import React, { Suspense, ComponentType } from "react";
+import { LoadingSpinner } from "./ui/LoadingSpinner";
 
 interface LazyWrapperProps {
   children: React.ReactNode;
@@ -12,26 +12,22 @@ interface LazyWrapperProps {
   className?: string;
 }
 
-export const LazyWrapper: React.FC<LazyWrapperProps> = ({ 
-  children, 
+export const LazyWrapper: React.FC<LazyWrapperProps> = ({
+  children,
   fallback,
-  minHeight = '200px',
-  className = ''
+  minHeight = "200px",
+  className = "",
 }) => {
   const defaultFallback = (
-    <div 
+    <div
       className={`lazy-loading-container ${className}`}
-      style={{ minHeight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{ minHeight, display: "flex", alignItems: "center", justifyContent: "center" }}
     >
       <LoadingSpinner size="md" showLabel label="Loading component..." />
     </div>
   );
 
-  return (
-    <Suspense fallback={fallback || defaultFallback}>
-      {children}
-    </Suspense>
-  );
+  return <Suspense fallback={fallback || defaultFallback}>{children}</Suspense>;
 };
 
 // Higher-order component for wrapping lazy components
@@ -41,7 +37,7 @@ export function withLazyWrapper<P extends object>(
     fallback?: React.ReactNode;
     minHeight?: string;
     className?: string;
-  }
+  },
 ) {
   return React.forwardRef<any, P>((props, ref) => (
     <LazyWrapper {...options}>
@@ -53,7 +49,7 @@ export function withLazyWrapper<P extends object>(
 // Preload function for critical components
 export function preloadComponent(importFn: () => Promise<any>) {
   // Preload on user interaction or idle time
-  if ('requestIdleCallback' in window) {
+  if ("requestIdleCallback" in window) {
     requestIdleCallback(() => {
       importFn();
     });
@@ -78,7 +74,7 @@ export function useLazyLoad(threshold = 0.1) {
           observer.disconnect();
         }
       },
-      { threshold }
+      { threshold },
     );
 
     if (ref.current) {

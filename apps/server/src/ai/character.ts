@@ -11,15 +11,24 @@ export interface CharacterConcept {
   prompt: string;
   preferences?: {
     system?: string; // D&D 5e, Pathfinder, etc.
-    powerLevel?: 'low' | 'standard' | 'high' | 'epic';
-    complexity?: 'simple' | 'moderate' | 'complex';
-    playstyle?: 'combat' | 'roleplay' | 'exploration' | 'balanced';
+    powerLevel?: "low" | "standard" | "high" | "epic";
+    complexity?: "simple" | "moderate" | "complex";
+    playstyle?: "combat" | "roleplay" | "exploration" | "balanced";
   };
 }
 
 export interface GenerationStep {
-  step: 'concept' | 'race' | 'class' | 'background' | 'abilities' | 'equipment' | 'spells' | 'personality' | 'optimization';
-  status: 'pending' | 'processing' | 'completed' | 'error';
+  step:
+    | "concept"
+    | "race"
+    | "class"
+    | "background"
+    | "abilities"
+    | "equipment"
+    | "spells"
+    | "personality"
+    | "optimization";
+  status: "pending" | "processing" | "completed" | "error";
   result?: any;
   reasoning?: string;
   alternatives?: any[];
@@ -52,7 +61,7 @@ export class GenesisService {
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
     this.characterService = new CharacterService();
-    
+
     // Initialize AI providers
     const openaiKey = process.env.OPENAI_API_KEY;
     if (openaiKey?.trim()) {
@@ -70,38 +79,38 @@ export class GenesisService {
    */
   async startGeneration(concept: CharacterConcept, userId: string): Promise<CharacterGeneration> {
     const generationId = this.generateId();
-    
+
     const generation: CharacterGeneration = {
       id: generationId,
       concept,
       steps: [
-        { step: 'concept', status: 'processing' },
-        { step: 'race', status: 'pending' },
-        { step: 'class', status: 'pending' },
-        { step: 'background', status: 'pending' },
-        { step: 'abilities', status: 'pending' },
-        { step: 'equipment', status: 'pending' },
-        { step: 'spells', status: 'pending' },
-        { step: 'personality', status: 'pending' },
-        { step: 'optimization', status: 'pending' }
+        { step: "concept", status: "processing" },
+        { step: "race", status: "pending" },
+        { step: "class", status: "pending" },
+        { step: "background", status: "pending" },
+        { step: "abilities", status: "pending" },
+        { step: "equipment", status: "pending" },
+        { step: "spells", status: "pending" },
+        { step: "personality", status: "pending" },
+        { step: "optimization", status: "pending" },
       ],
-      currentStep: 'concept',
+      currentStep: "concept",
       isComplete: false,
       metadata: {
-        provider: 'genesis',
+        provider: "genesis",
         totalCostUSD: 0,
         totalLatencyMs: 0,
-        generatedAt: new Date()
-      }
+        generatedAt: new Date(),
+      },
     };
 
     this.activeGenerations.set(generationId, generation);
 
     // Start async generation process
-    this.processGeneration(generation, userId).catch(error => {
+    this.processGeneration(generation, userId).catch((error) => {
       generation.error = error.message;
-      generation.steps.forEach(step => {
-        if (step.status === 'processing') step.status = 'error';
+      generation.steps.forEach((step) => {
+        if (step.status === "processing") step.status = "error";
       });
     });
 
@@ -122,28 +131,28 @@ export class GenesisService {
     try {
       // Step 1: Analyze concept
       await this.analyzeConceptStep(generation);
-      
+
       // Step 2: Determine race
       await this.determineRaceStep(generation);
-      
+
       // Step 3: Determine class
       await this.determineClassStep(generation);
-      
+
       // Step 4: Determine background
       await this.determineBackgroundStep(generation);
-      
+
       // Step 5: Generate ability scores
       await this.generateAbilitiesStep(generation);
-      
+
       // Step 6: Generate equipment
       await this.generateEquipmentStep(generation);
-      
+
       // Step 7: Generate spells (if applicable)
       await this.generateSpellsStep(generation);
-      
+
       // Step 8: Generate personality
       await this.generatePersonalityStep(generation);
-      
+
       // Step 9: Optimize build
       await this.optimizeCharacterStep(generation);
 
@@ -151,7 +160,6 @@ export class GenesisService {
       const character = await this.createFinalCharacter(generation, userId);
       generation.character = character;
       generation.isComplete = true;
-
     } catch (error: any) {
       generation.error = error.message;
       throw error;
@@ -159,8 +167,8 @@ export class GenesisService {
   }
 
   private async analyzeConceptStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'concept');
-    step.status = 'processing';
+    const step = this.getStep(generation, "concept");
+    step.status = "processing";
 
     const prompt = `Analyze this D&D 5e character concept and extract key elements:
 
@@ -181,20 +189,20 @@ Please analyze and extract:
 Format as JSON with clear reasoning for each suggestion.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.9;
-    
-    this.updateCurrentStep(generation, 'race');
+
+    this.updateCurrentStep(generation, "race");
   }
 
   private async determineRaceStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'race');
-    step.status = 'processing';
+    const step = this.getStep(generation, "race");
+    step.status = "processing";
 
-    const conceptAnalysis = this.getStep(generation, 'concept').result;
-    
+    const conceptAnalysis = this.getStep(generation, "concept").result;
+
     const prompt = `Based on this character concept analysis, choose the BEST race for this character:
 
 Concept Analysis: ${JSON.stringify(conceptAnalysis, null, 2)}
@@ -236,21 +244,21 @@ Choose ONE race and provide:
 Format as JSON.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.85;
-    
-    this.updateCurrentStep(generation, 'class');
+
+    this.updateCurrentStep(generation, "class");
   }
 
   private async determineClassStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'class');
-    step.status = 'processing';
+    const step = this.getStep(generation, "class");
+    step.status = "processing";
 
-    const conceptAnalysis = this.getStep(generation, 'concept').result;
-    const raceChoice = this.getStep(generation, 'race').result;
-    
+    const conceptAnalysis = this.getStep(generation, "concept").result;
+    const raceChoice = this.getStep(generation, "race").result;
+
     const prompt = `Choose the BEST class for this character:
 
 Concept: ${JSON.stringify(conceptAnalysis, null, 2)}
@@ -288,22 +296,22 @@ Choose ONE class and provide:
 Format as JSON.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.8;
-    
-    this.updateCurrentStep(generation, 'background');
+
+    this.updateCurrentStep(generation, "background");
   }
 
   private async determineBackgroundStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'background');
-    step.status = 'processing';
+    const step = this.getStep(generation, "background");
+    step.status = "processing";
 
-    const conceptAnalysis = this.getStep(generation, 'concept').result;
-    const raceChoice = this.getStep(generation, 'race').result;
-    const classChoice = this.getStep(generation, 'class').result;
-    
+    const conceptAnalysis = this.getStep(generation, "concept").result;
+    const raceChoice = this.getStep(generation, "race").result;
+    const classChoice = this.getStep(generation, "class").result;
+
     const prompt = `Choose the BEST background for this character:
 
 Concept: ${JSON.stringify(conceptAnalysis, null, 2)}
@@ -335,21 +343,21 @@ Choose ONE background and provide:
 Format as JSON.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.75;
-    
-    this.updateCurrentStep(generation, 'abilities');
+
+    this.updateCurrentStep(generation, "abilities");
   }
 
   private async generateAbilitiesStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'abilities');
-    step.status = 'processing';
+    const step = this.getStep(generation, "abilities");
+    step.status = "processing";
 
-    const raceChoice = this.getStep(generation, 'race').result;
-    const classChoice = this.getStep(generation, 'class').result;
-    
+    const raceChoice = this.getStep(generation, "race").result;
+    const classChoice = this.getStep(generation, "class").result;
+
     const prompt = `Generate optimal ability scores for this character using point buy (27 points):
 
 Race: ${JSON.stringify(raceChoice, null, 2)}
@@ -378,22 +386,22 @@ Provide:
 Format as JSON with clear STR/DEX/CON/INT/WIS/CHA breakdown.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.9;
-    
-    this.updateCurrentStep(generation, 'equipment');
+
+    this.updateCurrentStep(generation, "equipment");
   }
 
   private async generateEquipmentStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'equipment');
-    step.status = 'processing';
+    const step = this.getStep(generation, "equipment");
+    step.status = "processing";
 
-    const classChoice = this.getStep(generation, 'class').result;
-    const backgroundChoice = this.getStep(generation, 'background').result;
-    const abilities = this.getStep(generation, 'abilities').result;
-    
+    const classChoice = this.getStep(generation, "class").result;
+    const backgroundChoice = this.getStep(generation, "background").result;
+    const abilities = this.getStep(generation, "abilities").result;
+
     const prompt = `Generate starting equipment for this character:
 
 Class: ${JSON.stringify(classChoice, null, 2)}
@@ -418,32 +426,42 @@ Provide:
 Format as JSON with detailed equipment list and reasoning.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.8;
-    
-    this.updateCurrentStep(generation, 'spells');
+
+    this.updateCurrentStep(generation, "spells");
   }
 
   private async generateSpellsStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'spells');
-    step.status = 'processing';
+    const step = this.getStep(generation, "spells");
+    step.status = "processing";
 
-    const classChoice = this.getStep(generation, 'class').result;
-    const abilities = this.getStep(generation, 'abilities').result;
-    
+    const classChoice = this.getStep(generation, "class").result;
+    const abilities = this.getStep(generation, "abilities").result;
+
     // Check if character is a spellcaster
-    const spellcastingClasses = ['wizard', 'sorcerer', 'warlock', 'cleric', 'druid', 'bard', 'paladin', 'ranger', 'artificer'];
-    const isSpellcaster = spellcastingClasses.some(cls => 
-      classChoice.selectedClass?.toLowerCase().includes(cls)
+    const spellcastingClasses = [
+      "wizard",
+      "sorcerer",
+      "warlock",
+      "cleric",
+      "druid",
+      "bard",
+      "paladin",
+      "ranger",
+      "artificer",
+    ];
+    const isSpellcaster = spellcastingClasses.some((cls) =>
+      classChoice.selectedClass?.toLowerCase().includes(cls),
     );
 
     if (!isSpellcaster) {
-      step.result = { spells: [], cantrips: [], message: 'Non-spellcasting class' };
-      step.status = 'completed';
+      step.result = { spells: [], cantrips: [], message: "Non-spellcasting class" };
+      step.status = "completed";
       step.confidence = 1.0;
-      this.updateCurrentStep(generation, 'personality');
+      this.updateCurrentStep(generation, "personality");
       return;
     }
 
@@ -472,21 +490,21 @@ Provide:
 Format as JSON with complete spell list and mechanics.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.85;
-    
-    this.updateCurrentStep(generation, 'personality');
+
+    this.updateCurrentStep(generation, "personality");
   }
 
   private async generatePersonalityStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'personality');
-    step.status = 'processing';
+    const step = this.getStep(generation, "personality");
+    step.status = "processing";
 
-    const conceptAnalysis = this.getStep(generation, 'concept').result;
-    const backgroundChoice = this.getStep(generation, 'background').result;
-    
+    const conceptAnalysis = this.getStep(generation, "concept").result;
+    const backgroundChoice = this.getStep(generation, "background").result;
+
     const prompt = `Generate rich personality details for this character:
 
 Original Concept: "${generation.concept.prompt}"
@@ -514,30 +532,30 @@ Make it:
 Format as JSON with detailed explanations.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.7;
-    
-    this.updateCurrentStep(generation, 'optimization');
+
+    this.updateCurrentStep(generation, "optimization");
   }
 
   private async optimizeCharacterStep(generation: CharacterGeneration): Promise<void> {
-    const step = this.getStep(generation, 'optimization');
-    step.status = 'processing';
+    const step = this.getStep(generation, "optimization");
+    step.status = "processing";
 
     // Gather all previous results
     const allResults = {
-      concept: this.getStep(generation, 'concept').result,
-      race: this.getStep(generation, 'race').result,
-      class: this.getStep(generation, 'class').result,
-      background: this.getStep(generation, 'background').result,
-      abilities: this.getStep(generation, 'abilities').result,
-      equipment: this.getStep(generation, 'equipment').result,
-      spells: this.getStep(generation, 'spells').result,
-      personality: this.getStep(generation, 'personality').result
+      concept: this.getStep(generation, "concept").result,
+      race: this.getStep(generation, "race").result,
+      class: this.getStep(generation, "class").result,
+      background: this.getStep(generation, "background").result,
+      abilities: this.getStep(generation, "abilities").result,
+      equipment: this.getStep(generation, "equipment").result,
+      spells: this.getStep(generation, "spells").result,
+      personality: this.getStep(generation, "personality").result,
     };
-    
+
     const prompt = `Optimize and validate this complete character build:
 
 Character Build: ${JSON.stringify(allResults, null, 2)}
@@ -564,24 +582,27 @@ Provide:
 Format as JSON with detailed analysis.`;
 
     const result = await this.callAI(prompt, generation);
-    
+
     step.result = result;
-    step.status = 'completed';
+    step.status = "completed";
     step.confidence = 0.95;
-    
+
     // Mark generation as ready for final character creation
-    generation.currentStep = 'completed';
+    generation.currentStep = "completed";
   }
 
-  private async createFinalCharacter(generation: CharacterGeneration, userId: string): Promise<any> {
+  private async createFinalCharacter(
+    generation: CharacterGeneration,
+    userId: string,
+  ): Promise<any> {
     // Extract all the generated data
-    const raceResult = this.getStep(generation, 'race').result;
-    const classResult = this.getStep(generation, 'class').result;
-    const backgroundResult = this.getStep(generation, 'background').result;
-    const abilitiesResult = this.getStep(generation, 'abilities').result;
-    const _equipmentResult = this.getStep(generation, 'equipment').result;
-    const _spellsResult = this.getStep(generation, 'spells').result;
-    const personalityResult = this.getStep(generation, 'personality').result;
+    const raceResult = this.getStep(generation, "race").result;
+    const classResult = this.getStep(generation, "class").result;
+    const backgroundResult = this.getStep(generation, "background").result;
+    const abilitiesResult = this.getStep(generation, "abilities").result;
+    const _equipmentResult = this.getStep(generation, "equipment").result;
+    const _spellsResult = this.getStep(generation, "spells").result;
+    const personalityResult = this.getStep(generation, "personality").result;
 
     // Create character using existing CharacterService
     const characterRequest = {
@@ -595,45 +616,45 @@ Format as JSON with detailed analysis.`;
     };
 
     const character = await this.characterService.createCharacter(userId, characterRequest);
-    
+
     // Log generation job
     await this.logGenerationJob(generation, character);
-    
+
     return character;
   }
 
   private async callAI(prompt: string, generation: CharacterGeneration): Promise<any> {
     const startTime = Date.now();
-    
+
     try {
       // Try Anthropic first, fallback to OpenAI
       let result;
       let provider;
-      
+
       if (this.anthropicProvider) {
-        provider = 'anthropic';
-        const response = await this.anthropicProvider.generateGameContent('character', {
-          additionalContext: prompt
+        provider = "anthropic";
+        const response = await this.anthropicProvider.generateGameContent("character", {
+          additionalContext: prompt,
         });
         result = response.content;
         generation.metadata.totalCostUSD += response.costUSD;
       } else if (this.openaiProvider) {
-        provider = 'openai';
+        provider = "openai";
         const response = await this.openaiProvider.generateText(prompt, {
-          model: 'gpt-4',
+          model: "gpt-4",
           temperature: 0.7,
-          maxTokens: 2000
+          maxTokens: 2000,
         });
         result = JSON.parse(response.text);
         generation.metadata.totalCostUSD += response.costUSD;
       } else {
-        throw new Error('No AI provider available');
+        throw new Error("No AI provider available");
       }
-      
+
       const latency = Date.now() - startTime;
       generation.metadata.totalLatencyMs += latency;
       generation.metadata.provider = provider;
-      
+
       return result;
     } catch (error: any) {
       throw new Error(`AI generation failed: ${error.message}`);
@@ -643,8 +664,8 @@ Format as JSON with detailed analysis.`;
   private async logGenerationJob(generation: CharacterGeneration, character: any): Promise<void> {
     await this.prisma.generationJob.create({
       data: {
-        type: 'CHARACTER_GENERATION',
-        status: 'SUCCEEDED',
+        type: "CHARACTER_GENERATION",
+        status: "SUCCEEDED",
         input: generation.concept as any,
         output: character as any,
       },
@@ -652,7 +673,7 @@ Format as JSON with detailed analysis.`;
   }
 
   private getStep(generation: CharacterGeneration, stepName: string): GenerationStep {
-    const step = generation.steps.find(s => s.step === stepName);
+    const step = generation.steps.find((s) => s.step === stepName);
     if (!step) throw new Error(`Step not found: ${stepName}`);
     return step;
   }
@@ -667,8 +688,22 @@ Format as JSON with detailed analysis.`;
 
   private generateCharacterName(): string {
     const names = [
-      'Aelindra', 'Thorin', 'Zara', 'Gareth', 'Luna', 'Kael', 'Rina', 'Daven',
-      'Lyra', 'Magnus', 'Vera', 'Finn', 'Nyx', 'Orion', 'Sage', 'Raven'
+      "Aelindra",
+      "Thorin",
+      "Zara",
+      "Gareth",
+      "Luna",
+      "Kael",
+      "Rina",
+      "Daven",
+      "Lyra",
+      "Magnus",
+      "Vera",
+      "Finn",
+      "Nyx",
+      "Orion",
+      "Sage",
+      "Raven",
     ];
     return names[Math.floor(Math.random() * names.length)];
   }
@@ -676,21 +711,21 @@ Format as JSON with detailed analysis.`;
   // Public methods for external access
   async retryStep(generationId: string, stepName: string): Promise<void> {
     const generation = this.activeGenerations.get(generationId);
-    if (!generation) throw new Error('Generation not found');
+    if (!generation) throw new Error("Generation not found");
 
     const step = this.getStep(generation, stepName);
-    step.status = 'processing';
+    step.status = "processing";
     step.error = undefined;
 
     // Re-run the specific step
     switch (stepName) {
-      case 'concept':
+      case "concept":
         await this.analyzeConceptStep(generation);
         break;
-      case 'race':
+      case "race":
         await this.determineRaceStep(generation);
         break;
-      case 'class':
+      case "class":
         await this.determineClassStep(generation);
         break;
       // Add other cases as needed

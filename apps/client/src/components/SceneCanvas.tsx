@@ -1,7 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Application, Container, Sprite, Graphics, Text } from 'pixi.js';
-import { Viewport } from 'pixi-viewport';
-import { Socket } from 'socket.io-client';
+import React, { useRef, useEffect, useState } from "react";
+import { Application, Container, Sprite, Graphics, Text } from "pixi.js";
+import { Viewport } from "pixi-viewport";
+import { Socket } from "socket.io-client";
 
 export interface Token {
   id: string;
@@ -20,7 +20,7 @@ export interface Scene {
   id: string;
   name: string;
   gridSettings: {
-    type: 'square' | 'hex' | 'none';
+    type: "square" | "hex" | "none";
     size: number;
     offsetX: number;
     offsetY: number;
@@ -36,7 +36,13 @@ interface SceneCanvasProps {
   isGM: boolean;
 }
 
-export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canvasWidth, _canvasHeight, _isGM}) => {
+export const SceneCanvas: React.FC<SceneCanvasProps> = ({
+  _scene,
+  _socket,
+  _canvasWidth,
+  _canvasHeight,
+  _isGM,
+}) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
   const viewportRef = useRef<Viewport | null>(null);
@@ -50,7 +56,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
 
     // Initialize PixiJS Application
     const app = new Application();
-    
+
     const initApp = async () => {
       await app.init({
         width: canvasWidth,
@@ -58,7 +64,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
         backgroundColor: 0x1a1a1a,
         antialias: true,
         resolution: window.devicePixelRatio || 1,
-        autoDensity: true
+        autoDensity: true,
       });
 
       canvasRef.current?.appendChild(app.canvas);
@@ -70,40 +76,35 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
         screenHeight: canvasHeight,
         worldWidth: 5000,
         worldHeight: 5000,
-        events: app.renderer.events
+        events: app.renderer.events,
       });
 
       app.stage.addChild(viewport);
       viewportRef.current = viewport;
 
       // Enable viewport plugins
-      viewport
-        .drag()
-        .pinch()
-        .wheel()
-        .decelerate()
-        .clampZoom({
-          minWidth: 100,
-          minHeight: 100,
-          maxWidth: 10000,
-          maxHeight: 10000
-        });
+      viewport.drag().pinch().wheel().decelerate().clampZoom({
+        minWidth: 100,
+        minHeight: 100,
+        maxWidth: 10000,
+        maxHeight: 10000,
+      });
 
       // Create containers for different layers
       const gridContainer = new Container();
       const tokensContainer = new Container();
-      
+
       viewport.addChild(gridContainer);
       viewport.addChild(tokensContainer);
-      
+
       gridContainerRef.current = gridContainer;
       tokensContainerRef.current = tokensContainer;
 
       // Draw grid
       drawGrid();
-      
+
       // Add existing tokens
-      scene.tokens.forEach(token => {
+      scene.tokens.forEach((token) => {
         addToken(token);
       });
 
@@ -122,17 +123,20 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
 
   // Socket event handlers
   useEffect(() => {
-    socket.on('token_moved', (data: { tokenId: string, _x: number, _y: number, _rotation: number, scale: number }) => {
-      const tokenSprite = tokens.get(data.tokenId);
-      if (tokenSprite && data.tokenId !== isDragging) {
-        tokenSprite.x = data.x;
-        tokenSprite.y = data.y;
-        tokenSprite.rotation = data.rotation;
-        tokenSprite.scale.set(data.scale);
-      }
-    });
+    socket.on(
+      "token_moved",
+      (data: { tokenId: string; _x: number; _y: number; _rotation: number; scale: number }) => {
+        const tokenSprite = tokens.get(data.tokenId);
+        if (tokenSprite && data.tokenId !== isDragging) {
+          tokenSprite.x = data.x;
+          tokenSprite.y = data.y;
+          tokenSprite.rotation = data.rotation;
+          tokenSprite.scale.set(data.scale);
+        }
+      },
+    );
 
-    socket.on('scene_updated', (data: { scene: Scene }) => {
+    socket.on("scene_updated", (data: { scene: Scene }) => {
       // Handle scene updates (grid changes, lighting, etc.)
       if (data.scene.id === scene.id) {
         drawGrid();
@@ -140,8 +144,8 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
     });
 
     return () => {
-      socket.off('token_moved');
-      socket.off('scene_updated');
+      socket.off("token_moved");
+      socket.off("scene_updated");
     };
   }, [socket, tokens, isDragging]);
 
@@ -150,7 +154,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
 
     gridContainerRef.current.removeChildren();
 
-    if (scene.gridSettings.type === 'none') return;
+    if (scene.gridSettings.type === "none") return;
 
     const grid = new Graphics();
     const gridSize = scene.gridSettings.size;
@@ -159,7 +163,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
 
     grid.stroke({ width: 1, color: 0x444444, alpha: 0.5 });
 
-    if (scene.gridSettings.type === 'square') {
+    if (scene.gridSettings.type === "square") {
       // Draw square grid
       for (let x = offsetX; x < 5000; x += gridSize) {
         grid.moveTo(x, 0);
@@ -169,16 +173,16 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
         grid.moveTo(0, y);
         grid.lineTo(5000, y);
       }
-    } else if (scene.gridSettings.type === 'hex') {
+    } else if (scene.gridSettings.type === "hex") {
       // Draw hexagonal grid (simplified - would need proper hex math)
       const hexHeight = gridSize * Math.sqrt(3);
       const hexWidth = gridSize * 2;
-      
+
       for (let row = 0; row < 5000 / hexHeight; row++) {
         for (let col = 0; col < 5000 / hexWidth; col++) {
           const x = col * hexWidth * 0.75 + offsetX;
           const y = row * hexHeight + (col % 2) * hexHeight * 0.5 + offsetY;
-          
+
           drawHexagon(grid, x, y, gridSize);
         }
       }
@@ -210,7 +214,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
       const graphics = new Graphics();
       graphics.circle(0, 0, 25);
       graphics.fill(token.color || 0xff0000);
-      
+
       const texture = appRef.current?.renderer.generateTexture(graphics);
       tokenSprite = new Sprite(texture);
     }
@@ -223,7 +227,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
     tokenSprite.scale.set(token.scale);
     tokenSprite.anchor.set(0.5);
     tokenSprite.interactive = true;
-    tokenSprite.cursor = 'pointer';
+    tokenSprite.cursor = "pointer";
 
     // Add token label
     const label = new Text({
@@ -231,8 +235,8 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
       style: {
         fontSize: 12,
         fill: 0xffffff,
-        stroke: { color: 0x000000, width: 2 }
-      }
+        stroke: { color: 0x000000, width: 2 },
+      },
     });
     label.anchor.set(0.5);
     label.y = tokenSprite.height / 2 + 10;
@@ -242,19 +246,19 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
     if (isGM) {
       let dragData: any = null;
 
-      tokenSprite.on('pointerdown', (event) => {
+      tokenSprite.on("pointerdown", (event) => {
         dragData = {
           tokenId: token.id,
           offset: {
             x: event.global.x - tokenSprite.x,
-            y: event.global.y - tokenSprite.y
-          }
+            y: event.global.y - tokenSprite.y,
+          },
         };
         setIsDragging(token.id);
         tokenSprite.alpha = 0.8;
       });
 
-      tokenSprite.on('pointermove', (event) => {
+      tokenSprite.on("pointermove", (event) => {
         if (dragData && isDragging === token.id) {
           const viewport = viewportRef.current;
           if (viewport) {
@@ -265,24 +269,24 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
         }
       });
 
-      tokenSprite.on('pointerup', () => {
+      tokenSprite.on("pointerup", () => {
         if (dragData && isDragging === token.id) {
           // Snap to grid
           const gridSize = scene.gridSettings.size;
           const snappedX = Math.round(tokenSprite.x / gridSize) * gridSize;
           const snappedY = Math.round(tokenSprite.y / gridSize) * gridSize;
-          
+
           tokenSprite.x = snappedX;
           tokenSprite.y = snappedY;
           tokenSprite.alpha = 1;
 
           // Emit move event to server
-          socket.emit('move_token', {
+          socket.emit("move_token", {
             id: token.id,
             x: snappedX,
             y: snappedY,
             rotation: tokenSprite.rotation,
-            scale: tokenSprite.scale.x
+            scale: tokenSprite.scale.x,
           });
 
           setIsDragging(null);
@@ -290,7 +294,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
         }
       });
 
-      tokenSprite.on('pointerupoutside', () => {
+      tokenSprite.on("pointerupoutside", () => {
         if (dragData && isDragging === token.id) {
           tokenSprite.alpha = 1;
           setIsDragging(null);
@@ -300,7 +304,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
     }
 
     tokensContainerRef.current.addChild(tokenSprite);
-    setTokens(prev => new Map(prev).set(token.id, tokenSprite));
+    setTokens((prev) => new Map(prev).set(token.id, tokenSprite));
   };
 
   const _removeToken = (_tokenId: string) => {
@@ -308,7 +312,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
     if (tokenSprite && tokensContainerRef.current) {
       tokensContainerRef.current.removeChild(tokenSprite);
       tokenSprite.destroy();
-      setTokens(prev => {
+      setTokens((prev) => {
         const newMap = new Map(prev);
         newMap.delete(tokenId);
         return newMap;
@@ -317,15 +321,15 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({_scene, _socket, _canva
   };
 
   return (
-    <div 
-      ref={canvasRef} 
-      style={{ 
-        width: canvasWidth, 
+    <div
+      ref={canvasRef}
+      style={{
+        width: canvasWidth,
         height: canvasHeight,
-        border: '1px solid #333',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }} 
+        border: "1px solid #333",
+        borderRadius: "8px",
+        overflow: "hidden",
+      }}
     />
   );
 };

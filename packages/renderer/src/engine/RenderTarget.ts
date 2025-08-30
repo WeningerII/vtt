@@ -15,7 +15,7 @@ export class RenderTarget {
   private width: number;
   private height: number;
   private options: RenderTargetOptions;
-  
+
   public colorTexture: WebGLTexture | null = null;
   public depthTexture: WebGLTexture | null = null;
   public stencilTexture: WebGLTexture | null = null;
@@ -24,10 +24,10 @@ export class RenderTarget {
   public stencilBuffer: WebGLRenderbuffer | null = null;
 
   constructor(
-    gl: WebGL2RenderingContext, 
-    width: number, 
-    height: number, 
-    options: RenderTargetOptions = {}
+    gl: WebGL2RenderingContext,
+    width: number,
+    height: number,
+    options: RenderTargetOptions = {},
   ) {
     this.gl = gl;
     this.width = width;
@@ -40,12 +40,12 @@ export class RenderTarget {
       samples: 0,
       generateMipmaps: false,
       floatTexture: false,
-      ...options
+      ...options,
     };
 
     const framebuffer = gl.createFramebuffer();
     if (!framebuffer) {
-      throw new Error('Failed to create framebuffer');
+      throw new Error("Failed to create framebuffer");
     }
     this.framebuffer = framebuffer;
 
@@ -54,7 +54,7 @@ export class RenderTarget {
 
   private createAttachments(): void {
     const gl = this.gl;
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
 
     // Create color attachment
@@ -68,23 +68,23 @@ export class RenderTarget {
           this.options.samples,
           this.options.colorFormat,
           this.width,
-          this.height
+          this.height,
         );
         gl.framebufferRenderbuffer(
           gl.FRAMEBUFFER,
           gl.COLOR_ATTACHMENT0,
           gl.RENDERBUFFER,
-          this.colorBuffer
+          this.colorBuffer,
         );
       } else {
         // Color texture
         this.colorTexture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.colorTexture);
-        
+
         const internalFormat = this.options.colorFormat;
         const format = this.getFormatFromInternalFormat(internalFormat);
         const type = this.getTypeFromInternalFormat(internalFormat);
-        
+
         gl.texImage2D(
           gl.TEXTURE_2D,
           0,
@@ -94,24 +94,24 @@ export class RenderTarget {
           0,
           format,
           type,
-          null
+          null,
         );
-        
+
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.options.filter!);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.options.filter!);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.options.wrap!);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.options.wrap!);
-        
+
         if (this.options.generateMipmaps) {
           gl.generateMipmap(gl.TEXTURE_2D);
         }
-        
+
         gl.framebufferTexture2D(
           gl.FRAMEBUFFER,
           gl.COLOR_ATTACHMENT0,
           gl.TEXTURE_2D,
           this.colorTexture,
-          0
+          0,
         );
       }
     }
@@ -127,19 +127,19 @@ export class RenderTarget {
           this.options.samples,
           this.options.depthFormat,
           this.width,
-          this.height
+          this.height,
         );
         gl.framebufferRenderbuffer(
           gl.FRAMEBUFFER,
           gl.DEPTH_ATTACHMENT,
           gl.RENDERBUFFER,
-          this.depthBuffer
+          this.depthBuffer,
         );
       } else {
         // Depth texture
         this.depthTexture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.depthTexture);
-        
+
         gl.texImage2D(
           gl.TEXTURE_2D,
           0,
@@ -149,20 +149,20 @@ export class RenderTarget {
           0,
           gl.DEPTH_COMPONENT,
           gl.UNSIGNED_INT,
-          null
+          null,
         );
-        
+
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        
+
         gl.framebufferTexture2D(
           gl.FRAMEBUFFER,
           gl.DEPTH_ATTACHMENT,
           gl.TEXTURE_2D,
           this.depthTexture,
-          0
+          0,
         );
       }
     }
@@ -178,19 +178,19 @@ export class RenderTarget {
           this.options.samples,
           this.options.stencilFormat,
           this.width,
-          this.height
+          this.height,
         );
         gl.framebufferRenderbuffer(
           gl.FRAMEBUFFER,
           gl.STENCIL_ATTACHMENT,
           gl.RENDERBUFFER,
-          this.stencilBuffer
+          this.stencilBuffer,
         );
       } else {
         // Stencil texture
         this.stencilTexture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, this.stencilTexture);
-        
+
         gl.texImage2D(
           gl.TEXTURE_2D,
           0,
@@ -200,18 +200,18 @@ export class RenderTarget {
           0,
           gl.STENCIL_INDEX,
           gl.UNSIGNED_BYTE,
-          null
+          null,
         );
-        
+
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        
+
         gl.framebufferTexture2D(
           gl.FRAMEBUFFER,
           gl.STENCIL_ATTACHMENT,
           gl.TEXTURE_2D,
           this.stencilTexture,
-          0
+          0,
         );
       }
     }
@@ -227,7 +227,7 @@ export class RenderTarget {
 
   private getFormatFromInternalFormat(internalFormat: number): number {
     const gl = this.gl;
-    
+
     switch (internalFormat) {
       case gl.RGBA8:
       case gl.RGBA16F:
@@ -252,7 +252,7 @@ export class RenderTarget {
 
   private getTypeFromInternalFormat(internalFormat: number): number {
     const gl = this.gl;
-    
+
     switch (internalFormat) {
       case gl.RGBA8:
       case gl.RGB8:
@@ -276,18 +276,18 @@ export class RenderTarget {
 
   private getFramebufferStatusString(status: number): string {
     const gl = this.gl;
-    
+
     switch (status) {
       case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-        return 'FRAMEBUFFER_INCOMPLETE_ATTACHMENT';
+        return "FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
       case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-        return 'FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT';
+        return "FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
       case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
-        return 'FRAMEBUFFER_INCOMPLETE_DIMENSIONS';
+        return "FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
       case gl.FRAMEBUFFER_UNSUPPORTED:
-        return 'FRAMEBUFFER_UNSUPPORTED';
+        return "FRAMEBUFFER_UNSUPPORTED";
       case gl.FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-        return 'FRAMEBUFFER_INCOMPLETE_MULTISAMPLE';
+        return "FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
       default:
         return `UNKNOWN_STATUS_${status}`;
     }
@@ -329,23 +329,18 @@ export class RenderTarget {
     dstX1?: number,
     dstY1?: number,
     mask: number = this.gl.COLOR_BUFFER_BIT,
-    filter: number = this.gl.LINEAR
+    filter: number = this.gl.LINEAR,
   ): void {
     const gl = this.gl;
-    
+
     if (dstX1 === undefined) dstX1 = target ? target.width : gl.canvas.width;
     if (dstY1 === undefined) dstY1 = target ? target.height : gl.canvas.height;
 
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.framebuffer);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, target ? target.framebuffer : null);
-    
-    gl.blitFramebuffer(
-      srcX0, srcY0, srcX1, srcY1,
-      dstX0, dstY0, dstX1, dstY1,
-      mask,
-      filter
-    );
-    
+
+    gl.blitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
   }
@@ -357,14 +352,14 @@ export class RenderTarget {
     width: number = this.width,
     height: number = this.height,
     format: number = this.gl.RGBA,
-    type: number = this.gl.UNSIGNED_BYTE
+    type: number = this.gl.UNSIGNED_BYTE,
   ): ArrayBufferView {
     const gl = this.gl;
-    
+
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-    
+
     let pixels: ArrayBufferView;
-    
+
     switch (type) {
       case gl.UNSIGNED_BYTE:
         pixels = new Uint8Array(width * height * 4);
@@ -378,10 +373,10 @@ export class RenderTarget {
       default:
         pixels = new Uint8Array(width * height * 4);
     }
-    
+
     gl.readPixels(x, y, width, height, format, type, pixels);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    
+
     return pixels;
   }
 

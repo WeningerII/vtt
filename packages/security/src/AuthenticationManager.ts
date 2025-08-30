@@ -3,10 +3,10 @@
  * JWT-based authentication with role-based access control and session management
  */
 
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { EventEmitter } from 'events';
-import { v4 as uuidv4 } from 'uuid';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { EventEmitter } from "events";
+import { v4 as uuidv4 } from "uuid";
 
 export interface User {
   id: string;
@@ -27,7 +27,7 @@ export interface AuthToken {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
-  tokenType: 'Bearer';
+  tokenType: "Bearer";
 }
 
 export interface AuthSession {
@@ -96,14 +96,18 @@ export class AuthenticationManager extends EventEmitter {
   async register(data: RegisterData): Promise<AuthResult> {
     try {
       // Check if user already exists
-      const existingUser = Array.from(this.users.values())
-        .find(u => u.email === data.email || u.username === data.username);
-      
+      const existingUser = Array.from(this.users.values()).find(
+        (u) => u.email === data.email || u.username === data.username,
+      );
+
       if (existingUser) {
         return {
           success: false,
-          error: existingUser.email === data.email ? 'Email already registered' : 'Username already taken',
-          code: 'USER_EXISTS',
+          error:
+            existingUser.email === data.email
+              ? "Email already registered"
+              : "Username already taken",
+          code: "USER_EXISTS",
         };
       }
 
@@ -116,8 +120,8 @@ export class AuthenticationManager extends EventEmitter {
         email: data.email,
         username: data.username,
         passwordHash,
-        roles: ['user'], // Default role
-        permissions: ['read:own', 'write:own'],
+        roles: ["user"], // Default role
+        permissions: ["read:own", "write:own"],
         isActive: true,
         emailVerified: !this.config.requireEmailVerification,
         createdAt: new Date(),
@@ -125,8 +129,8 @@ export class AuthenticationManager extends EventEmitter {
       };
 
       this.users.set(user.id, user);
-      
-      this.emit('userRegistered', { user: this.sanitizeUser(user), ipAddress: data.ipAddress });
+
+      this.emit("userRegistered", { user: this.sanitizeUser(user), ipAddress: data.ipAddress });
 
       // Auto-login if email verification not required
       if (!this.config.requireEmailVerification) {
@@ -146,8 +150,8 @@ export class AuthenticationManager extends EventEmitter {
     } catch (_error) {
       return {
         success: false,
-        error: 'Registration failed',
-        code: 'REGISTRATION_ERROR',
+        error: "Registration failed",
+        code: "REGISTRATION_ERROR",
       };
     }
   }
@@ -158,33 +162,32 @@ export class AuthenticationManager extends EventEmitter {
   async login(credentials: LoginCredentials): Promise<AuthResult> {
     try {
       // Find user by email
-      const user = Array.from(this.users.values())
-        .find(u => u.email === credentials.email);
+      const user = Array.from(this.users.values()).find((u) => u.email === credentials.email);
 
       if (!user) {
-        this.emit('loginFailed', { 
-          email: credentials.email, 
-          reason: 'user_not_found',
-          ipAddress: credentials.ipAddress 
+        this.emit("loginFailed", {
+          email: credentials.email,
+          reason: "user_not_found",
+          ipAddress: credentials.ipAddress,
         });
         return {
           success: false,
-          error: 'Invalid credentials',
-          code: 'INVALID_CREDENTIALS',
+          error: "Invalid credentials",
+          code: "INVALID_CREDENTIALS",
         };
       }
 
       // Check if user is active
       if (!user.isActive) {
-        this.emit('loginFailed', { 
-          userId: user.id, 
-          reason: 'account_inactive',
-          ipAddress: credentials.ipAddress 
+        this.emit("loginFailed", {
+          userId: user.id,
+          reason: "account_inactive",
+          ipAddress: credentials.ipAddress,
         });
         return {
           success: false,
-          error: 'Account is inactive',
-          code: 'ACCOUNT_INACTIVE',
+          error: "Account is inactive",
+          code: "ACCOUNT_INACTIVE",
         };
       }
 
@@ -192,29 +195,29 @@ export class AuthenticationManager extends EventEmitter {
       if (this.config.requireEmailVerification && !user.emailVerified) {
         return {
           success: false,
-          error: 'Email not verified',
-          code: 'EMAIL_NOT_VERIFIED',
+          error: "Email not verified",
+          code: "EMAIL_NOT_VERIFIED",
         };
       }
 
       // Verify password
       const isValidPassword = await bcrypt.compare(credentials.password, user.passwordHash);
       if (!isValidPassword) {
-        this.emit('loginFailed', { 
-          userId: user.id, 
-          reason: 'invalid_password',
-          ipAddress: credentials.ipAddress 
+        this.emit("loginFailed", {
+          userId: user.id,
+          reason: "invalid_password",
+          ipAddress: credentials.ipAddress,
         });
         return {
           success: false,
-          error: 'Invalid credentials',
-          code: 'INVALID_CREDENTIALS',
+          error: "Invalid credentials",
+          code: "INVALID_CREDENTIALS",
         };
       }
 
       // Create session
       const session = await this.createSession(user, credentials);
-      
+
       // Generate tokens
       const token = this.generateTokens(user, session);
 
@@ -222,10 +225,10 @@ export class AuthenticationManager extends EventEmitter {
       user.lastLogin = new Date();
       user.updatedAt = new Date();
 
-      this.emit('loginSuccess', { 
-        user: this.sanitizeUser(user), 
+      this.emit("loginSuccess", {
+        user: this.sanitizeUser(user),
         session: session,
-        ipAddress: credentials.ipAddress 
+        ipAddress: credentials.ipAddress,
       });
 
       return {
@@ -235,11 +238,11 @@ export class AuthenticationManager extends EventEmitter {
         session,
       };
     } catch (error) {
-      this.emit('loginError', { error, credentials: { email: credentials.email } });
+      this.emit("loginError", { error, credentials: { email: credentials.email } });
       return {
         success: false,
-        error: 'Login failed',
-        code: 'LOGIN_ERROR',
+        error: "Login failed",
+        code: "LOGIN_ERROR",
       };
     }
   }
@@ -251,22 +254,22 @@ export class AuthenticationManager extends EventEmitter {
     try {
       const decoded = this.verifyAccessToken(token);
       if (!decoded.valid || !decoded.payload) {
-        return { success: false, error: 'Invalid token' };
+        return { success: false, error: "Invalid token" };
       }
 
       const sessionId = decoded.payload.sessionId;
       const session = this.sessions.get(sessionId);
-      
+
       if (session) {
         this.invalidateSession(sessionId);
-        this.emit('logout', { userId: session.userId, sessionId });
+        this.emit("logout", { userId: session.userId, sessionId });
       }
 
       this.blacklistedTokens.add(token);
-      
+
       return { success: true };
     } catch (_error) {
-      return { success: false, error: 'Logout failed' };
+      return { success: false, error: "Logout failed" };
     }
   }
 
@@ -279,8 +282,8 @@ export class AuthenticationManager extends EventEmitter {
       if (!sessionId) {
         return {
           success: false,
-          error: 'Invalid refresh token',
-          code: 'INVALID_REFRESH_TOKEN',
+          error: "Invalid refresh token",
+          code: "INVALID_REFRESH_TOKEN",
         };
       }
 
@@ -289,8 +292,8 @@ export class AuthenticationManager extends EventEmitter {
         this.refreshTokens.delete(refreshToken);
         return {
           success: false,
-          error: 'Session expired',
-          code: 'SESSION_EXPIRED',
+          error: "Session expired",
+          code: "SESSION_EXPIRED",
         };
       }
 
@@ -299,19 +302,19 @@ export class AuthenticationManager extends EventEmitter {
         this.invalidateSession(sessionId);
         return {
           success: false,
-          error: 'User not found or inactive',
-          code: 'USER_INACTIVE',
+          error: "User not found or inactive",
+          code: "USER_INACTIVE",
         };
       }
 
       // Generate new tokens
       const newTokens = this.generateTokens(user, session);
-      
+
       // Update session with new refresh token
       this.refreshTokens.delete(refreshToken);
       this.refreshTokens.set(newTokens.refreshToken, sessionId);
 
-      this.emit('tokenRefreshed', { userId: user.id, sessionId });
+      this.emit("tokenRefreshed", { userId: user.id, sessionId });
 
       return {
         success: true,
@@ -322,8 +325,8 @@ export class AuthenticationManager extends EventEmitter {
     } catch (_error) {
       return {
         success: false,
-        error: 'Token refresh failed',
-        code: 'REFRESH_ERROR',
+        error: "Token refresh failed",
+        code: "REFRESH_ERROR",
       };
     }
   }
@@ -334,20 +337,20 @@ export class AuthenticationManager extends EventEmitter {
   verifyAccessToken(token: string): { valid: boolean; payload?: any; error?: string } {
     try {
       if (this.blacklistedTokens.has(token)) {
-        return { valid: false, error: 'Token blacklisted' };
+        return { valid: false, error: "Token blacklisted" };
       }
 
       const payload = jwt.verify(token, this.config.jwtSecret) as any;
-      
+
       // Check if session is still active
       const session = this.sessions.get(payload.sessionId);
       if (!session || !session.isActive) {
-        return { valid: false, error: 'Session inactive' };
+        return { valid: false, error: "Session inactive" };
       }
 
       return { valid: true, payload };
     } catch (_error) {
-      return { valid: false, error: 'Invalid token' };
+      return { valid: false, error: "Invalid token" };
     }
   }
 
@@ -383,7 +386,7 @@ export class AuthenticationManager extends EventEmitter {
     if (!user.roles.includes(role)) {
       user.roles.push(role);
       user.updatedAt = new Date();
-      this.emit('roleAdded', { userId, role });
+      this.emit("roleAdded", { userId, role });
     }
 
     return true;
@@ -400,7 +403,7 @@ export class AuthenticationManager extends EventEmitter {
     if (index > -1) {
       user.roles.splice(index, 1);
       user.updatedAt = new Date();
-      this.emit('roleRemoved', { userId, role });
+      this.emit("roleRemoved", { userId, role });
     }
 
     return true;
@@ -412,8 +415,8 @@ export class AuthenticationManager extends EventEmitter {
   getUserSessions(userId: string): AuthSession[] {
     const sessionIds = this.userSessions.get(userId) || new Set();
     return Array.from(sessionIds)
-      .map(id => this.sessions.get(id))
-      .filter(session => session && session.isActive) as AuthSession[];
+      .map((id) => this.sessions.get(id))
+      .filter((session) => session && session.isActive) as AuthSession[];
   }
 
   /**
@@ -430,25 +433,29 @@ export class AuthenticationManager extends EventEmitter {
       }
     }
 
-    this.emit('otherSessionsInvalidated', { userId, count: invalidatedCount });
+    this.emit("otherSessionsInvalidated", { userId, count: invalidatedCount });
     return invalidatedCount;
   }
 
   /**
    * Change user password
    */
-  async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  async changePassword(
+    userId: string,
+    oldPassword: string,
+    newPassword: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const user = this.users.get(userId);
       if (!user) {
-        return { success: false, error: 'User not found' };
+        return { success: false, error: "User not found" };
       }
 
       // Verify old password
       const isValidPassword = await bcrypt.compare(oldPassword, user.passwordHash);
       if (!isValidPassword) {
-        this.emit('passwordChangeFailed', { userId, reason: 'invalid_old_password' });
-        return { success: false, error: 'Invalid current password' };
+        this.emit("passwordChangeFailed", { userId, reason: "invalid_old_password" });
+        return { success: false, error: "Invalid current password" };
       }
 
       // Hash new password
@@ -459,21 +466,21 @@ export class AuthenticationManager extends EventEmitter {
       // Invalidate all sessions except current to force re-login
       this.invalidateAllUserSessions(userId);
 
-      this.emit('passwordChanged', { userId });
+      this.emit("passwordChanged", { userId });
       return { success: true };
     } catch (_error) {
-      return { success: false, error: 'Password change failed' };
+      return { success: false, error: "Password change failed" };
     }
   }
 
   private async createSession(user: User, credentials: LoginCredentials): Promise<AuthSession> {
     const sessionId = uuidv4();
     const refreshToken = uuidv4();
-    
+
     const session: AuthSession = {
       id: sessionId,
       userId: user.id,
-      token: '', // Will be set when generating JWT
+      token: "", // Will be set when generating JWT
       refreshToken,
       expiresAt: new Date(Date.now() + this.parseTimeToMs(this.config.refreshTokenExpiry)),
       createdAt: new Date(),
@@ -500,7 +507,7 @@ export class AuthenticationManager extends EventEmitter {
 
   private generateTokens(user: User, session: AuthSession): AuthToken {
     const accessTokenExpiry = this.parseTimeToMs(this.config.accessTokenExpiry);
-    
+
     const accessToken = jwt.sign(
       {
         userId: user.id,
@@ -510,7 +517,7 @@ export class AuthenticationManager extends EventEmitter {
         permissions: user.permissions,
       },
       this.config.jwtSecret,
-      { expiresIn: Math.floor(accessTokenExpiry / 1000) }
+      { expiresIn: Math.floor(accessTokenExpiry / 1000) },
     );
 
     session.token = accessToken;
@@ -519,7 +526,7 @@ export class AuthenticationManager extends EventEmitter {
       accessToken,
       refreshToken: session.refreshToken,
       expiresIn: Math.floor(accessTokenExpiry / 1000),
-      tokenType: 'Bearer',
+      tokenType: "Bearer",
     };
   }
 
@@ -555,8 +562,8 @@ export class AuthenticationManager extends EventEmitter {
 
     // Get sessions sorted by creation time (oldest first)
     const sessions = Array.from(sessionIds)
-      .map(id => this.sessions.get(id))
-      .filter(session => session)
+      .map((id) => this.sessions.get(id))
+      .filter((session) => session)
       .sort((a, b) => a!.createdAt.getTime() - b!.createdAt.getTime()) as AuthSession[];
 
     // Remove oldest sessions
@@ -569,20 +576,20 @@ export class AuthenticationManager extends EventEmitter {
   private checkRolePermissions(roles: string[], permission: string): boolean {
     // Simple role-based permissions - in practice would be more sophisticated
     const rolePermissions: Record<string, string[]> = {
-      admin: ['*'], // Admin has all permissions
-      gm: ['read:*', 'write:*', 'manage:scenes', 'manage:tokens'],
-      player: ['read:own', 'write:own', 'read:scenes', 'write:tokens'],
-      user: ['read:own', 'write:own'],
+      admin: ["*"], // Admin has all permissions
+      gm: ["read:*", "write:*", "manage:scenes", "manage:tokens"],
+      player: ["read:own", "write:own", "read:scenes", "write:tokens"],
+      user: ["read:own", "write:own"],
     };
 
     for (const role of roles) {
       const permissions = rolePermissions[role] || [];
-      if (permissions.includes('*') || permissions.includes(permission)) {
+      if (permissions.includes("*") || permissions.includes(permission)) {
         return true;
       }
-      
+
       // Check wildcard permissions
-      if (permissions.some(p => p.endsWith('*') && permission.startsWith(p.slice(0, -1)))) {
+      if (permissions.some((p) => p.endsWith("*") && permission.startsWith(p.slice(0, -1)))) {
         return true;
       }
     }
@@ -592,7 +599,7 @@ export class AuthenticationManager extends EventEmitter {
 
   private sanitizeUser(user: User): User {
     // Redact sensitive fields while preserving the type shape
-    return { ...user, passwordHash: 'REDACTED' };
+    return { ...user, passwordHash: "REDACTED" };
   }
 
   private parseTimeToMs(timeString: string): number {

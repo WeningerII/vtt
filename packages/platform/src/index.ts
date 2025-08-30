@@ -1,16 +1,9 @@
 // Platform detection and cross-platform support
-export { PlatformDetection } from './PlatformDetection';
-export type {
-  PlatformInfo,
-  FeatureSupport
-} from './PlatformDetection';
+export { PlatformDetection } from "./PlatformDetection";
+export type { PlatformInfo, FeatureSupport } from "./PlatformDetection";
 
-export { CrossPlatformAdapter } from './CrossPlatformAdapter';
-export type {
-  PlatformAdapter,
-  PerformanceMetrics,
-  AdaptiveSettings
-} from './CrossPlatformAdapter';
+export { CrossPlatformAdapter } from "./CrossPlatformAdapter";
+export type { PlatformAdapter, PerformanceMetrics, AdaptiveSettings } from "./CrossPlatformAdapter";
 
 // Utility functions for common platform checks
 export function isMobileDevice(): boolean {

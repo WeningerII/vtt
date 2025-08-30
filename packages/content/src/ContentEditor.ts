@@ -2,14 +2,14 @@
  * Visual content editor and authoring tools for VTT
  */
 
-import { EventEmitter } from 'events';
-import { AssetManager, _AssetMetadata} from './AssetManager';
+import { EventEmitter } from "events";
+import { AssetManager, _AssetMetadata } from "./AssetManager";
 
 export interface EditorTool {
   id: string;
   name: string;
   icon: string;
-  category: 'drawing' | 'selection' | 'measurement' | 'annotation' | 'terrain' | 'lighting';
+  category: "drawing" | "selection" | "measurement" | "annotation" | "terrain" | "lighting";
   shortcut?: string;
   cursor?: string;
 }
@@ -17,7 +17,7 @@ export interface EditorTool {
 export interface Layer {
   id: string;
   name: string;
-  type: 'background' | 'terrain' | 'objects' | 'tokens' | 'effects' | 'ui' | 'fog';
+  type: "background" | "terrain" | "objects" | "tokens" | "effects" | "ui" | "fog";
   visible: boolean;
   locked: boolean;
   opacity: number;
@@ -27,7 +27,7 @@ export interface Layer {
 
 export interface DrawingElement {
   id: string;
-  type: 'line' | 'rectangle' | 'circle' | 'polygon' | 'text' | 'image' | 'token';
+  type: "line" | "rectangle" | "circle" | "polygon" | "text" | "image" | "token";
   layerId: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
@@ -54,7 +54,7 @@ export interface Scene {
   description: string;
   dimensions: { width: number; height: number };
   gridSize: number;
-  gridType: 'square' | 'hex' | 'none';
+  gridType: "square" | "hex" | "none";
   gridColor: string;
   backgroundColor: string;
   layers: Layer[];
@@ -74,7 +74,7 @@ export interface Scene {
     enabled: boolean;
     revealedAreas: Array<{
       id: string;
-      shape: 'circle' | 'polygon';
+      shape: "circle" | "polygon";
       points: Array<{ x: number; y: number }>;
     }>;
   };
@@ -103,7 +103,7 @@ export interface EditorState {
   };
   rulers: {
     visible: boolean;
-    units: 'pixels' | 'feet' | 'meters';
+    units: "pixels" | "feet" | "meters";
   };
 }
 
@@ -126,41 +126,41 @@ export class ContentEditor extends EventEmitter {
     this.scene = {
       id: this.generateId(),
       name,
-      description: '',
+      description: "",
       dimensions: { width, height },
       gridSize: 50,
-      gridType: 'square',
-      gridColor: '#cccccc',
-      backgroundColor: '#ffffff',
+      gridType: "square",
+      gridColor: "#cccccc",
+      backgroundColor: "#ffffff",
       layers: this.createDefaultLayers(),
       elements: [],
       lighting: {
-        ambient: '#404040',
-        sources: []
+        ambient: "#404040",
+        sources: [],
       },
       fogOfWar: {
         enabled: false,
-        revealedAreas: []
+        revealedAreas: [],
       },
       created: new Date(),
       modified: new Date(),
-      version: '1.0.0'
+      version: "1.0.0",
     };
 
-    this.emit('sceneCreated', this.scene);
+    this.emit("sceneCreated", this.scene);
     return this.scene;
   }
 
   loadScene(scene: Scene): void {
     this.scene = { ...scene };
-    this.state.activeLayer = this.scene.layers[0]?.id || '';
+    this.state.activeLayer = this.scene.layers[0]?.id || "";
     this.state.selectedElements = [];
     this.clearHistory();
-    this.emit('sceneLoaded', this.scene);
+    this.emit("sceneLoaded", this.scene);
   }
 
   // Layer management
-  addLayer(name: string, type: Layer['type'], order?: number): Layer {
+  addLayer(name: string, type: Layer["type"], order?: number): Layer {
     const layer: Layer = {
       id: this.generateId(),
       name,
@@ -168,8 +168,8 @@ export class ContentEditor extends EventEmitter {
       visible: true,
       locked: false,
       opacity: 1,
-      blendMode: 'normal',
-      order: order ?? this.scene.layers.length
+      blendMode: "normal",
+      order: order ?? this.scene.layers.length,
     };
 
     if (order !== undefined) {
@@ -179,68 +179,68 @@ export class ContentEditor extends EventEmitter {
       this.scene.layers.push(layer);
     }
 
-    this.recordHistory('addLayer', { layer });
-    this.emit('layerAdded', layer);
+    this.recordHistory("addLayer", { layer });
+    this.emit("layerAdded", layer);
     return layer;
   }
 
   removeLayer(layerId: string): void {
-    const layerIndex = this.scene.layers.findIndex(l => l.id === layerId);
+    const layerIndex = this.scene.layers.findIndex((l) => l.id === layerId);
     if (layerIndex === -1) return;
 
     const layer = this.scene.layers[layerIndex];
     this.scene.layers.splice(layerIndex, 1);
 
     // Remove all elements on this layer
-    this.scene.elements = this.scene.elements.filter(e => e.layerId !== layerId);
+    this.scene.elements = this.scene.elements.filter((e) => e.layerId !== layerId);
 
-    this.recordHistory('removeLayer', { layer, elements: this.scene.elements });
-    this.emit('layerRemoved', layer);
+    this.recordHistory("removeLayer", { layer, elements: this.scene.elements });
+    this.emit("layerRemoved", layer);
   }
 
   // Drawing tools
   setActiveTool(toolId: string): void {
     if (!this.tools.has(toolId)) return;
-    
+
     this.state.activeTool = toolId;
-    this.emit('toolChanged', toolId);
+    this.emit("toolChanged", toolId);
   }
 
   // Element creation
-  addElement(element: Omit<DrawingElement, 'id' | 'created' | 'modified'>): DrawingElement {
+  addElement(element: Omit<DrawingElement, "id" | "created" | "modified">): DrawingElement {
     const newElement: DrawingElement = {
       ...element,
       id: this.generateId(),
       created: new Date(),
-      modified: new Date()
+      modified: new Date(),
     };
 
     this.scene.elements.push(newElement);
-    this.recordHistory('addElement', { element: newElement });
-    this.emit('elementAdded', newElement);
+    this.recordHistory("addElement", { element: newElement });
+    this.emit("elementAdded", newElement);
     return newElement;
   }
 
   updateElement(elementId: string, updates: Partial<DrawingElement>): void {
-    const element = this.scene.elements.find(e => e.id === elementId);
+    const element = this.scene.elements.find((e) => e.id === elementId);
     if (!element) return;
 
     const oldElement = { ...element };
     Object.assign(element, updates, { modified: new Date() });
 
-    this.recordHistory('updateElement', { elementId, oldElement, newElement: element });
-    this.emit('elementUpdated', element);
+    this.recordHistory("updateElement", { elementId, oldElement, newElement: element });
+    this.emit("elementUpdated", element);
   }
 
   removeElement(elementId: string): void {
-    const elementIndex = this.scene.elements.findIndex(e => e.id === elementId);
+    const elementIndex = this.scene.elements.findIndex((e) => e.id === elementId);
     if (elementIndex === -1) return;
 
     const element = this.scene.elements[elementIndex];
     this.scene.elements.splice(elementIndex, 1);
 
-    this.recordHistory('removeElement', { element });
-    this.emit('elementRemoved', element);
+    this.recordHistory("removeElement", { element });
+    this.emit("elementRemoved", element);
   }
 
   // Selection management
@@ -250,57 +250,57 @@ export class ContentEditor extends EventEmitter {
     } else if (!this.state.selectedElements.includes(elementId)) {
       this.state.selectedElements.push(elementId);
     }
-    
-    this.emit('selectionChanged', this.state.selectedElements);
+
+    this.emit("selectionChanged", this.state.selectedElements);
   }
 
   selectElements(elementIds: string[]): void {
     this.state.selectedElements = [...elementIds];
-    this.emit('selectionChanged', this.state.selectedElements);
+    this.emit("selectionChanged", this.state.selectedElements);
   }
 
   clearSelection(): void {
     this.state.selectedElements = [];
-    this.emit('selectionChanged', this.state.selectedElements);
+    this.emit("selectionChanged", this.state.selectedElements);
   }
 
   // Transform operations
   moveElements(elementIds: string[], deltaX: number, deltaY: number): void {
-    const elements = this.scene.elements.filter(e => elementIds.includes(e.id));
-    
-    elements.forEach(element => {
+    const elements = this.scene.elements.filter((e) => elementIds.includes(e.id));
+
+    elements.forEach((element) => {
       element.position.x += deltaX;
       element.position.y += deltaY;
       element.modified = new Date();
     });
 
-    this.recordHistory('moveElements', { elementIds, deltaX, deltaY });
-    this.emit('elementsTransformed', elements);
+    this.recordHistory("moveElements", { elementIds, deltaX, deltaY });
+    this.emit("elementsTransformed", elements);
   }
 
   rotateElements(elementIds: string[], angle: number): void {
-    const elements = this.scene.elements.filter(e => elementIds.includes(e.id));
-    
-    elements.forEach(element => {
+    const elements = this.scene.elements.filter((e) => elementIds.includes(e.id));
+
+    elements.forEach((element) => {
       element.rotation += angle;
       element.modified = new Date();
     });
 
-    this.recordHistory('rotateElements', { elementIds, angle });
-    this.emit('elementsTransformed', elements);
+    this.recordHistory("rotateElements", { elementIds, angle });
+    this.emit("elementsTransformed", elements);
   }
 
   scaleElements(elementIds: string[], scaleX: number, scaleY: number): void {
-    const elements = this.scene.elements.filter(e => elementIds.includes(e.id));
-    
-    elements.forEach(element => {
+    const elements = this.scene.elements.filter((e) => elementIds.includes(e.id));
+
+    elements.forEach((element) => {
       element.size.width *= scaleX;
       element.size.height *= scaleY;
       element.modified = new Date();
     });
 
-    this.recordHistory('scaleElements', { elementIds, scaleX, scaleY });
-    this.emit('elementsTransformed', elements);
+    this.recordHistory("scaleElements", { elementIds, scaleX, scaleY });
+    this.emit("elementsTransformed", elements);
   }
 
   // History management
@@ -309,7 +309,7 @@ export class ContentEditor extends EventEmitter {
       this.state.historyIndex--;
       const action = this.state.history[this.state.historyIndex];
       this.revertAction(action);
-      this.emit('undone', action);
+      this.emit("undone", action);
     }
   }
 
@@ -318,7 +318,7 @@ export class ContentEditor extends EventEmitter {
       const action = this.state.history[this.state.historyIndex];
       this.applyAction(action);
       this.state.historyIndex++;
-      this.emit('redone', action);
+      this.emit("redone", action);
     }
   }
 
@@ -329,7 +329,7 @@ export class ContentEditor extends EventEmitter {
     const gridSize = this.state.grid.size;
     return {
       x: Math.round(point.x / gridSize) * gridSize,
-      y: Math.round(point.y / gridSize) * gridSize
+      y: Math.round(point.y / gridSize) * gridSize,
     };
   }
 
@@ -341,7 +341,7 @@ export class ContentEditor extends EventEmitter {
     }
 
     const element = this.addElement({
-      type: 'image',
+      type: "image",
       layerId: this.state.activeLayer,
       position: this.snapToGrid(position),
       size: asset.dimensions || { width: 100, height: 100 },
@@ -349,7 +349,7 @@ export class ContentEditor extends EventEmitter {
       style: { opacity: 1 },
       data: { assetId },
       locked: false,
-      visible: true
+      visible: true,
     });
 
     return element;
@@ -359,40 +359,46 @@ export class ContentEditor extends EventEmitter {
   exportScene(): Scene {
     return {
       ...this.scene,
-      modified: new Date()
+      modified: new Date(),
     };
   }
 
-  exportAsImage(_format: 'png' | 'jpg' | 'webp' = 'png'): Promise<Buffer> {
+  exportAsImage(_format: "png" | "jpg" | "webp" = "png"): Promise<Buffer> {
     // Would render scene to image format
-    throw new Error('Not implemented');
+    throw new Error("Not implemented");
   }
 
   // Private methods
   private initializeDefaultTools(): void {
     const tools: EditorTool[] = [
-      { id: 'select', name: 'Select', icon: 'cursor', category: 'selection', shortcut: 'v' },
-      { id: 'pan', name: 'Pan', icon: 'hand', category: 'selection', shortcut: 'space' },
-      { id: 'brush', name: 'Brush', icon: 'brush', category: 'drawing', shortcut: 'b' },
-      { id: 'eraser', name: 'Eraser', icon: 'eraser', category: 'drawing', shortcut: 'e' },
-      { id: 'line', name: 'Line', icon: 'line', category: 'drawing', shortcut: 'l' },
-      { id: 'rectangle', name: 'Rectangle', icon: 'square', category: 'drawing', shortcut: 'r' },
-      { id: 'circle', name: 'Circle', icon: 'circle', category: 'drawing', shortcut: 'c' },
-      { id: 'polygon', name: 'Polygon', icon: 'polygon', category: 'drawing', shortcut: 'p' },
-      { id: 'text', name: 'Text', icon: 'text', category: 'annotation', shortcut: 't' },
-      { id: 'measure', name: 'Measure', icon: 'ruler', category: 'measurement', shortcut: 'm' },
-      { id: 'light', name: 'Light', icon: 'lightbulb', category: 'lighting', shortcut: 'shift+l' },
-      { id: 'fog', name: 'Fog of War', icon: 'eye-off', category: 'lighting', shortcut: 'f' },
-      { id: 'terrain', name: 'Terrain', icon: 'mountain', category: 'terrain', shortcut: 'shift+t' }
+      { id: "select", name: "Select", icon: "cursor", category: "selection", shortcut: "v" },
+      { id: "pan", name: "Pan", icon: "hand", category: "selection", shortcut: "space" },
+      { id: "brush", name: "Brush", icon: "brush", category: "drawing", shortcut: "b" },
+      { id: "eraser", name: "Eraser", icon: "eraser", category: "drawing", shortcut: "e" },
+      { id: "line", name: "Line", icon: "line", category: "drawing", shortcut: "l" },
+      { id: "rectangle", name: "Rectangle", icon: "square", category: "drawing", shortcut: "r" },
+      { id: "circle", name: "Circle", icon: "circle", category: "drawing", shortcut: "c" },
+      { id: "polygon", name: "Polygon", icon: "polygon", category: "drawing", shortcut: "p" },
+      { id: "text", name: "Text", icon: "text", category: "annotation", shortcut: "t" },
+      { id: "measure", name: "Measure", icon: "ruler", category: "measurement", shortcut: "m" },
+      { id: "light", name: "Light", icon: "lightbulb", category: "lighting", shortcut: "shift+l" },
+      { id: "fog", name: "Fog of War", icon: "eye-off", category: "lighting", shortcut: "f" },
+      {
+        id: "terrain",
+        name: "Terrain",
+        icon: "mountain",
+        category: "terrain",
+        shortcut: "shift+t",
+      },
     ];
 
-    tools.forEach(tool => this.tools.set(tool.id, tool));
+    tools.forEach((tool) => this.tools.set(tool.id, tool));
   }
 
   private initializeDefaultState(): void {
     this.state = {
-      activeTool: 'select',
-      activeLayer: '',
+      activeTool: "select",
+      activeLayer: "",
       selectedElements: [],
       clipboard: [],
       history: [],
@@ -402,12 +408,12 @@ export class ContentEditor extends EventEmitter {
       grid: {
         visible: true,
         snap: true,
-        size: 50
+        size: 50,
       },
       rulers: {
         visible: true,
-        units: 'feet'
-      }
+        units: "feet",
+      },
     };
   }
 
@@ -415,54 +421,54 @@ export class ContentEditor extends EventEmitter {
     return [
       {
         id: this.generateId(),
-        name: 'Background',
-        type: 'background',
+        name: "Background",
+        type: "background",
         visible: true,
         locked: false,
         opacity: 1,
-        blendMode: 'normal',
-        order: 0
+        blendMode: "normal",
+        order: 0,
       },
       {
         id: this.generateId(),
-        name: 'Terrain',
-        type: 'terrain',
+        name: "Terrain",
+        type: "terrain",
         visible: true,
         locked: false,
         opacity: 1,
-        blendMode: 'normal',
-        order: 1
+        blendMode: "normal",
+        order: 1,
       },
       {
         id: this.generateId(),
-        name: 'Objects',
-        type: 'objects',
+        name: "Objects",
+        type: "objects",
         visible: true,
         locked: false,
         opacity: 1,
-        blendMode: 'normal',
-        order: 2
+        blendMode: "normal",
+        order: 2,
       },
       {
         id: this.generateId(),
-        name: 'Tokens',
-        type: 'tokens',
+        name: "Tokens",
+        type: "tokens",
         visible: true,
         locked: false,
         opacity: 1,
-        blendMode: 'normal',
-        order: 3
+        blendMode: "normal",
+        order: 3,
       },
       {
         id: this.generateId(),
-        name: 'Effects',
-        type: 'effects',
+        name: "Effects",
+        type: "effects",
         visible: true,
         locked: false,
         opacity: 1,
-        blendMode: 'normal',
-        order: 4
-      }
+        blendMode: "normal",
+        order: 4,
+      },
     ];
   }
 
@@ -473,7 +479,7 @@ export class ContentEditor extends EventEmitter {
     this.state.history.push({
       action,
       timestamp: new Date(),
-      data
+      data,
     });
 
     this.state.historyIndex = this.state.history.length;
@@ -493,18 +499,19 @@ export class ContentEditor extends EventEmitter {
   private revertAction(action: any): void {
     // Implement action reversal logic
     switch (action.action) {
-      case 'addElement':
-        this.scene.elements = this.scene.elements.filter(e => e.id !== action.data.element.id);
+      case "addElement":
+        this.scene.elements = this.scene.elements.filter((e) => e.id !== action.data.element.id);
         break;
-      case 'removeElement':
+      case "removeElement":
         this.scene.elements.push(action.data.element);
         break;
-      case 'updateElement': {
-        const element = this.scene.elements.find(e => e.id === action.data.elementId);
-        if (element) {
-          Object.assign(element, action.data.oldElement);
+      case "updateElement":
+        {
+          const element = this.scene.elements.find((e) => e.id === action.data.elementId);
+          if (element) {
+            Object.assign(element, action.data.oldElement);
+          }
         }
-    }
         break;
       // Add more action reversals as needed
     }
@@ -539,6 +546,6 @@ export class ContentEditor extends EventEmitter {
   }
 
   getSelectedElements(): DrawingElement[] {
-    return this.scene.elements.filter(e => this.state.selectedElements.includes(e.id));
+    return this.scene.elements.filter((e) => this.state.selectedElements.includes(e.id));
   }
 }

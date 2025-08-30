@@ -1,15 +1,15 @@
 /**
  * Login Form - Elegant authentication form with validation and error handling
  */
-import React, { useState } from 'react';
-import { logger } from '@vtt/logging';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Github, Chrome } from 'lucide-react';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/Card';
-import { useAuth } from '../../providers/AuthProvider';
-import { isValidEmail } from '../../lib/utils';
+import React, { useState } from "react";
+import { logger } from "@vtt/logging";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Github, Chrome } from "lucide-react";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card";
+import { useAuth } from "../../providers/AuthProvider";
+import { isValidEmail } from "../../lib/utils";
 
 interface LoginFormData {
   identifier: string;
@@ -27,25 +27,25 @@ export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoading: loading, error, clearError } = useAuth();
-  
+
   const [formData, setFormData] = useState<LoginFormData>({
-    identifier: '',
-    password: '',
+    identifier: "",
+    password: "",
     rememberMe: false,
   });
-  
+
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
 
   // Handle input changes
   const handleChange = (field: keyof LoginFormData, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Clear field-specific errors when user starts typing
     if (errors[field as keyof LoginFormErrors]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-    
+
     // Clear general errors
     if (error) {
       clearError();
@@ -57,15 +57,15 @@ export function LoginForm() {
     const newErrors: LoginFormErrors = {};
 
     if (!formData.identifier.trim()) {
-      newErrors.identifier = 'Email or username is required';
-    } else if (formData.identifier.includes('@') && !isValidEmail(formData.identifier)) {
-      newErrors.identifier = 'Please enter a valid email address';
+      newErrors.identifier = "Email or username is required";
+    } else if (formData.identifier.includes("@") && !isValidEmail(formData.identifier)) {
+      newErrors.identifier = "Please enter a valid email address";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
 
     setErrors(newErrors);
@@ -75,26 +75,26 @@ export function LoginForm() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
       await login(formData.identifier, formData.password);
-      
+
       // Redirect to dashboard or intended page
       const searchParams = new URLSearchParams(location.search);
-      const redirectTo = searchParams.get('redirect') || '/dashboard';
+      const redirectTo = searchParams.get("redirect") || "/dashboard";
       navigate(redirectTo);
     } catch (err) {
       // Error is handled by useAuth hook
-      logger.error('Login failed:', err);
+      logger.error("Login failed:", err);
     }
   };
 
   // Handle social login
-  const handleSocialLogin = (provider: 'google' | 'github') => {
+  const handleSocialLogin = (provider: "google" | "github") => {
     // Redirect to OAuth provider
-    const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+    const redirectUri = encodeURIComponent(window.location.origin + "/auth/callback");
     window.location.href = `/api/auth/${provider}?redirect_uri=${redirectUri}`;
   };
 
@@ -102,11 +102,9 @@ export function LoginForm() {
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription>
-          Sign in to your account to continue your adventure
-        </CardDescription>
+        <CardDescription>Sign in to your account to continue your adventure</CardDescription>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Social Login Buttons */}
         <div className="grid grid-cols-2 gap-3">
@@ -114,7 +112,7 @@ export function LoginForm() {
             type="button"
             variant="secondary"
             size="md"
-            onClick={() => handleSocialLogin('google')}
+            onClick={() => handleSocialLogin("google")}
             leftIcon={<Chrome className="h-4 w-4" />}
           >
             Google
@@ -123,7 +121,7 @@ export function LoginForm() {
             type="button"
             variant="secondary"
             size="md"
-            onClick={() => handleSocialLogin('github')}
+            onClick={() => handleSocialLogin("github")}
             leftIcon={<Github className="h-4 w-4" />}
           >
             GitHub
@@ -148,7 +146,7 @@ export function LoginForm() {
             type="text"
             placeholder="Enter your email or username"
             value={formData.identifier}
-            onChange={(e) => handleChange('identifier', e.target.value)}
+            onChange={(e) => handleChange("identifier", e.target.value)}
             error={errors.identifier}
             leftIcon={<Mail className="h-4 w-4" />}
             disabled={loading}
@@ -159,10 +157,10 @@ export function LoginForm() {
           {/* Password Field */}
           <Input
             label="Password"
-            type={showPassword ? 'text' : 'password'}
+            type={showPassword ? "text" : "password"}
             placeholder="Enter your password"
             value={formData.password}
-            onChange={(e) => handleChange('password', e.target.value)}
+            onChange={(e) => handleChange("password", e.target.value)}
             error={errors.password}
             leftIcon={<Lock className="h-4 w-4" />}
             rightIcon={
@@ -186,18 +184,18 @@ export function LoginForm() {
               <input
                 type="checkbox"
                 checked={formData.rememberMe}
-                onChange={(e) => handleChange('rememberMe', e.target.checked)}
+                onChange={(e) => handleChange("rememberMe", e.target.checked)}
                 className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                 disabled={loading}
               />
               <span className="text-neutral-700">Remember me</span>
             </label>
-            
+
             <Button
               type="button"
               variant="link"
               size="sm"
-              onClick={() => navigate('/auth/forgot-password')}
+              onClick={() => navigate("/auth/forgot-password")}
               disabled={loading}
               className="text-sm"
             >
@@ -221,18 +219,18 @@ export function LoginForm() {
             loading={loading}
             rightIcon={!loading && <ArrowRight className="h-4 w-4" />}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? "Signing in..." : "Sign in"}
           </Button>
         </form>
 
         {/* Sign Up Link */}
         <div className="text-center text-sm text-neutral-600">
-          Don't have an account?{' '}
+          Don't have an account?{" "}
           <Button
             type="button"
             variant="link"
             size="sm"
-            onClick={() => navigate('/auth/register')}
+            onClick={() => navigate("/auth/register")}
             disabled={loading}
             className="font-medium"
           >

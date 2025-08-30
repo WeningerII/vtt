@@ -1,10 +1,10 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 export enum NodeStatus {
-  SUCCESS = 'SUCCESS',
-  FAILURE = 'FAILURE',
-  RUNNING = 'RUNNING',
-  INVALID = 'INVALID'
+  SUCCESS = "SUCCESS",
+  FAILURE = "FAILURE",
+  RUNNING = "RUNNING",
+  INVALID = "INVALID",
 }
 
 export interface BlackboardData {
@@ -15,7 +15,7 @@ export interface BehaviorTreeConfig {
   tickRate: number;
   maxTicksPerFrame: number;
   enableDebug: boolean;
-  logLevel: 'none' | 'error' | 'warn' | 'info' | 'debug';
+  logLevel: "none" | "error" | "warn" | "info" | "debug";
 }
 
 export abstract class BehaviorNode {
@@ -24,13 +24,13 @@ export abstract class BehaviorNode {
   protected children: BehaviorNode[] = [];
   protected status: NodeStatus = NodeStatus.INVALID;
   protected blackboard: Blackboard;
-  
+
   // Debug and profiling
   protected executionCount = 0;
   protected lastExecutionTime = 0;
   protected totalExecutionTime = 0;
   protected isRunning = false;
-  
+
   constructor(name: string, blackboard: Blackboard) {
     this.name = name;
     this.blackboard = blackboard;
@@ -40,27 +40,29 @@ export abstract class BehaviorNode {
 
   protected onEnter(): void {}
   protected onExit(): void {}
-  protected onUpdate(): NodeStatus { return NodeStatus.SUCCESS; }
+  protected onUpdate(): NodeStatus {
+    return NodeStatus.SUCCESS;
+  }
 
   public execute(): NodeStatus {
     const startTime = performance.now();
-    
+
     if (this.status !== NodeStatus.RUNNING) {
       this.onEnter();
     }
-    
+
     this.isRunning = true;
     this.status = this.tick();
-    
+
     if (this.status !== NodeStatus.RUNNING) {
       this.isRunning = false;
       this.onExit();
     }
-    
+
     this.executionCount++;
     this.lastExecutionTime = performance.now() - startTime;
     this.totalExecutionTime += this.lastExecutionTime;
-    
+
     return this.status;
   }
 
@@ -86,14 +88,28 @@ export abstract class BehaviorNode {
   }
 
   // Getters
-  public getName(): string { return this.name; }
-  public getStatus(): NodeStatus { return this.status; }
-  public getChildren(): BehaviorNode[] { return [...this.children]; }
-  public getParent(): BehaviorNode | null { return this.parent; }
-  public getExecutionCount(): number { return this.executionCount; }
-  public getLastExecutionTime(): number { return this.lastExecutionTime; }
-  public getTotalExecutionTime(): number { return this.totalExecutionTime; }
-  public getAverageExecutionTime(): number { 
+  public getName(): string {
+    return this.name;
+  }
+  public getStatus(): NodeStatus {
+    return this.status;
+  }
+  public getChildren(): BehaviorNode[] {
+    return [...this.children];
+  }
+  public getParent(): BehaviorNode | null {
+    return this.parent;
+  }
+  public getExecutionCount(): number {
+    return this.executionCount;
+  }
+  public getLastExecutionTime(): number {
+    return this.lastExecutionTime;
+  }
+  public getTotalExecutionTime(): number {
+    return this.totalExecutionTime;
+  }
+  public getAverageExecutionTime(): number {
     return this.executionCount > 0 ? this.totalExecutionTime / this.executionCount : 0;
   }
 }
@@ -105,7 +121,7 @@ export class SequenceNode extends BehaviorNode {
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
       const status = this.children[this.currentChildIndex].execute();
-      
+
       switch (status) {
         case NodeStatus.SUCCESS:
           this.currentChildIndex++;
@@ -117,7 +133,7 @@ export class SequenceNode extends BehaviorNode {
           return NodeStatus.RUNNING;
       }
     }
-    
+
     this.reset();
     return NodeStatus.SUCCESS;
   }
@@ -134,7 +150,7 @@ export class SelectorNode extends BehaviorNode {
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
       const status = this.children[this.currentChildIndex].execute();
-      
+
       switch (status) {
         case NodeStatus.SUCCESS:
           this.reset();
@@ -146,7 +162,7 @@ export class SelectorNode extends BehaviorNode {
           return NodeStatus.RUNNING;
       }
     }
-    
+
     this.reset();
     return NodeStatus.FAILURE;
   }
@@ -161,7 +177,12 @@ export class ParallelNode extends BehaviorNode {
   private requiredSuccesses: number;
   private allowFailure: boolean;
 
-  constructor(name: string, blackboard: Blackboard, requiredSuccesses: number = -1, allowFailure: boolean = false) {
+  constructor(
+    name: string,
+    blackboard: Blackboard,
+    requiredSuccesses: number = -1,
+    allowFailure: boolean = false,
+  ) {
     super(name, blackboard);
     this.requiredSuccesses = requiredSuccesses === -1 ? this.children.length : requiredSuccesses;
     this.allowFailure = allowFailure;
@@ -171,10 +192,10 @@ export class ParallelNode extends BehaviorNode {
     let successCount = 0;
     let failureCount = 0;
     let runningCount = 0;
-    
+
     for (const child of this.children) {
       const status = child?.execute();
-      
+
       switch (status) {
         case NodeStatus.SUCCESS:
           successCount++;
@@ -187,19 +208,19 @@ export class ParallelNode extends BehaviorNode {
           break;
       }
     }
-    
+
     if (successCount >= this.requiredSuccesses) {
       return NodeStatus.SUCCESS;
     }
-    
+
     if (!this.allowFailure && failureCount > 0) {
       return NodeStatus.FAILURE;
     }
-    
+
     if (runningCount > 0) {
       return NodeStatus.RUNNING;
     }
-    
+
     return NodeStatus.FAILURE;
   }
 }
@@ -210,9 +231,9 @@ export class InverterNode extends BehaviorNode {
     if (this.children.length !== 1) {
       return NodeStatus.FAILURE;
     }
-    
+
     const status = this.children[0]?.execute();
-    
+
     switch (status) {
       case NodeStatus.SUCCESS:
         return NodeStatus.FAILURE;
@@ -239,26 +260,26 @@ export class RepeatNode extends BehaviorNode {
     if (this.children.length !== 1) {
       return NodeStatus.FAILURE;
     }
-    
+
     const child = this.children[0];
     const status = child.execute();
-    
+
     if (status === NodeStatus.RUNNING) {
       return NodeStatus.RUNNING;
     }
-    
+
     if (status === NodeStatus.SUCCESS) {
       this.currentRepeats++;
-      
+
       if (this.maxRepeats > 0 && this.currentRepeats >= this.maxRepeats) {
         this.reset();
         return NodeStatus.SUCCESS;
       }
-      
+
       child.reset();
       return NodeStatus.RUNNING;
     }
-    
+
     return NodeStatus.FAILURE;
   }
 
@@ -281,26 +302,26 @@ export class RetryNode extends BehaviorNode {
     if (this.children.length !== 1) {
       return NodeStatus.FAILURE;
     }
-    
+
     const child = this.children[0];
     const status = child.execute();
-    
+
     if (status === NodeStatus.SUCCESS || status === NodeStatus.RUNNING) {
       return status;
     }
-    
+
     if (status === NodeStatus.FAILURE) {
       this.currentRetries++;
-      
+
       if (this.currentRetries >= this.maxRetries) {
         this.reset();
         return NodeStatus.FAILURE;
       }
-      
+
       child.reset();
       return NodeStatus.RUNNING;
     }
-    
+
     return NodeStatus.FAILURE;
   }
 
@@ -327,18 +348,18 @@ export class TimeoutNode extends BehaviorNode {
     if (this.children.length !== 1) {
       return NodeStatus.FAILURE;
     }
-    
+
     const elapsed = Date.now() - this.startTime;
     if (elapsed >= this.timeoutMs) {
       return NodeStatus.FAILURE;
     }
-    
+
     const status = this.children[0]?.execute();
-    
+
     if (status === NodeStatus.RUNNING) {
       return NodeStatus.RUNNING;
     }
-    
+
     return status;
   }
 }
@@ -366,7 +387,7 @@ export class Blackboard {
   set<T>(key: string, value: T): void {
     const oldValue = this.data[key];
     this.data[key] = value;
-    
+
     if (oldValue !== value) {
       this.notifyObservers(key, value);
     }
@@ -453,15 +474,15 @@ export class BehaviorTree {
   private tickCount = 0;
   private lastTickTime = 0;
   private totalTickTime = 0;
-  
+
   constructor(config?: Partial<BehaviorTreeConfig>) {
     this.blackboard = new Blackboard();
     this.config = {
       tickRate: 60, // Hz
       maxTicksPerFrame: 10,
       enableDebug: false,
-      logLevel: 'error',
-      ...config
+      logLevel: "error",
+      ...config,
     };
   }
 
@@ -481,25 +502,25 @@ export class BehaviorTree {
     if (!this.root) {
       return NodeStatus.FAILURE;
     }
-    
+
     const startTime = performance.now();
-    
+
     const status = this.root.execute();
-    
+
     this.tickCount++;
     this.lastTickTime = performance.now() - startTime;
     this.totalTickTime += this.lastTickTime;
-    
+
     if (this.config.enableDebug) {
-      this.log('debug', `Tick ${this.tickCount}: ${status} (${this.lastTickTime.toFixed(2)}ms)`);
+      this.log("debug", `Tick ${this.tickCount}: ${status} (${this.lastTickTime.toFixed(2)}ms)`);
     }
-    
+
     return status;
   }
 
   start(): void {
     this.isRunning = true;
-    this.log('info', 'Behavior tree started');
+    this.log("info", "Behavior tree started");
   }
 
   stop(): void {
@@ -507,7 +528,7 @@ export class BehaviorTree {
     if (this.root) {
       this.root.reset();
     }
-    this.log('info', 'Behavior tree stopped');
+    this.log("info", "Behavior tree stopped");
   }
 
   reset(): void {
@@ -516,7 +537,7 @@ export class BehaviorTree {
     }
     this.tickCount = 0;
     this.totalTickTime = 0;
-    this.log('info', 'Behavior tree reset');
+    this.log("info", "Behavior tree reset");
   }
 
   // Tree traversal and utilities
@@ -529,20 +550,20 @@ export class BehaviorTree {
     if (node.getName() === name) {
       return node;
     }
-    
+
     for (const child of node.getChildren()) {
       const result = this.findNodeByNameRecursive(child, name);
       if (result) {
         return result;
       }
     }
-    
+
     return null;
   }
 
   getAllNodes(): BehaviorNode[] {
     if (!this.root) return [];
-    
+
     const nodes: BehaviorNode[] = [];
     this.collectNodesRecursive(this.root, nodes);
     return nodes;
@@ -564,7 +585,7 @@ export class BehaviorTree {
       averageTickTime: this.tickCount > 0 ? this.totalTickTime / this.tickCount : 0,
       isRunning: this.isRunning,
       nodeCount: this.getAllNodes().length,
-      blackboardKeys: this.blackboard.getKeys().length
+      blackboardKeys: this.blackboard.getKeys().length,
     };
   }
 
@@ -575,20 +596,20 @@ export class BehaviorTree {
     lastExecutionTime: number;
     averageExecutionTime: number;
   }> {
-    return this.getAllNodes().map(node => ({
+    return this.getAllNodes().map((node) => ({
       name: node.getName(),
       status: node.getStatus(),
       executionCount: node.getExecutionCount(),
       lastExecutionTime: node.getLastExecutionTime(),
-      averageExecutionTime: node.getAverageExecutionTime()
+      averageExecutionTime: node.getAverageExecutionTime(),
     }));
   }
 
   private log(level: string, message: string): void {
-    const levels = ['none', 'error', 'warn', 'info', 'debug'];
+    const levels = ["none", "error", "warn", "info", "debug"];
     const currentLevel = levels.indexOf(this.config.logLevel);
     const messageLevel = levels.indexOf(level);
-    
+
     if (messageLevel <= currentLevel) {
       logger.info(`[BehaviorTree:${level.toUpperCase()}] ${message}`);
     }
@@ -604,7 +625,7 @@ export class BehaviorTree {
     return {
       name: node.getName(),
       type: node.constructor.name,
-      children: node.getChildren().map(child => this.serializeNode(child))
+      children: node.getChildren().map((child) => this.serializeNode(child)),
     };
   }
 

@@ -50,7 +50,7 @@ export interface Disposable {
 
 export interface GPUResourceInfo {
   id: string;
-  type: 'buffer' | 'texture' | 'pipeline' | 'sampler';
+  type: "buffer" | "texture" | "pipeline" | "sampler";
   size: number;
   usage: number;
   label?: string;
@@ -61,7 +61,13 @@ export interface GPUResourceInfo {
 export interface GPUResourceManager extends Disposable {
   initialize(): Promise<void>;
   createBuffer(size: number, usage: number, label?: string): string;
-  createTexture(width: number, height: number, format: string, usage: number, label?: string): string;
+  createTexture(
+    width: number,
+    height: number,
+    format: string,
+    usage: number,
+    label?: string,
+  ): string;
   getResource(id: string): GPUResourceInfo | null;
   destroyResource(id: string): void;
   getMemoryUsage(): { used: number; total: number };
@@ -81,7 +87,14 @@ export interface AssetInfo {
   loadedAt?: Date;
 }
 
-export type AssetType = 'texture' | 'model' | 'audio' | 'data' | 'shader' | 'material' | 'animation';
+export type AssetType =
+  | "texture"
+  | "model"
+  | "audio"
+  | "data"
+  | "shader"
+  | "material"
+  | "animation";
 
 export interface AssetLoadOptions {
   priority?: number;
@@ -104,7 +117,7 @@ export interface AssetManager extends Disposable {
 
 export interface AIProvider {
   readonly name: string;
-  readonly type: 'chat' | 'completion' | 'embedding' | 'image' | 'audio';
+  readonly type: "chat" | "completion" | "embedding" | "image" | "audio";
   readonly capabilities: AICapability[];
   generateText?(prompt: string, options?: AITextOptions): Promise<AITextResponse>;
   generateImage?(prompt: string, options?: AIImageOptions): Promise<AIImageResponse>;
@@ -113,14 +126,14 @@ export interface AIProvider {
   createEmbeddings?(text: string): Promise<number[]>;
 }
 
-export type AICapability = 
-  | 'text_generation'
-  | 'code_generation'
-  | 'image_generation'
-  | 'audio_generation'
-  | 'embeddings'
-  | 'vision'
-  | 'function_calling';
+export type AICapability =
+  | "text_generation"
+  | "code_generation"
+  | "image_generation"
+  | "audio_generation"
+  | "embeddings"
+  | "vision"
+  | "function_calling";
 
 export interface AITextOptions {
   model?: string;
@@ -141,14 +154,14 @@ export interface AITextResponse {
     totalTokens: number;
   };
   model: string;
-  finishReason: 'stop' | 'length' | 'tool_calls';
+  finishReason: "stop" | "length" | "tool_calls";
 }
 
 export interface AIImageOptions {
   model?: string;
-  size?: '256x256' | '512x512' | '1024x1024' | '1792x1024' | '1024x1792';
-  quality?: 'standard' | 'hd';
-  style?: 'vivid' | 'natural';
+  size?: "256x256" | "512x512" | "1024x1024" | "1792x1024" | "1024x1792";
+  quality?: "standard" | "hd";
+  style?: "vivid" | "natural";
   n?: number;
 }
 
@@ -164,7 +177,7 @@ export interface AIImageResponse {
 export interface AIAudioOptions {
   model?: string;
   voice?: string;
-  format?: 'mp3' | 'opus' | 'aac' | 'flac';
+  format?: "mp3" | "opus" | "aac" | "flac";
   speed?: number;
 }
 
@@ -176,8 +189,8 @@ export interface AIAudioResponse {
 
 export interface AICodeOptions {
   language?: string;
-  style?: 'functional' | 'object-oriented' | 'modern';
-  complexity?: 'simple' | 'intermediate' | 'advanced';
+  style?: "functional" | "object-oriented" | "modern";
+  complexity?: "simple" | "intermediate" | "advanced";
   includeTests?: boolean;
   includeComments?: boolean;
 }
@@ -317,7 +330,12 @@ export interface NetworkMessage {
 
 export type MessageHandler = (_message: NetworkMessage) => void;
 
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
+export type ConnectionState =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "error";
 
 // ==================== COMPONENT SYSTEM ====================
 
@@ -340,9 +358,17 @@ export interface Component {
   findChildByType(type: ComponentType): Component | null;
 }
 
-export type ComponentType = 
-  | 'ui_element' | 'panel' | 'dialog' | 'layout' | 'widget' | 'control'
-  | 'game_object' | 'system' | 'behavior' | 'effect';
+export type ComponentType =
+  | "ui_element"
+  | "panel"
+  | "dialog"
+  | "layout"
+  | "widget"
+  | "control"
+  | "game_object"
+  | "system"
+  | "behavior"
+  | "effect";
 
 export interface ComponentProperties {
   [key: string]: any;

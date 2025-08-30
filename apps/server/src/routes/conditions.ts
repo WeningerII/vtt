@@ -76,7 +76,7 @@ export const getConditionHandler: RouteHandler = async (ctx) => {
 export const createConditionHandler: RouteHandler = async (ctx) => {
   try {
     const body = await parseJsonBody(ctx.req);
-    
+
     if (!body?.name || !body?.type || !body?.description) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing required fields: name, type, description" }));
@@ -87,7 +87,9 @@ export const createConditionHandler: RouteHandler = async (ctx) => {
     const validTypes = ["BUFF", "DEBUFF", "STATUS", "ENVIRONMENTAL"];
     if (!validTypes.includes(body.type)) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Invalid type. Must be BUFF, DEBUFF, STATUS, or ENVIRONMENTAL" }));
+      ctx.res.end(
+        JSON.stringify({ error: "Invalid type. Must be BUFF, DEBUFF, STATUS, or ENVIRONMENTAL" }),
+      );
       return;
     }
 
@@ -121,12 +123,16 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
     }
 
     const body = await parseJsonBody(ctx.req);
-    
+
     // Validate that exactly one target is specified
     const targets = [body.actorId, body.tokenId, body.encounterParticipantId].filter(Boolean);
     if (targets.length !== 1) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Must specify exactly one of: actorId, tokenId, encounterParticipantId" }));
+      ctx.res.end(
+        JSON.stringify({
+          error: "Must specify exactly one of: actorId, tokenId, encounterParticipantId",
+        }),
+      );
       return;
     }
 
@@ -156,7 +162,9 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
         return;
       }
     } else if (body.encounterParticipantId) {
-      const participant = await ctx.prisma.encounterParticipant.findUnique({ where: { id: body.encounterParticipantId } });
+      const participant = await ctx.prisma.encounterParticipant.findUnique({
+        where: { id: body.encounterParticipantId },
+      });
       if (!participant) {
         ctx.res.writeHead(400, { "Content-Type": "application/json" });
         ctx.res.end(JSON.stringify({ error: "Encounter participant not found" }));
@@ -175,7 +183,8 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
 
     if (body.actorId) appliedData.actorId = body.actorId;
     if (body.tokenId) appliedData.tokenId = body.tokenId;
-    if (body.encounterParticipantId) appliedData.encounterParticipantId = body.encounterParticipantId;
+    if (body.encounterParticipantId)
+      appliedData.encounterParticipantId = body.encounterParticipantId;
 
     const applied = await ctx.prisma.appliedCondition.create({
       data: appliedData,

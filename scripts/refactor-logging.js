@@ -4,36 +4,36 @@
  * Script to refactor console.log statements to use structured logging
  */
 
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
+const fs = require("fs");
+const path = require("path");
+const glob = require("glob");
 
 // Patterns to replace
 const replacements = [
   {
     // console.log -> logger.info
     pattern: /console\.log\((.*?)\);/g,
-    replacement: 'logger.info($1);',
+    replacement: "logger.info($1);",
   },
   {
     // console.error -> logger.error
     pattern: /console\.error\((.*?)\);/g,
-    replacement: 'logger.error($1);',
+    replacement: "logger.error($1);",
   },
   {
     // console.warn -> logger.warn
     pattern: /console\.warn\((.*?)\);/g,
-    replacement: 'logger.warn($1);',
+    replacement: "logger.warn($1);",
   },
   {
     // console.debug -> logger.debug
     pattern: /console\.debug\((.*?)\);/g,
-    replacement: 'logger.debug($1);',
+    replacement: "logger.debug($1);",
   },
   {
     // console.trace -> logger.trace
     pattern: /console\.trace\((.*?)\);/g,
-    replacement: 'logger.trace($1);',
+    replacement: "logger.trace($1);",
   },
 ];
 
@@ -41,12 +41,12 @@ const replacements = [
 const loggerImport = "import { logger } from '@vtt/logging';\n";
 
 function refactorFile(filePath) {
-  let content = fs.readFileSync(filePath, 'utf8');
+  let content = fs.readFileSync(filePath, "utf8");
   let modified = false;
   let hasConsoleUsage = false;
 
   // Check if file uses console
-  if (content.includes('console.')) {
+  if (content.includes("console.")) {
     hasConsoleUsage = true;
   }
 
@@ -59,14 +59,14 @@ function refactorFile(filePath) {
   });
 
   // Add import if needed and not already present
-  if (modified && !content.includes('@vtt/logging')) {
+  if (modified && !content.includes("@vtt/logging")) {
     // Add import after existing imports or at the beginning
-    if (content.includes('import ')) {
-      const firstImportIndex = content.indexOf('import ');
-      const lineEnd = content.indexOf('\n', firstImportIndex);
+    if (content.includes("import ")) {
+      const firstImportIndex = content.indexOf("import ");
+      const lineEnd = content.indexOf("\n", firstImportIndex);
       content = content.slice(0, lineEnd + 1) + loggerImport + content.slice(lineEnd + 1);
     } else {
-      content = loggerImport + '\n' + content;
+      content = loggerImport + "\n" + content;
     }
   }
 
@@ -81,22 +81,22 @@ function refactorFile(filePath) {
 
 function findAndRefactorFiles() {
   const patterns = [
-    'packages/*/src/**/*.ts',
-    'packages/*/src/**/*.tsx',
-    'apps/*/src/**/*.ts',
-    'apps/*/src/**/*.tsx',
-    'services/*/src/**/*.ts',
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "apps/*/src/**/*.ts",
+    "apps/*/src/**/*.tsx",
+    "services/*/src/**/*.ts",
   ];
 
   let totalFiles = 0;
   let refactoredFiles = 0;
 
-  patterns.forEach(pattern => {
-    const files = glob.sync(path.join(__dirname, '..', pattern));
-    
-    files.forEach(file => {
+  patterns.forEach((pattern) => {
+    const files = glob.sync(path.join(__dirname, "..", pattern));
+
+    files.forEach((file) => {
       // Skip test files and type definitions
-      if (file.includes('.test.') || file.includes('.spec.') || file.endsWith('.d.ts')) {
+      if (file.includes(".test.") || file.includes(".spec.") || file.endsWith(".d.ts")) {
         return;
       }
 
@@ -169,8 +169,8 @@ export function asyncHandler<T>(
 }
 `;
 
-  const errorHandlerPath = path.join(__dirname, '..', 'packages', 'core', 'src', 'errors.ts');
-  
+  const errorHandlerPath = path.join(__dirname, "..", "packages", "core", "src", "errors.ts");
+
   // Create directory if it doesn't exist
   const dir = path.dirname(errorHandlerPath);
   if (!fs.existsSync(dir)) {
@@ -178,7 +178,7 @@ export function asyncHandler<T>(
   }
 
   fs.writeFileSync(errorHandlerPath, errorHandlingTemplate);
-  console.log('✅ Created error handling utilities');
+  console.log("✅ Created error handling utilities");
 }
 
 // Type safety improvements
@@ -271,8 +271,8 @@ export async function tryAsync<T>(
 }
 `;
 
-  const typeSafetyPath = path.join(__dirname, '..', 'packages', 'core', 'src', 'type-safety.ts');
-  
+  const typeSafetyPath = path.join(__dirname, "..", "packages", "core", "src", "type-safety.ts");
+
   // Create directory if it doesn't exist
   const dir = path.dirname(typeSafetyPath);
   if (!fs.existsSync(dir)) {
@@ -280,26 +280,26 @@ export async function tryAsync<T>(
   }
 
   fs.writeFileSync(typeSafetyPath, typeSafetyTemplate);
-  console.log('✅ Created type safety utilities');
+  console.log("✅ Created type safety utilities");
 }
 
 // Main execution
-console.log('🔄 Starting logging refactoring...\n');
+console.log("🔄 Starting logging refactoring...\n");
 
 // Check if glob is installed
 try {
-  require.resolve('glob');
+  require.resolve("glob");
 } catch (e) {
-  console.log('Installing glob dependency...');
-  require('child_process').execSync('pnpm add -D glob', { stdio: 'inherit' });
+  console.log("Installing glob dependency...");
+  require("child_process").execSync("pnpm add -D glob", { stdio: "inherit" });
 }
 
 findAndRefactorFiles();
 addErrorHandling();
 createTypeSafetyUtils();
 
-console.log('\n✨ Refactoring complete!');
-console.log('Remember to:');
-console.log('1. Run tests to ensure nothing broke');
-console.log('2. Update package.json files to include @vtt/logging dependency');
-console.log('3. Configure logger in application entry points');
+console.log("\n✨ Refactoring complete!");
+console.log("Remember to:");
+console.log("1. Run tests to ensure nothing broke");
+console.log("2. Update package.json files to include @vtt/logging dependency");
+console.log("3. Configure logger in application entry points");

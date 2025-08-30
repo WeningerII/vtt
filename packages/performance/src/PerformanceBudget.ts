@@ -10,17 +10,17 @@ export interface PerformanceBudget {
     total: number;
     perRoute?: Record<string, number>;
   };
-  
+
   // Loading metrics (in ms)
   metrics: {
-    fcp: number;  // First Contentful Paint
-    lcp: number;  // Largest Contentful Paint
-    fid: number;  // First Input Delay
-    cls: number;  // Cumulative Layout Shift
+    fcp: number; // First Contentful Paint
+    lcp: number; // Largest Contentful Paint
+    fid: number; // First Input Delay
+    cls: number; // Cumulative Layout Shift
     ttfb: number; // Time to First Byte
-    tti: number;  // Time to Interactive
+    tti: number; // Time to Interactive
   };
-  
+
   // Resource counts
   resources: {
     images: number;
@@ -29,7 +29,7 @@ export interface PerformanceBudget {
     fonts: number;
     totalRequests: number;
   };
-  
+
   // Memory limits (in MB)
   memory: {
     initial: number;
@@ -41,38 +41,38 @@ export interface PerformanceBudget {
 // Default performance budgets
 export const DEFAULT_BUDGETS: PerformanceBudget = {
   bundles: {
-    main: 200,      // 200KB for main bundle
-    vendor: 300,    // 300KB for vendor bundle
-    total: 600,     // 600KB total
+    main: 200, // 200KB for main bundle
+    vendor: 300, // 300KB for vendor bundle
+    total: 600, // 600KB total
     perRoute: {
-      '/': 150,
-      '/dashboard': 200,
-      '/game-session': 250,
-      '/character-editor': 180,
-      '/campaign-browser': 160,
-      '/settings': 100
-    }
+      "/": 150,
+      "/dashboard": 200,
+      "/game-session": 250,
+      "/character-editor": 180,
+      "/campaign-browser": 160,
+      "/settings": 100,
+    },
   },
   metrics: {
-    fcp: 1800,      // 1.8s
-    lcp: 2500,      // 2.5s
-    fid: 100,       // 100ms
-    cls: 0.1,       // 0.1
-    ttfb: 600,      // 600ms
-    tti: 3800       // 3.8s
+    fcp: 1800, // 1.8s
+    lcp: 2500, // 2.5s
+    fid: 100, // 100ms
+    cls: 0.1, // 0.1
+    ttfb: 600, // 600ms
+    tti: 3800, // 3.8s
   },
   resources: {
     images: 20,
     scripts: 10,
     stylesheets: 5,
     fonts: 3,
-    totalRequests: 50
+    totalRequests: 50,
   },
   memory: {
-    initial: 50,    // 50MB
-    peak: 150,      // 150MB
-    idle: 80        // 80MB
-  }
+    initial: 50, // 50MB
+    peak: 150, // 150MB
+    idle: 80, // 80MB
+  },
 };
 
 export interface PerformanceMetrics {
@@ -109,7 +109,7 @@ export interface BudgetViolation {
   metric: string;
   budget: number;
   actual: number;
-  severity: 'warning' | 'error';
+  severity: "warning" | "error";
 }
 
 export class PerformanceBudgetMonitor {
@@ -149,17 +149,17 @@ export class PerformanceBudgetMonitor {
     return this.violations;
   }
 
-  private checkBundleSizes(bundles: PerformanceMetrics['bundles']): void {
+  private checkBundleSizes(bundles: PerformanceMetrics["bundles"]): void {
     if (bundles?.main && bundles.main > this.budget.bundles.main) {
-      this.addViolation('bundles', 'main', this.budget.bundles.main, bundles.main);
+      this.addViolation("bundles", "main", this.budget.bundles.main, bundles.main);
     }
 
     if (bundles?.vendor && bundles.vendor > this.budget.bundles.vendor) {
-      this.addViolation('bundles', 'vendor', this.budget.bundles.vendor, bundles.vendor);
+      this.addViolation("bundles", "vendor", this.budget.bundles.vendor, bundles.vendor);
     }
 
     if (bundles?.total && bundles.total > this.budget.bundles.total) {
-      this.addViolation('bundles', 'total', this.budget.bundles.total, bundles.total);
+      this.addViolation("bundles", "total", this.budget.bundles.total, bundles.total);
     }
 
     // Check per-route budgets
@@ -167,58 +167,58 @@ export class PerformanceBudgetMonitor {
       for (const [route, size] of Object.entries(bundles.perRoute)) {
         const budget = this.budget.bundles.perRoute[route];
         if (budget && size > budget) {
-          this.addViolation('bundles', `route:${route}`, budget, size);
+          this.addViolation("bundles", `route:${route}`, budget, size);
         }
       }
     }
   }
 
-  private checkPerformanceMetrics(metrics: PerformanceMetrics['metrics']): void {
-    const checks: Array<[keyof NonNullable<PerformanceMetrics['metrics']>, number]> = [
-      ['fcp', this.budget.metrics.fcp],
-      ['lcp', this.budget.metrics.lcp],
-      ['fid', this.budget.metrics.fid],
-      ['cls', this.budget.metrics.cls],
-      ['ttfb', this.budget.metrics.ttfb],
-      ['tti', this.budget.metrics.tti]
+  private checkPerformanceMetrics(metrics: PerformanceMetrics["metrics"]): void {
+    const checks: Array<[keyof NonNullable<PerformanceMetrics["metrics"]>, number]> = [
+      ["fcp", this.budget.metrics.fcp],
+      ["lcp", this.budget.metrics.lcp],
+      ["fid", this.budget.metrics.fid],
+      ["cls", this.budget.metrics.cls],
+      ["ttfb", this.budget.metrics.ttfb],
+      ["tti", this.budget.metrics.tti],
     ];
 
     for (const [metric, budget] of checks) {
       const actual = metrics?.[metric];
       if (actual !== undefined && actual > budget) {
-        this.addViolation('metrics', metric, budget, actual);
+        this.addViolation("metrics", metric, budget, actual);
       }
     }
   }
 
-  private checkResourceCounts(resources: PerformanceMetrics['resources']): void {
-    const checks: Array<[keyof NonNullable<PerformanceMetrics['resources']>, number]> = [
-      ['images', this.budget.resources.images],
-      ['scripts', this.budget.resources.scripts],
-      ['stylesheets', this.budget.resources.stylesheets],
-      ['fonts', this.budget.resources.fonts],
-      ['totalRequests', this.budget.resources.totalRequests]
+  private checkResourceCounts(resources: PerformanceMetrics["resources"]): void {
+    const checks: Array<[keyof NonNullable<PerformanceMetrics["resources"]>, number]> = [
+      ["images", this.budget.resources.images],
+      ["scripts", this.budget.resources.scripts],
+      ["stylesheets", this.budget.resources.stylesheets],
+      ["fonts", this.budget.resources.fonts],
+      ["totalRequests", this.budget.resources.totalRequests],
     ];
 
     for (const [resource, budget] of checks) {
       const actual = resources?.[resource];
       if (actual !== undefined && actual > budget) {
-        this.addViolation('resources', resource, budget, actual);
+        this.addViolation("resources", resource, budget, actual);
       }
     }
   }
 
-  private checkMemoryUsage(memory: PerformanceMetrics['memory']): void {
-    const checks: Array<[keyof NonNullable<PerformanceMetrics['memory']>, number]> = [
-      ['initial', this.budget.memory.initial],
-      ['peak', this.budget.memory.peak],
-      ['idle', this.budget.memory.idle]
+  private checkMemoryUsage(memory: PerformanceMetrics["memory"]): void {
+    const checks: Array<[keyof NonNullable<PerformanceMetrics["memory"]>, number]> = [
+      ["initial", this.budget.memory.initial],
+      ["peak", this.budget.memory.peak],
+      ["idle", this.budget.memory.idle],
     ];
 
     for (const [metric, budget] of checks) {
       const actual = memory?.[metric];
       if (actual !== undefined && actual > budget) {
-        this.addViolation('memory', metric, budget, actual);
+        this.addViolation("memory", metric, budget, actual);
       }
     }
   }
@@ -227,17 +227,17 @@ export class PerformanceBudgetMonitor {
     category: keyof PerformanceBudget,
     metric: string,
     budget: number,
-    actual: number
+    actual: number,
   ): void {
     const percentOver = ((actual - budget) / budget) * 100;
-    const severity = percentOver > 50 ? 'error' : 'warning';
+    const severity = percentOver > 50 ? "error" : "warning";
 
     this.violations.push({
       category,
       metric,
       budget,
       actual,
-      severity
+      severity,
     });
   }
 
@@ -246,29 +246,29 @@ export class PerformanceBudgetMonitor {
    */
   generateReport(metrics: PerformanceMetrics): string {
     const violations = this.checkBudget(metrics);
-    let report = '=== Performance Budget Report ===\n\n';
+    let report = "=== Performance Budget Report ===\n\n";
 
     if (violations.length === 0) {
-      report += '✅ All performance budgets met!\n';
+      report += "✅ All performance budgets met!\n";
     } else {
       report += `⚠️ Found ${violations.length} budget violations:\n\n`;
-      
-      const errors = violations.filter(v => v.severity === 'error');
-      const warnings = violations.filter(v => v.severity === 'warning');
+
+      const errors = violations.filter((v) => v.severity === "error");
+      const warnings = violations.filter((v) => v.severity === "warning");
 
       if (errors.length > 0) {
-        report += '❌ Errors:\n';
-        errors.forEach(v => {
-          const percentOver = ((v.actual - v.budget) / v.budget * 100).toFixed(1);
+        report += "❌ Errors:\n";
+        errors.forEach((v) => {
+          const percentOver = (((v.actual - v.budget) / v.budget) * 100).toFixed(1);
           report += `  - ${v.category}.${v.metric}: ${v.actual} (budget: ${v.budget}, +${percentOver}%)\n`;
         });
-        report += '\n';
+        report += "\n";
       }
 
       if (warnings.length > 0) {
-        report += '⚠️ Warnings:\n';
-        warnings.forEach(v => {
-          const percentOver = ((v.actual - v.budget) / v.budget * 100).toFixed(1);
+        report += "⚠️ Warnings:\n";
+        warnings.forEach((v) => {
+          const percentOver = (((v.actual - v.budget) / v.budget) * 100).toFixed(1);
           report += `  - ${v.category}.${v.metric}: ${v.actual} (budget: ${v.budget}, +${percentOver}%)\n`;
         });
       }
@@ -310,39 +310,39 @@ export class PerformanceBudgetPlugin {
   }
 
   apply(compiler: any): void {
-    compiler.hooks.done.tap('PerformanceBudgetPlugin', (stats: any) => {
+    compiler.hooks.done.tap("PerformanceBudgetPlugin", (stats: any) => {
       const compilation = stats.compilation;
       const assets = compilation.assets;
-      
+
       // Calculate bundle sizes
-      const bundles: PerformanceMetrics['bundles'] = {
+      const bundles: PerformanceMetrics["bundles"] = {
         main: 0,
         vendor: 0,
         total: 0,
-        perRoute: {}
+        perRoute: {},
       };
 
       for (const [name, asset] of Object.entries(assets)) {
         const size = (asset as any).size() / 1024; // Convert to KB
-        
-        if (name.includes('main')) {
+
+        if (name.includes("main")) {
           bundles.main! += size;
-        } else if (name.includes('vendor')) {
+        } else if (name.includes("vendor")) {
           bundles.vendor! += size;
         }
-        
+
         bundles.total! += size;
       }
 
       // Check budgets
       const violations = this.monitor.checkBudget({ bundles });
-      
+
       if (violations.length > 0) {
         const report = this.monitor.generateReport({ bundles });
         console.log(report);
-        
+
         // Fail build on errors
-        const errors = violations.filter(v => v.severity === 'error');
+        const errors = violations.filter((v) => v.severity === "error");
         if (errors.length > 0) {
           throw new Error(`Performance budget exceeded! ${errors.length} error(s) found.`);
         }

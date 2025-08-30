@@ -3,7 +3,15 @@
  * Manages different layers in a VTT scene (background, objects, tokens, effects, UI)
  */
 
-export type LayerType = 'background' | 'terrain' | 'objects' | 'tokens' | 'effects' | 'lighting' | 'fog' | 'ui';
+export type LayerType =
+  | "background"
+  | "terrain"
+  | "objects"
+  | "tokens"
+  | "effects"
+  | "lighting"
+  | "fog"
+  | "ui";
 
 export interface LayerSettings {
   id: string;
@@ -13,7 +21,7 @@ export interface LayerSettings {
   locked: boolean;
   opacity: number;
   zIndex: number;
-  blendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten';
+  blendMode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten";
 }
 
 export interface LayerObject {
@@ -42,80 +50,80 @@ export class LayerManager {
   private initializeDefaultLayers(): void {
     const defaultLayers: LayerSettings[] = [
       {
-        id: 'background',
-        name: 'Background',
-        type: 'background',
+        id: "background",
+        name: "Background",
+        type: "background",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 0
+        zIndex: 0,
       },
       {
-        id: 'terrain',
-        name: 'Terrain',
-        type: 'terrain',
+        id: "terrain",
+        name: "Terrain",
+        type: "terrain",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 100
+        zIndex: 100,
       },
       {
-        id: 'objects',
-        name: 'Objects',
-        type: 'objects',
+        id: "objects",
+        name: "Objects",
+        type: "objects",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 200
+        zIndex: 200,
       },
       {
-        id: 'tokens',
-        name: 'Tokens',
-        type: 'tokens',
+        id: "tokens",
+        name: "Tokens",
+        type: "tokens",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 300
+        zIndex: 300,
       },
       {
-        id: 'effects',
-        name: 'Effects',
-        type: 'effects',
+        id: "effects",
+        name: "Effects",
+        type: "effects",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 400
+        zIndex: 400,
       },
       {
-        id: 'lighting',
-        name: 'Lighting',
-        type: 'lighting',
+        id: "lighting",
+        name: "Lighting",
+        type: "lighting",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 500
+        zIndex: 500,
       },
       {
-        id: 'fog',
-        name: 'Fog of War',
-        type: 'fog',
+        id: "fog",
+        name: "Fog of War",
+        type: "fog",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 600
+        zIndex: 600,
       },
       {
-        id: 'ui',
-        name: 'UI',
-        type: 'ui',
+        id: "ui",
+        name: "UI",
+        type: "ui",
         visible: true,
         locked: false,
         opacity: 1.0,
-        zIndex: 1000
-      }
+        zIndex: 1000,
+      },
     ];
 
-    defaultLayers.forEach(layer => {
+    defaultLayers.forEach((layer) => {
       this.layers.set(layer.id, layer);
       this.layerOrder.push(layer.id);
     });
@@ -126,13 +134,13 @@ export class LayerManager {
    */
   addLayer(layer: LayerSettings): void {
     this.layers.set(layer.id, layer);
-    
+
     // Insert at appropriate position based on zIndex
-    const insertIndex = this.layerOrder.findIndex(layerId => {
+    const insertIndex = this.layerOrder.findIndex((layerId) => {
       const existingLayer = this.layers.get(layerId);
       return existingLayer && existingLayer.zIndex > layer.zIndex;
     });
-    
+
     if (insertIndex === -1) {
       this.layerOrder.push(layer.id);
     } else {
@@ -150,14 +158,14 @@ export class LayerManager {
 
     // Remove all objects in this layer
     const objectsToRemove = Array.from(this.objects.values())
-      .filter(obj => obj.layerId === layerId)
-      .map(obj => obj.id);
-    
-    objectsToRemove.forEach(objId => this.objects.delete(objId));
+      .filter((obj) => obj.layerId === layerId)
+      .map((obj) => obj.id);
+
+    objectsToRemove.forEach((objId) => this.objects.delete(objId));
 
     // Remove layer
     this.layers.delete(layerId);
-    this.layerOrder = this.layerOrder.filter(id => id !== layerId);
+    this.layerOrder = this.layerOrder.filter((id) => id !== layerId);
   }
 
   /**
@@ -198,7 +206,7 @@ export class LayerManager {
    */
   getLayers(): LayerSettings[] {
     return this.layerOrder
-      .map(id => this.layers.get(id))
+      .map((id) => this.layers.get(id))
       .filter((layer): layer is LayerSettings => layer !== undefined);
   }
 
@@ -206,7 +214,7 @@ export class LayerManager {
    * Get layers by type
    */
   getLayersByType(type: LayerType): LayerSettings[] {
-    return Array.from(this.layers.values()).filter(layer => layer.type === type);
+    return Array.from(this.layers.values()).filter((layer) => layer.type === type);
   }
 
   /**
@@ -216,7 +224,7 @@ export class LayerManager {
     if (!this.layers.has(object.layerId)) {
       throw new Error(`Layer ${object.layerId} does not exist`);
     }
-    
+
     this.objects.set(object.id, object);
   }
 
@@ -251,7 +259,7 @@ export class LayerManager {
    * Get all objects in a layer
    */
   getObjectsInLayer(layerId: string): LayerObject[] {
-    return Array.from(this.objects.values()).filter(obj => obj.layerId === layerId);
+    return Array.from(this.objects.values()).filter((obj) => obj.layerId === layerId);
   }
 
   /**
@@ -259,17 +267,16 @@ export class LayerManager {
    */
   getVisibleObjects(): LayerObject[] {
     const visibleObjects: LayerObject[] = [];
-    
+
     for (const layerId of this.layerOrder) {
       const layer = this.layers.get(layerId);
       if (!layer || !layer.visible) continue;
-      
-      const layerObjects = this.getObjectsInLayer(layerId)
-        .filter(obj => obj.visible);
-      
+
+      const layerObjects = this.getObjectsInLayer(layerId).filter((obj) => obj.visible);
+
       visibleObjects.push(...layerObjects);
     }
-    
+
     return visibleObjects;
   }
 
@@ -317,9 +324,8 @@ export class LayerManager {
    * Get objects at specific coordinates
    */
   getObjectsAtPoint(x: number, y: number): LayerObject[] {
-    return this.getVisibleObjects().filter(obj => {
-      return x >= obj.x && x <= obj.x + obj.width &&
-             y >= obj.y && y <= obj.y + obj.height;
+    return this.getVisibleObjects().filter((obj) => {
+      return x >= obj.x && x <= obj.x + obj.width && y >= obj.y && y <= obj.y + obj.height;
     });
   }
 
@@ -327,11 +333,13 @@ export class LayerManager {
    * Get objects in rectangular area
    */
   getObjectsInArea(x: number, y: number, width: number, height: number): LayerObject[] {
-    return this.getVisibleObjects().filter(obj => {
-      return !(obj.x > x + width || 
-               obj.x + obj.width < x || 
-               obj.y > y + height || 
-               obj.y + obj.height < y);
+    return this.getVisibleObjects().filter((obj) => {
+      return !(
+        obj.x > x + width ||
+        obj.x + obj.width < x ||
+        obj.y > y + height ||
+        obj.y + obj.height < y
+      );
     });
   }
 
@@ -340,39 +348,39 @@ export class LayerManager {
    */
   clearLayer(layerId: string): void {
     const objectsToRemove = Array.from(this.objects.values())
-      .filter(obj => obj.layerId === layerId)
-      .map(obj => obj.id);
-    
-    objectsToRemove.forEach(objId => this.objects.delete(objId));
+      .filter((obj) => obj.layerId === layerId)
+      .map((obj) => obj.id);
+
+    objectsToRemove.forEach((objId) => this.objects.delete(objId));
   }
 
   /**
    * Export layer configuration
    */
-  exportLayers(): { layers: LayerSettings[], objects: LayerObject[] } {
+  exportLayers(): { layers: LayerSettings[]; objects: LayerObject[] } {
     return {
       layers: this.getLayers(),
-      objects: Array.from(this.objects.values())
+      objects: Array.from(this.objects.values()),
     };
   }
 
   /**
    * Import layer configuration
    */
-  importLayers(data: { layers: LayerSettings[], objects: LayerObject[] }): void {
+  importLayers(data: { layers: LayerSettings[]; objects: LayerObject[] }): void {
     // Clear existing data
     this.layers.clear();
     this.objects.clear();
     this.layerOrder = [];
 
     // Import layers
-    data.layers.forEach(layer => {
+    data.layers.forEach((layer) => {
       this.layers.set(layer.id, layer);
       this.layerOrder.push(layer.id);
     });
 
     // Import objects
-    data.objects.forEach(object => {
+    data.objects.forEach((object) => {
       this.objects.set(object.id, object);
     });
 

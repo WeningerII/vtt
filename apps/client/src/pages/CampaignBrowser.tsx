@@ -2,8 +2,8 @@
  * Campaign Browser Page - Browse and manage campaigns
  */
 
-import React from 'react';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import React from "react";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
 interface CampaignBrowserProps {
   campaignId?: string;

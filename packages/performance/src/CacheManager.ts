@@ -3,8 +3,8 @@
  * Provides memory, LRU, persistent, and distributed caching with intelligent eviction policies
  */
 
-import { EventEmitter } from 'events';
-import { logger } from '@vtt/logging';
+import { EventEmitter } from "events";
+import { logger } from "@vtt/logging";
 
 export interface CacheEntry<T = any> {
   key: string;
@@ -37,7 +37,7 @@ export interface CacheConfig {
   maxMemorySize: number; // bytes
   maxEntries: number;
   defaultTtl: number; // milliseconds
-  evictionPolicy: 'lru' | 'lfu' | 'fifo' | 'adaptive';
+  evictionPolicy: "lru" | "lfu" | "fifo" | "adaptive";
   compressionEnabled: boolean;
   persistentStorage?: boolean;
   storageAdapter?: CacheStorageAdapter;
@@ -86,9 +86,9 @@ export class CacheManager extends EventEmitter {
    */
   async get<T>(key: string): Promise<T | null> {
     const start = performance.now();
-    
+
     let entry = this.cache.get(key);
-    
+
     // Try persistent storage if not in memory
     if (!entry && this.config.storageAdapter) {
       try {
@@ -98,31 +98,31 @@ export class CacheManager extends EventEmitter {
           this.cache.set(key, entry);
         }
       } catch (error) {
-        this.emit('storageError', { operation: 'get', key, error });
+        this.emit("storageError", { operation: "get", key, error });
       }
     }
 
     const accessTime = performance.now() - start;
     this.stats.accessTimes.push(accessTime);
-    
+
     if (entry && !this.isExpired(entry)) {
       // Update access information
       entry.lastAccessed = new Date();
       entry.accessCount++;
-      
+
       this.stats.hits++;
-      this.emit('hit', { key, entry, accessTime });
-      
+      this.emit("hit", { key, entry, accessTime });
+
       return entry.value as T;
     } else {
       // Remove expired entry
       if (entry) {
         this.delete(key);
       }
-      
+
       this.stats.misses++;
-      this.emit('miss', { key, accessTime });
-      
+      this.emit("miss", { key, accessTime });
+
       return null;
     }
   }
@@ -131,20 +131,20 @@ export class CacheManager extends EventEmitter {
    * Set value in cache
    */
   async set<T>(
-    key: string, 
-    value: T, 
+    key: string,
+    value: T,
     options: {
       ttl?: number;
       priority?: number;
       tags?: string[];
       metadata?: Record<string, any>;
-    } = {}
+    } = {},
   ): Promise<void> {
     const size = this.calculateSize(value);
-    
+
     // Check if we need to evict entries
     await this.ensureCapacity(size);
-    
+
     const entry: CacheEntry<T> = {
       key,
       value,
@@ -159,17 +159,17 @@ export class CacheManager extends EventEmitter {
     };
 
     this.cache.set(key, entry);
-    
+
     // Persist to storage if configured
     if (this.config.storageAdapter) {
       try {
         await this.config.storageAdapter.set(key, value, entry.ttl);
       } catch (error) {
-        this.emit('storageError', { operation: 'set', key, error });
+        this.emit("storageError", { operation: "set", key, error });
       }
     }
 
-    this.emit('set', { key, entry, size });
+    this.emit("set", { key, entry, size });
   }
 
   /**
@@ -178,17 +178,17 @@ export class CacheManager extends EventEmitter {
   async delete(key: string): Promise<boolean> {
     const entry = this.cache.get(key);
     const deleted = this.cache.delete(key);
-    
+
     if (this.config.storageAdapter) {
       try {
         await this.config.storageAdapter.delete(key);
       } catch (error) {
-        this.emit('storageError', { operation: 'delete', key, error });
+        this.emit("storageError", { operation: "delete", key, error });
       }
     }
 
     if (deleted && entry) {
-      this.emit('delete', { key, entry });
+      this.emit("delete", { key, entry });
     }
 
     return deleted;
@@ -199,23 +199,23 @@ export class CacheManager extends EventEmitter {
    */
   async clear(query?: CacheQuery): Promise<number> {
     let deletedCount = 0;
-    
+
     if (!query) {
       // Clear all
       deletedCount = this.cache.size;
       this.cache.clear();
-      
+
       if (this.config.storageAdapter) {
         try {
           await this.config.storageAdapter.clear();
         } catch (error) {
-          this.emit('storageError', { operation: 'clear', error });
+          this.emit("storageError", { operation: "clear", error });
         }
       }
     } else {
       // Clear matching entries
       const keysToDelete: string[] = [];
-      
+
       for (const [key, entry] of this.cache) {
         if (this.matchesQuery(entry, query)) {
           keysToDelete.push(key);
@@ -228,7 +228,7 @@ export class CacheManager extends EventEmitter {
       }
     }
 
-    this.emit('clear', { query, deletedCount });
+    this.emit("clear", { query, deletedCount });
     return deletedCount;
   }
 
@@ -237,9 +237,10 @@ export class CacheManager extends EventEmitter {
    */
   getStats(): CacheStats {
     const totalAccesses = this.stats.hits + this.stats.misses;
-    const avgAccessTime = this.stats.accessTimes.length > 0 
-      ? this.stats.accessTimes.reduce((a, b) => a + b, 0) / this.stats.accessTimes.length
-      : 0;
+    const avgAccessTime =
+      this.stats.accessTimes.length > 0
+        ? this.stats.accessTimes.reduce((a, b) => a + b, 0) / this.stats.accessTimes.length
+        : 0;
 
     let totalSize = 0;
     for (const entry of this.cache.values()) {
@@ -265,7 +266,7 @@ export class CacheManager extends EventEmitter {
    */
   query(query: CacheQuery): CacheEntry[] {
     const results: CacheEntry[] = [];
-    
+
     for (const entry of this.cache.values()) {
       if (this.matchesQuery(entry, query)) {
         results.push({ ...entry }); // Return copy to prevent mutation
@@ -293,7 +294,7 @@ export class CacheManager extends EventEmitter {
           const value = await fetcher(key);
           await this.set(key, value);
         } catch (error) {
-          this.emit('prefetchError', { key, error });
+          this.emit("prefetchError", { key, error });
         }
       }
     });
@@ -322,7 +323,7 @@ export class CacheManager extends EventEmitter {
   async getMany<T>(keys: string[]): Promise<Array<{ key: string; value: T | null }>> {
     const promises = keys.map(async (key) => ({
       key,
-      value: await this.get<T>(key)
+      value: await this.get<T>(key),
     }));
     return Promise.all(promises);
   }
@@ -333,7 +334,7 @@ export class CacheManager extends EventEmitter {
   async deleteMany(keys: string[]): Promise<{ success: string[]; failed: string[] }> {
     const success: string[] = [];
     const failed: string[] = [];
-    
+
     for (const key of keys) {
       try {
         await this.delete(key);
@@ -342,7 +343,7 @@ export class CacheManager extends EventEmitter {
         failed.push(key);
       }
     }
-    
+
     return { success, failed };
   }
 
@@ -360,12 +361,10 @@ export class CacheManager extends EventEmitter {
    * Warm up cache with commonly accessed data
    */
   async warmup(warmupData: Array<{ key: string; value: any; options?: any }>): Promise<void> {
-    const promises = warmupData.map(({ key, value, options }) => 
-      this.set(key, value, options)
-    );
+    const promises = warmupData.map(({ key, value, options }) => this.set(key, value, options));
 
     await Promise.allSettled(promises);
-    this.emit('warmup', { count: warmupData.length });
+    this.emit("warmup", { count: warmupData.length });
   }
 
   private async ensureCapacity(newEntrySize: number): Promise<void> {
@@ -373,15 +372,16 @@ export class CacheManager extends EventEmitter {
     const currentEntries = this.cache.size;
 
     // Check if we need to evict based on size or count
-    if (currentSize + newEntrySize > this.config.maxMemorySize || 
-        currentEntries >= this.config.maxEntries) {
-      
+    if (
+      currentSize + newEntrySize > this.config.maxMemorySize ||
+      currentEntries >= this.config.maxEntries
+    ) {
       const entriesToEvict = this.selectEntriesForEviction(newEntrySize);
-      
+
       for (const key of entriesToEvict) {
         await this.delete(key);
         this.stats.evictions++;
-        this.emit('evict', { key, reason: 'capacity' });
+        this.emit("evict", { key, reason: "capacity" });
       }
     }
   }
@@ -392,19 +392,19 @@ export class CacheManager extends EventEmitter {
     let freedSize = 0;
 
     switch (this.config.evictionPolicy) {
-      case 'lru':
+      case "lru":
         entries.sort(([, a], [, b]) => a.lastAccessed.getTime() - b.lastAccessed.getTime());
         break;
-      
-      case 'lfu':
+
+      case "lfu":
         entries.sort(([, a], [, b]) => a.accessCount - b.accessCount);
         break;
-      
-      case 'fifo':
+
+      case "fifo":
         entries.sort(([, a], [, b]) => a.createdAt.getTime() - b.createdAt.getTime());
         break;
-      
-      case 'adaptive':
+
+      case "adaptive":
         entries.sort(([, a], [, b]) => {
           const scoreA = this.calculateAdaptiveScore(a);
           const scoreB = this.calculateAdaptiveScore(b);
@@ -415,10 +415,10 @@ export class CacheManager extends EventEmitter {
 
     // Evict entries until we have enough space
     const targetSize = Math.max(newEntrySize, this.config.maxMemorySize * 0.1);
-    
+
     for (const [key, entry] of entries) {
       if (freedSize >= targetSize) break;
-      
+
       keysToEvict.push(key);
       freedSize += entry.size;
     }
@@ -431,13 +431,15 @@ export class CacheManager extends EventEmitter {
     const age = now - entry.createdAt.getTime();
     const timeSinceAccess = now - entry.lastAccessed.getTime();
     const sizeRatio = entry.size / this.config.maxMemorySize;
-    
+
     // Lower score = more likely to be evicted
-    return (entry.priority * 0.4) + 
-           (entry.accessCount * 0.3) + 
-           (1 / (timeSinceAccess + 1) * 0.2) + 
-           (1 / (age + 1) * 0.1) - 
-           (sizeRatio * 0.1);
+    return (
+      entry.priority * 0.4 +
+      entry.accessCount * 0.3 +
+      (1 / (timeSinceAccess + 1)) * 0.2 +
+      (1 / (age + 1)) * 0.1 -
+      sizeRatio * 0.1
+    );
   }
 
   private getCurrentSize(): number {
@@ -454,7 +456,11 @@ export class CacheManager extends EventEmitter {
     return new Blob([str]).size;
   }
 
-  private createEntry<T>(key: string, value: T, options: { ttl?: number; tags?: string[]; metadata?: Record<string, any>; } = {}): CacheEntry<T> {
+  private createEntry<T>(
+    key: string,
+    value: T,
+    options: { ttl?: number; tags?: string[]; metadata?: Record<string, any> } = {},
+  ): CacheEntry<T> {
     return {
       key,
       value,
@@ -475,7 +481,7 @@ export class CacheManager extends EventEmitter {
   }
 
   private matchesQuery(entry: CacheEntry, query: CacheQuery): boolean {
-    if (query.tags && (!entry.tags || !query.tags.some(tag => entry.tags!.includes(tag)))) {
+    if (query.tags && (!entry.tags || !query.tags.some((tag) => entry.tags!.includes(tag)))) {
       return false;
     }
 
@@ -514,7 +520,7 @@ export class CacheManager extends EventEmitter {
 
   private async cleanup(): Promise<void> {
     const keysToDelete: string[] = [];
-    
+
     for (const [key, entry] of this.cache) {
       if (this.isExpired(entry)) {
         keysToDelete.push(key);
@@ -523,7 +529,7 @@ export class CacheManager extends EventEmitter {
 
     for (const key of keysToDelete) {
       await this.delete(key);
-      this.emit('evict', { key, reason: 'expired' });
+      this.emit("evict", { key, reason: "expired" });
     }
 
     // Trim access times array to prevent memory leak
@@ -531,7 +537,7 @@ export class CacheManager extends EventEmitter {
       this.stats.accessTimes = this.stats.accessTimes.slice(-5000);
     }
 
-    this.emit('cleanup', { expiredCount: keysToDelete.length });
+    this.emit("cleanup", { expiredCount: keysToDelete.length });
   }
 
   /**
@@ -542,7 +548,7 @@ export class CacheManager extends EventEmitter {
       clearInterval(this.cleanupTimer);
     }
     this.cleanupTimer = undefined;
-    
+
     this.cache.clear();
     this.removeAllListeners();
   }
@@ -554,7 +560,7 @@ export class CacheManager extends EventEmitter {
 export class LocalStorageCacheAdapter implements CacheStorageAdapter {
   private prefix: string;
 
-  constructor(prefix = 'vtt_cache') {
+  constructor(prefix = "vtt_cache") {
     this.prefix = prefix;
   }
 
@@ -570,7 +576,7 @@ export class LocalStorageCacheAdapter implements CacheStorageAdapter {
         return parsed.value;
       }
     } catch (error) {
-      logger.warn('LocalStorage cache get error:', error);
+      logger.warn("LocalStorage cache get error:", error);
     }
     return undefined;
   }
@@ -584,7 +590,7 @@ export class LocalStorageCacheAdapter implements CacheStorageAdapter {
       };
       localStorage.setItem(this.prefix + key, JSON.stringify(data));
     } catch (error) {
-      logger.warn('LocalStorage cache set error:', error);
+      logger.warn("LocalStorage cache set error:", error);
     }
   }
 
@@ -625,7 +631,7 @@ export const _DEFAULT_CACHE_CONFIGS = {
     maxMemorySize: 50 * 1024 * 1024, // 50MB
     maxEntries: 1000,
     defaultTtl: 30 * 60 * 1000, // 30 minutes
-    evictionPolicy: 'lru' as const,
+    evictionPolicy: "lru" as const,
     compressionEnabled: false,
     persistentStorage: false,
     cleanupInterval: 5 * 60 * 1000, // 5 minutes
@@ -636,7 +642,7 @@ export const _DEFAULT_CACHE_CONFIGS = {
     maxMemorySize: 200 * 1024 * 1024, // 200MB
     maxEntries: 5000,
     defaultTtl: 24 * 60 * 60 * 1000, // 24 hours
-    evictionPolicy: 'adaptive' as const,
+    evictionPolicy: "adaptive" as const,
     compressionEnabled: true,
     persistentStorage: true,
     storageAdapter: new LocalStorageCacheAdapter(),
@@ -648,7 +654,7 @@ export const _DEFAULT_CACHE_CONFIGS = {
     maxMemorySize: 10 * 1024 * 1024, // 10MB
     maxEntries: 500,
     defaultTtl: 5 * 60 * 1000, // 5 minutes
-    evictionPolicy: 'lfu' as const,
+    evictionPolicy: "lfu" as const,
     compressionEnabled: false,
     persistentStorage: false,
     cleanupInterval: 30 * 1000, // 30 seconds

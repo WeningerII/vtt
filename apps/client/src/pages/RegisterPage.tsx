@@ -2,12 +2,12 @@
  * Register Page - User registration interface
  */
 
-import React, { useState } from 'react';
-import { useAuth } from '../providers/AuthProvider';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Eye, EyeOff, Mail, User, Github } from 'lucide-react';
-import { useTranslation } from '@vtt/i18n';
+import React, { useState } from "react";
+import { useAuth } from "../providers/AuthProvider";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Eye, EyeOff, Mail, User, Github } from "lucide-react";
+import { useTranslation } from "@vtt/i18n";
 
 interface RegisterPageProps {
   router: {
@@ -20,11 +20,11 @@ export function RegisterPage({ router }: RegisterPageProps) {
   const { t } = useTranslation();
   const { register, loginWithProvider, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    username: '',
-    displayName: '',
-    password: '',
-    confirmPassword: ''
+    email: "",
+    username: "",
+    displayName: "",
+    password: "",
+    confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,45 +33,46 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    
+
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = "Please enter a valid email address";
     }
-    
+
     if (!formData.username) {
-      errors.username = 'Username is required';
+      errors.username = "Username is required";
     } else if (formData.username.length < 3) {
-      errors.username = 'Username must be at least 3 characters';
+      errors.username = "Username must be at least 3 characters";
     } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
-      errors.username = 'Username can only contain letters, numbers, hyphens, and underscores';
+      errors.username = "Username can only contain letters, numbers, hyphens, and underscores";
     }
-    
+
     if (!formData.displayName) {
-      errors.displayName = 'Display name is required';
+      errors.displayName = "Display name is required";
     } else if (formData.displayName.length < 2) {
-      errors.displayName = 'Display name must be at least 2 characters';
+      errors.displayName = "Display name must be at least 2 characters";
     }
-    
+
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters';
+      errors.password = "Password must be at least 8 characters";
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+      errors.password =
+        "Password must contain at least one uppercase letter, one lowercase letter, and one number";
     }
-    
+
     if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      errors.confirmPassword = "Please confirm your password";
     } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      errors.confirmPassword = "Passwords do not match";
     }
-    
+
     if (!acceptTerms) {
-      errors.terms = 'You must accept the Terms of Service and Privacy Policy';
+      errors.terms = "You must accept the Terms of Service and Privacy Policy";
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -79,15 +80,15 @@ export function RegisterPage({ router }: RegisterPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     if (!validateForm()) return;
-    
+
     try {
       await register({
         email: formData.email,
         username: formData.username,
         displayName: formData.displayName,
-        password: formData.password
+        password: formData.password,
       });
       // Navigation will be handled by the Router component based on auth state
     } catch (_error) {
@@ -96,15 +97,15 @@ export function RegisterPage({ router }: RegisterPageProps) {
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear validation error when user starts typing
     if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+      setValidationErrors((prev) => ({ ...prev, [field]: "" }));
     }
     clearError();
   };
 
-  const handleOAuthLogin = (provider: 'discord' | 'google') => {
+  const handleOAuthLogin = (provider: "discord" | "google") => {
     clearError();
     loginWithProvider(provider);
   };
@@ -114,12 +115,8 @@ export function RegisterPage({ router }: RegisterPageProps) {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">
-            Join the Adventure
-          </h1>
-          <p className="text-text-secondary">
-            Create your Virtual Tabletop account
-          </p>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Join the Adventure</h1>
+          <p className="text-text-secondary">Create your Virtual Tabletop account</p>
         </div>
 
         {/* Registration Form */}
@@ -141,7 +138,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="Enter your email"
                 error={validationErrors.email}
                 leftIcon={<Mail className="h-4 w-4" />}
@@ -151,14 +148,17 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
             {/* Username Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-1">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-text-primary mb-1"
+              >
                 Username
               </label>
               <Input
                 id="username"
                 type="text"
                 value={formData.username}
-                onChange={(e) => handleInputChange('username', e.target.value)}
+                onChange={(e) => handleInputChange("username", e.target.value)}
                 placeholder="Choose a unique username"
                 error={validationErrors.username}
                 leftIcon={<User className="h-4 w-4" />}
@@ -171,14 +171,17 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
             {/* Display Name Field */}
             <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-text-primary mb-1">
+              <label
+                htmlFor="displayName"
+                className="block text-sm font-medium text-text-primary mb-1"
+              >
                 Display Name
               </label>
               <Input
                 id="displayName"
                 type="text"
                 value={formData.displayName}
-                onChange={(e) => handleInputChange('displayName', e.target.value)}
+                onChange={(e) => handleInputChange("displayName", e.target.value)}
                 placeholder="How others will see you"
                 error={validationErrors.displayName}
                 disabled={isLoading}
@@ -190,14 +193,17 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-text-primary mb-1"
+              >
                 Password
               </label>
               <Input
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 placeholder="Create a strong password"
                 error={validationErrors.password}
                 disabled={isLoading}
@@ -216,14 +222,17 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-text-primary mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-text-primary mb-1"
+              >
                 Confirm Password
               </label>
               <Input
                 id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? "text" : "password"}
                 value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                 placeholder="Confirm your password"
                 error={validationErrors.confirmPassword}
                 disabled={isLoading}
@@ -234,7 +243,11 @@ export function RegisterPage({ router }: RegisterPageProps) {
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
                     className="text-text-secondary hover:text-text-primary transition-colors"
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 }
               />
@@ -249,18 +262,18 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 onChange={(e) => {
                   setAcceptTerms(e.target.checked);
                   if (validationErrors.terms) {
-                    setValidationErrors((prev) => ({ ...prev, terms: '' }));
+                    setValidationErrors((prev) => ({ ...prev, terms: "" }));
                   }
                 }}
                 className="mt-1 h-4 w-4 text-accent-primary focus:ring-accent-primary border-border-primary rounded"
                 disabled={isLoading}
               />
               <label htmlFor="acceptTerms" className="text-sm text-text-secondary">
-                I agree to the{' '}
+                I agree to the{" "}
                 <a href="/terms" className="text-accent-primary hover:text-accent-hover">
                   Terms of Service
-                </a>{' '}
-                and{' '}
+                </a>{" "}
+                and{" "}
                 <a href="/privacy" className="text-accent-primary hover:text-accent-hover">
                   Privacy Policy
                 </a>
@@ -279,7 +292,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
               loading={isLoading}
               disabled={isLoading}
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
 
@@ -297,12 +310,12 @@ export function RegisterPage({ router }: RegisterPageProps) {
               size="lg"
               fullWidth
               leftIcon={<Github className="h-4 w-4" />}
-              onClick={() => handleOAuthLogin('discord')}
+              onClick={() => handleOAuthLogin("discord")}
               disabled={isLoading}
             >
               Continue with Discord
             </Button>
-            
+
             <Button
               variant="secondary"
               size="lg"
@@ -327,7 +340,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
                   />
                 </svg>
               }
-              onClick={() => handleOAuthLogin('google')}
+              onClick={() => handleOAuthLogin("google")}
               disabled={isLoading}
             >
               Continue with Google
@@ -337,9 +350,9 @@ export function RegisterPage({ router }: RegisterPageProps) {
           {/* Sign In Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-text-secondary">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <button
-                onClick={() => router.navigate('/login')}
+                onClick={() => router.navigate("/login")}
                 className="text-accent-primary hover:text-accent-hover font-medium transition-colors"
                 disabled={isLoading}
               >

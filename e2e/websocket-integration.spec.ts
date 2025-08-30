@@ -1,16 +1,16 @@
-import { test, expect } from '@playwright/test';
-import { factory } from './utils/factories';
-import { authUtils } from './utils/auth';
-import { testDb } from './utils/database';
+import { test, expect } from "@playwright/test";
+import { factory } from "./utils/factories";
+import { authUtils } from "./utils/auth";
+import { testDb } from "./utils/database";
 
-test.describe('WebSocket Integration Tests', () => {
+test.describe("WebSocket Integration Tests", () => {
   test.beforeEach(async () => {
     await testDb.reset();
   });
 
-  test('WebSocket connection establishment and health', async ({ page }) => {
+  test("WebSocket connection establishment and health", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     await authUtils.mockAuthentication(page, gm);
 
@@ -18,31 +18,31 @@ test.describe('WebSocket Integration Tests', () => {
     const wsMessages: any[] = [];
 
     // Monitor WebSocket connections
-    page.on('websocket', ws => {
+    page.on("websocket", (ws) => {
       console.log(`WebSocket connected: ${ws.url()}`);
       wsConnected = true;
 
-      ws.on('framereceived', event => {
+      ws.on("framereceived", (event) => {
         try {
           const data = JSON.parse(event.payload as string);
           wsMessages.push(data);
-          console.log('WS Received:', data);
+          console.log("WS Received:", data);
         } catch (_e) {
-          console.log('WS Received (raw):', event.payload);
+          console.log("WS Received (raw):", event.payload);
         }
       });
 
-      ws.on('framesent', event => {
+      ws.on("framesent", (event) => {
         try {
           const data = JSON.parse(event.payload as string);
-          console.log('WS Sent:', data);
+          console.log("WS Sent:", data);
         } catch (_e) {
-          console.log('WS Sent (raw):', event.payload);
+          console.log("WS Sent (raw):", event.payload);
         }
       });
 
-      ws.on('close', () => {
-        console.log('WebSocket disconnected');
+      ws.on("close", () => {
+        console.log("WebSocket disconnected");
         wsConnected = false;
       });
     });
@@ -56,13 +56,13 @@ test.describe('WebSocket Integration Tests', () => {
 
     // Test heartbeat/ping messages
     await page.waitForTimeout(5000);
-    const heartbeats = wsMessages.filter(msg => msg.type === 'ping' || msg.type === 'heartbeat');
+    const heartbeats = wsMessages.filter((msg) => msg.type === "ping" || msg.type === "heartbeat");
     expect(heartbeats.length).toBeGreaterThan(0);
   });
 
-  test('Real-time token movement synchronization', async ({ browser }) => {
+  test("Real-time token movement synchronization", async ({ browser }) => {
     const gameSession = await factory.createCompleteGameSession();
-    const { gm,  player1  } = gameSession.users;
+    const { gm, player1 } = gameSession.users;
 
     const gmContext = await browser.newContext();
     const playerContext = await browser.newContext();
@@ -75,8 +75,8 @@ test.describe('WebSocket Integration Tests', () => {
       const gmMessages: any[] = [];
       const playerMessages: any[] = [];
 
-      gmPage.on('websocket', ws => {
-        ws.on('framereceived', event => {
+      gmPage.on("websocket", (ws) => {
+        ws.on("framereceived", (event) => {
           try {
             const data = JSON.parse(event.payload as string);
             gmMessages.push(data);
@@ -84,8 +84,8 @@ test.describe('WebSocket Integration Tests', () => {
         });
       });
 
-      playerPage.on('websocket', ws => {
-        ws.on('framereceived', event => {
+      playerPage.on("websocket", (ws) => {
+        ws.on("framereceived", (event) => {
           try {
             const data = JSON.parse(event.payload as string);
             playerMessages.push(data);
@@ -97,10 +97,7 @@ test.describe('WebSocket Integration Tests', () => {
       await authUtils.mockAuthentication(playerPage, player1);
 
       const sceneUrl = `/scenes/${gameSession.scene.id}`;
-      await Promise.all([
-        gmPage.goto(sceneUrl),
-        playerPage.goto(sceneUrl),
-      ]);
+      await Promise.all([gmPage.goto(sceneUrl), playerPage.goto(sceneUrl)]);
 
       await Promise.all([
         authUtils.waitForAuthReady(gmPage),
@@ -126,27 +123,27 @@ test.describe('WebSocket Integration Tests', () => {
       await gmPage.waitForTimeout(1000);
 
       // Verify player received token movement message
-      const tokenMoveMessages = playerMessages.filter(msg => 
-        msg.type === 'token_moved' || 
-        msg.type === 'scene_update' ||
-        (msg.event === 'token_update' && msg.data?.position)
+      const tokenMoveMessages = playerMessages.filter(
+        (msg) =>
+          msg.type === "token_moved" ||
+          msg.type === "scene_update" ||
+          (msg.event === "token_update" && msg.data?.position),
       );
       expect(tokenMoveMessages.length).toBeGreaterThan(0);
 
       // Verify token position updated on player's screen
       const playerToken = playerPage.locator('[data-testid="token"]').first();
-      await expect(playerToken).toHaveAttribute('data-x', newX.toString());
-      await expect(playerToken).toHaveAttribute('data-y', newY.toString());
-
+      await expect(playerToken).toHaveAttribute("data-x", newX.toString());
+      await expect(playerToken).toHaveAttribute("data-y", newY.toString());
     } finally {
       await gmContext.close();
       await playerContext.close();
     }
   });
 
-  test('Chat message real-time delivery', async ({ browser }) => {
+  test("Chat message real-time delivery", async ({ browser }) => {
     const gameSession = await factory.createCompleteGameSession();
-    const { gm,  player1,  player2  } = gameSession.users;
+    const { gm, player1, player2 } = gameSession.users;
 
     const contexts = await Promise.all([
       browser.newContext(),
@@ -186,9 +183,9 @@ test.describe('WebSocket Integration Tests', () => {
       await gmPage.waitForTimeout(2000);
 
       // GM sends a message
-      const gmMessage = 'GM: Roll for initiative!';
+      const gmMessage = "GM: Roll for initiative!";
       await gmPage.fill('[data-testid="chat-input"]', gmMessage);
-      await gmPage.press('[data-testid="chat-input"]', 'Enter');
+      await gmPage.press('[data-testid="chat-input"]', "Enter");
 
       // Wait for message propagation
       await gmPage.waitForTimeout(1000);
@@ -200,31 +197,32 @@ test.describe('WebSocket Integration Tests', () => {
       ]);
 
       // Player 1 responds
-      const player1Message = 'Player 1: Rolling!';
+      const player1Message = "Player 1: Rolling!";
       await player1Page.fill('[data-testid="chat-input"]', player1Message);
-      await player1Page.press('[data-testid="chat-input"]', 'Enter');
+      await player1Page.press('[data-testid="chat-input"]', "Enter");
 
       await player1Page.waitForTimeout(1000);
 
       // Verify GM and Player 2 see Player 1's message
       await Promise.all([
         expect(gmPage.locator('[data-testid="chat-message"]').last()).toContainText(player1Message),
-        expect(player2Page.locator('[data-testid="chat-message"]').last()).toContainText(player1Message),
+        expect(player2Page.locator('[data-testid="chat-message"]').last()).toContainText(
+          player1Message,
+        ),
       ]);
 
       // Test message ordering
       const gmMessages = await gmPage.locator('[data-testid="chat-message"]').allTextContents();
-      expect(gmMessages[gmMessages.length - 2]).toContain('GM: Roll for initiative!');
-      expect(gmMessages[gmMessages.length - 1]).toContain('Player 1: Rolling!');
-
+      expect(gmMessages[gmMessages.length - 2]).toContain("GM: Roll for initiative!");
+      expect(gmMessages[gmMessages.length - 1]).toContain("Player 1: Rolling!");
     } finally {
-      await Promise.all(contexts.map(ctx => ctx.close()));
+      await Promise.all(contexts.map((ctx) => ctx.close()));
     }
   });
 
-  test('Initiative tracker real-time synchronization', async ({ browser }) => {
+  test("Initiative tracker real-time synchronization", async ({ browser }) => {
     const gameSession = await factory.createCompleteGameSession();
-    const { gm,  player1  } = gameSession.users;
+    const { gm, player1 } = gameSession.users;
 
     const gmContext = await browser.newContext();
     const playerContext = await browser.newContext();
@@ -237,10 +235,7 @@ test.describe('WebSocket Integration Tests', () => {
       await authUtils.mockAuthentication(playerPage, player1);
 
       const sceneUrl = `/scenes/${gameSession.scene.id}`;
-      await Promise.all([
-        gmPage.goto(sceneUrl),
-        playerPage.goto(sceneUrl),
-      ]);
+      await Promise.all([gmPage.goto(sceneUrl), playerPage.goto(sceneUrl)]);
 
       await Promise.all([
         authUtils.waitForAuthReady(gmPage),
@@ -256,7 +251,7 @@ test.describe('WebSocket Integration Tests', () => {
 
       // Start encounter
       await gmPage.click('[data-testid="start-encounter"]');
-      
+
       // Wait for sync
       await gmPage.waitForTimeout(1000);
 
@@ -265,7 +260,7 @@ test.describe('WebSocket Integration Tests', () => {
 
       // GM advances turn
       await gmPage.click('[data-testid="next-turn"]');
-      
+
       await gmPage.waitForTimeout(1000);
 
       // Verify turn advancement synced to player
@@ -274,35 +269,38 @@ test.describe('WebSocket Integration Tests', () => {
       // GM updates initiative order
       await gmPage.dragAndDrop(
         '[data-testid="initiative-item"]:first-child',
-        '[data-testid="initiative-item"]:last-child'
+        '[data-testid="initiative-item"]:last-child',
       );
 
       await gmPage.waitForTimeout(1000);
 
       // Verify initiative order updated for player
-      const playerInitiativeOrder = await playerPage.locator('[data-testid="initiative-item"]').allTextContents();
-      const gmInitiativeOrder = await gmPage.locator('[data-testid="initiative-item"]').allTextContents();
+      const playerInitiativeOrder = await playerPage
+        .locator('[data-testid="initiative-item"]')
+        .allTextContents();
+      const gmInitiativeOrder = await gmPage
+        .locator('[data-testid="initiative-item"]')
+        .allTextContents();
       expect(playerInitiativeOrder).toEqual(gmInitiativeOrder);
-
     } finally {
       await gmContext.close();
       await playerContext.close();
     }
   });
 
-  test('Connection resilience and reconnection', async ({ page }) => {
+  test("Connection resilience and reconnection", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     await authUtils.mockAuthentication(page, gm);
 
     let wsConnections = 0;
     const _wsDisconnections = 0;
 
-    page.on('websocket', ws => {
+    page.on("websocket", (ws) => {
       wsConnections++;
-      
-      ws.on('close', () => {
+
+      ws.on("close", () => {
         wsDisconnections++;
       });
     });
@@ -333,19 +331,19 @@ test.describe('WebSocket Integration Tests', () => {
     await page.mouse.up();
 
     // Verify token movement works after reconnection
-    await expect(token).toHaveAttribute('data-x', '400');
+    await expect(token).toHaveAttribute("data-x", "400");
   });
 
-  test('WebSocket message queuing during disconnection', async ({ page }) => {
+  test("WebSocket message queuing during disconnection", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     await authUtils.mockAuthentication(page, gm);
 
     const sentMessages: any[] = [];
-    
-    page.on('websocket', ws => {
-      ws.on('framesent', event => {
+
+    page.on("websocket", (ws) => {
+      ws.on("framesent", (event) => {
         try {
           const data = JSON.parse(event.payload as string);
           sentMessages.push(data);
@@ -368,8 +366,8 @@ test.describe('WebSocket Integration Tests', () => {
     await page.mouse.up();
 
     // Send chat message while offline
-    await page.fill('[data-testid="chat-input"]', 'Offline message');
-    await page.press('[data-testid="chat-input"]', 'Enter');
+    await page.fill('[data-testid="chat-input"]', "Offline message");
+    await page.press('[data-testid="chat-input"]', "Enter");
 
     // Verify offline indicator
     await expect(page.locator('[data-testid="offline-indicator"]')).toBeVisible();
@@ -384,13 +382,15 @@ test.describe('WebSocket Integration Tests', () => {
     expect(sentMessages.length).toBeGreaterThan(messagesBeforeReconnect);
 
     // Verify actions were applied
-    await expect(token).toHaveAttribute('data-x', '500');
-    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText('Offline message');
+    await expect(token).toHaveAttribute("data-x", "500");
+    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText(
+      "Offline message",
+    );
   });
 
-  test('WebSocket performance under load', async ({ page }) => {
+  test("WebSocket performance under load", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Create many tokens for stress testing
     for (let i = 0; i < 20; i++) {
@@ -409,8 +409,8 @@ test.describe('WebSocket Integration Tests', () => {
     const wsMessages: any[] = [];
     const messageLatencies: number[] = [];
 
-    page.on('websocket', ws => {
-      ws.on('framesent', event => {
+    page.on("websocket", (ws) => {
+      ws.on("framesent", (event) => {
         const timestamp = Date.now();
         try {
           const data = JSON.parse(event.payload as string);
@@ -418,12 +418,12 @@ test.describe('WebSocket Integration Tests', () => {
         } catch (_e) {}
       });
 
-      ws.on('framereceived', event => {
+      ws.on("framereceived", (event) => {
         const receivedAt = Date.now();
         try {
           const data = JSON.parse(event.payload as string);
           wsMessages.push(data);
-          
+
           if (data._sentAt) {
             messageLatencies.push(receivedAt - data._sentAt);
           }
@@ -440,7 +440,7 @@ test.describe('WebSocket Integration Tests', () => {
     const tokenCount = await tokens.count();
 
     const startTime = Date.now();
-    
+
     for (let i = 0; i < Math.min(tokenCount, 10); i++) {
       const token = tokens.nth(i);
       await token.hover();
@@ -462,28 +462,28 @@ test.describe('WebSocket Integration Tests', () => {
     }
 
     // Verify no message loss
-    const tokenMoveMessages = wsMessages.filter(msg => 
-      msg.type === 'token_moved' || 
-      msg.type === 'scene_update'
+    const tokenMoveMessages = wsMessages.filter(
+      (msg) => msg.type === "token_moved" || msg.type === "scene_update",
     );
     expect(tokenMoveMessages.length).toBeGreaterThan(0);
   });
 
-  test('WebSocket authentication and authorization', async ({ page }) => {
+  test("WebSocket authentication and authorization", async ({ page }) => {
     const gameSession = await factory.createMinimalGameSession();
-    const { player  } = gameSession.users;
+    const { player } = gameSession.users;
 
     // Test unauthenticated WebSocket connection
     await page.goto(`/scenes/${gameSession.scene.id}`);
-    
+
     let wsConnected = false;
     let wsRejected = false;
 
-    page.on('websocket', ws => {
+    page.on("websocket", (ws) => {
       wsConnected = true;
-      
-      ws.on('close', (code) => {
-        if (code === 1008 || code === 1011) { // Unauthorized codes
+
+      ws.on("close", (code) => {
+        if (code === 1008 || code === 1011) {
+          // Unauthorized codes
           wsRejected = true;
         }
       });

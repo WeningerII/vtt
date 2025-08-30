@@ -1,4 +1,3 @@
-
 /**
  * E2E Test Configuration
  * Centralized configuration for all e2e test settings
@@ -47,37 +46,37 @@ export const E2E_CONFIG = {
     chromium: {
       headless: true,
       viewport: { width: 1280, height: 720 },
-      video: 'retain-on-failure',
-      screenshot: 'only-on-failure',
-      trace: 'retain-on-failure',
+      video: "retain-on-failure",
+      screenshot: "only-on-failure",
+      trace: "retain-on-failure",
     },
     firefox: {
       headless: true,
       viewport: { width: 1280, height: 720 },
-      video: 'retain-on-failure',
-      screenshot: 'only-on-failure',
-      trace: 'retain-on-failure',
+      video: "retain-on-failure",
+      screenshot: "only-on-failure",
+      trace: "retain-on-failure",
     },
     webkit: {
       headless: true,
       viewport: { width: 1280, height: 720 },
-      video: 'retain-on-failure',
-      screenshot: 'only-on-failure',
-      trace: 'retain-on-failure',
+      video: "retain-on-failure",
+      screenshot: "only-on-failure",
+      trace: "retain-on-failure",
     },
   },
 
   // Mobile device configurations
   mobile: {
-    'iPhone 13': {
+    "iPhone 13": {
       viewport: { width: 390, height: 844 },
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15',
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15",
       isMobile: true,
       hasTouch: true,
     },
-    'iPad': {
+    iPad: {
       viewport: { width: 820, height: 1180 },
-      userAgent: 'Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15',
+      userAgent: "Mozilla/5.0 (iPad; CPU OS 15_0 like Mac OS X) AppleWebKit/605.1.15",
       isMobile: true,
       hasTouch: true,
     },
@@ -85,24 +84,24 @@ export const E2E_CONFIG = {
 
   // Test environment URLs
   urls: {
-    server: 'http://localhost:8080',
-    client: 'http://localhost:3000',
-    websocket: 'ws://localhost:8080/ws',
+    server: "http://localhost:8080",
+    client: "http://localhost:3000",
+    websocket: "ws://localhost:8080/ws",
   },
 
   // Database configuration
   database: {
-    testFile: './test.db',
+    testFile: "./test.db",
     resetBetweenTests: true,
     seedData: true,
   },
 
   // Test data patterns
   testData: {
-    userPrefix: 'test-user-',
-    campaignPrefix: 'test-campaign-',
-    scenePrefix: 'test-scene-',
-    tokenPrefix: 'test-token-',
+    userPrefix: "test-user-",
+    campaignPrefix: "test-campaign-",
+    scenePrefix: "test-scene-",
+    tokenPrefix: "test-token-",
   },
 
   // Feature flags for tests
@@ -110,7 +109,7 @@ export const E2E_CONFIG = {
     enableWebSocket: true,
     enableRealTimeCollaboration: true,
     enablePerformanceTesting: true,
-    enableStressTesting: process.env.STRESS_TEST_MODE === 'true',
+    enableStressTesting: process.env.STRESS_TEST_MODE === "true",
     enableCrossBrowserTesting: true,
   },
 
@@ -118,7 +117,7 @@ export const E2E_CONFIG = {
   ci: {
     shards: 4,
     maxFailures: 5,
-    reportFormats: ['html', 'json', 'junit'],
+    reportFormats: ["html", "json", "junit"],
     artifactRetentionDays: 7,
     videoRetentionDays: 3,
     traceRetentionDays: 3,
@@ -127,27 +126,27 @@ export const E2E_CONFIG = {
   // Test categories and their priorities
   testCategories: {
     smoke: {
-      priority: 'high',
+      priority: "high",
       timeout: 10000,
       retries: 3,
     },
     integration: {
-      priority: 'high',
+      priority: "high",
       timeout: 30000,
       retries: 2,
     },
     e2e: {
-      priority: 'medium',
+      priority: "medium",
       timeout: 60000,
       retries: 2,
     },
     performance: {
-      priority: 'low',
+      priority: "low",
       timeout: 120000,
       retries: 1,
     },
     stress: {
-      priority: 'low',
+      priority: "low",
       timeout: 300000,
       retries: 0,
     },
@@ -160,27 +159,27 @@ export const E2E_CONFIG = {
     usernameInput: '[data-testid="username-input"]',
     passwordInput: '[data-testid="password-input"]',
     loginButton: '[data-testid="login-button"]',
-    
+
     // Navigation
     campaignsList: '[data-testid="campaigns-list"]',
     sceneCanvas: '[data-testid="scene-canvas"]',
-    
+
     // Game elements
     token: '[data-testid="token"]',
     chatInput: '[data-testid="chat-input"]',
     chatMessage: '[data-testid="chat-message"]',
     initiativeTracker: '[data-testid="initiative-tracker"]',
-    
+
     // Tools
     addTokenTool: '[data-testid="add-token-tool"]',
     drawingTool: '[data-testid="drawing-tool"]',
     measureTool: '[data-testid="measure-tool"]',
-    
+
     // Status indicators
     connectionStatus: '[data-testid="connection-status"]',
     offlineIndicator: '[data-testid="offline-indicator"]',
     loadingIndicator: '[data-testid="loading-indicator"]',
-    
+
     // Error handling
     errorBanner: '[data-testid="error-banner"]',
     errorMessage: '[data-testid="error-message"]',
@@ -189,12 +188,12 @@ export const E2E_CONFIG = {
 
   // API endpoints for testing
   apiEndpoints: {
-    auth: '/api/auth',
-    campaigns: '/api/campaigns',
-    scenes: '/api/scenes',
-    tokens: '/api/tokens',
-    assets: '/api/assets',
-    websocket: '/ws',
+    auth: "/api/auth",
+    campaigns: "/api/campaigns",
+    scenes: "/api/scenes",
+    tokens: "/api/tokens",
+    assets: "/api/assets",
+    websocket: "/ws",
   },
 
   // Mock data configurations
@@ -208,7 +207,7 @@ export const E2E_CONFIG = {
   // Accessibility testing
   accessibility: {
     enableA11yTesting: true,
-    wcagLevel: 'AA',
+    wcagLevel: "AA",
     includeWarnings: false,
   },
 

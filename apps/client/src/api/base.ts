@@ -19,15 +19,15 @@ export interface ApiError {
  */
 export async function apiRequest<T>(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
   try {
     const response = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
-      credentials: 'include', // Include cookies for authentication
+      credentials: "include", // Include cookies for authentication
       ...options,
     });
 
@@ -47,7 +47,7 @@ export async function apiRequest<T>(
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
@@ -56,8 +56,8 @@ export async function apiRequest<T>(
  * Handle API errors consistently
  */
 export function handleApiError(error: ApiError | string): string {
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return error;
   }
-  return error.message || 'An unexpected error occurred';
+  return error.message || "An unexpected error occurred";
 }

@@ -2,7 +2,7 @@
  * Session management
  */
 
-import { Session } from './types';
+import { Session } from "./types";
 
 export interface CreateSessionRequest {
   id?: string;
@@ -50,44 +50,44 @@ export class SessionManager {
 
   async getSession(id: string): Promise<Session | null> {
     const session = await this.repository.findById(id);
-    
+
     if (session && session.expiresAt < new Date()) {
       await this.repository.delete(id);
       return null;
     }
-    
+
     return session;
   }
 
   async getSessionByToken(token: string): Promise<Session | null> {
     const session = await this.repository.findByToken(token);
-    
+
     if (session && session.expiresAt < new Date()) {
       await this.repository.delete(session.id);
       return null;
     }
-    
+
     return session;
   }
 
   async getSessionByRefreshToken(refreshToken: string): Promise<Session | null> {
     const session = await this.repository.findByRefreshToken(refreshToken);
-    
+
     if (session && session.expiresAt < new Date()) {
       await this.repository.delete(session.id);
       return null;
     }
-    
+
     return session;
   }
 
   async getUserSessions(userId: string): Promise<Session[]> {
     const sessions = await this.repository.findByUserId(userId);
-    
+
     // Filter out expired sessions and clean them up
     const validSessions: Session[] = [];
     const expiredSessionIds: string[] = [];
-    
+
     for (const session of sessions) {
       if (session.expiresAt < new Date()) {
         expiredSessionIds.push(session.id);
@@ -95,12 +95,12 @@ export class SessionManager {
         validSessions.push(session);
       }
     }
-    
+
     // Clean up expired sessions
     for (const id of expiredSessionIds) {
       await this.repository.delete(id);
     }
-    
+
     return validSessions;
   }
 

@@ -2,7 +2,7 @@
  * Request validation middleware using Zod schemas
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 export const _validateRequest = (schemas: {
   body?: z.ZodSchema;
@@ -31,12 +31,14 @@ export const _validateRequest = (schemas: {
       await _next();
     } catch (error) {
       if (error instanceof z.ZodError) {
-        ctx.res.writeHead(400, { 'Content-Type': 'application/json' });
-        ctx.res.end(JSON.stringify({
-          success: false,
-          error: 'Validation failed',
-          details: error.errors
-        }));
+        ctx.res.writeHead(400, { "Content-Type": "application/json" });
+        ctx.res.end(
+          JSON.stringify({
+            success: false,
+            error: "Validation failed",
+            details: error.errors,
+          }),
+        );
         return;
       }
       throw error;

@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Marketplace and Mod System - Triple A Quality Extensibility Platform
@@ -15,7 +15,7 @@ export interface MarketplaceItem {
   version: string;
   author: MarketplaceAuthor;
   price: number;
-  currency: 'USD' | 'EUR' | 'credits';
+  currency: "USD" | "EUR" | "credits";
   license: LicenseType;
   tags: string[];
   screenshots: string[];
@@ -35,17 +35,42 @@ export interface MarketplaceItem {
   verified: boolean;
 }
 
-export type ItemType = 
-  | 'asset_pack' | 'character_sheet' | 'map' | 'token_set' | 'audio_pack' 
-  | 'rule_system' | 'theme' | 'extension' | 'tool' | 'campaign' | 'adventure'
-  | 'dice_set' | 'ui_component' | 'script' | 'shader' | 'effect' | 'full_game';
+export type ItemType =
+  | "asset_pack"
+  | "character_sheet"
+  | "map"
+  | "token_set"
+  | "audio_pack"
+  | "rule_system"
+  | "theme"
+  | "extension"
+  | "tool"
+  | "campaign"
+  | "adventure"
+  | "dice_set"
+  | "ui_component"
+  | "script"
+  | "shader"
+  | "effect"
+  | "full_game";
 
-export type LicenseType = 
-  | 'free' | 'premium' | 'subscription' | 'open_source' | 'commercial' | 'educational';
+export type LicenseType =
+  | "free"
+  | "premium"
+  | "subscription"
+  | "open_source"
+  | "commercial"
+  | "educational";
 
-export type ItemStatus = 
-  | 'draft' | 'pending_review' | 'approved' | 'rejected' | 'published' 
-  | 'deprecated' | 'removed' | 'suspended';
+export type ItemStatus =
+  | "draft"
+  | "pending_review"
+  | "approved"
+  | "rejected"
+  | "published"
+  | "deprecated"
+  | "removed"
+  | "suspended";
 
 export interface MarketplaceAuthor {
   id: string;
@@ -78,7 +103,7 @@ export interface AuthorBadge {
   description: string;
   icon: string;
   earned: Date;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  rarity: "common" | "rare" | "epic" | "legendary";
 }
 
 export interface CompatibilityInfo {
@@ -96,10 +121,10 @@ export interface Dependency {
   name: string;
   version: string;
   required: boolean;
-  category: 'core' | 'optional' | 'recommended';
+  category: "core" | "optional" | "recommended";
 }
 
-export type Platform = 'web' | 'desktop' | 'mobile' | 'vr';
+export type Platform = "web" | "desktop" | "mobile" | "vr";
 
 export interface SystemRequirements {
   minMemory: number;
@@ -158,7 +183,7 @@ export interface StatisticsTrends {
 
 export interface ItemMetadata {
   fileHashes: Record<string, string>;
-  contentRating: 'everyone' | 'teen' | 'mature' | 'adult';
+  contentRating: "everyone" | "teen" | "mature" | "adult";
   languages: string[];
   accessibility: AccessibilityFeatures;
   customProperties: Record<string, any>;
@@ -206,7 +231,7 @@ export interface ModManifest {
 export interface ModFile {
   path: string;
   content: ArrayBuffer | string;
-  type: 'script' | 'asset' | 'data' | 'localization' | 'config';
+  type: "script" | "asset" | "data" | "localization" | "config";
   hash: string;
   size: number;
   compressed: boolean;
@@ -217,7 +242,7 @@ export interface ModDependency {
   name: string;
   version: string;
   required: boolean;
-  source: 'marketplace' | 'external' | 'builtin';
+  source: "marketplace" | "external" | "builtin";
 }
 
 export interface ModPermissions {
@@ -300,7 +325,7 @@ export interface ModAPIAccess {
 
 export interface APIEndpoint {
   path: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method: "GET" | "POST" | "PUT" | "DELETE";
   description: string;
   parameters: APIParameter[];
   response: APIResponse;
@@ -329,17 +354,17 @@ export interface MarketplaceTransaction {
   id: string;
   userId: string;
   itemId: string;
-  type: 'purchase' | 'subscription' | 'refund' | 'chargeback';
+  type: "purchase" | "subscription" | "refund" | "chargeback";
   amount: number;
   currency: string;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
+  status: "pending" | "completed" | "failed" | "refunded";
   paymentMethod: PaymentMethod;
   timestamp: Date;
   metadata: Record<string, any>;
 }
 
 export interface PaymentMethod {
-  type: 'credit_card' | 'paypal' | 'crypto' | 'credits' | 'gift_card';
+  type: "credit_card" | "paypal" | "crypto" | "credits" | "gift_card";
   last4?: string;
   provider?: string;
 }
@@ -378,8 +403,8 @@ export interface SearchQuery {
 }
 
 export interface SearchSort {
-  field: 'relevance' | 'popularity' | 'rating' | 'price' | 'date' | 'downloads';
-  order: 'asc' | 'desc';
+  field: "relevance" | "popularity" | "rating" | "price" | "date" | "downloads";
+  order: "asc" | "desc";
 }
 
 export interface SearchResult {
@@ -420,27 +445,27 @@ export class MarketplaceModSystem {
   private transactions: Map<string, MarketplaceTransaction> = new Map();
   private reviews: Map<string, MarketplaceReview[]> = new Map();
   private authors: Map<string, MarketplaceAuthor> = new Map();
-  
+
   // Core systems
   private searchEngine: SearchEngine;
   private paymentProcessor: PaymentProcessor;
   private reviewSystem: ReviewSystem;
   private modManager: ModManager;
   private sandboxManager: SandboxManager;
-  
+
   // Security and validation
   private securityScanner: SecurityScanner;
   private contentModerator: ContentModerator;
   private licenseValidator: LicenseValidator;
-  
+
   // Analytics and insights
   private analytics: MarketplaceAnalytics;
   private recommender: RecommendationEngine;
-  
+
   // CDN and distribution
   private distributionNetwork: DistributionNetwork;
   private cacheManager: CacheManager;
-  
+
   // Statistics
   private stats = {
     totalItems: 0,
@@ -467,11 +492,13 @@ export class MarketplaceModSystem {
   }
 
   // Item management
-  async publishItem(item: Omit<MarketplaceItem, 'id' | 'created' | 'updated' | 'status'>): Promise<MarketplaceItem> {
+  async publishItem(
+    item: Omit<MarketplaceItem, "id" | "created" | "updated" | "status">,
+  ): Promise<MarketplaceItem> {
     // Security scan
     const scanResult = await this.securityScanner.scan(item);
     if (!scanResult.safe) {
-      throw new Error(`Security scan failed: ${scanResult.issues.join(', ')}`);
+      throw new Error(`Security scan failed: ${scanResult.issues.join(", ")}`);
     }
 
     // Content moderation
@@ -483,13 +510,13 @@ export class MarketplaceModSystem {
     // License validation
     const licenseValid = this.licenseValidator.validate(item.license);
     if (!licenseValid) {
-      throw new Error('Invalid license');
+      throw new Error("Invalid license");
     }
 
     const publishedItem: MarketplaceItem = {
       id: this.generateId(),
       ...item,
-      status: 'pending_review',
+      status: "pending_review",
       created: new Date(),
       updated: new Date(),
     };
@@ -501,7 +528,10 @@ export class MarketplaceModSystem {
     return publishedItem;
   }
 
-  async updateItem(itemId: string, updates: Partial<MarketplaceItem>): Promise<MarketplaceItem | null> {
+  async updateItem(
+    itemId: string,
+    updates: Partial<MarketplaceItem>,
+  ): Promise<MarketplaceItem | null> {
     const item = this.items.get(itemId);
     if (!item) return null;
 
@@ -514,11 +544,11 @@ export class MarketplaceModSystem {
     const item = this.items.get(itemId);
     if (!item) return false;
 
-    item.status = 'removed';
+    item.status = "removed";
     await this.distributionNetwork.remove(itemId);
     this.items.delete(itemId);
     this.stats.totalItems--;
-    
+
     return true;
   }
 
@@ -533,10 +563,10 @@ export class MarketplaceModSystem {
   }
 
   getFeaturedItems(): MarketplaceItem[] {
-    return Array.from(this.items.values()).filter(item => item.featured);
+    return Array.from(this.items.values()).filter((item) => item.featured);
   }
 
-  getTrendingItems(period: 'day' | 'week' | 'month' = 'week'): MarketplaceItem[] {
+  getTrendingItems(period: "day" | "week" | "month" = "week"): MarketplaceItem[] {
     return Array.from(this.items.values())
       .sort((_a, _b) => this.getTrendingScore(b, period) - this.getTrendingScore(a, period))
       .slice(0, 20);
@@ -548,24 +578,34 @@ export class MarketplaceModSystem {
     const rating = item.ratings.averageRating || 0;
     const age = Date.now() - item.created.getTime();
     const ageWeight = Math.max(0, 1 - age / (30 * 24 * 60 * 60 * 1000)); // 30 days
-    
+
     return downloads * rating * ageWeight;
   }
 
   // Purchase and transactions
-  async purchaseItem(userId: string, itemId: string, paymentMethod: PaymentMethod): Promise<MarketplaceTransaction> {
+  async purchaseItem(
+    userId: string,
+    itemId: string,
+    paymentMethod: PaymentMethod,
+  ): Promise<MarketplaceTransaction> {
     const item = this.items.get(itemId);
     if (!item) {
-      throw new Error('Item not found');
+      throw new Error("Item not found");
     }
 
     if (item.price === 0) {
       // Free item - no payment needed
-      return this.createTransaction(userId, itemId, 0, 'completed', paymentMethod);
+      return this.createTransaction(userId, itemId, 0, "completed", paymentMethod);
     }
 
-    const transaction = this.createTransaction(userId, itemId, item.price, 'pending', paymentMethod);
-    
+    const transaction = this.createTransaction(
+      userId,
+      itemId,
+      item.price,
+      "pending",
+      paymentMethod,
+    );
+
     try {
       const paymentResult = await this.paymentProcessor.processPayment({
         amount: item.price,
@@ -575,31 +615,37 @@ export class MarketplaceModSystem {
       });
 
       if (paymentResult.success) {
-        transaction.status = 'completed';
+        transaction.status = "completed";
         this.stats.totalRevenue += item.price;
         this.stats.totalDownloads++;
-        
+
         // Update item statistics
         item.statistics.downloads++;
       } else {
-        transaction.status = 'failed';
+        transaction.status = "failed";
       }
 
       return transaction;
     } catch (error) {
-      transaction.status = 'failed';
+      transaction.status = "failed";
       throw error;
     }
   }
 
-  private createTransaction(userId: string, itemId: string, amount: number, status: MarketplaceTransaction['status'], paymentMethod: PaymentMethod): MarketplaceTransaction {
+  private createTransaction(
+    userId: string,
+    itemId: string,
+    amount: number,
+    status: MarketplaceTransaction["status"],
+    paymentMethod: PaymentMethod,
+  ): MarketplaceTransaction {
     const transaction: MarketplaceTransaction = {
       id: this.generateId(),
       userId,
       itemId,
-      type: 'purchase',
+      type: "purchase",
       amount,
-      currency: 'USD',
+      currency: "USD",
       status,
       paymentMethod,
       timestamp: new Date(),
@@ -611,7 +657,7 @@ export class MarketplaceModSystem {
   }
 
   // Reviews and ratings
-  async addReview(review: Omit<MarketplaceReview, 'id' | 'timestamp'>): Promise<MarketplaceReview> {
+  async addReview(review: Omit<MarketplaceReview, "id" | "timestamp">): Promise<MarketplaceReview> {
     const newReview: MarketplaceReview = {
       id: this.generateId(),
       ...review,
@@ -632,18 +678,18 @@ export class MarketplaceModSystem {
   private async updateItemRatings(itemId: string): Promise<void> {
     const item = this.items.get(itemId);
     const reviews = this.reviews.get(itemId);
-    
+
     if (!item || !reviews) return;
 
     const totalRatings = reviews.length;
     const averageRating = reviews.reduce((_sum, _r) => sum + r.rating, 0) / totalRatings;
-    
+
     const distribution: RatingDistribution = {
-      fiveStar: reviews.filter(r => r.rating === 5).length,
-      fourStar: reviews.filter(r => r.rating === 4).length,
-      threeStar: reviews.filter(r => r.rating === 3).length,
-      twoStar: reviews.filter(r => r.rating === 2).length,
-      oneStar: reviews.filter(r => r.rating === 1).length,
+      fiveStar: reviews.filter((r) => r.rating === 5).length,
+      fourStar: reviews.filter((r) => r.rating === 4).length,
+      threeStar: reviews.filter((r) => r.rating === 3).length,
+      twoStar: reviews.filter((r) => r.rating === 2).length,
+      oneStar: reviews.filter((r) => r.rating === 1).length,
     };
 
     item.ratings = {
@@ -658,12 +704,12 @@ export class MarketplaceModSystem {
   // Mod management
   async installMod(modId: string, userId: string): Promise<boolean> {
     const item = this.items.get(modId);
-    if (!item || item.type !== 'extension') return false;
+    if (!item || item.type !== "extension") return false;
 
     try {
       const modPackage = await this.downloadMod(modId);
       const installed = await this.modManager.install(modPackage, userId);
-      
+
       if (installed) {
         this.stats.modsInstalled++;
         return true;
@@ -671,7 +717,7 @@ export class MarketplaceModSystem {
     } catch (error) {
       logger.error(`Failed to install mod ${modId}:`, error);
     }
-    
+
     return false;
   }
 
@@ -689,11 +735,11 @@ export class MarketplaceModSystem {
 
   private async downloadMod(modId: string): Promise<ModPackage> {
     const item = this.items.get(modId);
-    if (!item) throw new Error('Mod not found');
+    if (!item) throw new Error("Mod not found");
 
     // Download mod files from CDN
     const files = await this.distributionNetwork.download(modId);
-    
+
     // Create mod package
     const modPackage: ModPackage = {
       id: modId,
@@ -703,9 +749,17 @@ export class MarketplaceModSystem {
       files: files,
       dependencies: [],
       permissions: {} as ModPermissions,
-      sandbox: { enabled: true, isolated: true, memoryLimit: 64 * 1024 * 1024, timeLimit: 5000, cpuLimit: 50, networkLimit: 100, restrictions: { noEval: true, noGlobals: true, noDOM: false, whitelistedAPIs: [] } },
+      sandbox: {
+        enabled: true,
+        isolated: true,
+        memoryLimit: 64 * 1024 * 1024,
+        timeLimit: 5000,
+        cpuLimit: 50,
+        networkLimit: 100,
+        restrictions: { noEval: true, noGlobals: true, noDOM: false, whitelistedAPIs: [] },
+      },
       lifecycle: { install: [], enable: [], disable: [], uninstall: [], update: [] },
-      api: { version: '1.0', endpoints: [], events: [], permissions: [] },
+      api: { version: "1.0", endpoints: [], events: [], permissions: [] },
     };
 
     return modPackage;
@@ -727,21 +781,21 @@ export class MarketplaceModSystem {
 
   private getTopCategories(): Array<{ category: string; count: number }> {
     const categories = new Map<string, number>();
-    
+
     for (const item of this.items.values()) {
       const count = categories.get(item.category) || 0;
       categories.set(item.category, count + 1);
     }
 
     return Array.from(categories.entries())
-      .map([category, _count] => ({ category, count }))
-      .sort((_a, _b) => b.count - a.count)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
       .slice(0, 10);
   }
 
   private getTopAuthors(): Array<{ author: string; items: number; downloads: number }> {
     const authors = new Map<string, { items: number; downloads: number }>();
-    
+
     for (const item of this.items.values()) {
       const stats = authors.get(item.author.id) || { items: 0, downloads: 0 };
       stats.items++;
@@ -750,8 +804,8 @@ export class MarketplaceModSystem {
     }
 
     return Array.from(authors.entries())
-      .map([author, _stats] => ({ author, ...stats }))
-      .sort((_a, _b) => b.downloads - a.downloads)
+      .map(([author, stats]) => ({ author, ...stats }))
+      .sort((a, b) => b.downloads - a.downloads)
       .slice(0, 10);
   }
 
@@ -787,48 +841,66 @@ export class MarketplaceModSystem {
 }
 
 // Helper classes (simplified implementations)
-class SearchEngine { 
+class SearchEngine {
   async search(_query: SearchQuery, _items: MarketplaceItem[]): Promise<SearchResult> {
     return { items: [], total: 0, facets: {} as SearchFacets, suggestions: [] };
   }
 }
-class PaymentProcessor { 
-  async processPayment(_payment: any): Promise<{ success: boolean }> { 
-    return { success: true }; 
+class PaymentProcessor {
+  async processPayment(_payment: any): Promise<{ success: boolean }> {
+    return { success: true };
   }
 }
 class ReviewSystem {}
-class ModManager { 
-  async install(_mod: ModPackage, _userId: string): Promise<boolean> { return true; }
-  async uninstall(_modId: string, _userId: string): Promise<boolean> { return true; }
-  async enable(_modId: string, _userId: string): Promise<boolean> { return true; }
-  async disable(_modId: string, _userId: string): Promise<boolean> { return true; }
-  getUserMods(_userId: string): ModPackage[] { return []; }
+class ModManager {
+  async install(_mod: ModPackage, _userId: string): Promise<boolean> {
+    return true;
+  }
+  async uninstall(_modId: string, _userId: string): Promise<boolean> {
+    return true;
+  }
+  async enable(_modId: string, _userId: string): Promise<boolean> {
+    return true;
+  }
+  async disable(_modId: string, _userId: string): Promise<boolean> {
+    return true;
+  }
+  getUserMods(_userId: string): ModPackage[] {
+    return [];
+  }
 }
 class SandboxManager {}
-class SecurityScanner { 
-  async scan(_item: any): Promise<{ safe: boolean; issues: string[] }> { 
-    return { safe: true, issues: [] }; 
+class SecurityScanner {
+  async scan(_item: any): Promise<{ safe: boolean; issues: string[] }> {
+    return { safe: true, issues: [] };
   }
 }
-class ContentModerator { 
-  async moderate(_item: any): Promise<{ approved: boolean; reason?: string }> { 
-    return { approved: true }; 
+class ContentModerator {
+  async moderate(_item: any): Promise<{ approved: boolean; reason?: string }> {
+    return { approved: true };
   }
 }
-class LicenseValidator { 
-  validate(_license: string): boolean { return true; }
+class LicenseValidator {
+  validate(_license: string): boolean {
+    return true;
+  }
 }
 class MarketplaceAnalytics {}
-class RecommendationEngine { 
-  async getRecommendations(userId: string, items: MarketplaceItem[], count: number): Promise<MarketplaceItem[]> { 
-    return items.slice(0, count); 
+class RecommendationEngine {
+  async getRecommendations(
+    userId: string,
+    items: MarketplaceItem[],
+    count: number,
+  ): Promise<MarketplaceItem[]> {
+    return items.slice(0, count);
   }
 }
-class DistributionNetwork { 
+class DistributionNetwork {
   async upload(_item: MarketplaceItem): Promise<void> {}
   async update(_item: MarketplaceItem): Promise<void> {}
   async remove(_itemId: string): Promise<void> {}
-  async download(_itemId: string): Promise<ModFile[]> { return []; }
+  async download(_itemId: string): Promise<ModFile[]> {
+    return [];
+  }
 }
 class CacheManager {}

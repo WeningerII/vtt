@@ -2,12 +2,20 @@
  * Core authentication service
  */
 
-import { User, _Session, AuthTokens, LoginRequest, RegisterRequest, JWTPayload, AuthContext } from './types';
-import { logger } from '@vtt/logging';
-import { JWTManager } from './JWTManager';
-import { PasswordManager } from './PasswordManager';
-import { SessionManager } from './SessionManager';
-import { UserRepository } from './UserRepository';
+import {
+  User,
+  _Session,
+  AuthTokens,
+  LoginRequest,
+  RegisterRequest,
+  JWTPayload,
+  AuthContext,
+} from "./types";
+import { logger } from "@vtt/logging";
+import { JWTManager } from "./JWTManager";
+import { PasswordManager } from "./PasswordManager";
+import { SessionManager } from "./SessionManager";
+import { UserRepository } from "./UserRepository";
 
 export class AuthService {
   private jwtManager: JWTManager;
@@ -19,7 +27,7 @@ export class AuthService {
     jwtManager: JWTManager,
     passwordManager: PasswordManager,
     sessionManager: SessionManager,
-    userRepository: UserRepository
+    userRepository: UserRepository,
   ) {
     this.jwtManager = jwtManager;
     this.passwordManager = passwordManager;
@@ -28,26 +36,26 @@ export class AuthService {
   }
 
   async login(request: LoginRequest, ipAddress?: string, userAgent?: string): Promise<AuthTokens> {
-    const { email,  password,  rememberMe = false  } = request;
+    const { email, password, rememberMe = false } = request;
 
     // Find user by email
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Verify password
     if (!user.passwordHash) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
     const isValidPassword = await this.passwordManager.verify(password, user.passwordHash);
     if (!isValidPassword) {
-      throw new Error('Invalid credentials');
+      throw new Error("Invalid credentials");
     }
 
     // Check if user is active
     if (!user.isActive) {
-      throw new Error('Account is disabled');
+      throw new Error("Account is disabled");
     }
 
     // Generate tokens
@@ -70,17 +78,17 @@ export class AuthService {
   }
 
   async register(request: RegisterRequest): Promise<User> {
-    const { email,  username,  password,  displayName  } = request;
+    const { email, username, password, displayName } = request;
 
     // Check if user already exists
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
-      throw new Error('User already exists');
+      throw new Error("User already exists");
     }
 
     const existingUsername = await this.userRepository.findByUsername(username);
     if (existingUsername) {
-      throw new Error('Username already taken');
+      throw new Error("Username already taken");
     }
 
     // Validate password strength
@@ -97,7 +105,7 @@ export class AuthService {
       passwordHash,
       isEmailVerified: false,
       isActive: true,
-      roles: ['player'], // Default role
+      roles: ["player"], // Default role
     });
 
     // Send verification email (implement separately)
@@ -109,17 +117,17 @@ export class AuthService {
   async refreshToken(refreshToken: string): Promise<AuthTokens> {
     // Verify refresh token
     const payload = await this.jwtManager.verifyRefreshToken(refreshToken);
-    
+
     // Get session
     const session = await this.sessionManager.getSessionByRefreshToken(refreshToken);
     if (!session || session.expiresAt < new Date()) {
-      throw new Error('Invalid or expired refresh token');
+      throw new Error("Invalid or expired refresh token");
     }
 
     // Get user
     const user = await this.userRepository.findById(payload.sub);
     if (!user || !user.isActive) {
-      throw new Error('User not found or inactive');
+      throw new Error("User not found or inactive");
     }
 
     // Generate new tokens
@@ -149,11 +157,11 @@ export class AuthService {
   async verifyToken(token: string): Promise<AuthContext> {
     try {
       const payload = await this.jwtManager.verifyAccessToken(token);
-      
+
       // Get user to ensure they're still active
       const user = await this.userRepository.findById(payload.sub);
       if (!user || !user.isActive) {
-        throw new Error('User not found or inactive');
+        throw new Error("User not found or inactive");
       }
 
       const permissions = new Set<string>(payload.permissions);
@@ -176,19 +184,23 @@ export class AuthService {
     }
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Verify current password
     if (!user.passwordHash) {
-      throw new Error('Invalid current password');
+      throw new Error("Invalid current password");
     }
     const isValidPassword = await this.passwordManager.verify(currentPassword, user.passwordHash);
     if (!isValidPassword) {
-      throw new Error('Invalid current password');
+      throw new Error("Invalid current password");
     }
 
     // Validate new password
@@ -224,11 +236,11 @@ export class AuthService {
   async confirmPasswordReset(token: string, newPassword: string): Promise<void> {
     // Verify reset token
     const payload = await this.jwtManager.verifyPasswordResetToken(token);
-    
+
     // Check if token is still valid in storage
     const isValidToken = await this.userRepository.isValidPasswordResetToken(payload.sub, token);
     if (!isValidToken) {
-      throw new Error('Invalid or expired reset token');
+      throw new Error("Invalid or expired reset token");
     }
 
     // Validate new password
@@ -253,10 +265,10 @@ export class AuthService {
   }
 
   private async generateTokens(user: User, longExpiry = false): Promise<AuthTokens> {
-    const permissions = user.roles.flatMap(role => role.permissions.map(p => p.name));
-    const roleNames = user.roles.map(role => role.name);
+    const permissions = user.roles.flatMap((role) => role.permissions.map((p) => p.name));
+    const roleNames = user.roles.map((role) => role.name);
 
-    const payload: Omit<JWTPayload, 'iat' | 'exp' | 'iss'> = {
+    const payload: Omit<JWTPayload, "iat" | "exp" | "iss"> = {
       sub: user.id,
       email: user.email,
       username: user.username,
@@ -278,7 +290,7 @@ export class AuthService {
   private async sendVerificationEmail(user: User): Promise<void> {
     // Generate verification token
     const verificationToken = await this.jwtManager.generateEmailVerificationToken(user.id);
-    
+
     // TODO: Implement email sending
     logger.info(`Send verification email to ${user.email} with token: ${verificationToken}`);
   }

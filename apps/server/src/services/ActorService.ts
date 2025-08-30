@@ -41,7 +41,7 @@ export class ActorService {
   constructor(private prisma: PrismaClient) {}
 
   async searchActors(options: ActorSearchOptions) {
-    const { campaignId,  kind,  isActive,  limit = 50,  offset = 0  } = options;
+    const { campaignId, kind, isActive, limit = 50, offset = 0 } = options;
 
     const where: any = { campaignId };
     if (kind) where.kind = kind;
@@ -133,7 +133,12 @@ export class ActorService {
     });
   }
 
-  async createActorFromMonster(monsterId: string, campaignId: string, userId: string, name?: string) {
+  async createActorFromMonster(
+    monsterId: string,
+    campaignId: string,
+    userId: string,
+    name?: string,
+  ) {
     const monster = await this.prisma.monster.findUnique({
       where: { id: monsterId },
     });
@@ -258,10 +263,13 @@ export class ActorService {
     return {
       total,
       active: activeCount,
-      byKind: byKind.reduce((_acc, _group) => {
-        acc[group.kind] = group._count;
-        return acc;
-      }, {} as Record<string, number>),
+      byKind: byKind.reduce(
+        (_acc, _group) => {
+          acc[group.kind] = group._count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ),
     };
   }
 }

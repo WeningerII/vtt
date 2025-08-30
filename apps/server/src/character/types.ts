@@ -19,7 +19,7 @@ export interface Skill {
 export interface Equipment {
   id: string;
   name: string;
-  type: 'weapon' | 'armor' | 'tool' | 'consumable' | 'misc';
+  type: "weapon" | "armor" | "tool" | "consumable" | "misc";
   description?: string;
   quantity: number;
   weight?: number;
@@ -49,7 +49,7 @@ export interface ClassFeature {
   uses?: {
     max: number;
     current: number;
-    resetOn: 'short' | 'long' | 'none';
+    resetOn: "short" | "long" | "none";
   };
 }
 
@@ -57,7 +57,7 @@ export interface Character {
   id: string;
   userId: string;
   campaignId?: string | undefined;
-  
+
   // Basic Info
   name: string;
   race: string;
@@ -65,7 +65,7 @@ export interface Character {
   level: number;
   background: string;
   alignment: string;
-  
+
   // Core Stats
   experience: number;
   hitPoints: {
@@ -76,19 +76,22 @@ export interface Character {
   armorClass: number;
   proficiencyBonus: number;
   speed: number;
-  
+
   // Abilities (STR, DEX, CON, INT, WIS, CHA)
   abilities: Record<string, Ability>;
-  
+
   // Skills
   skills: Record<string, Skill>;
-  
+
   // Saves
-  savingThrows: Record<string, {
-    proficient: boolean;
-    value: number;
-  }>;
-  
+  savingThrows: Record<
+    string,
+    {
+      proficient: boolean;
+      value: number;
+    }
+  >;
+
   // Combat
   initiative: number;
   hitDice: {
@@ -96,17 +99,17 @@ export interface Character {
     current: number;
     type: string; // d6, d8, d10, d12
   };
-  
+
   // Equipment
   equipment: Equipment[];
   currency: {
     cp: number; // copper
-    sp: number; // silver  
+    sp: number; // silver
     ep: number; // electrum
     gp: number; // gold
     pp: number; // platinum
   };
-  
+
   // Spells (if applicable)
   spellcasting?: {
     ability: string;
@@ -117,11 +120,11 @@ export interface Character {
     cantripsKnown: number;
     spellsKnown: number;
   };
-  
+
   // Features & Traits
   features: ClassFeature[];
   traits: string[];
-  
+
   // Roleplay
   personality: {
     traits: string[];
@@ -129,10 +132,10 @@ export interface Character {
     bonds: string[];
     flaws: string[];
   };
-  
+
   // Notes
   notes: string;
-  
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -146,9 +149,9 @@ export interface CharacterTemplate {
   class: string;
   level: number;
   abilities: Record<string, number>;
-  equipment: Omit<Equipment, 'id'>[];
-  spells?: Omit<Spell, 'id'>[];
-  features: Omit<ClassFeature, 'id'>[];
+  equipment: Omit<Equipment, "id">[];
+  spells?: Omit<Spell, "id">[];
+  features: Omit<ClassFeature, "id">[];
 }
 
 export interface Campaign {
@@ -184,9 +187,9 @@ export interface UpdateCharacterRequest {
   name?: string;
   level?: number;
   experience?: number;
-  hitPoints?: Partial<Character['hitPoints']>;
+  hitPoints?: Partial<Character["hitPoints"]>;
   abilities?: Record<string, Partial<Ability>>;
   equipment?: Equipment[];
   notes?: string;
-  personality?: Partial<Character['personality']>;
+  personality?: Partial<Character["personality"]>;
 }

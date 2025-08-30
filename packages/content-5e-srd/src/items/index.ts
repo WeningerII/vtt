@@ -16,35 +16,64 @@ export interface BaseItem {
   tags: string[];
 }
 
-export type ItemType = 
-  | 'weapon' | 'armor' | 'shield' | 'tool' | 'gear' | 'consumable' 
-  | 'magic_item' | 'treasure' | 'mount' | 'vehicle' | 'ammunition';
+export type ItemType =
+  | "weapon"
+  | "armor"
+  | "shield"
+  | "tool"
+  | "gear"
+  | "consumable"
+  | "magic_item"
+  | "treasure"
+  | "mount"
+  | "vehicle"
+  | "ammunition";
 
 export type ItemCategory =
   // Weapons
-  | 'simple_melee' | 'martial_melee' | 'simple_ranged' | 'martial_ranged'
+  | "simple_melee"
+  | "martial_melee"
+  | "simple_ranged"
+  | "martial_ranged"
   // Armor
-  | 'light_armor' | 'medium_armor' | 'heavy_armor'
+  | "light_armor"
+  | "medium_armor"
+  | "heavy_armor"
   // Tools
-  | 'artisan_tools' | 'gaming_set' | 'musical_instrument' | 'other_tools'
+  | "artisan_tools"
+  | "gaming_set"
+  | "musical_instrument"
+  | "other_tools"
   // Gear
-  | 'adventuring_gear' | 'equipment_pack' | 'container' | 'trade_good'
+  | "adventuring_gear"
+  | "equipment_pack"
+  | "container"
+  | "trade_good"
   // Consumables
-  | 'potion' | 'scroll' | 'wand' | 'ammunition' | 'explosive'
+  | "potion"
+  | "scroll"
+  | "wand"
+  | "ammunition"
+  | "explosive"
   // Magic Items
-  | 'wondrous_item' | 'ring' | 'rod' | 'staff' | 'weapon_magic' | 'armor_magic';
+  | "wondrous_item"
+  | "ring"
+  | "rod"
+  | "staff"
+  | "weapon_magic"
+  | "armor_magic";
 
-export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'very_rare' | 'legendary' | 'artifact';
+export type ItemRarity = "common" | "uncommon" | "rare" | "very_rare" | "legendary" | "artifact";
 
 export interface ItemCost {
   amount: number;
-  currency: 'cp' | 'sp' | 'ep' | 'gp' | 'pp';
+  currency: "cp" | "sp" | "ep" | "gp" | "pp";
 }
 
 export interface Weapon extends BaseItem {
-  type: 'weapon';
-  weaponType: 'simple' | 'martial';
-  meleeRanged: 'melee' | 'ranged' | 'versatile';
+  type: "weapon";
+  weaponType: "simple" | "martial";
+  meleeRanged: "melee" | "ranged" | "versatile";
   damage: {
     dice: string;
     type: DamageType;
@@ -59,33 +88,33 @@ export interface Weapon extends BaseItem {
 }
 
 export interface Armor extends BaseItem {
-  type: 'armor' | 'shield';
-  armorType: 'light' | 'medium' | 'heavy' | 'shield';
+  type: "armor" | "shield";
+  armorType: "light" | "medium" | "heavy" | "shield";
   ac: {
     base: number;
-    dexModifier?: 'full' | 'max2' | 'none';
+    dexModifier?: "full" | "max2" | "none";
   };
   strengthRequirement?: number;
   stealthDisadvantage?: boolean;
 }
 
 export interface Tool extends BaseItem {
-  type: 'tool';
-  toolType: 'artisan' | 'gaming' | 'musical' | 'other';
+  type: "tool";
+  toolType: "artisan" | "gaming" | "musical" | "other";
   relatedSkill?: string;
   craftingCategory?: string[];
 }
 
 export interface Consumable extends BaseItem {
-  type: 'consumable';
-  consumableType: 'potion' | 'scroll' | 'ammunition' | 'explosive' | 'other';
+  type: "consumable";
+  consumableType: "potion" | "scroll" | "ammunition" | "explosive" | "other";
   effects: ConsumableEffect[];
   charges?: number;
   stackable: boolean;
 }
 
 export interface MagicItem extends BaseItem {
-  type: 'magic_item';
+  type: "magic_item";
   requiresAttunement: boolean;
   attunementRestriction?: string;
   charges?: {
@@ -96,19 +125,39 @@ export interface MagicItem extends BaseItem {
   baseItem?: string; // ID of base item if enhanced version
 }
 
-export type DamageType = 
-  | 'acid' | 'bludgeoning' | 'cold' | 'fire' | 'force' | 'lightning' 
-  | 'necrotic' | 'piercing' | 'poison' | 'psychic' | 'radiant' | 'slashing' | 'thunder';
+export type DamageType =
+  | "acid"
+  | "bludgeoning"
+  | "cold"
+  | "fire"
+  | "force"
+  | "lightning"
+  | "necrotic"
+  | "piercing"
+  | "poison"
+  | "psychic"
+  | "radiant"
+  | "slashing"
+  | "thunder";
 
 export type WeaponProperty =
-  | 'ammunition' | 'finesse' | 'heavy' | 'light' | 'loading' | 'range'
-  | 'reach' | 'special' | 'thrown' | 'two_handed' | 'versatile';
+  | "ammunition"
+  | "finesse"
+  | "heavy"
+  | "light"
+  | "loading"
+  | "range"
+  | "reach"
+  | "special"
+  | "thrown"
+  | "two_handed"
+  | "versatile";
 
 export interface ConsumableEffect {
-  type: 'healing' | 'damage' | 'buff' | 'utility' | 'spell_effect';
+  type: "healing" | "damage" | "buff" | "utility" | "spell_effect";
   value?: string; // dice or fixed value
   duration?: number; // in seconds
-  target: 'self' | 'other' | 'area';
+  target: "self" | "other" | "area";
   savingThrow?: {
     ability: string;
     dc: number;
@@ -116,13 +165,13 @@ export interface ConsumableEffect {
 }
 
 export interface MagicItemEffect {
-  type: 'passive' | 'active' | 'triggered' | 'charges';
+  type: "passive" | "active" | "triggered" | "charges";
   name: string;
   description: string;
   mechanical: string; // mechanical effect description
   trigger?: string;
   cost?: {
-    type: 'charge' | 'attunement' | 'action';
+    type: "charge" | "attunement" | "action";
     amount?: number;
   };
 }
@@ -136,13 +185,13 @@ export interface MaterialComponent {
   consumed: boolean;
   replaceable: boolean; // can be replaced by component pouch or spell focus
   spells: string[]; // spell IDs that use this component
-  rarity: 'common' | 'uncommon' | 'rare' | 'very_rare';
+  rarity: "common" | "uncommon" | "rare" | "very_rare";
 }
 
 export interface SpellFocus {
   id: string;
   name: string;
-  type: 'arcane' | 'divine' | 'druidic' | 'component_pouch';
+  type: "arcane" | "divine" | "druidic" | "component_pouch";
   classes: string[]; // which classes can use this focus
   cost: ItemCost;
   weight: number;
@@ -173,15 +222,19 @@ export class ItemDatabase {
    */
   getItemsByType(type: ItemType): BaseItem[] {
     const itemIds = this.itemsByType.get(type) || new Set();
-    return Array.from(itemIds).map(id => this.items.get(id)!).filter(Boolean);
+    return Array.from(itemIds)
+      .map((id) => this.items.get(id)!)
+      .filter(Boolean);
   }
 
   /**
-   * Get items by category  
+   * Get items by category
    */
   getItemsByCategory(category: ItemCategory): BaseItem[] {
     const itemIds = this.itemsByCategory.get(category) || new Set();
-    return Array.from(itemIds).map(id => this.items.get(id)!).filter(Boolean);
+    return Array.from(itemIds)
+      .map((id) => this.items.get(id)!)
+      .filter(Boolean);
   }
 
   /**
@@ -192,9 +245,11 @@ export class ItemDatabase {
     const results: BaseItem[] = [];
 
     for (const item of this.items.values()) {
-      if (item.name.toLowerCase().includes(lowercaseQuery) ||
-          item.description.toLowerCase().includes(lowercaseQuery) ||
-          item.tags.some(tag => tag.toLowerCase().includes(lowercaseQuery))) {
+      if (
+        item.name.toLowerCase().includes(lowercaseQuery) ||
+        item.description.toLowerCase().includes(lowercaseQuery) ||
+        item.tags.some((tag) => tag.toLowerCase().includes(lowercaseQuery))
+      ) {
         results.push(item);
       }
     }
@@ -221,13 +276,13 @@ export class ItemDatabase {
    */
   getSpellComponents(spellId: string): MaterialComponent[] {
     const components: MaterialComponent[] = [];
-    
+
     for (const component of this.materialComponents.values()) {
       if (component.spells.includes(spellId)) {
         components.push(component);
       }
     }
-    
+
     return components;
   }
 
@@ -236,13 +291,13 @@ export class ItemDatabase {
    */
   addItem(item: BaseItem): void {
     this.items.set(item.id, item);
-    
+
     // Index by type
     if (!this.itemsByType.has(item.type)) {
       this.itemsByType.set(item.type, new Set());
     }
     this.itemsByType.get(item.type)!.add(item.id);
-    
+
     // Index by category
     if (!this.itemsByCategory.has(item.category)) {
       this.itemsByCategory.set(item.category, new Set());
@@ -303,7 +358,7 @@ export class ItemDatabase {
     spellFoci: number;
   } {
     const itemsByType: Record<string, number> = {};
-    
+
     for (const [type, itemSet] of this.itemsByType.entries()) {
       itemsByType[type] = itemSet.size;
     }
@@ -312,7 +367,7 @@ export class ItemDatabase {
       totalItems: this.items.size,
       itemsByType,
       materialComponents: this.materialComponents.size,
-      spellFoci: this.spellFoci.size
+      spellFoci: this.spellFoci.size,
     };
   }
 }

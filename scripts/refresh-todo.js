@@ -9,40 +9,45 @@
  *   node scripts/refresh-todo.js --dry   # preview without writing
  */
 
-const fs = require('fs/promises');
-const path = require('path');
+const fs = require("fs/promises");
+const path = require("path");
 
 const ROOT = process.cwd();
-const TRACKER = path.join(ROOT, 'TODO_TRACKER.md');
+const TRACKER = path.join(ROOT, "TODO_TRACKER.md");
 
 // Include common source and script extensions
-const INCLUDE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx', '.cjs', '.mjs', '.sh']);
+const INCLUDE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".cjs", ".mjs", ".sh"]);
 
 // Ignore directories that are vendor/build/artifact caches
 const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.git',
-  'coverage',
-  'dist',
-  'build',
-  '.pnpm-store',
-  '.pnpm-state',
-  '.pnpm-cache',
-  'playwright-report',
-  'test-results',
-  'reports',
-  'uploads',
-  '.next',
-  '.turbo',
-  '.cache',
-  '.idea',
-  '.vscode'
+  "node_modules",
+  ".git",
+  "coverage",
+  "dist",
+  "build",
+  ".pnpm-store",
+  ".pnpm-state",
+  ".pnpm-cache",
+  "playwright-report",
+  "test-results",
+  "reports",
+  "uploads",
+  ".next",
+  ".turbo",
+  ".cache",
+  ".idea",
+  ".vscode",
 ]);
 
 const TERMS_RE = /\b(TODO|FIXME|HACK)\b/i;
 
 async function exists(p) {
-  try { await fs.access(p); return true; } catch { return false; }
+  try {
+    await fs.access(p);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function walk(dir) {
@@ -64,10 +69,18 @@ async function walk(dir) {
       if (!INCLUDE_EXTS.has(ext)) continue;
       // Avoid extremely large files
       let stat;
-      try { stat = await fs.stat(full); } catch { continue; }
+      try {
+        stat = await fs.stat(full);
+      } catch {
+        continue;
+      }
       if (stat.size > 2 * 1024 * 1024) continue;
       let text;
-      try { text = await fs.readFile(full, 'utf8'); } catch { continue; }
+      try {
+        text = await fs.readFile(full, "utf8");
+      } catch {
+        continue;
+      }
       if (TERMS_RE.test(text)) results.push(full);
     }
   }
@@ -75,32 +88,32 @@ async function walk(dir) {
 }
 
 function toRelPosix(p) {
-  return path.relative(ROOT, p).split(path.sep).join('/');
+  return path.relative(ROOT, p).split(path.sep).join("/");
 }
 
 function buildSection(files, today, nextReviewLine) {
   const lines = [];
   lines.push(`## New TODO Items Found (${today})`);
-  lines.push('');
-  lines.push('### Files with TODO/FIXME/HACK Comments');
+  lines.push("");
+  lines.push("### Files with TODO/FIXME/HACK Comments");
   if (files.length === 0) {
-    lines.push('No actionable TODO/FIXME/HACK comments found.');
+    lines.push("No actionable TODO/FIXME/HACK comments found.");
   } else {
     files.forEach((f, i) => lines.push(`${i + 1}. **${f}**`));
   }
-  lines.push('');
-  lines.push('---');
+  lines.push("");
+  lines.push("---");
   lines.push(`*Last Updated: ${today}*`);
   if (nextReviewLine) lines.push(nextReviewLine.trim());
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 async function main() {
   const args = process.argv.slice(2);
-  const dry = args.includes('--dry') || args.includes('-n');
+  const dry = args.includes("--dry") || args.includes("-n");
   const today = new Date().toISOString().slice(0, 10);
 
-  if (!await exists(TRACKER)) {
+  if (!(await exists(TRACKER))) {
     console.error(`ERROR: ${TRACKER} not found.`);
     process.exit(1);
   }
@@ -109,36 +122,44 @@ async function main() {
   const absFiles = await walk(ROOT);
   // Map to relative POSIX paths and exclude this script itself
   const mapped = [...new Set(absFiles.map(toRelPosix))];
-  const selfRel = toRelPosix(path.join(ROOT, 'scripts/refresh-todo.js'));
+  const selfRel = toRelPosix(path.join(ROOT, "scripts/refresh-todo.js"));
   const relFiles = mapped.filter((f) => f !== selfRel).sort();
 
   // Load tracker
-  const content = await fs.readFile(TRACKER, 'utf8');
+  const content = await fs.readFile(TRACKER, "utf8");
 
   // Find existing block start and end
   const startRe = /^##\s+New TODO Items Found\s*\(\d{4}-\d{2}-\d{2}\)\s*$/m;
   const startMatch = content.match(startRe);
 
-  const defaultNextReview = '*Next Review: Weekly (WebSocket infrastructure stabilized)*';
+  const defaultNextReview = "*Next Review: Weekly (WebSocket infrastructure stabilized)*";
 
-  const newBlock = buildSection(relFiles, today, (content.match(/^\*Next Review:.*$/m) || [defaultNextReview])[0]);
+  const newBlock = buildSection(
+    relFiles,
+    today,
+    (content.match(/^\*Next Review:.*$/m) || [defaultNextReview])[0],
+  );
 
   if (!startMatch) {
     // Append new block to EOF
-    const updated = content.endsWith('\n') ? content + '\n' + newBlock : content + '\n\n' + newBlock;
+    const updated = content.endsWith("\n")
+      ? content + "\n" + newBlock
+      : content + "\n\n" + newBlock;
     if (dry) {
-      console.log(`# Preview (dry-run)\nFound ${relFiles.length} files. Will append new section with date ${today}.`);
+      console.log(
+        `# Preview (dry-run)\nFound ${relFiles.length} files. Will append new section with date ${today}.`,
+      );
       console.log(newBlock);
       return;
     }
-    await fs.writeFile(TRACKER, updated, 'utf8');
+    await fs.writeFile(TRACKER, updated, "utf8");
     console.log(`Updated ${path.basename(TRACKER)} (appended). Items: ${relFiles.length}`);
     return;
   }
 
   const startIdx = startMatch.index;
   // Find next top-level section after start
-  let endIdx = content.indexOf('\n## ', startIdx + startMatch[0].length);
+  let endIdx = content.indexOf("\n## ", startIdx + startMatch[0].length);
   if (endIdx === -1) endIdx = content.length;
 
   const oldBlock = content.slice(startIdx, endIdx);
@@ -148,12 +169,14 @@ async function main() {
   const updated = content.slice(0, startIdx) + block + content.slice(endIdx);
 
   if (dry) {
-    console.log(`# Preview (dry-run)\nFound ${relFiles.length} files. Will update section date to ${today}.`);
+    console.log(
+      `# Preview (dry-run)\nFound ${relFiles.length} files. Will update section date to ${today}.`,
+    );
     console.log(block);
     return;
   }
 
-  await fs.writeFile(TRACKER, updated, 'utf8');
+  await fs.writeFile(TRACKER, updated, "utf8");
   console.log(`Updated ${path.basename(TRACKER)}. Items: ${relFiles.length}`);
 }
 

@@ -1,12 +1,12 @@
 /**
  * Unified WebSocket Manager for VTT - Combines functionality from both managers
  */
-import { WebSocket, WebSocketServer, RawData } from 'ws';
-import { logger } from '@vtt/logging';
-import { IncomingMessage } from 'http';
-import { EventEmitter } from 'events';
-import { GameManager } from '../game/GameManager';
-import { v4 as uuidv4 } from 'uuid';
+import { WebSocket, WebSocketServer, RawData } from "ws";
+import { logger } from "@vtt/logging";
+import { IncomingMessage } from "http";
+import { EventEmitter } from "events";
+import { GameManager } from "../game/GameManager";
+import { v4 as uuidv4 } from "uuid";
 
 export interface VTTWebSocketMessage {
   type: string;
@@ -48,16 +48,16 @@ export class UnifiedWebSocketManager extends EventEmitter {
   }
 
   private setupConnectionHandler(): void {
-    this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+    this.wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
       const clientId = uuidv4();
-      const url = new URL(req.url || '', `http://${req.headers.host}`);
-      
+      const url = new URL(req.url || "", `http://${req.headers.host}`);
+
       // Extract connection parameters
-      const sessionId = url.searchParams.get('sessionId');
-      const userId = url.searchParams.get('userId');
-      const campaignId = url.searchParams.get('campaignId');
-      const gameId = url.searchParams.get('gameId');
-      const isGM = url.searchParams.get('isGM') === 'true';
+      const sessionId = url.searchParams.get("sessionId");
+      const userId = url.searchParams.get("userId");
+      const campaignId = url.searchParams.get("campaignId");
+      const gameId = url.searchParams.get("gameId");
+      const isGM = url.searchParams.get("isGM") === "true";
 
       const client: ConnectedClient = {
         id: clientId,
@@ -68,11 +68,11 @@ export class UnifiedWebSocketManager extends EventEmitter {
         gameId,
         isGM,
         lastActivity: Date.now(),
-        lastPing: Date.now()
+        lastPing: Date.now(),
       };
 
       this.clients.set(clientId, client);
-      
+
       // Add to session tracking
       if (sessionId) {
         if (!this.sessions.has(sessionId)) {
@@ -90,19 +90,19 @@ export class UnifiedWebSocketManager extends EventEmitter {
       }
 
       // Setup event handlers
-      ws.on('message', (data: RawData) => this.handleMessage(clientId, data));
-      ws.on('close', () => this.handleDisconnection(clientId));
-      ws.on('error', (error: Error) => this.handleError(clientId, error));
-      ws.on('pong', () => this.handlePong(clientId));
+      ws.on("message", (data: RawData) => this.handleMessage(clientId, data));
+      ws.on("close", () => this.handleDisconnection(clientId));
+      ws.on("error", (error: Error) => this.handleError(clientId, error));
+      ws.on("pong", () => this.handlePong(clientId));
 
       // Send welcome message
       this.sendToClient(clientId, {
-        type: 'CONNECTION_ESTABLISHED',
-        payload: { clientId, sessionId, userId, campaignId, gameId }
+        type: "CONNECTION_ESTABLISHED",
+        payload: { clientId, sessionId, userId, campaignId, gameId },
       });
 
       // Emit connection event
-      this.emit('client:connected', client);
+      this.emit("client:connected", client);
     });
   }
 
@@ -114,11 +114,11 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
     let message: VTTWebSocketMessage;
     try {
-      const raw = typeof data === 'string' ? data : data.toString('utf-8');
+      const raw = typeof data === "string" ? data : data.toString("utf-8");
       message = JSON.parse(raw);
     } catch (error) {
       logger.error(`Invalid WebSocket message from ${clientId}:`, error);
-      this.sendError(clientId, 'INVALID_JSON', 'Message must be valid JSON');
+      this.sendError(clientId, "INVALID_JSON", "Message must be valid JSON");
       return;
     }
 
@@ -126,46 +126,46 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
     try {
       switch (message.type) {
-        case 'PING':
-          this.sendToClient(clientId, { type: 'PONG', timestamp: Date.now() });
+        case "PING":
+          this.sendToClient(clientId, { type: "PONG", timestamp: Date.now() });
           break;
 
-        case 'JOIN_GAME':
+        case "JOIN_GAME":
           this.handleJoinGame(clientId, message);
           break;
 
-        case 'LEAVE_GAME':
+        case "LEAVE_GAME":
           this.handleLeaveGame(clientId);
           break;
 
-        case 'TOKEN_MOVE':
-        case 'MOVE_TOKEN':
+        case "TOKEN_MOVE":
+        case "MOVE_TOKEN":
           this.handleTokenMove(clientId, message);
           break;
 
-        case 'TOKEN_ADD':
+        case "TOKEN_ADD":
           this.handleTokenAdd(clientId, message);
           break;
 
-        case 'TOKEN_REMOVE':
+        case "TOKEN_REMOVE":
           this.handleTokenRemove(clientId, message);
           break;
 
-        case 'SCENE_UPDATE':
+        case "SCENE_UPDATE":
           this.handleSceneUpdate(clientId, message);
           break;
 
-        case 'COMBAT_UPDATE':
-        case 'COMBAT_SUBSCRIBE':
-        case 'REQUEST_TACTICAL_DECISION':
+        case "COMBAT_UPDATE":
+        case "COMBAT_SUBSCRIBE":
+        case "REQUEST_TACTICAL_DECISION":
           this.handleCombatMessage(clientId, message);
           break;
 
-        case 'ROLL_DICE':
+        case "ROLL_DICE":
           this.handleDiceRoll(clientId, message);
           break;
 
-        case 'CHAT_MESSAGE':
+        case "CHAT_MESSAGE":
           this.handleChatMessage(clientId, message);
           break;
 
@@ -176,7 +176,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
       }
     } catch (error) {
       logger.error(`Error handling message ${message.type} from ${clientId}:`, error);
-      this.sendError(clientId, 'INTERNAL_ERROR', 'Failed to process message');
+      this.sendError(clientId, "INTERNAL_ERROR", "Failed to process message");
     }
   }
 
@@ -186,7 +186,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
     const { gameId, userId, displayName } = message.payload || {};
     if (!gameId) {
-      this.sendError(clientId, 'MISSING_GAME_ID', 'Game ID is required');
+      this.sendError(clientId, "MISSING_GAME_ID", "Game ID is required");
       return;
     }
 
@@ -197,28 +197,32 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
     // Get or create game
     const game = this.gameManager.findOrCreateGame(gameId);
-    
+
     // Add player to game
     if (userId && displayName) {
       const success = game.addPlayer(userId, displayName);
       if (success) {
         logger.info(`Player ${displayName} joined game ${gameId}`);
-        
+
         // Send game state
         this.sendToClient(clientId, {
-          type: 'GAME_STATE',
-          payload: game.getGameState()
+          type: "GAME_STATE",
+          payload: game.getGameState(),
         });
 
         // Broadcast join event to other players
-        this.broadcastToGame(gameId, {
-          type: 'PLAYER_JOINED',
-          payload: { userId, displayName }
-        }, clientId);
+        this.broadcastToGame(
+          gameId,
+          {
+            type: "PLAYER_JOINED",
+            payload: { userId, displayName },
+          },
+          clientId,
+        );
       }
     }
 
-    this.emit('game:joined', client, gameId);
+    this.emit("game:joined", client, gameId);
   }
 
   private handleLeaveGame(clientId: string): void {
@@ -228,16 +232,20 @@ export class UnifiedWebSocketManager extends EventEmitter {
     const game = this.gameManager.getGame(client.gameId);
     if (game) {
       game.removePlayer(client.userId);
-      
+
       // Broadcast leave event
-      this.broadcastToGame(client.gameId, {
-        type: 'PLAYER_LEFT',
-        payload: { userId: client.userId, displayName: client.displayName }
-      }, clientId);
+      this.broadcastToGame(
+        client.gameId,
+        {
+          type: "PLAYER_LEFT",
+          payload: { userId: client.userId, displayName: client.displayName },
+        },
+        clientId,
+      );
     }
 
     client.gameId = undefined;
-    this.emit('game:left', client);
+    this.emit("game:left", client);
   }
 
   private handleTokenMove(clientId: string, message: VTTWebSocketMessage): void {
@@ -245,52 +253,68 @@ export class UnifiedWebSocketManager extends EventEmitter {
     if (!client || !client.gameId) return;
 
     // Broadcast to all clients in the same game
-    this.broadcastToGame(client.gameId, {
-      type: 'TOKEN_MOVED',
-      payload: message.payload,
-      userId: client.userId
-    }, clientId);
+    this.broadcastToGame(
+      client.gameId,
+      {
+        type: "TOKEN_MOVED",
+        payload: message.payload,
+        userId: client.userId,
+      },
+      clientId,
+    );
 
-    this.emit('token:moved', client, message.payload);
+    this.emit("token:moved", client, message.payload);
   }
 
   private handleTokenAdd(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
     if (!client || !client.gameId) return;
 
-    this.broadcastToGame(client.gameId, {
-      type: 'TOKEN_ADDED',
-      payload: message.payload,
-      userId: client.userId
-    }, clientId);
+    this.broadcastToGame(
+      client.gameId,
+      {
+        type: "TOKEN_ADDED",
+        payload: message.payload,
+        userId: client.userId,
+      },
+      clientId,
+    );
 
-    this.emit('token:added', client, message.payload);
+    this.emit("token:added", client, message.payload);
   }
 
   private handleTokenRemove(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
     if (!client || !client.gameId) return;
 
-    this.broadcastToGame(client.gameId, {
-      type: 'TOKEN_REMOVED',
-      payload: message.payload,
-      userId: client.userId
-    }, clientId);
+    this.broadcastToGame(
+      client.gameId,
+      {
+        type: "TOKEN_REMOVED",
+        payload: message.payload,
+        userId: client.userId,
+      },
+      clientId,
+    );
 
-    this.emit('token:removed', client, message.payload);
+    this.emit("token:removed", client, message.payload);
   }
 
   private handleSceneUpdate(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
     if (!client || !client.sessionId) return;
 
-    this.broadcastToSession(client.sessionId, {
-      type: 'SCENE_UPDATED',
-      payload: message.payload,
-      userId: client.userId
-    }, clientId);
+    this.broadcastToSession(
+      client.sessionId,
+      {
+        type: "SCENE_UPDATED",
+        payload: message.payload,
+        userId: client.userId,
+      },
+      clientId,
+    );
 
-    this.emit('scene:updated', client, message.payload);
+    this.emit("scene:updated", client, message.payload);
   }
 
   private handleCombatMessage(clientId: string, message: VTTWebSocketMessage): void {
@@ -298,10 +322,10 @@ export class UnifiedWebSocketManager extends EventEmitter {
     if (!client) return;
 
     // Emit combat event for specialized handling
-    this.emit('combat:message', client, message);
+    this.emit("combat:message", client, message);
 
     // Broadcast combat updates to session
-    if (client.sessionId && message.type === 'COMBAT_UPDATE') {
+    if (client.sessionId && message.type === "COMBAT_UPDATE") {
       this.broadcastToSession(client.sessionId, message, clientId);
     }
   }
@@ -311,12 +335,12 @@ export class UnifiedWebSocketManager extends EventEmitter {
     if (!client || !client.gameId) return;
 
     const rollResult = {
-      type: 'DICE_ROLLED',
+      type: "DICE_ROLLED",
       payload: {
         ...message.payload,
         roller: client.displayName || client.userId,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     };
 
     // Broadcast to game unless it's a private roll
@@ -326,7 +350,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
       this.sendToClient(clientId, rollResult);
     }
 
-    this.emit('dice:rolled', client, message.payload);
+    this.emit("dice:rolled", client, message.payload);
   }
 
   private handleChatMessage(clientId: string, message: VTTWebSocketMessage): void {
@@ -334,16 +358,16 @@ export class UnifiedWebSocketManager extends EventEmitter {
     if (!client || !client.gameId) return;
 
     const chatMessage = {
-      type: 'CHAT_MESSAGE',
+      type: "CHAT_MESSAGE",
       payload: {
         ...message.payload,
         sender: client.displayName || client.userId,
-        timestamp: Date.now()
-      }
+        timestamp: Date.now(),
+      },
     };
 
     this.broadcastToGame(client.gameId, chatMessage);
-    this.emit('chat:message', client, message.payload);
+    this.emit("chat:message", client, message.payload);
   }
 
   private handleDisconnection(clientId: string): void {
@@ -384,7 +408,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
     // Clean up client
     this.clients.delete(clientId);
-    this.emit('client:disconnected', client);
+    this.emit("client:disconnected", client);
   }
 
   private handleError(clientId: string, error: Error): void {
@@ -403,16 +427,16 @@ export class UnifiedWebSocketManager extends EventEmitter {
     // Broadcast game state deltas every 50ms (20Hz)
     setInterval(() => {
       const activeGames = this.gameManager.getGames();
-      
+
       for (const game of activeGames) {
         const delta = game.getNetworkDelta();
         if (!delta || (!delta.created.length && !delta.updated.length && !delta.removed.length)) {
           continue;
         }
-        
+
         this.broadcastToGame(game.gameId, {
-          type: 'STATE_DELTA',
-          payload: delta
+          type: "STATE_DELTA",
+          payload: delta,
         });
       }
     }, 50);
@@ -461,7 +485,11 @@ export class UnifiedWebSocketManager extends EventEmitter {
     }
   }
 
-  public broadcastToSession(sessionId: string, message: VTTWebSocketMessage, excludeClientId?: string): void {
+  public broadcastToSession(
+    sessionId: string,
+    message: VTTWebSocketMessage,
+    excludeClientId?: string,
+  ): void {
     const clientIds = this.sessions.get(sessionId);
     if (!clientIds) return;
 
@@ -472,7 +500,11 @@ export class UnifiedWebSocketManager extends EventEmitter {
     }
   }
 
-  public broadcastToGame(gameId: string, message: VTTWebSocketMessage, excludeClientId?: string): void {
+  public broadcastToGame(
+    gameId: string,
+    message: VTTWebSocketMessage,
+    excludeClientId?: string,
+  ): void {
     for (const [clientId, client] of this.clients) {
       if (client.gameId === gameId && clientId !== excludeClientId) {
         this.sendToClient(clientId, message);
@@ -490,8 +522,8 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
   private sendError(clientId: string, code: string, message: string): void {
     this.sendToClient(clientId, {
-      type: 'ERROR',
-      payload: { code, message }
+      type: "ERROR",
+      payload: { code, message },
     });
   }
 
@@ -531,7 +563,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
     }
 
     for (const [clientId, client] of this.clients) {
-      client.ws.close(1000, 'Server shutting down');
+      client.ws.close(1000, "Server shutting down");
     }
 
     this.clients.clear();

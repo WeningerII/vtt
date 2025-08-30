@@ -2,13 +2,13 @@
  * Login Page - User authentication interface
  */
 
-import React, { useState } from 'react';
-import { useAuth } from '../providers/AuthProvider';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
+import React, { useState } from "react";
+import { useAuth } from "../providers/AuthProvider";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 // LoadingSpinner not used on this page; remove import to avoid unused var
-import { Eye, EyeOff, Github, Mail } from 'lucide-react';
-import { useTranslation } from '@vtt/i18n';
+import { Eye, EyeOff, Github, Mail } from "lucide-react";
+import { useTranslation } from "@vtt/i18n";
 
 interface LoginPageProps {
   router: {
@@ -19,29 +19,29 @@ interface LoginPageProps {
 
 export function LoginPage({ router }: LoginPageProps) {
   const { t } = useTranslation();
-  const { login,  loginWithProvider,  isLoading,  error,  clearError  } = useAuth();
+  const { login, loginWithProvider, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    
+
     if (!formData.email) {
-      errors.email = 'Email is required';
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
+      errors.email = "Please enter a valid email address";
     }
-    
+
     if (!formData.password) {
-      errors.password = 'Password is required';
+      errors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+      errors.password = "Password must be at least 6 characters";
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -49,9 +49,9 @@ export function LoginPage({ router }: LoginPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
-    
+
     if (!validateForm()) return;
-    
+
     try {
       await login(formData.email, formData.password);
       // Navigation will be handled by the Router component based on auth state
@@ -61,15 +61,15 @@ export function LoginPage({ router }: LoginPageProps) {
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear validation error when user starts typing
     if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+      setValidationErrors((prev) => ({ ...prev, [field]: "" }));
     }
     clearError();
   };
 
-  const handleOAuthLogin = (provider: 'discord' | 'google') => {
+  const handleOAuthLogin = (provider: "discord" | "google") => {
     clearError();
     loginWithProvider(provider);
   };
@@ -79,12 +79,8 @@ export function LoginPage({ router }: LoginPageProps) {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">
-            Welcome Back
-          </h1>
-          <p className="text-text-secondary">
-            Sign in to your Virtual Tabletop account
-          </p>
+          <h1 className="text-3xl font-bold text-text-primary mb-2">Welcome Back</h1>
+          <p className="text-text-secondary">Sign in to your Virtual Tabletop account</p>
         </div>
 
         {/* Login Form */}
@@ -106,7 +102,7 @@ export function LoginPage({ router }: LoginPageProps) {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="Enter your email"
                 error={validationErrors.email}
                 leftIcon={<Mail className="h-4 w-4" />}
@@ -116,21 +112,24 @@ export function LoginPage({ router }: LoginPageProps) {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-text-primary mb-1"
+              >
                 Password
               </label>
               <Input
                 id="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 placeholder="Enter your password"
                 error={validationErrors.password}
                 disabled={isLoading}
                 rightIcon={
                   <button
                     type="button"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     onClick={() => setShowPassword(!showPassword)}
                     className="text-text-secondary hover:text-text-primary transition-colors"
                   >
@@ -145,7 +144,7 @@ export function LoginPage({ router }: LoginPageProps) {
               <button
                 type="button"
                 aria-label="Forgot password"
-                onClick={() => router.navigate('/forgot-password')}
+                onClick={() => router.navigate("/forgot-password")}
                 className="text-sm text-accent-primary hover:text-accent-hover transition-colors"
                 disabled={isLoading}
               >
@@ -162,7 +161,7 @@ export function LoginPage({ router }: LoginPageProps) {
               loading={isLoading}
               disabled={isLoading}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
@@ -180,12 +179,12 @@ export function LoginPage({ router }: LoginPageProps) {
               size="lg"
               fullWidth
               leftIcon={<Github className="h-4 w-4" />}
-              onClick={() => handleOAuthLogin('discord')}
+              onClick={() => handleOAuthLogin("discord")}
               disabled={isLoading}
             >
               Continue with Discord
             </Button>
-            
+
             <Button
               variant="secondary"
               size="lg"
@@ -210,7 +209,7 @@ export function LoginPage({ router }: LoginPageProps) {
                   />
                 </svg>
               }
-              onClick={() => handleOAuthLogin('google')}
+              onClick={() => handleOAuthLogin("google")}
               disabled={isLoading}
             >
               Continue with Google
@@ -220,10 +219,10 @@ export function LoginPage({ router }: LoginPageProps) {
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-text-secondary">
-              Don't have an account?{' '}
+              Don't have an account?{" "}
               <button
                 aria-label="Go to register"
-                onClick={() => router.navigate('/register')}
+                onClick={() => router.navigate("/register")}
                 className="text-accent-primary hover:text-accent-hover font-medium transition-colors"
                 disabled={isLoading}
               >
@@ -236,11 +235,11 @@ export function LoginPage({ router }: LoginPageProps) {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-text-tertiary">
-            By signing in, you agree to our{' '}
+            By signing in, you agree to our{" "}
             <a href="/terms" className="text-accent-primary hover:text-accent-hover">
               Terms of Service
-            </a>{' '}
-            and{' '}
+            </a>{" "}
+            and{" "}
             <a href="/privacy" className="text-accent-primary hover:text-accent-hover">
               Privacy Policy
             </a>

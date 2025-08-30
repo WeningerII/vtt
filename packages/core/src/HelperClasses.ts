@@ -3,7 +3,7 @@
  * Supporting utilities for decision trees, automation, and procedural generation
  */
 
-import { _globalEventBus, _GameEvents} from './EventBus';
+import { _globalEventBus, _GameEvents } from "./EventBus";
 
 // Math and Utility Helpers
 export class MathHelpers {
@@ -64,17 +64,17 @@ export class MathHelpers {
   static weightedRandom<T>(items: Array<{ item: T; weight: number }>): T {
     const totalWeight = items.reduce((_sum, _item) => sum + item.weight, 0);
     let random = Math.random() * totalWeight;
-    
+
     for (const item of items) {
       random -= item.weight;
       if (random <= 0) {
         return item.item;
       }
     }
-    
+
     const fallback = items[items.length - 1]?.item ?? items[0]?.item;
     if (fallback === undefined) {
-      throw new Error('No items provided to weighted random selector');
+      throw new Error("No items provided to weighted random selector");
     }
     return fallback;
   }
@@ -95,16 +95,16 @@ export class DiceRoller {
     const sides = parseInt(match[2]!);
     const modifierSign = match[3];
     const modifierValue = match[4] ? parseInt(match[4]) : 0;
-    
-    const modifier = modifierSign === '-' ? -modifierValue : modifierValue;
+
+    const modifier = modifierSign === "-" ? -modifierValue : modifierValue;
     const rolls: number[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       rolls.push(Math.floor(Math.random() * sides) + 1);
     }
-    
+
     const total = rolls.reduce((_sum, __roll) => sum + roll, 0) + modifier;
-    
+
     return { total, rolls, modifier };
   }
 
@@ -114,29 +114,33 @@ export class DiceRoller {
   static rollAdvantage(notation: string): { total: number; rolls: number[][]; modifier: number } {
     const roll1 = this.roll(notation);
     const roll2 = this.roll(notation);
-    
+
     const total = Math.max(roll1.total, roll2.total);
-    
+
     return {
       total,
       rolls: [roll1.rolls, roll2.rolls],
-      modifier: roll1.modifier
+      modifier: roll1.modifier,
     };
   }
 
   /**
    * Roll with disadvantage (roll twice, take lower)
    */
-  static rollDisadvantage(notation: string): { total: number; rolls: number[][]; modifier: number } {
+  static rollDisadvantage(notation: string): {
+    total: number;
+    rolls: number[][];
+    modifier: number;
+  } {
     const roll1 = this.roll(notation);
     const roll2 = this.roll(notation);
-    
+
     const total = Math.min(roll1.total, roll2.total);
-    
+
     return {
       total,
       rolls: [roll1.rolls, roll2.rolls],
-      modifier: roll1.modifier
+      modifier: roll1.modifier,
     };
   }
 }
@@ -150,10 +154,10 @@ export class EntityManager {
   /**
    * Register an entity
    */
-  registerEntity(id: string, entity: any, type: string = 'unknown'): void {
+  registerEntity(id: string, entity: any, type: string = "unknown"): void {
     this.entities.set(id, entity);
     this.entityTypes.set(id, type);
-    
+
     // Add to type group
     if (!this.entityGroups.has(type)) {
       this.entityGroups.set(type, new Set());
@@ -174,8 +178,10 @@ export class EntityManager {
   getEntitiesByType(type: string): any[] {
     const group = this.entityGroups.get(type);
     if (!group) return [];
-    
-    return Array.from(group).map(id => this.entities.get(id)).filter(Boolean);
+
+    return Array.from(group)
+      .map((id) => this.entities.get(id))
+      .filter(Boolean);
   }
 
   /**
@@ -186,7 +192,7 @@ export class EntityManager {
     if (type) {
       this.entityGroups.get(type)?.delete(id);
     }
-    
+
     this.entityTypes.delete(id);
     return this.entities.delete(id);
   }
@@ -196,20 +202,22 @@ export class EntityManager {
    */
   findEntitiesInRange(centerX: number, centerY: number, range: number): any[] {
     const result = [];
-    
+
     for (const entity of this.entities.values()) {
       if (entity.position) {
         const distance = MathHelpers.distance(
-          centerX, centerY,
-          entity.position.x, entity.position.y
+          centerX,
+          centerY,
+          entity.position.x,
+          entity.position.y,
         );
-        
+
         if (distance <= range) {
           result.push(entity);
         }
       }
     }
-    
+
     return result;
   }
 
@@ -259,11 +267,11 @@ export class StateMachine<T extends string> {
     }
 
     // Check if transition is allowed
-    if (currentDefinition?.canExit && !await currentDefinition.canExit(newState, data)) {
+    if (currentDefinition?.canExit && !(await currentDefinition.canExit(newState, data))) {
       return false;
     }
 
-    if (newDefinition.canEnter && !await newDefinition.canEnter(this.currentState, data)) {
+    if (newDefinition.canEnter && !(await newDefinition.canEnter(this.currentState, data))) {
       return false;
     }
 
@@ -306,7 +314,7 @@ export class StateMachine<T extends string> {
    */
   async goBack(data?: any): Promise<boolean> {
     if (this.history.length === 0) return false;
-    
+
     const previousState = this.history.pop()!;
     return await this.transition(previousState, data);
   }
@@ -336,12 +344,12 @@ export class CooldownManager {
   isOnCooldown(key: string): boolean {
     const endTime = this.cooldowns.get(key);
     if (!endTime) return false;
-    
+
     if (Date.now() >= endTime) {
       this.cooldowns.delete(key);
       return false;
     }
-    
+
     return true;
   }
 
@@ -351,7 +359,7 @@ export class CooldownManager {
   getRemainingTime(key: string): number {
     const endTime = this.cooldowns.get(key);
     if (!endTime) return 0;
-    
+
     const remaining = endTime - Date.now();
     return Math.max(0, remaining);
   }
@@ -390,12 +398,12 @@ export class ResourcePool {
    */
   use(amount: number): boolean {
     this.updateRegeneration();
-    
+
     if (this.current >= amount) {
       this.current -= amount;
       return true;
     }
-    
+
     return false;
   }
 
@@ -445,11 +453,11 @@ export class ResourcePool {
    */
   private updateRegeneration(): void {
     if (this.regenerationRate <= 0) return;
-    
+
     const now = Date.now();
     const deltaSeconds = (now - this.lastRegenTime) / 1000;
     const regenAmount = deltaSeconds * this.regenerationRate;
-    
+
     if (regenAmount > 0) {
       this.current = Math.min(this.maximum, this.current + regenAmount);
       this.lastRegenTime = now;
@@ -491,7 +499,7 @@ export class ConditionManager {
    * Get conditions by type
    */
   getConditionsByType(type: string): Condition[] {
-    return Array.from(this.conditions.values()).filter(c => c.type === type);
+    return Array.from(this.conditions.values()).filter((c) => c.type === type);
   }
 
   /**
@@ -499,7 +507,7 @@ export class ConditionManager {
    */
   updateConditions(deltaTime: number): void {
     const toRemove: string[] = [];
-    
+
     for (const condition of this.conditions.values()) {
       if (condition.duration > 0) {
         condition.duration -= deltaTime;
@@ -508,9 +516,9 @@ export class ConditionManager {
         }
       }
     }
-    
+
     // Remove expired conditions
-    toRemove.forEach(id => {
+    toRemove.forEach((id) => {
       const condition = this.conditions.get(id);
       if (condition?.onExpire) {
         condition.onExpire();
@@ -545,7 +553,13 @@ export interface Condition {
 }
 
 export interface ConditionEffect {
-  type: 'attribute_modifier' | 'advantage' | 'disadvantage' | 'immunity' | 'vulnerability' | 'custom';
+  type:
+    | "attribute_modifier"
+    | "advantage"
+    | "disadvantage"
+    | "immunity"
+    | "vulnerability"
+    | "custom";
   target: string;
   value?: any;
   apply?: (entity: any) => void;
@@ -561,7 +575,7 @@ export class Pathfinder {
     start: { x: number; y: number },
     goal: { x: number; y: number },
     grid: boolean[][],
-    allowDiagonal: boolean = true
+    allowDiagonal: boolean = true,
   ): { x: number; y: number }[] {
     const openSet: PathNode[] = [];
     const closedSet: PathNode[] = [];
@@ -571,45 +585,45 @@ export class Pathfinder {
       g: 0,
       h: this.heuristic(start, goal),
       f: 0,
-      parent: null
+      parent: null,
     };
     startNode.f = startNode.g + startNode.h;
-    
+
     openSet.push(startNode);
-    
+
     while (openSet.length > 0) {
       // Find node with lowest f score
       let current = openSet[0]!;
       let currentIndex = 0;
-      
+
       for (let i = 1; i < openSet.length; i++) {
         if (openSet[i]!.f < current.f) {
           current = openSet[i]!;
           currentIndex = i;
         }
       }
-      
+
       // Move current from open to closed
       openSet.splice(currentIndex, 1);
       closedSet.push(current);
-      
+
       // Check if we reached the goal
       if (current.x === goal.x && current.y === goal.y) {
         return this.reconstructPath(current);
       }
-      
+
       // Check neighbors
       const neighbors = this.getNeighbors(current, grid, allowDiagonal);
-      
+
       for (const neighbor of neighbors) {
         // Skip if in closed set
-        if (closedSet.find(n => n.x === neighbor.x && n.y === neighbor.y)) {
+        if (closedSet.find((n) => n.x === neighbor.x && n.y === neighbor.y)) {
           continue;
         }
-        
+
         const tentativeG = current.g + this.distance(current, neighbor);
-        const existingNode = openSet.find(n => n.x === neighbor.x && n.y === neighbor.y);
-        
+        const existingNode = openSet.find((n) => n.x === neighbor.x && n.y === neighbor.y);
+
         if (!existingNode) {
           neighbor.g = tentativeG;
           neighbor.h = this.heuristic(neighbor, goal);
@@ -623,7 +637,7 @@ export class Pathfinder {
         }
       }
     }
-    
+
     return []; // No path found
   }
 
@@ -640,39 +654,56 @@ export class Pathfinder {
   private static getNeighbors(
     node: PathNode,
     grid: boolean[][],
-    allowDiagonal: boolean
+    allowDiagonal: boolean,
   ): PathNode[] {
     const neighbors: PathNode[] = [];
     const directions = allowDiagonal
-      ? [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,-1], [1,0], [1,1]]
-      : [[-1,0], [0,-1], [0,1], [1,0]];
-    
+      ? [
+          [-1, -1],
+          [-1, 0],
+          [-1, 1],
+          [0, -1],
+          [0, 1],
+          [1, -1],
+          [1, 0],
+          [1, 1],
+        ]
+      : [
+          [-1, 0],
+          [0, -1],
+          [0, 1],
+          [1, 0],
+        ];
+
     for (const [dx, dy] of directions) {
       if (dx === undefined || dy === undefined) continue;
       const x = node.x + dx;
       const y = node.y + dy;
-      
+
       if (x >= 0 && x < (grid[0]?.length || 0) && y >= 0 && y < grid.length && grid[y]?.[x]) {
         neighbors.push({
-          x, y,
-          g: 0, h: 0, f: 0,
-          parent: null
+          x,
+          y,
+          g: 0,
+          h: 0,
+          f: 0,
+          parent: null,
         });
       }
     }
-    
+
     return neighbors;
   }
 
   private static reconstructPath(node: PathNode): { x: number; y: number }[] {
     const path: { x: number; y: number }[] = [];
     let current: PathNode | null = node;
-    
+
     while (current) {
       path.unshift({ x: current.x, y: current.y });
       current = current.parent;
     }
-    
+
     return path;
   }
 }

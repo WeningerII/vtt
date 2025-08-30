@@ -3,7 +3,7 @@
  * Comprehensive testing utilities for Virtual Tabletop system
  */
 
-export { TestUtils } from './TestUtils';
+export { TestUtils } from "./TestUtils";
 
 // Re-export common testing utilities
 export {
@@ -15,12 +15,12 @@ export {
   beforeAll,
   afterAll,
   vi,
-  vitest
-} from 'vitest';
+  vitest,
+} from "vitest";
 
 // Test suite exports
-export * from './unit/DiceRollerTests';
-export * from './unit/PhysicsTests';
+export * from "./unit/DiceRollerTests";
+export * from "./unit/PhysicsTests";
 // export * from './integration/GameSessionTests';
 // export * from './e2e/VTTWorkflowTests';
 
@@ -53,19 +53,19 @@ export interface MockWebSocketServer {
 export const TEST_CONFIG: TestConfig = {
   timeout: 10000,
   retries: 2,
-  parallel: true
+  parallel: true,
 };
 
 /**
  * Create mock WebSocket server for testing
  */
 export function createMockWebSocketServer(port: number = 0): any {
-  const wss = new (require('ws').Server)({ port: port });
+  const wss = new (require("ws").Server)({ port: port });
   const clients = new Set();
 
-  wss.on('connection', (ws: any) => {
+  wss.on("connection", (ws: any) => {
     clients.add(ws);
-    ws.on('close', () => clients.delete(ws));
+    ws.on("close", () => clients.delete(ws));
   });
 
   return {
@@ -73,13 +73,15 @@ export function createMockWebSocketServer(port: number = 0): any {
     clients,
     broadcast: (message: string) => {
       clients.forEach((client: any) => {
-        if (client.readyState === 1) { // WebSocket.OPEN
+        if (client.readyState === 1) {
+          // WebSocket.OPEN
           client.send(message);
         }
       });
     },
-    close: () => new Promise<void>((resolve) => {
-      wss.close((_err?: Error) => resolve());
-    })
+    close: () =>
+      new Promise<void>((resolve) => {
+        wss.close((_err?: Error) => resolve());
+      }),
   };
 }

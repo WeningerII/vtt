@@ -1,6 +1,6 @@
-import { vec3, _vec4} from 'gl-matrix';
-import { TextureManager } from './TextureManager';
-import { ShaderProgram } from './Shader';
+import { vec3, _vec4 } from "gl-matrix";
+import { TextureManager } from "./TextureManager";
+import { ShaderProgram } from "./Shader";
 
 export interface MaterialProperties {
   albedo?: vec3;
@@ -32,17 +32,17 @@ export interface MaterialTextures {
 }
 
 export enum BlendMode {
-  OPAQUE = 'OPAQUE',
-  ALPHA_BLEND = 'ALPHA_BLEND',
-  ADDITIVE = 'ADDITIVE',
-  MULTIPLY = 'MULTIPLY',
-  PREMULTIPLIED_ALPHA = 'PREMULTIPLIED_ALPHA'
+  OPAQUE = "OPAQUE",
+  ALPHA_BLEND = "ALPHA_BLEND",
+  ADDITIVE = "ADDITIVE",
+  MULTIPLY = "MULTIPLY",
+  PREMULTIPLIED_ALPHA = "PREMULTIPLIED_ALPHA",
 }
 
 export enum CullMode {
-  NONE = 'NONE',
-  FRONT = 'FRONT',
-  BACK = 'BACK'
+  NONE = "NONE",
+  FRONT = "FRONT",
+  BACK = "BACK",
 }
 
 export class Material {
@@ -50,16 +50,16 @@ export class Material {
   public properties: MaterialProperties;
   public textures: MaterialTextures;
   public uniformValues = new Map<string, any>();
-  
+
   private gl: WebGL2RenderingContext;
   private textureSlots = new Map<string, number>();
   private nextTextureSlot = 0;
 
   constructor(
     gl: WebGL2RenderingContext,
-    shaderName: string = 'pbr',
+    shaderName: string = "pbr",
     properties: MaterialProperties = {},
-    textures: MaterialTextures = {}
+    textures: MaterialTextures = {},
   ) {
     this.gl = gl;
     this.shaderName = shaderName;
@@ -78,26 +78,26 @@ export class Material {
       depthTest: true,
       blendMode: BlendMode.OPAQUE,
       cullMode: CullMode.BACK,
-      ...properties
+      ...properties,
     };
     this.textures = { ...textures };
-    
+
     this.setupTextureSlots();
   }
 
   private setupTextureSlots(): void {
     const textureNames = [
-      'albedoMap',
-      'normalMap', 
-      'metallicRoughnessMap',
-      'emissiveMap',
-      'occlusionMap',
-      'heightMap',
-      'detailNormalMap',
-      'detailAlbedoMap',
-      'cubeMap'
+      "albedoMap",
+      "normalMap",
+      "metallicRoughnessMap",
+      "emissiveMap",
+      "occlusionMap",
+      "heightMap",
+      "detailNormalMap",
+      "detailAlbedoMap",
+      "cubeMap",
     ];
-    
+
     for (const textureName of textureNames) {
       this.textureSlots.set(textureName, this.nextTextureSlot++);
     }
@@ -106,12 +106,12 @@ export class Material {
   bindTextures(gl: WebGL2RenderingContext, textureManager: TextureManager): void {
     for (const [textureName, texturePath] of Object.entries(this.textures)) {
       if (!texturePath) continue;
-      
+
       const slot = this.textureSlots.get(textureName);
       if (slot === undefined) continue;
-      
+
       gl.activeTexture(gl.TEXTURE0 + slot);
-      
+
       const texture = textureManager.getTexture(texturePath);
       if (texture) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -124,32 +124,42 @@ export class Material {
 
   setUniforms(shader: ShaderProgram): void {
     // Material properties
-    shader.setUniform3f('u_albedo', this.properties.albedo![0], this.properties.albedo![1], this.properties.albedo![2]);
-    shader.setUniform1f('u_metallic', this.properties.metallic!);
-    shader.setUniform1f('u_roughness', this.properties.roughness!);
-    shader.setUniform1f('u_normalScale', this.properties.normalScale!);
-    shader.setUniform3f('u_emissive', this.properties.emissive![0], this.properties.emissive![1], this.properties.emissive![2]);
-    shader.setUniform1f('u_emissiveIntensity', this.properties.emissiveIntensity!);
-    shader.setUniform1f('u_opacity', this.properties.opacity!);
-    shader.setUniform1f('u_alphaTest', this.properties.alphaTest!);
-    
+    shader.setUniform3f(
+      "u_albedo",
+      this.properties.albedo![0],
+      this.properties.albedo![1],
+      this.properties.albedo![2],
+    );
+    shader.setUniform1f("u_metallic", this.properties.metallic!);
+    shader.setUniform1f("u_roughness", this.properties.roughness!);
+    shader.setUniform1f("u_normalScale", this.properties.normalScale!);
+    shader.setUniform3f(
+      "u_emissive",
+      this.properties.emissive![0],
+      this.properties.emissive![1],
+      this.properties.emissive![2],
+    );
+    shader.setUniform1f("u_emissiveIntensity", this.properties.emissiveIntensity!);
+    shader.setUniform1f("u_opacity", this.properties.opacity!);
+    shader.setUniform1f("u_alphaTest", this.properties.alphaTest!);
+
     // Texture samplers
     for (const [textureName, slot] of this.textureSlots) {
       const uniformName = `u_${textureName}`;
       shader.setUniform1i(uniformName, slot);
     }
-    
+
     // Texture flags
-    shader.setUniform1i('u_hasAlbedoMap', this.textures.albedoMap ? 1 : 0);
-    shader.setUniform1i('u_hasNormalMap', this.textures.normalMap ? 1 : 0);
-    shader.setUniform1i('u_hasMetallicRoughnessMap', this.textures.metallicRoughnessMap ? 1 : 0);
-    shader.setUniform1i('u_hasEmissiveMap', this.textures.emissiveMap ? 1 : 0);
-    shader.setUniform1i('u_hasOcclusionMap', this.textures.occlusionMap ? 1 : 0);
-    shader.setUniform1i('u_hasHeightMap', this.textures.heightMap ? 1 : 0);
-    shader.setUniform1i('u_hasDetailNormalMap', this.textures.detailNormalMap ? 1 : 0);
-    shader.setUniform1i('u_hasDetailAlbedoMap', this.textures.detailAlbedoMap ? 1 : 0);
-    shader.setUniform1i('u_hasCubeMap', this.textures.cubeMap ? 1 : 0);
-    
+    shader.setUniform1i("u_hasAlbedoMap", this.textures.albedoMap ? 1 : 0);
+    shader.setUniform1i("u_hasNormalMap", this.textures.normalMap ? 1 : 0);
+    shader.setUniform1i("u_hasMetallicRoughnessMap", this.textures.metallicRoughnessMap ? 1 : 0);
+    shader.setUniform1i("u_hasEmissiveMap", this.textures.emissiveMap ? 1 : 0);
+    shader.setUniform1i("u_hasOcclusionMap", this.textures.occlusionMap ? 1 : 0);
+    shader.setUniform1i("u_hasHeightMap", this.textures.heightMap ? 1 : 0);
+    shader.setUniform1i("u_hasDetailNormalMap", this.textures.detailNormalMap ? 1 : 0);
+    shader.setUniform1i("u_hasDetailAlbedoMap", this.textures.detailAlbedoMap ? 1 : 0);
+    shader.setUniform1i("u_hasCubeMap", this.textures.cubeMap ? 1 : 0);
+
     // Custom uniform values
     for (const [name, value] of this.uniformValues) {
       this.setUniformValue(shader, name, value);
@@ -157,7 +167,7 @@ export class Material {
   }
 
   private setUniformValue(shader: ShaderProgram, name: string, value: any): void {
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       shader.setUniform1f(name, value);
     } else if (Array.isArray(value)) {
       switch (value.length) {
@@ -285,14 +295,14 @@ export class Material {
       this.gl,
       this.shaderName,
       { ...this.properties },
-      { ...this.textures }
+      { ...this.textures },
     );
-    
+
     // Copy uniform values
     for (const [name, value] of this.uniformValues) {
       cloned.uniformValues.set(name, value);
     }
-    
+
     return cloned;
   }
 
@@ -301,46 +311,51 @@ export class Material {
     gl: WebGL2RenderingContext,
     albedo: vec3 = vec3.fromValues(1, 1, 1),
     metallic: number = 0.0,
-    roughness: number = 0.5
+    roughness: number = 0.5,
   ): Material {
-    return new Material(gl, 'pbr', {
+    return new Material(gl, "pbr", {
       albedo,
       metallic,
-      roughness
+      roughness,
     });
   }
 
   static createUnlitMaterial(
     gl: WebGL2RenderingContext,
     color: vec3 = vec3.fromValues(1, 1, 1),
-    texture?: string
+    texture?: string,
   ): Material {
-    return new Material(gl, 'unlit', {
-      albedo: color
-    }, texture ? { albedoMap: texture } : Record<string, any>);
+    return new Material(
+      gl,
+      "unlit",
+      {
+        albedo: color,
+      },
+      texture ? { albedoMap: texture } : Record<string, any>,
+    );
   }
 
   static createEmissiveMaterial(
     gl: WebGL2RenderingContext,
     emissiveColor: vec3,
-    intensity: number = 1.0
+    intensity: number = 1.0,
   ): Material {
-    return new Material(gl, 'emissive', {
+    return new Material(gl, "emissive", {
       emissive: emissiveColor,
-      emissiveIntensity: intensity
+      emissiveIntensity: intensity,
     });
   }
 
   static createTransparentMaterial(
     gl: WebGL2RenderingContext,
     albedo: vec3,
-    opacity: number
+    opacity: number,
   ): Material {
-    return new Material(gl, 'pbr', {
+    return new Material(gl, "pbr", {
       albedo,
       opacity,
       transparent: true,
-      blendMode: BlendMode.ALPHA_BLEND
+      blendMode: BlendMode.ALPHA_BLEND,
     });
   }
 }

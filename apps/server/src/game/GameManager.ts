@@ -1,5 +1,5 @@
 import { GameSession, GameConfig } from "./GameSession";
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Manages multiple game sessions and handles game lifecycle
@@ -10,9 +10,12 @@ export class GameManager {
 
   constructor() {
     // Cleanup empty games every 5 minutes
-    this.cleanupInterval = setInterval(() => {
-      this.cleanupEmptyGames();
-    }, 5 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanupEmptyGames();
+      },
+      5 * 60 * 1000,
+    );
   }
 
   /**
@@ -25,7 +28,7 @@ export class GameManager {
 
     const game = new GameSession(config);
     this.games.set(config.gameId, game);
-    
+
     logger.info(`[GameManager] Created game ${config.gameId}`);
     return game;
   }
@@ -46,11 +49,11 @@ export class GameManager {
 
     game.destroy();
     const removed = this.games.delete(gameId);
-    
+
     if (removed) {
       logger.info(`[GameManager] Removed game ${gameId}`);
     }
-    
+
     return removed;
   }
 
@@ -65,7 +68,7 @@ export class GameManager {
    * Get games with connected players
    */
   getActiveGames(): GameSession[] {
-    return this.getGames().filter(game => !game.isEmpty());
+    return this.getGames().filter((game) => !game.isEmpty());
   }
 
   /**
@@ -73,7 +76,7 @@ export class GameManager {
    */
   findOrCreateGame(gameId: string, config?: Partial<GameConfig>): GameSession {
     let game = this.getGame(gameId);
-    
+
     if (!game) {
       const fullConfig: GameConfig = {
         gameId,
@@ -83,7 +86,7 @@ export class GameManager {
       };
       game = this.createGame(fullConfig);
     }
-    
+
     return game;
   }
 
@@ -91,12 +94,12 @@ export class GameManager {
    * Clean up empty games
    */
   private cleanupEmptyGames(): void {
-    const emptyGames = this.getGames().filter(game => game.isEmpty());
-    
+    const emptyGames = this.getGames().filter((game) => game.isEmpty());
+
     for (const game of emptyGames) {
       this.removeGame(game.gameId);
     }
-    
+
     if (emptyGames.length > 0) {
       logger.info(`[GameManager] Cleaned up ${emptyGames.length} empty games`);
     }
@@ -108,7 +111,7 @@ export class GameManager {
   getStats() {
     const games = this.getGames();
     const activeGames = this.getActiveGames();
-    
+
     return {
       totalGames: games.length,
       activeGames: activeGames.length,
@@ -128,13 +131,13 @@ export class GameManager {
     }
 
     // Shutdown all games
-    const shutdownPromises = Array.from(this.games.values()).map(game => 
-      Promise.resolve(game.destroy())
+    const shutdownPromises = Array.from(this.games.values()).map((game) =>
+      Promise.resolve(game.destroy()),
     );
-    
+
     await Promise.all(shutdownPromises);
     this.games.clear();
-    
-    logger.info('[GameManager] Shutdown complete');
+
+    logger.info("[GameManager] Shutdown complete");
   }
 }

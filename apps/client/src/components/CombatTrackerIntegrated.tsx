@@ -2,11 +2,11 @@
  * Integrated Combat Tracker - Uses real encounter data and API integration
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { logger } from '@vtt/logging';
-import { useEncounter, CombatActor, EncounterData } from '../hooks/useEncounter';
-import { useCharacter } from '../hooks/useCharacter';
-import './CombatTracker.css';
+import React, { useState, useEffect, useCallback } from "react";
+import { logger } from "@vtt/logging";
+import { useEncounter, CombatActor, EncounterData } from "../hooks/useEncounter";
+import { useCharacter } from "../hooks/useCharacter";
+import "./CombatTracker.css";
 
 interface CombatTrackerIntegratedProps {
   encounterId?: string;
@@ -16,48 +16,54 @@ interface CombatTrackerIntegratedProps {
 }
 
 interface AddCombatantData {
-  type: 'character' | 'monster';
+  type: "character" | "monster";
   id: string;
   name?: string; // For monster instances
 }
 
-export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = ({encounterId, campaignId, onEncounterChange, readOnly = false}) => {
-  const { encounter, 
-    isLoading, 
-    error, 
-    createEncounter, 
-    getEncounter, 
-    startEncounter, 
-    endEncounter, 
-    addCharacterToEncounter, 
-    addMonsterToEncounter, 
-    updateActorHealth
-   } = useEncounter();
+export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = ({
+  encounterId,
+  campaignId,
+  onEncounterChange,
+  readOnly = false,
+}) => {
+  const {
+    encounter,
+    isLoading,
+    error,
+    createEncounter,
+    getEncounter,
+    startEncounter,
+    endEncounter,
+    addCharacterToEncounter,
+    addMonsterToEncounter,
+    updateActorHealth,
+  } = useEncounter();
 
   const { characters } = useCharacter();
-  
+
   const [showAddDialog, setShowAddDialog] = useState(false);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (readOnly) return;
-      
+
       // Keyboard shortcuts
-      switch(e.key) {
-        case 'n':
+      switch (e.key) {
+        case "n":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             onNextTurn();
           }
           break;
-        case 'p':
+        case "p":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             onPreviousTurn();
           }
           break;
-        case 's':
+        case "s":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
             if (isActive) {
@@ -67,18 +73,18 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
             }
           }
           break;
-        case 'Escape':
+        case "Escape":
           setShowAddForm(false);
           break;
       }
     };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isActive, readOnly, onNextTurn, onPreviousTurn, onStartCombat, onEndCombat]);
   const [addCombatantData, setAddCombatantData] = useState<AddCombatantData>({
-    type: 'character',
-    id: ''
+    type: "character",
+    id: "",
   });
 
   // Load encounter data
@@ -95,90 +101,92 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
     }
   }, [encounter, onEncounterChange]);
 
-  const handleCreateEncounter = useCallback(async (name: string) => {
-    try {
-      await createEncounter({
-        name,
-        campaignId,
-        characterIds: [],
-        monsters: []
-      });
-    } catch (error) {
-      logger.error('Failed to create encounter:', error);
-    }
-  }, [createEncounter, campaignId]);
+  const handleCreateEncounter = useCallback(
+    async (name: string) => {
+      try {
+        await createEncounter({
+          name,
+          campaignId,
+          characterIds: [],
+          monsters: [],
+        });
+      } catch (error) {
+        logger.error("Failed to create encounter:", error);
+      }
+    },
+    [createEncounter, campaignId],
+  );
 
   const handleStartCombat = useCallback(async () => {
     if (!encounter?.id) return;
-    
+
     try {
       await startEncounter(encounter.id);
     } catch (error) {
-      logger.error('Failed to start encounter:', error);
+      logger.error("Failed to start encounter:", error);
     }
   }, [encounter?.id, startEncounter]);
 
   const handleEndCombat = useCallback(async () => {
     if (!encounter?.id) return;
-    
+
     try {
       await endEncounter(encounter.id);
     } catch (error) {
-      logger.error('Failed to end encounter:', error);
+      logger.error("Failed to end encounter:", error);
     }
   }, [encounter?.id, endEncounter]);
 
-  const handleHealthChange = useCallback(async (
-    actorId: string, 
-    current: number, 
-    temporary: number = 0
-  ) => {
-    const actor = encounter?.actors.find(a => a.id === actorId);
-    if (!actor) return;
+  const handleHealthChange = useCallback(
+    async (actorId: string, current: number, temporary: number = 0) => {
+      const actor = encounter?.actors.find((a) => a.id === actorId);
+      if (!actor) return;
 
-    try {
-      await updateActorHealth(actorId, {
-        current,
-        max: actor.hitPoints.max,
-        temporary
-      });
-    } catch (error) {
-      logger.error('Failed to update actor health:', error);
-    }
-  }, [encounter?.actors, updateActorHealth]);
+      try {
+        await updateActorHealth(actorId, {
+          current,
+          max: actor.hitPoints.max,
+          temporary,
+        });
+      } catch (error) {
+        logger.error("Failed to update actor health:", error);
+      }
+    },
+    [encounter?.actors, updateActorHealth],
+  );
 
   const handleAddCombatant = useCallback(async () => {
     if (!encounter?.id || !addCombatantData.id) return;
 
     try {
-      if (addCombatantData.type === 'character') {
+      if (addCombatantData.type === "character") {
         await addCharacterToEncounter(encounter.id, addCombatantData.id);
       } else {
         await addMonsterToEncounter(encounter.id, addCombatantData.id, addCombatantData.name);
       }
-      
+
       setShowAddDialog(false);
-      setAddCombatantData({ type: 'character', id: '' });
+      setAddCombatantData({ type: "character", id: "" });
     } catch (error) {
-      logger.error('Failed to add combatant:', error);
+      logger.error("Failed to add combatant:", error);
     }
   }, [encounter?.id, addCombatantData, addCharacterToEncounter, addMonsterToEncounter]);
 
   const getHealthBarColor = (actor: CombatActor): string => {
     const percentage = (actor.hitPoints.current / actor.hitPoints.max) * 100;
-    if (percentage <= 25) return '#dc3545'; // Red
-    if (percentage <= 50) return '#fd7e14'; // Orange
-    if (percentage <= 75) return '#ffc107'; // Yellow
-    return '#28a745'; // Green
+    if (percentage <= 25) return "#dc3545"; // Red
+    if (percentage <= 50) return "#fd7e14"; // Orange
+    if (percentage <= 75) return "#ffc107"; // Yellow
+    return "#28a745"; // Green
   };
 
   const getHealthStatus = (actor: CombatActor): string => {
     const percentage = (actor.hitPoints.current / actor.hitPoints.max) * 100;
-    if (actor.hitPoints.current <= 0) return 'Unconscious';
-    if (percentage <= 25) return 'Critical';
-    if (percentage <= 50) return 'Bloodied';
-    if (percentage <= 75) return 'Injured';
-    return 'Healthy';
+    if (actor.hitPoints.current <= 0) return "Unconscious";
+    if (percentage <= 25) return "Critical";
+    if (percentage <= 50) return "Bloodied";
+    if (percentage <= 75) return "Injured";
+    return "Healthy";
   };
 
   if (isLoading) {
@@ -193,10 +201,7 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
     return (
       <div className="combat-tracker no-encounter">
         <h3>No Encounter Active</h3>
-        <button 
-          onClick={() => handleCreateEncounter('New Encounter')}
-          disabled={readOnly}
-        >
+        <button onClick={() => handleCreateEncounter("New Encounter")} disabled={readOnly}>
           Create Encounter
         </button>
       </div>
@@ -214,12 +219,15 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
           {encounter.isActive ? (
             <>
               <span className="round-counter">Round {encounter.currentRound}</span>
-              <button onClick={handleEndCombat} disabled={readOnly} >End Combat</button>
+              <button onClick={handleEndCombat} disabled={readOnly}>
+                End Combat
+              </button>
             </>
           ) : (
-            <button 
-              onClick={handleStartCombat} 
-              disabled={readOnly || encounter.actors.length === 0} >
+            <button
+              onClick={handleStartCombat}
+              disabled={readOnly || encounter.actors.length === 0}
+            >
               Start Combat
             </button>
           )}
@@ -228,24 +236,24 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
 
       <div className="combatants-list">
         {sortedActors.map((actor, index) => (
-          <div 
-            key={actor.id} 
-            className={`combatant ${index === encounter.currentTurn ? 'active-turn' : ''} ${actor.type}`}
+          <div
+            key={actor.id}
+            className={`combatant ${index === encounter.currentTurn ? "active-turn" : ""} ${actor.type}`}
           >
             <div className="combatant-header">
               <div className="combatant-name">
                 <span className="name">{actor.name}</span>
-                <span className="type-badge">{actor.type === 'character' ? 'PC' : 'NPC'}</span>
+                <span className="type-badge">{actor.type === "character" ? "PC" : "NPC"}</span>
               </div>
               <div className="initiative">
                 <label>Init:</label>
-                <input 
-                  type="number" 
-                  value={actor.initiative} 
+                <input
+                  type="number"
+                  value={actor.initiative}
                   onChange={(e) => {
                     const newInitiative = parseInt(e.target.value) || 0;
                     // Initiative change would be handled here
-                    logger.info('Initiative change:', { actorId: actor.id, newInitiative });
+                    logger.info("Initiative change:", { actorId: actor.id, newInitiative });
                   }}
                   disabled={readOnly}
                   className="initiative-input"
@@ -256,19 +264,25 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
             <div className="combatant-stats">
               <div className="health-section">
                 <div className="health-bar-container">
-                  <div 
-                    className="health-bar" 
-                    style={{ 
+                  <div
+                    className="health-bar"
+                    style={{
                       width: `${(actor.hitPoints.current / actor.hitPoints.max) * 100}%`,
-                      backgroundColor: getHealthBarColor(actor)
+                      backgroundColor: getHealthBarColor(actor),
                     }}
                   />
                 </div>
                 <div className="health-numbers">
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={actor.hitPoints.current}
-                    onChange={(e) => handleHealthChange(actor.id, parseInt(e.target.value) || 0, actor.hitPoints.temporary)}
+                    onChange={(e) =>
+                      handleHealthChange(
+                        actor.id,
+                        parseInt(e.target.value) || 0,
+                        actor.hitPoints.temporary,
+                      )
+                    }
                     disabled={readOnly}
                     className="health-input current"
                     min="0"
@@ -279,10 +293,16 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
                   {actor.hitPoints.temporary > 0 && (
                     <>
                       <span>+</span>
-                      <input 
-                        type="number" 
+                      <input
+                        type="number"
                         value={actor.hitPoints.temporary}
-                        onChange={(e) => handleHealthChange(actor.id, actor.hitPoints.current, parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                          handleHealthChange(
+                            actor.id,
+                            actor.hitPoints.current,
+                            parseInt(e.target.value) || 0,
+                          )
+                        }
                         disabled={readOnly}
                         className="health-input temp"
                         min="0"
@@ -315,10 +335,10 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
                   <details>
                     <summary>Actions ({actor.actions.length})</summary>
                     <div className="actions-list">
-                      {actor.actions.slice(0, 3).map(action => (
+                      {actor.actions.slice(0, 3).map((action) => (
                         <div key={action.id} className="action-item">
                           <span className="action-name">{action.name}</span>
-                          <span className="action-type">({action.type.replace('', ' ')})</span>
+                          <span className="action-type">({action.type.replace("", " ")})</span>
                         </div>
                       ))}
                       {actor.actions.length > 3 && (
@@ -342,10 +362,7 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
 
       {!readOnly && (
         <div className="combat-actions">
-          <button 
-            onClick={() => setShowAddDialog(true)}
-            className="add-combatant-btn"
-          >
+          <button onClick={() => setShowAddDialog(true)} className="add-combatant-btn">
             Add Combatant
           </button>
         </div>
@@ -355,34 +372,38 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
         <div className="modal-overlay">
           <div className="modal">
             <h4>Add Combatant</h4>
-            
+
             <div className="form-group">
               <label>Type:</label>
-              <select 
-                value={addCombatantData.type} 
-                onChange={(e) => setAddCombatantData(prev => ({ 
-                  ...prev, 
-                  type: e.target.value as 'character' | 'monster',
-                  id: '' 
-                }))}
+              <select
+                value={addCombatantData.type}
+                onChange={(e) =>
+                  setAddCombatantData((prev) => ({
+                    ...prev,
+                    type: e.target.value as "character" | "monster",
+                    id: "",
+                  }))
+                }
               >
                 <option value="character">Character</option>
                 <option value="monster">Monster</option>
               </select>
             </div>
 
-            {addCombatantData.type === 'character' ? (
+            {addCombatantData.type === "character" ? (
               <div className="form-group">
                 <label>Character:</label>
-                <select 
-                  value={addCombatantData.id} 
-                  onChange={(e) => setAddCombatantData(prev => ({ 
-                    ...prev, 
-                    id: e.target.value 
-                  }))}
+                <select
+                  value={addCombatantData.id}
+                  onChange={(e) =>
+                    setAddCombatantData((prev) => ({
+                      ...prev,
+                      id: e.target.value,
+                    }))
+                  }
                 >
                   <option value="">Select a character...</option>
-                  {characters.map(char => (
+                  {characters.map((char) => (
                     <option key={char.id} value={char.id}>
                       {char.name} (Level {char.level} {char.class})
                     </option>
@@ -393,25 +414,29 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
               <>
                 <div className="form-group">
                   <label>Monster ID:</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={addCombatantData.id}
-                    onChange={(e) => setAddCombatantData(prev => ({ 
-                      ...prev, 
-                      id: e.target.value 
-                    }))}
+                    onChange={(e) =>
+                      setAddCombatantData((prev) => ({
+                        ...prev,
+                        id: e.target.value,
+                      }))
+                    }
                     placeholder="Enter monster ID..."
                   />
                 </div>
                 <div className="form-group">
                   <label>Instance Name (optional):</label>
-                  <input 
-                    type="text" 
-                    value={addCombatantData.name || ''}
-                    onChange={(e) => setAddCombatantData(prev => ({ 
-                      ...prev, 
-                      name: e.target.value 
-                    }))}
+                  <input
+                    type="text"
+                    value={addCombatantData.name || ""}
+                    onChange={(e) =>
+                      setAddCombatantData((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                     placeholder="e.g., Goblin 1, Boss Orc..."
                   />
                 </div>
@@ -419,12 +444,10 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
             )}
 
             <div className="modal-actions">
-              <button onClick={handleAddCombatant} disabled={!addCombatantData.id} >
+              <button onClick={handleAddCombatant} disabled={!addCombatantData.id}>
                 Add
               </button>
-              <button onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </button>
+              <button onClick={() => setShowAddDialog(false)}>Cancel</button>
             </div>
           </div>
         </div>

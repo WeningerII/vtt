@@ -3,7 +3,7 @@
  * Provides intelligent loading strategies for assets, components, and data
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from "events";
 
 export interface LazyLoadable {
   id: string;
@@ -82,25 +82,25 @@ export class LazyLoader extends EventEmitter {
   /**
    * Register a lazy loadable item
    */
-  register(item: LazyLoadable, groupId = 'default'): void {
+  register(item: LazyLoadable, groupId = "default"): void {
     this.items.set(item.id, item);
-    
+
     if (!this.groups.has(groupId)) {
       this.groups.set(groupId, {
         id: groupId,
         items: [],
-        strategy: this.strategies.get('viewport')!,
+        strategy: this.strategies.get("viewport")!,
         concurrency: 3,
         enabled: true,
       });
     }
 
     const group = this.groups.get(groupId)!;
-    if (!group.items.some(i => i.id === item.id)) {
+    if (!group.items.some((i) => i.id === item.id)) {
       group.items.push(item);
     }
 
-    this.emit('registered', { item, groupId });
+    this.emit("registered", { item, groupId });
   }
 
   /**
@@ -112,14 +112,14 @@ export class LazyLoader extends EventEmitter {
 
     // Remove from all groups
     for (const group of this.groups.values()) {
-      group.items = group.items.filter(i => i.id !== itemId);
+      group.items = group.items.filter((i) => i.id !== itemId);
     }
 
     // Unload if loaded
     this.unload(itemId);
-    
+
     this.items.delete(itemId);
-    this.emit('unregistered', { itemId });
+    this.emit("unregistered", { itemId });
   }
 
   /**
@@ -152,13 +152,13 @@ export class LazyLoader extends EventEmitter {
 
     try {
       const result = await loadPromise;
-      
+
       if (result.success) {
         this.loadedData.set(itemId, result.data);
         this.context.currentlyLoaded.add(itemId);
       }
 
-      this.emit('loaded', result);
+      this.emit("loaded", result);
       return result;
     } finally {
       this.loadingPromises.delete(itemId);
@@ -180,7 +180,7 @@ export class LazyLoader extends EventEmitter {
     this.context.currentlyLoaded.delete(itemId);
 
     if (wasLoaded) {
-      this.emit('unloaded', { itemId });
+      this.emit("unloaded", { itemId });
     }
 
     return wasLoaded;
@@ -190,13 +190,13 @@ export class LazyLoader extends EventEmitter {
    * Load items based on current context and strategies
    */
   async loadByStrategy(groupIds?: string[]): Promise<LoadResult[]> {
-    const targetGroups = groupIds 
-      ? groupIds.map(id => this.groups.get(id)).filter(Boolean) as LoadGroup[]
+    const targetGroups = groupIds
+      ? (groupIds.map((id) => this.groups.get(id)).filter(Boolean) as LoadGroup[])
       : Array.from(this.groups.values());
 
     const results: LoadResult[] = [];
-    
-    for (const group of targetGroups.filter(g => g.enabled)) {
+
+    for (const group of targetGroups.filter((g) => g.enabled)) {
       const itemsToLoad = this.selectItemsToLoad(group);
       const groupResults = await this.loadItemsConcurrently(itemsToLoad, group.concurrency);
       results.push(...groupResults);
@@ -214,13 +214,13 @@ export class LazyLoader extends EventEmitter {
     groupIds?: string[];
   }): Promise<LoadResult[]> {
     const items: LazyLoadable[] = [];
-    
+
     for (const group of this.groups.values()) {
       if (criteria.groupIds && !criteria.groupIds.includes(group.id)) continue;
-      
+
       for (const item of group.items) {
         if (criteria.priority && item.priority < criteria.priority) continue;
-        
+
         if (criteria.distance && this.context.userPosition) {
           // Simple distance check - in real use would be more sophisticated
           const distance = Math.abs(item.priority - 1) * 1000; // Mock distance
@@ -235,7 +235,7 @@ export class LazyLoader extends EventEmitter {
 
     // Sort by priority
     items.sort((a, b) => b.priority - a.priority);
-    
+
     return this.loadItemsConcurrently(items, 2); // Lower concurrency for preloading
   }
 
@@ -244,7 +244,7 @@ export class LazyLoader extends EventEmitter {
    */
   updateContext(updates: Partial<LoadContext>): void {
     this.context = { ...this.context, ...updates, timestamp: Date.now() };
-    this.emit('contextUpdated', this.context);
+    this.emit("contextUpdated", this.context);
   }
 
   /**
@@ -259,7 +259,7 @@ export class LazyLoader extends EventEmitter {
       for (const item of group.items) {
         totalItems++;
         totalBytes += item.estimatedSize;
-        
+
         if (this.loadedData.has(item.id)) {
           loadedBytes += item.estimatedSize;
         }
@@ -269,7 +269,7 @@ export class LazyLoader extends EventEmitter {
     const loadedItems = this.context.currentlyLoaded.size;
     const currentlyLoading = this.loadingPromises.size;
     const failedItems = totalItems - loadedItems - currentlyLoading;
-    
+
     // Estimate time remaining based on recent load times
     const avgLoadTime = 1000; // Mock - would track real load times
     const estimatedTimeRemaining = (totalItems - loadedItems - currentlyLoading) * avgLoadTime;
@@ -288,10 +288,14 @@ export class LazyLoader extends EventEmitter {
   /**
    * Create a load group with custom strategy
    */
-  createGroup(id: string, strategy: LoadStrategy, options: {
-    concurrency?: number;
-    enabled?: boolean;
-  } = {}): LoadGroup {
+  createGroup(
+    id: string,
+    strategy: LoadStrategy,
+    options: {
+      concurrency?: number;
+      enabled?: boolean;
+    } = {},
+  ): LoadGroup {
     const group: LoadGroup = {
       id,
       items: [],
@@ -301,8 +305,8 @@ export class LazyLoader extends EventEmitter {
     };
 
     this.groups.set(id, group);
-    this.emit('groupCreated', { group });
-    
+    this.emit("groupCreated", { group });
+
     return group;
   }
 
@@ -323,7 +327,7 @@ export class LazyLoader extends EventEmitter {
     utilizationRatio: number;
   } {
     let estimatedMemoryUsage = 0;
-    
+
     for (const itemId of this.context.currentlyLoaded) {
       const item = this.items.get(itemId);
       if (item) {
@@ -344,16 +348,16 @@ export class LazyLoader extends EventEmitter {
    */
   optimizeMemory(): number {
     const usage = this.getMemoryUsage();
-    
+
     if (usage.utilizationRatio < 0.8) {
       return 0; // No optimization needed
     }
 
     // Get loaded items sorted by priority (lowest first)
     const loadedItems = Array.from(this.context.currentlyLoaded)
-      .map(id => this.items.get(id))
+      .map((id) => this.items.get(id))
       .filter(Boolean) as LazyLoadable[];
-    
+
     loadedItems.sort((a, b) => a.priority - b.priority);
 
     let freedMemory = 0;
@@ -362,28 +366,28 @@ export class LazyLoader extends EventEmitter {
 
     for (const item of loadedItems) {
       if (freedMemory >= targetReduction) break;
-      
+
       this.unload(item.id);
       freedMemory += item.estimatedSize;
       unloadedCount++;
     }
 
-    this.emit('memoryOptimized', { unloadedCount, freedMemory });
+    this.emit("memoryOptimized", { unloadedCount, freedMemory });
     return unloadedCount;
   }
 
   private async performLoad(item: LazyLoadable): Promise<LoadResult> {
     const start = performance.now();
-    
+
     try {
       // Load dependencies first
       if (item.dependencies) {
-        await Promise.all(item.dependencies.map(depId => this.load(depId)));
+        await Promise.all(item.dependencies.map((depId) => this.load(depId)));
       }
 
       const data = await item.load();
       const loadTime = performance.now() - start;
-      
+
       return {
         id: item.id,
         success: true,
@@ -393,20 +397,20 @@ export class LazyLoader extends EventEmitter {
       };
     } catch (error) {
       const loadTime = performance.now() - start;
-      
+
       return {
         id: item.id,
         success: false,
         loadTime,
         size: 0,
-        error: error instanceof Error ? error : new Error('Unknown load error'),
+        error: error instanceof Error ? error : new Error("Unknown load error"),
       };
     }
   }
 
   private selectItemsToLoad(group: LoadGroup): LazyLoadable[] {
     const items: LazyLoadable[] = [];
-    
+
     for (const item of group.items) {
       if (this.loadedData.has(item.id) || this.loadingPromises.has(item.id)) {
         continue; // Already loaded or loading
@@ -427,7 +431,10 @@ export class LazyLoader extends EventEmitter {
     return items;
   }
 
-  private async loadItemsConcurrently(items: LazyLoadable[], concurrency: number): Promise<LoadResult[]> {
+  private async loadItemsConcurrently(
+    items: LazyLoadable[],
+    concurrency: number,
+  ): Promise<LoadResult[]> {
     const results: LoadResult[] = [];
     const semaphore = new Semaphore(concurrency);
 
@@ -448,8 +455,8 @@ export class LazyLoader extends EventEmitter {
 
   private setupDefaultStrategies(): void {
     // Viewport-based loading strategy
-    this.strategies.set('viewport', {
-      name: 'viewport',
+    this.strategies.set("viewport", {
+      name: "viewport",
       shouldLoad: (item, _context) => {
         // Mock viewport check - in real implementation would check actual bounds
         return item.priority > 0.3;
@@ -461,40 +468,39 @@ export class LazyLoader extends EventEmitter {
     });
 
     // Distance-based loading strategy
-    this.strategies.set('distance', {
-      name: 'distance',
+    this.strategies.set("distance", {
+      name: "distance",
       shouldLoad: (item, context) => {
         if (!context.userPosition) return item.priority > 0.5;
-        
+
         // Mock distance calculation
         const distance = Math.abs(item.priority - 0.5) * 100;
         return distance < 50; // Within 50 units
       },
       getPriority: (item, context) => {
         if (!context.userPosition) return item.priority;
-        
+
         const distance = Math.abs(item.priority - 0.5) * 100;
         return Math.max(0, 1 - distance / 100) * item.priority;
       },
     });
 
     // Priority-only strategy
-    this.strategies.set('priority', {
-      name: 'priority',
+    this.strategies.set("priority", {
+      name: "priority",
       shouldLoad: (item) => item.priority > 0.6,
       getPriority: (item) => item.priority,
     });
 
     // Memory-conscious strategy
-    this.strategies.set('memory', {
-      name: 'memory',
+    this.strategies.set("memory", {
+      name: "memory",
       shouldLoad: (item, context) => {
-        const currentUsage = Array.from(context.currentlyLoaded)
-          .reduce((sum, id) => {
-            const loadedItem = this.items.get(id);
-            return sum + (loadedItem?.estimatedSize || 0);
-          }, 0);
-        
+        const currentUsage = Array.from(context.currentlyLoaded).reduce((sum, id) => {
+          const loadedItem = this.items.get(id);
+          return sum + (loadedItem?.estimatedSize || 0);
+        }, 0);
+
         return currentUsage + item.estimatedSize < context.memoryBudget * 0.8;
       },
       getPriority: (item, context) => {
@@ -508,10 +514,10 @@ export class LazyLoader extends EventEmitter {
   private startUpdateLoop(): void {
     this.updateInterval = setInterval(() => {
       this.updateContext({ timestamp: Date.now() });
-      
+
       // Trigger automatic loading based on strategies
-      this.loadByStrategy().catch(error => {
-        this.emit('loadError', error);
+      this.loadByStrategy().catch((error) => {
+        this.emit("loadError", error);
       });
     }, 1000); // Update every second
   }
@@ -555,7 +561,7 @@ class Semaphore {
       return;
     }
 
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.waitQueue.push(resolve);
     });
   }
@@ -579,16 +585,16 @@ export class AssetLoadable implements LazyLoadable {
     public url: string,
     public priority: number,
     public estimatedSize: number,
-    public type: 'image' | 'audio' | 'model' | 'data' = 'data'
+    public type: "image" | "audio" | "model" | "data" = "data",
   ) {}
 
   async load(): Promise<any> {
     switch (this.type) {
-      case 'image':
+      case "image":
         return this.loadImage();
-      case 'audio':
+      case "audio":
         return this.loadAudio();
-      case 'model':
+      case "model":
         return this.loadModel();
       default:
         return this.loadData();
@@ -625,9 +631,9 @@ export class AssetLoadable implements LazyLoadable {
     if (!response.ok) {
       throw new Error(`Failed to load data: ${response.statusText}`);
     }
-    
-    const contentType = response.headers.get('content-type');
-    if (contentType?.includes('json')) {
+
+    const contentType = response.headers.get("content-type");
+    if (contentType?.includes("json")) {
       return response.json();
     } else {
       return response.text();

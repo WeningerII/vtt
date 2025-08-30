@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 // import { AnthropicProvider } from "@vtt/ai"; // Temporarily disabled due to build issues
 
 export interface ContentGenerationRequest {
-  type: 'npc' | 'location' | 'quest' | 'item';
+  type: "npc" | "location" | "quest" | "item";
   context: {
     setting?: string;
     theme?: string;
@@ -38,27 +38,27 @@ export function createContentGenerationService(prisma: PrismaClient) {
 
   async function generateContent(request: ContentGenerationRequest): Promise<GeneratedContent> {
     // Temporarily disabled due to build issues
-    throw new Error('Content generation temporarily disabled due to AI provider build issues');
+    throw new Error("Content generation temporarily disabled due to AI provider build issues");
   }
 
   async function generateNPC(context: any) {
-    return generateContent({ type: 'npc', context });
+    return generateContent({ type: "npc", context });
   }
 
   async function generateLocation(context: any) {
-    return generateContent({ type: 'location', context });
+    return generateContent({ type: "location", context });
   }
 
   async function generateQuest(context: any) {
-    return generateContent({ type: 'quest', context });
+    return generateContent({ type: "quest", context });
   }
 
   async function generateItem(context: any) {
-    return generateContent({ type: 'item', context });
+    return generateContent({ type: "item", context });
   }
 
   async function listGenerationHistory(filters?: {
-    type?: ContentGenerationRequest['type'];
+    type?: ContentGenerationRequest["type"];
     campaignId?: string;
     limit?: number;
   }) {

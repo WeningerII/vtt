@@ -26,18 +26,20 @@ const DICE_PATTERN = /^(\d+)?d(\d+)([+-]\d+)?$/i;
  * Parse dice notation and validate it
  * Examples: "1d20", "2d6+3", "d4", "3d8-2"
  */
-export function parseDiceNotation(dice: string): { count: number; sides: number; modifier: number } | null {
+export function parseDiceNotation(
+  dice: string,
+): { count: number; sides: number; modifier: number } | null {
   const trimmed = dice.trim().toLowerCase();
   const match = trimmed.match(DICE_PATTERN);
-  
+
   if (!match) {
     return null;
   }
 
   const [, countStr, sidesStr, modifierStr] = match;
-  
+
   if (!sidesStr) return null;
-  
+
   const count = countStr ? parseInt(countStr, 10) : 1;
   const sides = parseInt(sidesStr, 10);
   const modifier = modifierStr ? parseInt(modifierStr, 10) : 0;
@@ -65,9 +67,9 @@ export function rollDice(dice: string): DiceRoll | null {
     return null;
   }
 
-  const { count,  sides,  modifier  } = parsed;
+  const { count, sides, modifier } = parsed;
   const rolls: number[] = [];
-  
+
   for (let i = 0; i < count; i++) {
     rolls.push(rollDie(sides));
   }
@@ -86,10 +88,7 @@ export function rollDice(dice: string): DiceRoll | null {
 /**
  * Create a complete dice roll result with metadata
  */
-export function createDiceRollResult(
-  dice: string, 
-  _label?: string
-): DiceRollResult | null {
+export function createDiceRollResult(dice: string, _label?: string): DiceRollResult | null {
   const roll = rollDice(dice);
   if (!roll) {
     return null;
@@ -103,11 +102,11 @@ export function createDiceRollResult(
     modifier: roll.modifier,
     timestamp: Date.now(),
   };
-  
+
   if (label !== undefined) {
     result.label = label;
   }
-  
+
   return result;
 }
 
@@ -123,13 +122,13 @@ function generateRollId(): string {
  */
 export const _COMMON_DICE = {
   D4: "1d4",
-  D6: "1d6", 
+  D6: "1d6",
   D8: "1d8",
   D10: "1d10",
   D12: "1d12",
   D20: "1d20",
   D100: "1d100",
-  
+
   // Common combinations
   ABILITY_SCORE: "4d6", // Roll 4d6, drop lowest (not implemented here)
   DAMAGE_2D6: "2d6",

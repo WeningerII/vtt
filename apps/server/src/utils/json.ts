@@ -1,5 +1,5 @@
-import type { IncomingMessage } from 'node:http';
-import { Buffer } from 'node:buffer';
+import type { IncomingMessage } from "node:http";
+import { Buffer } from "node:buffer";
 
 /**
  * Represents an HTTP error.
@@ -16,7 +16,8 @@ export class HttpError extends Error {
 
 export function parseJsonBody<T = any>(
   req: IncomingMessage,
-  opts?: { limitBytes?: number }): Promise<T> {
+  opts?: { limitBytes?: number },
+): Promise<T> {
   const envLimit = Number(process.env.JSON_LIMIT_BYTES ?? "");
   const defaultLimit = Number.isFinite(envLimit) && envLimit > 0 ? envLimit : 1_000_000; // 1MB default
   const limit = opts?.limitBytes ?? defaultLimit;

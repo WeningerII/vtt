@@ -55,7 +55,7 @@ export class StatsStore {
 
   add(entity: number, data: StatsData): void {
     if (this.count >= this.capacity) {
-      throw new Error('StatsStore capacity exceeded');
+      throw new Error("StatsStore capacity exceeded");
     }
 
     const index = this.count++;
@@ -90,7 +90,7 @@ export class StatsStore {
       this.armorClass[index] = this.armorClass[lastIndex] || 10;
       this.speed[index] = this.speed[lastIndex] || 30;
       this.level[index] = this.level[lastIndex] || 1;
-      this.hitDie[index] = this.hitDie[lastIndex] || 'd8';
+      this.hitDie[index] = this.hitDie[lastIndex] || "d8";
     }
     this.count--;
   }
@@ -126,7 +126,7 @@ export class StatsStore {
       armorClass: this.armorClass[index] || 10,
       speed: this.speed[index] || 30,
       level: this.level[index] || 1,
-      hitDie: this.hitDie[index] || 'd8',
+      hitDie: this.hitDie[index] || "d8",
     };
   }
 
@@ -144,18 +144,23 @@ export class StatsStore {
     return abilityMod + profBonus;
   }
 
-  getSkillModifier(entity: number, ability: keyof AbilityScores, proficient = false, expertise = false): number {
+  getSkillModifier(
+    entity: number,
+    ability: keyof AbilityScores,
+    proficient = false,
+    expertise = false,
+  ): number {
     const abilityMod = this.getAbilityModifier(entity, ability);
     const profBonus = this.getProficiencyBonus(entity);
     let modifier = abilityMod;
-    
+
     if (proficient) {
       modifier += profBonus;
       if (expertise) {
         modifier += profBonus; // Double proficiency for expertise
       }
     }
-    
+
     return modifier;
   }
 
@@ -166,7 +171,7 @@ export class StatsStore {
   }
 
   getInitiativeModifier(entity: number): number {
-    return this.getAbilityModifier(entity, 'dexterity');
+    return this.getAbilityModifier(entity, "dexterity");
   }
 
   getSpellSaveDC(entity: number, spellcastingAbility: keyof AbilityScores): number {

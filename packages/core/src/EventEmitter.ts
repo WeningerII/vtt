@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Shared EventEmitter implementation for the VTT platform
@@ -15,7 +15,6 @@ export interface SystemEvents {
   disposed: undefined;
 }
 
-
 export interface PerformanceEvents extends SystemEvents {
   measurement_added: { name: string; duration: number };
   fps_update: { fps: number; frameTime: number };
@@ -25,7 +24,7 @@ export interface PerformanceEvents extends SystemEvents {
   memory: { used: number; total: number; usage: number; threshold: number };
   gc_detected: { type: string; duration: number };
   measurement: { name: string; duration: number; tags: Record<string, string> };
-  performance_issue: { type: string; severity: 'warning' | 'error'; details: any };
+  performance_issue: { type: string; severity: "warning" | "error"; details: any };
 }
 
 export type EventListener<T = any> = (_data: T) => void;
@@ -99,7 +98,7 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
       hasListeners = true;
       const listenersArray = Array.from(onceListeners);
       this.onceListeners.delete(event);
-      
+
       for (const listener of listenersArray) {
         try {
           listener(data);
@@ -161,8 +160,8 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
    * Pipe events from another emitter
    */
   pipe<TOther extends EventMap>(
-    other: EventEmitter<TOther>, 
-    eventMap?: Partial<Record<keyof TOther, keyof TEvents>>
+    other: EventEmitter<TOther>,
+    eventMap?: Partial<Record<keyof TOther, keyof TEvents>>,
   ): () => void {
     const unsubscribers: Array<() => void> = [];
 
@@ -190,17 +189,23 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
     };
   }
 
-  private addListener<K extends keyof TEvents>(event: K, listener: EventListener<TEvents[K]>, once: boolean): void {
+  private addListener<K extends keyof TEvents>(
+    event: K,
+    listener: EventListener<TEvents[K]>,
+    once: boolean,
+  ): void {
     const listenersMap = once ? this.onceListeners : this.listeners;
-    
+
     if (!listenersMap.has(event)) {
       listenersMap.set(event, new Set());
     }
 
     const listeners = listenersMap.get(event)!;
-    
+
     if (listeners.size >= this.maxListeners) {
-      logger.warn(`Maximum number of listeners (${this.maxListeners}) exceeded for event ${String(event)}`);
+      logger.warn(
+        `Maximum number of listeners (${this.maxListeners}) exceeded for event ${String(event)}`,
+      );
     }
 
     listeners.add(listener);

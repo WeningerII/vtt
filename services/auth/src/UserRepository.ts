@@ -2,7 +2,7 @@
  * User data repository interface and implementation
  */
 
-import { User, Role, Permission } from './types';
+import { User, Role, Permission } from "./types";
 
 export interface CreateUserRequest {
   email: string;
@@ -25,7 +25,7 @@ export interface UserRepository {
   storePasswordResetToken(id: string, token: string): Promise<void>;
   isValidPasswordResetToken(id: string, token: string): Promise<boolean>;
   clearPasswordResetToken(id: string): Promise<void>;
-  updateProfile(id: string, data: Partial<Pick<User, 'displayName' | 'avatar'>>): Promise<User>;
+  updateProfile(id: string, data: Partial<Pick<User, "displayName" | "avatar">>): Promise<User>;
   deactivateUser(id: string): Promise<void>;
   activateUser(id: string): Promise<void>;
   assignRole(userId: string, roleId: string): Promise<void>;
@@ -37,7 +37,7 @@ export interface RoleRepository {
   findById(id: string): Promise<Role | null>;
   findByName(name: string): Promise<Role | null>;
   findAll(): Promise<Role[]>;
-  update(id: string, data: Partial<Pick<Role, 'name'>>): Promise<Role>;
+  update(id: string, data: Partial<Pick<Role, "name">>): Promise<Role>;
   delete(id: string): Promise<void>;
   addPermission(roleId: string, permissionId: string): Promise<void>;
   removePermission(roleId: string, permissionId: string): Promise<void>;
@@ -54,7 +54,10 @@ export interface PermissionRepository {
 
 // In-memory implementation for development/testing
 export class InMemoryUserRepository implements UserRepository {
-  private users: Map<string, User & { passwordHash: string; isActive: boolean; passwordResetTokens: Set<string> }> = new Map();
+  private users: Map<
+    string,
+    User & { passwordHash: string; isActive: boolean; passwordResetTokens: Set<string> }
+  > = new Map();
   private roles: Map<string, Role> = new Map();
   private permissions: Map<string, Permission> = new Map();
   private userIdCounter = 1;
@@ -68,11 +71,11 @@ export class InMemoryUserRepository implements UserRepository {
   async create(data: CreateUserRequest): Promise<User> {
     const id = `user_${this.userIdCounter++}`;
     const now = new Date();
-    
+
     const userRoles = await Promise.all(
-      data.roles.map(roleName => this.findRoleByName(roleName))
+      data.roles.map((roleName) => this.findRoleByName(roleName)),
     );
-    
+
     const validRoles = userRoles.filter((role): role is Role => role !== null);
 
     const user = {
@@ -92,7 +95,7 @@ export class InMemoryUserRepository implements UserRepository {
     this.users.set(id, user);
 
     // Return user without sensitive data
-    const { _passwordHash, _passwordResetTokens,  ...publicUser  } = user;
+    const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
     return publicUser;
   }
 
@@ -100,14 +103,14 @@ export class InMemoryUserRepository implements UserRepository {
     const user = this.users.get(id);
     if (!user) return null;
 
-    const { _passwordHash, _passwordResetTokens,  ...publicUser  } = user;
+    const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
     return publicUser;
   }
 
   async findByEmail(email: string): Promise<User | null> {
     for (const user of this.users.values()) {
       if (user.email === email) {
-        const { passwordHash, _passwordResetTokens,  ...publicUser  } = user;
+        const { passwordHash, _passwordResetTokens, ...publicUser } = user;
         return { ...publicUser, passwordHash }; // Include passwordHash for auth
       }
     }
@@ -117,7 +120,7 @@ export class InMemoryUserRepository implements UserRepository {
   async findByUsername(username: string): Promise<User | null> {
     for (const user of this.users.values()) {
       if (user.username === username) {
-        const { _passwordHash, _passwordResetTokens,  ...publicUser  } = user;
+        const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
         return publicUser;
       }
     }
@@ -167,17 +170,20 @@ export class InMemoryUserRepository implements UserRepository {
     }
   }
 
-  async updateProfile(id: string, data: Partial<Pick<User, 'displayName' | 'avatar'>>): Promise<User> {
+  async updateProfile(
+    id: string,
+    data: Partial<Pick<User, "displayName" | "avatar">>,
+  ): Promise<User> {
     const user = this.users.get(id);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     if (data.displayName !== undefined) user.displayName = data.displayName;
     if (data.avatar !== undefined) user.avatar = data.avatar;
     user.updatedAt = new Date();
 
-    const { _passwordHash, _passwordResetTokens,  ...publicUser  } = user;
+    const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
     return publicUser;
   }
 
@@ -200,9 +206,9 @@ export class InMemoryUserRepository implements UserRepository {
   async assignRole(userId: string, roleId: string): Promise<void> {
     const user = this.users.get(userId);
     const role = this.roles.get(roleId);
-    
+
     if (user && role) {
-      if (!user.roles.some(r => r.id === roleId)) {
+      if (!user.roles.some((r) => r.id === roleId)) {
         user.roles.push(role);
         user.updatedAt = new Date();
       }
@@ -211,9 +217,9 @@ export class InMemoryUserRepository implements UserRepository {
 
   async removeRole(userId: string, roleId: string): Promise<void> {
     const user = this.users.get(userId);
-    
+
     if (user) {
-      user.roles = user.roles.filter(r => r.id !== roleId);
+      user.roles = user.roles.filter((r) => r.id !== roleId);
       user.updatedAt = new Date();
     }
   }
@@ -230,45 +236,45 @@ export class InMemoryUserRepository implements UserRepository {
   private initializeDefaultData(): void {
     // Create default permissions
     const permissions = [
-      { name: 'game:create', resource: 'game', action: 'create' },
-      { name: 'game:edit', resource: 'game', action: 'edit' },
-      { name: 'game:delete', resource: 'game', action: 'delete' },
-      { name: 'game:join', resource: 'game', action: 'join' },
-      { name: 'character:create', resource: 'character', action: 'create' },
-      { name: 'character:edit', resource: 'character', action: 'edit' },
-      { name: 'character:view', resource: 'character', action: 'view' },
-      { name: 'map:edit', resource: 'map', action: 'edit' },
-      { name: 'combat:manage', resource: 'combat', action: 'manage' },
-      { name: 'users:manage', resource: 'users', action: 'manage' },
+      { name: "game:create", resource: "game", action: "create" },
+      { name: "game:edit", resource: "game", action: "edit" },
+      { name: "game:delete", resource: "game", action: "delete" },
+      { name: "game:join", resource: "game", action: "join" },
+      { name: "character:create", resource: "character", action: "create" },
+      { name: "character:edit", resource: "character", action: "edit" },
+      { name: "character:view", resource: "character", action: "view" },
+      { name: "map:edit", resource: "map", action: "edit" },
+      { name: "combat:manage", resource: "combat", action: "manage" },
+      { name: "users:manage", resource: "users", action: "manage" },
     ];
 
-    permissions.forEach(p => {
+    permissions.forEach((p) => {
       const id = `perm_${this.permissionIdCounter++}`;
       this.permissions.set(id, { id, ...p });
     });
 
     // Create default roles
     const adminPermissions = Array.from(this.permissions.values());
-    const gmPermissions = adminPermissions.filter(p => !p.name.startsWith('users:'));
-    const playerPermissions = adminPermissions.filter(p => 
-      p.name.includes('character:') || p.name === 'game:join'
+    const gmPermissions = adminPermissions.filter((p) => !p.name.startsWith("users:"));
+    const playerPermissions = adminPermissions.filter(
+      (p) => p.name.includes("character:") || p.name === "game:join",
     );
 
-    this.roles.set('role_1', {
-      id: 'role_1',
-      name: 'admin',
+    this.roles.set("role_1", {
+      id: "role_1",
+      name: "admin",
       permissions: adminPermissions,
     });
 
-    this.roles.set('role_2', {
-      id: 'role_2',
-      name: 'game_master',
+    this.roles.set("role_2", {
+      id: "role_2",
+      name: "game_master",
       permissions: gmPermissions,
     });
 
-    this.roles.set('role_3', {
-      id: 'role_3',
-      name: 'player',
+    this.roles.set("role_3", {
+      id: "role_3",
+      name: "player",
       permissions: playerPermissions,
     });
   }

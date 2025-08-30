@@ -3,7 +3,7 @@
  * Handles item crafting, recipes, skill checks, and tool requirements
  */
 
-import { _BaseItem, _Tool, ItemCost } from './index.js';
+import { _BaseItem, _Tool, ItemCost } from "./index.js";
 
 export interface CraftingRecipe {
   id: string;
@@ -32,9 +32,17 @@ export interface CraftingSkill {
   required: boolean; // whether this check must succeed
 }
 
-export type CraftingDifficulty = 'trivial' | 'easy' | 'medium' | 'hard' | 'very_hard' | 'legendary';
-export type CraftingCategory = 'alchemy' | 'blacksmithing' | 'leatherworking' | 'woodworking' | 'enchanting' | 'cooking' | 'herbalism' | 'other';
-export type CraftingQuality = 'poor' | 'standard' | 'superior' | 'masterwork';
+export type CraftingDifficulty = "trivial" | "easy" | "medium" | "hard" | "very_hard" | "legendary";
+export type CraftingCategory =
+  | "alchemy"
+  | "blacksmithing"
+  | "leatherworking"
+  | "woodworking"
+  | "enchanting"
+  | "cooking"
+  | "herbalism"
+  | "other";
+export type CraftingQuality = "poor" | "standard" | "superior" | "masterwork";
 
 export interface CraftingAttempt {
   id: string;
@@ -42,7 +50,7 @@ export interface CraftingAttempt {
   crafterId: string;
   startTime: Date;
   endTime?: Date;
-  status: 'in_progress' | 'completed' | 'failed' | 'abandoned';
+  status: "in_progress" | "completed" | "failed" | "abandoned";
   skillChecks: SkillCheckResult[];
   quality: CraftingQuality;
   timeSpent: number; // actual time spent in hours
@@ -89,15 +97,16 @@ export class CraftingSystem {
     recipeId: string,
     crafterId: string,
     availableTools: string[],
-    workspaceId?: string
+    workspaceId?: string,
   ): CraftingAttempt | null {
     const recipe = this.recipes.get(recipeId);
     if (!recipe) return null;
 
     // Check if crafter has required tools
-    const hasRequiredTools = recipe.tools.every(toolId => 
-      availableTools.includes(toolId) || 
-      (workspaceId && this.workspaces.get(workspaceId)?.availableTools.includes(toolId))
+    const hasRequiredTools = recipe.tools.every(
+      (toolId) =>
+        availableTools.includes(toolId) ||
+        (workspaceId && this.workspaces.get(workspaceId)?.availableTools.includes(toolId)),
     );
 
     if (!hasRequiredTools) return null;
@@ -107,13 +116,13 @@ export class CraftingSystem {
       recipeId,
       crafterId,
       startTime: new Date(),
-      status: 'in_progress',
+      status: "in_progress",
       skillChecks: [],
-      quality: 'standard',
+      quality: "standard",
       timeSpent: 0,
       materialsUsed: [],
       toolsUsed: recipe.tools,
-      workspace: workspaceId
+      workspace: workspaceId,
     };
 
     this.activeAttempts.set(attempt.id, attempt);
@@ -125,7 +134,7 @@ export class CraftingSystem {
    */
   performSkillChecks(
     attemptId: string,
-    skillModifiers: Record<string, number>
+    skillModifiers: Record<string, number>,
   ): SkillCheckResult[] {
     const attempt = this.activeAttempts.get(attemptId);
     if (!attempt) return [];
@@ -152,7 +161,7 @@ export class CraftingSystem {
         modifier,
         total,
         success,
-        critical
+        critical,
       };
 
       results.push(result);
@@ -176,32 +185,30 @@ export class CraftingSystem {
     attempt.endTime = new Date();
 
     // Determine success based on skill checks
-    const requiredChecks = recipe.skills.filter(s => s.required);
-    const requiredSuccess = requiredChecks.every(check => 
-      attempt.skillChecks.some(result => 
-        result.skill === check.skill && result.success
-      )
+    const requiredChecks = recipe.skills.filter((s) => s.required);
+    const requiredSuccess = requiredChecks.every((check) =>
+      attempt.skillChecks.some((result) => result.skill === check.skill && result.success),
     );
 
     if (!requiredSuccess) {
-      attempt.status = 'failed';
-      attempt.quality = 'poor';
+      attempt.status = "failed";
+      attempt.quality = "poor";
     } else {
-      attempt.status = 'completed';
-      
+      attempt.status = "completed";
+
       // Determine quality based on skill check results
-      const successfulChecks = attempt.skillChecks.filter(r => r.success).length;
+      const successfulChecks = attempt.skillChecks.filter((r) => r.success).length;
       const totalChecks = attempt.skillChecks.length;
-      const criticalSuccesses = attempt.skillChecks.filter(r => r.critical).length;
+      const criticalSuccesses = attempt.skillChecks.filter((r) => r.critical).length;
 
       if (criticalSuccesses > 0 && successfulChecks === totalChecks) {
-        attempt.quality = 'masterwork';
+        attempt.quality = "masterwork";
       } else if (successfulChecks === totalChecks) {
-        attempt.quality = 'superior';
+        attempt.quality = "superior";
       } else if (successfulChecks >= totalChecks * 0.75) {
-        attempt.quality = 'standard';
+        attempt.quality = "standard";
       } else {
-        attempt.quality = 'poor';
+        attempt.quality = "poor";
       }
     }
 
@@ -218,20 +225,16 @@ export class CraftingSystem {
   getAvailableRecipes(
     characterSkills: string[],
     availableTools: string[],
-    characterLevel?: number
+    characterLevel?: number,
   ): CraftingRecipe[] {
     const available: CraftingRecipe[] = [];
 
     for (const recipe of this.recipes.values()) {
       // Check if character has required skills
-      const hasSkills = recipe.skills.every(skill => 
-        characterSkills.includes(skill.skill)
-      );
+      const hasSkills = recipe.skills.every((skill) => characterSkills.includes(skill.skill));
 
       // Check if character has access to required tools
-      const hasTools = recipe.tools.every(toolId => 
-        availableTools.includes(toolId)
-      );
+      const hasTools = recipe.tools.every((toolId) => availableTools.includes(toolId));
 
       if (hasSkills && hasTools) {
         available.push(recipe);
@@ -245,7 +248,7 @@ export class CraftingSystem {
    * Get recipes by category
    */
   getRecipesByCategory(category: CraftingCategory): CraftingRecipe[] {
-    return Array.from(this.recipes.values()).filter(recipe => recipe.category === category);
+    return Array.from(this.recipes.values()).filter((recipe) => recipe.category === category);
   }
 
   /**
@@ -253,9 +256,10 @@ export class CraftingSystem {
    */
   searchRecipes(query: string): CraftingRecipe[] {
     const lowercaseQuery = query.toLowerCase();
-    return Array.from(this.recipes.values()).filter(recipe =>
-      recipe.name.toLowerCase().includes(lowercaseQuery) ||
-      recipe.description.toLowerCase().includes(lowercaseQuery)
+    return Array.from(this.recipes.values()).filter(
+      (recipe) =>
+        recipe.name.toLowerCase().includes(lowercaseQuery) ||
+        recipe.description.toLowerCase().includes(lowercaseQuery),
     );
   }
 
@@ -264,19 +268,19 @@ export class CraftingSystem {
    */
   getActiveAttempts(crafterId?: string): CraftingAttempt[] {
     const attempts = Array.from(this.activeAttempts.values());
-    return crafterId ? attempts.filter(a => a.crafterId === crafterId) : attempts;
+    return crafterId ? attempts.filter((a) => a.crafterId === crafterId) : attempts;
   }
 
   /**
    * Get completed attempts
    */
   getCompletedAttempts(crafterId?: string, limit?: number): CraftingAttempt[] {
-    let attempts = crafterId ? 
-      this.completedAttempts.filter(a => a.crafterId === crafterId) :
-      this.completedAttempts;
+    let attempts = crafterId
+      ? this.completedAttempts.filter((a) => a.crafterId === crafterId)
+      : this.completedAttempts;
 
     attempts = attempts.sort((a, b) => (b.endTime?.getTime() || 0) - (a.endTime?.getTime() || 0));
-    
+
     return limit ? attempts.slice(0, limit) : attempts;
   }
 
@@ -311,67 +315,67 @@ export class CraftingSystem {
   private initializeRecipes(): void {
     const recipes: CraftingRecipe[] = [
       {
-        id: 'healing_potion',
-        name: 'Potion of Healing',
-        description: 'Craft a basic healing potion',
-        resultItemId: 'potion_of_healing',
+        id: "healing_potion",
+        name: "Potion of Healing",
+        description: "Craft a basic healing potion",
+        resultItemId: "potion_of_healing",
         resultQuantity: 1,
         materials: [
-          { itemId: 'herbs_healing', quantity: 2, consumed: true },
-          { itemId: 'vial_empty', quantity: 1, consumed: true },
-          { itemId: 'water_pure', quantity: 1, consumed: true }
+          { itemId: "herbs_healing", quantity: 2, consumed: true },
+          { itemId: "vial_empty", quantity: 1, consumed: true },
+          { itemId: "water_pure", quantity: 1, consumed: true },
         ],
-        tools: ['alchemist_supplies'],
+        tools: ["alchemist_supplies"],
         skills: [
-          { skill: 'Medicine', dc: 15, required: true },
-          { skill: 'Nature', dc: 12, required: false }
+          { skill: "Medicine", dc: 15, required: true },
+          { skill: "Nature", dc: 12, required: false },
         ],
         timeRequired: 4,
-        difficulty: 'medium',
-        category: 'alchemy'
+        difficulty: "medium",
+        category: "alchemy",
       },
       {
-        id: 'iron_sword',
-        name: 'Iron Sword',
-        description: 'Forge a basic iron sword',
-        resultItemId: 'longsword',
+        id: "iron_sword",
+        name: "Iron Sword",
+        description: "Forge a basic iron sword",
+        resultItemId: "longsword",
         resultQuantity: 1,
         materials: [
-          { itemId: 'iron_ingot', quantity: 3, consumed: true },
-          { itemId: 'leather_strip', quantity: 1, consumed: true },
-          { itemId: 'wood_handle', quantity: 1, consumed: true }
+          { itemId: "iron_ingot", quantity: 3, consumed: true },
+          { itemId: "leather_strip", quantity: 1, consumed: true },
+          { itemId: "wood_handle", quantity: 1, consumed: true },
         ],
-        tools: ['smith_tools', 'forge'],
+        tools: ["smith_tools", "forge"],
         skills: [
-          { skill: 'Smith\'s Tools', dc: 18, required: true },
-          { skill: 'Athletics', dc: 15, required: false }
+          { skill: "Smith's Tools", dc: 18, required: true },
+          { skill: "Athletics", dc: 15, required: false },
         ],
         timeRequired: 8,
-        difficulty: 'hard',
-        category: 'blacksmithing'
+        difficulty: "hard",
+        category: "blacksmithing",
       },
       {
-        id: 'leather_armor',
-        name: 'Leather Armor',
-        description: 'Craft basic leather armor',
-        resultItemId: 'leather_armor',
+        id: "leather_armor",
+        name: "Leather Armor",
+        description: "Craft basic leather armor",
+        resultItemId: "leather_armor",
         resultQuantity: 1,
         materials: [
-          { itemId: 'leather_hide', quantity: 4, consumed: true },
-          { itemId: 'thread_strong', quantity: 1, consumed: true }
+          { itemId: "leather_hide", quantity: 4, consumed: true },
+          { itemId: "thread_strong", quantity: 1, consumed: true },
         ],
-        tools: ['leatherworker_tools'],
+        tools: ["leatherworker_tools"],
         skills: [
-          { skill: 'Leatherworker\'s Tools', dc: 16, required: true },
-          { skill: 'Sleight of Hand', dc: 14, required: false }
+          { skill: "Leatherworker's Tools", dc: 16, required: true },
+          { skill: "Sleight of Hand", dc: 14, required: false },
         ],
         timeRequired: 6,
-        difficulty: 'medium',
-        category: 'leatherworking'
-      }
+        difficulty: "medium",
+        category: "leatherworking",
+      },
     ];
 
-    recipes.forEach(recipe => {
+    recipes.forEach((recipe) => {
       this.recipes.set(recipe.id, recipe);
     });
   }
@@ -379,35 +383,35 @@ export class CraftingSystem {
   private initializeWorkspaces(): void {
     const workspaces: CraftingWorkspace[] = [
       {
-        id: 'blacksmith_forge',
-        name: 'Blacksmith\'s Forge',
-        type: 'blacksmithing',
+        id: "blacksmith_forge",
+        name: "Blacksmith's Forge",
+        type: "blacksmithing",
         qualityBonus: 2,
         timeMultiplier: 0.75,
-        availableTools: ['smith_tools', 'forge', 'anvil', 'bellows'],
-        cost: { amount: 5, currency: 'gp' }
+        availableTools: ["smith_tools", "forge", "anvil", "bellows"],
+        cost: { amount: 5, currency: "gp" },
       },
       {
-        id: 'alchemist_lab',
-        name: 'Alchemist\'s Laboratory',
-        type: 'alchemy',
+        id: "alchemist_lab",
+        name: "Alchemist's Laboratory",
+        type: "alchemy",
         qualityBonus: 3,
         timeMultiplier: 0.5,
-        availableTools: ['alchemist_supplies', 'distillery', 'cauldron'],
-        cost: { amount: 10, currency: 'gp' }
+        availableTools: ["alchemist_supplies", "distillery", "cauldron"],
+        cost: { amount: 10, currency: "gp" },
       },
       {
-        id: 'leather_workshop',
-        name: 'Leatherworker\'s Workshop',
-        type: 'leatherworking',
+        id: "leather_workshop",
+        name: "Leatherworker's Workshop",
+        type: "leatherworking",
         qualityBonus: 1,
         timeMultiplier: 0.8,
-        availableTools: ['leatherworker_tools', 'tanning_rack', 'cutting_tools'],
-        cost: { amount: 3, currency: 'gp' }
-      }
+        availableTools: ["leatherworker_tools", "tanning_rack", "cutting_tools"],
+        cost: { amount: 3, currency: "gp" },
+      },
     ];
 
-    workspaces.forEach(workspace => {
+    workspaces.forEach((workspace) => {
       this.workspaces.set(workspace.id, workspace);
     });
   }

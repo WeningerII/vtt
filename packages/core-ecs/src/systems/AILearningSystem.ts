@@ -1,5 +1,5 @@
-import { EntityId } from '../components/Combat';
-import { AIDecision, AIBehavior } from './MonsterAISystem';
+import { EntityId } from "../components/Combat";
+import { AIDecision, AIBehavior } from "./MonsterAISystem";
 
 export interface ActionOutcome {
   actionType: string;
@@ -48,12 +48,15 @@ export class AILearningSystem {
   private qValues: Map<string, QValue> = new Map();
   private experienceReplay: ActionOutcome[] = [];
   private parameters: LearningParameters;
-  private entityLearningData: Map<EntityId, {
-    totalReward: number;
-    actionCount: number;
-    lastUpdate: number;
-    personalityAdjustments: Partial<AIBehavior>;
-  }> = new Map();
+  private entityLearningData: Map<
+    EntityId,
+    {
+      totalReward: number;
+      actionCount: number;
+      lastUpdate: number;
+      personalityAdjustments: Partial<AIBehavior>;
+    }
+  > = new Map();
 
   constructor(parameters?: Partial<LearningParameters>) {
     this.parameters = {
@@ -64,7 +67,7 @@ export class AILearningSystem {
       minExplorationRate: 0.05,
       memorySize: 10000,
       batchSize: 32,
-      ...parameters
+      ...parameters,
     };
   }
 
@@ -74,7 +77,7 @@ export class AILearningSystem {
   recordOutcome(entityId: EntityId, decision: AIDecision, outcome: ActionOutcome): void {
     // Add to experience replay buffer
     this.experienceReplay.push(outcome);
-    
+
     // Limit memory size
     if (this.experienceReplay.length > this.parameters.memorySize) {
       this.experienceReplay.shift();
@@ -85,7 +88,7 @@ export class AILearningSystem {
       totalReward: 0,
       actionCount: 0,
       lastUpdate: Date.now(),
-      personalityAdjustments: {} as Record<string, any>
+      personalityAdjustments: {} as Record<string, any>,
     };
 
     const reward = this.calculateReward(outcome);
@@ -109,7 +112,7 @@ export class AILearningSystem {
    */
   getBestAction(entityId: EntityId, state: QValueState, availableActions: string[]): string {
     if (availableActions.length === 0) {
-      return 'wait';
+      return "wait";
     }
 
     // Exploration vs exploitation
@@ -143,10 +146,10 @@ export class AILearningSystem {
 
     // Apply learned personality adjustments
     const adaptedBehavior = { ...baseBehavior };
-    
+
     // Adjust based on success rate
     const averageReward = learningData.totalReward / Math.max(learningData.actionCount, 1);
-    
+
     if (averageReward < -0.5) {
       // Poor performance - become more defensive
       adaptedBehavior.selfPreservation = Math.min(1, adaptedBehavior.selfPreservation + 0.2);
@@ -173,7 +176,7 @@ export class AILearningSystem {
 
     // Sample random batch from experience
     const batch = this.sampleExperience(this.parameters.batchSize);
-    
+
     for (const experience of batch) {
       const reward = this.calculateReward(experience);
       this.updateQValue(experience, reward);
@@ -182,7 +185,7 @@ export class AILearningSystem {
     // Decay exploration rate
     this.parameters.explorationRate = Math.max(
       this.parameters.minExplorationRate,
-      this.parameters.explorationRate * this.parameters.explorationDecay
+      this.parameters.explorationRate * this.parameters.explorationDecay,
     );
   }
 
@@ -262,13 +265,14 @@ export class AILearningSystem {
     const actionKey = `${stateKey}:${outcome.actionType}`;
 
     const existingQValue = this.qValues.get(actionKey);
-    
+
     if (existingQValue) {
       // Update existing Q-value using Q-learning formula
       const oldValue = existingQValue.value;
-      const newValue = oldValue + this.parameters.learningRate * (
-        reward + this.parameters.discountFactor * this.getMaxQValue(state) - oldValue
-      );
+      const newValue =
+        oldValue +
+        this.parameters.learningRate *
+          (reward + this.parameters.discountFactor * this.getMaxQValue(state) - oldValue);
 
       existingQValue.value = newValue;
       existingQValue.sampleCount++;
@@ -280,7 +284,7 @@ export class AILearningSystem {
         action: outcome.actionType,
         value: reward,
         confidence: 0.1,
-        sampleCount: 1
+        sampleCount: 1,
       });
     }
   }
@@ -303,7 +307,7 @@ export class AILearningSystem {
     let maxValue = 0;
 
     for (const [key, qValue] of this.qValues) {
-      if (key.startsWith(stateKey + ':')) {
+      if (key.startsWith(stateKey + ":")) {
         maxValue = Math.max(maxValue, qValue.value);
       }
     }
@@ -320,7 +324,7 @@ export class AILearningSystem {
       enemyCount: Math.min(outcome.context.enemyCount, 10), // Cap at 10
       allyCount: Math.min(outcome.context.allyCount, 10), // Cap at 10
       actionPoints: Math.min(3, Math.max(0, 1)), // Assume 1 action point for simplicity
-      hasAdvantage: outcome.context.allyCount > outcome.context.enemyCount
+      hasAdvantage: outcome.context.allyCount > outcome.context.enemyCount,
     };
   }
 
@@ -337,8 +341,11 @@ export class AILearningSystem {
   getStats() {
     const entities = Array.from(this.entityLearningData.entries());
     const totalEntities = entities.length;
-    const avgReward = entities.reduce((sum, [, data]) => 
-      sum + (data.totalReward / Math.max(data.actionCount, 1)), 0) / Math.max(totalEntities, 1);
+    const avgReward =
+      entities.reduce(
+        (sum, [, data]) => sum + data.totalReward / Math.max(data.actionCount, 1),
+        0,
+      ) / Math.max(totalEntities, 1);
 
     return {
       totalEntities,
@@ -346,7 +353,8 @@ export class AILearningSystem {
       experienceBufferSize: this.experienceReplay.length,
       explorationRate: this.parameters.explorationRate,
       averageReward: avgReward,
-      highConfidenceQValues: Array.from(this.qValues.values()).filter(q => q.confidence > 0.8).length
+      highConfidenceQValues: Array.from(this.qValues.values()).filter((q) => q.confidence > 0.8)
+        .length,
     };
   }
 
@@ -358,7 +366,7 @@ export class AILearningSystem {
       qValues: Array.from(this.qValues.entries()),
       entityData: Array.from(this.entityLearningData.entries()),
       parameters: this.parameters,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 

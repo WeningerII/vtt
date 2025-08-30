@@ -5,7 +5,13 @@
 import { RouteHandler } from "../router/types";
 import SRDMonsters from "@vtt/content-5e-srd";
 import { MonsterService } from "../services/MonsterService";
-import { handleRouteError, validateRequired, validateString, validateArray, NotFoundError } from "../middleware/errorHandler";
+import {
+  handleRouteError,
+  validateRequired,
+  validateString,
+  validateArray,
+  NotFoundError,
+} from "../middleware/errorHandler";
 
 export const seedSRDMonstersHandler: RouteHandler = async (ctx) => {
   try {
@@ -64,10 +70,11 @@ export const createMonsterHandler: RouteHandler = async (ctx) => {
     ctx.req.on("end", async () => {
       try {
         const data = JSON.parse(body);
-        
+
         validateRequired(data, ["name", "statblock"]);
         validateString(data.name, "name", { minLength: 1, maxLength: 200 });
-        if (data.stableId) validateString(data.stableId, "stableId", { minLength: 1, maxLength: 100 });
+        if (data.stableId)
+          validateString(data.stableId, "stableId", { minLength: 1, maxLength: 100 });
         if (data.tags) validateArray(data.tags, "tags", { maxLength: 50 });
 
         const monsterService = new MonsterService(ctx.prisma);
@@ -101,7 +108,7 @@ export const updateMonsterHandler: RouteHandler = async (ctx) => {
     ctx.req.on("end", async () => {
       try {
         const data = JSON.parse(body);
-        
+
         if (data.name) validateString(data.name, "name", { minLength: 1, maxLength: 200 });
         if (data.tags) validateArray(data.tags, "tags", { maxLength: 50 });
 

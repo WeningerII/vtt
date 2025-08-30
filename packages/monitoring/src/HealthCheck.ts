@@ -2,7 +2,7 @@
  * Health check system for monitoring service availability
  */
 
-export type HealthStatus = 'healthy' | 'degraded' | 'unhealthy';
+export type HealthStatus = "healthy" | "degraded" | "unhealthy";
 
 export interface HealthCheckResult {
   name: string;
@@ -39,10 +39,10 @@ export class HealthCheckManager {
 
   start(): void {
     if (this.isRunning) return;
-    
+
     this.isRunning = true;
     this.runChecks(); // Run immediately
-    
+
     this.intervalId = setInterval(() => {
       this.runChecks();
     }, this.config.interval);
@@ -57,7 +57,7 @@ export class HealthCheckManager {
   }
 
   private async runChecks(): Promise<void> {
-    const promises = this.config.checks.map(check => this.runSingleCheck(check));
+    const promises = this.config.checks.map((check) => this.runSingleCheck(check));
     await Promise.all(promises);
   }
 
@@ -73,7 +73,7 @@ export class HealthCheckManager {
       } catch (error) {
         lastError = error as Error;
         attempt++;
-        
+
         if (attempt < this.config.retries) {
           await this.sleep(1000 * attempt); // Exponential backoff
         }
@@ -83,7 +83,7 @@ export class HealthCheckManager {
     // All retries failed
     this.results.set(check.name, {
       name: check.name,
-      status: 'unhealthy',
+      status: "unhealthy",
       message: `Check failed after ${this.config.retries} attempts: ${lastError?.message}`,
       duration: 0,
       timestamp: new Date(),
@@ -92,9 +92,9 @@ export class HealthCheckManager {
 
   private async executeCheck(check: HealthCheck): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     const timeoutPromise = new Promise<never>((__, __reject) => {
-      setTimeout(() => reject(new Error('Health check timeout')), check.timeout);
+      setTimeout(() => reject(new Error("Health check timeout")), check.timeout);
     });
 
     try {
@@ -109,7 +109,7 @@ export class HealthCheckManager {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   getResults(): HealthCheckResult[] {
@@ -118,15 +118,15 @@ export class HealthCheckManager {
 
   getOverallStatus(): HealthStatus {
     const results = this.getResults();
-    
-    if (results.length === 0) return 'unhealthy';
-    
-    const unhealthyCount = results.filter(r => r.status === 'unhealthy').length;
-    const degradedCount = results.filter(r => r.status === 'degraded').length;
-    
-    if (unhealthyCount > 0) return 'unhealthy';
-    if (degradedCount > 0) return 'degraded';
-    return 'healthy';
+
+    if (results.length === 0) return "unhealthy";
+
+    const unhealthyCount = results.filter((r) => r.status === "unhealthy").length;
+    const degradedCount = results.filter((r) => r.status === "degraded").length;
+
+    if (unhealthyCount > 0) return "unhealthy";
+    if (degradedCount > 0) return "degraded";
+    return "healthy";
   }
 
   getHealthSummary(): {
@@ -144,8 +144,8 @@ export class HealthCheckManager {
 
 // Database health check
 export class DatabaseHealthCheck implements HealthCheck {
-  name = 'database';
-  description = 'Database connectivity check';
+  name = "database";
+  description = "Database connectivity check";
   timeout = 5000;
 
   private connectionString: string;
@@ -156,22 +156,22 @@ export class DatabaseHealthCheck implements HealthCheck {
 
   async check(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       // Simulate database check
       await this.simulateDBQuery();
-      
+
       return {
         name: this.name,
-        status: 'healthy',
-        message: 'Database connection successful',
+        status: "healthy",
+        message: "Database connection successful",
         duration: Date.now() - startTime,
         timestamp: new Date(),
       };
     } catch (error) {
       return {
         name: this.name,
-        status: 'unhealthy',
+        status: "unhealthy",
         message: `Database connection failed: ${(error as Error).message}`,
         duration: Date.now() - startTime,
         timestamp: new Date(),
@@ -181,19 +181,19 @@ export class DatabaseHealthCheck implements HealthCheck {
 
   private async simulateDBQuery(): Promise<void> {
     // Simulate database query delay
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
+
     // Simulate occasional failures
     if (Math.random() < 0.05) {
-      throw new Error('Connection timeout');
+      throw new Error("Connection timeout");
     }
   }
 }
 
 // Redis health check
 export class RedisHealthCheck implements HealthCheck {
-  name = 'redis';
-  description = 'Redis connectivity check';
+  name = "redis";
+  description = "Redis connectivity check";
   timeout = 3000;
 
   private host: string;
@@ -206,15 +206,15 @@ export class RedisHealthCheck implements HealthCheck {
 
   async check(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       // Simulate Redis ping
       await this.simulateRedisPing();
-      
+
       return {
         name: this.name,
-        status: 'healthy',
-        message: 'Redis connection successful',
+        status: "healthy",
+        message: "Redis connection successful",
         duration: Date.now() - startTime,
         timestamp: new Date(),
         metadata: { host: this.host, port: this.port },
@@ -222,7 +222,7 @@ export class RedisHealthCheck implements HealthCheck {
     } catch (error) {
       return {
         name: this.name,
-        status: 'unhealthy',
+        status: "unhealthy",
         message: `Redis connection failed: ${(error as Error).message}`,
         duration: Date.now() - startTime,
         timestamp: new Date(),
@@ -231,18 +231,18 @@ export class RedisHealthCheck implements HealthCheck {
   }
 
   private async simulateRedisPing(): Promise<void> {
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
-    
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
+
     if (Math.random() < 0.02) {
-      throw new Error('Redis unavailable');
+      throw new Error("Redis unavailable");
     }
   }
 }
 
 // Memory usage health check
 export class MemoryHealthCheck implements HealthCheck {
-  name = 'memory';
-  description = 'Memory usage check';
+  name = "memory";
+  description = "Memory usage check";
   timeout = 1000;
 
   private warningThreshold: number;
@@ -255,22 +255,22 @@ export class MemoryHealthCheck implements HealthCheck {
 
   async check(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const memoryUsage = this.getMemoryUsage();
       const usageRatio = memoryUsage.used / memoryUsage.total;
-      
-      let status: HealthStatus = 'healthy';
+
+      let status: HealthStatus = "healthy";
       let message = `Memory usage: ${(usageRatio * 100).toFixed(1)}%`;
-      
+
       if (usageRatio >= this.criticalThreshold) {
-        status = 'unhealthy';
-        message += ' (Critical)';
+        status = "unhealthy";
+        message += " (Critical)";
       } else if (usageRatio >= this.warningThreshold) {
-        status = 'degraded';
-        message += ' (Warning)';
+        status = "degraded";
+        message += " (Warning)";
       }
-      
+
       return {
         name: this.name,
         status,
@@ -286,7 +286,7 @@ export class MemoryHealthCheck implements HealthCheck {
     } catch (error) {
       return {
         name: this.name,
-        status: 'unhealthy',
+        status: "unhealthy",
         message: `Memory check failed: ${(error as Error).message}`,
         duration: Date.now() - startTime,
         timestamp: new Date(),
@@ -295,14 +295,14 @@ export class MemoryHealthCheck implements HealthCheck {
   }
 
   private getMemoryUsage(): { used: number; total: number } {
-    if (typeof process !== 'undefined' && process.memoryUsage) {
+    if (typeof process !== "undefined" && process.memoryUsage) {
       const usage = process.memoryUsage();
       return {
         used: usage.heapUsed,
         total: usage.heapTotal,
       };
     }
-    
+
     // Fallback for browser environment
     return {
       used: 50 * 1024 * 1024, // 50MB
@@ -329,19 +329,19 @@ export class ExternalServiceHealthCheck implements HealthCheck {
 
   async check(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const response = await fetch(this.url, {
-        method: 'GET',
+        method: "GET",
         signal: AbortSignal.timeout(this.timeout),
       });
-      
+
       const duration = Date.now() - startTime;
-      
+
       if (response.status === this.expectedStatus) {
         return {
           name: this.name,
-          status: 'healthy',
+          status: "healthy",
           message: `Service responded with status ${response.status}`,
           duration,
           timestamp: new Date(),
@@ -350,7 +350,7 @@ export class ExternalServiceHealthCheck implements HealthCheck {
       } else {
         return {
           name: this.name,
-          status: 'degraded',
+          status: "degraded",
           message: `Service responded with unexpected status ${response.status}`,
           duration,
           timestamp: new Date(),
@@ -360,7 +360,7 @@ export class ExternalServiceHealthCheck implements HealthCheck {
     } catch (error) {
       return {
         name: this.name,
-        status: 'unhealthy',
+        status: "unhealthy",
         message: `Service check failed: ${(error as Error).message}`,
         duration: Date.now() - startTime,
         timestamp: new Date(),

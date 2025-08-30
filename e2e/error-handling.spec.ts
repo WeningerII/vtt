@@ -1,14 +1,14 @@
-import { test, expect } from '@playwright/test';
-import { factory as _factory } from './utils/factories';
-import { authUtils as _authUtils } from './utils/auth';
-import { testDb as _testDb } from './utils/database';
+import { test, expect } from "@playwright/test";
+import { factory as _factory } from "./utils/factories";
+import { authUtils as _authUtils } from "./utils/auth";
+import { testDb as _testDb } from "./utils/database";
 
-test.describe('Error Handling and Resilience Tests', () => {
+test.describe("Error Handling and Resilience Tests", () => {
   test.beforeEach(async () => {
     await _testDb.reset();
   });
 
-  test('Network failure recovery', async ({ page, context }) => {
+  test("Network failure recovery", async ({ page, context }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
@@ -17,7 +17,7 @@ test.describe('Error Handling and Resilience Tests', () => {
     await _authUtils.waitForAuthReady(page);
 
     // Verify initial connection
-    await expect(page.locator('[data-testid="connection-status"]')).toHaveText('Connected');
+    await expect(page.locator('[data-testid="connection-status"]')).toHaveText("Connected");
 
     // Simulate network failure
     await context.setOffline(true);
@@ -25,7 +25,7 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify offline indicator appears
     await expect(page.locator('[data-testid="offline-indicator"]')).toBeVisible();
-    await expect(page.locator('[data-testid="connection-status"]')).toHaveText('Offline');
+    await expect(page.locator('[data-testid="connection-status"]')).toHaveText("Offline");
 
     // Try to perform actions while offline
     const token = page.locator('[data-testid="token"]').first();
@@ -35,8 +35,8 @@ test.describe('Error Handling and Resilience Tests', () => {
     await page.mouse.up();
 
     // Send chat message while offline
-    await page.fill('[data-testid="chat-input"]', 'Offline message');
-    await page.press('[data-testid="chat-input"]', 'Enter');
+    await page.fill('[data-testid="chat-input"]', "Offline message");
+    await page.press('[data-testid="chat-input"]', "Enter");
 
     // Verify queued actions indicator
     await expect(page.locator('[data-testid="queued-actions"]')).toBeVisible();
@@ -46,31 +46,33 @@ test.describe('Error Handling and Resilience Tests', () => {
     await page.waitForTimeout(5000);
 
     // Verify reconnection
-    await expect(page.locator('[data-testid="connection-status"]')).toHaveText('Connected');
+    await expect(page.locator('[data-testid="connection-status"]')).toHaveText("Connected");
     await expect(page.locator('[data-testid="offline-indicator"]')).not.toBeVisible();
 
     // Verify queued actions were applied
-    await expect(token).toHaveAttribute('data-x', '300');
-    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText('Offline message');
+    await expect(token).toHaveAttribute("data-x", "300");
+    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText(
+      "Offline message",
+    );
     await expect(page.locator('[data-testid="queued-actions"]')).not.toBeVisible();
 
     // Should attempt retry
     await expect(page.locator('[data-testid="loading-indicator"]')).toBeVisible();
   });
 
-  test('Server error handling', async ({ page }) => {
+  test("Server error handling", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
     await _authUtils.mockAuthentication(page, gm);
 
     // Mock server errors
-    await page.route('**/api/**', route => {
-      if (route.request().url().includes('/scenes/')) {
+    await page.route("**/api/**", (route) => {
+      if (route.request().url().includes("/scenes/")) {
         route.fulfill({
           status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({ error: 'Internal Server Error' }),
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Internal Server Error" }),
         });
       } else {
         route.continue();
@@ -81,7 +83,9 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify error handling
     await expect(page.locator('[data-testid="error-banner"]')).toBeVisible();
-    await expect(page.locator('[data-testid="error-message"]')).toContainText('Failed to load scene');
+    await expect(page.locator('[data-testid="error-message"]')).toContainText(
+      "Failed to load scene",
+    );
 
     // Verify retry mechanism
     await page.click('[data-testid="retry-button"]');
@@ -91,7 +95,7 @@ test.describe('Error Handling and Resilience Tests', () => {
     await expect(page.locator('[data-testid="loading-indicator"]')).toBeVisible();
   });
 
-  test('Authentication expiration handling', async ({ page }) => {
+  test("Authentication expiration handling", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
@@ -100,12 +104,12 @@ test.describe('Error Handling and Resilience Tests', () => {
     await _authUtils.waitForAuthReady(page);
 
     // Mock authentication expiration
-    await page.route('**/api/**', route => {
-      if (route.request().headers()['authorization']) {
+    await page.route("**/api/**", (route) => {
+      if (route.request().headers()["authorization"]) {
         route.fulfill({
           status: 401,
-          contentType: 'application/json',
-          body: JSON.stringify({ error: 'Token expired' }),
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Token expired" }),
         });
       } else {
         route.continue();
@@ -117,7 +121,9 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify auth expiration handling
     await expect(page.locator('[data-testid="auth-expired-modal"]')).toBeVisible();
-    await expect(page.locator('[data-testid="reauth-prompt"]')).toContainText('Please log in again');
+    await expect(page.locator('[data-testid="reauth-prompt"]')).toContainText(
+      "Please log in again",
+    );
 
     // Test automatic token refresh
     await page.click('[data-testid="refresh-token"]');
@@ -127,18 +133,18 @@ test.describe('Error Handling and Resilience Tests', () => {
     await expect(page.locator('[data-testid="login-form"]')).toBeVisible();
   });
 
-  test('Database connection failure', async ({ page }) => {
+  test("Database connection failure", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
     await _authUtils.mockAuthentication(page, gm);
 
     // Mock database errors
-    await page.route('**/api/**', route => {
+    await page.route("**/api/**", (route) => {
       route.fulfill({
         status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Database unavailable' }),
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Database unavailable" }),
       });
     });
 
@@ -146,25 +152,29 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify database error handling
     await expect(page.locator('[data-testid="service-unavailable"]')).toBeVisible();
-    await expect(page.locator('[data-testid="error-message"]')).toContainText('Service temporarily unavailable');
+    await expect(page.locator('[data-testid="error-message"]')).toContainText(
+      "Service temporarily unavailable",
+    );
 
     // Verify graceful degradation
     await expect(page.locator('[data-testid="offline-mode-banner"]')).toBeVisible();
-    await expect(page.locator('[data-testid="limited-functionality"]')).toContainText('Limited functionality available');
+    await expect(page.locator('[data-testid="limited-functionality"]')).toContainText(
+      "Limited functionality available",
+    );
   });
 
-  test('WebSocket connection failure and recovery', async ({ page }) => {
+  test("WebSocket connection failure and recovery", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
     let wsConnectionCount = 0;
     let wsDisconnectionCount = 0;
 
-    page.on('websocket', ws => {
+    page.on("websocket", (ws) => {
       wsConnectionCount++;
       console.log(`WebSocket connection #${wsConnectionCount}`);
 
-      ws.on('close', () => {
+      ws.on("close", () => {
         wsDisconnectionCount++;
         console.log(`WebSocket disconnection #${wsDisconnectionCount}`);
       });
@@ -179,14 +189,14 @@ test.describe('Error Handling and Resilience Tests', () => {
     expect(wsConnectionCount).toBeGreaterThan(0);
 
     // Simulate WebSocket server unavailable
-    await page.route('**/ws', route => {
+    await page.route("**/ws", (route) => {
       route.abort();
     });
 
     // Force WebSocket reconnection attempt
     await page.evaluate(() => {
       // Trigger reconnection logic
-      window.dispatchEvent(new Event('online'));
+      window.dispatchEvent(new Event("online"));
     });
 
     await page.waitForTimeout(3000);
@@ -195,7 +205,7 @@ test.describe('Error Handling and Resilience Tests', () => {
     await expect(page.locator('[data-testid="websocket-reconnecting"]')).toBeVisible();
 
     // Clear route to allow reconnection
-    await page.unroute('**/ws');
+    await page.unroute("**/ws");
     await page.waitForTimeout(5000);
 
     // Verify successful reconnection
@@ -203,22 +213,22 @@ test.describe('Error Handling and Resilience Tests', () => {
     await expect(page.locator('[data-testid="websocket-connected"]')).toBeVisible();
   });
 
-  test('Invalid data handling', async ({ page }) => {
+  test("Invalid data handling", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
     await _authUtils.mockAuthentication(page, gm);
 
     // Mock invalid API responses
-    await page.route('**/api/scenes/**', route => {
+    await page.route("**/api/scenes/**", (route) => {
       route.fulfill({
         status: 200,
-        contentType: 'application/json',
+        contentType: "application/json",
         body: JSON.stringify({
-          id: 'invalid-id',
+          id: "invalid-id",
           name: null, // Invalid data
-          tokens: 'not-an-array', // Type mismatch
-          invalidField: 'should-be-ignored',
+          tokens: "not-an-array", // Type mismatch
+          invalidField: "should-be-ignored",
         }),
       });
     });
@@ -227,13 +237,15 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify graceful handling of invalid data
     await expect(page.locator('[data-testid="data-validation-error"]')).toBeVisible();
-    await expect(page.locator('[data-testid="fallback-scene-name"]')).toContainText('Untitled Scene');
+    await expect(page.locator('[data-testid="fallback-scene-name"]')).toContainText(
+      "Untitled Scene",
+    );
 
     // Verify application doesn't crash
     await expect(page.locator('[data-testid="scene-canvas"]')).toBeVisible();
   });
 
-  test('Concurrent modification conflicts', async ({ browser }) => {
+  test("Concurrent modification conflicts", async ({ browser }) => {
     const gameSession = await _factory.createCompleteGameSession();
     const { gm, player1 } = gameSession.users;
 
@@ -248,10 +260,7 @@ test.describe('Error Handling and Resilience Tests', () => {
       await _authUtils.mockAuthentication(playerPage, player1);
 
       const sceneUrl = `/scenes/${gameSession.scene.id}`;
-      await Promise.all([
-        gmPage.goto(sceneUrl),
-        playerPage.goto(sceneUrl),
-      ]);
+      await Promise.all([gmPage.goto(sceneUrl), playerPage.goto(sceneUrl)]);
 
       await Promise.all([
         _authUtils.waitForAuthReady(gmPage),
@@ -265,9 +274,9 @@ test.describe('Error Handling and Resilience Tests', () => {
       const playerToken = playerPage.locator('[data-testid="token"]').first();
 
       // GM starts editing token properties
-      await gmToken.click({ button: 'right' });
+      await gmToken.click({ button: "right" });
       await gmPage.click('[data-testid="edit-token"]');
-      await gmPage.fill('[data-testid="token-name"]', 'GM Edit');
+      await gmPage.fill('[data-testid="token-name"]', "GM Edit");
 
       // Player tries to move the same token
       await playerToken.hover();
@@ -285,19 +294,18 @@ test.describe('Error Handling and Resilience Tests', () => {
       await expect(playerPage.locator('[data-testid="conflict-notification"]')).toBeVisible();
 
       // Verify one change wins or merge is attempted
-      const finalTokenName = await gmToken.getAttribute('data-name');
-      const finalTokenX = await gmToken.getAttribute('data-x');
+      const finalTokenName = await gmToken.getAttribute("data-name");
+      const finalTokenX = await gmToken.getAttribute("data-x");
 
       expect(finalTokenName).toBeTruthy();
       expect(finalTokenX).toBeTruthy();
-
     } finally {
       await gmContext.close();
       await playerContext.close();
     }
   });
 
-  test('Memory leak prevention', async ({ page }) => {
+  test("Memory leak prevention", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
@@ -306,12 +314,13 @@ test.describe('Error Handling and Resilience Tests', () => {
     await _authUtils.waitForAuthReady(page);
 
     // Get initial memory baseline
-    const getMemoryUsage = () => page.evaluate(() => {
-      return {
-        usedJSHeapSize: (performance as any).memory?.usedJSHeapSize || 0,
-        totalJSHeapSize: (performance as any).memory?.totalJSHeapSize || 0,
-      };
-    });
+    const getMemoryUsage = () =>
+      page.evaluate(() => {
+        return {
+          usedJSHeapSize: (performance as any).memory?.usedJSHeapSize || 0,
+          totalJSHeapSize: (performance as any).memory?.totalJSHeapSize || 0,
+        };
+      });
 
     const initialMemory = await getMemoryUsage();
 
@@ -331,7 +340,7 @@ test.describe('Error Handling and Resilience Tests', () => {
       await page.waitForTimeout(100);
 
       // Delete token
-      await page.click('[data-testid="token"]', { button: 'right' });
+      await page.click('[data-testid="token"]', { button: "right" });
       await page.click('[data-testid="delete-token"]');
       await page.waitForTimeout(100);
     }
@@ -355,7 +364,7 @@ test.describe('Error Handling and Resilience Tests', () => {
     expect(memoryGrowthMB).toBeLessThan(20); // Less than 20MB growth
   });
 
-  test('File upload error handling', async ({ page }) => {
+  test("File upload error handling", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
@@ -364,65 +373,65 @@ test.describe('Error Handling and Resilience Tests', () => {
     await _authUtils.waitForAuthReady(page);
 
     // Test file too large
-    await page.route('**/api/assets/upload', route => {
+    await page.route("**/api/assets/upload", (route) => {
       route.fulfill({
         status: 413,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'File too large' }),
+        contentType: "application/json",
+        body: JSON.stringify({ error: "File too large" }),
       });
     });
 
     await page.click('[data-testid="upload-asset"]');
-    
+
     // Create a mock file input
     await page.setInputFiles('[data-testid="file-input"]', {
-      name: 'large-file.png',
-      mimeType: 'image/png',
+      name: "large-file.png",
+      mimeType: "image/png",
       buffer: Buffer.alloc(1024 * 1024 * 10), // 10MB
     });
 
     // Verify error handling
     await expect(page.locator('[data-testid="upload-error"]')).toBeVisible();
-    await expect(page.locator('[data-testid="error-message"]')).toContainText('File too large');
+    await expect(page.locator('[data-testid="error-message"]')).toContainText("File too large");
 
     // Test invalid file type
-    await page.unroute('**/api/assets/upload');
-    await page.route('**/api/assets/upload', route => {
+    await page.unroute("**/api/assets/upload");
+    await page.route("**/api/assets/upload", (route) => {
       route.fulfill({
         status: 400,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Invalid file type' }),
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Invalid file type" }),
       });
     });
 
     await page.setInputFiles('[data-testid="file-input"]', {
-      name: 'invalid.exe',
-      mimeType: 'application/x-executable',
-      buffer: Buffer.from('fake executable'),
+      name: "invalid.exe",
+      mimeType: "application/x-executable",
+      buffer: Buffer.from("fake executable"),
     });
 
     await expect(page.locator('[data-testid="upload-error"]')).toBeVisible();
-    await expect(page.locator('[data-testid="error-message"]')).toContainText('Invalid file type');
+    await expect(page.locator('[data-testid="error-message"]')).toContainText("Invalid file type");
   });
 
-  test('Rate limiting handling', async ({ page }) => {
+  test("Rate limiting handling", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     await _authUtils.mockAuthentication(page, gm);
 
     // Mock rate limiting
     let requestCount = 0;
-    await page.route('**/api/**', route => {
+    await page.route("**/api/**", (route) => {
       requestCount++;
       if (requestCount > 5) {
         route.fulfill({
           status: 429,
-          contentType: 'application/json',
+          contentType: "application/json",
           headers: {
-            'Retry-After': '60',
+            "Retry-After": "60",
           },
-          body: JSON.stringify({ error: 'Rate limit exceeded' }),
+          body: JSON.stringify({ error: "Rate limit exceeded" }),
         });
       } else {
         route.continue();
@@ -440,26 +449,26 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify rate limiting handling
     await expect(page.locator('[data-testid="rate-limit-warning"]')).toBeVisible();
-    await expect(page.locator('[data-testid="retry-after"]')).toContainText('60');
+    await expect(page.locator('[data-testid="retry-after"]')).toContainText("60");
 
     // Verify automatic retry after delay
     await page.waitForTimeout(2000);
     await expect(page.locator('[data-testid="auto-retry-countdown"]')).toBeVisible();
   });
 
-  test('Browser compatibility fallbacks', async ({ page }) => {
+  test("Browser compatibility fallbacks", async ({ page }) => {
     const gameSession = await _factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Mock unsupported browser features
     await page.addInitScript(() => {
       // Remove WebSocket support
       delete (window as any).WebSocket;
-      
+
       // Remove modern Canvas features
       const originalGetContext = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function(type: string) {
-        if (type === 'webgl' || type === 'webgl2') {
+      HTMLCanvasElement.prototype.getContext = function (type: string) {
+        if (type === "webgl" || type === "webgl2") {
           return null; // Simulate no WebGL support
         }
         return originalGetContext.call(this, type);
@@ -481,12 +490,14 @@ test.describe('Error Handling and Resilience Tests', () => {
 
     // Verify basic functionality still works
     await expect(page.locator('[data-testid="scene-canvas"]')).toBeVisible();
-    
+
     // Test polling fallback for real-time updates
-    await page.fill('[data-testid="chat-input"]', 'Fallback test message');
-    await page.press('[data-testid="chat-input"]', 'Enter');
+    await page.fill('[data-testid="chat-input"]', "Fallback test message");
+    await page.press('[data-testid="chat-input"]', "Enter");
 
     await page.waitForTimeout(3000);
-    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText('Fallback test message');
+    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText(
+      "Fallback test message",
+    );
   });
 });

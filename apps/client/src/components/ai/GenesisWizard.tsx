@@ -3,41 +3,41 @@
  * AI-powered character generation interface
  */
 
-import React, { useState, useEffect } from 'react';
-import { logger } from '@vtt/logging';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Wand2, 
-  User, 
-  Shield, 
-  Book, 
-  Dices, 
-  Sword, 
-  Sparkles, 
+import React, { useState, useEffect } from "react";
+import { logger } from "@vtt/logging";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Wand2,
+  User,
+  Shield,
+  Book,
+  Dices,
+  Sword,
+  Sparkles,
   Heart,
   Brain,
   CheckCircle,
   AlertCircle,
   RefreshCw,
   Play,
-  Download
-} from 'lucide-react';
-import { useWebSocket } from '../../providers/WebSocketProvider';
-import { useCharacter } from '../../hooks/useCharacter';
+  Download,
+} from "lucide-react";
+import { useWebSocket } from "../../providers/WebSocketProvider";
+import { useCharacter } from "../../hooks/useCharacter";
 
 interface CharacterConcept {
   prompt: string;
   preferences?: {
-    system?: 'dnd5e' | 'pathfinder' | 'generic';
-    powerLevel?: 'low' | 'standard' | 'high' | 'epic';
-    complexity?: 'simple' | 'moderate' | 'complex';
-    playstyle?: 'combat' | 'roleplay' | 'exploration' | 'balanced';
+    system?: "dnd5e" | "pathfinder" | "generic";
+    powerLevel?: "low" | "standard" | "high" | "epic";
+    complexity?: "simple" | "moderate" | "complex";
+    playstyle?: "combat" | "roleplay" | "exploration" | "balanced";
   };
 }
 
 interface GenerationStep {
   step: string;
-  status: 'pending' | 'processing' | 'completed' | 'error';
+  status: "pending" | "processing" | "completed" | "error";
   result?: any;
   reasoning?: string;
   alternatives?: any[];
@@ -69,51 +69,51 @@ const stepIcons: Record<string, React.ReactNode> = {
   equipment: <Sword className="w-5 h-5" />,
   spells: <Sparkles className="w-5 h-5" />,
   personality: <Heart className="w-5 h-5" />,
-  optimization: <CheckCircle className="w-5 h-5" />
+  optimization: <CheckCircle className="w-5 h-5" />,
 };
 
 const stepLabels: Record<string, string> = {
-  concept: 'Concept Analysis',
-  race: 'Race Selection',
-  class: 'Class Selection', 
-  background: 'Background',
-  abilities: 'Ability Scores',
-  equipment: 'Equipment',
-  spells: 'Spells',
-  personality: 'Personality',
-  optimization: 'Optimization'
+  concept: "Concept Analysis",
+  race: "Race Selection",
+  class: "Class Selection",
+  background: "Background",
+  abilities: "Ability Scores",
+  equipment: "Equipment",
+  spells: "Spells",
+  personality: "Personality",
+  optimization: "Optimization",
 };
 
 export const GenesisWizard: React.FC = () => {
   const [currentGeneration, setCurrentGeneration] = useState<CharacterGeneration | null>(null);
   const [conceptForm, setConceptForm] = useState<CharacterConcept>({
-    prompt: '',
+    prompt: "",
     preferences: {
-      system: 'dnd5e',
-      powerLevel: 'standard',
-      complexity: 'moderate',
-      playstyle: 'balanced'
-    }
+      system: "dnd5e",
+      powerLevel: "standard",
+      complexity: "moderate",
+      playstyle: "balanced",
+    },
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { send: sendWebSocket  } = useWebSocket();
+  const { send: sendWebSocket } = useWebSocket();
   const { createCharacter } = useCharacter();
 
   // Example prompts for inspiration
   const examplePrompts = [
     "A wise old wizard who left their tower to help people",
-    "A cheerful halfling rogue with a heart of gold", 
+    "A cheerful halfling rogue with a heart of gold",
     "A battle-scarred paladin seeking redemption",
     "A mysterious warlock bound to an ancient entity",
     "A nature-loving druid protecting the forest",
-    "A street-smart bard collecting stories"
+    "A street-smart bard collecting stories",
   ];
 
   const startGeneration = async () => {
     if (!conceptForm.prompt.trim()) {
-      setError('Please enter a character concept');
+      setError("Please enter a character concept");
       return;
     }
 
@@ -121,31 +121,30 @@ export const GenesisWizard: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/genesis/generate', {
-        method: 'POST',
+      const response = await fetch("/api/genesis/generate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify(conceptForm)
+        body: JSON.stringify(conceptForm),
       });
 
       const result = await response.json();
-      
+
       if (!result.success) {
-        throw new Error(result.error || 'Failed to start generation');
+        throw new Error(result.error || "Failed to start generation");
       }
 
       // Subscribe to WebSocket updates
       const generationId = result.data.generationId;
       sendWebSocket({
-        type: 'GENESIS_SUBSCRIBE',
-        payload: { generationId }
+        type: "GENESIS_SUBSCRIBE",
+        payload: { generationId },
       });
 
       // Poll for updates
       pollGenerationStatus(generationId);
-      
     } catch (err: any) {
       setError(err.message);
       setIsGenerating(false);
@@ -157,22 +156,22 @@ export const GenesisWizard: React.FC = () => {
       try {
         const response = await fetch(`/api/genesis/${generationId}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
           setCurrentGeneration(result.data);
-          
+
           if (result.data.isComplete || result.data.error) {
             clearInterval(pollInterval);
             setIsGenerating(false);
           }
         }
       } catch (err) {
-        logger.error('Failed to poll generation status:', err);
+        logger.error("Failed to poll generation status:", err);
       }
     }, 2000);
 
@@ -185,23 +184,22 @@ export const GenesisWizard: React.FC = () => {
 
     try {
       const response = await fetch(`/api/genesis/${currentGeneration.id}/retry`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ stepName })
+        body: JSON.stringify({ stepName }),
       });
 
       const result = await response.json();
-      
+
       if (!result.success) {
-        throw new Error(result.error || 'Failed to retry step');
+        throw new Error(result.error || "Failed to retry step");
       }
 
       // Continue polling for updates
       pollGenerationStatus(currentGeneration.id);
-      
     } catch (err: any) {
       setError(err.message);
     }
@@ -224,13 +222,13 @@ export const GenesisWizard: React.FC = () => {
     setIsGenerating(false);
     setError(null);
     setConceptForm({
-      prompt: '',
+      prompt: "",
       preferences: {
-        system: 'dnd5e',
-        powerLevel: 'standard',
-        complexity: 'moderate',
-        playstyle: 'balanced'
-      }
+        system: "dnd5e",
+        powerLevel: "standard",
+        complexity: "moderate",
+        playstyle: "balanced",
+      },
     });
   };
 
@@ -252,9 +250,7 @@ export const GenesisWizard: React.FC = () => {
 
       <div className="bg-gray-800 rounded-lg p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Character Concept
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Character Concept</label>
           <textarea
             value={conceptForm.prompt}
             onChange={(e) => setConceptForm({ ...conceptForm, prompt: e.target.value })}
@@ -265,15 +261,15 @@ export const GenesisWizard: React.FC = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Power Level
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Power Level</label>
             <select
-              value={conceptForm.preferences?.powerLevel || 'standard'}
-              onChange={(e) => setConceptForm({
-                ...conceptForm,
-                preferences: { ...conceptForm.preferences, powerLevel: e.target.value as any }
-              })}
+              value={conceptForm.preferences?.powerLevel || "standard"}
+              onChange={(e) =>
+                setConceptForm({
+                  ...conceptForm,
+                  preferences: { ...conceptForm.preferences, powerLevel: e.target.value as any },
+                })
+              }
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="low">Low Power</option>
@@ -284,15 +280,15 @@ export const GenesisWizard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Complexity
-            </label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Complexity</label>
             <select
-              value={conceptForm.preferences?.complexity || 'moderate'}
-              onChange={(e) => setConceptForm({
-                ...conceptForm,
-                preferences: { ...conceptForm.preferences, complexity: e.target.value as any }
-              })}
+              value={conceptForm.preferences?.complexity || "moderate"}
+              onChange={(e) =>
+                setConceptForm({
+                  ...conceptForm,
+                  preferences: { ...conceptForm.preferences, complexity: e.target.value as any },
+                })
+              }
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value="simple">Simple</option>
@@ -303,21 +299,21 @@ export const GenesisWizard: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Playstyle Focus
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Playstyle Focus</label>
           <div className="grid grid-cols-2 gap-2">
-            {['combat', 'roleplay', 'exploration', 'balanced'].map((style) => (
+            {["combat", "roleplay", "exploration", "balanced"].map((style) => (
               <button
                 key={style}
-                onClick={() => setConceptForm({
-                  ...conceptForm,
-                  preferences: { ...conceptForm.preferences, playstyle: style as any }
-                })}
+                onClick={() =>
+                  setConceptForm({
+                    ...conceptForm,
+                    preferences: { ...conceptForm.preferences, playstyle: style as any },
+                  })
+                }
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   conceptForm.preferences?.playstyle === style
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    ? "bg-purple-600 text-white"
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                 }`}
               >
                 {style.charAt(0).toUpperCase() + style.slice(1)}
@@ -327,9 +323,7 @@ export const GenesisWizard: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Need inspiration?
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Need inspiration?</label>
           <div className="flex flex-wrap gap-2">
             {examplePrompts.map((prompt, index) => (
               <button
@@ -347,7 +341,8 @@ export const GenesisWizard: React.FC = () => {
           onClick={startGeneration}
           disabled={isGenerating || !conceptForm.prompt.trim()}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-         aria-label="Click button" >
+          aria-label="Click button"
+        >
           <Play className="w-5 h-5" />
           Begin Genesis
         </button>
@@ -380,26 +375,34 @@ export const GenesisWizard: React.FC = () => {
         <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
           {currentGeneration?.steps.map((step, _index) => {
             const isActive = step.step === currentGeneration.currentStep;
-            const isCompleted = step.status === 'completed';
-            const isError = step.status === 'error';
-            const isProcessing = step.status === 'processing';
+            const isCompleted = step.status === "completed";
+            const isError = step.status === "error";
+            const isProcessing = step.status === "processing";
 
             return (
               <div
                 key={step.step}
                 className={`relative flex flex-col items-center p-4 rounded-lg transition-all ${
-                  isActive ? 'bg-purple-900/50 border-2 border-purple-500' :
-                  isCompleted ? 'bg-green-900/50 border border-green-500' :
-                  isError ? 'bg-red-900/50 border border-red-500' :
-                  'bg-gray-700 border border-gray-600'
+                  isActive
+                    ? "bg-purple-900/50 border-2 border-purple-500"
+                    : isCompleted
+                      ? "bg-green-900/50 border border-green-500"
+                      : isError
+                        ? "bg-red-900/50 border border-red-500"
+                        : "bg-gray-700 border border-gray-600"
                 }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full mb-2 ${
-                  isCompleted ? 'bg-green-500 text-white' :
-                  isError ? 'bg-red-500 text-white' :
-                  isProcessing ? 'bg-purple-500 text-white animate-pulse' :
-                  'bg-gray-600 text-gray-300'
-                }`}>
+                <div
+                  className={`flex items-center justify-center w-10 h-10 rounded-full mb-2 ${
+                    isCompleted
+                      ? "bg-green-500 text-white"
+                      : isError
+                        ? "bg-red-500 text-white"
+                        : isProcessing
+                          ? "bg-purple-500 text-white animate-pulse"
+                          : "bg-gray-600 text-gray-300"
+                  }`}
+                >
                   {isProcessing ? (
                     <RefreshCw className="w-5 h-5 animate-spin" />
                   ) : (
@@ -407,12 +410,17 @@ export const GenesisWizard: React.FC = () => {
                   )}
                 </div>
 
-                <span className={`text-sm font-medium text-center ${
-                  isCompleted ? 'text-green-400' :
-                  isError ? 'text-red-400' :
-                  isActive ? 'text-purple-400' :
-                  'text-gray-400'
-                }`}>
+                <span
+                  className={`text-sm font-medium text-center ${
+                    isCompleted
+                      ? "text-green-400"
+                      : isError
+                        ? "text-red-400"
+                        : isActive
+                          ? "text-purple-400"
+                          : "text-gray-400"
+                  }`}
+                >
                   {stepLabels[step.step]}
                 </span>
 
@@ -437,7 +445,7 @@ export const GenesisWizard: React.FC = () => {
         </div>
 
         {/* Current Step Details */}
-        {currentGeneration?.steps.find(s => s.step === currentGeneration.currentStep) && (
+        {currentGeneration?.steps.find((s) => s.step === currentGeneration.currentStep) && (
           <div className="mt-6 p-4 bg-gray-700 rounded-lg">
             <h4 className="font-medium text-white mb-2">
               Current: {stepLabels[currentGeneration.currentStep]}
@@ -458,7 +466,8 @@ export const GenesisWizard: React.FC = () => {
             <button
               onClick={resetWizard}
               className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
-             aria-label="start over" >
+              aria-label="start over"
+            >
               Start Over
             </button>
           </div>
@@ -476,11 +485,15 @@ export const GenesisWizard: React.FC = () => {
             </div>
             <div>
               <span className="text-gray-400">Cost:</span>
-              <span className="ml-2 text-white">${currentGeneration.metadata.totalCostUSD.toFixed(4)}</span>
+              <span className="ml-2 text-white">
+                ${currentGeneration.metadata.totalCostUSD.toFixed(4)}
+              </span>
             </div>
             <div>
               <span className="text-gray-400">Time:</span>
-              <span className="ml-2 text-white">{Math.round(currentGeneration.metadata.totalLatencyMs / 1000)}s</span>
+              <span className="ml-2 text-white">
+                {Math.round(currentGeneration.metadata.totalLatencyMs / 1000)}s
+              </span>
             </div>
           </div>
         </div>
@@ -505,13 +518,15 @@ export const GenesisWizard: React.FC = () => {
       {/* Character Summary */}
       <div className="bg-gray-800 rounded-lg p-6">
         <h3 className="text-xl font-bold text-white mb-4">Character Summary</h3>
-        
+
         {currentGeneration?.character && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <div>
                 <span className="text-gray-400">Name:</span>
-                <span className="ml-2 text-white font-medium">{currentGeneration.character.name}</span>
+                <span className="ml-2 text-white font-medium">
+                  {currentGeneration.character.name}
+                </span>
               </div>
               <div>
                 <span className="text-gray-400">Race:</span>
@@ -526,7 +541,7 @@ export const GenesisWizard: React.FC = () => {
                 <span className="ml-2 text-white">{currentGeneration.character.background}</span>
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <div>
                 <span className="text-gray-400">Level:</span>
@@ -550,15 +565,17 @@ export const GenesisWizard: React.FC = () => {
         <button
           onClick={acceptCharacter}
           className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-blue-700 transition-all"
-         aria-label="Click button" >
+          aria-label="Click button"
+        >
           <Download className="w-5 h-5" />
           Accept Character
         </button>
-        
+
         <button
           onClick={resetWizard}
           className="flex items-center gap-2 px-6 py-3 bg-gray-700 text-gray-300 font-medium rounded-lg hover:bg-gray-600 transition-colors"
-         aria-label="Click button" >
+          aria-label="Click button"
+        >
           <Wand2 className="w-5 h-5" />
           Create Another
         </button>
@@ -570,7 +587,8 @@ export const GenesisWizard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-900 to-purple-900 p-6">
       <AnimatePresence mode="wait">
         {!currentGeneration && !isGenerating && renderConceptForm()}
-        {(isGenerating || (currentGeneration && !currentGeneration.isComplete)) && renderGenerationProgress()}
+        {(isGenerating || (currentGeneration && !currentGeneration.isComplete)) &&
+          renderGenerationProgress()}
         {currentGeneration?.isComplete && renderCharacterResult()}
       </AnimatePresence>
     </div>

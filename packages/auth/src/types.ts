@@ -18,23 +18,23 @@ export interface User {
   updatedAt: Date;
 }
 
-export type UserRole = 'admin' | 'moderator' | 'gamemaster' | 'player' | 'guest';
+export type UserRole = "admin" | "moderator" | "gamemaster" | "player" | "guest";
 
-export type Permission = 
-  | 'session.create'
-  | 'session.join'
-  | 'session.manage'
-  | 'session.delete'
-  | 'content.create'
-  | 'content.edit'
-  | 'content.delete'
-  | 'content.publish'
-  | 'user.manage'
-  | 'user.moderate'
-  | 'system.admin'
-  | 'billing.manage';
+export type Permission =
+  | "session.create"
+  | "session.join"
+  | "session.manage"
+  | "session.delete"
+  | "content.create"
+  | "content.edit"
+  | "content.delete"
+  | "content.publish"
+  | "user.manage"
+  | "user.moderate"
+  | "system.admin"
+  | "billing.manage";
 
-export type SubscriptionTier = 'free' | 'basic' | 'premium' | 'enterprise';
+export type SubscriptionTier = "free" | "basic" | "premium" | "enterprise";
 
 export interface AuthTokens {
   accessToken: string;
@@ -176,7 +176,13 @@ export interface OAuthConfig {
 }
 
 export interface AuthEvent {
-  type: 'login' | 'logout' | 'register' | 'password_reset' | 'permission_change' | 'security_violation';
+  type:
+    | "login"
+    | "logout"
+    | "register"
+    | "password_reset"
+    | "permission_change"
+    | "security_violation";
   userId: string;
   details: Record<string, any>;
   timestamp: Date;

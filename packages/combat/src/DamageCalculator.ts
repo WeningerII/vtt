@@ -5,7 +5,7 @@
 
 export interface DamageResistance {
   type: string;
-  value: number | 'immunity' | 'resistance' | 'vulnerability';
+  value: number | "immunity" | "resistance" | "vulnerability";
   conditions?: string[]; // Optional conditions when resistance applies
 }
 
@@ -28,7 +28,7 @@ export interface DamageResult {
 }
 
 export interface DamageModification {
-  type: 'resistance' | 'immunity' | 'vulnerability' | 'reduction' | 'absorption';
+  type: "resistance" | "immunity" | "vulnerability" | "reduction" | "absorption";
   damageType: string;
   amount: number;
   source: string;
@@ -49,20 +49,30 @@ export interface CreatureDefenses {
 export class DamageCalculator {
   // Standard D&D 5e damage types
   private static readonly DAMAGE_TYPES = [
-    'acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning',
-    'necrotic', 'piercing', 'poison', 'psychic', 'radiant',
-    'slashing', 'thunder'
+    "acid",
+    "bludgeoning",
+    "cold",
+    "fire",
+    "force",
+    "lightning",
+    "necrotic",
+    "piercing",
+    "poison",
+    "psychic",
+    "radiant",
+    "slashing",
+    "thunder",
   ];
 
   // Physical damage types (affected by some resistances differently)
-  private static readonly PHYSICAL_DAMAGE = ['bludgeoning', 'piercing', 'slashing'];
+  private static readonly PHYSICAL_DAMAGE = ["bludgeoning", "piercing", "slashing"];
 
   /**
    * Calculate damage against a target
    */
   static calculateDamage(
     damageInstances: DamageInstance[],
-    targetDefenses: CreatureDefenses
+    targetDefenses: CreatureDefenses,
   ): DamageResult {
     const result: DamageResult = {
       totalDamage: 0,
@@ -70,30 +80,34 @@ export class DamageCalculator {
       resistanceApplied: Record<string, any>,
       immunityBlocked: Record<string, any>,
       vulnerabilityAdded: Record<string, any>,
-      modifications: []
+      modifications: [],
     };
 
     for (const damage of damageInstances) {
       const processedDamage = this.processDamageInstance(damage, targetDefenses);
-      
+
       // Add to totals
       result.totalDamage += processedDamage.finalAmount;
-      result.damageByType[damage.type] = (result.damageByType[damage.type] || 0) + processedDamage.finalAmount;
-      
+      result.damageByType[damage.type] =
+        (result.damageByType[damage.type] || 0) + processedDamage.finalAmount;
+
       // Track modifications
       result.modifications.push(...processedDamage.modifications);
-      
+
       // Update resistance/immunity/vulnerability tracking
       if (processedDamage.resistanceReduction > 0) {
-        result.resistanceApplied[damage.type] = (result.resistanceApplied[damage.type] || 0) + processedDamage.resistanceReduction;
+        result.resistanceApplied[damage.type] =
+          (result.resistanceApplied[damage.type] || 0) + processedDamage.resistanceReduction;
       }
-      
+
       if (processedDamage.immunityBlocked > 0) {
-        result.immunityBlocked[damage.type] = (result.immunityBlocked[damage.type] || 0) + processedDamage.immunityBlocked;
+        result.immunityBlocked[damage.type] =
+          (result.immunityBlocked[damage.type] || 0) + processedDamage.immunityBlocked;
       }
-      
+
       if (processedDamage.vulnerabilityAdded > 0) {
-        result.vulnerabilityAdded[damage.type] = (result.vulnerabilityAdded[damage.type] || 0) + processedDamage.vulnerabilityAdded;
+        result.vulnerabilityAdded[damage.type] =
+          (result.vulnerabilityAdded[damage.type] || 0) + processedDamage.vulnerabilityAdded;
       }
     }
 
@@ -102,7 +116,7 @@ export class DamageCalculator {
 
   private static processDamageInstance(
     damage: DamageInstance,
-    defenses: CreatureDefenses
+    defenses: CreatureDefenses,
   ): {
     finalAmount: number;
     resistanceReduction: number;
@@ -119,49 +133,58 @@ export class DamageCalculator {
     // Skip resistance processing if damage ignores resistance
     if (!damage.ignoresResistance) {
       // Find applicable resistances
-      const applicableResistances = defenses.resistances.filter(resistance => 
-        this.resistanceApplies(resistance, damage, defenses.conditions)
+      const applicableResistances = defenses.resistances.filter((resistance) =>
+        this.resistanceApplies(resistance, damage, defenses.conditions),
       );
 
       for (const resistance of applicableResistances) {
-        const damageModification = this.applyResistance(resistance, currentAmount, damage.type, damage.source);
-        
+        const damageModification = this.applyResistance(
+          resistance,
+          currentAmount,
+          damage.type,
+          damage.source,
+        );
+
         if (damageModification.amount !== 0) {
           modifications.push(damageModification);
-          
+
           switch (damageModification.type) {
-            case 'resistance': {
-              const reduction = currentAmount - Math.floor(currentAmount / 2);
-              resistanceReduction += reduction;
-              currentAmount = Math.floor(currentAmount / 2);
-    }
+            case "resistance":
+              {
+                const reduction = currentAmount - Math.floor(currentAmount / 2);
+                resistanceReduction += reduction;
+                currentAmount = Math.floor(currentAmount / 2);
+              }
               break;
-            
-            case 'immunity':
+
+            case "immunity":
               immunityBlocked += currentAmount;
               currentAmount = 0;
               break;
-            
-            case 'vulnerability': {
-              const addition = currentAmount;
-              vulnerabilityAdded += addition;
-              currentAmount *= 2;
-    }
+
+            case "vulnerability":
+              {
+                const addition = currentAmount;
+                vulnerabilityAdded += addition;
+                currentAmount *= 2;
+              }
               break;
-            
-            case 'reduction': {
-              const flatReduction = Math.min(currentAmount, damageModification.amount);
-              resistanceReduction += flatReduction;
-              currentAmount = Math.max(0, currentAmount - damageModification.amount);
-    }
+
+            case "reduction":
+              {
+                const flatReduction = Math.min(currentAmount, damageModification.amount);
+                resistanceReduction += flatReduction;
+                currentAmount = Math.max(0, currentAmount - damageModification.amount);
+              }
               break;
-            
-            case 'absorption': {
-              const absorbed = Math.min(currentAmount, damageModification.amount);
-              resistanceReduction += absorbed;
-              currentAmount = Math.max(0, currentAmount - absorbed);
-              // Note: Absorption might heal the target instead
-    }
+
+            case "absorption":
+              {
+                const absorbed = Math.min(currentAmount, damageModification.amount);
+                resistanceReduction += absorbed;
+                currentAmount = Math.max(0, currentAmount - absorbed);
+                // Note: Absorption might heal the target instead
+              }
               break;
           }
         }
@@ -176,28 +199,30 @@ export class DamageCalculator {
       resistanceReduction,
       immunityBlocked,
       vulnerabilityAdded,
-      modifications
+      modifications,
     };
   }
 
   private static resistanceApplies(
     resistance: DamageResistance,
     damage: DamageInstance,
-    conditions: string[]
+    conditions: string[],
   ): boolean {
     // Check if damage type matches
-    if (resistance.type !== damage.type && resistance.type !== 'all') {
+    if (resistance.type !== damage.type && resistance.type !== "all") {
       // Special case for nonmagical physical damage
-      if (resistance.type === 'nonmagical_physical') {
-        return this.PHYSICAL_DAMAGE.includes(damage.type) && 
-               !damage.source.toLowerCase().includes('magical');
+      if (resistance.type === "nonmagical_physical") {
+        return (
+          this.PHYSICAL_DAMAGE.includes(damage.type) &&
+          !damage.source.toLowerCase().includes("magical")
+        );
       }
       return false;
     }
 
     // Check if conditions are met
     if (resistance.conditions && resistance.conditions.length > 0) {
-      return resistance.conditions.some(condition => conditions.includes(condition));
+      return resistance.conditions.some((condition) => conditions.includes(condition));
     }
 
     return true;
@@ -207,49 +232,49 @@ export class DamageCalculator {
     resistance: DamageResistance,
     damage: number,
     damageType: string,
-    source: string
+    source: string,
   ): DamageModification {
     switch (resistance.value) {
-      case 'immunity':
+      case "immunity":
         return {
-          type: 'immunity',
+          type: "immunity",
           damageType,
           amount: damage,
-          source: `Immunity to ${damageType}`
+          source: `Immunity to ${damageType}`,
         };
-      
-      case 'resistance':
+
+      case "resistance":
         return {
-          type: 'resistance',
+          type: "resistance",
           damageType,
           amount: Math.floor(damage / 2),
-          source: `Resistance to ${damageType}`
+          source: `Resistance to ${damageType}`,
         };
-      
-      case 'vulnerability':
+
+      case "vulnerability":
         return {
-          type: 'vulnerability',
+          type: "vulnerability",
           damageType,
           amount: damage,
-          source: `Vulnerability to ${damageType}`
+          source: `Vulnerability to ${damageType}`,
         };
-      
+
       default:
         // Numeric value - flat reduction or absorption
-        if (typeof resistance.value === 'number') {
+        if (typeof resistance.value === "number") {
           return {
-            type: resistance.value > 0 ? 'reduction' : 'absorption',
+            type: resistance.value > 0 ? "reduction" : "absorption",
             damageType,
             amount: Math.abs(resistance.value),
-            source: `${resistance.value > 0 ? 'Damage reduction' : 'Damage absorption'} (${Math.abs(resistance.value)})`
+            source: `${resistance.value > 0 ? "Damage reduction" : "Damage absorption"} (${Math.abs(resistance.value)})`,
           };
         }
-        
+
         return {
-          type: 'reduction',
+          type: "reduction",
           damageType,
           amount: 0,
-          source: 'No effect'
+          source: "No effect",
         };
     }
   }
@@ -257,22 +282,25 @@ export class DamageCalculator {
   private static applyConditionEffects(
     damage: number,
     damageInstance: DamageInstance,
-    conditions: string[]
+    conditions: string[],
   ): number {
     let modifiedDamage = damage;
 
     // Bear totem barbarian rage resistance to all damage except psychic
-    if (conditions.includes('rage_bear') && damageInstance.type !== 'psychic') {
+    if (conditions.includes("rage_bear") && damageInstance.type !== "psychic") {
       modifiedDamage = Math.floor(modifiedDamage / 2);
     }
 
     // Heavy armor master feat
-    if (conditions.includes('heavy_armor_master') && this.PHYSICAL_DAMAGE.includes(damageInstance.type)) {
+    if (
+      conditions.includes("heavy_armor_master") &&
+      this.PHYSICAL_DAMAGE.includes(damageInstance.type)
+    ) {
       modifiedDamage = Math.max(0, modifiedDamage - 3);
     }
 
     // Uncanny dodge (rogue)
-    if (conditions.includes('uncanny_dodge')) {
+    if (conditions.includes("uncanny_dodge")) {
       modifiedDamage = Math.floor(modifiedDamage / 2);
     }
 
@@ -285,7 +313,7 @@ export class DamageCalculator {
   static calculateHealing(
     healingAmount: number,
     target: CreatureDefenses,
-    source: string = 'unknown'
+    source: string = "unknown",
   ): {
     effectiveHealing: number;
     overflow: number;
@@ -297,18 +325,18 @@ export class DamageCalculator {
     let blocked = false;
 
     // Check for healing immunity/resistance
-    if (target.conditions.includes('undead') && source.includes('positive energy')) {
+    if (target.conditions.includes("undead") && source.includes("positive energy")) {
       blocked = true;
       effectiveHealing = 0;
-      modifications.push('Undead immunity to positive energy healing');
+      modifications.push("Undead immunity to positive energy healing");
     }
 
     // Check for healing reversal (undead taking positive energy damage)
-    if (target.conditions.includes('undead') && source.includes('cure')) {
+    if (target.conditions.includes("undead") && source.includes("cure")) {
       // Convert healing to damage for undead
       blocked = true;
       effectiveHealing = -healingAmount; // Negative indicates damage
-      modifications.push('Healing converted to damage (undead)');
+      modifications.push("Healing converted to damage (undead)");
     }
 
     // Calculate overflow
@@ -323,7 +351,7 @@ export class DamageCalculator {
       effectiveHealing,
       overflow,
       blocked,
-      modifications
+      modifications,
     };
   }
 
@@ -333,7 +361,7 @@ export class DamageCalculator {
   static calculateCriticalHit(
     baseDamage: DamageInstance,
     criticalMultiplier: number = 2,
-    extraDice?: string
+    extraDice?: string,
   ): DamageInstance {
     let criticalAmount = baseDamage.amount;
 
@@ -356,7 +384,7 @@ export class DamageCalculator {
     return {
       ...baseDamage,
       amount: criticalAmount,
-      isCritical: true
+      isCritical: true,
     };
   }
 
@@ -368,9 +396,9 @@ export class DamageCalculator {
     const match = diceNotation.match(/(\d+)d(\d+)(?:\+(\d+))?/);
     if (!match) return 0;
 
-    const numDice = parseInt(match[1] || '1');
-    const diceSides = parseInt(match[2] || '6');
-    const modifier = parseInt(match[3] || '0') || 0;
+    const numDice = parseInt(match[1] || "1");
+    const diceSides = parseInt(match[2] || "6");
+    const modifier = parseInt(match[3] || "0") || 0;
 
     let total = 0;
     for (let i = 0; i < numDice; i++) {
@@ -385,45 +413,48 @@ export class DamageCalculator {
    */
   static getDamageTypeColor(damageType: string): string {
     const colors: Record<string, string> = {
-      'acid': '#9ACD32',
-      'bludgeoning': '#8B4513',
-      'cold': '#87CEEB',
-      'fire': '#FF4500',
-      'force': '#9370DB',
-      'lightning': '#FFD700',
-      'necrotic': '#2F4F2F',
-      'piercing': '#CD853F',
-      'poison': '#32CD32',
-      'psychic': '#FF69B4',
-      'radiant': '#FFFFE0',
-      'slashing': '#DC143C',
-      'thunder': '#4169E1'
+      acid: "#9ACD32",
+      bludgeoning: "#8B4513",
+      cold: "#87CEEB",
+      fire: "#FF4500",
+      force: "#9370DB",
+      lightning: "#FFD700",
+      necrotic: "#2F4F2F",
+      piercing: "#CD853F",
+      poison: "#32CD32",
+      psychic: "#FF69B4",
+      radiant: "#FFFFE0",
+      slashing: "#DC143C",
+      thunder: "#4169E1",
     };
 
-    return colors[damageType] || '#808080';
+    return colors[damageType] || "#808080";
   }
 
   /**
    * Get damage severity description
    */
-  static getDamageSeverity(damage: number, maxHp: number): {
-    level: 'minimal' | 'light' | 'moderate' | 'heavy' | 'severe' | 'massive';
+  static getDamageSeverity(
+    damage: number,
+    maxHp: number,
+  ): {
+    level: "minimal" | "light" | "moderate" | "heavy" | "severe" | "massive";
     description: string;
   } {
     const percentage = (damage / maxHp) * 100;
 
     if (percentage < 5) {
-      return { level: 'minimal', description: 'barely scratched' };
+      return { level: "minimal", description: "barely scratched" };
     } else if (percentage < 15) {
-      return { level: 'light', description: 'lightly wounded' };
+      return { level: "light", description: "lightly wounded" };
     } else if (percentage < 30) {
-      return { level: 'moderate', description: 'moderately injured' };
+      return { level: "moderate", description: "moderately injured" };
     } else if (percentage < 50) {
-      return { level: 'heavy', description: 'heavily damaged' };
+      return { level: "heavy", description: "heavily damaged" };
     } else if (percentage < 75) {
-      return { level: 'severe', description: 'severely wounded' };
+      return { level: "severe", description: "severely wounded" };
     } else {
-      return { level: 'massive', description: 'catastrophically injured' };
+      return { level: "massive", description: "catastrophically injured" };
     }
   }
 

@@ -1,4 +1,3 @@
-
 // Enhanced error handling
 export class ApplicationError extends Error {
   public readonly code: string;
@@ -7,15 +6,15 @@ export class ApplicationError extends Error {
 
   constructor(
     message: string,
-    code: string = 'INTERNAL_ERROR',
+    code: string = "INTERNAL_ERROR",
     statusCode: number = 500,
-    isOperational: boolean = true
+    isOperational: boolean = true,
   ) {
     super(message);
     this.code = code;
     this.statusCode = statusCode;
     this.isOperational = isOperational;
-    
+
     Error.captureStackTrace(this, this.constructor);
   }
 }
@@ -23,13 +22,13 @@ export class ApplicationError extends Error {
 // Global error handler
 export function handleError(error: Error | ApplicationError): void {
   if (error instanceof ApplicationError && error.isOperational) {
-    logger.error('Operational error occurred', {
+    logger.error("Operational error occurred", {
       code: error.code,
       message: error.message,
       stack: error.stack,
     });
   } else {
-    logger.fatal('Unexpected error occurred', {
+    logger.fatal("Unexpected error occurred", {
       message: error.message,
       stack: error.stack,
     });
@@ -40,7 +39,7 @@ export function handleError(error: Error | ApplicationError): void {
 
 // Async error wrapper
 export function asyncHandler<T>(
-  fn: (...args: any[]) => Promise<T>
+  fn: (...args: any[]) => Promise<T>,
 ): (...args: any[]) => Promise<T> {
   return async (...args) => {
     try {

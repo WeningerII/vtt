@@ -2,8 +2,8 @@
  * Map and grid system types for tactical combat
  */
 
-export type GridType = 'square' | 'hex' | 'none';
-export type GridSnapMode = 'center' | 'corner' | 'edge' | 'free';
+export type GridType = "square" | "hex" | "none";
+export type GridSnapMode = "center" | "corner" | "edge" | "free";
 
 export interface GridSettings {
   type: GridType;
@@ -19,7 +19,7 @@ export interface GridSettings {
 export interface MapLayer {
   id: string;
   name: string;
-  type: 'background' | 'overlay' | 'tokens' | 'effects' | 'fog';
+  type: "background" | "overlay" | "tokens" | "effects" | "fog";
   visible: boolean;
   locked: boolean;
   opacity: number;
@@ -59,7 +59,7 @@ export interface LightSource {
   dimRadius?: number;
   intensity: number; // 0-1
   color: string;
-  type: 'bright' | 'dim' | 'torch' | 'candle' | 'magical' | 'custom';
+  type: "bright" | "dim" | "torch" | "candle" | "magical" | "custom";
   flickering: boolean;
   animated: boolean;
   ownerId?: string; // token that owns this light
@@ -67,7 +67,7 @@ export interface LightSource {
 
 export interface FogSettings {
   enabled: boolean;
-  mode: 'revealed' | 'hidden' | 'exploration'; // revealed = show all, hidden = hide all, exploration = fog of war
+  mode: "revealed" | "hidden" | "exploration"; // revealed = show all, hidden = hide all, exploration = fog of war
   exploredAreas: FogArea[];
   hiddenAreas: FogArea[];
   lineOfSight: boolean;
@@ -76,7 +76,7 @@ export interface FogSettings {
 
 export interface FogArea {
   id: string;
-  type: 'polygon' | 'circle' | 'rectangle';
+  type: "polygon" | "circle" | "rectangle";
   points: Array<{ x: number; y: number }>;
   radius?: number; // for circles
   width?: number; // for rectangles
@@ -84,7 +84,7 @@ export interface FogArea {
 }
 
 export interface WeatherSettings {
-  type: 'clear' | 'rain' | 'snow' | 'fog' | 'storm' | 'wind';
+  type: "clear" | "rain" | "snow" | "fog" | "storm" | "wind";
   intensity: number; // 0-1
   direction?: number; // degrees for wind
   particles: boolean;
@@ -132,12 +132,12 @@ export interface TokenMovement {
   tokenId: string;
   path: Array<{ x: number; y: number }>;
   duration: number; // milliseconds
-  animation: 'linear' | 'ease' | 'bounce';
+  animation: "linear" | "ease" | "bounce";
 }
 
 export interface MeasurementTool {
   id: string;
-  type: 'ruler' | 'template' | 'area';
+  type: "ruler" | "template" | "area";
   points: Array<{ x: number; y: number }>;
   color: string;
   visible: boolean;
@@ -145,7 +145,7 @@ export interface MeasurementTool {
   measurements: {
     distance: number;
     area?: number;
-    units: 'feet' | 'meters' | 'squares';
+    units: "feet" | "meters" | "squares";
   };
 }
 
@@ -154,7 +154,7 @@ export interface CombatGrid {
   initiative: InitiativeEntry[];
   currentTurn: number;
   round: number;
-  phase: 'setup' | 'combat' | 'ended';
+  phase: "setup" | "combat" | "ended";
   effects: GridEffect[];
 }
 
@@ -169,10 +169,10 @@ export interface InitiativeEntry {
 
 export interface GridEffect {
   id: string;
-  type: 'spell' | 'aura' | 'trap' | 'hazard' | 'custom';
+  type: "spell" | "aura" | "trap" | "hazard" | "custom";
   name: string;
   description: string;
-  shape: 'circle' | 'square' | 'cone' | 'line' | 'custom';
+  shape: "circle" | "square" | "cone" | "line" | "custom";
   position: { x: number; y: number };
   size: number; // radius or side length
   rotation?: number; // for cones/lines
@@ -180,12 +180,19 @@ export interface GridEffect {
   opacity: number;
   duration: number; // rounds, -1 for permanent
   visible: boolean;
-  affects: 'all' | 'allies' | 'enemies' | 'none';
+  affects: "all" | "allies" | "enemies" | "none";
   ownerId?: string;
 }
 
 export interface MapUpdateEvent {
-  type: 'token_move' | 'token_add' | 'token_remove' | 'light_update' | 'fog_update' | 'effect_add' | 'effect_remove';
+  type:
+    | "token_move"
+    | "token_add"
+    | "token_remove"
+    | "light_update"
+    | "fog_update"
+    | "effect_add"
+    | "effect_remove";
   sceneId: string;
   data: any;
   timestamp: number;

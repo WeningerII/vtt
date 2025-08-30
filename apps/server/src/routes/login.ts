@@ -106,11 +106,15 @@ export const loginPageHandler: RouteHandler = async (ctx) => {
         <div class="logo">🎲 VTT Platform</div>
         <div class="subtitle">Sign in to continue to your virtual tabletop</div>
         
-        ${ctx.url.searchParams.get('error') ? `
+        ${
+          ctx.url.searchParams.get("error")
+            ? `
         <div class="error">
-            ${getErrorMessage(ctx.url.searchParams.get('error'))}
+            ${getErrorMessage(ctx.url.searchParams.get("error"))}
         </div>
-        ` : ''}
+        `
+            : ""
+        }
         
         <a href="/auth/discord" class="oauth-button discord-btn">
             Continue with Discord
@@ -132,19 +136,19 @@ export const loginPageHandler: RouteHandler = async (ctx) => {
 </html>
   `;
 
-  ctx.res.writeHead(200, { 'Content-Type': 'text/html' });
+  ctx.res.writeHead(200, { "Content-Type": "text/html" });
   ctx.res.end(html);
 };
 
 function getErrorMessage(error: string | null): string {
   switch (error) {
-    case 'discord_auth_failed':
-      return 'Discord authentication failed. Please try again.';
-    case 'google_auth_failed':
-      return 'Google authentication failed. Please try again.';
-    case 'auth_callback_failed':
-      return 'Authentication callback failed. Please try again.';
+    case "discord_auth_failed":
+      return "Discord authentication failed. Please try again.";
+    case "google_auth_failed":
+      return "Google authentication failed. Please try again.";
+    case "auth_callback_failed":
+      return "Authentication callback failed. Please try again.";
     default:
-      return 'An authentication error occurred. Please try again.';
+      return "An authentication error occurred. Please try again.";
   }
 }

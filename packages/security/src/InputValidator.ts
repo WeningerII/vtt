@@ -3,13 +3,13 @@
  * Comprehensive input validation, sanitization, and schema enforcement
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 
 export interface ValidationRule {
   name: string;
   description: string;
   validator: (_value: any) => ValidationResult;
-  severity: 'error' | 'warning' | 'info';
+  severity: "error" | "warning" | "info";
 }
 
 export interface ValidationResult {
@@ -59,7 +59,9 @@ export class InputValidator {
     if (!schema) {
       return {
         valid: false,
-        errors: [{ field: 'schema', message: `Schema not found: ${schemaName}`, code: 'SCHEMA_NOT_FOUND' }],
+        errors: [
+          { field: "schema", message: `Schema not found: ${schemaName}`, code: "SCHEMA_NOT_FOUND" },
+        ],
         warnings: [],
       };
     }
@@ -76,8 +78,8 @@ export class InputValidator {
       if (error instanceof z.ZodError) {
         return {
           valid: false,
-          errors: error.errors.map(err => ({
-            field: err.path.join('.'),
+          errors: error.errors.map((err) => ({
+            field: err.path.join("."),
             message: err.message,
             code: err.code,
             value: data,
@@ -88,7 +90,7 @@ export class InputValidator {
 
       return {
         valid: false,
-        errors: [{ field: 'unknown', message: 'Validation failed', code: 'VALIDATION_ERROR' }],
+        errors: [{ field: "unknown", message: "Validation failed", code: "VALIDATION_ERROR" }],
         warnings: [],
       };
     }
@@ -100,11 +102,11 @@ export class InputValidator {
   validateInput(
     data: Record<string, any>,
     schemaName?: string,
-    options: SanitizationOptions = {}
+    options: SanitizationOptions = {},
   ): ValidationResult {
     // First sanitize the input
     const sanitized = this.sanitizeInput(data, options);
-    
+
     // Then validate against schema if provided
     if (schemaName) {
       return this.validateSchema(schemaName, sanitized);
@@ -118,15 +120,15 @@ export class InputValidator {
    * Sanitize input data
    */
   sanitizeInput(data: any, options: SanitizationOptions = {}): any {
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       return this.sanitizeString(data, options);
     }
 
     if (Array.isArray(data)) {
-      return data.map(item => this.sanitizeInput(item, options));
+      return data.map((item) => this.sanitizeInput(item, options));
     }
 
-    if (typeof data === 'object' && data !== null) {
+    if (typeof data === "object" && data !== null) {
       const sanitized: Record<string, any> = {};
       for (const [key, value] of Object.entries(data)) {
         sanitized[key] = this.sanitizeInput(value, options);
@@ -166,22 +168,22 @@ export class InputValidator {
     // File name validation
     if (!file.name || file.name.trim().length === 0) {
       errors.push({
-        field: 'name',
-        message: 'File name is required',
-        code: 'REQUIRED',
+        field: "name",
+        message: "File name is required",
+        code: "REQUIRED",
       });
     } else if (file.name.length > 255) {
       errors.push({
-        field: 'name',
-        message: 'File name too long',
-        code: 'MAX_LENGTH',
+        field: "name",
+        message: "File name too long",
+        code: "MAX_LENGTH",
         value: file.name,
       });
     } else if (/[<>:"/\\|?*\x00-\x1f]/.test(file.name)) {
       errors.push({
-        field: 'name',
-        message: 'File name contains invalid characters',
-        code: 'INVALID_CHARACTERS',
+        field: "name",
+        message: "File name contains invalid characters",
+        code: "INVALID_CHARACTERS",
         value: file.name,
       });
     }
@@ -190,9 +192,9 @@ export class InputValidator {
     const maxFileSize = 50 * 1024 * 1024; // 50MB
     if (file.size > maxFileSize) {
       errors.push({
-        field: 'size',
+        field: "size",
         message: `File too large (max: ${maxFileSize / 1024 / 1024}MB)`,
-        code: 'FILE_TOO_LARGE',
+        code: "FILE_TOO_LARGE",
         value: file.size,
       });
     }
@@ -212,17 +214,17 @@ export class InputValidator {
     }
 
     if (options.normalizeWhitespace) {
-      result = result.replace(/\s+/g, ' ');
+      result = result.replace(/\s+/g, " ");
     }
 
     if (options.stripHtml) {
-      result = result.replace(/<[^>]*>/g, '');
+      result = result.replace(/<[^>]*>/g, "");
     }
 
     if (options.removeScripts) {
-      result = result.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-      result = result.replace(/javascript:/gi, '');
-      result = result.replace(/on\w+\s*=/gi, '');
+      result = result.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+      result = result.replace(/javascript:/gi, "");
+      result = result.replace(/on\w+\s*=/gi, "");
     }
 
     if (options.lowercaseEmails && this.isEmail(result)) {
@@ -251,9 +253,9 @@ export class InputValidator {
         warnings.push(...result.warnings);
       } catch (error) {
         errors.push({
-          field: 'validation',
-          message: `Rule "${rule.name}" failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          code: 'RULE_ERROR',
+          field: "validation",
+          message: `Rule "${rule.name}" failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+          code: "RULE_ERROR",
         });
       }
     }
@@ -269,9 +271,9 @@ export class InputValidator {
   private setupDefaultRules(): void {
     // SQL Injection detection
     this.registerRule({
-      name: 'sql_injection',
-      description: 'Detects potential SQL injection attempts',
-      severity: 'error',
+      name: "sql_injection",
+      description: "Detects potential SQL injection attempts",
+      severity: "error",
       validator: (data: any) => {
         const errors: ValidationError[] = [];
         const sqlPatterns = [
@@ -284,8 +286,8 @@ export class InputValidator {
             if (pattern.test(str)) {
               errors.push({
                 field,
-                message: 'Potential SQL injection detected',
-                code: 'SQL_INJECTION',
+                message: "Potential SQL injection detected",
+                code: "SQL_INJECTION",
                 value: str,
               });
               break;
@@ -301,9 +303,9 @@ export class InputValidator {
 
     // XSS detection
     this.registerRule({
-      name: 'xss_detection',
-      description: 'Detects potential XSS attacks',
-      severity: 'error',
+      name: "xss_detection",
+      description: "Detects potential XSS attacks",
+      severity: "error",
       validator: (data: any) => {
         const errors: ValidationError[] = [];
         const xssPatterns = [
@@ -320,8 +322,8 @@ export class InputValidator {
             if (pattern.test(str)) {
               errors.push({
                 field,
-                message: 'Potential XSS attack detected',
-                code: 'XSS_DETECTED',
+                message: "Potential XSS attack detected",
+                code: "XSS_DETECTED",
                 value: str,
               });
               break;
@@ -338,51 +340,69 @@ export class InputValidator {
 
   private setupDefaultSchemas(): void {
     // User authentication schemas
-    this.registerSchema('user/login', z.object({
-      email: z.string().email(),
-      password: z.string().min(8),
-      rememberMe: z.boolean().optional(),
-    }));
+    this.registerSchema(
+      "user/login",
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+        rememberMe: z.boolean().optional(),
+      }),
+    );
 
-    this.registerSchema('user/register', z.object({
-      email: z.string().email(),
-      password: z.string().min(8).max(128),
-      username: z.string().min(3).max(30),
-      acceptTerms: z.boolean().refine(val => val === true),
-    }));
+    this.registerSchema(
+      "user/register",
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(8).max(128),
+        username: z.string().min(3).max(30),
+        acceptTerms: z.boolean().refine((val) => val === true),
+      }),
+    );
 
     // Scene management schemas
-    this.registerSchema('scene/create', z.object({
-      name: z.string().min(1).max(100),
-      width: z.number().int().min(100).max(10000),
-      height: z.number().int().min(100).max(10000),
-      gridSize: z.number().int().min(5).max(200).optional(),
-      backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-    }));
+    this.registerSchema(
+      "scene/create",
+      z.object({
+        name: z.string().min(1).max(100),
+        width: z.number().int().min(100).max(10000),
+        height: z.number().int().min(100).max(10000),
+        gridSize: z.number().int().min(5).max(200).optional(),
+        backgroundColor: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+      }),
+    );
 
     // Token management schemas
-    this.registerSchema('token/create', z.object({
-      name: z.string().min(1).max(50),
-      x: z.number(),
-      y: z.number(),
-      size: z.number().min(0.1).max(5),
-      color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-      imageUrl: z.string().url().optional(),
-    }));
+    this.registerSchema(
+      "token/create",
+      z.object({
+        name: z.string().min(1).max(50),
+        x: z.number(),
+        y: z.number(),
+        size: z.number().min(0.1).max(5),
+        color: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/)
+          .optional(),
+        imageUrl: z.string().url().optional(),
+      }),
+    );
   }
 
   private traverseObject(
     obj: any,
     callback: (str: string, field: string) => void,
-    path = ''
+    path = "",
   ): void {
-    if (typeof obj === 'string') {
+    if (typeof obj === "string") {
       callback(obj, path);
     } else if (Array.isArray(obj)) {
       obj.forEach((item, index) => {
         this.traverseObject(item, callback, `${path}[${index}]`);
       });
-    } else if (typeof obj === 'object' && obj !== null) {
+    } else if (typeof obj === "object" && obj !== null) {
       for (const [key, value] of Object.entries(obj)) {
         const newPath = path ? `${path}.${key}` : key;
         this.traverseObject(value, callback, newPath);

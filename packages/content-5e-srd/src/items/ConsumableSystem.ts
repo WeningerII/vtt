@@ -3,10 +3,10 @@
  * Handles potions, scrolls, ammunition, and other consumable items
  */
 
-import { Consumable, _ConsumableEffect} from './index.js';
+import { Consumable, _ConsumableEffect } from "./index.js";
 
 export interface PotionEffect {
-  type: 'healing' | 'buff' | 'utility';
+  type: "healing" | "buff" | "utility";
   dice?: string;
   fixedValue?: number;
   duration?: number; // in seconds
@@ -56,7 +56,7 @@ export class ConsumableSystem {
     itemId: string,
     userId: string,
     targetId?: string,
-    quantity: number = 1
+    quantity: number = 1,
   ): ConsumableUseResult {
     // Check potions first
     const potion = this.potions.get(itemId);
@@ -80,7 +80,7 @@ export class ConsumableSystem {
       success: false,
       effects: [],
       consumed: false,
-      error: `Unknown consumable: ${itemId}`
+      error: `Unknown consumable: ${itemId}`,
     };
   }
 
@@ -91,15 +91,15 @@ export class ConsumableSystem {
     potion: Consumable & { potionData: PotionEffect },
     userId: string,
     targetId?: string,
-    quantity: number = 1
+    quantity: number = 1,
   ): ConsumableUseResult {
     const effects: string[] = [];
     const diceRolls: { dice: string; result: number }[] = [];
 
     for (let i = 0; i < quantity; i++) {
       const effect = potion.potionData;
-      
-      if (effect.type === 'healing' && effect.dice) {
+
+      if (effect.type === "healing" && effect.dice) {
         const roll = this.rollDice(effect.dice);
         diceRolls.push({ dice: effect.dice, result: roll });
         effects.push(`Healed ${roll} hit points`);
@@ -110,14 +110,14 @@ export class ConsumableSystem {
       }
     }
 
-    this.recordUsage(potion.id, userId, 'potion', quantity, effects);
-    this.recordUsage(potion.id, userId, 'scroll', 1, effects);
+    this.recordUsage(potion.id, userId, "potion", quantity, effects);
+    this.recordUsage(potion.id, userId, "scroll", 1, effects);
 
     return {
       success: true,
       effects,
       diceRolls,
-      consumed: true
+      consumed: true,
     };
   }
 
@@ -127,15 +127,15 @@ export class ConsumableSystem {
   private useScroll(
     scroll: Consumable & { scrollData: ScrollData },
     userId: string,
-    targetId?: string
+    targetId?: string,
   ): ConsumableUseResult {
     const scrollData = scroll.scrollData;
-    
+
     // This would integrate with the spell system
     const effects = [
       `Cast ${scrollData.spellId} at level ${scrollData.spellLevel}`,
       `Casting time: ${scrollData.castingTime}`,
-      `Caster level: ${scrollData.casterLevel}`
+      `Caster level: ${scrollData.casterLevel}`,
     ];
 
     if (scrollData.spellAttackBonus) {
@@ -146,12 +146,12 @@ export class ConsumableSystem {
       effects.push(`Spell save DC: ${scrollData.spellSaveDC}`);
     }
 
-    this.recordUsage(scroll.id, userId, 'scroll', 1, effects);
+    this.recordUsage(scroll.id, userId, "scroll", 1, effects);
 
     return {
       success: true,
       effects,
-      consumed: true
+      consumed: true,
     };
   }
 
@@ -161,30 +161,27 @@ export class ConsumableSystem {
   private useAmmunition(
     ammo: Consumable & { ammoData: AmmunitionData },
     userId: string,
-    quantity: number
+    quantity: number,
   ): ConsumableUseResult {
     const effects = [`Used ${quantity}x ${ammo.name}`];
-    
+
     if (ammo.ammoData.specialProperties) {
-      effects.push(`Special: ${ammo.ammoData.specialProperties.join(', ')}`);
+      effects.push(`Special: ${ammo.ammoData.specialProperties.join(", ")}`);
     }
 
-    this.recordUsage(ammo.id, userId, 'ammunition', quantity, effects);
+    this.recordUsage(ammo.id, userId, "ammunition", quantity, effects);
 
     return {
       success: true,
       effects,
-      consumed: true
+      consumed: true,
     };
   }
 
   /**
    * Recover ammunition after combat
    */
-  recoverAmmunition(
-    ammoId: string,
-    quantityUsed: number
-  ): { recovered: number; lost: number } {
+  recoverAmmunition(ammoId: string, quantityUsed: number): { recovered: number; lost: number } {
     const ammo = this.ammunition.get(ammoId);
     if (!ammo) {
       return { recovered: 0, lost: quantityUsed };
@@ -244,12 +241,12 @@ export class ConsumableSystem {
    * Get usage history
    */
   getUsageHistory(userId?: string, limit?: number): ConsumableUsage[] {
-    let history = userId ? 
-      this.usageHistory.filter(usage => usage.userId === userId) :
-      this.usageHistory;
+    let history = userId
+      ? this.usageHistory.filter((usage) => usage.userId === userId)
+      : this.usageHistory;
 
     history = history.sort((_a, _b) => b.timestamp.getTime() - a.timestamp.getTime());
-    
+
     return limit ? history.slice(0, limit) : history;
   }
 
@@ -275,7 +272,7 @@ export class ConsumableSystem {
 
     const numDice = parseInt(match[1]!, 10);
     const dieSize = parseInt(match[2]!, 10);
-    const bonus = parseInt(match[3] || '0', 10);
+    const bonus = parseInt(match[3] || "0", 10);
 
     let total = bonus;
     for (let i = 0; i < numDice; i++) {
@@ -288,9 +285,9 @@ export class ConsumableSystem {
   private recordUsage(
     itemId: string,
     userId: string,
-    type: 'potion' | 'scroll' | 'ammunition',
+    type: "potion" | "scroll" | "ammunition",
     quantity: number,
-    effects: string[]
+    effects: string[],
   ): void {
     const usage: ConsumableUsage = {
       id: `usage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -299,7 +296,7 @@ export class ConsumableSystem {
       type,
       quantity,
       effects,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     this.usageHistory.push(usage);
@@ -313,60 +310,60 @@ export class ConsumableSystem {
   private initializePotions(): void {
     const potions = [
       {
-        id: 'potion_of_healing',
-        name: 'Potion of Healing',
-        type: 'consumable' as const,
-        category: 'potion' as const,
-        rarity: 'common' as const,
-        description: 'A magical red liquid that restores health when consumed.',
+        id: "potion_of_healing",
+        name: "Potion of Healing",
+        type: "consumable" as const,
+        category: "potion" as const,
+        rarity: "common" as const,
+        description: "A magical red liquid that restores health when consumed.",
         weight: 0.5,
-        cost: { amount: 50, currency: 'gp' as const },
-        source: 'SRD',
-        tags: ['healing', 'magic', 'consumable'],
-        consumableType: 'potion' as const,
+        cost: { amount: 50, currency: "gp" as const },
+        source: "SRD",
+        tags: ["healing", "magic", "consumable"],
+        consumableType: "potion" as const,
         effects: [
           {
-            type: 'healing' as const,
-            value: '2d4+2',
-            target: 'self' as const
-          }
+            type: "healing" as const,
+            value: "2d4+2",
+            target: "self" as const,
+          },
         ],
         stackable: true,
         potionData: {
-          type: 'healing' as const,
-          dice: '2d4+2',
-          description: 'Restores hit points'
-        }
+          type: "healing" as const,
+          dice: "2d4+2",
+          description: "Restores hit points",
+        },
       },
       {
-        id: 'potion_of_greater_healing',
-        name: 'Potion of Greater Healing',
-        type: 'consumable' as const,
-        category: 'potion' as const,
-        rarity: 'uncommon' as const,
-        description: 'A magical red liquid that restores significant health.',
+        id: "potion_of_greater_healing",
+        name: "Potion of Greater Healing",
+        type: "consumable" as const,
+        category: "potion" as const,
+        rarity: "uncommon" as const,
+        description: "A magical red liquid that restores significant health.",
         weight: 0.5,
-        cost: { amount: 150, currency: 'gp' as const },
-        source: 'SRD',
-        tags: ['healing', 'magic', 'consumable'],
-        consumableType: 'potion' as const,
+        cost: { amount: 150, currency: "gp" as const },
+        source: "SRD",
+        tags: ["healing", "magic", "consumable"],
+        consumableType: "potion" as const,
         effects: [
           {
-            type: 'healing' as const,
-            value: '4d4+4',
-            target: 'self' as const
-          }
+            type: "healing" as const,
+            value: "4d4+4",
+            target: "self" as const,
+          },
         ],
         stackable: true,
         potionData: {
-          type: 'healing' as const,
-          dice: '4d4+4',
-          description: 'Restores hit points'
-        }
-      }
+          type: "healing" as const,
+          dice: "4d4+4",
+          description: "Restores hit points",
+        },
+      },
     ];
 
-    potions.forEach(potion => {
+    potions.forEach((potion) => {
       this.potions.set(potion.id, potion);
     });
   }
@@ -374,66 +371,66 @@ export class ConsumableSystem {
   private initializeScrolls(): void {
     const scrolls = [
       {
-        id: 'scroll_of_cure_wounds',
-        name: 'Scroll of Cure Wounds',
-        type: 'consumable' as const,
-        category: 'scroll' as const,
-        rarity: 'common' as const,
-        description: 'A scroll containing the Cure Wounds spell.',
+        id: "scroll_of_cure_wounds",
+        name: "Scroll of Cure Wounds",
+        type: "consumable" as const,
+        category: "scroll" as const,
+        rarity: "common" as const,
+        description: "A scroll containing the Cure Wounds spell.",
         weight: 0,
-        cost: { amount: 25, currency: 'gp' as const },
-        source: 'SRD',
-        tags: ['scroll', 'magic', 'healing'],
-        consumableType: 'scroll' as const,
+        cost: { amount: 25, currency: "gp" as const },
+        source: "SRD",
+        tags: ["scroll", "magic", "healing"],
+        consumableType: "scroll" as const,
         effects: [
           {
-            type: 'spell_effect' as const,
-            target: 'other' as const
-          }
+            type: "spell_effect" as const,
+            target: "other" as const,
+          },
         ],
         stackable: true,
         scrollData: {
-          spellId: 'cure_wounds',
+          spellId: "cure_wounds",
           spellLevel: 1,
-          castingTime: '1 action',
+          castingTime: "1 action",
           spellSaveDC: 13,
-          casterLevel: 1
-        }
+          casterLevel: 1,
+        },
       },
       {
-        id: 'scroll_of_fireball',
-        name: 'Scroll of Fireball',
-        type: 'consumable' as const,
-        category: 'scroll' as const,
-        rarity: 'uncommon' as const,
-        description: 'A scroll containing the Fireball spell.',
+        id: "scroll_of_fireball",
+        name: "Scroll of Fireball",
+        type: "consumable" as const,
+        category: "scroll" as const,
+        rarity: "uncommon" as const,
+        description: "A scroll containing the Fireball spell.",
         weight: 0,
-        cost: { amount: 150, currency: 'gp' as const },
-        source: 'SRD',
-        tags: ['scroll', 'magic', 'damage'],
-        consumableType: 'scroll' as const,
+        cost: { amount: 150, currency: "gp" as const },
+        source: "SRD",
+        tags: ["scroll", "magic", "damage"],
+        consumableType: "scroll" as const,
         effects: [
           {
-            type: 'spell_effect' as const,
-            target: 'area' as const,
+            type: "spell_effect" as const,
+            target: "area" as const,
             savingThrow: {
-              ability: 'Dexterity',
-              dc: 15
-            }
-          }
+              ability: "Dexterity",
+              dc: 15,
+            },
+          },
         ],
         stackable: true,
         scrollData: {
-          spellId: 'fireball',
+          spellId: "fireball",
           spellLevel: 3,
-          castingTime: '1 action',
+          castingTime: "1 action",
           spellSaveDC: 15,
-          casterLevel: 5
-        }
-      }
+          casterLevel: 5,
+        },
+      },
     ];
 
-    scrolls.forEach(scroll => {
+    scrolls.forEach((scroll) => {
       this.scrolls.set(scroll.id, scroll);
     });
   }
@@ -441,68 +438,68 @@ export class ConsumableSystem {
   private initializeAmmunition(): void {
     const ammunition = [
       {
-        id: 'arrows',
-        name: 'Arrows',
-        type: 'consumable' as const,
-        category: 'ammunition' as const,
-        rarity: 'common' as const,
-        description: 'A bundle of arrows for use with bows.',
+        id: "arrows",
+        name: "Arrows",
+        type: "consumable" as const,
+        category: "ammunition" as const,
+        rarity: "common" as const,
+        description: "A bundle of arrows for use with bows.",
         weight: 1,
-        cost: { amount: 1, currency: 'gp' as const },
-        source: 'SRD',
-        tags: ['ammunition', 'ranged'],
-        consumableType: 'ammunition' as const,
+        cost: { amount: 1, currency: "gp" as const },
+        source: "SRD",
+        tags: ["ammunition", "ranged"],
+        consumableType: "ammunition" as const,
         effects: [],
         stackable: true,
         ammoData: {
-          weaponTypes: ['shortbow', 'longbow'],
+          weaponTypes: ["shortbow", "longbow"],
           recoveryRate: 0.5,
-          specialProperties: []
-        }
+          specialProperties: [],
+        },
       },
       {
-        id: 'crossbow_bolts',
-        name: 'Crossbow Bolts',
-        type: 'consumable' as const,
-        category: 'ammunition' as const,
-        rarity: 'common' as const,
-        description: 'Bolts for use with crossbows.',
+        id: "crossbow_bolts",
+        name: "Crossbow Bolts",
+        type: "consumable" as const,
+        category: "ammunition" as const,
+        rarity: "common" as const,
+        description: "Bolts for use with crossbows.",
         weight: 1.5,
-        cost: { amount: 1, currency: 'gp' as const },
-        source: 'SRD',
-        tags: ['ammunition', 'ranged'],
-        consumableType: 'ammunition' as const,
+        cost: { amount: 1, currency: "gp" as const },
+        source: "SRD",
+        tags: ["ammunition", "ranged"],
+        consumableType: "ammunition" as const,
         effects: [],
         stackable: true,
         ammoData: {
-          weaponTypes: ['crossbow_light', 'crossbow_heavy', 'crossbow_hand'],
+          weaponTypes: ["crossbow_light", "crossbow_heavy", "crossbow_hand"],
           recoveryRate: 0.5,
-          specialProperties: []
-        }
+          specialProperties: [],
+        },
       },
       {
-        id: 'sling_bullets',
-        name: 'Sling Bullets',
-        type: 'consumable' as const,
-        category: 'ammunition' as const,
-        rarity: 'common' as const,
-        description: 'Lead bullets for use with slings.',
+        id: "sling_bullets",
+        name: "Sling Bullets",
+        type: "consumable" as const,
+        category: "ammunition" as const,
+        rarity: "common" as const,
+        description: "Lead bullets for use with slings.",
         weight: 1.5,
-        cost: { amount: 4, currency: 'cp' as const },
-        source: 'SRD',
-        tags: ['ammunition', 'ranged'],
-        consumableType: 'ammunition' as const,
+        cost: { amount: 4, currency: "cp" as const },
+        source: "SRD",
+        tags: ["ammunition", "ranged"],
+        consumableType: "ammunition" as const,
         effects: [],
         stackable: true,
         ammoData: {
-          weaponTypes: ['sling'],
+          weaponTypes: ["sling"],
           recoveryRate: 0.25, // harder to recover bullets
-          specialProperties: []
-        }
-      }
+          specialProperties: [],
+        },
+      },
     ];
 
-    ammunition.forEach(ammo => {
+    ammunition.forEach((ammo) => {
       this.ammunition.set(ammo.id, ammo);
     });
   }
@@ -512,7 +509,7 @@ export interface ConsumableUsage {
   id: string;
   itemId: string;
   userId: string;
-  type: 'potion' | 'scroll' | 'ammunition';
+  type: "potion" | "scroll" | "ammunition";
   quantity: number;
   effects: string[];
   timestamp: Date;

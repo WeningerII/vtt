@@ -1,24 +1,24 @@
-import { test, expect } from '@playwright/test';
-import { factory } from './utils/factories';
-import { authUtils } from './utils/auth';
-import { testDb } from './utils/database';
+import { test, expect } from "@playwright/test";
+import { factory } from "./utils/factories";
+import { authUtils } from "./utils/auth";
+import { testDb } from "./utils/database";
 
-test.describe('Complete User Journeys', () => {
+test.describe("Complete User Journeys", () => {
   test.beforeEach(async () => {
     // Reset database state before each test
     await testDb.reset();
   });
 
-  test('GM creates campaign and manages game session', async ({ page, _request}) => {
+  test("GM creates campaign and manages game session", async ({ page, _request }) => {
     // Setup test data
     const gameSession = await factory.createCompleteGameSession();
-    const { gm, _player1,  _player2  } = gameSession.users;
+    const { gm, _player1, _player2 } = gameSession.users;
 
     // Mock authentication for GM
     await authUtils.mockAuthentication(page, gm);
-    
+
     // Navigate to campaigns page
-    await page.goto('/campaigns');
+    await page.goto("/campaigns");
     await authUtils.waitForAuthReady(page);
 
     // Verify campaign is visible
@@ -37,8 +37,8 @@ test.describe('Complete User Journeys', () => {
     await page.waitForURL(`/scenes/${gameSession.scene.id}`);
 
     // Verify scene canvas loads
-    await expect(page.locator('canvas')).toBeVisible();
-    
+    await expect(page.locator("canvas")).toBeVisible();
+
     // Verify tokens are visible
     await expect(page.locator('[data-testid="token"]')).toHaveCount(3);
 
@@ -50,8 +50,8 @@ test.describe('Complete User Journeys', () => {
     await page.mouse.up();
 
     // Verify token moved
-    await expect(firstToken).toHaveAttribute('data-x', '300');
-    await expect(firstToken).toHaveAttribute('data-y', '300');
+    await expect(firstToken).toHaveAttribute("data-x", "300");
+    await expect(firstToken).toHaveAttribute("data-y", "300");
 
     // Open initiative tracker
     await page.click('[data-testid="initiative-tracker-button"]');
@@ -63,19 +63,19 @@ test.describe('Complete User Journeys', () => {
 
     // Advance turn
     await page.click('[data-testid="next-turn"]');
-    await expect(page.locator('[data-testid="turn-indicator"]')).toContainText('Turn 2');
+    await expect(page.locator('[data-testid="turn-indicator"]')).toContainText("Turn 2");
   });
 
-  test('Player joins campaign and participates in session', async ({ page, _request}) => {
+  test("Player joins campaign and participates in session", async ({ page, _request }) => {
     // Setup test data
     const gameSession = await factory.createMinimalGameSession();
-    const { player  } = gameSession.users;
+    const { player } = gameSession.users;
 
     // Mock authentication for player
     await authUtils.mockAuthentication(page, player);
-    
+
     // Navigate to campaigns
-    await page.goto('/campaigns');
+    await page.goto("/campaigns");
     await authUtils.waitForAuthReady(page);
 
     // Join campaign
@@ -94,9 +94,9 @@ test.describe('Complete User Journeys', () => {
     await expect(page.locator('[data-testid="character-sheet"]')).toBeVisible();
 
     // Update character HP
-    await page.fill('[data-testid="current-hp-input"]', '20');
+    await page.fill('[data-testid="current-hp-input"]', "20");
     await page.click('[data-testid="save-character"]');
-    await expect(page.locator('[data-testid="hp-display"]')).toContainText('20/25');
+    await expect(page.locator('[data-testid="hp-display"]')).toContainText("20/25");
 
     // Test dice rolling
     await page.click('[data-testid="dice-roller"]');
@@ -104,15 +104,17 @@ test.describe('Complete User Journeys', () => {
     await expect(page.locator('[data-testid="dice-result"]')).toBeVisible();
 
     // Test chat functionality
-    await page.fill('[data-testid="chat-input"]', 'Hello from player!');
-    await page.press('[data-testid="chat-input"]', 'Enter');
-    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText('Hello from player!');
+    await page.fill('[data-testid="chat-input"]', "Hello from player!");
+    await page.press('[data-testid="chat-input"]', "Enter");
+    await expect(page.locator('[data-testid="chat-message"]').last()).toContainText(
+      "Hello from player!",
+    );
   });
 
-  test('Multi-user real-time collaboration', async ({ browser }) => {
+  test("Multi-user real-time collaboration", async ({ browser }) => {
     // Setup test data
     const gameSession = await factory.createCompleteGameSession();
-    const { gm,  player1,  player2  } = gameSession.users;
+    const { gm, player1, player2 } = gameSession.users;
 
     // Create multiple browser contexts
     const gmContext = await browser.newContext();
@@ -163,21 +165,31 @@ test.describe('Complete User Journeys', () => {
 
       // Verify players see the token movement
       await Promise.all([
-        expect(player1Page.locator('[data-testid="token"]').first()).toHaveAttribute('data-x', '400'),
-        expect(player2Page.locator('[data-testid="token"]').first()).toHaveAttribute('data-x', '400'),
+        expect(player1Page.locator('[data-testid="token"]').first()).toHaveAttribute(
+          "data-x",
+          "400",
+        ),
+        expect(player2Page.locator('[data-testid="token"]').first()).toHaveAttribute(
+          "data-x",
+          "400",
+        ),
       ]);
 
       // Test chat synchronization
-      await player1Page.fill('[data-testid="chat-input"]', 'Player 1 message');
-      await player1Page.press('[data-testid="chat-input"]', 'Enter');
+      await player1Page.fill('[data-testid="chat-input"]', "Player 1 message");
+      await player1Page.press('[data-testid="chat-input"]', "Enter");
 
       // Wait for message to propagate
       await player1Page.waitForTimeout(500);
 
       // Verify all users see the message
       await Promise.all([
-        expect(gmPage.locator('[data-testid="chat-message"]').last()).toContainText('Player 1 message'),
-        expect(player2Page.locator('[data-testid="chat-message"]').last()).toContainText('Player 1 message'),
+        expect(gmPage.locator('[data-testid="chat-message"]').last()).toContainText(
+          "Player 1 message",
+        ),
+        expect(player2Page.locator('[data-testid="chat-message"]').last()).toContainText(
+          "Player 1 message",
+        ),
       ]);
 
       // Test initiative tracker synchronization
@@ -192,7 +204,6 @@ test.describe('Complete User Journeys', () => {
         expect(player1Page.locator('[data-testid="encounter-active"]')).toBeVisible(),
         expect(player2Page.locator('[data-testid="encounter-active"]')).toBeVisible(),
       ]);
-
     } finally {
       // Cleanup contexts
       await gmContext.close();
@@ -201,26 +212,26 @@ test.describe('Complete User Journeys', () => {
     }
   });
 
-  test('Asset upload and management workflow', async ({ page, _request}) => {
+  test("Asset upload and management workflow", async ({ page, _request }) => {
     // Setup test data
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Mock authentication
     await authUtils.mockAuthentication(page, gm);
-    
+
     // Navigate to asset library
-    await page.goto('/assets');
+    await page.goto("/assets");
     await authUtils.waitForAuthReady(page);
 
     // Test file upload
     const fileInput = page.locator('[data-testid="file-upload-input"]');
-    
+
     // Create a test file
-    const testImageBuffer = Buffer.from('fake-image-data');
+    const testImageBuffer = Buffer.from("fake-image-data");
     await fileInput.setInputFiles({
-      name: 'test-map.png',
-      mimeType: 'image/png',
+      name: "test-map.png",
+      mimeType: "image/png",
       buffer: testImageBuffer,
     });
 
@@ -230,7 +241,7 @@ test.describe('Complete User Journeys', () => {
 
     // Verify asset appears in library
     await expect(page.locator('[data-testid="asset-item"]')).toHaveCount(1);
-    await expect(page.locator('[data-testid="asset-name"]')).toContainText('test-map.png');
+    await expect(page.locator('[data-testid="asset-name"]')).toContainText("test-map.png");
 
     // Test asset preview
     await page.click('[data-testid="asset-item"]');
@@ -246,7 +257,7 @@ test.describe('Complete User Journeys', () => {
     await expect(page.locator('[data-testid="scene-asset"]')).toBeVisible();
 
     // Test asset deletion
-    await page.goto('/assets');
+    await page.goto("/assets");
     await page.click('[data-testid="asset-menu"]');
     await page.click('[data-testid="delete-asset"]');
     await page.click('[data-testid="confirm-delete"]');
@@ -255,10 +266,10 @@ test.describe('Complete User Journeys', () => {
     await expect(page.locator('[data-testid="asset-item"]')).toHaveCount(0);
   });
 
-  test('Error handling and recovery scenarios', async ({ page, _request}) => {
+  test("Error handling and recovery scenarios", async ({ page, _request }) => {
     // Setup test data
     const gameSession = await factory.createMinimalGameSession();
-    const { player  } = gameSession.users;
+    const { player } = gameSession.users;
 
     // Mock authentication
     await authUtils.mockAuthentication(page, player);
@@ -287,18 +298,18 @@ test.describe('Complete User Journeys', () => {
     await expect(page.locator('[data-testid="online-indicator"]')).toBeVisible({ timeout: 10000 });
 
     // Test invalid scene access
-    await page.goto('/scenes/invalid-scene-id');
+    await page.goto("/scenes/invalid-scene-id");
     await expect(page.locator('[data-testid="scene-not-found"]')).toBeVisible();
 
     // Test unauthorized access
-    await page.goto('/admin/dashboard');
+    await page.goto("/admin/dashboard");
     await expect(page.locator('[data-testid="unauthorized"]')).toBeVisible();
   });
 
-  test('Performance under load', async ({ page, _request}) => {
+  test("Performance under load", async ({ page, _request }) => {
     // Create a scene with many tokens
     const gameSession = await factory.createMinimalGameSession();
-    const { gm  } = gameSession.users;
+    const { gm } = gameSession.users;
 
     // Create 50 tokens for stress testing
     const tokens = [];
@@ -321,7 +332,7 @@ test.describe('Complete User Journeys', () => {
     const startTime = Date.now();
     await page.goto(`/scenes/${gameSession.scene.id}`);
     await authUtils.waitForAuthReady(page);
-    
+
     // Wait for all tokens to render
     await expect(page.locator('[data-testid="token"]')).toHaveCount(51); // 50 + 1 original
     const loadTime = Date.now() - startTime;
@@ -343,8 +354,8 @@ test.describe('Complete User Journeys', () => {
 
     // Check for console errors
     const errors: string[] = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') {
+    page.on("console", (msg) => {
+      if (msg.type() === "error") {
         errors.push(msg.text());
       }
     });
@@ -356,10 +367,8 @@ test.describe('Complete User Journeys', () => {
     }
 
     // Verify no critical errors
-    const criticalErrors = errors.filter(error => 
-      error.includes('memory') || 
-      error.includes('crash') || 
-      error.includes('fatal')
+    const criticalErrors = errors.filter(
+      (error) => error.includes("memory") || error.includes("crash") || error.includes("fatal"),
     );
     expect(criticalErrors).toHaveLength(0);
   });

@@ -1,9 +1,9 @@
-import { _SparseSet, MultiSparseSet } from './SparseSet';
+import { _SparseSet, MultiSparseSet } from "./SparseSet";
 
 export interface ComponentChange {
   entityId: number;
   componentType: string;
-  changeType: 'added' | 'modified' | 'removed';
+  changeType: "added" | "modified" | "removed";
   timestamp: number;
   version: number;
 }
@@ -38,11 +38,11 @@ export class ComponentManager {
    */
   setComponent<T>(entityId: number, componentType: string, component: T): void {
     const hadComponent = this.componentStorage.hasComponent(entityId, componentType);
-    
+
     this.componentStorage.setComponent(entityId, componentType, component);
-    
+
     // Track changes
-    this.recordChange(entityId, componentType, hadComponent ? 'modified' : 'added');
+    this.recordChange(entityId, componentType, hadComponent ? "modified" : "added");
     this.markEntityDirty(entityId);
     this.invalidateQueriesForComponent(componentType);
   }
@@ -66,7 +66,7 @@ export class ComponentManager {
    */
   removeComponent(entityId: number, componentType: string): boolean {
     if (this.componentStorage.removeComponent(entityId, componentType)) {
-      this.recordChange(entityId, componentType, 'removed');
+      this.recordChange(entityId, componentType, "removed");
       this.markEntityDirty(entityId);
       this.invalidateQueriesForComponent(componentType);
       return true;
@@ -80,14 +80,14 @@ export class ComponentManager {
   removeEntity(entityId: number): void {
     // Get all component types for this entity before removal
     const componentTypes = this.getEntityComponentTypes(entityId);
-    
+
     this.componentStorage.removeEntity(entityId);
-    
+
     // Record changes for all removed components
     for (const componentType of componentTypes) {
-      this.recordChange(entityId, componentType, 'removed');
+      this.recordChange(entityId, componentType, "removed");
     }
-    
+
     this.markEntityDirty(entityId);
     this.invalidateAllQueries();
   }
@@ -98,7 +98,7 @@ export class ComponentManager {
   queryEntities(query: ComponentQuery): number[] {
     const queryKey = this.getQueryKey(query);
     const cached = this.queryResultCache.get(queryKey);
-    
+
     // Return cached result if still valid
     if (cached && cached.version === this.globalVersion) {
       return [...cached.entities];
@@ -106,11 +106,11 @@ export class ComponentManager {
 
     // Execute query
     const entities = this.executeQuery(query);
-    
+
     // Cache result
     this.queryResultCache.set(queryKey, {
       entities: [...entities],
-      version: this.globalVersion
+      version: this.globalVersion,
     });
 
     return entities;
@@ -155,7 +155,7 @@ export class ComponentManager {
     if (sinceVersion === undefined) {
       return [...this.changeLog];
     }
-    return this.changeLog.filter(change => change.version > sinceVersion);
+    return this.changeLog.filter((change) => change.version > sinceVersion);
   }
 
   /**
@@ -164,13 +164,13 @@ export class ComponentManager {
   getEntityComponentTypes(entityId: number): string[] {
     const types: string[] = [];
     const stats = this.componentStorage.getMemoryStats();
-    
+
     for (const componentType in stats.componentStats) {
       if (this.componentStorage.hasComponent(entityId, componentType)) {
         types.push(componentType);
       }
     }
-    
+
     return types;
   }
 
@@ -181,14 +181,14 @@ export class ComponentManager {
     const memoryStats = this.componentStorage.getMemoryStats();
     const queryCacheSize = this.queryResultCache.size;
     const changeLogSize = this.changeLog.length;
-    
+
     return {
       ...memoryStats,
       dirtyEntities: this.dirtyEntities.size,
       changeLogSize,
       queryCacheSize,
       registeredSystems: this.systemQueries.size,
-      globalVersion: this.globalVersion
+      globalVersion: this.globalVersion,
     };
   }
 
@@ -197,12 +197,12 @@ export class ComponentManager {
    */
   compact(): void {
     this.componentStorage.compact();
-    
+
     // Trim change log if too large
     if (this.changeLog.length > this.maxChangeLogSize) {
       this.changeLog = this.changeLog.slice(-this.maxChangeLogSize / 2);
     }
-    
+
     // Clear old query cache
     this.queryResultCache.clear();
   }
@@ -212,17 +212,17 @@ export class ComponentManager {
    */
   batch(_operations: (() => void)[]): void {
     const startVersion = this.globalVersion;
-    
+
     // Execute all operations without triggering individual updates
     for (const operation of operations) {
       operation();
     }
-    
+
     // Single version increment for the entire batch
     if (this.globalVersion === startVersion) {
       this.globalVersion++;
     }
-    
+
     // Clear query cache once for the entire batch
     this.queryResultCache.clear();
   }
@@ -241,17 +241,16 @@ export class ComponentManager {
     // Filter by remaining required components
     for (let i = 1; i < query.required.length; i++) {
       const req = query.required[i]!;
-      entities = entities.filter(entityId => 
-        this.componentStorage.hasComponent(entityId, req)
-      );
+      entities = entities.filter((entityId) => this.componentStorage.hasComponent(entityId, req));
     }
 
     // Filter out excluded components
     if (query.excluded) {
-      entities = entities.filter(entityId =>
-        !query.excluded!.some(excludedType => 
-          this.componentStorage.hasComponent(entityId, excludedType)
-        )
+      entities = entities.filter(
+        (entityId) =>
+          !query.excluded!.some((excludedType) =>
+            this.componentStorage.hasComponent(entityId, excludedType),
+          ),
       );
     }
 
@@ -262,24 +261,28 @@ export class ComponentManager {
    * Generate a unique key for a query
    */
   private getQueryKey(query: ComponentQuery): string {
-    const required = query.required.sort().join(',');
-    const optional = query.optional ? query.optional.sort().join(',') : '';
-    const excluded = query.excluded ? query.excluded.sort().join(',') : '';
+    const required = query.required.sort().join(",");
+    const optional = query.optional ? query.optional.sort().join(",") : "";
+    const excluded = query.excluded ? query.excluded.sort().join(",") : "";
     return `req:${required}|opt:${optional}|exc:${excluded}`;
   }
 
   /**
    * Record a component change
    */
-  private recordChange(entityId: number, componentType: string, changeType: ComponentChange['changeType']): void {
+  private recordChange(
+    entityId: number,
+    componentType: string,
+    changeType: ComponentChange["changeType"],
+  ): void {
     this.globalVersion++;
-    
+
     const change: ComponentChange = {
       entityId,
       componentType,
       changeType,
       timestamp: Date.now(),
-      version: this.globalVersion
+      version: this.globalVersion,
     };
 
     this.changeLog.push(change);

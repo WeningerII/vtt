@@ -2,11 +2,11 @@
  * File storage implementations for different storage backends
  */
 
-import { AssetStorage } from './AssetManager';
-import type { Buffer } from 'node:buffer';
+import { AssetStorage } from "./AssetManager";
+import type { Buffer } from "node:buffer";
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from "fs/promises";
+import * as path from "path";
 
 // Local file system storage
 export class LocalFileStorage implements AssetStorage {
@@ -21,13 +21,13 @@ export class LocalFileStorage implements AssetStorage {
   async upload(key: string, data: Buffer, _contentType: string): Promise<string> {
     const filePath = path.join(this.basePath, key);
     const directory = path.dirname(filePath);
-    
+
     // Ensure directory exists
     await fs.mkdir(directory, { recursive: true });
-    
+
     // Write file
     await fs.writeFile(filePath, data);
-    
+
     return `${this.baseUrl}/${key}`;
   }
 
@@ -42,7 +42,7 @@ export class LocalFileStorage implements AssetStorage {
       await fs.unlink(filePath);
     } catch (error) {
       // Ignore if file doesn't exist
-      if ((error as any).code !== 'ENOENT') {
+      if ((error as any).code !== "ENOENT") {
         throw error;
       }
     }
@@ -89,14 +89,14 @@ export class S3Storage implements AssetStorage {
     // Simplified S3 upload implementation
     // In production, use AWS SDK
     const url = this.getUrl(key);
-    
+
     try {
       const response = await fetch(this.getUploadUrl(key), {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': contentType,
-          'Content-Length': data.length.toString(),
-          'Authorization': this.getAuthHeader('PUT', key),
+          "Content-Type": contentType,
+          "Content-Length": data.length.toString(),
+          Authorization: this.getAuthHeader("PUT", key),
         },
         body: data as BodyInit,
       });
@@ -115,7 +115,7 @@ export class S3Storage implements AssetStorage {
     try {
       const response = await fetch(this.getUrl(key), {
         headers: {
-          'Authorization': this.getAuthHeader('GET', key),
+          Authorization: this.getAuthHeader("GET", key),
         },
       });
 
@@ -132,9 +132,9 @@ export class S3Storage implements AssetStorage {
   async delete(key: string): Promise<void> {
     try {
       const response = await fetch(this.getUrl(key), {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': this.getAuthHeader('DELETE', key),
+          Authorization: this.getAuthHeader("DELETE", key),
         },
       });
 
@@ -157,9 +157,9 @@ export class S3Storage implements AssetStorage {
 
   private extractStorageKey(url: string): string {
     // Extract storage key from URL - implementation depends on storage provider
-    const key = url.split('/').pop();
+    const key = url.split("/").pop();
     if (key === undefined) {
-      throw new Error('Invalid URL: cannot extract storage key');
+      throw new Error("Invalid URL: cannot extract storage key");
     }
     return key;
   }
@@ -167,9 +167,9 @@ export class S3Storage implements AssetStorage {
   async exists(key: string): Promise<boolean> {
     try {
       const response = await fetch(this.getUrl(key), {
-        method: 'HEAD',
+        method: "HEAD",
         headers: {
-          'Authorization': this.getAuthHeader('HEAD', key),
+          Authorization: this.getAuthHeader("HEAD", key),
         },
       });
       return response.ok;
@@ -189,7 +189,7 @@ export class MemoryStorage implements AssetStorage {
   private storage: Map<string, Buffer> = new Map();
   private baseUrl: string;
 
-  constructor(baseUrl = 'http://localhost:3000/assets') {
+  constructor(baseUrl = "http://localhost:3000/assets") {
     this.baseUrl = baseUrl;
   }
 

@@ -1,7 +1,7 @@
 export type EntityId = number;
 
 export interface LightSource {
-  type: 'point' | 'directional' | 'spot' | 'area';
+  type: "point" | "directional" | "spot" | "area";
   intensity: number; // 0-1
   color: [number, number, number]; // RGB
   range: number; // in grid units
@@ -37,7 +37,7 @@ export class LightingStore {
       ambientLight: [0.2, 0.2, 0.2],
       ambientIntensity: 0.3,
       shadowsEnabled: true,
-      dynamicLighting: true
+      dynamicLighting: true,
     };
   }
 
@@ -47,7 +47,7 @@ export class LightingStore {
       ambientLight: data.ambientLight ?? [1, 1, 1],
       ambientIntensity: data.ambientIntensity ?? 1,
       shadowsEnabled: data.shadowsEnabled ?? true,
-      dynamicLighting: data.dynamicLighting ?? true
+      dynamicLighting: data.dynamicLighting ?? true,
     });
   }
 
@@ -157,7 +157,7 @@ export class LightingStore {
     let totalIntensity = this.globalLighting.ambientIntensity;
 
     // Calculate contribution from all light sources
-    for (const { light  } of this.getAllLightSources()) {
+    for (const { light } of this.getAllLightSources()) {
       if (!light.enabled) continue;
 
       // This is a simplified calculation - in a real implementation,
@@ -174,41 +174,41 @@ export class LightingStore {
 
   // Torch/lantern helpers
   createTorch(id: EntityId): void {
-    this.addLightSource(id, 'torch', {
-      type: 'point',
+    this.addLightSource(id, "torch", {
+      type: "point",
       intensity: 0.8,
       color: [1, 0.8, 0.4],
       range: 4, // 20 feet bright, 20 feet dim
       falloff: 2,
       castsShadows: true,
       flickerRate: 0.1,
-      enabled: true
+      enabled: true,
     });
   }
 
   createLantern(id: EntityId): void {
-    this.addLightSource(id, 'lantern', {
-      type: 'point',
+    this.addLightSource(id, "lantern", {
+      type: "point",
       intensity: 1,
       color: [1, 0.9, 0.6],
       range: 6, // 30 feet bright, 30 feet dim
       falloff: 1.5,
       castsShadows: true,
       flickerRate: 0.02,
-      enabled: true
+      enabled: true,
     });
   }
 
   createMagicalLight(id: EntityId, color: [number, number, number] = [1, 1, 1]): void {
-    this.addLightSource(id, 'magical', {
-      type: 'point',
+    this.addLightSource(id, "magical", {
+      type: "point",
       intensity: 1,
       color,
       range: 4, // 20 feet bright light
       falloff: 1,
       castsShadows: false,
       flickerRate: 0,
-      enabled: true
+      enabled: true,
     });
   }
 }

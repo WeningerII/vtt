@@ -26,7 +26,7 @@ export class EncounterService {
   constructor(private prisma: PrismaClient) {}
 
   async searchEncounters(options: EncounterSearchOptions) {
-    const { campaignId,  isActive,  limit = 50,  offset = 0  } = options;
+    const { campaignId, isActive, limit = 50, offset = 0 } = options;
 
     const where: any = { campaignId };
     if (isActive !== undefined) where.isActive = isActive;
@@ -243,7 +243,7 @@ export class EncounterService {
     if (newTurn >= participants.length) {
       newTurn = 0;
       newRound += 1;
-      
+
       // Reset hasActed for all participants at start of new round
       await this.prisma.encounterParticipant.updateMany({
         where: { encounterId: id },
@@ -312,7 +312,7 @@ export class EncounterService {
       return null;
     }
 
-    const participants = encounter.participants.filter(p => p.isActive);
+    const participants = encounter.participants.filter((p) => p.isActive);
     if (participants.length === 0 || encounter.currentTurn >= participants.length) {
       return null;
     }
@@ -378,7 +378,7 @@ export class EncounterService {
       }
 
       const roll = Math.floor(Math.random() * 20) + 1 + dexMod;
-      
+
       return this.updateInitiative(encounterId, participant.actorId, roll);
     });
 

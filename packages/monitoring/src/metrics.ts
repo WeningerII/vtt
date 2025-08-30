@@ -1,10 +1,10 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Metrics collection and monitoring system
  */
 
-export type MetricType = 'counter' | 'gauge' | 'histogram' | 'timer';
+export type MetricType = "counter" | "gauge" | "histogram" | "timer";
 
 export interface MetricValue {
   value: number;
@@ -39,9 +39,9 @@ export class MetricsRegistry {
 
   // Counter metrics - values that only increase
   incrementCounter(name: string, value = 1, labels?: Record<string, string>): void {
-    const metric = this.getOrCreateMetric(name, 'counter', `Counter metric: ${name}`);
+    const metric = this.getOrCreateMetric(name, "counter", `Counter metric: ${name}`);
     const lastValue = metric.values[metric.values.length - 1]?.value || 0;
-    
+
     const metricValue: MetricValue = {
       value: lastValue + value,
       timestamp: new Date(),
@@ -59,8 +59,8 @@ export class MetricsRegistry {
 
   // Gauge metrics - values that can go up or down
   setGauge(name: string, value: number, labels?: Record<string, string>): void {
-    const metric = this.getOrCreateMetric(name, 'gauge', `Gauge metric: ${name}`);
-    
+    const metric = this.getOrCreateMetric(name, "gauge", `Gauge metric: ${name}`);
+
     const metricValue: MetricValue = {
       value,
       timestamp: new Date(),
@@ -78,8 +78,8 @@ export class MetricsRegistry {
 
   // Histogram metrics - distribution of values
   recordHistogram(name: string, value: number, labels?: Record<string, string>): void {
-    const metric = this.getOrCreateMetric(name, 'histogram', `Histogram metric: ${name}`);
-    
+    const metric = this.getOrCreateMetric(name, "histogram", `Histogram metric: ${name}`);
+
     const metricValue: MetricValue = {
       value,
       timestamp: new Date(),
@@ -98,7 +98,7 @@ export class MetricsRegistry {
   // Timer metrics - measure duration
   startTimer(name: string, labels?: Record<string, string>): () => void {
     const startTime = Date.now();
-    
+
     return () => {
       const duration = Date.now() - startTime;
       this.recordHistogram(name, duration, labels);
@@ -107,7 +107,7 @@ export class MetricsRegistry {
 
   private getOrCreateMetric(name: string, type: MetricType, description: string): Metric {
     let metric = this.metrics.get(name);
-    
+
     if (!metric) {
       metric = {
         name,
@@ -117,7 +117,7 @@ export class MetricsRegistry {
       };
       this.metrics.set(name, metric);
     }
-    
+
     return metric;
   }
 
@@ -127,7 +127,7 @@ export class MetricsRegistry {
 
   async getAllMetrics(): Promise<Metric[]> {
     const staticMetrics = Array.from(this.metrics.values());
-    
+
     // Collect metrics from registered collectors
     const collectedMetrics: Metric[] = [];
     for (const collector of this.collectors) {
@@ -138,7 +138,7 @@ export class MetricsRegistry {
         logger.error(`Failed to collect metrics from ${collector.name}:`, error);
       }
     }
-    
+
     return [...staticMetrics, ...collectedMetrics];
   }
 
@@ -147,7 +147,10 @@ export class MetricsRegistry {
   }
 
   // Get metric statistics
-  getMetricStats(name: string, timeWindow?: number): {
+  getMetricStats(
+    name: string,
+    timeWindow?: number,
+  ): {
     count: number;
     min: number;
     max: number;
@@ -161,20 +164,20 @@ export class MetricsRegistry {
     }
 
     let values = metric.values;
-    
+
     // Filter by time window if specified
     if (timeWindow) {
       const cutoff = new Date(Date.now() - timeWindow);
-      values = values.filter(v => v.timestamp >= cutoff);
+      values = values.filter((v) => v.timestamp >= cutoff);
     }
 
     if (values.length === 0) {
       return null;
     }
 
-    const nums = values.map(v => v.value);
+    const nums = values.map((v) => v.value);
     const sum = nums.reduce((_a, __b) => a + b, 0);
-    
+
     return {
       count: nums.length,
       min: Math.min(...nums),
@@ -192,7 +195,7 @@ export class MetricsRegistry {
 
 // Game-specific metrics collector
 export class GameMetricsCollector implements MetricsCollector {
-  name = 'game-metrics';
+  name = "game-metrics";
   private gameStates: Map<string, any> = new Map();
 
   updateGameState(gameId: string, state: any): void {
@@ -208,26 +211,28 @@ export class GameMetricsCollector implements MetricsCollector {
 
     // Active games metric
     metrics.push({
-      name: 'vtt_active_games_total',
-      type: 'gauge',
-      description: 'Number of active games',
-      values: [{
-        value: this.gameStates.size,
-        timestamp: now,
-      }],
+      name: "vtt_active_games_total",
+      type: "gauge",
+      description: "Number of active games",
+      values: [
+        {
+          value: this.gameStates.size,
+          timestamp: now,
+        },
+      ],
     });
 
     // Players per game
-    const playersPerGame = Array.from(this.gameStates.values()).map(state => 
-      state.players?.length || 0
+    const playersPerGame = Array.from(this.gameStates.values()).map(
+      (state) => state.players?.length || 0,
     );
 
     if (playersPerGame.length > 0) {
       metrics.push({
-        name: 'vtt_players_per_game',
-        type: 'histogram',
-        description: 'Distribution of players per game',
-        values: playersPerGame.map(count => ({
+        name: "vtt_players_per_game",
+        type: "histogram",
+        description: "Distribution of players per game",
+        values: playersPerGame.map((count) => ({
           value: count,
           timestamp: now,
         })),
@@ -240,41 +245,41 @@ export class GameMetricsCollector implements MetricsCollector {
 
 // System metrics collector
 export class SystemMetricsCollector implements MetricsCollector {
-  name = 'system-metrics';
+  name = "system-metrics";
 
   async collect(): Promise<Metric[]> {
     const metrics: Metric[] = [];
     const now = new Date();
 
     // Memory usage
-    if (typeof process !== 'undefined' && process.memoryUsage) {
+    if (typeof process !== "undefined" && process.memoryUsage) {
       const memUsage = process.memoryUsage();
-      
+
       metrics.push({
-        name: 'vtt_memory_usage_bytes',
-        type: 'gauge',
-        description: 'Memory usage in bytes',
-        unit: 'bytes',
+        name: "vtt_memory_usage_bytes",
+        type: "gauge",
+        description: "Memory usage in bytes",
+        unit: "bytes",
         values: [
-          { value: memUsage.heapUsed, timestamp: now, labels: { type: 'heap_used' } },
-          { value: memUsage.heapTotal, timestamp: now, labels: { type: 'heap_total' } },
-          { value: memUsage.rss, timestamp: now, labels: { type: 'rss' } },
+          { value: memUsage.heapUsed, timestamp: now, labels: { type: "heap_used" } },
+          { value: memUsage.heapTotal, timestamp: now, labels: { type: "heap_total" } },
+          { value: memUsage.rss, timestamp: now, labels: { type: "rss" } },
         ],
       });
     }
 
     // CPU usage (simplified)
-    if (typeof process !== 'undefined' && process.cpuUsage) {
+    if (typeof process !== "undefined" && process.cpuUsage) {
       const cpuUsage = process.cpuUsage();
-      
+
       metrics.push({
-        name: 'vtt_cpu_usage_microseconds',
-        type: 'counter',
-        description: 'CPU usage in microseconds',
-        unit: 'microseconds',
+        name: "vtt_cpu_usage_microseconds",
+        type: "counter",
+        description: "CPU usage in microseconds",
+        unit: "microseconds",
         values: [
-          { value: cpuUsage.user, timestamp: now, labels: { type: 'user' } },
-          { value: cpuUsage.system, timestamp: now, labels: { type: 'system' } },
+          { value: cpuUsage.user, timestamp: now, labels: { type: "user" } },
+          { value: cpuUsage.system, timestamp: now, labels: { type: "system" } },
         ],
       });
     }
@@ -287,11 +292,7 @@ export class SystemMetricsCollector implements MetricsCollector {
 export class PerformanceMonitor {
   private static registry = MetricsRegistry.getInstance();
 
-  static measureFunction<T>(
-    _name: string,
-    _fn: () => T,
-    labels?: Record<string, string>
-  ): T {
+  static measureFunction<T>(_name: string, _fn: () => T, labels?: Record<string, string>): T {
     const endTimer = this.registry.startTimer(`vtt_function_duration_ms`, {
       function: name,
       ...labels,
@@ -301,14 +302,14 @@ export class PerformanceMonitor {
       const result = fn();
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
         function: name,
-        status: 'success',
+        status: "success",
         ...labels,
       });
       return result;
     } catch (error) {
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
         function: name,
-        status: 'error',
+        status: "error",
         ...labels,
       });
       throw error;
@@ -320,7 +321,7 @@ export class PerformanceMonitor {
   static async measureAsyncFunction<T>(
     _name: string,
     _fn: () => Promise<T>,
-    labels?: Record<string, string>
+    labels?: Record<string, string>,
   ): Promise<T> {
     const endTimer = this.registry.startTimer(`vtt_function_duration_ms`, {
       function: name,
@@ -331,14 +332,14 @@ export class PerformanceMonitor {
       const result = await fn();
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
         function: name,
-        status: 'success',
+        status: "success",
         ...labels,
       });
       return result;
     } catch (error) {
       this.registry.incrementCounter(`vtt_function_calls_total`, 1, {
         function: name,
-        status: 'error',
+        status: "error",
         ...labels,
       });
       throw error;
@@ -367,7 +368,7 @@ export class PerformanceMonitor {
     });
   }
 
-  static recordWebSocketConnection(event: 'connect' | 'disconnect'): void {
+  static recordWebSocketConnection(event: "connect" | "disconnect"): void {
     this.registry.incrementCounter(`vtt_websocket_connections_total`, 1, {
       event,
     });

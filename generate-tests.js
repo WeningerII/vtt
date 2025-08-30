@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
 // Components that need comprehensive tests
 const componentsToTest = [
-  'MonsterBrowser.tsx',
-  'CombatTracker.tsx',
-  'DiceRoller.tsx',
-  'CharacterSheet.tsx',
-  'AIAssistant.tsx',
-  'EncounterGenerator.tsx',
-  'GameLobby.tsx',
-  'VTTApp.tsx'
+  "MonsterBrowser.tsx",
+  "CombatTracker.tsx",
+  "DiceRoller.tsx",
+  "CharacterSheet.tsx",
+  "AIAssistant.tsx",
+  "EncounterGenerator.tsx",
+  "GameLobby.tsx",
+  "VTTApp.tsx",
 ];
 
 function generateTestTemplate(componentName) {
-  const baseName = componentName.replace('.tsx', '');
-  
+  const baseName = componentName.replace(".tsx", "");
+
   return `import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -176,15 +176,18 @@ describe('${baseName}', () => {
 }
 
 // Generate test files for components that don't have comprehensive tests
-componentsToTest.forEach(componentName => {
-  const testFileName = componentName.replace('.tsx', '.test.tsx');
-  const testPath = path.join('/home/weningerii/vtt/apps/client/src/components', testFileName);
-  
-  if (!fs.existsSync(testPath) || fs.readFileSync(testPath, 'utf8').includes('Add specific content assertions')) {
+componentsToTest.forEach((componentName) => {
+  const testFileName = componentName.replace(".tsx", ".test.tsx");
+  const testPath = path.join("/home/weningerii/vtt/apps/client/src/components", testFileName);
+
+  if (
+    !fs.existsSync(testPath) ||
+    fs.readFileSync(testPath, "utf8").includes("Add specific content assertions")
+  ) {
     const testContent = generateTestTemplate(componentName);
-    fs.writeFileSync(testPath, testContent, 'utf8');
+    fs.writeFileSync(testPath, testContent, "utf8");
     console.log(`Generated comprehensive test template: ${testFileName}`);
   }
 });
 
-console.log('Test generation complete!');
+console.log("Test generation complete!");

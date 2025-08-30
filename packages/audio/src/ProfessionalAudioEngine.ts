@@ -1,4 +1,4 @@
-import { logger } from '@vtt/logging';
+import { logger } from "@vtt/logging";
 
 /**
  * Professional Audio Engine - Triple A Quality 3D Spatial Audio
@@ -27,7 +27,7 @@ export interface AudioSource {
 }
 
 export interface DirectivityPattern {
-  type: 'omnidirectional' | 'cardioid' | 'bidirectional' | 'shotgun';
+  type: "omnidirectional" | "cardioid" | "bidirectional" | "shotgun";
   direction: [number, number, number];
   innerAngle: number;
   outerAngle: number;
@@ -36,7 +36,7 @@ export interface DirectivityPattern {
 
 export interface FadeConfig {
   duration: number;
-  curve: 'linear' | 'exponential' | 'logarithmic' | 'sCurve';
+  curve: "linear" | "exponential" | "logarithmic" | "sCurve";
 }
 
 export interface AudioListener {
@@ -65,10 +65,10 @@ export interface AmbientTrack {
 
 export interface AudioZone {
   id: string;
-  shape: 'sphere' | 'box' | 'cylinder' | 'polygon';
+  shape: "sphere" | "box" | "cylinder" | "polygon";
   center: [number, number, number];
   dimensions: [number, number, number];
-  falloffType: 'linear' | 'exponential' | 'inverse';
+  falloffType: "linear" | "exponential" | "inverse";
   priority: number;
 }
 
@@ -84,13 +84,21 @@ export interface ReverbSettings {
   density: number;
 }
 
-export type ReverbPreset = 
-  | 'room' | 'hall' | 'cathedral' | 'cave' | 'forest' 
-  | 'underwater' | 'pipe' | 'arena' | 'hangar' | 'custom';
+export type ReverbPreset =
+  | "room"
+  | "hall"
+  | "cathedral"
+  | "cave"
+  | "forest"
+  | "underwater"
+  | "pipe"
+  | "arena"
+  | "hangar"
+  | "custom";
 
 export interface AtmosphericEffect {
   id: string;
-  type: 'wind' | 'rain' | 'thunder' | 'fire' | 'water' | 'magic';
+  type: "wind" | "rain" | "thunder" | "fire" | "water" | "magic";
   intensity: number;
   direction?: [number, number, number];
   frequency: number;
@@ -112,7 +120,7 @@ export interface MusicTheme {
   triggers: MusicTrigger[];
   tempo: number;
   key: string;
-  mood: 'calm' | 'tense' | 'combat' | 'exploration' | 'mysterious' | 'epic';
+  mood: "calm" | "tense" | "combat" | "exploration" | "mysterious" | "epic";
 }
 
 export interface MusicLayer {
@@ -127,7 +135,7 @@ export interface MusicLayer {
 
 export interface MusicTrigger {
   condition: string;
-  action: 'play' | 'stop' | 'fade' | 'layer' | 'transition';
+  action: "play" | "stop" | "fade" | "layer" | "transition";
   target: string;
   parameters: Record<string, any>;
 }
@@ -142,7 +150,7 @@ export interface AdaptiveParameters {
 
 export interface AudioEffect {
   id: string;
-  type: 'reverb' | 'echo' | 'distortion' | 'chorus' | 'flanger' | 'compressor' | 'eq';
+  type: "reverb" | "echo" | "distortion" | "chorus" | "flanger" | "compressor" | "eq";
   enabled: boolean;
   parameters: Record<string, number>;
   wetGain: number;
@@ -157,7 +165,7 @@ export interface VoiceChat {
   echoCancellation: boolean;
   proximityFade: boolean;
   maxDistance: number;
-  quality: 'low' | 'medium' | 'high' | 'ultra';
+  quality: "low" | "medium" | "high" | "ultra";
 }
 
 export interface AudioAnalyzer {
@@ -175,30 +183,30 @@ export class ProfessionalAudioEngine {
   private listener: AudioListener;
   private masterGain: GainNode;
   private compressor: DynamicsCompressorNode;
-  
+
   // Audio sources and management
   private audioSources: Map<string, AudioSourceNode> = new Map();
   private audioBuffers: Map<string, AudioBuffer> = new Map();
   private audioGroups: Map<string, GainNode> = new Map();
-  
+
   // Environmental audio
   private environmentalAudio: EnvironmentalAudio;
   private activeZones: Set<string> = new Set();
   private reverbNode: ConvolverNode | null = null;
-  
+
   // Effects chain
   private effectsChain: Map<string, AudioEffect> = new Map();
   private effectNodes: Map<string, AudioNode> = new Map();
-  
+
   // Voice chat
   private voiceChat: VoiceChat;
   private mediaStream: MediaStream | null = null;
   private voiceNodes: Map<string, AudioNode> = new Map();
-  
+
   // Analysis
   private analyzer: AudioAnalyzer;
   private analyzerNode: AnalyserNode;
-  
+
   // Performance tracking
   private stats = {
     activeSources: 0,
@@ -210,17 +218,17 @@ export class ProfessionalAudioEngine {
 
   constructor() {
     this.audioContext = new AudioContext();
-    
+
     // Initialize master audio chain
     this.masterGain = this.audioContext.createGain();
     this.compressor = this.audioContext.createDynamicsCompressor();
     this.analyzerNode = this.audioContext.createAnalyser();
-    
+
     // Connect master chain
     this.masterGain.connect(this.compressor);
     this.compressor.connect(this.analyzerNode);
     this.analyzerNode.connect(this.audioContext.destination);
-    
+
     // Initialize listener
     this.listener = {
       position: [0, 0, 0],
@@ -228,12 +236,12 @@ export class ProfessionalAudioEngine {
       up: [0, 1, 0],
       velocity: [0, 0, 0],
     };
-    
+
     this.environmentalAudio = {
       ambientTracks: [],
       reverb: {
         enabled: true,
-        preset: 'room',
+        preset: "room",
         roomSize: 0.5,
         damping: 0.5,
         wetGain: 0.3,
@@ -245,7 +253,7 @@ export class ProfessionalAudioEngine {
       atmosphericEffects: [],
       dynamicMusic: {
         enabled: true,
-        currentTheme: '',
+        currentTheme: "",
         themes: [],
         crossfadeDuration: 2.0,
         adaptiveParameters: {
@@ -257,7 +265,7 @@ export class ProfessionalAudioEngine {
         },
       },
     };
-    
+
     this.voiceChat = {
       enabled: false,
       spatialVoice: true,
@@ -266,9 +274,9 @@ export class ProfessionalAudioEngine {
       echoCancellation: true,
       proximityFade: true,
       maxDistance: 50,
-      quality: 'high',
+      quality: "high",
     };
-    
+
     this.analyzer = {
       enabled: true,
       fftSize: 2048,
@@ -278,7 +286,7 @@ export class ProfessionalAudioEngine {
       pitch: 0,
       spectralCentroid: 0,
     };
-    
+
     this.setupAudioGroups();
     this.setupEffectsChain();
     this.startAnalysis();
@@ -286,19 +294,19 @@ export class ProfessionalAudioEngine {
 
   async initialize(): Promise<void> {
     // Resume audio context if suspended
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext.state === "suspended") {
       await this.audioContext.resume();
     }
-    
+
     await this.setupVoiceChat();
     await this.loadDefaultReverbImpulses();
     this.setupSpatialAudio();
   }
 
   private setupAudioGroups(): void {
-    const groups = ['master', 'music', 'sfx', 'ambient', 'voice', 'ui'];
-    
-    groups.forEach(group => {
+    const groups = ["master", "music", "sfx", "ambient", "voice", "ui"];
+
+    groups.forEach((group) => {
       const gainNode = this.audioContext.createGain();
       gainNode.connect(this.masterGain);
       this.audioGroups.set(group, gainNode);
@@ -309,16 +317,16 @@ export class ProfessionalAudioEngine {
     // Create reverb
     this.reverbNode = this.audioContext.createConvolver();
     this.reverbNode.connect(this.masterGain);
-    
+
     // Create standard effects
     const effects = [
-      { id: 'reverb', type: 'reverb' as const },
-      { id: 'echo', type: 'echo' as const },
-      { id: 'chorus', type: 'chorus' as const },
-      { id: 'eq', type: 'eq' as const },
+      { id: "reverb", type: "reverb" as const },
+      { id: "echo", type: "echo" as const },
+      { id: "chorus", type: "chorus" as const },
+      { id: "eq", type: "eq" as const },
     ];
-    
-    effects.forEach(effect => {
+
+    effects.forEach((effect) => {
       this.effectsChain.set(effect.id, {
         id: effect.id,
         type: effect.type,
@@ -337,11 +345,11 @@ export class ProfessionalAudioEngine {
       this.audioContext.listener.positionX.value = this.listener.position[0];
       this.audioContext.listener.positionY.value = this.listener.position[1];
       this.audioContext.listener.positionZ.value = this.listener.position[2];
-      
+
       this.audioContext.listener.forwardX.value = this.listener.forward[0];
       this.audioContext.listener.forwardY.value = this.listener.forward[1];
       this.audioContext.listener.forwardZ.value = this.listener.forward[2];
-      
+
       this.audioContext.listener.upX.value = this.listener.up[0];
       this.audioContext.listener.upY.value = this.listener.up[1];
       this.audioContext.listener.upZ.value = this.listener.up[2];
@@ -354,23 +362,22 @@ export class ProfessionalAudioEngine {
 
   private async setupVoiceChat(): Promise<void> {
     if (!this.voiceChat.enabled) return;
-    
+
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: this.voiceChat.echoCancellation,
           noiseSuppression: this.voiceChat.noiseSuppression,
           autoGainControl: true,
-          sampleRate: this.voiceChat.quality === 'ultra' ? 48000 : 44100,
+          sampleRate: this.voiceChat.quality === "ultra" ? 48000 : 44100,
         },
       });
-      
+
       const source = this.audioContext.createMediaStreamSource(this.mediaStream);
-      const voiceGain = this.audioGroups.get('voice')!;
+      const voiceGain = this.audioGroups.get("voice")!;
       source.connect(voiceGain);
-      
     } catch (error) {
-      logger.error('Failed to setup voice chat:', error);
+      logger.error("Failed to setup voice chat:", error);
       this.voiceChat.enabled = false;
     }
   }
@@ -378,13 +385,13 @@ export class ProfessionalAudioEngine {
   private async loadDefaultReverbImpulses(): Promise<void> {
     // Load default impulse responses for different environments
     const impulseUrls = {
-      room: '/audio/impulses/room.wav',
-      hall: '/audio/impulses/hall.wav',
-      cathedral: '/audio/impulses/cathedral.wav',
-      cave: '/audio/impulses/cave.wav',
-      forest: '/audio/impulses/forest.wav',
+      room: "/audio/impulses/room.wav",
+      hall: "/audio/impulses/hall.wav",
+      cathedral: "/audio/impulses/cathedral.wav",
+      cave: "/audio/impulses/cave.wav",
+      forest: "/audio/impulses/forest.wav",
     };
-    
+
     for (const [preset, url] of Object.entries(impulseUrls)) {
       try {
         const response = await fetch(url);
@@ -399,20 +406,20 @@ export class ProfessionalAudioEngine {
 
   private startAnalysis(): void {
     this.analyzerNode.fftSize = this.analyzer.fftSize;
-    
+
     const analyze = () => {
       if (!this.analyzer.enabled) return;
-      
+
       this.analyzerNode.getFloatFrequencyData(this.analyzer.frequencyData);
       this.analyzerNode.getFloatTimeDomainData(this.analyzer.waveformData);
-      
+
       // Calculate volume (RMS)
       let sum = 0;
       for (let i = 0; i < this.analyzer.waveformData.length; i++) {
         sum += this.analyzer.waveformData[i] * this.analyzer.waveformData[i];
       }
       this.analyzer.volume = Math.sqrt(sum / this.analyzer.waveformData.length);
-      
+
       // Calculate spectral centroid
       let numerator = 0;
       let denominator = 0;
@@ -422,10 +429,10 @@ export class ProfessionalAudioEngine {
         denominator += magnitude;
       }
       this.analyzer.spectralCentroid = denominator > 0 ? numerator / denominator : 0;
-      
+
       requestAnimationFrame(analyze);
     };
-    
+
     analyze();
   }
 
@@ -445,25 +452,25 @@ export class ProfessionalAudioEngine {
     const buffer = this.audioBuffers.get(config.id);
     if (!buffer) {
       logger.error(`Audio buffer ${config.id} not found`);
-      return '';
+      return "";
     }
-    
+
     const source = this.audioContext.createBufferSource();
     const panner = this.audioContext.createPanner();
     const gainNode = this.audioContext.createGain();
-    
+
     // Configure source
     source.buffer = buffer;
     source.loop = config.loop;
     source.playbackRate.value = config.pitch;
-    
+
     // Configure panner for 3D audio
-    panner.panningModel = 'HRTF';
-    panner.distanceModel = 'inverse';
+    panner.panningModel = "HRTF";
+    panner.distanceModel = "inverse";
     panner.refDistance = config.minDistance;
     panner.maxDistance = config.maxDistance;
     panner.rolloffFactor = config.rolloffFactor;
-    
+
     // Set position
     if (panner.positionX) {
       panner.positionX.value = config.position[0];
@@ -472,41 +479,41 @@ export class ProfessionalAudioEngine {
     } else {
       panner.setPosition(...config.position);
     }
-    
+
     // Configure directivity
     if (config.directivityPattern) {
       this.applyDirectivityPattern(panner, config.directivityPattern);
     }
-    
+
     // Configure volume
     gainNode.gain.value = config.volume;
-    
+
     // Apply fade in
     if (config.fadeIn) {
       gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
       this.applyFade(gainNode.gain, config.fadeIn, this.audioContext.currentTime);
     }
-    
+
     // Connect audio graph
     source.connect(gainNode);
-    
+
     if (config.spatialBlend > 0) {
       const spatialGain = this.audioContext.createGain();
       const directGain = this.audioContext.createGain();
-      
+
       spatialGain.gain.value = config.spatialBlend;
       directGain.gain.value = 1 - config.spatialBlend;
-      
+
       gainNode.connect(spatialGain);
       gainNode.connect(directGain);
-      
+
       spatialGain.connect(panner);
       panner.connect(this.audioGroups.get(config.audioGroup) || this.masterGain);
       directGain.connect(this.audioGroups.get(config.audioGroup) || this.masterGain);
     } else {
       gainNode.connect(this.audioGroups.get(config.audioGroup) || this.masterGain);
     }
-    
+
     // Store reference
     const sourceNode = {
       source,
@@ -515,12 +522,12 @@ export class ProfessionalAudioEngine {
       config,
     };
     this.audioSources.set(config.id, sourceNode);
-    
+
     // Auto-play if configured
     if (config.autoplay) {
       source.start();
     }
-    
+
     return config.id;
   }
 
@@ -528,7 +535,7 @@ export class ProfessionalAudioEngine {
     panner.coneInnerAngle = pattern.innerAngle;
     panner.coneOuterAngle = pattern.outerAngle;
     panner.coneOuterGain = pattern.outerGain;
-    
+
     if (panner.orientationX) {
       panner.orientationX.value = pattern.direction[0];
       panner.orientationY.value = pattern.direction[1];
@@ -540,33 +547,35 @@ export class ProfessionalAudioEngine {
 
   private applyFade(param: AudioParam, fade: FadeConfig, startTime: number): void {
     const endTime = startTime + fade.duration;
-    
+
     switch (fade.curve) {
-      case 'linear':
+      case "linear":
         param.linearRampToValueAtTime(1, endTime);
         break;
-      case 'exponential':
+      case "exponential":
         param.exponentialRampToValueAtTime(1, endTime);
         break;
-      case 'logarithmic': {
-        // Custom logarithmic curve
-        const steps = 10;
-        for (let i = 1; i <= steps; i++) {
-          const t = i / steps;
-          const value = Math.log(1 + t * (Math.E - 1)) / Math.log(Math.E);
-          param.linearRampToValueAtTime(value, startTime + t * fade.duration);
+      case "logarithmic":
+        {
+          // Custom logarithmic curve
+          const steps = 10;
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const value = Math.log(1 + t * (Math.E - 1)) / Math.log(Math.E);
+            param.linearRampToValueAtTime(value, startTime + t * fade.duration);
+          }
         }
-    }
         break;
-      case 'sCurve': {
-        // S-curve using sine
-        const sCurveSteps = 20;
-        for (let i = 1; i <= sCurveSteps; i++) {
-          const t = i / sCurveSteps;
-          const value = (Math.sin((t - 0.5) * Math.PI) + 1) / 2;
-          param.linearRampToValueAtTime(value, startTime + t * fade.duration);
+      case "sCurve":
+        {
+          // S-curve using sine
+          const sCurveSteps = 20;
+          for (let i = 1; i <= sCurveSteps; i++) {
+            const t = i / sCurveSteps;
+            const value = (Math.sin((t - 0.5) * Math.PI) + 1) / 2;
+            param.linearRampToValueAtTime(value, startTime + t * fade.duration);
+          }
         }
-    }
         break;
     }
   }
@@ -579,21 +588,21 @@ export class ProfessionalAudioEngine {
   updateAudioSource(id: string, updates: Partial<AudioSource>): void {
     const sourceNode = this.audioSources.get(id);
     if (!sourceNode) return;
-    
+
     Object.assign(sourceNode.config, updates);
-    
+
     // Update spatial position
     if (updates.position && sourceNode.panner.positionX) {
       sourceNode.panner.positionX.value = updates.position[0];
       sourceNode.panner.positionY.value = updates.position[1];
       sourceNode.panner.positionZ.value = updates.position[2];
     }
-    
+
     // Update volume
     if (updates.volume !== undefined) {
       sourceNode.gainNode.gain.value = updates.volume;
     }
-    
+
     // Update pitch
     if (updates.pitch !== undefined) {
       sourceNode.source.playbackRate.value = updates.pitch;
@@ -607,28 +616,28 @@ export class ProfessionalAudioEngine {
 
   updateEnvironmentalAudio(position: [number, number, number]): void {
     const activeZones = this.getActiveZones(position);
-    
+
     // Update ambient tracks based on zones
-    this.environmentalAudio.ambientTracks.forEach(track => {
-      const _shouldPlay = track.zones.some(zone => activeZones.has(zone.id));
+    this.environmentalAudio.ambientTracks.forEach((track) => {
+      const _shouldPlay = track.zones.some((zone) => activeZones.has(zone.id));
       // Logic to crossfade ambient tracks
     });
-    
+
     // Update reverb based on environment
     this.updateReverbForEnvironment(activeZones);
   }
 
   private getActiveZones(position: [number, number, number]): Set<string> {
     const activeZones = new Set<string>();
-    
-    this.environmentalAudio.ambientTracks.forEach(track => {
-      track.zones.forEach(zone => {
+
+    this.environmentalAudio.ambientTracks.forEach((track) => {
+      track.zones.forEach((zone) => {
         if (this.isPointInZone(position, zone)) {
           activeZones.add(zone.id);
         }
       });
     });
-    
+
     return activeZones;
   }
 
@@ -636,20 +645,20 @@ export class ProfessionalAudioEngine {
     const [x, y, z] = point;
     const [cx, cy, cz] = zone.center;
     const [dx, dy, dz] = zone.dimensions;
-    
+
     switch (zone.shape) {
-      case 'sphere': {
+      case "sphere": {
         const distance = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2 + (z - cz) ** 2);
         return distance <= dx;
-    }
-      case 'box':
-        return Math.abs(x - cx) <= dx / 2 && 
-               Math.abs(y - cy) <= dy / 2 && 
-               Math.abs(z - cz) <= dz / 2;
-      case 'cylinder': {
+      }
+      case "box":
+        return (
+          Math.abs(x - cx) <= dx / 2 && Math.abs(y - cy) <= dy / 2 && Math.abs(z - cz) <= dz / 2
+        );
+      case "cylinder": {
         const cylinderDistance = Math.sqrt((x - cx) ** 2 + (z - cz) ** 2);
         return cylinderDistance <= dx && Math.abs(y - cy) <= dy / 2;
-    }
+      }
       default:
         return false;
     }
@@ -663,10 +672,10 @@ export class ProfessionalAudioEngine {
   // Dynamic music system
   updateDynamicMusic(parameters: Partial<AdaptiveParameters>): void {
     Object.assign(this.environmentalAudio.dynamicMusic.adaptiveParameters, parameters);
-    
+
     // Select appropriate music theme based on parameters
     const newTheme = this.selectMusicTheme(this.environmentalAudio.dynamicMusic.adaptiveParameters);
-    
+
     if (newTheme && newTheme !== this.environmentalAudio.dynamicMusic.currentTheme) {
       this.transitionToMusicTheme(newTheme);
     }
@@ -674,24 +683,24 @@ export class ProfessionalAudioEngine {
 
   private selectMusicTheme(params: AdaptiveParameters): string | null {
     const themes = this.environmentalAudio.dynamicMusic.themes;
-    
+
     if (params.combatIntensity > 0.7) {
-      return themes.find(t => t.mood === 'combat')?.id || null;
+      return themes.find((t) => t.mood === "combat")?.id || null;
     } else if (params.tension > 0.5) {
-      return themes.find(t => t.mood === 'tense')?.id || null;
+      return themes.find((t) => t.mood === "tense")?.id || null;
     } else if (params.exploration > 0.5) {
-      return themes.find(t => t.mood === 'exploration')?.id || null;
+      return themes.find((t) => t.mood === "exploration")?.id || null;
     }
-    
-    return themes.find(t => t.mood === 'calm')?.id || null;
+
+    return themes.find((t) => t.mood === "calm")?.id || null;
   }
 
   private transitionToMusicTheme(themeId: string): void {
-    const theme = this.environmentalAudio.dynamicMusic.themes.find(t => t.id === themeId);
+    const theme = this.environmentalAudio.dynamicMusic.themes.find((t) => t.id === themeId);
     if (!theme) return;
-    
+
     const _crossfadeDuration = this.environmentalAudio.dynamicMusic.crossfadeDuration;
-    
+
     // Fade out current theme
     // Fade in new theme
     // Update current theme
@@ -720,7 +729,7 @@ export class ProfessionalAudioEngine {
 
   mutePlayer(playerId: string, muted: boolean): void {
     const voiceNode = this.voiceNodes.get(playerId);
-    if (voiceNode && 'gain' in voiceNode) {
+    if (voiceNode && "gain" in voiceNode) {
       (voiceNode as GainNode).gain.value = muted ? 0 : 1;
     }
   }
@@ -736,7 +745,7 @@ export class ProfessionalAudioEngine {
   stop(sourceId: string, fadeOut?: FadeConfig): void {
     const sourceNode = this.audioSources.get(sourceId);
     if (!sourceNode) return;
-    
+
     if (fadeOut) {
       this.applyFade(sourceNode.gainNode.gain, fadeOut, this.audioContext.currentTime);
       setTimeout(() => {
@@ -769,15 +778,15 @@ export class ProfessionalAudioEngine {
   destroy(): void {
     // Stop all sources
     this.audioSources.forEach((_node, __id) => this.stop(id));
-    
+
     // Close audio context
     this.audioContext.close();
-    
+
     // Stop media stream
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream.getTracks().forEach((track) => track.stop());
     }
-    
+
     this.audioSources.clear();
     this.audioBuffers.clear();
     this.audioGroups.clear();

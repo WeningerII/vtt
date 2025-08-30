@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -13,7 +13,7 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   public override state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -21,7 +21,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('Uncaught error:', error, errorInfo);
+    console.error("Uncaught error:", error, errorInfo);
   }
 
   private handleReset = () => {
@@ -48,7 +48,8 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               onClick={this.handleReset}
               className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors"
-             aria-label="Try again after error" >
+              aria-label="Try again after error"
+            >
               Try Again
             </button>
           </div>

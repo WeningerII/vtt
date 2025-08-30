@@ -14,7 +14,7 @@ export const BaseEventSchema = z.object({
 
 // Token movement events
 export const TokenMoveEventSchema = BaseEventSchema.extend({
-  type: z.literal('TOKEN_MOVE'),
+  type: z.literal("TOKEN_MOVE"),
   payload: z.object({
     tokenId: z.string(),
     position: z.object({
@@ -28,7 +28,7 @@ export const TokenMoveEventSchema = BaseEventSchema.extend({
 
 // Token creation events
 export const TokenCreateEventSchema = BaseEventSchema.extend({
-  type: z.literal('TOKEN_CREATE'),
+  type: z.literal("TOKEN_CREATE"),
   payload: z.object({
     token: z.object({
       id: z.string(),
@@ -39,10 +39,12 @@ export const TokenCreateEventSchema = BaseEventSchema.extend({
         y: z.number(),
         z: z.number().optional(),
       }),
-      scale: z.object({
-        x: z.number(),
-        y: z.number(),
-      }).optional(),
+      scale: z
+        .object({
+          x: z.number(),
+          y: z.number(),
+        })
+        .optional(),
       rotation: z.number().optional(),
       color: z.array(z.number()).optional(),
     }),
@@ -51,7 +53,7 @@ export const TokenCreateEventSchema = BaseEventSchema.extend({
 
 // Token deletion events
 export const TokenDeleteEventSchema = BaseEventSchema.extend({
-  type: z.literal('TOKEN_DELETE'),
+  type: z.literal("TOKEN_DELETE"),
   payload: z.object({
     tokenId: z.string(),
   }),
@@ -59,7 +61,7 @@ export const TokenDeleteEventSchema = BaseEventSchema.extend({
 
 // Game state sync events
 export const GameStateSyncEventSchema = BaseEventSchema.extend({
-  type: z.literal('GAME_STATE_SYNC'),
+  type: z.literal("GAME_STATE_SYNC"),
   payload: z.object({
     gameId: z.string(),
     state: z.unknown(),
@@ -68,7 +70,7 @@ export const GameStateSyncEventSchema = BaseEventSchema.extend({
 
 // User connection events
 export const UserJoinEventSchema = BaseEventSchema.extend({
-  type: z.literal('USER_JOIN'),
+  type: z.literal("USER_JOIN"),
   payload: z.object({
     user: z.object({
       id: z.string(),
@@ -79,7 +81,7 @@ export const UserJoinEventSchema = BaseEventSchema.extend({
 });
 
 export const UserLeaveEventSchema = BaseEventSchema.extend({
-  type: z.literal('USER_LEAVE'),
+  type: z.literal("USER_LEAVE"),
   payload: z.object({
     userId: z.string(),
   }),
@@ -87,7 +89,7 @@ export const UserLeaveEventSchema = BaseEventSchema.extend({
 
 // Chat events
 export const ChatMessageEventSchema = BaseEventSchema.extend({
-  type: z.literal('CHAT_MESSAGE'),
+  type: z.literal("CHAT_MESSAGE"),
   payload: z.object({
     message: z.string(),
     userName: z.string(),

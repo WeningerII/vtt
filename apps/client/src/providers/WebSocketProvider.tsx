@@ -2,9 +2,9 @@
  * WebSocket Provider - Manages real-time communication with game server
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { logger } from '@vtt/logging';
-import { WSClient, WSState } from '../net/ws';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { logger } from "@vtt/logging";
+import { WSClient, WSState } from "../net/ws";
 // Type definitions for WebSocket messages
 type AnyServerMessage = {
   type: string;
@@ -33,7 +33,7 @@ const WebSocketContext = createContext<WebSocketContextType | null>(null);
 export function useWebSocket() {
   const context = useContext(WebSocketContext);
   if (!context) {
-    throw new Error('useWebSocket must be used within a WebSocketProvider');
+    throw new Error("useWebSocket must be used within a WebSocketProvider");
   }
   return context;
 }
@@ -49,7 +49,7 @@ interface MessageHandler {
 }
 
 export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
-  const [state, setState] = useState<WSState>('disconnected');
+  const [state, setState] = useState<WSState>("disconnected");
   const [latency, setLatency] = useState<number>(0);
   const clientRef = useRef<WSClient | null>(null);
   const handlersRef = useRef<MessageHandler[]>([]);
@@ -58,7 +58,7 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   const reconnectAttemptsRef = useRef<number>(0);
   const lastPingRef = useRef<number>(0);
 
-  const isConnected = state === 'open';
+  const isConnected = state === "open";
 
   const startLatencyTracking = useCallback(() => {
     if (pingIntervalRef.current) return;
@@ -67,8 +67,8 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
       if (clientRef.current && isConnected) {
         lastPingRef.current = Date.now();
         clientRef.current.send({
-          type: 'PING',
-          timestamp: lastPingRef.current
+          type: "PING",
+          timestamp: lastPingRef.current,
         });
       }
     }, 30000); // Ping every 30 seconds
@@ -111,15 +111,15 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
 
     client.onState((newState) => {
       setState(newState);
-      
-      if (newState === 'open') {
-        logger.info('WebSocket connected');
+
+      if (newState === "open") {
+        logger.info("WebSocket connected");
         cancelReconnect();
         startLatencyTracking();
-      } else if (newState === 'disconnected') {
-        logger.info('WebSocket disconnected');
+      } else if (newState === "disconnected") {
+        logger.info("WebSocket disconnected");
         stopLatencyTracking();
-        
+
         // Auto-reconnect unless explicitly disconnected
         if (reconnectAttemptsRef.current < 10) {
           scheduleReconnect();
@@ -129,21 +129,21 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
 
     client.onMessage((message: AnyServerMessage) => {
       // Handle system messages
-      if (message.type === 'PONG') {
+      if (message.type === "PONG") {
         const now = Date.now();
         const roundTripTime = now - lastPingRef.current;
         setLatency(roundTripTime);
         return;
       }
 
-      if (message.type === 'ERROR') {
-        logger.error('WebSocket error:', message);
+      if (message.type === "ERROR") {
+        logger.error("WebSocket error:", message);
         return;
       }
 
       // Distribute message to registered handlers
       handlersRef.current.forEach(({ type, handler }) => {
-        if (type === message.type || type === '*') {
+        if (type === message.type || type === "*") {
           try {
             handler(message);
           } catch (error) {
@@ -159,13 +159,13 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   const disconnect = useCallback(() => {
     cancelReconnect();
     stopLatencyTracking();
-    
+
     if (clientRef.current) {
       clientRef.current.close();
       clientRef.current = null;
     }
-    
-    setState('disconnected');
+
+    setState("disconnected");
   }, [cancelReconnect, stopLatencyTracking]);
 
   const reconnect = useCallback(() => {
@@ -173,13 +173,16 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
     setTimeout(connect, 100);
   }, [disconnect, connect]);
 
-  const send = useCallback((message: AnyClientMessage) => {
-    if (clientRef.current && isConnected) {
-      clientRef.current.send(message);
-    } else {
-      logger.warn('Cannot send message: WebSocket not connected', message);
-    }
-  }, [isConnected]);
+  const send = useCallback(
+    (message: AnyClientMessage) => {
+      if (clientRef.current && isConnected) {
+        clientRef.current.send(message);
+      } else {
+        logger.warn("Cannot send message: WebSocket not connected", message);
+      }
+    },
+    [isConnected],
+  );
 
   const subscribe = useCallback((type: string, handler: (message: any) => void) => {
     const messageHandler: MessageHandler = { type, handler };
@@ -196,7 +199,7 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   // Auto-connect on mount
   useEffect(() => {
     connect();
-    
+
     return () => {
       disconnect();
     };
@@ -219,8 +222,8 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [isConnected, startLatencyTracking, stopLatencyTracking, connect]);
 
   // Handle online/offline events
@@ -236,12 +239,12 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
       cancelReconnect();
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, [isConnected, connect, cancelReconnect]);
 
@@ -253,12 +256,8 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
     subscribe,
     connect,
     disconnect,
-    reconnect
+    reconnect,
   };
 
-  return (
-    <WebSocketContext.Provider value={contextValue}>
-      {children}
-    </WebSocketContext.Provider>
-  );
+  return <WebSocketContext.Provider value={contextValue}>{children}</WebSocketContext.Provider>;
 }

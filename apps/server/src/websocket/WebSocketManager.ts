@@ -1,19 +1,35 @@
 /**
  * WebSocket Manager for real-time VTT collaboration
  */
-import { WebSocketServer, WebSocket } from 'ws';
-import { logger } from '@vtt/logging';
-import type { Buffer } from 'node:buffer';
+import { WebSocketServer, WebSocket } from "ws";
+import { logger } from "@vtt/logging";
+import type { Buffer } from "node:buffer";
 
-import { IncomingMessage } from 'http';
-import { v4 as _uuidv4 } from 'uuid';
-import { EventEmitter } from 'events';
+import { IncomingMessage } from "http";
+import { v4 as _uuidv4 } from "uuid";
+import { EventEmitter } from "events";
 
 export interface VTTWebSocketMessage {
-  type: 'token_move' | 'token_add' | 'token_remove' | 'scene_update' | 'combat_update' | 
-        'spell_cast' | 'spell_effect' | 'physics_collision' | 'projectile_launch' | 
-        'barrier_created' | 'constraint_applied' | 'force_applied' | 'teleport_effect' |
-        'concentration_check' | 'effect_expired' | 'user_join' | 'user_leave' | 'ping' | 'pong';
+  type:
+    | "token_move"
+    | "token_add"
+    | "token_remove"
+    | "scene_update"
+    | "combat_update"
+    | "spell_cast"
+    | "spell_effect"
+    | "physics_collision"
+    | "projectile_launch"
+    | "barrier_created"
+    | "constraint_applied"
+    | "force_applied"
+    | "teleport_effect"
+    | "concentration_check"
+    | "effect_expired"
+    | "user_join"
+    | "user_leave"
+    | "ping"
+    | "pong";
   payload: any;
   sessionId: string;
   userId: string;
@@ -43,15 +59,15 @@ export class WebSocketManager extends EventEmitter {
   }
 
   private setupWebSocketServer() {
-    this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+    this.wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
       const url = new URL(req.url!, `http://${req.headers.host}`);
-      const sessionId = url.searchParams.get('sessionId');
-      const userId = url.searchParams.get('userId');
-      const campaignId = url.searchParams.get('campaignId');
-      const isGM = url.searchParams.get('isGM') === 'true';
+      const sessionId = url.searchParams.get("sessionId");
+      const userId = url.searchParams.get("userId");
+      const campaignId = url.searchParams.get("campaignId");
+      const isGM = url.searchParams.get("isGM") === "true";
 
       if (!sessionId || !userId || !campaignId) {
-        ws.close(1008, 'Missing required parameters');
+        ws.close(1008, "Missing required parameters");
         return;
       }
 
@@ -61,36 +77,36 @@ export class WebSocketManager extends EventEmitter {
         sessionId,
         campaignId,
         isGM,
-        lastPing: Date.now()
+        lastPing: Date.now(),
       };
 
       this.addUserToSession(user);
 
-      ws.on('message', (data: Buffer) => {
+      ws.on("message", (data: Buffer) => {
         try {
           const message: VTTWebSocketMessage = JSON.parse(data.toString());
           this.handleMessage(user, message);
         } catch (error) {
-          logger.error('Invalid WebSocket message:', error as Error);
+          logger.error("Invalid WebSocket message:", error as Error);
         }
       });
 
-      ws.on('close', () => {
+      ws.on("close", () => {
         this.removeUserFromSession(user);
       });
 
-      ws.on('error', (error) => {
-        logger.error('WebSocket error:', error as Error);
+      ws.on("error", (error) => {
+        logger.error("WebSocket error:", error as Error);
         this.removeUserFromSession(user);
       });
 
       // Send welcome message
       this.sendToUser(user, {
-        type: 'user_join',
+        type: "user_join",
         payload: { userId, sessionId, campaignId },
         sessionId,
-        userId: 'system',
-        timestamp: Date.now()
+        userId: "system",
+        timestamp: Date.now(),
       });
     });
   }
@@ -101,22 +117,26 @@ export class WebSocketManager extends EventEmitter {
       this.sessions.set(user.sessionId, new Set());
     }
     this.sessions.get(user.sessionId)!.add(user);
-    
+
     // Add to user lookup
     this.userSockets.set(user.id, user);
 
     // Notify other users
-    this.broadcastToSession(user.sessionId, {
-      type: 'user_join',
-      payload: { 
-        userId: user.id, 
-        isGM: user.isGM,
-        userCount: this.sessions.get(user.sessionId)!.size
+    this.broadcastToSession(
+      user.sessionId,
+      {
+        type: "user_join",
+        payload: {
+          userId: user.id,
+          isGM: user.isGM,
+          userCount: this.sessions.get(user.sessionId)!.size,
+        },
+        sessionId: user.sessionId,
+        userId: "system",
+        timestamp: Date.now(),
       },
-      sessionId: user.sessionId,
-      userId: 'system',
-      timestamp: Date.now()
-    }, user.id);
+      user.id,
+    );
 
     logger.info(`User ${user.id} joined session ${user.sessionId}`);
   }
@@ -134,14 +154,14 @@ export class WebSocketManager extends EventEmitter {
 
     // Notify other users
     this.broadcastToSession(user.sessionId, {
-      type: 'user_leave',
-      payload: { 
+      type: "user_leave",
+      payload: {
         userId: user.id,
-        userCount: session?.size || 0
+        userCount: session?.size || 0,
       },
       sessionId: user.sessionId,
-      userId: 'system',
-      timestamp: Date.now()
+      userId: "system",
+      timestamp: Date.now(),
     });
 
     logger.info(`User ${user.id} left session ${user.sessionId}`);
@@ -152,55 +172,55 @@ export class WebSocketManager extends EventEmitter {
     user.lastPing = Date.now();
 
     switch (message.type) {
-      case 'ping':
+      case "ping":
         this.sendToUser(user, {
-          type: 'pong',
+          type: "pong",
           payload: {},
           sessionId: user.sessionId,
-          userId: 'system',
-          timestamp: Date.now()
+          userId: "system",
+          timestamp: Date.now(),
         });
         break;
 
-      case 'token_move':
+      case "token_move":
         // Validate GM permissions for certain actions
         if (this.requiresGMPermission(message.type) && !user.isGM) {
-          this.sendError(user, 'Insufficient permissions');
+          this.sendError(user, "Insufficient permissions");
           return;
         }
         this.broadcastToSession(user.sessionId, message, user.id);
         break;
 
-      case 'token_add':
-      case 'token_remove':
-      case 'scene_update':
+      case "token_add":
+      case "token_remove":
+      case "scene_update":
         if (!user.isGM) {
-          this.sendError(user, 'GM permissions required');
+          this.sendError(user, "GM permissions required");
           return;
         }
         this.broadcastToSession(user.sessionId, message, user.id);
         break;
 
-      case 'combat_update':
+      case "combat_update":
         if (!user.isGM) {
-          this.sendError(user, 'GM permissions required');
+          this.sendError(user, "GM permissions required");
           return;
         }
         this.broadcastToSession(user.sessionId, message, user.id);
         break;
 
-      case 'spell_cast':
-      case 'spell_effect':
-      case 'physics_collision':
-      case 'projectile_launch':
-      case 'barrier_created':
-      case 'constraint_applied':
-      case 'force_applied':
-      case 'teleport_effect':
-      case 'concentration_check':
-      case 'effect_expired':
+      case "spell_cast":
+      case "spell_effect":
+      case "physics_collision":
+      case "projectile_launch":
+      case "barrier_created":
+      case "constraint_applied":
+      case "force_applied":
+      case "teleport_effect":
+      case "concentration_check":
+      case "effect_expired":
         this.broadcastToSession(user.sessionId, message, user.id);
-        this.emit('gameEvent', message);
+        this.emit("gameEvent", message);
         break;
 
       default:
@@ -209,7 +229,7 @@ export class WebSocketManager extends EventEmitter {
   }
 
   private requiresGMPermission(messageType: string): boolean {
-    const gmOnlyActions = ['token_add', 'token_remove', 'scene_update', 'combat_update'];
+    const gmOnlyActions = ["token_add", "token_remove", "scene_update", "combat_update"];
     return gmOnlyActions.includes(messageType);
   }
 
@@ -221,15 +241,19 @@ export class WebSocketManager extends EventEmitter {
 
   private sendError(user: ConnectedUser, error: string) {
     this.sendToUser(user, {
-      type: 'error' as any,
+      type: "error" as any,
       payload: { error },
       sessionId: user.sessionId,
-      userId: 'system',
-      timestamp: Date.now()
+      userId: "system",
+      timestamp: Date.now(),
     });
   }
 
-  private broadcastToSession(sessionId: string, message: VTTWebSocketMessage, excludeUserId?: string) {
+  private broadcastToSession(
+    sessionId: string,
+    message: VTTWebSocketMessage,
+    excludeUserId?: string,
+  ) {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
@@ -244,9 +268,9 @@ export class WebSocketManager extends EventEmitter {
     const message: VTTWebSocketMessage = {
       type: type as any,
       payload,
-      sessionId: 'broadcast',
-      userId: 'system',
-      timestamp: Date.now()
+      sessionId: "broadcast",
+      userId: "system",
+      timestamp: Date.now(),
     };
 
     // Broadcast to all connected users across all sessions
@@ -269,53 +293,59 @@ export class WebSocketManager extends EventEmitter {
   }
 
   // Public API methods
-  public broadcastTokenMove(sessionId: string, tokenId: string, x: number, y: number, userId: string) {
+  public broadcastTokenMove(
+    sessionId: string,
+    tokenId: string,
+    x: number,
+    y: number,
+    userId: string,
+  ) {
     this.broadcastToSession(sessionId, {
-      type: 'token_move',
+      type: "token_move",
       payload: { tokenId, x, y },
       sessionId,
       userId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   public broadcastTokenAdd(sessionId: string, token: any, userId: string) {
     this.broadcastToSession(sessionId, {
-      type: 'token_add',
+      type: "token_add",
       payload: { token },
       sessionId,
       userId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   public broadcastTokenRemove(sessionId: string, tokenId: string, userId: string) {
     this.broadcastToSession(sessionId, {
-      type: 'token_remove',
+      type: "token_remove",
       payload: { tokenId },
       sessionId,
       userId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   public broadcastSceneUpdate(sessionId: string, sceneData: any, userId: string) {
     this.broadcastToSession(sessionId, {
-      type: 'scene_update',
+      type: "scene_update",
       payload: { sceneData },
       sessionId,
       userId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   public broadcastCombatUpdate(sessionId: string, combatData: any, userId: string) {
     this.broadcastToSession(sessionId, {
-      type: 'combat_update',
+      type: "combat_update",
       payload: { combatData },
       sessionId,
       userId,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
