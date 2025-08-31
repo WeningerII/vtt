@@ -101,7 +101,7 @@ export class AuthTestUtils {
     await page.click('[data-testid="login-button"]');
     
     // Wait for redirect to dashboard or main app
-    await page.waitForURL(//(dashboard|app|campaigns)/);
+    await page.waitForURL(/(dashboard|app|campaigns)/);
   }
 
   /**

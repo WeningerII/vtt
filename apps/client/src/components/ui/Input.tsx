@@ -1,7 +1,7 @@
 /**
  * Input Component - Flexible input field with validation states and icons
  */
-import React, { forwardRef, useId, useState } from "react";
+import React, { forwardRef, useId, useState, useCallback } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
 import { Eye, EyeOff, AlertCircle, CheckCircle } from "lucide-react";
@@ -54,7 +54,7 @@ export interface InputProps
   showPasswordToggle?: boolean;
 }
 
-const Input = forwardRef<HTMLInputElement, InputProps>(
+const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
   (
     {
       className,
@@ -84,13 +84,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     // Determine input type (handle password toggle)
     const inputType = showPasswordToggle && type === "password" && showPassword ? "text" : type;
 
-    // Show password toggle icon
+    // Show password toggle icon with useCallback for performance
+    const togglePassword = useCallback(() => setShowPassword(!showPassword), [showPassword]);
+    
     const passwordToggleIcon = showPasswordToggle && type === "password" && (
       <button
         type="button"
         className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
-        onClick={() => setShowPassword(!showPassword)}
+        onClick={togglePassword}
         tabIndex={-1}
+        aria-label={showPassword ? "Hide password" : "Show password"}
       >
         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
@@ -167,7 +170,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       </div>
     );
   },
-);
+));
 
 Input.displayName = "Input";
 

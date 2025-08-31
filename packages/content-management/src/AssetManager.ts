@@ -304,7 +304,7 @@ export class AssetManager extends EventEmitter {
     }
 
     // Sort by creation date (newest first)
-    results.sort((_a, _b) => b.createdAt.getTime() - a.createdAt.getTime());
+    results.sort((_a, _b) => _b.createdAt.getTime() - _a.createdAt.getTime());
 
     // Paginate
     const totalCount = results.length;

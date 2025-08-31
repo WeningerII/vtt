@@ -1,11 +1,11 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AIAssistant } from "./AIAssistant";
 import "@testing-library/jest-dom";
 
 // Mock dependencies
-jest.mock("@vtt/logging", () => ({
+jest.mock("../utils/logger", () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
@@ -14,6 +14,10 @@ jest.mock("@vtt/logging", () => ({
   },
 }));
 
+// Mock fetch for API calls
+global.fetch = jest.fn();
+const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
 describe("AIAssistant", () => {
   const mockProps = {
     // Add default props based on component interface
@@ -21,104 +25,292 @@ describe("AIAssistant", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe("Rendering", () => {
-    it("renders without crashing", () => {
-      render(<AIAssistant {...mockProps} />);
+    it("should render the AI assistant component with all UI elements", () => {
+      render(<AIAssistant />);
+
+      expect(screen.getByRole("heading", { name: /AI Assistant/i })).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/ask me anything/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument();
+      expect(screen.getByTestId("message-list")).toBeInTheDocument();
     });
 
-    it("displays correct initial content", () => {
-      render(<AIAssistant {...mockProps} />);
-      // Add specific content assertions
+    it("should display quick action buttons", () => {
+      render(<AIAssistant />);
+
+      expect(screen.getByRole("button", { name: /explain rules/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /generate NPC/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /create encounter/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /describe scene/i })).toBeInTheDocument();
     });
 
-    it("renders with different prop combinations", () => {
-      const altProps = { ...mockProps };
-      render(<AIAssistant {...altProps} />);
-      // Test different prop scenarios
+    it("should show loading state when processing", async () => {
+      mockFetch.mockImplementationOnce(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ response: "Test response", metadata: {} }),
+                } as Response),
+              100,
+            ),
+          ),
+      );
+
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+      const sendButton = screen.getByRole("button", { name: /send/i });
+
+      await userEvent.type(input, "Test query");
+      await userEvent.click(sendButton);
+
+      expect(screen.getByTestId("loading-indicator")).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(screen.queryByTestId("loading-indicator")).not.toBeInTheDocument();
+      });
     });
   });
 
   describe("User Interactions", () => {
-    it("handles button clicks correctly", async () => {
-      const user = userEvent.setup();
-      render(<AIAssistant {...mockProps} />);
+    it("should handle text input and update state", async () => {
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i) as HTMLInputElement;
 
-      // Test button interactions
+      await userEvent.type(input, "What are the rules for grappling?");
+      expect(input.value).toBe("What are the rules for grappling?");
     });
 
-    it("handles form inputs correctly", async () => {
-      const user = userEvent.setup();
-      render(<AIAssistant {...mockProps} />);
+    it("should submit query on button click", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          response: "Grappling rules explanation...",
+          metadata: { provider: "openai", model: "gpt-4" },
+        }),
+      } as Response);
 
-      // Test form interactions
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+      const sendButton = screen.getByRole("button", { name: /send/i });
+
+      await userEvent.type(input, "Explain grappling");
+      await userEvent.click(sendButton);
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith("/api/assistant/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: "Explain grappling" }),
+        });
+      });
     });
 
-    it("handles keyboard navigation", async () => {
-      const user = userEvent.setup();
-      render(<AIAssistant {...mockProps} />);
+    it("should submit query on Enter key", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: "Test response", metadata: {} }),
+      } as Response);
 
-      // Test keyboard interactions
-      await user.keyboard("{Tab}");
-      await user.keyboard("{Enter}");
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+
+      await userEvent.type(input, "Test query{Enter}");
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("should handle quick action buttons", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: "NPC generated...", metadata: {} }),
+      } as Response);
+
+      render(<AIAssistant />);
+      const npcButton = screen.getByRole("button", { name: /generate NPC/i });
+
+      await userEvent.click(npcButton);
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith("/api/assistant/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: "Generate a random NPC with personality and backstory" }),
+        });
+      });
+    });
+
+    it("should clear input after submission", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: "Response", metadata: {} }),
+      } as Response);
+
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i) as HTMLInputElement;
+
+      await userEvent.type(input, "Test query");
+      expect(input.value).toBe("Test query");
+
+      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+      await waitFor(() => {
+        expect(input.value).toBe("");
+      });
     });
   });
 
   describe("State Management", () => {
-    it("updates state on user actions", async () => {
-      render(<AIAssistant {...mockProps} />);
+    it("should manage message history correctly", async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ response: "First response", metadata: { model: "gpt-4" } }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ response: "Second response", metadata: { model: "claude" } }),
+        } as Response);
 
-      // Test state changes
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+      const sendButton = screen.getByRole("button", { name: /send/i });
+
+      // First message
+      await userEvent.type(input, "First query");
+      await userEvent.click(sendButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("First query")).toBeInTheDocument();
+        expect(screen.getByText(/First response/i)).toBeInTheDocument();
+      });
+
+      // Second message
+      await userEvent.type(input, "Second query");
+      await userEvent.click(sendButton);
+
+      await waitFor(() => {
+        expect(screen.getByText("Second query")).toBeInTheDocument();
+        expect(screen.getByText(/Second response/i)).toBeInTheDocument();
+      });
     });
 
-    it("handles async operations correctly", async () => {
-      render(<AIAssistant {...mockProps} />);
+    it("should display message metadata", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          response: "Test response",
+          metadata: {
+            provider: "openai",
+            model: "gpt-4",
+            tokensUsed: 150,
+            responseTime: 1234,
+          },
+        }),
+      } as Response);
 
-      // Test loading states and async operations
+      render(<AIAssistant />);
+
+      await userEvent.type(screen.getByPlaceholderText(/ask me anything/i), "Test");
+      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/gpt-4/i)).toBeInTheDocument();
+      });
     });
   });
 
   describe("Error Handling", () => {
-    it("handles error states gracefully", () => {
-      const errorProps = { ...mockProps };
-      render(<AIAssistant {...errorProps} />);
+    it("should handle API errors gracefully", async () => {
+      mockFetch.mockRejectedValueOnce(new Error("API Error"));
 
-      // Test error scenarios
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+
+      await userEvent.type(input, "Test query");
+      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+      });
     });
 
-    it("displays error messages appropriately", () => {
-      render(<AIAssistant {...mockProps} />);
+    it("should display server error messages", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: "Internal Server Error",
+        json: async () => ({ error: "Database connection failed" }),
+      } as Response);
 
-      // Test error display
+      render(<AIAssistant />);
+
+      await userEvent.type(screen.getByPlaceholderText(/ask me anything/i), "Test");
+      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+      });
+    });
+
+    it("should handle network failures", async () => {
+      mockFetch.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+      render(<AIAssistant />);
+
+      await userEvent.type(screen.getByPlaceholderText(/ask me anything/i), "Test");
+      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole("alert")).toBeInTheDocument();
+      });
     });
   });
 
   describe("Accessibility", () => {
-    it("has proper ARIA labels", () => {
-      render(<AIAssistant {...mockProps} />);
+    it("should have proper ARIA labels and roles", () => {
+      render(<AIAssistant />);
 
-      // Test ARIA attributes
-      const buttons = screen.getAllByRole("button");
-      buttons.forEach((button) => {
-        expect(button).toHaveAttribute("aria-label");
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+      expect(input).toHaveAttribute("aria-label");
+
+      const sendButton = screen.getByRole("button", { name: /send/i });
+      expect(sendButton).toHaveAttribute("aria-label");
+
+      const messageList = screen.getByTestId("message-list");
+      expect(messageList).toHaveAttribute("role", "log");
+    });
+
+    it("should support keyboard navigation", async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ response: "Response", metadata: {} }),
+      } as Response);
+
+      render(<AIAssistant />);
+      const input = screen.getByPlaceholderText(/ask me anything/i);
+
+      // Tab to input
+      input.focus();
+      expect(document.activeElement).toBe(input);
+
+      // Type and submit with Enter
+      await userEvent.type(input, "Test{Enter}");
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalled();
       });
-    });
-
-    it("supports keyboard navigation", async () => {
-      const user = userEvent.setup();
-      render(<AIAssistant {...mockProps} />);
-
-      // Test tab order and keyboard accessibility
-      await user.tab();
-      expect(document.activeElement).toBeInTheDocument();
-    });
-
-    it("has proper focus management", async () => {
-      const user = userEvent.setup();
-      render(<AIAssistant {...mockProps} />);
-
-      // Test focus management
     });
   });
 

@@ -49,7 +49,7 @@ export interface GameSession {
 export class CampaignService {
   private campaigns = new Map<string, Campaign>();
 
-  // Active scene tracking (TODO: move to database)
+  // Active scene tracking - maps campaignId to activeSceneId
   private activeScenes: Map<string, string> = new Map();
 
   // Session management
@@ -169,9 +169,9 @@ export class CampaignService {
         id: scene.id,
         name: scene.name,
         mapId: scene.mapId,
-        isActive: false, // TODO: Track active scene
+        isActive: this.activeScenes.get(campaignId) === scene.id
       })),
-      activeSceneId: undefined, // TODO: Implement active scene tracking
+      activeSceneId: this.activeScenes.get(campaignId)
     };
   }
 
@@ -499,5 +499,27 @@ export class CampaignService {
     return Array.from(this.activeSessions.values()).filter(
       (session) => session.status === "active",
     );
+  }
+
+  /**
+   * Set active scene for a campaign
+   */
+  async setActiveScene(campaignId: string, sceneId: string): Promise<void> {
+    this.activeScenes.set(campaignId, sceneId);
+    // TODO: Persist to database when scene management is implemented
+  }
+
+  /**
+   * Get active scene for a campaign
+   */
+  getActiveScene(campaignId: string): string | undefined {
+    return this.activeScenes.get(campaignId);
+  }
+
+  /**
+   * Clear active scene for a campaign
+   */
+  clearActiveScene(campaignId: string): void {
+    this.activeScenes.delete(campaignId);
   }
 }

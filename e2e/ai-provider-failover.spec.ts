@@ -197,14 +197,14 @@ test.describe('AI Provider Failover System', () => {
     );
 
     // Make concurrent requests
-    const promises = Array.from({_ length: 10 }, (_, _i) => 
+    const promises = Array.from({ length: 10 }, (_, i) => 
       aiProviderRegistry.generateText(`Concurrent prompt ${i}`)
     );
 
     const responses = await Promise.all(promises);
     
     expect(responses).toHaveLength(10);
-    responses.forEach((response, _i) => {
+    responses.forEach((response, i) => {
       expect(response.text).toBe(`Mock response: Concurrent prompt ${i}`);
     });
 

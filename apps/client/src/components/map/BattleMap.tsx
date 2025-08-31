@@ -2,7 +2,7 @@
  * Battle Map Component - Interactive tactical grid for combat encounters
  */
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { cn } from "../../lib/utils";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useGame } from "../../providers/GameProvider";
@@ -293,7 +293,7 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
     );
   };
 
-  const getTokenStyle = (token: Token) => {
+  const getTokenStyle = useCallback((token: Token) => {
     const size = token.size * GRID_SIZE;
     return {
       position: "absolute" as const,
@@ -317,7 +317,25 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
       textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
       transition: "all 0.1s ease",
     };
-  };
+  }, [selectedTokens, activeTool, isGM]);
+
+  // Memoize expensive style calculations
+  const mapContainerStyle = useMemo(() => ({
+    transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+    transformOrigin: "0 0",
+  }), [zoom, pan.x, pan.y]);
+
+  const backgroundLayerStyle = useMemo(() => ({
+    opacity: layers.find((l) => l.id === "background")?.opacity || 1,
+    backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  }), [backgroundImage, layers]);
+
+  const gridLayerStyle = useMemo(() => ({
+    opacity: layers.find((l) => l.id === "grid")?.opacity || 0.3,
+  }), [layers]);
 
   const _renderGrid = () => {
     if (!showGrid) return null;
@@ -497,30 +515,18 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
           ref={mapRef}
           className="absolute inset-0 cursor-crosshair"
           onClick={handleMapClick}
-          style={{
-            transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-            transformOrigin: "0 0",
-          }}
+          style={mapContainerStyle}
         >
           {/* Background */}
           <div
             className="relative flex-1 overflow-hidden bg-bg-primary"
-            style={{
-              transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-              transformOrigin: "0 0",
-            }}
+            style={mapContainerStyle}
           >
             {/* Background Image Layer */}
             {backgroundImage && layers.find((l) => l.id === "background")?.visible && (
               <div
                 className="absolute inset-0"
-                style={{
-                  opacity: layers.find((l) => l.id === "background")?.opacity || 1,
-                  backgroundImage: `url(${backgroundImage})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  backgroundRepeat: "no-repeat",
-                }}
+                style={backgroundLayerStyle}
               />
             )}
 
@@ -531,7 +537,7 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
                 style={{
                   width: "100%",
                   height: "100%",
-                  opacity: layers.find((l) => l.id === "grid")?.opacity || 0.3,
+                  ...gridLayerStyle,
                 }}
               >
                 <defs>

@@ -1,9 +1,11 @@
 /**
  * Monster service for business logic and data operations
+ * Enhanced with intelligent caching for performance
  */
 
 import { PrismaClient } from "@prisma/client";
 import SRDMonsters from "@vtt/content-5e-srd";
+import { cacheManager } from "../cache/CacheManager";
 
 export interface CreateMonsterRequest {
   name: string;
@@ -31,6 +33,9 @@ export class MonsterService {
   async seedSRDMonsters(): Promise<{ created: number; updated: number; total: number }> {
     let created = 0;
     let updated = 0;
+
+    // Clear monster cache since we're doing bulk updates
+    cacheManager.clearAll();
 
     for (const monster of SRDMonsters) {
       const stableId = monster.id;
@@ -66,6 +71,12 @@ export class MonsterService {
   async searchMonsters(options: MonsterSearchOptions = {}) {
     const { query, tags, limit = 50, offset = 0 } = options;
 
+    // Check cache first
+    const cached = cacheManager.getMonsterList(query || '', tags, limit, offset);
+    if (cached) {
+      return cached;
+    }
+
     const where: any = {};
 
     if (query || tags?.length) {
@@ -93,11 +104,22 @@ export class MonsterService {
       this.prisma.monster.count({ where }),
     ]);
 
-    return { items, total, limit, offset };
+    const result = { items, total, limit, offset };
+    
+    // Cache the result for future requests  
+    cacheManager.setMonsterList(query || '', items, tags, limit, offset);
+    
+    return result;
   }
 
   async getMonster(idOrStableId: string) {
-    return this.prisma.monster.findFirst({
+    // Check cache first
+    const cached = cacheManager.getMonster(idOrStableId);
+    if (cached) {
+      return cached;
+    }
+
+    const monster = await this.prisma.monster.findFirst({
       where: {
         OR: [{ id: idOrStableId }, { stableId: idOrStableId }],
       },
@@ -109,12 +131,23 @@ export class MonsterService {
         },
       },
     });
+
+    // Cache the monster if found
+    if (monster) {
+      cacheManager.setMonster(monster.id, monster);
+      // Also cache by stableId if different
+      if (monster.stableId && monster.stableId !== monster.id) {
+        cacheManager.setMonster(monster.stableId, monster);
+      }
+    }
+
+    return monster;
   }
 
   async createMonster(request: CreateMonsterRequest) {
     const stableId = request.stableId || this.generateStableId(request.name);
 
-    return this.prisma.monster.create({
+    const monster = await this.prisma.monster.create({
       data: {
         name: request.name,
         stableId,
@@ -122,6 +155,14 @@ export class MonsterService {
         tags: request.tags || [],
       },
     });
+
+    // Cache the new monster
+    cacheManager.setMonster(monster.id, monster);
+    if (monster.stableId !== monster.id) {
+      cacheManager.setMonster(monster.stableId, monster);
+    }
+
+    return monster;
   }
 
   async updateMonster(idOrStableId: string, request: UpdateMonsterRequest) {
@@ -135,10 +176,19 @@ export class MonsterService {
     if (request.statblock !== undefined) data.statblock = request.statblock;
     if (request.tags !== undefined) data.tags = request.tags;
 
-    return this.prisma.monster.update({
+    const updatedMonster = await this.prisma.monster.update({
       where: { id: monster.id },
       data,
     });
+
+    // Invalidate and refresh cache
+    cacheManager.invalidateMonster(monster.id);
+    cacheManager.setMonster(updatedMonster.id, updatedMonster);
+    if (updatedMonster.stableId !== updatedMonster.id) {
+      cacheManager.setMonster(updatedMonster.stableId, updatedMonster);
+    }
+
+    return updatedMonster;
   }
 
   async deleteMonster(idOrStableId: string) {
@@ -147,9 +197,17 @@ export class MonsterService {
       throw new Error("Monster not found");
     }
 
-    return this.prisma.monster.delete({
+    const result = await this.prisma.monster.delete({
       where: { id: monster.id },
     });
+
+    // Invalidate cache
+    cacheManager.invalidateMonster(monster.id);
+    if (monster.stableId !== monster.id) {
+      cacheManager.invalidateMonster(monster.stableId);
+    }
+
+    return result;
   }
 
   private generateStableId(name: string): string {

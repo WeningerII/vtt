@@ -28,41 +28,24 @@ async function globalSetup(_config: FullConfig) {
   let serverReady = false;
   const skipClient = !!process.env.E2E_SKIP_CLIENT;
   let clientReady = skipClient; // if skipping client, treat as ready
-  const maxRetries = 30;
-  const retryDelay = 2000;
+
+  const maxRetries = 10;
+  const retryDelay = 1000;
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      // Check server health
-      if (!serverReady) {
-        const serverResponse = await page.request.get("http://localhost:8080/livez");
-        if (serverResponse.ok()) {
-          console.log("[E2E Setup] Server is ready");
-          serverReady = true;
-        }
+      // Wait for server to be ready
+      const response = await page.request.get("http://localhost:8080/livez");
+      if (response.status() === 200) {
+        console.log("[E2E Setup] Server is ready");
+        serverReady = true;
+        break; // Success - exit retry loop for API tests
       }
-
-      // Check client health (optional)
-      if (!clientReady && !skipClient) {
-        const clientResponse = await page.goto("http://localhost:3000", {
-          waitUntil: "networkidle",
-          timeout: 5000,
-        });
-        if (clientResponse?.ok()) {
-          console.log("[E2E Setup] Client is ready");
-          clientReady = true;
-        }
-      }
-
-      if (serverReady && clientReady) {
-        break;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     } catch (error) {
+      console.log(`[E2E Setup] Attempt ${i + 1}/${maxRetries} failed, retrying...`);
       if (i === maxRetries - 1) {
-        console.error("[E2E Setup] Services failed to start:", error);
-        throw new Error("Test environment setup failed - services not ready");
+        console.error("[E2E Setup] Server failed to start:", error);
+        throw new Error("Test environment setup failed - server not ready");
       }
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }

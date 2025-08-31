@@ -3,20 +3,3 @@
 > @vtt/plugins@0.0.0 build /home/weningerii/vtt/packages/plugins
 > tsc -b
 
-[91merror[0m[90m TS2688: [0mCannot find type definition file for 'chokidar'.
-  The file is in the program because:
-    Entry point for implicit type library 'chokidar'
-
-[91merror[0m[90m TS2688: [0mCannot find type definition file for 'hapi__catbox'.
-  The file is in the program because:
-    Entry point for implicit type library 'hapi__catbox'
-
-[91merror[0m[90m TS2688: [0mCannot find type definition file for 'hapi__shot'.
-  The file is in the program because:
-    Entry point for implicit type library 'hapi__shot'
-
-
-Found 3 errors.
-
-[41m[30m ELIFECYCLE [39m[49m [31mCommand failed with exit code 1.[39m
-[43m[30m WARN [39m[49m  Local package.json exists, but node_modules missing, did you mean to install?

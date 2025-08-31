@@ -2,10 +2,12 @@
  * Character management routes
  */
 
-import { RouteHandler } from "../router/types";
-import { CharacterService } from "../character/CharacterService";
+import { RouteHandler, handleRouteError } from "../types/route";
+import { CharacterService } from "../services/CharacterService";
+import { parseJsonBody } from "../utils/request";
 import { extractUserIdFromToken } from "../utils/auth";
 import { CreateCharacterRequest, UpdateCharacterRequest } from "../character/types";
+import { validateRequest, GameSchemas, CommonSchemas } from "../middleware/validation";
 
 // Global character service instance
 const characterService = new CharacterService();
@@ -98,8 +100,11 @@ export const getCharacterHandler: RouteHandler = async (ctx) => {
  */
 export const getUserCharactersHandler: RouteHandler = async (ctx) => {
   try {
-    // TODO: Extract userId from authenticated session
-    const userId = ctx.url.searchParams.get("userId") || "temp-user-id";
+    // Extract userId from authenticated session
+    const authHeader = ctx.req.headers["authorization"];
+    const userId = authHeader
+      ? (await extractUserIdFromToken(authHeader)) || "temp-user-id"
+      : ctx.url.searchParams.get("userId") || "temp-user-id";
 
     const characters = await characterService.getCharactersByUser(userId);
 
@@ -190,8 +195,11 @@ export const deleteCharacterHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    // TODO: Extract userId from authenticated session
-    const userId = ctx.url.searchParams.get("userId") || "temp-user-id";
+    // Extract userId from authenticated session
+    const authHeader = ctx.req.headers["authorization"];
+    const userId = authHeader
+      ? (await extractUserIdFromToken(authHeader)) || "temp-user-id"
+      : ctx.url.searchParams.get("userId") || "temp-user-id";
 
     const success = await characterService.deleteCharacter(characterId, userId);
 

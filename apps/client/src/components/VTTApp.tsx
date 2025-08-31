@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
 import { SceneCanvas, Scene } from "./SceneCanvas";
 import { useSocket } from "../providers/SocketProvider";
+import { VTTHeader } from "./vtt/VTTHeader";
+import { TokensPanel } from "./vtt/TokensPanel";
+import { ChatPanel } from "./vtt/ChatPanel";
+import { LoadingScreen } from "./vtt/LoadingScreen";
 
 interface Campaign {
   id: string;
@@ -19,6 +23,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
   const [currentScene, setCurrentScene] = useState<Scene | null>(null);
   const [_campaign, _setCampaign] = useState<Campaign | null>(null);
   const [isGM, setIsGM] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
 
   // Initialize authentication
   useEffect(() => {
@@ -46,7 +51,13 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
 
     socket.on("new_message", (message: any) => {
       logger.info("New chat message:", message);
-      // Handle chat messages here
+      setChatMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: message.text,
+        author: message.author || 'Unknown',
+        timestamp: new Date(),
+        type: message.type || 'message'
+      }]);
     });
 
     return () => {
@@ -100,63 +111,42 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
     }
   }, [user, currentScene]);
 
+  const handleSendMessage = (message: string) => {
+    if (socket) {
+      socket.emit("send_message", { text: message });
+    }
+  };
+
   if (!socket || !isConnected) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Connecting to VTT server...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Connecting to VTT server..." />;
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="text-center">
-          <p>Authenticating...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Authenticating..." />;
   }
 
   if (!currentScene) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
-        <div className="text-center">
-          <p>Loading scene...</p>
-          <button
-            onClick={() => joinScene("mock-scene-1")}
-            className="mt-4 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-            tabIndex={0}
-          >
-            Join Test Scene
-          </button>
-        </div>
-      </div>
+      <LoadingScreen message="Loading scene..." showSpinner={false}>
+        <button
+          onClick={() => joinScene("mock-scene-1")}
+          className="mt-4 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+          tabIndex={0}
+        >
+          Join Test Scene
+        </button>
+      </LoadingScreen>
     );
   }
 
   return (
     <div className="h-screen bg-gray-900 text-white flex flex-col">
-      {/* Header */}
-      <header className="bg-gray-800 p-4 border-b border-gray-700">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold">{currentScene.name}</h1>
-            <p className="text-sm text-gray-400">
-              Connected as {user.displayName} {isGM && "(GM)"}
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div
-              className={`w-3 h-3 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}
-            ></div>
-            <span className="text-sm">{isConnected ? "Connected" : "Disconnected"}</span>
-          </div>
-        </div>
-      </header>
+      <VTTHeader
+        sceneName={currentScene.name}
+        userDisplayName={user.displayName}
+        isGM={isGM}
+        isConnected={isConnected}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex">
@@ -172,61 +162,9 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
         </div>
 
         {/* Right Panel */}
-        <div className="w-80 bg-gray-800 border-l border-gray-700">
-          {/* Tokens Panel */}
-          <div className="p-4 border-b border-gray-700">
-            <h3 className="font-semibold mb-3">Tokens</h3>
-            <div className="space-y-2">
-              {currentScene.tokens.map((token) => (
-                <div
-                  key={token.id}
-                  className="flex items-center justify-between p-2 bg-gray-700 rounded"
-                >
-                  <span className="text-sm">{token.name}</span>
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{
-                      backgroundColor: `#${token.color?.toString(16).padStart(6, "0") || "666666"}`,
-                    }}
-                  ></div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Chat Panel */}
-          <div className="flex-1 flex flex-col">
-            <div className="p-4 border-b border-gray-700">
-              <h3 className="font-semibold">Chat</h3>
-            </div>
-            <div className="flex-1 p-4">
-              <div className="text-sm text-gray-400 mb-4">Chat messages will appear here...</div>
-            </div>
-            <div className="p-4 border-t border-gray-700">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      const target = e.target as HTMLInputElement;
-                      if (target.value.trim()) {
-                        socket.emit("send_message", { text: target.value.trim() });
-                        target.value = "";
-                      }
-                    }
-                  }}
-                />
-                <button
-                  className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label="Send message"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+          <TokensPanel tokens={currentScene.tokens} />
+          <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} />
         </div>
       </div>
     </div>

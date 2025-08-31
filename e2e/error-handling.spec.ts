@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { factory as _factory } from "./utils/factories";
-import { authUtils as _authUtils } from "./utils/auth";
+import { _factory } from "./utils/factories";
+import { _authUtils } from "./utils/auth";
 import { testDb as _testDb } from "./utils/database";
 
 test.describe("Error Handling and Resilience Tests", () => {

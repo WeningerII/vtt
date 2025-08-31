@@ -12,10 +12,16 @@ module.exports = {
 
   // Test file patterns
   testMatch: [
-    "<rootDir>/packages/**/__tests__/**/*.test.ts",
-    "<rootDir>/packages/**/__tests__/**/*.spec.ts",
-    "<rootDir>/apps/**/__tests__/**/*.test.ts",
-    "<rootDir>/services/**/__tests__/**/*.test.ts",
+    "<rootDir>/packages/**/*.test.ts",
+    "<rootDir>/packages/**/*.test.tsx",
+    "<rootDir>/packages/**/*.spec.ts",
+    "<rootDir>/apps/**/*.test.ts",
+    "<rootDir>/apps/**/*.test.tsx",
+    "<rootDir>/apps/**/*.spec.ts",
+    "<rootDir>/services/**/*.test.ts",
+    "<rootDir>/services/**/*.spec.ts",
+    "<rootDir>/tests/**/*.test.ts",
+    "<rootDir>/tests/**/*.spec.ts",
   ],
 
   // File extensions to consider
@@ -82,18 +88,29 @@ module.exports = {
   projects: [
     {
       displayName: "unit",
-      testMatch: ["<rootDir>/packages/**/__tests__/**/*.test.ts"],
+      testMatch: [
+        "<rootDir>/packages/**/*.test.ts",
+        "<rootDir>/packages/**/*.test.tsx",
+        "<rootDir>/packages/**/*.spec.ts"
+      ],
       testEnvironment: "node",
     },
     {
       displayName: "integration",
-      testMatch: ["<rootDir>/apps/**/__tests__/**/*.test.ts"],
+      testMatch: [
+        "<rootDir>/apps/**/*.test.ts",
+        "<rootDir>/apps/**/*.test.tsx",
+        "<rootDir>/apps/**/*.spec.ts"
+      ],
       testEnvironment: "node",
       testTimeout: 60000,
     },
     {
       displayName: "services",
-      testMatch: ["<rootDir>/services/**/__tests__/**/*.test.ts"],
+      testMatch: [
+        "<rootDir>/services/**/*.test.ts",
+        "<rootDir>/services/**/*.spec.ts"
+      ],
       testEnvironment: "node",
       testTimeout: 45000,
     },

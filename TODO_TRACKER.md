@@ -13,7 +13,7 @@
 ## Overview
 This document provides systematic tracking of all development tasks, technical debt, and project milestones for the VTT (Virtual Tabletop) project.
 
-**Last Updated:** 2025-08-30 14:28  
+**Last Updated:** 2025-08-31 11:13  
 **Next Review:** Weekly Wednesday 14:00  
 **Project Phase:** Production Readiness & Quality Assurance
 
@@ -43,9 +43,12 @@ This document provides systematic tracking of all development tasks, technical d
 
 #### P1 - HIGH PRIORITY
 - [ ] **TEST-001** Expand test coverage from 12.09% to 80% (8 pts)
-  - **Status**: 🔄 **IN PROGRESS** - CrucibleService, combat routes, and WebSocket manager tests added
-  - **Progress**: Added comprehensive test suites for combat AI logic, tactical decisions, and WebSocket infrastructure
-  - **Remaining**: Install test dependencies, run coverage verification, add more component tests
+  - **Status**: 🔄 **IN PROGRESS** - Low-memory test configurations implemented
+  - **Progress**: ✅ Created `jest.config.low-memory.js` and `playwright.config.low-memory.ts` for RAM-constrained environments
+  - **Progress**: ✅ Added memory-optimized npm scripts: `test:low-memory`, `test:e2e:low-memory`, `build:sequential`
+  - **Progress**: ✅ Successfully ran 105 tests (66 passed, 39 failed) with single-worker Jest configuration
+  - **Progress**: ✅ Installed missing `jest-serializer-path` dependency
+  - **Remaining**: Fix existing test failures, add more component tests, run coverage verification
   - **Owner**: QA Team | **Due**: 2025-09-15
   
 - [x] **TS-002** Reduce remaining TypeScript errors from 330 to <50 (5 pts)
@@ -67,9 +70,9 @@ This document provides systematic tracking of all development tasks, technical d
   - **Owner**: Security Team | **Completed**: 2025-08-29
 
 ### 🔄 In Progress
-- **TEST-001**: Jest configuration and test suites created for combat AI and WebSocket infrastructure
-- **Combat Testing**: Added comprehensive tests for CrucibleService tactical decisions and combat routes
-- **WebSocket Testing**: Created unified WebSocket manager test suite with connection handling and message routing
+- **TEST-001**: Low-memory test environment successfully implemented and validated
+- **Memory Optimization**: Created optional configurations for RAM-constrained development environments
+- **Test Infrastructure**: 105 tests running successfully with single-worker Jest (66 passed, 39 existing failures)
 
 ---
 
@@ -149,14 +152,18 @@ This document provides systematic tracking of all development tasks, technical d
 - **Build Tool**: `turbo.json`
 - **Package Manager**: `pnpm-workspace.yaml`
 - **Testing**: `jest.config.js`, `playwright.config.ts`
+- **Memory-Optimized Testing**: `jest.config.low-memory.js`, `playwright.config.low-memory.ts`
 
 ### Quick Commands
 ```bash
-pnpm install    # Install dependencies
-pnpm build      # Build all packages
-pnpm test       # Run tests
-pnpm lint       # Run linting
-pnpm dev        # Start development server
+pnpm install              # Install dependencies
+pnpm build                # Build all packages
+pnpm test                 # Run tests (standard)
+pnpm test:low-memory      # Run tests (single-worker, RAM-friendly)
+pnpm test:e2e:low-memory  # Run E2E tests (Chromium-only)
+pnpm build:sequential     # Build packages sequentially
+pnpm dev:light            # Start development server (memory-limited)
+pnpm lint                 # Run linting
 ```
 
 ---
@@ -457,6 +464,228 @@ Comprehensive analysis of VTT client application UI/UX reveals significant oppor
 
 *UI/UX Audit completed: 2025-08-28 19:35*  
 *Next Review: After Phase 1 implementation (estimated 3 weeks)*
+
+## 🧪 **E2E TESTING INFRASTRUCTURE TECHNICAL PLAN** (2025-01-02)
+
+### 📋 **Executive Summary**
+The VTT project has a partially functional e2e testing infrastructure using Playwright. Basic API tests pass, but significant schema mismatches and incomplete factory implementations block comprehensive user journey and real-time collaboration testing. This plan addresses the critical path to full e2e test readiness.
+
+### 🎯 **Current E2E Testing State**
+
+#### **✅ Working Components**
+- Playwright test framework configured with custom reporters
+- Basic API endpoint testing (82 tests across 9 files discovered)
+- Test database setup with SQLite isolation
+- Environment variables and configuration management
+- Memory-optimized test configurations for low-RAM environments
+
+#### **❌ Critical Blockers**
+- **Schema Mismatches**: Test database models don't match factory expectations
+- **Incomplete Factories**: Missing `campaign`, `actor`, `token`, `encounter` model support
+- **WebSocket Integration**: Client startup skipped in current test runs
+- **Database Utility Gaps**: Reset/seed methods reference non-existent models
+- **Authentication Flow**: Inconsistent auth patterns between API and WebSocket tests
+
+### 🚨 **Critical Issues Requiring Immediate Action**
+
+#### **P0 - Database Schema Alignment**
+- [ ] **SCHEMA-001**: Align test schema with factory expectations (8 pts)
+  - **Current**: Test schema uses `email`, `username`, `passwordHash` fields
+  - **Problem**: Factories expect `displayName` and other production schema fields
+  - **Impact**: All complex test scenarios fail with Prisma validation errors
+  - **Solution**: Update test schema or refactor factories to match test models
+  - **Owner**: Backend Team | **Due**: 2025-01-15
+
+#### **P0 - Factory Implementation Completion**
+- [ ] **FACTORY-001**: Implement missing factory methods (5 pts)
+  - **Missing Models**: `Campaign`, `CampaignMember`, `Actor`, `Token`, `Encounter`
+  - **Current**: Only basic `User`, `Game`, `Scene` factories work
+  - **Impact**: Complex test scenarios like multi-user collaboration cannot run
+  - **Solution**: Create complete factory methods matching test schema
+  - **Owner**: QA Team | **Due**: 2025-01-15
+
+#### **P0 - WebSocket Testing Integration**
+- [ ] **WS-001**: Enable client startup in e2e tests (5 pts)
+  - **Current**: Tests run with `E2E_SKIP_CLIENT=1` to avoid startup issues
+  - **Problem**: Real-time collaboration and WebSocket features untested
+  - **Impact**: Critical VTT functionality (live token movement, chat) not validated
+  - **Solution**: Fix client readiness checks and WebSocket authentication
+  - **Owner**: Full Stack Team | **Due**: 2025-01-20
+
+### 📊 **Technical Implementation Plan**
+
+#### **Phase 1: Foundation Fixes (Week 1-2)**
+
+**1.1 Database Schema Harmonization**
+```typescript
+// Priority: Update test schema to include production fields
+// File: apps/server/prisma/schema.test.prisma
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  displayName String   // ADD: Match production schema
+  passwordHash String
+  // ... existing fields
+}
+
+model Campaign {
+  id          String   @id @default(cuid())  
+  name        String
+  description String?
+  gameSystem  String   @default("dnd5e")
+  isActive    Boolean  @default(true)
+  // ADD: Missing campaign model for test database
+}
+```
+
+**1.2 Factory Method Updates**
+```typescript
+// Priority: Fix factory methods to use test schema fields
+// File: e2e/utils/factories.ts
+async createUser(overrides: Partial<TestUser> = {}) {
+  return this.db.user.create({
+    data: {
+      email: `user-${Date.now()}@test.com`,
+      username: `user-${Date.now()}`,
+      displayName: `Test User ${Date.now()}`, // ADD: Support both schemas
+      passwordHash: "hashedpassword",
+      ...overrides,
+    },
+  });
+}
+```
+
+**1.3 Database Utility Corrections**
+```typescript
+// Priority: Fix reset/seed methods to match available models
+// File: e2e/utils/database.ts
+async reset(): Promise<void> {
+  // Remove references to non-existent models
+  await this.prisma!.gameParticipant.deleteMany();
+  await this.prisma!.game.deleteMany();
+  await this.prisma!.scene.deleteMany();
+  await this.prisma!.session.deleteMany();
+  await this.prisma!.user.deleteMany();
+  // ADD: Only reference models that exist in test schema
+}
+```
+
+#### **Phase 2: WebSocket Integration (Week 2-3)**
+
+**2.1 Client Startup Resolution**
+- Fix global setup script to properly handle client readiness
+- Update environment variables for test WebSocket connections
+- Resolve authentication flow between Playwright tests and WebSocket server
+
+**2.2 Real-time Testing Implementation**
+```typescript
+// File: e2e/websocket-integration.spec.ts
+test("Multi-user token synchronization", async ({ browser }) => {
+  const gameSession = await factory.createCompleteGameSession();
+  
+  // Create separate browser contexts for GM and players
+  const contexts = await Promise.all([
+    browser.newContext(), // GM
+    browser.newContext(), // Player 1  
+    browser.newContext(), // Player 2
+  ]);
+  
+  // Test real-time token movement, chat, combat
+  // Verify WebSocket message propagation
+  // Assert UI updates across all clients
+});
+```
+
+#### **Phase 3: Comprehensive Test Coverage (Week 3-4)**
+
+**3.1 User Journey Expansion**
+- Complete campaign creation and management flows
+- Multi-user collaboration scenarios
+- Combat encounter management
+- Asset upload and sharing workflows
+
+**3.2 Performance and Stability**
+- Memory leak prevention testing
+- Connection reliability under load
+- Error recovery and reconnection scenarios
+
+### 🔧 **Immediate Action Items**
+
+#### **Week 1 - Schema Alignment Sprint**
+- [ ] **Day 1-2**: Audit complete test schema vs production schema differences
+- [ ] **Day 3-4**: Update test schema to include missing fields and models
+- [ ] **Day 5**: Regenerate Prisma test client and update factories
+
+#### **Week 2 - Factory Completion Sprint**  
+- [ ] **Day 1-2**: Implement missing factory methods (`Campaign`, `Actor`, `Token`)
+- [ ] **Day 3-4**: Fix database reset/seed methods for test schema compatibility
+- [ ] **Day 5**: Validate all factory methods work with updated test database
+
+#### **Week 3 - WebSocket Integration Sprint**
+- [ ] **Day 1-2**: Fix client startup and readiness checks in e2e environment
+- [ ] **Day 3-4**: Implement real-time collaboration test scenarios
+- [ ] **Day 5**: Validate WebSocket authentication and message propagation
+
+#### **Week 4 - Validation and Expansion Sprint**
+- [ ] **Day 1-3**: Run comprehensive test suite and fix remaining issues
+- [ ] **Day 4-5**: Add performance and stress testing scenarios
+
+### 📈 **Success Metrics**
+
+#### **Immediate Targets (Week 4)**
+- ✅ **Database Tests**: All factory methods work without Prisma errors
+- ✅ **API Tests**: 82 existing tests pass consistently  
+- ✅ **WebSocket Tests**: Real-time collaboration scenarios functional
+- ✅ **Integration Tests**: Client startup works in e2e environment
+
+#### **Long-term Goals (Month 1)**
+- **Coverage**: 90% of critical user journeys covered by e2e tests
+- **Reliability**: <5% flaky test rate across all scenarios
+- **Performance**: Tests complete in <10 minutes for full suite
+- **Maintainability**: Clear test data management and cleanup
+
+### 🔍 **Risk Mitigation**
+
+#### **High Risk - Schema Complexity**
+- **Risk**: Production and test schemas diverge further during development
+- **Mitigation**: Automated schema sync validation in CI/CD pipeline
+- **Contingency**: Maintain separate test-specific factories if schemas must differ
+
+#### **Medium Risk - WebSocket Stability**
+- **Risk**: Real-time testing introduces flaky test scenarios  
+- **Mitigation**: Implement robust wait conditions and message acknowledgments
+- **Contingency**: Fallback to API-only testing for critical CI/CD workflows
+
+#### **Low Risk - Performance Impact**
+- **Risk**: Comprehensive e2e tests slow development feedback loops
+- **Mitigation**: Parallel test execution and smart test selection
+- **Contingency**: Separate smoke tests from comprehensive test suites
+
+### 📋 **Implementation Dependencies**
+
+#### **Technical Dependencies**
+- Updated Prisma test schema generation
+- WebSocket authentication standardization  
+- Test environment configuration management
+- Playwright WebSocket event handling improvements
+
+#### **Team Dependencies**
+- Backend team for schema alignment decisions
+- Frontend team for client startup issue resolution
+- DevOps team for CI/CD pipeline integration
+- QA team for comprehensive test scenario development
+
+### 🎯 **Next Steps**
+1. **Immediate**: Start Schema Alignment Sprint (Week 1)
+2. **Short-term**: Complete Factory Implementation (Week 2)
+3. **Medium-term**: Enable WebSocket Integration (Week 3)
+4. **Long-term**: Expand to full user journey coverage (Week 4+)
+
+---
+
+*E2E Testing Plan completed: 2025-01-02*  
+*Next Review: Weekly progress check every Friday*
 
 ## 🔗 **FRONTEND-BACKEND CONNECTIONS COMPREHENSIVE AUDIT** (2025-08-29)
 

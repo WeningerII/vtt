@@ -10,6 +10,7 @@ import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { corsMiddleware } from "./middleware/cors";
 import { csrfMiddleware, csrfTokenMiddleware } from "./middleware/csrf";
 import { requireAdmin, requirePermission, optionalAuth } from "./middleware/auth";
+import { metricsMiddleware, addDatabaseHealthCheck, addAIServiceHealthCheck } from "./middleware/metrics";
 import session from "express-session";
 import passport from "passport";
 import {
@@ -141,6 +142,13 @@ import {
   deleteMonsterHandler,
   getMonsterStatsHandler,
 } from "./routes/monsters";
+import {
+  healthCheckHandler,
+  livenessProbeHandler,
+  readinessProbeHandler,
+  metricsHandler,
+  prometheusMetricsHandler,
+} from "./routes/metrics";
 import { createUnifiedWebSocketManager } from "./websocket/UnifiedWebSocketManager";
 import { DatabaseManager } from "./database/connection";
 import { initializeAuth } from "./auth";
@@ -176,6 +184,7 @@ router.use(csrfMiddleware); // CSRF protection after CORS
 router.use(csrfTokenMiddleware); // Add CSRF token to response headers
 router.use(securityHeadersMiddleware);
 router.use(rateLimitMiddleware);
+router.use(metricsMiddleware);
 
 // Session and passport middleware
 router.use(async (ctx, next) => {
@@ -216,6 +225,14 @@ router.post("/api/combat/simulate", simulateCombatHandler);
 router.post("/api/combat/analyze", analyzeCombatHandler);
 router.get("/api/combat/simulations", getActiveSimulationsHandler);
 
+// Health check and metrics endpoints
+router.get("/api/health", healthCheckHandler);
+router.get("/api/health/live", livenessProbeHandler);
+router.get("/api/health/ready", readinessProbeHandler);
+router.get("/api/metrics", metricsHandler);
+router.get("/api/metrics/prometheus", prometheusMetricsHandler);
+
+// Legacy health check endpoints
 router.get("/health", healthHandler); // legacy: readiness
 router.get("/livez", livenessHandler);
 router.get("/readyz", readinessHandler);
@@ -537,6 +554,11 @@ process.on("SIGINT", () => void shutdown("SIGINT"));
 async function startServer() {
   try {
     await DatabaseManager.connect();
+    
+    // Initialize health checks
+    addDatabaseHealthCheck(prisma);
+    addAIServiceHealthCheck();
+    
     server.listen(PORT, () => {
       logger.info(`[Server] Listening on port`, { port: PORT });
       console.log(

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { factory } from "./utils/factories";
-import { authUtils } from "./utils/auth";
+import { _factory as factory } from "./utils/factories";
+import { _authUtils as authUtils } from "./utils/auth";
 import { testDb } from "./utils/database";
 
 test.describe("Complete User Journeys", () => {
@@ -9,10 +9,10 @@ test.describe("Complete User Journeys", () => {
     await testDb.reset();
   });
 
-  test("GM creates campaign and manages game session", async ({ page, _request }) => {
+  test("GM creates campaign and manages game session", async ({ page, request }) => {
     // Setup test data
     const gameSession = await factory.createCompleteGameSession();
-    const { gm, _player1, _player2 } = gameSession.users;
+    const { gm, player1, player2 } = gameSession.users;
 
     // Mock authentication for GM
     await authUtils.mockAuthentication(page, gm);
@@ -66,7 +66,7 @@ test.describe("Complete User Journeys", () => {
     await expect(page.locator('[data-testid="turn-indicator"]')).toContainText("Turn 2");
   });
 
-  test("Player joins campaign and participates in session", async ({ page, _request }) => {
+  test("Player joins campaign and participates in session", async ({ page, request }) => {
     // Setup test data
     const gameSession = await factory.createMinimalGameSession();
     const { player } = gameSession.users;
@@ -212,7 +212,7 @@ test.describe("Complete User Journeys", () => {
     }
   });
 
-  test("Asset upload and management workflow", async ({ page, _request }) => {
+  test("Asset upload and management workflow", async ({ page, request }) => {
     // Setup test data
     const gameSession = await factory.createMinimalGameSession();
     const { gm } = gameSession.users;
@@ -266,7 +266,7 @@ test.describe("Complete User Journeys", () => {
     await expect(page.locator('[data-testid="asset-item"]')).toHaveCount(0);
   });
 
-  test("Error handling and recovery scenarios", async ({ page, _request }) => {
+  test("Error handling and recovery scenarios", async ({ page, request }) => {
     // Setup test data
     const gameSession = await factory.createMinimalGameSession();
     const { player } = gameSession.users;
@@ -306,13 +306,13 @@ test.describe("Complete User Journeys", () => {
     await expect(page.locator('[data-testid="unauthorized"]')).toBeVisible();
   });
 
-  test("Performance under load", async ({ page, _request }) => {
+  test("Performance under load", async ({ page, request }) => {
     // Create a scene with many tokens
     const gameSession = await factory.createMinimalGameSession();
     const { gm } = gameSession.users;
 
     // Create 50 tokens for stress testing
-    const tokens = [];
+    const tokens: any[] = [];
     for (let i = 0; i < 50; i++) {
       const actor = await factory.createActor(gm.id, gameSession.campaign.id, {
         name: `Test Actor ${i}`,

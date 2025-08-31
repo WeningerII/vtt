@@ -42,7 +42,9 @@ export class TestDataFactory {
 
   async createUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
     const userData = {
-      displayName: "Test User",
+      email: `user-${Date.now()}@test.com`,
+      username: `user-${Date.now()}`,
+      passwordHash: "hashedpassword",
       ...overrides,
     };
 
@@ -55,14 +57,16 @@ export class TestDataFactory {
 
   async createGMUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
     return this.createUser({
-      displayName: "Test GM",
+      email: `gm-${Date.now()}@test.com`,
+      username: `gm-${Date.now()}`,
       ...overrides,
     });
   }
 
   async createPlayerUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
     return this.createUser({
-      displayName: "Test Player",
+      email: `player-${Date.now()}@test.com`,
+      username: `player-${Date.now()}`,
       ...overrides,
     });
   }

@@ -191,7 +191,8 @@ export const addCharacterToEncounterHandler: RouteHandler = async (ctx) => {
     }
 
     const actor = await actorService.createCharacterActor(characterId);
-    const dbActorId = await actorService.createDatabaseActor(actor, "default-campaign"); // TODO: Get real campaign ID
+    const campaignId = ctx.url.searchParams.get("campaignId") || "default-campaign";
+    const dbActorId = await actorService.createDatabaseActor(actor, campaignId);
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, actor: { ...actor, databaseId: dbActorId } }));
@@ -221,7 +222,8 @@ export const addMonsterToEncounterHandler: RouteHandler = async (ctx) => {
     }
 
     const actor = await actorService.createMonsterActor(monsterId, instanceName);
-    const dbActorId = await actorService.createDatabaseActor(actor, "default-campaign"); // TODO: Get real campaign ID
+    const campaignId = ctx.url.searchParams.get("campaignId") || "default-campaign";
+    const dbActorId = await actorService.createDatabaseActor(actor, campaignId);
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, actor: { ...actor, databaseId: dbActorId } }));

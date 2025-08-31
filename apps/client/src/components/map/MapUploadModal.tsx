@@ -18,6 +18,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { cn } from '../../lib/utils';
+import AccessibleModal from '../AccessibleModal';
 
 interface MapUploadModalProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ interface MapMetadata {
   realWorldScale: number; // pixels per unit
 }
 
-export function MapUploadModal({_ isOpen, _onClose, _onUploadComplete, _campaignId}: MapUploadModalProps) {
+export function MapUploadModal({ isOpen, onClose, onUploadComplete, campaignId }: MapUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadState, setUploadState] = useState<UploadState>({
     file: null,
@@ -180,16 +181,19 @@ export function MapUploadModal({_ isOpen, _onClose, _onUploadComplete, _campaign
   const canUpload = uploadState.file && metadata.name.trim() && !uploadState.uploading;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Upload Map"
+      size="xl"
+      className="max-h-[90vh] overflow-y-auto"
+    >
+      <Card className="w-full border-0 shadow-none">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
             Upload Map
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
-            <X className="h-4 w-4" />
-          </Button>
         </CardHeader>
         
         <CardContent className="space-y-6">
@@ -389,6 +393,6 @@ export function MapUploadModal({_ isOpen, _onClose, _onUploadComplete, _campaign
           </div>
         </CardContent>
       </Card>
-    </div>
+    </AccessibleModal>
   );
 }

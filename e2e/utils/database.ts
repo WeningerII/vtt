@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../node_modules/.prisma/test-client";
 import { execSync } from "child_process";
 import { join } from "path";
 import { existsSync, unlinkSync } from "fs";
@@ -40,8 +40,8 @@ export class TestDatabase {
     // Remove existing test database
     await this.cleanup();
 
-    // Push schema to test database using main schema but test DB
-    execSync("pnpm dlx prisma db push --schema apps/server/prisma/schema.prisma", {
+    // Push schema to test database using test schema
+    execSync("pnpm dlx prisma db push --schema apps/server/prisma/schema.test.prisma", {
       stdio: "inherit",
       cwd: process.cwd(),
       env: { ...process.env, DATABASE_URL: "file:./test.db" },
@@ -74,19 +74,13 @@ export class TestDatabase {
 
     console.log("[Test DB] Resetting database state...");
 
-    // Delete all data in reverse dependency order
-    await this.prisma!.appliedCondition.deleteMany();
-    await this.prisma!.encounterParticipant.deleteMany();
-    await this.prisma!.encounter.deleteMany();
-    await this.prisma!.token.deleteMany();
-    await this.prisma!.actor.deleteMany();
-    await this.prisma!.scene.deleteMany();
-    await this.prisma!.campaignMember.deleteMany();
-    await this.prisma!.campaign.deleteMany();
+    // Delete all data in reverse dependency order (using test schema models)
+    await this.prisma!.auditLog.deleteMany();
     await this.prisma!.asset.deleteMany();
-    await this.prisma!.generationJob.deleteMany();
-    await this.prisma!.map.deleteMany();
-    await this.prisma!.chatMessage.deleteMany();
+    await this.prisma!.gameParticipant.deleteMany();
+    await this.prisma!.game.deleteMany();
+    await this.prisma!.scene.deleteMany();
+    await this.prisma!.session.deleteMany();
     await this.prisma!.user.deleteMany();
 
     console.log("[Test DB] Database reset complete");
@@ -101,94 +95,64 @@ export class TestDatabase {
 
     console.log("[Test DB] Seeding test data...");
 
-    // Create test users (using actual schema fields)
+    // Create test users (using test schema fields)
     const gmUser = await this.prisma!.user.create({
       data: {
-        displayName: "Test GM",
+        email: "gm@test.com",
+        username: "testgm",
+        passwordHash: "hashedpassword",
       },
     });
 
     const playerUser = await this.prisma!.user.create({
       data: {
-        displayName: "Test Player",
+        email: "player@test.com",
+        username: "testplayer",
+        passwordHash: "hashedpassword",
       },
     });
 
-    // Create test map
-    const testMap = await this.prisma!.map.create({
+    // Create test game
+    const testGame = await this.prisma!.game.create({
       data: {
-        name: "Test Map",
-        widthPx: 1000,
-        heightPx: 800,
-        gridSizePx: 50,
+        name: "Test Game",
+        sceneId: "temp-scene-id", // Will be updated after scene creation
       },
     });
 
-    // Create test campaign
-    const testCampaign = await this.prisma!.campaign.create({
+    // Add users as game participants
+    await this.prisma!.gameParticipant.create({
       data: {
-        name: "Test Campaign",
-        description: "A test campaign for e2e testing",
-        gameSystem: "dnd5e",
-        isActive: true,
+        gameId: testGame.id,
+        userId: gmUser.id,
+        role: "GM",
       },
     });
 
-    // Add campaign members
-    await this.prisma!.campaignMember.createMany({
-      data: [
-        {
-          userId: gmUser.id,
-          campaignId: testCampaign.id,
-          role: "gm",
-        },
-        {
-          userId: playerUser.id,
-          campaignId: testCampaign.id,
-          role: "player",
-        },
-      ],
+    await this.prisma!.gameParticipant.create({
+      data: {
+        gameId: testGame.id,
+        userId: playerUser.id,
+        role: "PLAYER",
+      },
     });
 
     // Create test scene
     const testScene = await this.prisma!.scene.create({
       data: {
         name: "Test Scene",
-        campaignId: testCampaign.id,
-        mapId: testMap.id,
-        gridSettings: '{"size": 50, "type": "square"}',
-        lightingSettings: '{"globalLight": true}',
-        fogSettings: '{"enabled": false}',
+        description: "A test scene for E2E testing",
+        ownerId: gmUser.id,
+        width: 1000,
+        height: 1000,
+        gridSize: 50,
       },
     });
 
-    // Create test actor
-    const testActor = await this.prisma!.actor.create({
-      data: {
-        name: "Test Character",
-        kind: "PC",
-        userId: playerUser.id,
-        campaignId: testCampaign.id,
-        currentHp: 25,
-        maxHp: 25,
-        ac: 15,
-        initiative: 12,
-      },
-    });
-
-    // Create test token
-    await this.prisma!.token.create({
-      data: {
-        name: "Test Token",
-        sceneId: testScene.id,
-        actorId: testActor.id,
-        x: 100,
-        y: 100,
-        width: 1,
-        height: 1,
-        disposition: "FRIENDLY",
-        isVisible: true,
-      },
+    // Update game with actual scene ID
+    await this.prisma!.game.update({
+      where: { id: testGame.id },
+      data: { sceneId: testScene.id },
     });
 
     console.log("[Test DB] Test data seeded successfully");

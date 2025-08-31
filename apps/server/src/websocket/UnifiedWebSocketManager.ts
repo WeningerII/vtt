@@ -427,6 +427,11 @@ export class UnifiedWebSocketManager extends EventEmitter {
     // Broadcast game state deltas every 50ms (20Hz)
     setInterval(() => {
       const activeGames = this.gameManager.getGames();
+      
+      // Ensure activeGames is iterable
+      if (!activeGames || !Array.isArray(activeGames)) {
+        return;
+      }
 
       for (const game of activeGames) {
         const delta = game.getNetworkDelta();

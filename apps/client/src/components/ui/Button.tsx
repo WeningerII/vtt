@@ -91,7 +91,7 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
-const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = React.memo(forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
       className,
@@ -133,7 +133,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       </button>
     );
   },
-);
+));
 
 Button.displayName = "Button";
 
