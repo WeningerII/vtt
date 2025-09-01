@@ -1,0 +1,62 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "close": "Cerrar",
+    "ok": "Aceptar",
+    "yes": "Sí",
+    "no": "No",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "submit": "Enviar",
+    "reset": "Restablecer"
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "subtitle": "Inicia sesión en tu cuenta para continuar tu aventura",
+      "emailOrUsername": "Correo o Nombre de Usuario",
+      "emailOrUsernamePlaceholder": "Ingresa tu correo o nombre de usuario",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Ingresa tu contraseña",
+      "rememberMe": "Recordarme",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "signIn": "Iniciar sesión",
+      "signingIn": "Iniciando sesión...",
+      "signUp": "Registrarse",
+      "dontHaveAccount": "¿No tienes una cuenta?",
+      "orContinueWith": "O continúa con",
+      "google": "Google",
+      "github": "GitHub",
+      "togglePasswordVisibility": "Alternar visibilidad de contraseña"
+    },
+    "validation": {
+      "emailOrUsernameRequired": "El correo o nombre de usuario es requerido",
+      "validEmailRequired": "Por favor ingresa un correo válido",
+      "passwordRequired": "La contraseña es requerida",
+      "passwordMinLength": "La contraseña debe tener al menos 6 caracteres"
+    }
+  },
+  "vtt": {
+    "connecting": "Conectando al servidor VTT...",
+    "authenticating": "Autenticando...",
+    "loadingScene": "Cargando escena...",
+    "joinTestScene": "Unirse a Escena de Prueba",
+    "sceneName": "Escena: {{name}}",
+    "tokens": "Fichas",
+    "chat": "Chat",
+    "sendMessage": "Enviar mensaje"
+  },
+  "errors": {
+    "general": "Algo salió mal. Por favor intenta de nuevo.",
+    "network": "Error de red. Por favor verifica tu conexión.",
+    "unauthorized": "No estás autorizado para realizar esta acción."
+  }
+}

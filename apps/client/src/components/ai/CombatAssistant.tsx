@@ -261,3 +261,5 @@ const ActionIcon: React.FC<{ action: string }> = ({ action }) => {
       return <Target className="w-5 h-5 text-gray-400" />;
   }
 };
+
+export default CombatAssistant;

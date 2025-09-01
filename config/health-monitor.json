@@ -1,0 +1,58 @@
+{
+  "baseUrl": "http://localhost:8080",
+  "timeout": 10000,
+  "interval": 30000,
+  "retries": 3,
+  "endpoints": [
+    {
+      "name": "Health Check",
+      "url": "/api/health",
+      "critical": true
+    },
+    {
+      "name": "Liveness",
+      "url": "/api/health/live",
+      "critical": true
+    },
+    {
+      "name": "Readiness",
+      "url": "/api/health/ready",
+      "critical": true
+    },
+    {
+      "name": "Metrics",
+      "url": "/api/metrics",
+      "critical": false
+    },
+    {
+      "name": "Prometheus Metrics",
+      "url": "/api/metrics/prometheus",
+      "critical": false
+    }
+  ],
+  "alertThresholds": {
+    "responseTime": 5000,
+    "errorRate": 0.1,
+    "consecutiveFailures": 3
+  },
+  "notifications": {
+    "webhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+    "slack": {
+      "webhook": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+      "channel": "#vtt-alerts"
+    },
+    "email": {
+      "smtp": {
+        "host": "smtp.example.com",
+        "port": 587,
+        "secure": false,
+        "auth": {
+          "user": "alerts@vtt.example.com",
+          "pass": "your-password"
+        }
+      },
+      "from": "alerts@vtt.example.com",
+      "to": ["devops@vtt.example.com", "oncall@vtt.example.com"]
+    }
+  }
+}

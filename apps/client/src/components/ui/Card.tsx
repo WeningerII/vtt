@@ -41,7 +41,7 @@ const cardVariants = cva(
 const Card = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>
->(_({ className, _variant, _padding, _interactive, _...props }, _ref) => (
+>(({ className, variant, padding, interactive, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(cardVariants({ variant, padding, interactive }), className)}
@@ -53,7 +53,7 @@ Card.displayName = 'Card';
 const CardHeader = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(_({ className, _...props }, _ref) => (
+>(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn('flex flex-col space-y-1.5 pb-6', className)}
@@ -65,7 +65,7 @@ CardHeader.displayName = 'CardHeader';
 const CardTitle = forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(_({ className, _children, _...props }, _ref) => (
+>(({ className, children, ...props }, ref) => (
   <h3
     ref={ref}
     className={cn('font-semibold text-xl text-neutral-900 leading-none tracking-tight', className)}
@@ -79,7 +79,7 @@ CardTitle.displayName = 'CardTitle';
 const CardDescription = forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(_({ className, _...props }, _ref) => (
+>(({ className, ...props }, ref) => (
   <p
     ref={ref}
     className={cn('text-sm text-neutral-600 leading-relaxed', className)}
@@ -91,7 +91,7 @@ CardDescription.displayName = 'CardDescription';
 const CardContent = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(_({ className, _...props }, _ref) => (
+>(({ className, ...props }, ref) => (
   <div ref={ref} className={cn('space-y-4', className)} {...props} />
 ));
 CardContent.displayName = 'CardContent';
@@ -99,7 +99,7 @@ CardContent.displayName = 'CardContent';
 const CardFooter = forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(_({ className, _...props }, _ref) => (
+>(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn('flex items-center justify-between pt-6', className)}

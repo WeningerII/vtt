@@ -254,7 +254,7 @@ export function validateSecurityHeaders(headers: Headers): SecurityHeaders {
  * Content type validation
  */
 export function isValidContentType(contentType: string, allowedTypes: string[]): boolean {
-  const normalizedType = contentType.toLowerCase().split(";")[0].trim();
+  const normalizedType = contentType?.toLowerCase()?.split(";")[0]?.trim() || "";
   return allowedTypes.some(
     (allowed) =>
       allowed === "*/*" ||

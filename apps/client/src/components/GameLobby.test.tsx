@@ -15,6 +15,12 @@ jest.mock("@vtt/logging", () => ({
 }));
 
 describe("GameLobby", () => {
+const defaultProps = {
+  onJoinGame: jest.fn(),
+  onCreateGame: jest.fn(),
+  onSpectateGame: jest.fn()
+};
+
   const mockProps = {
     // Add default props based on component interface
   };
@@ -25,17 +31,17 @@ describe("GameLobby", () => {
 
   describe("Rendering", () => {
     it("renders without crashing", () => {
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
     });
 
     it("displays correct initial content", () => {
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
       // Add specific content assertions
     });
 
     it("renders with different prop combinations", () => {
       const altProps = { ...mockProps };
-      render(<GameLobby {...altProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
       // Test different prop scenarios
     });
   });
@@ -43,21 +49,21 @@ describe("GameLobby", () => {
   describe("User Interactions", () => {
     it("handles button clicks correctly", async () => {
       const user = userEvent.setup();
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test button interactions
     });
 
     it("handles form inputs correctly", async () => {
       const user = userEvent.setup();
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test form interactions
     });
 
     it("handles keyboard navigation", async () => {
       const user = userEvent.setup();
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test keyboard interactions
       await user.keyboard("{Tab}");
@@ -67,13 +73,13 @@ describe("GameLobby", () => {
 
   describe("State Management", () => {
     it("updates state on user actions", async () => {
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test state changes
     });
 
     it("handles async operations correctly", async () => {
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test loading states and async operations
     });
@@ -82,13 +88,13 @@ describe("GameLobby", () => {
   describe("Error Handling", () => {
     it("handles error states gracefully", () => {
       const errorProps = { ...mockProps };
-      render(<GameLobby {...errorProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test error scenarios
     });
 
     it("displays error messages appropriately", () => {
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test error display
     });
@@ -96,7 +102,7 @@ describe("GameLobby", () => {
 
   describe("Accessibility", () => {
     it("has proper ARIA labels", () => {
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test ARIA attributes
       const buttons = screen.getAllByRole("button");
@@ -107,7 +113,7 @@ describe("GameLobby", () => {
 
     it("supports keyboard navigation", async () => {
       const user = userEvent.setup();
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test tab order and keyboard accessibility
       await user.tab();
@@ -116,7 +122,7 @@ describe("GameLobby", () => {
 
     it("has proper focus management", async () => {
       const user = userEvent.setup();
-      render(<GameLobby {...mockProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test focus management
     });
@@ -126,7 +132,7 @@ describe("GameLobby", () => {
     it("renders efficiently with large datasets", () => {
       const largeDataProps = { ...mockProps };
       const startTime = performance.now();
-      render(<GameLobby {...largeDataProps} />);
+      render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
       const endTime = performance.now();
 
       expect(endTime - startTime).toBeLessThan(100); // Should render in under 100ms
@@ -143,10 +149,10 @@ describe("GameLobby", () => {
     });
 
     it("handles prop changes correctly", () => {
-      const { rerender } = render(<GameLobby {...mockProps} />);
+      const { rerender } = render(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       const newProps = { ...mockProps };
-      rerender(<GameLobby {...newProps} />);
+      rerender(<GameLobby onJoinGame={jest.fn()} onCreateGame={jest.fn()} onSpectateGame={jest.fn()} />);
 
       // Test prop updates
     });

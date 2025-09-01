@@ -227,10 +227,10 @@ export const handlers = [
   }),
 
   http.post("/api/characters", async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as any;
     const newCharacter = {
       id: `char-${Date.now()}`,
-      ...body,
+      ...(body as any),
       createdAt: new Date().toISOString(),
     };
 
@@ -240,7 +240,7 @@ export const handlers = [
 
   http.put("/api/characters/:id", async ({ params, request }) => {
     const { id } = params;
-    const body = await request.json();
+    const body = await request.json() as any;
     const characterIndex = mockCharacters.findIndex((c) => c.id === id);
 
     if (characterIndex === -1) {
@@ -249,7 +249,7 @@ export const handlers = [
 
     const existingCharacter = mockCharacters[characterIndex];
     if (existingCharacter) {
-      mockCharacters[characterIndex] = { ...existingCharacter, ...body };
+      mockCharacters[characterIndex] = { ...existingCharacter, ...(body as any) };
       return HttpResponse.json(mockCharacters[characterIndex]);
     }
 
@@ -288,7 +288,7 @@ export const handlers = [
     const body = (await request.json()) as any;
     const newCampaign = {
       id: `campaign-${Date.now()}`,
-      ...body,
+      ...(body as any),
       createdAt: new Date().toISOString(),
     };
 
@@ -307,7 +307,7 @@ export const handlers = [
 
     const existingCampaign = mockCampaigns[campaignIndex];
     if (existingCampaign) {
-      mockCampaigns[campaignIndex] = { ...existingCampaign, ...body };
+      mockCampaigns[campaignIndex] = { ...existingCampaign, ...(body as any) };
       return HttpResponse.json(mockCampaigns[campaignIndex]);
     }
 
@@ -330,7 +330,7 @@ export const handlers = [
 
     const existingEncounter = mockEncounters[encounterIndex];
     if (existingEncounter) {
-      mockEncounters[encounterIndex] = { ...existingEncounter, ...body };
+      mockEncounters[encounterIndex] = { ...existingEncounter, ...(body as any) };
       return HttpResponse.json(mockEncounters[encounterIndex]);
     }
 
@@ -373,7 +373,7 @@ export const handlers = [
 
   // Combat AI endpoints
   http.post("/api/combat/suggestions", async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as any;
 
     return HttpResponse.json({
       suggestions: [
@@ -394,7 +394,7 @@ export const handlers = [
   }),
 
   http.post("/api/combat/analysis", async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as any;
 
     return HttpResponse.json({
       analysis: {
@@ -443,19 +443,19 @@ export const handlers = [
     return HttpResponse.json({ error: "Internal server error" }, { status: 500 });
   }),
 
-  http.get("/api/test/timeout", () => {
-    // Simulate a timeout by never resolving
-    return new Promise(() => {});
+  http.get("/api/test/timeout", async ({ request }) => {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    return HttpResponse.json({ message: "This should timeout" });
   }),
 
-  http.get("/api/test/network-error", () => {
-    return HttpResponse.error();
+  http.get("/api/test/network-error", async ({ request }) => {
+    throw new Error("Network error");
   }),
 
   // AI Assistant endpoints
   http.post("/api/assistant/query", async ({ request }) => {
-    const body = await request.json();
-    const { query, context } = body;
+    const body = await request.json() as any;
+    const { query, context } = body as { query: string; context?: any };
 
     // Simulate AI processing
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -490,14 +490,14 @@ export const handlers = [
   }),
 
   // Dice rolling endpoints
-  rest.post("/api/dice/roll", async (req, res, ctx) => {
-    const body = await req.json();
+  http.post("/api/dice/roll", async ({ request }) => {
+    const body = await req.json() as Record<string, any>;
     const { expression, type = "custom", roller = "Player" } = body;
 
     // Simple dice rolling simulation
     const match = expression.match(/(\d+)?d(\d+)([+-]\d+)?/i);
     if (!match || !match[2]) {
-      return res(ctx.status(400), ctx.json({ error: "Invalid dice expression" }));
+      return HttpResponse.json({ error: "Invalid dice expression" }, { status: 400 });
     }
 
     const numDice = parseInt(match[1] || "1");
@@ -529,25 +529,25 @@ export const handlers = [
     };
 
     mockRolls.unshift(roll);
-    return res(ctx.json(roll));
+    return HttpResponse.json(HttpResponse.json(roll));
   }),
 
-  rest.get("/api/dice/recent", (req, res, ctx) => {
-    const limit = parseInt(req.url.searchParams.get("limit") || "10");
-    return res(ctx.json(mockRolls.slice(0, limit)));
+  http.get("/api/dice/recent", async ({ request }) => {
+    const limit = parseInt(new URL(request.url).searchParams.get("limit") || "10");
+    return HttpResponse.json(HttpResponse.json(mockRolls.slice(0, limit)));
   }),
 
   // Error simulation endpoints for testing
-  rest.get("/api/test/error", (req, res, ctx) => {
-    return res(ctx.status(500), ctx.json({ error: "Simulated server error" }));
+  http.get("/api/test/error", async ({ request }) => {
+    return HttpResponse.json({ error: "Simulated server error" }, { status: 500 });
   }),
 
-  rest.get("/api/test/timeout", (req, res, ctx) => {
+  http.get("/api/test/timeout", async ({ request }) => {
     // Simulate timeout by never resolving
     return new Promise(() => {});
   }),
 
-  rest.get("/api/test/network-error", (req, res, ctx) => {
+  http.get("/api/test/network-error", async ({ request }) => {
     return res.networkError("Network connection failed");
   }),
 ];

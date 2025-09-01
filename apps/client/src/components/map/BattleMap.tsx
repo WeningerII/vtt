@@ -2,10 +2,12 @@
  * Battle Map Component - Interactive tactical grid for combat encounters
  */
 
-import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo, memo, Suspense, lazy } from "react";
 import { cn } from "../../lib/utils";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useGame } from "../../providers/GameProvider";
+import { useTouchGestures, type TouchPoint } from "../../hooks/useTouchGestures";
+import { SimpleErrorBoundary } from "../ui/SimpleErrorBoundary";
 import {
   MousePointer,
   Move,
@@ -15,7 +17,6 @@ import {
   ZoomOut,
   Grid3X3,
   Eye,
-  EyeOff,
   RotateCw,
   Target,
   Layers,
@@ -25,10 +26,13 @@ import {
   RotateCcw,
   Circle,
   Square,
-} from "lucide-react";
+} from "../ui/Icons";
 import { Button } from "../ui/Button";
-import { TokenPropertiesPanel } from "./TokenPropertiesPanel";
-import { MapLayersPanel } from "./MapLayersPanel";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
+
+// Lazy load heavy components for better initial bundle size
+const TokenPropertiesPanel = lazy(() => import("./TokenPropertiesPanel"));
+const MapLayersPanel = lazy(() => import("./MapLayersPanel"));
 
 export interface Token {
   id: string;
@@ -69,7 +73,122 @@ type Tool = "select" | "pan" | "measure" | "add-token" | "grid";
 const GRID_SIZE = 40; // pixels per grid square
 const DEFAULT_MAP_SIZE = { width: 40, height: 30 }; // grid squares
 
-export function BattleMap({ className, isGM = false }: BattleMapProps) {
+// Enhanced Token component with comprehensive touch support
+const MemoizedToken = memo<{
+  token: Token;
+  isSelected: boolean;
+  activeTool: Tool;
+  isGM: boolean;
+  sessionId: string | undefined;
+  onTokenSelect: (tokenId: string, multiSelect: boolean) => void;
+  onTokenDoubleClick: (token: Token) => void;
+  onTokenMouseDown: (e: React.MouseEvent, token: Token) => void;
+  onTokenTouchStart: (token: Token, point: { x: number; y: number }) => void;
+}>(({ token, isSelected, activeTool, isGM, sessionId, onTokenSelect, onTokenDoubleClick, onTokenMouseDown, onTokenTouchStart }) => {
+  const tokenStyle = useMemo(() => {
+    const size = token.size * GRID_SIZE;
+    return {
+      position: "absolute" as const,
+      left: token.x * GRID_SIZE,
+      top: token.y * GRID_SIZE,
+      width: size,
+      height: size,
+      backgroundColor: token.color,
+      border: isSelected ? "3px solid #fbbf24" : "2px solid #000",
+      borderRadius: token.size === 1 ? "50%" : "8px",
+      transform: `rotate(${token.rotation}deg)`,
+      opacity: token.isVisible ? 1 : isGM ? 0.5 : 0,
+      cursor: activeTool === "select" ? "move" : "pointer",
+      zIndex: isSelected ? 10 : 5,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      color: "white",
+      fontSize: `${Math.max(10, size / 4)}px`,
+      fontWeight: "bold",
+      textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+      transition: "all 0.1s ease",
+    };
+  }, [token, isSelected, activeTool, isGM]);
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onTokenSelect(token.id, e.shiftKey);
+  }, [token.id, onTokenSelect]);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isGM || token.playerId === sessionId) {
+      onTokenDoubleClick(token);
+    }
+  }, [token, isGM, sessionId, onTokenDoubleClick]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    onTokenMouseDown(e, token);
+  }, [token, onTokenMouseDown]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.touches.length === 1) {
+      const touch = e.touches[0]!;
+      onTokenTouchStart(token, { x: touch.clientX, y: touch.clientY });
+    }
+  }, [token, onTokenTouchStart]);
+
+  const tooltipText = useMemo(() => {
+    let tooltip = token.name;
+    if (token.hitPoints) {
+      tooltip += ` (${token.hitPoints.current}/${token.hitPoints.max} HP)`;
+    }
+    if (token.conditions.length > 0) {
+      tooltip += ` [${token.conditions.join(", ")}]`;
+    }
+    return tooltip;
+  }, [token.name, token.hitPoints, token.conditions]);
+
+  return (
+    <div
+      role="button"
+      style={tokenStyle}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
+      title={tooltipText}
+    >
+      {token.avatar ? (
+        <img
+          src={token.avatar}
+          alt={token.name}
+          className="w-full h-full object-cover rounded-inherit"
+        />
+      ) : (
+        <span>{token.name.charAt(0).toUpperCase()}</span>
+      )}
+
+      {/* Conditions */}
+      {token.conditions.length > 0 && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full border border-white text-xs flex items-center justify-center text-white">
+          {token.conditions.length}
+        </div>
+      )}
+
+      {/* Health Bar (if damaged) */}
+      {token.hitPoints && token.hitPoints.current < token.hitPoints.max && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black bg-opacity-50">
+          <div
+            className="h-full bg-red-500"
+            style={{
+              width: `${(token.hitPoints.current / token.hitPoints.max) * 100}%`,
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+});
+
+export const BattleMap = memo<BattleMapProps>(({ className, isGM = false }) => {
   const { send } = useWebSocket();
   const { session } = useGame();
   const mapRef = useRef<HTMLDivElement>(null);
@@ -77,11 +196,12 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
   const [selectedTokens, setSelectedTokens] = useState<string[]>([]);
   const [activeTool, setActiveTool] = useState<Tool>("select");
   const [zoom, setZoom] = useState(1);
-  const [pan, _setPan] = useState({ x: 0, y: 0 });
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const [_isDragging, setIsDragging] = useState(false);
-  const [_dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [draggedToken, setDraggedToken] = useState<string | null>(null);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [showTokenProperties, setShowTokenProperties] = useState(false);
   const [showMapLayers, setShowMapLayers] = useState(false);
@@ -293,37 +413,173 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
     );
   };
 
-  const getTokenStyle = useCallback((token: Token) => {
-    const size = token.size * GRID_SIZE;
-    return {
-      position: "absolute" as const,
-      left: token.x * GRID_SIZE,
-      top: token.y * GRID_SIZE,
-      width: size,
-      height: size,
-      backgroundColor: token.color,
-      border: selectedTokens.includes(token.id) ? "3px solid #fbbf24" : "2px solid #000",
-      borderRadius: token.size === 1 ? "50%" : "8px",
-      transform: `rotate(${token.rotation}deg)`,
-      opacity: token.isVisible ? 1 : isGM ? 0.5 : 0,
-      cursor: activeTool === "select" ? "move" : "pointer",
-      zIndex: selectedTokens.includes(token.id) ? 10 : 5,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "white",
-      fontSize: `${Math.max(10, size / 4)}px`,
-      fontWeight: "bold",
-      textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-      transition: "all 0.1s ease",
-    };
-  }, [selectedTokens, activeTool, isGM]);
+  // Comprehensive touch gesture support
+  const { gestureState, touchHandlers } = useTouchGestures({
+    onPanStart: useCallback((point: TouchPoint) => {
+      if (activeTool === "pan" || activeTool === "select") {
+        setIsDragging(true);
+        setDragStart({ x: point.x, y: point.y });
+      }
+    }, [activeTool]),
+    
+    onPanMove: useCallback((delta: { x: number; y: number }, velocity: { x: number; y: number }) => {
+      if (activeTool === "pan") {
+        // Pan the map
+        setPan(prev => ({
+          x: prev.x + delta.x / zoom,
+          y: prev.y + delta.y / zoom,
+        }));
+      } else if (activeTool === "select" && draggedToken) {
+        // Move selected token
+        const token = tokens.find(t => t.id === draggedToken);
+        if (token && mapRef.current) {
+          const rect = mapRef.current.getBoundingClientRect();
+          const newX = Math.round(((dragStart.x + delta.x - rect.left - pan.x) / zoom) / GRID_SIZE);
+          const newY = Math.round(((dragStart.y + delta.y - rect.top - pan.y) / zoom) / GRID_SIZE);
+          
+          setTokens(prev =>
+            prev.map(t => t.id === draggedToken ? { ...t, x: newX, y: newY } : t)
+          );
+        }
+      }
+    }, [activeTool, draggedToken, tokens, zoom, pan, dragStart]),
+    
+    onPanEnd: useCallback((velocity: { x: number; y: number }) => {
+      if (draggedToken) {
+        // Send final token position to server
+        const token = tokens.find(t => t.id === draggedToken);
+        if (token) {
+          send({
+            type: "MOVE_TOKEN",
+            entityId: parseInt(draggedToken.replace("token", "")) || 0,
+            x: token.x,
+            y: token.y,
+            animate: false,
+          });
+        }
+        setDraggedToken(null);
+      }
+      setIsDragging(false);
+    }, [draggedToken, tokens, send]),
+    
+    onPinchStart: useCallback((center: { x: number; y: number }) => {
+      // Store pinch start state
+    }, []),
+    
+    onPinchMove: useCallback((scale: number, center: { x: number; y: number }) => {
+      // Smooth zoom with center point
+      const newZoom = Math.max(0.25, Math.min(4, scale * zoom));
+      setZoom(newZoom);
+      
+      // Adjust pan to keep zoom centered on pinch point
+      if (mapRef.current) {
+        const rect = mapRef.current.getBoundingClientRect();
+        const centerX = center.x - rect.left;
+        const centerY = center.y - rect.top;
+        
+        setPan(prev => ({
+          x: prev.x + (centerX - rect.width / 2) * (1 - scale) * 0.1,
+          y: prev.y + (centerY - rect.height / 2) * (1 - scale) * 0.1,
+        }));
+      }
+    }, [zoom]),
+    
+    onPinchEnd: useCallback((finalScale: number) => {
+      // Finalize zoom level
+      setZoom(prev => Math.max(0.25, Math.min(4, prev * finalScale)));
+    }, []),
+    
+    onTap: useCallback((point: TouchPoint) => {
+      if (activeTool === "select") {
+        // Clear selection on empty tap
+        setSelectedTokens([]);
+      } else if (activeTool === "add-token" && isGM && mapRef.current) {
+        // Add new token on tap
+        const rect = mapRef.current.getBoundingClientRect();
+        const x = Math.round(((point.x - rect.left - pan.x) / zoom) / GRID_SIZE);
+        const y = Math.round(((point.y - rect.top - pan.y) / zoom) / GRID_SIZE);
+        
+        const newToken: Token = {
+          id: `token_${Date.now()}`,
+          name: "New Token",
+          x,
+          y,
+          size: 1,
+          color: "#6b7280",
+          isVisible: true,
+          rotation: 0,
+          conditions: [],
+        };
+        setTokens(prev => [...prev, newToken]);
+      }
+    }, [activeTool, isGM, pan, zoom]),
+    
+    onDoubleTap: useCallback((point: TouchPoint) => {
+      if (activeTool === "select") {
+        // Double tap to zoom to token or center view
+        setZoom(prev => prev < 1.5 ? 2 : 1);
+      }
+    }, [activeTool]),
+    
+    onLongPress: useCallback((point: TouchPoint) => {
+      // Long press for context menu (future enhancement)
+      console.log("Long press detected at", point);
+    }, []),
+  });
 
-  // Memoize expensive style calculations
+  // Enhanced token selection with touch support
+  const handleTokenMouseDown = useCallback((e: React.MouseEvent, token: Token) => {
+    if (activeTool === "select") {
+      setIsDragging(true);
+      setDraggedToken(token.id);
+      setDragStart({
+        x: e.clientX,
+        y: e.clientY,
+      });
+    }
+  }, [activeTool]);
+
+  // Touch-specific token interaction handler
+  const handleTokenTouchStart = useCallback((token: Token, point: { x: number; y: number }) => {
+    if (activeTool === "select") {
+      setSelectedTokens([token.id]);
+      setDraggedToken(token.id);
+      setDragStart(point);
+      setIsDragging(true);
+    }
+  }, [activeTool]);
+
+  // Memoize expensive style calculations with better precision
   const mapContainerStyle = useMemo(() => ({
     transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
     transformOrigin: "0 0",
   }), [zoom, pan.x, pan.y]);
+
+  // Memoize grid calculations to avoid expensive re-renders
+  const gridDimensions = useMemo(() => ({
+    mapWidth: DEFAULT_MAP_SIZE.width * GRID_SIZE,
+    mapHeight: DEFAULT_MAP_SIZE.height * GRID_SIZE,
+    totalGridSquares: DEFAULT_MAP_SIZE.width * DEFAULT_MAP_SIZE.height,
+  }), []);
+
+  // Memoize visible tokens based on viewport and zoom level
+  const visibleTokens = useMemo(() => {
+    // For high zoom levels, filter tokens outside viewport for better performance
+    if (zoom < 0.5) {
+      const viewportBuffer = 200; // pixels
+      return tokens.filter(token => {
+        const tokenX = token.x * GRID_SIZE;
+        const tokenY = token.y * GRID_SIZE;
+        const tokenSize = token.size * GRID_SIZE;
+        
+        return tokenX + tokenSize >= -viewportBuffer && 
+               tokenX <= gridDimensions.mapWidth + viewportBuffer &&
+               tokenY + tokenSize >= -viewportBuffer && 
+               tokenY <= gridDimensions.mapHeight + viewportBuffer;
+      });
+    }
+    return tokens;
+  }, [tokens, zoom, gridDimensions]);
 
   const backgroundLayerStyle = useMemo(() => ({
     opacity: layers.find((l) => l.id === "background")?.opacity || 1,
@@ -337,14 +593,14 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
     opacity: layers.find((l) => l.id === "grid")?.opacity || 0.3,
   }), [layers]);
 
-  const _renderGrid = () => {
+  // Memoized grid rendering - only recalculate when grid settings change
+  const renderedGrid = useMemo(() => {
     if (!showGrid) return null;
 
-    const lines: JSX.Element[] = [];
-    const mapWidth = DEFAULT_MAP_SIZE.width * GRID_SIZE;
-    const mapHeight = DEFAULT_MAP_SIZE.height * GRID_SIZE;
+    const lines: React.ReactElement[] = [];
+    const { mapWidth, mapHeight } = gridDimensions;
 
-    // Vertical lines
+    // Vertical lines - optimized loop
     for (let i = 0; i <= DEFAULT_MAP_SIZE.width; i++) {
       lines.push(
         <line
@@ -359,7 +615,7 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
       );
     }
 
-    // Horizontal lines
+    // Horizontal lines - optimized loop
     for (let i = 0; i <= DEFAULT_MAP_SIZE.height; i++) {
       lines.push(
         <line
@@ -379,7 +635,7 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
         {lines}
       </svg>
     );
-  };
+  }, [showGrid, gridDimensions]);
 
   return (
     <div className={cn("flex flex-col h-full bg-bg-primary", className)}>
@@ -513,8 +769,11 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
         <div
           role="button"
           ref={mapRef}
-          className="absolute inset-0 cursor-crosshair"
+          className="absolute inset-0 cursor-crosshair touch-none"
           onClick={handleMapClick}
+          onTouchStart={touchHandlers.onTouchStart}
+          onTouchMove={touchHandlers.onTouchMove}
+          onTouchEnd={touchHandlers.onTouchEnd}
           style={mapContainerStyle}
         >
           {/* Background */}
@@ -530,13 +789,13 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
               />
             )}
 
-            {/* Grid Layer */}
+            {/* Grid Layer - Use pattern for better performance */}
             {showGrid && layers.find((l) => l.id === "grid")?.visible && (
               <svg
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  width: gridDimensions.mapWidth,
+                  height: gridDimensions.mapHeight,
                   ...gridLayerStyle,
                 }}
               >
@@ -556,96 +815,76 @@ export function BattleMap({ className, isGM = false }: BattleMapProps) {
                     />
                   </pattern>
                 </defs>
-                <rect width="100%" height="100%" fill="url(#grid)" />
+                <rect 
+                  width={gridDimensions.mapWidth} 
+                  height={gridDimensions.mapHeight} 
+                  fill="url(#grid)" 
+                />
               </svg>
             )}
 
-            {/* Tokens */}
-            {tokens.map((token) => (
-              <div
-                role="button"
+            {/* Tokens - Render only visible tokens for performance */}
+            {visibleTokens.map((token) => (
+              <MemoizedToken
                 key={token.id}
-                style={getTokenStyle(token)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleTokenSelect(token.id, e.shiftKey);
-                }}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  if (isGM || token.playerId === session?.id) {
-                    handleTokenDoubleClick(token);
-                  }
-                }}
-                onMouseDown={(e) => {
-                  if (activeTool === "select") {
-                    setIsDragging(true);
-                    setDragStart({
-                      x: e.clientX - token.x * GRID_SIZE * zoom,
-                      y: e.clientY - token.y * GRID_SIZE * zoom,
-                    });
-                  }
-                }}
-                title={`${token.name}${token.hitPoints ? ` (${token.hitPoints.current}/${token.hitPoints.max} HP)` : ""}${token.conditions.length > 0 ? ` [${token.conditions.join(", ")}]` : ""}`}
-              >
-                {token.avatar ? (
-                  <img
-                    src={token.avatar}
-                    alt={token.name}
-                    className="w-full h-full object-cover rounded-inherit"
-                  />
-                ) : (
-                  <span>{token.name.charAt(0).toUpperCase()}</span>
-                )}
-
-                {/* Conditions */}
-                {token.conditions.length > 0 && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-warning rounded-full border border-white text-xs flex items-center justify-center text-white">
-                    {token.conditions.length}
-                  </div>
-                )}
-
-                {/* Health Bar (if damaged) */}
-                {token.hitPoints && token.hitPoints.current < token.hitPoints.max && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-black bg-opacity-50">
-                    <div
-                      className="h-full bg-red-500"
-                      style={{
-                        width: `${(token.hitPoints.current / token.hitPoints.max) * 100}%`,
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+                token={token}
+                isSelected={selectedTokens.includes(token.id)}
+                activeTool={activeTool}
+                isGM={isGM}
+                sessionId={session?.id}
+                onTokenSelect={handleTokenSelect}
+                onTokenDoubleClick={handleTokenDoubleClick}
+                onTokenMouseDown={handleTokenMouseDown}
+                onTokenTouchStart={handleTokenTouchStart}
+              />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Token Properties Panel */}
+      {/* Token Properties Panel - Lazy loaded */}
       {showTokenProperties && selectedToken && (
-        <TokenPropertiesPanel
-          token={selectedToken}
-          onClose={() => {
-            setShowTokenProperties(false);
-            setSelectedToken(null);
-          }}
-          onUpdate={handleTokenUpdate}
-          onDelete={handleTokenDelete}
-          isGM={isGM}
-        />
-      )}
-
-      {/* Map Layers Panel */}
-      {showMapLayers && isGM && (
-        <div className="absolute top-16 right-4 w-80 z-50">
-          <MapLayersPanel
-            layers={layers}
-            onLayersUpdate={handleLayersUpdate}
-            onBackgroundUpload={handleBackgroundUpload}
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <LoadingSpinner size="lg" variant="primary" showLabel label="Loading token properties..." />
+            </div>
+          }
+        >
+          <TokenPropertiesPanel
+            token={selectedToken}
+            onClose={() => {
+              setShowTokenProperties(false);
+              setSelectedToken(null);
+            }}
+            onUpdate={handleTokenUpdate}
+            onDelete={handleTokenDelete}
             isGM={isGM}
           />
+        </Suspense>
+      )}
+
+      {/* Map Layers Panel - Lazy loaded */}
+      {showMapLayers && isGM && (
+        <div className="absolute top-16 right-4 w-80 z-50">
+          <Suspense
+            fallback={
+              <div className="w-80 h-64 bg-bg-secondary border border-border-primary rounded-lg p-4 flex items-center justify-center">
+                <LoadingSpinner size="md" variant="primary" showLabel label="Loading layers..." />
+              </div>
+            }
+          >
+            <MapLayersPanel
+              layers={layers}
+              onLayersUpdate={handleLayersUpdate}
+              onBackgroundUpload={handleBackgroundUpload}
+              isGM={isGM}
+            />
+          </Suspense>
         </div>
       )}
     </div>
   );
-}
+});
+
+export default BattleMap;

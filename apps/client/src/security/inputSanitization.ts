@@ -1,3 +1,4 @@
+import React from 'react';
 /**
  * Input sanitization and validation utilities for the VTT application
  */
@@ -57,7 +58,7 @@ export function sanitizeHTML(
     RETURN_DOM_IMPORT: false,
   };
 
-  return DOMPurify.sanitize(input, config);
+  return String(DOMPurify.sanitize(input, config));
 }
 
 /**

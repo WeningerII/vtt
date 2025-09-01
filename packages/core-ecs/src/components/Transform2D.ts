@@ -1,5 +1,14 @@
 export type EntityId = number;
 
+export interface Transform2DData {
+  x: number;
+  y: number;
+  rot: number;
+  sx: number;
+  sy: number;
+  zIndex: number;
+}
+
 export class Transform2DStore {
   readonly capacity: number;
   readonly present: Uint8Array;
@@ -33,4 +42,51 @@ export class Transform2DStore {
 
   remove(id: EntityId) { this.present[id] = 0; }
   has(id: EntityId) { return this.present[id] === 1; }
+
+  /**
+   * Get complete transform data for an entity
+   * @param id Entity ID
+   * @returns Transform data or null if entity doesn't have transform component
+   */
+  get(id: EntityId): Transform2DData | null {
+    if (!this.has(id)) return null;
+    
+    return {
+      x: this.x[id],
+      y: this.y[id], 
+      rot: this.rot[id],
+      sx: this.sx[id],
+      sy: this.sy[id],
+      zIndex: this.zIndex[id]
+    };
+  }
+
+  /**
+   * Get position data for an entity
+   * @param id Entity ID
+   * @returns Position data or null if entity doesn't have transform component
+   */
+  getPosition(id: EntityId): { x: number; y: number } | null {
+    if (!this.has(id)) return null;
+    return { x: this.x[id], y: this.y[id] };
+  }
+
+  /**
+   * Get rotation for an entity
+   * @param id Entity ID
+   * @returns Rotation in radians or null if entity doesn't have transform component
+   */
+  getRotation(id: EntityId): number | null {
+    return this.has(id) ? this.rot[id] : null;
+  }
+
+  /**
+   * Get scale data for an entity
+   * @param id Entity ID
+   * @returns Scale data or null if entity doesn't have transform component
+   */
+  getScale(id: EntityId): { sx: number; sy: number } | null {
+    if (!this.has(id)) return null;
+    return { sx: this.sx[id], sy: this.sy[id] };
+  }
 }

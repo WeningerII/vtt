@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useEncounter } from '../hooks/useEncounter';
 import { logger } from "@vtt/logging";
 import { useEncounter, CombatActor, EncounterData } from "../hooks/useEncounter";
 import { useCharacter } from "../hooks/useCharacter";

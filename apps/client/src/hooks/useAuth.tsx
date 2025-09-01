@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiClient.post('/auth/register', data);
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser((response.data as any).user);
       } else {
         throw new Error(response.data.error || 'Registration failed');
       }
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiClient.get('/auth/me');
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser((response.data as any).user);
       } else {
         setUser(null);
       }
@@ -276,7 +276,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiClient.put('/auth/me', data);
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser((response.data as any).user);
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.error || 'Profile update failed';
@@ -316,8 +316,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return Promise.reject(error);
       }
-      );
-    }
+    );
 
     return () => {
       if ('interceptors' in apiClient) {

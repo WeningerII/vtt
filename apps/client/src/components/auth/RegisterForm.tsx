@@ -416,3 +416,5 @@ export function RegisterForm() {
     </Card>
   );
 }
+
+export default RegisterForm;

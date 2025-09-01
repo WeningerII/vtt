@@ -41,7 +41,7 @@ export function withLazyWrapper<P extends object>(
 ) {
   return React.forwardRef<any, P>((props, ref) => (
     <LazyWrapper {...options}>
-      <Component {...props} ref={ref} />
+      <Component {...(props as P)} ref={ref} />
     </LazyWrapper>
   ));
 }
@@ -69,7 +69,7 @@ export function useLazyLoad(threshold = 0.1) {
   React.useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           setIsVisible(true);
           observer.disconnect();
         }

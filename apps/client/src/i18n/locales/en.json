@@ -1,0 +1,136 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "close": "Close",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account to continue your adventure",
+      "emailOrUsername": "Email or Username",
+      "emailOrUsernamePlaceholder": "Enter your email or username",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "signIn": "Sign in",
+      "signingIn": "Signing in...",
+      "signUp": "Sign up",
+      "dontHaveAccount": "Don't have an account?",
+      "orContinueWith": "Or continue with",
+      "google": "Google",
+      "github": "GitHub",
+      "togglePasswordVisibility": "Toggle password visibility"
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join the adventure and create your first campaign",
+      "username": "Username",
+      "usernamePlaceholder": "Choose a username",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Create a secure password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "createAccount": "Create Account",
+      "creatingAccount": "Creating account...",
+      "alreadyHaveAccount": "Already have an account?",
+      "signIn": "Sign in"
+    },
+    "validation": {
+      "emailOrUsernameRequired": "Email or username is required",
+      "validEmailRequired": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 6 characters",
+      "usernameRequired": "Username is required",
+      "emailRequired": "Email is required",
+      "passwordsDoNotMatch": "Passwords do not match"
+    }
+  },
+  "vtt": {
+    "connecting": "Connecting to VTT server...",
+    "authenticating": "Authenticating...",
+    "loadingScene": "Loading scene...",
+    "joinTestScene": "Join Test Scene",
+    "sceneName": "Scene: {{name}}",
+    "tokens": "Tokens",
+    "chat": "Chat",
+    "sendMessage": "Send message",
+    "userJoined": "{{user}} joined the scene",
+    "userLeft": "{{user}} left the scene",
+    "gmControls": "GM Controls",
+    "playerView": "Player View"
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "createNew": "Create New Campaign",
+    "noCampaigns": "No campaigns found",
+    "createFirst": "Create your first campaign to get started",
+    "joinCampaign": "Join Campaign",
+    "manageCampaign": "Manage Campaign"
+  },
+  "characters": {
+    "title": "Characters",
+    "sheet": "Character Sheet",
+    "stats": "Stats",
+    "equipment": "Equipment",
+    "spells": "Spells",
+    "notes": "Notes",
+    "level": "Level {{level}}",
+    "hitPoints": "Hit Points",
+    "armorClass": "Armor Class",
+    "speed": "Speed"
+  },
+  "combat": {
+    "initiative": "Initiative",
+    "tracker": "Combat Tracker",
+    "startCombat": "Start Combat",
+    "endCombat": "End Combat",
+    "nextTurn": "Next Turn",
+    "previousTurn": "Previous Turn",
+    "addCombatant": "Add Combatant",
+    "round": "Round {{number}}"
+  },
+  "map": {
+    "editor": "Map Editor",
+    "upload": "Upload Map",
+    "grid": "Grid",
+    "tokens": "Tokens",
+    "lighting": "Lighting",
+    "fog": "Fog of War",
+    "layers": "Layers",
+    "tools": "Tools"
+  },
+  "dice": {
+    "roller": "Dice Roller",
+    "roll": "Roll",
+    "result": "Result: {{value}}",
+    "advantage": "Advantage",
+    "disadvantage": "Disadvantage",
+    "modifier": "Modifier"
+  },
+  "errors": {
+    "general": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "notFound": "The requested resource was not found.",
+    "serverError": "Server error. Please try again later.",
+    "validation": "Please check your input and try again."
+  }
+}

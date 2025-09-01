@@ -42,6 +42,14 @@ interface CreateSceneModalProps {
   availableMaps: Array<{ id: string; name: string; }>;
 }
 
+interface SceneSettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (sceneId: string, updates: { name?: string; mapId?: string | null; }) => void;
+  scene: Scene | null;
+  availableMaps: Array<{ id: string; name: string; }>;
+}
+
 function CreateSceneModal({ isOpen: _isOpen, onClose: _onClose, onSubmit, availableMaps }: CreateSceneModalProps) {
   const [sceneName, setSceneName] = useState('');
   const [selectedMapId, setSelectedMapId] = useState<string>('');
@@ -105,10 +113,106 @@ function CreateSceneModal({ isOpen: _isOpen, onClose: _onClose, onSubmit, availa
   );
 }
 
+function SceneSettingsModal({ isOpen, onClose, onSubmit, scene, availableMaps }: SceneSettingsModalProps) {
+  const [sceneName, setSceneName] = useState('');
+  const [selectedMapId, setSelectedMapId] = useState<string>('');
+
+  // Initialize form values when scene changes
+  React.useEffect(() => {
+    if (scene) {
+      setSceneName(scene.name);
+      setSelectedMapId(scene.mapId || '');
+    }
+  }, [scene]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scene || !sceneName.trim()) return;
+    
+    const updates: { name?: string; mapId?: string | null; } = {};
+    
+    // Only include changed values
+    if (sceneName.trim() !== scene.name) {
+      updates.name = sceneName.trim();
+    }
+    
+    const newMapId = selectedMapId || null;
+    if (newMapId !== scene.mapId) {
+      updates.mapId = newMapId;
+    }
+    
+    // Only submit if there are actual changes
+    if (Object.keys(updates).length > 0) {
+      onSubmit(scene.id, updates);
+    }
+    
+    onClose();
+  };
+
+  if (!isOpen || !scene) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Scene Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4" role="form">
+            <div>
+              <label className="block text-sm font-medium mb-2">Scene Name</label>
+              <Input
+                value={sceneName}
+                onChange={(e) => setSceneName(e.target.value)}
+                placeholder="Enter scene name..."
+                autoFocus
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Map</label>
+              <select
+                value={selectedMapId}
+                onChange={(e) => setSelectedMapId(e.target.value)}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">No map - Empty scene</option>
+                {availableMaps.map(map => (
+                  <option key={map.id} value={map.id}>{map.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="bg-neutral-50 p-3 rounded-lg">
+              <h4 className="text-sm font-medium text-neutral-700 mb-2">Scene Info</h4>
+              <div className="text-sm text-neutral-600 space-y-1">
+                <p><strong>Created:</strong> {new Date(scene.createdAt).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> {scene.isActive ? 'Active' : 'Inactive'}</p>
+                <p><strong>Current Map:</strong> {scene.mapId ? 'Has map' : 'Empty scene'}</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-2 justify-end">
+              <Button onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!sceneName.trim()}>
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelect, onLaunchSession }: CampaignMapManagerProps) {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [selectedScene, setSelectedScene] = useState<Scene | null>(null);
   const [availableMaps, setAvailableMaps] = useState<Array<{ id: string; name: string; }>>([]);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
 
@@ -176,9 +280,11 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
   };
 
   const handleSceneSettings = (sceneId: string) => {
-    // Open scene settings modal or navigate to settings page
-    logger.info('Opening settings for scene:', sceneId);
-    // TODO: Implement scene settings modal
+    const scene = scenes.find(s => s.id === sceneId);
+    if (scene) {
+      setSelectedScene(scene);
+      setShowSettingsModal(true);
+    }
   };
 
   const handleCreateScene = async (name: string, mapId?: string) => {
@@ -201,6 +307,33 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
       }
     } catch (error) {
       logger.error('Failed to create scene:', error);
+    }
+  };
+
+  const handleUpdateScene = async (sceneId: string, updates: { name?: string; mapId?: string | null; }) => {
+    try {
+      const response = await fetch(`/api/maps/scenes/${sceneId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update the scene in our local state
+        setScenes(prev => prev.map(scene => 
+          scene.id === sceneId ? { ...scene, ...updates } : scene
+        ));
+        
+        // If this was the selected scene, update it too
+        if (selectedScene && selectedScene.id === sceneId) {
+          setSelectedScene({ ...selectedScene, ...updates });
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to update scene:', error);
     }
   };
 
@@ -270,11 +403,11 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
             </CardTitle>
             {isGM && (
               <div className="flex gap-2">
-                <Button className="border border-neutral-300 px-3 py-1 rounded hover:bg-neutral-50" onClick={() => {}>
+                <Button className="border border-neutral-300 px-3 py-1 rounded hover:bg-neutral-50" onClick={() => {}}>
                   <span className="h-4 w-4 mr-2 inline-block"><Users /></span>
                   Manage Players
                 </Button>
-                <Button className="border border-neutral-300 px-3 py-1 rounded hover:bg-neutral-50" onClick={() => {}>
+                <Button className="border border-neutral-300 px-3 py-1 rounded hover:bg-neutral-50" onClick={() => {}}>
                   <span className="h-4 w-4 mr-2 inline-block"><Settings /></span>
                   Session Settings
                 </Button>
@@ -437,6 +570,19 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
         onSubmit={handleCreateScene}
         availableMaps={availableMaps}
       />
+
+      <SceneSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => {
+          setShowSettingsModal(false);
+          setSelectedScene(null);
+        }}
+        onSubmit={handleUpdateScene}
+        scene={selectedScene}
+        availableMaps={availableMaps}
+      />
     </div>
   );
 }
+
+export default CampaignMapManager;

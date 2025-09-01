@@ -97,6 +97,8 @@ export class CampaignService {
       gameMasterId,
       players: [gameMasterId],
       characters: [],
+      sessions: 0,
+      totalHours: 0,
       isActive: dbCampaign.isActive,
       createdAt: dbCampaign.createdAt,
       updatedAt: dbCampaign.updatedAt,
@@ -140,6 +142,8 @@ export class CampaignService {
       gameMasterId: gameMaster?.userId || "",
       players,
       characters: [],
+      sessions: 0,
+      totalHours: 0,
       isActive: (dbCampaign as any).isActive !== false,
       createdAt: dbCampaign.createdAt,
       updatedAt: (dbCampaign as any).updatedAt || new Date(),
@@ -203,7 +207,7 @@ export class CampaignService {
   }
 
   /**
-   * Set active scene for campaign
+   * Set active scene for campaign with authorization
    */
   async setActiveScene(campaignId: string, sceneId: string, userId: string): Promise<boolean> {
     const campaign = await this.getCampaign(campaignId);
@@ -218,14 +222,8 @@ export class CampaignService {
 
     if (!scene) return false;
 
-    // Update active scene in database
-    await this.prisma.campaign.update({
-      where: { id: campaignId },
-      data: { activeSceneId: sceneId } as any,
-    });
-
-    // Update in-memory cache
-    this.activeScenes.set(campaignId, sceneId);
+    // Use internal method for consistent database persistence
+    await this.setActiveSceneInternal(campaignId, sceneId);
 
     return true;
   }
@@ -502,11 +500,18 @@ export class CampaignService {
   }
 
   /**
-   * Set active scene for a campaign
+   * Set active scene for a campaign (overloaded method)
+   * This version is for internal use when user authorization is already verified
    */
-  async setActiveScene(campaignId: string, sceneId: string): Promise<void> {
+  async setActiveSceneInternal(campaignId: string, sceneId: string): Promise<void> {
+    // Update in-memory cache
     this.activeScenes.set(campaignId, sceneId);
-    // TODO: Persist to database when scene management is implemented
+    
+    // Persist to database
+    await this.prisma.campaign.update({
+      where: { id: campaignId },
+      data: { activeSceneId: sceneId } as any,
+    });
   }
 
   /**

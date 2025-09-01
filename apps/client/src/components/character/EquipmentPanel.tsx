@@ -500,3 +500,5 @@ export const EquipmentPanel = memo(function EquipmentPanel({
     </div>
   );
 });
+
+export default EquipmentPanel;

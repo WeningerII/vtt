@@ -1,3 +1,4 @@
+import React from 'react';
 /**
  * CSRF Protection utilities for the VTT application
  */

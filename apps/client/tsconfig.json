@@ -2,10 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    
     "jsx": "react-jsx",
+    "resolveJsonModule": true,
     "baseUrl": ".",
-    "types": ["node", "react", "react-dom", "jest", "@testing-library/jest-dom"],
+    "types": ["node", "react", "react-dom", "jest"],
     "paths": {
       "@/*": ["./src/*"],
       "@vtt/logging": ["./src/lib/logger.ts"],
@@ -84,5 +85,12 @@
       "@vtt/i18n/*": ["../../packages/i18n/src/*"]
     }
   },
-  "include": ["src"]
+  "include": [
+    "src/**/*", 
+    "../../packages/i18n/src/**/*",
+    "src/i18n/locales/en.json",
+    "src/i18n/locales/es.json", 
+    "src/i18n/locales/fr.json",
+    "src/i18n/locales/de.json"
+  ]
 }

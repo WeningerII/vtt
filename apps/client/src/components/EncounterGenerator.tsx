@@ -329,3 +329,5 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({
     </div>
   );
 };
+
+export default EncounterGenerator;

@@ -15,7 +15,7 @@ export function CharacterEditor() {
   const [character, setCharacter] = useState<Character | null>(null);
 
   const handleCharacterUpdate = (_updatedCharacter: Character) => {
-    setCharacter(updatedCharacter);
+    setCharacter(character);
   };
 
   const handleBackToDashboard = () => {

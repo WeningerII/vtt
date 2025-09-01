@@ -12,6 +12,19 @@ export interface VisionData {
   fogOfWarEnabled: boolean;
   revealedAreas: Set<string>; // grid coordinates that have been revealed
   currentVisibleAreas: Set<string>; // currently visible areas
+  
+  // Entity visibility state properties
+  isInvisible: boolean;
+  isEthereal: boolean;
+  
+  // Advanced visibility conditions
+  isBlinded: boolean;
+  hasDevilsSight: boolean;
+  hasMagicalDarkness: boolean;
+  
+  // Condition immunities
+  immuneToBlindness: boolean;
+  immuneToInvisibilityDetection: boolean;
 }
 
 export class VisionStore {
@@ -35,6 +48,19 @@ export class VisionStore {
       fogOfWarEnabled: data.fogOfWarEnabled ?? true,
       revealedAreas: data.revealedAreas ?? new Set(),
       currentVisibleAreas: data.currentVisibleAreas ?? new Set(),
+      
+      // Entity visibility state properties
+      isInvisible: data.isInvisible ?? false,
+      isEthereal: data.isEthereal ?? false,
+      
+      // Advanced visibility conditions
+      isBlinded: data.isBlinded ?? false,
+      hasDevilsSight: data.hasDevilsSight ?? false,
+      hasMagicalDarkness: data.hasMagicalDarkness ?? false,
+      
+      // Condition immunities
+      immuneToBlindness: data.immuneToBlindness ?? false,
+      immuneToInvisibilityDetection: data.immuneToInvisibilityDetection ?? false,
     });
   }
 
@@ -111,27 +137,52 @@ export class VisionStore {
     targetId: EntityId,
     distance: number,
     lightLevel: number,
+    targetVision?: VisionData
   ): boolean {
-    const vision = this.data.get(observerId);
-    if (!vision) return false;
+    const observerVision = this.data.get(observerId);
+    if (!observerVision || (observerVision.isBlinded && !observerVision.immuneToBlindness)) return false;
 
-    // Check if blinded by light sensitivity
-    if (lightLevel > vision.lightSensitivity) return false;
+    // Get target vision data if not provided
+    const targetData = targetVision || this.data.get(targetId);
 
-    // Truesight sees everything
-    if (distance <= vision.truesightRange) return true;
-
-    // Blindsight doesn't need light
-    if (distance <= vision.blindsightRange) return true;
-
-    // Normal sight and darkvision
-    let effectiveRange = vision.sightRange;
-    if (lightLevel < 0.5) {
-      // Dim light or darkness
-      effectiveRange = Math.max(effectiveRange, vision.darkvisionRange);
+    // Check target invisibility
+    if (targetData?.isInvisible) {
+      // Can only see invisible with truesight, blindsight, or special ability
+      if (distance <= observerVision.truesightRange) return true;
+      if (distance <= observerVision.blindsightRange) return true;
+      if (observerVision.canSeeInvisible && !targetData.immuneToInvisibilityDetection) return true;
+      return false;
     }
 
-    return distance <= effectiveRange;
+    // Check ethereal plane
+    if (targetData?.isEthereal) {
+      // Only truesight can see ethereal creatures
+      return distance <= observerVision.truesightRange;
+    }
+
+    // Check if blinded by light sensitivity
+    if (lightLevel > observerVision.lightSensitivity && !observerVision.immuneToBlindness) {
+      return false;
+    }
+
+    // Truesight sees everything within range
+    if (distance <= observerVision.truesightRange) return true;
+
+    // Blindsight doesn't need light
+    if (distance <= observerVision.blindsightRange) return true;
+
+    // Devil's sight penetrates magical darkness
+    if (observerVision.hasDevilsSight && observerVision.hasMagicalDarkness) {
+      return distance <= observerVision.sightRange;
+    }
+
+    // Normal sight in adequate light
+    if (lightLevel >= 0.5 && distance <= observerVision.sightRange) return true;
+
+    // Darkvision in dim light or darkness  
+    if (lightLevel < 0.5 && distance <= observerVision.darkvisionRange) return true;
+
+    return false;
   }
 
   clearFogOfWar(id: EntityId): void {

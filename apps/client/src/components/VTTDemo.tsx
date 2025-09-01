@@ -73,3 +73,5 @@ export const VTTDemo: React.FC = () => {
 
   return <VTTApp userId={user.id} campaignId={user.campaignId} />;
 };
+
+export default VTTDemo;

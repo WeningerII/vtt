@@ -328,3 +328,5 @@ export const DiceRoller = memo<DiceRollerProps>(
     );
   },
 );
+
+export default DiceRoller;

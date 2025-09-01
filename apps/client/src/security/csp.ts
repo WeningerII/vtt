@@ -1,3 +1,4 @@
+import React from 'react';
 /**
  * Content Security Policy (CSP) utilities and configuration for the VTT application
  */

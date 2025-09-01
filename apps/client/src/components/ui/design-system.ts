@@ -1,3 +1,22 @@
+
+export interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}
+
+export interface InputProps {
+  type?: string;
+  placeholder?: string;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  className?: string;
+  disabled?: boolean;
+}
+
 /**
  * VTT Platform Design System
  * A comprehensive design system with typography, colors, spacing, and component foundations

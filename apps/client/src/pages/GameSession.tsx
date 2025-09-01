@@ -2,7 +2,7 @@
  * Game Session Page - Main game interface with map, chat, and controls
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { useGame } from "../providers/GameProvider";
 import { ChatSystem } from "../components/game/ChatSystem";
@@ -47,6 +47,48 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  // Event handlers with useCallback optimization
+  const handleReturnToDashboard = useCallback(() => {
+    router.navigate("/dashboard");
+  }, [router]);
+
+  const handleLeaveSession = useCallback(async () => {
+    await leaveSession();
+    router.navigate("/dashboard");
+  }, [leaveSession, router]);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  }, [sidebarCollapsed]);
+
+  const handleSetActivePanel = useCallback((panel: PanelType) => {
+    setActivePanel(panel);
+  }, []);
+
+  const handleOpenMapPanel = useCallback(() => {
+    setActivePanel("map");
+  }, []);
+
+  const handleOpenChatPanel = useCallback(() => {
+    setSidebarCollapsed(false);
+    setActivePanel("chat");
+  }, []);
+
+  const handleOpenDicePanel = useCallback(() => {
+    setSidebarCollapsed(false);
+    setActivePanel("dice");
+  }, []);
+
   // Join session on mount
   useEffect(() => {
     if (!session || session.id !== sessionId) {
@@ -72,26 +114,12 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
             The game session "{sessionId}" could not be found or you don't have permission to access
             it.
           </p>
-          <Button onClick={() => router.navigate("/dashboard")}>Return to Dashboard</Button>
+          <Button onClick={handleReturnToDashboard}>Return to Dashboard</Button>
         </div>
       </div>
     );
   }
 
-  const handleLeaveSession = async () => {
-    await leaveSession();
-    router.navigate("/dashboard");
-  };
-
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
 
   const renderActivePanel = () => {
     switch (activePanel) {
@@ -126,7 +154,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={handleToggleSidebar}
             leftIcon={sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           >
             {sidebarCollapsed ? "Show" : "Hide"} Panels
@@ -180,7 +208,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                 ].map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
-                    onClick={() => setActivePanel(key as PanelType)}
+                    onClick={() => handleSetActivePanel(key as PanelType)}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors border-b-2",
                       activePanel === key
@@ -220,7 +248,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                   </p>
                   <Button
                     variant="primary"
-                    onClick={() => setActivePanel("map")}
+                    onClick={handleOpenMapPanel}
                     leftIcon={<Map className="h-4 w-4" />}
                   >
                     Open Battle Map
@@ -234,20 +262,14 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                 <>
                   <Button
                     variant="primary"
-                    onClick={() => {
-                      setSidebarCollapsed(false);
-                      setActivePanel("chat");
-                    }}
+                    onClick={handleOpenChatPanel}
                     leftIcon={<MessageSquare className="h-4 w-4" />}
                   >
                     Chat
                   </Button>
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      setSidebarCollapsed(false);
-                      setActivePanel("dice");
-                    }}
+                    onClick={handleOpenDicePanel}
                     leftIcon={<Dice6 className="h-4 w-4" />}
                   >
                     Dice

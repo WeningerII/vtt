@@ -1,0 +1,62 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Fehler",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "search": "Suchen",
+    "close": "Schließen",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nein",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Vorherige",
+    "submit": "Senden",
+    "reset": "Zurücksetzen"
+  },
+  "auth": {
+    "login": {
+      "title": "Willkommen zurück",
+      "subtitle": "Melden Sie sich in Ihrem Konto an, um Ihr Abenteuer fortzusetzen",
+      "emailOrUsername": "E-Mail oder Benutzername",
+      "emailOrUsernamePlaceholder": "Geben Sie Ihre E-Mail oder Ihren Benutzernamen ein",
+      "password": "Passwort",
+      "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+      "rememberMe": "Angemeldet bleiben",
+      "forgotPassword": "Passwort vergessen?",
+      "signIn": "Anmelden",
+      "signingIn": "Anmeldung...",
+      "signUp": "Registrieren",
+      "dontHaveAccount": "Haben Sie noch kein Konto?",
+      "orContinueWith": "Oder weiter mit",
+      "google": "Google",
+      "github": "GitHub",
+      "togglePasswordVisibility": "Passwort-Sichtbarkeit umschalten"
+    },
+    "validation": {
+      "emailOrUsernameRequired": "E-Mail oder Benutzername ist erforderlich",
+      "validEmailRequired": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+      "passwordRequired": "Passwort ist erforderlich",
+      "passwordMinLength": "Das Passwort muss mindestens 6 Zeichen lang sein"
+    }
+  },
+  "vtt": {
+    "connecting": "Verbindung zum VTT-Server...",
+    "authenticating": "Authentifizierung...",
+    "loadingScene": "Szene wird geladen...",
+    "joinTestScene": "Test-Szene beitreten",
+    "sceneName": "Szene: {{name}}",
+    "tokens": "Spielsteine",
+    "chat": "Chat",
+    "sendMessage": "Nachricht senden"
+  },
+  "errors": {
+    "general": "Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.",
+    "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion durchzuführen."
+  }
+}

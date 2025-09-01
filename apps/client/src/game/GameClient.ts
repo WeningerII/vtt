@@ -1,3 +1,4 @@
+import { Socket } from 'socket.io-client';
 import { WSClient } from "../net/ws";
 import { logger } from "@vtt/logging";
 import type { AnyServerMessage, AnyClientMessage } from "@vtt/core-schemas";

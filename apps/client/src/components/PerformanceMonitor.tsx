@@ -32,7 +32,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ isVisibl
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const fpsHistoryRef = useRef<number[]>([]);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number>(null);
 
   // Performance monitoring loop
   useEffect(() => {
@@ -201,7 +201,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ isVisibl
               onClick={() => {
                 const gameState = (window as any).__VTT_GAME_STATE__;
                 logger.info('Game State:', gameState);
-              }
+              }}
             >
               Log State
             </button>

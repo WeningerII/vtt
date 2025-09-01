@@ -83,9 +83,9 @@ const COMMON_CONDITIONS = [
   { name: 'Unconscious', color: '#000000', description: 'Incapacitated, cannot move or speak, drops items, falls prone' },
 ];
 
-export function CombatEncounterPanel({_ 
-  campaignId, _sceneId, 
-  _isVisible, _onToggleVisibility}: CombatEncounterPanelProps) {
+export function CombatEncounterPanel({ 
+  campaignId, sceneId, 
+  isVisible, onToggleVisibility}: CombatEncounterPanelProps) {
   const [encounter, setEncounter] = useState<CombatEncounter | null>(null);
   const [loading, setLoading] = useState(false);
   const [_editingCombatant, _setEditingCombatant] = useState<string | null>(null);
@@ -567,3 +567,5 @@ export function CombatEncounterPanel({_
     </Card>
   );
 }
+
+export default CombatEncounterPanel;

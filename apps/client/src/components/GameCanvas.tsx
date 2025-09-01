@@ -112,8 +112,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = memo(({ width, height, game
 
   const [mapData, setMapData] = useState<MapData | null>(null);
 
-  const { socket } = useWebSocket();
-  const { currentGame } = useGame();
+  const websocketContext = useWebSocket();
+  const socket = websocketContext;
+  const gameContext = useGame();
+  const game = gameContext;
 
   // Memoize expensive calculations
   const viewportBounds = useMemo(() => {
@@ -410,7 +412,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = memo(({ width, height, game
         }
 
         // Start drag if GM or owner
-        if (isGM || clickedToken.actorId === currentGame?.currentUserId) {
+        if (isGM || clickedToken.actorId === game?.currentUserId) {
           setDragState({
             isDragging: true,
             startPos: { x: worldX, y: worldY },

@@ -1,0 +1,1024 @@
+openapi: 3.0.0
+info:
+  title: VTT (Virtual Tabletop) API
+  version: 1.2.0
+  description: |
+    Comprehensive API for Virtual Tabletop platform with real-time collaboration, 
+    combat AI, and content management. Supports D&D 5e campaigns with character 
+    management, battle maps, AI assistance, and real-time multiplayer sessions.
+  contact:
+    name: VTT Development Team
+    email: api@vtt.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.vtt.example.com
+    description: Production server
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from OAuth authentication
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Invalid request parameters
+            details:
+              type: object
+              properties:
+                field:
+                  type: string
+                  example: characterId
+                issue:
+                  type: string
+                  example: Character not found
+            timestamp:
+              type: string
+              format: date-time
+            requestId:
+              type: string
+              example: req_abc123
+      required: [error]
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        uptime:
+          type: number
+          description: Server uptime in seconds
+        timestamp:
+          type: number
+          description: Unix timestamp
+        version:
+          type: string
+          example: "1.2.0"
+        checks:
+          type: object
+          properties:
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pass, fail]
+                responseTime:
+                  type: number
+                  description: Response time in milliseconds
+                message:
+                  type: string
+            memory:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pass, fail]
+                message:
+                  type: string
+
+    Character:
+      type: object
+      properties:
+        id:
+          type: string
+          example: char_123
+        name:
+          type: string
+          example: Thorin Ironforge
+        level:
+          type: number
+          minimum: 1
+          maximum: 20
+          example: 5
+        class:
+          type: string
+          example: Fighter
+        race:
+          type: string
+          example: Dwarf
+        hitPoints:
+          type: object
+          properties:
+            current:
+              type: number
+              example: 45
+            maximum:
+              type: number
+              example: 50
+            temporary:
+              type: number
+              example: 0
+        armorClass:
+          type: number
+          example: 18
+        stats:
+          type: object
+          properties:
+            strength:
+              type: number
+              example: 16
+            dexterity:
+              type: number
+              example: 12
+            constitution:
+              type: number
+              example: 15
+            intelligence:
+              type: number
+              example: 10
+            wisdom:
+              type: number
+              example: 13
+            charisma:
+              type: number
+              example: 8
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, level, class, race, hitPoints, armorClass, stats]
+
+    CreateCharacterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Thorin Ironforge
+        level:
+          type: number
+          minimum: 1
+          maximum: 20
+          example: 1
+        class:
+          type: string
+          example: Fighter
+        race:
+          type: string
+          example: Dwarf
+        stats:
+          type: object
+          properties:
+            strength:
+              type: number
+              example: 16
+            dexterity:
+              type: number
+              example: 12
+            constitution:
+              type: number
+              example: 15
+            intelligence:
+              type: number
+              example: 10
+            wisdom:
+              type: number
+              example: 13
+            charisma:
+              type: number
+              example: 8
+        hitPoints:
+          type: object
+          properties:
+            maximum:
+              type: number
+              example: 12
+        armorClass:
+          type: number
+          example: 16
+      required: [name, level, class, race, stats, hitPoints, armorClass]
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          example: camp_456
+        name:
+          type: string
+          example: Curse of Strahd
+        description:
+          type: string
+          example: Gothic horror in Barovia
+        isActive:
+          type: boolean
+          example: true
+        playerCount:
+          type: number
+          example: 4
+        gmId:
+          type: string
+          example: user_789
+        activeSceneId:
+          type: string
+          example: scene_101
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, description, isActive, playerCount, gmId]
+
+    Monster:
+      type: object
+      properties:
+        id:
+          type: string
+          example: monster_123
+        stableId:
+          type: string
+          example: adult-red-dragon
+        name:
+          type: string
+          example: Adult Red Dragon
+        statblock:
+          type: object
+          properties:
+            armorClass:
+              type: number
+              example: 19
+            hitPoints:
+              type: number
+              example: 256
+            speed:
+              type: string
+              example: "40 ft., climb 40 ft., fly 80 ft."
+            stats:
+              type: object
+              properties:
+                STR:
+                  type: number
+                  example: 27
+                DEX:
+                  type: number
+                  example: 10
+                CON:
+                  type: number
+                  example: 25
+                INT:
+                  type: number
+                  example: 16
+                WIS:
+                  type: number
+                  example: 13
+                CHA:
+                  type: number
+                  example: 21
+            challengeRating:
+              type: string
+              example: "17"
+            actions:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: Fire Breath
+                  description:
+                    type: string
+                    example: The dragon exhales fire in a 60-foot cone...
+        tags:
+          type: array
+          items:
+            type: string
+          example: [dragon, large, fire]
+      required: [id, stableId, name, statblock, tags]
+
+    TacticalDecisionRequest:
+      type: object
+      properties:
+        character:
+          type: object
+          properties:
+            name:
+              type: string
+              example: Thorin
+            level:
+              type: number
+              example: 5
+            class:
+              type: string
+              example: Fighter
+            hitPoints:
+              type: object
+              properties:
+                current:
+                  type: number
+                  example: 45
+                maximum:
+                  type: number
+                  example: 50
+            armorClass:
+              type: number
+              example: 18
+            spellSlots:
+              type: object
+              properties:
+                "1":
+                  type: number
+                  example: 0
+                "2":
+                  type: number
+                  example: 0
+        allies:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Gandalf
+              class:
+                type: string
+                example: Wizard
+              position:
+                type: object
+                properties:
+                  x:
+                    type: number
+                    example: 10
+                  y:
+                    type: number
+                    example: 15
+        enemies:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: Orc Warrior
+              hitPoints:
+                type: object
+                properties:
+                  current:
+                    type: number
+                    example: 20
+                  maximum:
+                    type: number
+                    example: 20
+              position:
+                type: object
+                properties:
+                  x:
+                    type: number
+                    example: 5
+                  y:
+                    type: number
+                    example: 10
+        battlefield:
+          type: object
+          properties:
+            terrain:
+              type: string
+              example: forest
+            weather:
+              type: string
+              example: clear
+            lighting:
+              type: string
+              example: daylight
+        objectives:
+          type: array
+          items:
+            type: string
+          example: [Defeat enemies, Protect ally]
+      required: [character, allies, enemies, battlefield, objectives]
+
+    TacticalDecisionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            recommendation:
+              type: string
+              example: Move to flank the orc and use Action Surge for extra attack
+            reasoning:
+              type: string
+              example: Positioning advantage will grant +2 to hit, and Action Surge maximizes damage output
+            movement:
+              type: object
+              properties:
+                x:
+                  type: number
+                  example: 8
+                y:
+                  type: number
+                  example: 12
+            actions:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: move
+                  target:
+                    type: object
+                    properties:
+                      x:
+                        type: number
+                        example: 8
+                      y:
+                        type: number
+                        example: 12
+            riskLevel:
+              type: string
+              enum: [low, medium, high]
+              example: medium
+            expectedOutcome:
+              type: string
+              example: 75% chance to defeat orc this turn
+
+paths:
+  # Authentication Endpoints
+  /auth/discord:
+    get:
+      tags: [Authentication]
+      summary: Initiate Discord OAuth
+      description: Redirects to Discord OAuth authorization page
+      responses:
+        '302':
+          description: Redirect to Discord OAuth
+
+  /auth/google:
+    get:
+      tags: [Authentication]
+      summary: Initiate Google OAuth
+      description: Redirects to Google OAuth authorization page
+      responses:
+        '302':
+          description: Redirect to Google OAuth
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: Logout user
+      description: Invalidates the current session
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user info
+      description: Returns information about the authenticated user
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  displayName:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # Health & Monitoring
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Comprehensive health check
+      description: Returns detailed health status of all system components
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /api/health/live:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      description: Simple alive check for Kubernetes liveness probe
+      responses:
+        '200':
+          description: Service is alive
+
+  /api/health/ready:
+    get:
+      tags: [Health]
+      summary: Readiness probe
+      description: Service ready check for Kubernetes readiness probe
+      responses:
+        '200':
+          description: Service is ready
+
+  /api/metrics:
+    get:
+      tags: [Monitoring]
+      summary: Application metrics
+      description: Returns application metrics in JSON format
+      responses:
+        '200':
+          description: Application metrics
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/metrics/prometheus:
+    get:
+      tags: [Monitoring]
+      summary: Prometheus metrics
+      description: Returns metrics in Prometheus format
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  # Characters API
+  /characters:
+    get:
+      tags: [Characters]
+      summary: Get user's characters
+      description: Returns a paginated list of characters belonging to the authenticated user
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 50
+            maximum: 100
+          description: Number of characters to return
+        - name: offset
+          in: query
+          schema:
+            type: number
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: List of characters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  characters:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Character'
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Characters]
+      summary: Create a new character
+      description: Creates a new character for the authenticated user
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCharacterRequest'
+      responses:
+        '201':
+          description: Character created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /characters/{id}:
+    get:
+      tags: [Characters]
+      summary: Get specific character
+      description: Returns detailed information about a specific character
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Character ID
+      responses:
+        '200':
+          description: Character details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Characters]
+      summary: Update character
+      description: Updates an existing character
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCharacterRequest'
+      responses:
+        '200':
+          description: Character updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Characters]
+      summary: Delete character
+      description: Deletes a character
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Character deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /characters/{id}/level-up:
+    post:
+      tags: [Characters]
+      summary: Level up character
+      description: Increases character level and applies improvements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hitPointIncrease:
+                  type: number
+                  example: 8
+                newSpells:
+                  type: array
+                  items:
+                    type: string
+                  example: [fireball, lightning_bolt]
+                statIncrease:
+                  type: object
+                  properties:
+                    strength:
+                      type: number
+                      example: 1
+      responses:
+        '200':
+          description: Character leveled up successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+
+  # Campaigns API
+  /campaigns:
+    get:
+      tags: [Campaigns]
+      summary: List user's campaigns
+      description: Returns campaigns where the user is a player or GM
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of campaigns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  campaigns:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Campaign'
+
+    post:
+      tags: [Campaigns]
+      summary: Create new campaign
+      description: Creates a new campaign with the authenticated user as GM
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Curse of Strahd
+                description:
+                  type: string
+                  example: Gothic horror in Barovia
+                maxPlayers:
+                  type: number
+                  example: 6
+                isPrivate:
+                  type: boolean
+                  example: false
+              required: [name, description]
+      responses:
+        '201':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Campaign'
+
+  # Monsters API
+  /api/monsters:
+    get:
+      tags: [Monsters]
+      summary: Search and list monsters
+      description: Returns a paginated list of monsters with optional filtering
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search query for monster name
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tags to filter by
+        - name: limit
+          in: query
+          schema:
+            type: number
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: number
+            default: 0
+      responses:
+        '200':
+          description: List of monsters
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Monster'
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+
+    post:
+      tags: [Monsters]
+      summary: Create custom monster
+      description: Creates a new custom monster
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Monster'
+      responses:
+        '201':
+          description: Monster created successfully
+
+  # AI Services API
+  /api/combat/tactical-decision:
+    post:
+      tags: [AI Services]
+      summary: Get AI tactical decision
+      description: Returns AI-generated tactical recommendations for combat
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TacticalDecisionRequest'
+      responses:
+        '200':
+          description: Tactical decision generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TacticalDecisionResponse'
+        '429':
+          description: Rate limit exceeded
+
+  /api/assistant/query:
+    post:
+      tags: [AI Services]
+      summary: Query AI assistant
+      description: Ask the AI assistant for rules clarification and guidance
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  example: How does grappling work in D&D 5e?
+                context:
+                  type: object
+                  properties:
+                    system:
+                      type: string
+                      example: dnd5e
+                    playerLevel:
+                      type: string
+                      example: beginner
+              required: [query]
+      responses:
+        '200':
+          description: Assistant response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  answer:
+                    type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+                  confidence:
+                    type: number
+
+  # Maps & Scenes API
+  /maps/upload:
+    post:
+      tags: [Maps]
+      summary: Upload map image
+      description: Uploads a new map image for use in scenes
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Map image file
+      responses:
+        '200':
+          description: Map uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mapId:
+                    type: string
+                    example: map_789
+                  url:
+                    type: string
+                    example: https://cdn.vtt.example.com/maps/map_789.jpg
+                  width:
+                    type: number
+                    example: 1920
+                  height:
+                    type: number
+                    example: 1080
+                  gridDetected:
+                    type: boolean
+                    example: true
+
+components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+tags:
+  - name: Authentication
+    description: User authentication and session management
+  - name: Health
+    description: Health checks and system status
+  - name: Monitoring
+    description: Application metrics and monitoring
+  - name: Characters
+    description: Character management and progression
+  - name: Campaigns
+    description: Campaign creation and management
+  - name: Monsters
+    description: Monster database and custom creatures
+  - name: AI Services
+    description: AI-powered tactical decisions and assistance
+  - name: Maps
+    description: Battle maps and scene management

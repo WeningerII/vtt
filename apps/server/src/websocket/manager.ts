@@ -1,9 +1,11 @@
-import { WebSocket, WebSocketServer, RawData } from "ws";
+import { WebSocketServer, WebSocket, RawData } from "ws";
+import { Server } from "http";
+import { GameSession } from "../game/GameSession";
 import { logger } from "@vtt/logging";
+import { getRedisAdapter, RedisWebSocketAdapter } from "./redis-adapter";
 import { IncomingMessage } from "http";
 import { World, MovementSystem } from "@vtt/core-ecs";
 import { GameManager } from "../game/GameManager";
-import { GameSession } from "../game/GameSession";
 
 interface Client {
   id: string;
@@ -299,7 +301,7 @@ export class WebSocketManager {
     const game = this.gameManager.getGame(client.gameId);
     if (!game) return;
 
-    const result = game.rollDice(msg.dice, client.userId, msg.label);
+    const result = game.rollDice(msg.dice, msg.label, msg.private);
     if (!result) {
       this.sendToClient(clientId, {
         type: "ERROR",

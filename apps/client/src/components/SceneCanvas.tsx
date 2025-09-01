@@ -37,11 +37,11 @@ interface SceneCanvasProps {
 }
 
 export const SceneCanvas: React.FC<SceneCanvasProps> = ({
-  _scene,
-  _socket,
-  _canvasWidth,
-  _canvasHeight,
-  _isGM,
+  scene,
+  socket,
+  canvasWidth,
+  canvasHeight,
+  isGM,
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
@@ -50,6 +50,47 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
   const gridContainerRef = useRef<Container | null>(null);
   const [tokens, setTokens] = useState<Map<string, Sprite>>(new Map());
   const [isDragging, setIsDragging] = useState<string | null>(null);
+
+  
+  const drawGrid = () => {
+    if (!gridGraphics.current) return;
+    gridGraphics.current.clear();
+    gridGraphics.current.lineStyle(1, 0x444444, 0.5);
+    
+    const gridSize = 50;
+    for (let x = 0; x < canvasWidth; x += gridSize) {
+      gridGraphics.current.moveTo(x, 0);
+      gridGraphics.current.lineTo(x, canvasHeight);
+    }
+    for (let y = 0; y < canvasHeight; y += gridSize) {
+      gridGraphics.current.moveTo(0, y);
+      gridGraphics.current.lineTo(canvasWidth, y);
+    }
+  };
+
+  const addToken = (token: any) => {
+    if (!tokensContainer.current) return;
+    const sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
+    sprite.width = 50;
+    sprite.height = 50;
+    sprite.x = token.x;
+    sprite.y = token.y;
+    sprite.name = token.id || 'token';
+    tokensContainer.current.addChild(sprite);
+  };
+
+  const drawHexagon = (graphics: PIXI.Graphics, x: number, y: number, radius: number) => {
+    const points = [];
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i;
+      points.push(
+        centerX + radius * Math.cos(angle),
+        centerY + radius * Math.sin(angle)
+      );
+    }
+    graphics.drawPolygon(points);
+  };
+
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -126,8 +167,8 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
     socket.on(
       "token_moved",
       (data: { tokenId: string; _x: number; _y: number; _rotation: number; scale: number }) => {
-        const tokenSprite = tokens.get(data.tokenId);
-        if (tokenSprite && data.tokenId !== isDragging) {
+        const tokenSprite = tokens.get(data.token.id);
+        if (tokenSprite && data.token.id !== isDragging) {
           tokenSprite.x = data.x;
           tokenSprite.y = data.y;
           tokenSprite.rotation = data.rotation;
@@ -195,8 +236,8 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
     const points: number[] = [];
     for (let i = 0; i < 6; i++) {
       const angle = (Math.PI / 3) * i;
-      points.push(x + radius * Math.cos(angle));
-      points.push(y + radius * Math.sin(angle));
+      points.push(centerX + radius * Math.cos(angle));
+      points.push(centerY + radius * Math.sin(angle));
     }
     graphics.drawPolygon(points);
   };
@@ -308,13 +349,13 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
   };
 
   const _removeToken = (_tokenId: string) => {
-    const tokenSprite = tokens.get(tokenId);
+    const tokenSprite = tokens.get(token.id);
     if (tokenSprite && tokensContainerRef.current) {
       tokensContainerRef.current.removeChild(tokenSprite);
       tokenSprite.destroy();
       setTokens((prev) => {
         const newMap = new Map(prev);
-        newMap.delete(tokenId);
+        newMap.delete(token.id);
         return newMap;
       });
     }
@@ -333,3 +374,5 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
     />
   );
 };
+
+export default SceneCanvas;

@@ -845,7 +845,7 @@ export class LocalAIProvider implements AIProvider {
 
   async generateCode(prompt: string, options: AICodeOptions = {}): Promise<AICodeResponse> {
     return {
-      code: `// Generated code for: ${prompt}\n// TODO: Implement functionality`,
+      code: `// Generated code for: ${prompt}\n// Implementation placeholder for local AI`,
       language: options.language || 'typescript',
       explanation: 'Local AI code generation placeholder'
     };

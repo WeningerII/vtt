@@ -234,6 +234,33 @@
   "include": [
     "src"
   ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "test/**",
+    "tests/**",
+    "e2e/**",
+    "cypress/**",
+    "jest.config.js",
+    "jest.setup.js",
+    "*.config.js",
+    "*.config.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/test/**",
+    "src/tests/**",
+    "src/**/__tests__/**",
+    "src/**/__mocks__/**",
+    "src/test-runner.ts",
+    "src/integration/**/*.test.ts",
+    "src/security/**/*.test.ts",
+    "src/routes/**/*.test.ts"
+  ],
   "references": [
     {
       "path": "../../packages/core-ecs"

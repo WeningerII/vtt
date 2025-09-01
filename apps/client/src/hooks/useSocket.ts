@@ -22,7 +22,7 @@ export const useSocket = (): UseSocketReturn => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [user, setUser] = useState<SocketUser | null>(null);
-  const reconnectTimeoutRef = useRef<number>();
+  const reconnectTimeoutRef = useRef<number>(null);
 
   useEffect(() => {
     const serverUrl = (window as any).REACT_APP_SERVER_URL || "http://localhost:8080";

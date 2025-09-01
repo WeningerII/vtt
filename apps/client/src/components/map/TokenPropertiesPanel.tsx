@@ -476,3 +476,5 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
     </div>
   );
 });
+
+export default TokenPropertiesPanel;

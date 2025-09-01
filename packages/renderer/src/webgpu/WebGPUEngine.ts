@@ -5,12 +5,14 @@ import type {
   GPURenderPipeline,
   GPUBuffer,
   GPUBindGroup,
-  GPUTextureUsage,
-  GPUBufferUsage,
   GPUCommandEncoder,
   GPURenderPassEncoder,
 } from "@webgpu/types";
+import { GPUBufferUsage, GPUTextureUsage } from "@webgpu/types";
 import { logger } from "@vtt/logging";
+import { PipelineManager } from "./PipelineManager";
+import { BufferManager } from "./BufferManager";
+import { TextureManager } from "./TextureManager";
 /**
  * Advanced WebGPU 3D Graphics Engine
  * Exceeds industry VTT standards with professional-grade rendering

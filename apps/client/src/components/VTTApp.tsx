@@ -6,6 +6,7 @@ import { VTTHeader } from "./vtt/VTTHeader";
 import { TokensPanel } from "./vtt/TokensPanel";
 import { ChatPanel } from "./vtt/ChatPanel";
 import { LoadingScreen } from "./vtt/LoadingScreen";
+import { useVTTTranslation } from "../hooks/useTranslation";
 
 interface Campaign {
   id: string;
@@ -20,6 +21,7 @@ interface VTTAppProps {
 
 export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
   const { socket, isConnected, user, authenticate, joinScene } = useSocket();
+  const { t } = useVTTTranslation();
   const [currentScene, setCurrentScene] = useState<Scene | null>(null);
   const [_campaign, _setCampaign] = useState<Campaign | null>(null);
   const [isGM, setIsGM] = useState(false);
@@ -74,7 +76,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
       // Create a mock scene for testing
       const mockScene: Scene = {
         id: "mock-scene-1",
-        name: "Test Scene",
+        name: t("joinTestScene"),
         gridSettings: {
           type: "square",
           size: 70,
@@ -118,22 +120,22 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
   };
 
   if (!socket || !isConnected) {
-    return <LoadingScreen message="Connecting to VTT server..." />;
+    return <LoadingScreen message={t("connecting")} />;
   }
 
   if (!user) {
-    return <LoadingScreen message="Authenticating..." />;
+    return <LoadingScreen message={t("authenticating")} />;
   }
 
   if (!currentScene) {
     return (
-      <LoadingScreen message="Loading scene..." showSpinner={false}>
+      <LoadingScreen message={t("loadingScene")} showSpinner={false}>
         <button
           onClick={() => joinScene("mock-scene-1")}
           className="mt-4 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition-colors"
           tabIndex={0}
         >
-          Join Test Scene
+          {t("joinTestScene")}
         </button>
       </LoadingScreen>
     );
@@ -170,3 +172,5 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
     </div>
   );
 };
+
+export default VTTApp;

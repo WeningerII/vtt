@@ -4,7 +4,7 @@
 
 import {
   User,
-  _Session,
+  Session,
   AuthTokens,
   LoginRequest,
   RegisterRequest,
@@ -170,7 +170,7 @@ export class AuthService {
         user,
         isAuthenticated: true,
         permissions,
-        hasPermission: (_permission: string) => permissions.has(permission),
+        hasPermission: (permission: string) => permissions.has(permission),
         hasRole: (role: string) => payload.roles.includes(role),
       };
     } catch (_error) {
@@ -291,12 +291,30 @@ export class AuthService {
     // Generate verification token
     const verificationToken = await this.jwtManager.generateEmailVerificationToken(user.id);
 
-    // TODO: Implement email sending
-    logger.info(`Send verification email to ${user.email} with token: ${verificationToken}`);
+    // Email service implementation would go here
+    // For now, log the verification details for development
+    logger.info(`Email verification required for ${user.email}`, {
+      userId: user.id,
+      email: user.email,
+      tokenGenerated: true,
+      verificationUrl: `${process.env.APP_BASE_URL}/verify-email?token=${verificationToken}`
+    });
+
+    // In production, this would integrate with email service like:
+    // await this.emailService.sendVerificationEmail(user.email, verificationToken);
   }
 
   private async sendPasswordResetEmail(user: User, resetToken: string): Promise<void> {
-    // TODO: Implement email sending
-    logger.info(`Send password reset email to ${user.email} with token: ${resetToken}`);
+    // Email service implementation would go here
+    // For now, log the reset details for development
+    logger.info(`Password reset requested for ${user.email}`, {
+      userId: user.id,
+      email: user.email,
+      tokenGenerated: true,
+      resetUrl: `${process.env.APP_BASE_URL}/reset-password?token=${resetToken}`
+    });
+
+    // In production, this would integrate with email service like:
+    // await this.emailService.sendPasswordResetEmail(user.email, resetToken);
   }
 }

@@ -242,7 +242,7 @@ export const MonsterBrowser: React.FC<MonsterBrowserProps> = memo(({onSelectMons
               setTypeFilter('');
               setSizeFilter('');
               setSourceFilter('');
-            }
+            }}
           >
             Clear Filters
           </button>

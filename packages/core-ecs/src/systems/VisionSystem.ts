@@ -179,15 +179,9 @@ export class VisionSystem {
     const visionData = this.vision.get(observerId);
     if (!visionData) return false;
 
-    // Check basic vision capabilities
-    if (!visionData.canSeeEntity(observerId, targetId, distance, lightLevel)) {
-      return false;
-    }
-
-    // TODO: Check for invisibility, ethereal plane, etc.
-    // This would integrate with other component systems
-
-    return true;
+    // Use the enhanced canSeeEntity method from VisionStore
+    const targetVision = this.vision.get(targetId);
+    return this.vision.canSeeEntity(observerId, targetId, distance, lightLevel, targetVision);
   }
 
   // Line of sight check between two points

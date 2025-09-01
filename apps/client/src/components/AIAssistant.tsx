@@ -234,3 +234,5 @@ What would you like to know?`,
     </div>
   );
 };
+
+export default AIAssistant;

@@ -9,6 +9,10 @@
     "build": "tsc -b",
     "lint": "eslint src --ext .ts"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "@vtt/logging": "workspace:*"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.44"
+  }
 }

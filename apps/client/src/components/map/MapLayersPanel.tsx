@@ -298,3 +298,5 @@ export const MapLayersPanel = memo(function MapLayersPanel({
     </div>
   );
 });
+
+export default MapLayersPanel;

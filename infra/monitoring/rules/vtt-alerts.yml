@@ -1,0 +1,230 @@
+groups:
+  - name: vtt-health-alerts
+    rules:
+      # API Health Check Alerts
+      - alert: VTTAPIDown
+        expr: up{job="vtt-server"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: vtt-api
+        annotations:
+          summary: "VTT API is down"
+          description: "VTT API server has been down for more than 1 minute"
+          runbook_url: "https://docs.vtt.example.com/runbooks/api-down"
+
+      - alert: VTTHealthCheckFailing
+        expr: probe_success{job="vtt-health-check"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: vtt-api
+        annotations:
+          summary: "VTT health check failing"
+          description: "VTT /api/health endpoint has been failing for more than 2 minutes"
+          runbook_url: "https://docs.vtt.example.com/runbooks/health-check-failing"
+
+      - alert: VTTDatabaseUnhealthy
+        expr: vtt_health_check_database_status != 1
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "VTT database health check failing"
+          description: "Database health check is reporting unhealthy status"
+          runbook_url: "https://docs.vtt.example.com/runbooks/database-unhealthy"
+
+      - alert: VTTHighMemoryUsage
+        expr: vtt_health_check_memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: vtt-api
+        annotations:
+          summary: "VTT server high memory usage"
+          description: "VTT server memory usage is above 85% for more than 5 minutes (current: {{ $value }}%)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/high-memory"
+
+      - alert: VTTCriticalMemoryUsage
+        expr: vtt_health_check_memory_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          service: vtt-api
+        annotations:
+          summary: "VTT server critical memory usage"
+          description: "VTT server memory usage is above 95% for more than 2 minutes (current: {{ $value }}%)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/critical-memory"
+
+  - name: vtt-performance-alerts
+    rules:
+      # Response Time Alerts
+      - alert: VTTHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="vtt-server"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: vtt-api
+        annotations:
+          summary: "VTT API high response time"
+          description: "95th percentile response time is above 2 seconds for more than 5 minutes (current: {{ $value }}s)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/high-response-time"
+
+      - alert: VTTVeryHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="vtt-server"}[5m])) > 5
+        for: 2m
+        labels:
+          severity: critical
+          service: vtt-api
+        annotations:
+          summary: "VTT API very high response time"
+          description: "95th percentile response time is above 5 seconds for more than 2 minutes (current: {{ $value }}s)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/very-high-response-time"
+
+      # Error Rate Alerts
+      - alert: VTTHighErrorRate
+        expr: rate(http_requests_total{job="vtt-server",status=~"5.."}[5m]) / rate(http_requests_total{job="vtt-server"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: vtt-api
+        annotations:
+          summary: "VTT API high error rate"
+          description: "Error rate is above 5% for more than 3 minutes (current: {{ $value | humanizePercentage }})"
+          runbook_url: "https://docs.vtt.example.com/runbooks/high-error-rate"
+
+      - alert: VTTCriticalErrorRate
+        expr: rate(http_requests_total{job="vtt-server",status=~"5.."}[5m]) / rate(http_requests_total{job="vtt-server"}[5m]) > 0.15
+        for: 1m
+        labels:
+          severity: critical
+          service: vtt-api
+        annotations:
+          summary: "VTT API critical error rate"
+          description: "Error rate is above 15% for more than 1 minute (current: {{ $value | humanizePercentage }})"
+          runbook_url: "https://docs.vtt.example.com/runbooks/critical-error-rate"
+
+  - name: vtt-business-alerts
+    rules:
+      # WebSocket Connection Alerts
+      - alert: VTTWebSocketConnectionsDrop
+        expr: decrease(vtt_websocket_connections_total[10m]) < -50
+        for: 1m
+        labels:
+          severity: warning
+          service: websocket
+        annotations:
+          summary: "Large drop in WebSocket connections"
+          description: "WebSocket connections dropped by more than 50 in the last 10 minutes"
+          runbook_url: "https://docs.vtt.example.com/runbooks/websocket-drop"
+
+      # AI Service Alerts
+      - alert: VTTAIServiceHighLatency
+        expr: histogram_quantile(0.95, rate(vtt_ai_request_duration_seconds_bucket[5m])) > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: ai-services
+        annotations:
+          summary: "VTT AI service high latency"
+          description: "AI service 95th percentile latency is above 10 seconds (current: {{ $value }}s)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/ai-high-latency"
+
+      - alert: VTTAIServiceFailureRate
+        expr: rate(vtt_ai_requests_failed_total[5m]) / rate(vtt_ai_requests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: ai-services
+        annotations:
+          summary: "VTT AI service high failure rate"
+          description: "AI service failure rate is above 10% (current: {{ $value | humanizePercentage }})"
+          runbook_url: "https://docs.vtt.example.com/runbooks/ai-failures"
+
+      # Campaign/Session Alerts
+      - alert: VTTActiveCampaignsDrop
+        expr: decrease(vtt_active_campaigns_total[30m]) < -10
+        for: 5m
+        labels:
+          severity: warning
+          service: campaigns
+        annotations:
+          summary: "Significant drop in active campaigns"
+          description: "Active campaigns dropped by more than 10 in the last 30 minutes"
+          runbook_url: "https://docs.vtt.example.com/runbooks/campaigns-drop"
+
+  - name: vtt-infrastructure-alerts
+    rules:
+      # Database Connection Pool
+      - alert: VTTDatabaseConnectionPoolExhausted
+        expr: vtt_database_connections_active / vtt_database_connections_max > 0.9
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Database connection pool usage is above 90% ({{ $value | humanizePercentage }})"
+          runbook_url: "https://docs.vtt.example.com/runbooks/db-pool-exhausted"
+
+      # File Storage Alerts
+      - alert: VTTFileStorageHighUsage
+        expr: vtt_file_storage_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: storage
+        annotations:
+          summary: "File storage usage high"
+          description: "File storage usage is above 80% (current: {{ $value }}%)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/storage-high"
+
+      - alert: VTTFileStorageCritical
+        expr: vtt_file_storage_usage_percent > 95
+        for: 5m
+        labels:
+          severity: critical
+          service: storage
+        annotations:
+          summary: "File storage usage critical"
+          description: "File storage usage is above 95% (current: {{ $value }}%)"
+          runbook_url: "https://docs.vtt.example.com/runbooks/storage-critical"
+
+  - name: vtt-security-alerts
+    rules:
+      # Rate Limiting Alerts
+      - alert: VTTHighRateLimitHits
+        expr: rate(vtt_rate_limit_hits_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High rate limit violations"
+          description: "Rate limit hits are above 100/minute for more than 2 minutes"
+          runbook_url: "https://docs.vtt.example.com/runbooks/rate-limit-hits"
+
+      # Authentication Failures
+      - alert: VTTHighAuthFailures
+        expr: rate(vtt_auth_failures_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures are above 10/minute for more than 3 minutes"
+          runbook_url: "https://docs.vtt.example.com/runbooks/auth-failures"
+
+      # Suspicious Activity
+      - alert: VTTSuspiciousActivity
+        expr: rate(vtt_suspicious_requests_total[5m]) > 5
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Suspicious requests detected at rate above 5/minute"
+          runbook_url: "https://docs.vtt.example.com/runbooks/suspicious-activity"

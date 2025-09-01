@@ -10,6 +10,7 @@ import { Input } from "../ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card";
 import { useAuth } from "../../providers/AuthProvider";
 import { isValidEmail } from "../../lib/utils";
+import { useAuthTranslation } from "../../hooks/useTranslation";
 
 interface LoginFormData {
   identifier: string;
@@ -27,6 +28,7 @@ export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, isLoading: loading, error, clearError } = useAuth();
+  const { t } = useAuthTranslation();
 
   const [formData, setFormData] = useState<LoginFormData>({
     identifier: "",
@@ -57,15 +59,15 @@ export function LoginForm() {
     const newErrors: LoginFormErrors = {};
 
     if (!formData.identifier.trim()) {
-      newErrors.identifier = "Email or username is required";
+      newErrors.identifier = t("validation.emailOrUsernameRequired");
     } else if (formData.identifier.includes("@") && !isValidEmail(formData.identifier)) {
-      newErrors.identifier = "Please enter a valid email address";
+      newErrors.identifier = t("validation.validEmailRequired");
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = t("validation.passwordRequired");
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = t("validation.passwordMinLength");
     }
 
     setErrors(newErrors);
@@ -101,8 +103,8 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription>Sign in to your account to continue your adventure</CardDescription>
+        <CardTitle className="text-2xl font-bold">{t("login.title")}</CardTitle>
+        <CardDescription>{t("login.subtitle")}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -115,7 +117,7 @@ export function LoginForm() {
             onClick={() => handleSocialLogin("google")}
             leftIcon={<Chrome className="h-4 w-4" />}
           >
-            Google
+            {t("login.google")}
           </Button>
           <Button
             type="button"
@@ -124,7 +126,7 @@ export function LoginForm() {
             onClick={() => handleSocialLogin("github")}
             leftIcon={<Github className="h-4 w-4" />}
           >
-            GitHub
+            {t("login.github")}
           </Button>
         </div>
 
@@ -134,7 +136,7 @@ export function LoginForm() {
             <span className="w-full border-t border-neutral-300" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-neutral-500">Or continue with</span>
+            <span className="bg-white px-2 text-neutral-500">{t("login.orContinueWith")}</span>
           </div>
         </div>
 
@@ -142,9 +144,9 @@ export function LoginForm() {
         <form onSubmit={handleSubmit} className="space-y-4" role="form">
           {/* Email/Username Field */}
           <Input
-            label="Email or Username"
+            label={t("login.emailOrUsername")}
             type="text"
-            placeholder="Enter your email or username"
+            placeholder={t("login.emailOrUsernamePlaceholder")}
             value={formData.identifier}
             onChange={(e) => handleChange("identifier", e.target.value)}
             error={errors.identifier}
@@ -156,9 +158,9 @@ export function LoginForm() {
 
           {/* Password Field */}
           <Input
-            label="Password"
+            label={t("login.password")}
             type={showPassword ? "text" : "password"}
-            placeholder="Enter your password"
+            placeholder={t("login.passwordPlaceholder")}
             value={formData.password}
             onChange={(e) => handleChange("password", e.target.value)}
             error={errors.password}
@@ -168,7 +170,7 @@ export function LoginForm() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="text-neutral-400 hover:text-neutral-600 focus:outline-none"
-                aria-label="Toggle password visibility"
+                aria-label={t("login.togglePasswordVisibility")}
                 tabIndex={0}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -188,7 +190,7 @@ export function LoginForm() {
                 className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
                 disabled={loading}
               />
-              <span className="text-neutral-700">Remember me</span>
+              <span className="text-neutral-700">{t("login.rememberMe")}</span>
             </label>
 
             <Button
@@ -199,7 +201,7 @@ export function LoginForm() {
               disabled={loading}
               className="text-sm"
             >
-              Forgot password?
+              {t("login.forgotPassword")}
             </Button>
           </div>
 
@@ -219,13 +221,13 @@ export function LoginForm() {
             loading={loading}
             rightIcon={!loading && <ArrowRight className="h-4 w-4" />}
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? t("login.signingIn") : t("login.signIn")}
           </Button>
         </form>
 
         {/* Sign Up Link */}
         <div className="text-center text-sm text-neutral-600">
-          Don't have an account?{" "}
+          {t("login.dontHaveAccount")}{" "}
           <Button
             type="button"
             variant="link"
@@ -234,10 +236,12 @@ export function LoginForm() {
             disabled={loading}
             className="font-medium"
           >
-            Sign up
+            {t("login.signUp")}
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 }
+
+export default LoginForm;

@@ -402,3 +402,5 @@ export function BillingDashboard() {
     </div>
   );
 }
+
+export default BillingDashboard;

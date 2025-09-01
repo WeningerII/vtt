@@ -15,6 +15,23 @@ jest.mock("@vtt/logging", () => ({
 }));
 
 describe("CombatTracker", () => {
+const defaultProps = {
+  combatants: [],
+  currentTurn: 0,
+  round: 1,
+  isActive: false,
+  onAddCombatant: jest.fn(),
+  onRemoveCombatant: jest.fn(),
+  onUpdateCombatant: jest.fn(),
+  onNextTurn: jest.fn(),
+  onPreviousTurn: jest.fn(),
+  onStartCombat: jest.fn(),
+  onEndCombat: jest.fn(),
+  onRollInitiative: jest.fn(),
+  onSortCombatants: jest.fn(),
+  onToggleVisibility: jest.fn()
+};
+
   const mockProps = {
     // Add default props based on component interface
   };

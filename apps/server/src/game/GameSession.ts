@@ -89,20 +89,25 @@ export class GameSession {
     const entity = this.world.create();
 
     // Set transform
-    this.world.transforms.add(entity, { x, y, rot: 0, sx: 1, sy: 1, zIndex: 1 });
+    this.world.transforms.x[entity] = x;
+    this.world.transforms.y[entity] = y;
+    this.world.transforms.rot[entity] = 0;
+    this.world.transforms.sx[entity] = 1;
+    this.world.transforms.sy[entity] = 1;
+    this.world.transforms.zIndex[entity] = 1;
 
     // Set appearance with default values
-    this.world.appearance.add(entity, {
-      sprite: 0,
-      tintR: 1,
-      tintG: 1,
-      tintB: 1,
-      alpha: 1,
-      frame: 0,
-    });
+    this.world.appearance.sprite[entity] = 0;
+    this.world.appearance.tintR[entity] = 1;
+    this.world.appearance.tintG[entity] = 1;
+    this.world.appearance.tintB[entity] = 1;
+    this.world.appearance.alpha[entity] = 1;
+    this.world.appearance.frame[entity] = 0;
 
     // Add movement capability
-    this.world.movement.add(entity, { vx: 0, vy: 0, maxSpeed: 100 });
+    this.world.movement.vx[entity] = 0;
+    this.world.movement.vy[entity] = 0;
+    this.world.movement.speed[entity] = 100;
 
     return entity;
   }
@@ -151,11 +156,13 @@ export class GameSession {
   }
 
   // Dice Rolling
-  rollDice(dice: string, userId: string, label?: string): DiceRollResult | null {
-    const player = this.players.get(userId);
-    if (!player) return null;
-
-    return createDiceRollResult(dice, label);
+  rollDice(dice: string, label?: string, isPrivate: boolean = false): DiceRollResult {
+    const result = createDiceRollResult(dice, label);
+    if (!result) {
+      throw new Error(`Failed to roll dice: ${dice}`);
+    }
+    logger.info(`[game:${this.gameId}] Dice rolled: ${dice} = ${result.total}`);
+    return result;
   }
 
   // Combat Management
@@ -209,7 +216,7 @@ export class GameSession {
       try {
         this.tick();
       } catch (error) {
-        logger.error(`[GameSession:${this.gameId}] Tick error:`, error);
+        logger.error(`[GameSession:${this.gameId}] Tick error:`, error as Record<string, any>);
       }
     }, interval);
   }
@@ -227,7 +234,13 @@ export class GameSession {
   }
 
   // Network Sync
-  getNetworkDelta() {
+  getNetworkDelta(): {
+    seq: number;
+    baseSeq: number;
+    created: any[];
+    updated: any[];
+    removed: number[];
+  } {
     return this.netSync.update(this.world);
   }
 

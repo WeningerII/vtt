@@ -19,10 +19,10 @@ const AllTheProviders = ({
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0,
-      },
-    },
-  }),
+        refetchOnWindowFocus: false
+      }
+    }
+  })
 }: {
   children: React.ReactNode;
   queryClient?: QueryClient;
@@ -38,7 +38,7 @@ const customRender = (ui: ReactElement, options: CustomRenderOptions = {}) => {
   const { queryClient, ...renderOptions } = options;
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <AllTheProviders queryClient={queryClient}>{children}</AllTheProviders>
+    <AllTheProviders queryClient={queryClient!}>{children}</AllTheProviders>
   );
 
   return render(ui, { wrapper: Wrapper, ...renderOptions });
@@ -50,18 +50,13 @@ export const createTestQueryClient = () =>
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0,
-        staleTime: 0,
+        gcTime: 0,
+        staleTime: 0
       },
       mutations: {
-        retry: false,
-      },
-    },
-    logger: {
-      log: () => {},
-      warn: () => {},
-      error: () => {},
-    },
+        retry: false
+      }
+    }
   });
 
 // Helper to wait for queries to settle
@@ -70,7 +65,7 @@ export const waitForQueries = async (queryClient: QueryClient) => {
     .getQueryCache()
     .getAll()
     .forEach((query) => {
-      if (query.state.status === "loading") {
+      if (query.state.status === "pending") {
         return query.promise;
       }
     });

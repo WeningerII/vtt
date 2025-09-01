@@ -16,7 +16,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 // Import global styles
 import "./styles/globals.css";
 import "./styles/theme.css";
-import { I18nProvider } from "@vtt/i18n";
+import { I18nProvider } from "./providers/I18nProvider";
 
 interface AppConfig {
   serverUrl: string;
@@ -101,11 +101,12 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <AuthProvider serverUrl={config.serverUrl}>
-        <WebSocketProvider wsUrl={config.wsUrl}>
-          <GameProvider>
-            <div className="app">
-              <Router />
+      <I18nProvider>
+        <AuthProvider serverUrl={config.serverUrl}>
+          <WebSocketProvider wsUrl={config.wsUrl}>
+            <GameProvider>
+              <div className="app">
+                <Router />
 
               {/* Development info footer */}
               {config.environment === "development" && (
@@ -114,12 +115,13 @@ export default function App() {
                   WebSocket: {config.wsUrl}
                 </div>
               )}
-            </div>
+              </div>
 
-            {/* Toast notifications - will be implemented later */}
-          </GameProvider>
-        </WebSocketProvider>
-      </AuthProvider>
+              {/* Toast notifications - will be implemented later */}
+            </GameProvider>
+          </WebSocketProvider>
+        </AuthProvider>
+      </I18nProvider>
     </ErrorBoundary>
   );
 }

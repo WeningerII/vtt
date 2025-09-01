@@ -1,0 +1,190 @@
+global:
+  # Global configuration
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@vtt.example.com'
+  smtp_auth_username: 'alerts@vtt.example.com'
+  smtp_auth_password: 'your-smtp-password'
+
+# Inhibition rules allow to mute a set of alerts given that another alert is firing
+inhibit_rules:
+  # Inhibit any warning-level alerts when the same alert is firing at critical level
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service']
+
+  # Inhibit specific combinations
+  - source_match:
+      alertname: 'VTTAPIDown'
+    target_match_re:
+      alertname: 'VTT.*'
+    equal: ['service']
+
+route:
+  # Default route configuration
+  group_by: ['alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'default-notifications'
+
+  # Specific routing rules
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 5m
+
+    # Security alerts - immediate notification to security team
+    - match:
+        service: security
+      receiver: 'security-team'
+      group_wait: 10s
+      repeat_interval: 30m
+
+    # Database alerts - notify DBA team
+    - match:
+        service: database
+      receiver: 'dba-team'
+      group_wait: 30s
+      repeat_interval: 1h
+
+    # AI service alerts - notify AI team
+    - match:
+        service: ai-services
+      receiver: 'ai-team'
+      group_wait: 1m
+      repeat_interval: 2h
+
+    # Infrastructure alerts
+    - match:
+        service: storage
+      receiver: 'infrastructure-team'
+      group_wait: 1m
+      repeat_interval: 4h
+
+receivers:
+  # Default notification channel
+  - name: 'default-notifications'
+    email_configs:
+      - to: 'devops@vtt.example.com'
+        subject: '[VTT Alert] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Severity: {{ .Labels.severity }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#vtt-alerts'
+        title: 'VTT Alert: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Service: {{ .Labels.service }} | Severity: {{ .Labels.severity }}
+          <{{ .Annotations.runbook_url }}|Runbook>
+          {{ end }}
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'oncall@vtt.example.com, devops@vtt.example.com'
+        subject: '[CRITICAL] VTT Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🚨 CRITICAL ALERT 🚨
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          Started: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#vtt-critical'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Service: {{ .Labels.service }}
+          <{{ .Annotations.runbook_url }}|Runbook>
+          {{ end }}
+    pagerduty_configs:
+      - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+        description: '{{ .GroupLabels.alertname }}: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+  # Security team notifications
+  - name: 'security-team'
+    email_configs:
+      - to: 'security@vtt.example.com'
+        subject: '[SECURITY] VTT Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🔒 SECURITY ALERT 🔒
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#security-alerts'
+        title: '🔒 Security Alert: {{ .GroupLabels.alertname }}'
+
+  # Database team notifications
+  - name: 'dba-team'
+    email_configs:
+      - to: 'dba@vtt.example.com'
+        subject: '[DATABASE] VTT Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🗄️ DATABASE ALERT 🗄️
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+
+  # AI team notifications
+  - name: 'ai-team'
+    email_configs:
+      - to: 'ai-team@vtt.example.com'
+        subject: '[AI SERVICES] VTT Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🤖 AI SERVICES ALERT 🤖
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+
+  # Infrastructure team notifications
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure@vtt.example.com'
+        subject: '[INFRASTRUCTURE] VTT Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          🏗️ INFRASTRUCTURE ALERT 🏗️
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Started: {{ .StartsAt }}
+          Runbook: {{ .Annotations.runbook_url }}
+          {{ end }}
+
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'

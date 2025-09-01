@@ -131,7 +131,7 @@ export function useRenderPerformance(componentName: string, props?: any) {
 // Hook for detecting memory leaks
 export function useMemoryLeak(componentName: string) {
   const [memoryUsage, setMemoryUsage] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout>(null);
 
   useEffect(() => {
     if (
@@ -237,10 +237,10 @@ export function PerformanceDashboard() {
       }
 
       const stat = stats[metric.componentName];
-      stat.count++;
-      stat.totalTime += metric.renderTime;
-      stat.maxTime = Math.max(stat.maxTime, metric.renderTime);
-      stat.minTime = Math.min(stat.minTime, metric.renderTime);
+      if (stat) stat.count++;
+      if (stat) stat.totalTime += metric.renderTime;
+      if (stat) stat.maxTime = Math.max(stat.maxTime, metric.renderTime);
+      if (stat) stat.minTime = Math.min(stat.minTime, metric.renderTime);
 
       return stats;
     },

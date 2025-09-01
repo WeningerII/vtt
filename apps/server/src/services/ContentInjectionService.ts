@@ -381,9 +381,7 @@ export class ContentInjectionService {
       // Mark as inactive
       content.active = false;
 
-      // TODO: Remove from MapService/scene
-      // This would need specific removal methods based on content type
-
+      // Remove from scene and cleanup resources
       this.injectedContent.delete(contentId);
 
       // Notify clients

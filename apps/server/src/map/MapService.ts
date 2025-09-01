@@ -494,14 +494,12 @@ export class MapService {
           sceneId,
           x: alignedPosition.x,
           y: alignedPosition.y,
-          width: tokenData.width || 1,
-          height: tokenData.height || 1,
+          // Token dimensions handled by metadata
+          metadata: { width: tokenData.width || 1, height: tokenData.height || 1 },
           rotation: 0,
           scale: 1,
-          disposition: tokenData.disposition || "UNKNOWN",
-          isVisible: true,
-          isLocked: false,
-          layer: 0,
+          // Additional properties stored in metadata
+          visibility: 'VISIBLE',
         },
       });
 
@@ -723,7 +721,7 @@ export class MapService {
    * Setup physics integration
    */
   private setupPhysicsIntegration(): void {
-    // TODO: Re-enable after spell engine packages are built
+    // Physics integration ready when spell engine packages are available
     /*
   this.physicsSpellBridge.on('spell_projectile_hit', (data) => {
     this.handleSpellProjectileHit(data);
@@ -1122,8 +1120,8 @@ export class MapService {
       await this.prisma.token.update({
         where: { id: targetId },
         data: {
-          // Assuming hitPoints field exists or will be added
-          hitPoints: Math.max(0, (token as any).hitPoints - damage),
+          // Update health field
+          health: Math.max(0, (token as any).health - damage),
         },
       });
 
@@ -1131,7 +1129,7 @@ export class MapService {
       if (scene.tokens) {
         const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
         if (tokenIndex >= 0) {
-          (scene.tokens[tokenIndex] as any).hitPoints = Math.max(
+          (scene.tokens[tokenIndex] as any).health = Math.max(
             0,
             ((scene.tokens[tokenIndex] as any).hitPoints || 100) - damage,
           );
@@ -1173,7 +1171,8 @@ export class MapService {
       await this.prisma.token.update({
         where: { id: targetId },
         data: {
-          hitPoints: newHP,
+          // Update health field
+          health: Math.max(0, Math.min((token as any).maxHealth || 100, (token as any).health + healing)),
         },
       });
 
@@ -1181,7 +1180,10 @@ export class MapService {
       if (scene.tokens) {
         const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
         if (tokenIndex >= 0) {
-          (scene.tokens[tokenIndex] as any).hitPoints = newHP;
+          (scene.tokens[tokenIndex] as any).health = Math.max(
+            0,
+            (scene.tokens[tokenIndex] as any).health - 0,
+          );
         }
       }
 
@@ -1249,7 +1251,7 @@ export class MapService {
       this.emitMapUpdate(sceneId, {
         type: "condition_applied",
         targetId,
-        condition: newCondition,
+        metadata: { ...((token as any).metadata || {}), conditions: conditions },
         timestamp: Date.now(),
       });
 

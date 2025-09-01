@@ -325,3 +325,5 @@ export const SkillsPanel = memo(function SkillsPanel({
     </div>
   );
 });
+
+export default SkillsPanel;

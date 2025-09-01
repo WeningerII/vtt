@@ -45,7 +45,7 @@ const navigation: NavigationItem[] = [
   { name: 'Help', href: '/dashboard/help', icon: HelpCircle },
 ];
 
-export function DashboardLayout({_ children, _title, _action }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title, action }: DashboardLayoutProps) {
   const router = useRouter();
   const { user,  logout  } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -60,7 +60,7 @@ export function DashboardLayout({_ children, _title, _action }: DashboardLayoutP
     }
   };
 
-  const isCurrentPage = (_href: string) => {
+  const isCurrentPage = (href: string) => {
     if (href === '/dashboard') {
       return router.pathname === '/dashboard';
     }
@@ -69,6 +69,19 @@ export function DashboardLayout({_ children, _title, _action }: DashboardLayoutP
 
   return (
     <div className="min-h-screen bg-neutral-50">
+      {/* Skip Navigation Links */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-md z-50 focus:z-50"
+      >
+        Skip to main content
+      </a>
+      <a
+        href="#navigation"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-32 bg-primary-600 text-white px-4 py-2 rounded-md z-50 focus:z-50"
+      >
+        Skip to navigation
+      </a>
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -84,7 +97,7 @@ export function DashboardLayout({_ children, _title, _action }: DashboardLayoutP
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <nav className="mt-8 px-4" aria-label="Navigation">
+            <nav id="navigation" className="mt-8 px-4" aria-label="Navigation">
               <ul className="space-y-1">
                 {navigation.map((item) => (
                   <li key={item.name}>
@@ -165,7 +178,8 @@ export function DashboardLayout({_ children, _title, _action }: DashboardLayoutP
                 type="text"
                 placeholder="Search campaigns, players..."
                 className="block h-full w-full border-0 py-0 pl-10 pr-0 text-neutral-900 placeholder:text-neutral-400 focus:ring-0 sm:text-sm bg-transparent"
-              / aria-label="search campaigns, players... input">
+                aria-label="Search campaigns, players..."
+              />
             </div>
 
             {/* Right side */}
@@ -213,7 +227,8 @@ export function DashboardLayout({_ children, _title, _action }: DashboardLayoutP
                       <button
                         onClick={handleLogout}
                         className="flex w-full items-center px-4 py-2 text-sm text-error-700 hover:bg-error-50"
-                       aria-label="Click button" >
+                        aria-label="Sign out"
+                      >
                         <LogOut className="mr-3 h-4 w-4" />
                         Sign out
                       </button>
@@ -236,7 +251,7 @@ export function DashboardLayout({_ children, _title, _action }: DashboardLayoutP
         )}
 
         {/* Main content */}
-        <main className="py-6 px-4 sm:px-6 lg:px-8">
+        <main id="main-content" className="py-6 px-4 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>

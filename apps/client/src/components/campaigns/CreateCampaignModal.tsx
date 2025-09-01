@@ -1,12 +1,13 @@
 /**
- * Create Campaign Modal - Form for creating new campaigns with system selection
+ * Create Campaign Modal - Form for creating new campaigns with formData.system selection
  */
 import React, { useState } from 'react';
-import { X, Upload, _Users, Globe, Lock, UserCheck } from 'lucide-react';
+import { X, Upload, Users, Globe, Lock, UserCheck } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { cn, generateId } from '../../lib/utils';
+import AccessibleModal from '../AccessibleModal';
 
 interface CreateCampaignModalProps {
   isOpen: boolean;
@@ -36,7 +37,13 @@ const gameSystems = [
   { id: 'custom', name: 'Custom System', popular: false },
 ];
 
-export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCampaignModalProps) {
+
+const generateId = () => {
+  return Math.random().toString(36).substr(2, 9);
+};
+
+
+export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampaignModalProps) {
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
     system: '',
@@ -51,9 +58,9 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
   const [step, setStep] = useState(1);
 
   const handleChange = (_field: keyof CampaignFormData, _value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    setFormData(prev => ({ ...prev, [name]: e.target.value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -80,8 +87,8 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
       newErrors.name = 'Campaign name is required';
     }
     
-    if (!formData.system) {
-      newErrors.system = 'Please select a game system';
+    if (!formData.formData.system) {
+      newErrors.formData.system = 'Please select a game formData.system';
     }
     
     if (!formData.description.trim()) {
@@ -182,8 +189,8 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                 <Input
                   label="Campaign Name"
                   placeholder="Enter a memorable campaign name"
-                  value={formData.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
+                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => handleChange('name', e.target.e.target.value)}
                   error={errors.name}
                   disabled={loading}
                 />
@@ -196,29 +203,29 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-neutral-200 rounded-lg p-2">
                     {gameSystems.map((_system) => (
                       <label
-                        key={system.id}
+                        key={formData.system.id}
                         className={cn(
                           "flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors",
-                          formData.system === system.id
+                          formData.formData.system === formData.system.id
                             ? "border-primary-500 bg-primary-50"
                             : "border-neutral-200 hover:border-neutral-300",
-                          system.popular && "ring-1 ring-warning-200"
+                          formData.system.popular && "ring-1 ring-warning-200"
                         )}
                       >
                         <input
                           type="radio"
-                          name="system"
-                          value={system.id}
-                          checked={formData.system === system.id}
-                          onChange={(e) => handleChange('system', e.target.value)}
+                          name="formData.system"
+                          value={formData.system} onChange={(e) => setFormData({...formData, system: e.target.value})}
+                          checked={formData.formData.system === formData.system.id}
+                          onChange={(e) => handleChange('formData.system', e.target.e.target.value)}
                           className="sr-only"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-neutral-900 truncate">
-                              {system.name}
+                              {formData.system.name}
                             </span>
-                            {system.popular && (
+                            {formData.system.popular && (
                               <span className="ml-2 px-2 py-1 text-xs bg-warning-100 text-warning-800 rounded-full">
                                 Popular
                               </span>
@@ -228,8 +235,8 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                       </label>
                     ))}
                   </div>
-                  {errors.system && (
-                    <p className="text-xs text-error-600">{errors.system}</p>
+                  {errors.formData.system && (
+                    <p className="text-xs text-error-600">{errors.formData.system}</p>
                   )}
                 </div>
 
@@ -240,8 +247,8 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                   </label>
                   <textarea
                     placeholder="Describe your campaign setting, tone, and what players can expect..."
-                    value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
+                    value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={(e) => handleChange('description', e.target.e.target.value)}
                     rows={4}
                     className={cn(
                       "w-full px-3 py-2 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
@@ -279,8 +286,8 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                       type="range"
                       min="2"
                       max="8"
-                      value={formData.maxPlayers}
-                      onChange={(e) => handleChange('maxPlayers', parseInt(e.target.value))}
+                      value={formData.maxPlayers} onChange={(e) => setFormData({...formData, maxPlayers: parseInt(e.target.value)})}
+                      onChange={(e) => handleChange('maxPlayers', parseInt(e.target.e.target.value))}
                       className="flex-1"
                     />
                     <div className="w-16 text-center">
@@ -306,10 +313,10 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                       { value: 'public', icon: Globe, label: 'Public', desc: 'Anyone can find and request to join' },
                     ].map((_option) => (
                       <label
-                        key={option.value}
+                        key={opt.value}
                         className={cn(
                           "flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors",
-                          formData.visibility === option.value
+                          formData.visibility === opt.value
                             ? "border-primary-500 bg-primary-50"
                             : "border-neutral-200 hover:border-neutral-300"
                         )}
@@ -317,15 +324,15 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                         <input
                           type="radio"
                           name="visibility"
-                          value={option.value}
-                          checked={formData.visibility === option.value}
-                          onChange={(e) => handleChange('visibility', e.target.value)}
+                          value={opt.value} onChange={(e) => handleInputChange("name", e.target.value)}
+                          checked={formData.visibility === opt.value}
+                          onChange={(e) => handleChange('visibility', e.target.e.target.value)}
                           className="sr-only"
                         />
-                        <option.icon className="h-5 w-5 text-neutral-600 mr-3" />
+                        <opt.icon className="h-5 w-5 text-neutral-600 mr-3" />
                         <div>
-                          <div className="font-medium text-neutral-900">{option.label}</div>
-                          <div className="text-sm text-neutral-600">{option.desc}</div>
+                          <div className="font-medium text-neutral-900">{opt.label}</div>
+                          <div className="text-sm text-neutral-600">{opt.desc}</div>
                         </div>
                       </label>
                     ))}
@@ -372,7 +379,8 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
                         className="hidden"
                         accept="image/*"
                         onChange={handleImageUpload}
-                      / aria-label="enter a memorable campaign name input">
+                        aria-label="enter a memorable campaign name input"
+                      />
                     </label>
                   </div>
                   {errors.coverImage && (
@@ -407,3 +415,5 @@ export function CreateCampaignModal({ isOpen, _onClose, _onSuccess }: CreateCamp
     </div>
   );
 }
+
+export default CreateCampaignModal;

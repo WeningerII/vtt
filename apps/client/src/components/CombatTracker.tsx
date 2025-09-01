@@ -2,7 +2,7 @@
  * Combat tracker component for managing initiative and combat flow
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo, useCallback, useMemo } from "react";
 import "./CombatTracker.css";
 
 export interface Combatant {
@@ -46,7 +46,7 @@ export interface CombatTrackerProps {
   readOnly?: boolean;
 }
 
-export const CombatTracker: React.FC<CombatTrackerProps> = ({
+export const CombatTracker: React.FC<CombatTrackerProps> = memo(({
   combatants,
   currentTurn,
   round,
@@ -114,10 +114,14 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({
     isVisible: true,
   });
 
-  const sortedCombatants = [...combatants].sort((a, b) => b.initiative - a.initiative);
+  // Memoize expensive sorting operation
+  const sortedCombatants = useMemo(() => 
+    [...combatants].sort((a, b) => b.initiative - a.initiative),
+    [combatants]
+  );
   const currentCombatant = sortedCombatants[currentTurn];
 
-  const handleAddCombatant = () => {
+  const handleAddCombatant = useCallback(() => {
     if (newCombatant.name.trim()) {
       onAddCombatant(newCombatant);
       setNewCombatant({
@@ -132,25 +136,25 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({
       });
       setShowAddForm(false);
     }
-  };
+  }, [newCombatant.name, newCombatant.type, newCombatant.initiative, newCombatant.hitPoints, newCombatant.armorClass, onAddCombatant]);
 
-  const rollInitiative = (combatant: Combatant) => {
+  const rollInitiative = useCallback((combatant: Combatant) => {
     const roll = Math.floor(Math.random() * 20) + 1;
     const dexMod = Math.floor((10 - 10) / 2); // Simplified - would use actual dex modifier
     onInitiativeChange(combatant.id, roll + dexMod);
-  };
+  }, [onInitiativeChange]);
 
-  const getHealthPercentage = (combatant: Combatant) => {
+  const getHealthPercentage = useCallback((combatant: Combatant) => {
     return (combatant.hitPoints.current / combatant.hitPoints.max) * 100;
-  };
+  }, []);
 
-  const getHealthBarColor = (percentage: number) => {
+  const getHealthBarColor = useCallback((percentage: number) => {
     if (percentage <= 0) return "dead";
     if (percentage <= 25) return "critical";
     if (percentage <= 50) return "bloodied";
     if (percentage <= 75) return "injured";
     return "healthy";
-  };
+  }, []);
 
   return (
     <div className="combat-tracker">
@@ -400,4 +404,6 @@ export const CombatTracker: React.FC<CombatTrackerProps> = ({
       )}
     </div>
   );
-};
+});
+
+export default CombatTracker;

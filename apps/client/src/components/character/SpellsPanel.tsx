@@ -602,3 +602,5 @@ export const SpellsPanel = memo(function SpellsPanel({
     </div>
   );
 });
+
+export default SpellsPanel;

@@ -594,3 +594,5 @@ export const GenesisWizard: React.FC = () => {
     </div>
   );
 };
+
+export default GenesisWizard;

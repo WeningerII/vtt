@@ -15,8 +15,11 @@ jest.mock("@vtt/logging", () => ({
 }));
 
 describe("VTTApp", () => {
+const defaultProps = {};
+
   const mockProps = {
-    // Add default props based on component interface
+    userId: "test-user-123",
+    campaignId: "test-campaign-456"
   };
 
   beforeEach(() => {

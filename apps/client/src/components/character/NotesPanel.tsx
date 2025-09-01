@@ -593,3 +593,5 @@ export const NotesPanel = memo(function NotesPanel({
     </div>
   );
 });
+
+export default NotesPanel;

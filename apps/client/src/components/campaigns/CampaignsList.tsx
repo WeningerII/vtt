@@ -394,3 +394,5 @@ export function CampaignsList() {
     </div>
   );
 }
+
+export default CampaignsList;

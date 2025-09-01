@@ -286,19 +286,19 @@ Key API endpoints:
 
 ## 🗺️ Roadmap
 
-### **Q1 2024**
+### **Q1 2025**
 - [ ] Advanced dice system with 3D physics
 - [ ] Voice/video chat integration
 - [ ] Mobile companion app
 - [ ] Marketplace for community content
 
-### **Q2 2024**
+### **Q2 2025**
 - [ ] AR/VR support for immersive gameplay
 - [ ] Advanced AI game master assistance
 - [ ] Multi-language localization
 - [ ] Enhanced accessibility features
 
-### **Q3 2024**
+### **Q3 2025**
 - [ ] Tournament and event system
 - [ ] Advanced analytics dashboard
 - [ ] Community forums integration

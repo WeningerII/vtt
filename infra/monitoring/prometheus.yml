@@ -64,3 +64,51 @@ scrape_configs:
     metrics_path: '/api/metrics/business'
     scrape_interval: 60s
     honor_labels: true
+
+  # VTT Health Check Probes
+  - job_name: 'vtt-health-check'
+    static_configs:
+      - targets: ['server:8080']
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+      target: ['http://server:8080/api/health']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # VTT Liveness Probe
+  - job_name: 'vtt-liveness'
+    static_configs:
+      - targets: ['server:8080']
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+      target: ['http://server:8080/api/health/live']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # VTT Readiness Probe
+  - job_name: 'vtt-readiness'
+    static_configs:
+      - targets: ['server:8080']
+    metrics_path: '/probe'
+    params:
+      module: [http_2xx]
+      target: ['http://server:8080/api/health/ready']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -29,6 +29,36 @@ enum JobStatus {
   SUCCEEDED
   FAILED
   CANCELED
+}
+
+enum TokenType {
+  PC
+  NPC
+  MONSTER
+  OBJECT
+  EFFECT
+}
+
+enum TokenVisibility {
+  VISIBLE
+  HIDDEN
+  PARTIAL
+  REVEALED
+}
+
+enum GameSessionStatus {
+  WAITING
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ABANDONED
+}
+
+enum EncounterStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
 }
 
 model Map {
@@ -184,4 +214,106 @@ model ProviderCall {
   @@index([success, provider]) // For error rate monitoring
   @@index([createdAt]) // For time-series analytics
   @@index([costUSD]) // For cost analytics
+}
+
+model Token {
+  id              String          @id @default(uuid())
+  name            String
+  type            TokenType
+  visibility      TokenVisibility @default(VISIBLE)
+  gameSessionId   String
+  sceneId         String?
+  characterId     String?
+  x               Float           @default(0)
+  y               Float           @default(0)
+  z               Float           @default(0)
+  rotation        Float           @default(0)
+  scale           Float           @default(1)
+  health          Int?
+  maxHealth       Int?
+  initiative      Int?
+  speed           Int             @default(30)
+  imageUrl        String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  gameSession     GameSession     @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  encounterTokens EncounterToken[]
+
+  @@index([gameSessionId]) // For session-based queries
+  @@index([sceneId]) // For scene-based queries
+  @@index([type]) // For filtering by token type
+  @@index([visibility]) // For visibility filtering
+  @@index([gameSessionId, sceneId]) // For session+scene queries
+  @@index([x, y]) // For spatial queries
+}
+
+model GameSession {
+  id              String            @id @default(uuid())
+  name            String
+  campaignId      String
+  status          GameSessionStatus @default(WAITING)
+  currentSceneId  String?
+  currentTurn     Int               @default(0)
+  roundNumber     Int               @default(1)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  tokens          Token[]
+  encounters      Encounter[]
+  
+  @@index([campaignId]) // For campaign-based queries
+  @@index([status]) // For status filtering
+  @@index([createdAt]) // For pagination and sorting
+  @@index([startedAt]) // For active session queries
+  @@index([campaignId, status]) // For campaign active sessions
+}
+
+model Encounter {
+  id              String            @id @default(uuid())
+  name            String
+  gameSessionId   String
+  sceneId         String?
+  status          EncounterStatus   @default(PLANNED)
+  initiativeOrder Json?             // Array of token IDs in initiative order
+  currentTurn     Int               @default(0)
+  roundNumber     Int               @default(1)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  gameSession     GameSession       @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  encounterTokens EncounterToken[]
+  
+  @@index([gameSessionId]) // For session-based queries
+  @@index([status]) // For status filtering
+  @@index([sceneId]) // For scene-based queries
+  @@index([gameSessionId, status]) // For session active encounters
+  @@index([startedAt]) // For active encounter queries
+}
+
+model EncounterToken {
+  id          String    @id @default(uuid())
+  encounterId String
+  tokenId     String
+  initiative  Int?
+  turnOrder   Int?
+  isActive    Boolean   @default(true)
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  token       Token     @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  
+  @@unique([encounterId, tokenId])
+  @@index([encounterId]) // For encounter queries
+  @@index([tokenId]) // For token queries
+  @@index([initiative]) // For initiative sorting
+  @@index([isActive]) // For active token filtering
 }

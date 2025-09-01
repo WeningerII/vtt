@@ -1,16 +1,31 @@
 /**
  * OpenAPI/Swagger configuration and documentation
- * Auto-generated documentation for VTT API endpoints
+ * Comprehensive API documentation for VTT endpoints
  */
 
 import swaggerJSDoc from 'swagger-jsdoc';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import yaml from 'js-yaml';
+
+// Load the comprehensive OpenAPI specification
+const openApiSpecPath = join(__dirname, '../../../docs/api/openapi.yaml');
+let openApiSpec: any;
+
+try {
+  const yamlContent = readFileSync(openApiSpecPath, 'utf8');
+  openApiSpec = yaml.load(yamlContent);
+} catch (error) {
+  console.warn('Could not load comprehensive OpenAPI spec, falling back to basic config');
+  openApiSpec = null;
+}
 
 const options: swaggerJSDoc.Options = {
-  definition: {
+  definition: openApiSpec || {
     openapi: '3.0.0',
     info: {
       title: 'VTT (Virtual Tabletop) API',
-      version: '1.0.0',
+      version: '1.2.0',
       description: 'Comprehensive API for Virtual Tabletop platform with real-time collaboration, combat AI, and content management',
       contact: {
         name: 'VTT Development Team',
@@ -23,11 +38,11 @@ const options: swaggerJSDoc.Options = {
     },
     servers: [
       {
-        url: 'http://localhost:3001/api/v1',
+        url: 'http://localhost:8080',
         description: 'Development server'
       },
       {
-        url: 'https://api.vtt.dev/v1',
+        url: 'https://api.vtt.example.com',
         description: 'Production server'
       }
     ],

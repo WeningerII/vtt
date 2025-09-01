@@ -319,3 +319,5 @@ export const GameLobby: React.FC<GameLobbyProps> = ({
     </div>
   );
 };
+
+export default GameLobby;

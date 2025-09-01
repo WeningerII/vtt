@@ -594,3 +594,5 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = memo((props) => {
     </div>
   );
 });
+
+export default CharacterSheet;

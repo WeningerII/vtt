@@ -4,6 +4,19 @@ import userEvent from "@testing-library/user-event";
 import "@testing-library/jest-dom";
 import { CombatTrackerIntegrated } from "./CombatTrackerIntegrated";
 
+
+// Mock the useEncounter hook
+jest.mock('../hooks/useEncounter', () => ({
+  useEncounter: jest.fn(() => ({
+    encounter: null,
+    loading: false,
+    error: null,
+    updateEncounter: jest.fn(),
+    deleteEncounter: jest.fn()
+  }))
+}));
+
+const { useEncounter } = require('../hooks/useEncounter');
 // Mock dependencies
 jest.mock("@vtt/logging", () => ({
   logger: {
