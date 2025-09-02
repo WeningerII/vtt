@@ -24,6 +24,6 @@ export const _Protocol = {
     },
     decode(data) {
         return JSON.parse(data);
-    }
+    },
 };
 //# sourceMappingURL=Protocol.js.map

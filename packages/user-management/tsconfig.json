@@ -8,7 +8,10 @@
     "sourceMap": true,
     "incremental": true,
     "tsBuildInfoFile": "./user-management.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "lib": ["ES2020", "DOM"]
   },
   "include": [
     "src/**/*"

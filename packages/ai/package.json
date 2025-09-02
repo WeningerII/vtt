@@ -12,6 +12,21 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.js"
+    },
+    "./src/providers/RealProviders": {
+      "types": "./src/providers/RealProviders.ts",
+      "import": "./src/providers/RealProviders.ts",
+      "require": "./src/providers/RealProviders.ts"
+    },
+    "./src/circuit-breaker": {
+      "types": "./src/circuit-breaker.ts",
+      "import": "./src/circuit-breaker.ts", 
+      "require": "./src/circuit-breaker.ts"
+    },
+    "./src/providers/CircuitBreakerProvider": {
+      "types": "./src/providers/CircuitBreakerProvider.ts",
+      "import": "./src/providers/CircuitBreakerProvider.ts",
+      "require": "./src/providers/CircuitBreakerProvider.ts"
     }
   },
   "scripts": {

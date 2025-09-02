@@ -42,7 +42,7 @@ export class Grid {
     for (let x = 0; x < width; x++) {
       this.nodes[x] = [];
       for (let y = 0; y < height; y++) {
-        this.nodes[x][y] = {
+        this.nodes[x]![y] = {
           x,
           y,
           walkable: true,
@@ -59,7 +59,9 @@ export class Grid {
     if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return null;
     }
-    return this.nodes[x][y];
+    const row = this.nodes[x];
+    if (!row) return null;
+    return row[y] || null;
   }
 
   public setWalkable(x: number, y: number, walkable: boolean): void {
@@ -120,8 +122,11 @@ export class Grid {
 
   public reset(): void {
     for (let x = 0; x < this.width; x++) {
+      const row = this.nodes[x];
+      if (!row) continue;
       for (let y = 0; y < this.height; y++) {
-        const node = this.nodes[x][y];
+        const node = row[y];
+        if (!node) continue;
         node.gCost = 0;
         node.hCost = 0;
         node.fCost = 0;
@@ -133,8 +138,13 @@ export class Grid {
   public setObstacles(obstacles: Vector2[]): void {
     // Reset all to walkable first
     for (let x = 0; x < this.width; x++) {
+      const row = this.nodes[x];
+      if (!row) continue;
       for (let y = 0; y < this.height; y++) {
-        this.nodes[x][y].walkable = true;
+        const node = row[y];
+        if (node) {
+          node.walkable = true;
+        }
       }
     }
 
@@ -148,8 +158,15 @@ export class Grid {
     const newGrid = new Grid(this.width, this.height);
 
     for (let x = 0; x < this.width; x++) {
+      const sourceRow = this.nodes[x];
+      const targetRow = newGrid.nodes[x];
+      if (!sourceRow || !targetRow) continue;
       for (let y = 0; y < this.height; y++) {
-        newGrid.nodes[x][y].walkable = this.nodes[x][y].walkable;
+        const sourceNode = sourceRow[y];
+        const targetNode = targetRow[y];
+        if (sourceNode && targetNode) {
+          targetNode.walkable = sourceNode.walkable;
+        }
       }
     }
 
@@ -245,14 +262,17 @@ export class AStar {
 
       // Find node with lowest fCost
       let currentNode = openSet[0];
+      if (!currentNode) break; // Safety check
       let currentIndex = 0;
 
       for (let i = 1; i < openSet.length; i++) {
+        const node = openSet[i];
+        if (!node) continue;
         if (
-          openSet[i].fCost < currentNode.fCost ||
-          (openSet[i].fCost === currentNode.fCost && openSet[i].hCost < currentNode.hCost)
+          node.fCost < currentNode.fCost ||
+          (node.fCost === currentNode.fCost && node.hCost < currentNode.hCost)
         ) {
-          currentNode = openSet[i];
+          currentNode = node;
           currentIndex = i;
         }
       }
@@ -314,16 +334,20 @@ export class AStar {
       return path;
     }
 
-    const smoothed: Vector2[] = [path[0]];
+    const firstPoint = path[0];
+    if (!firstPoint) return path;
+    const smoothed: Vector2[] = [firstPoint];
 
     for (let i = 2; i < path.length; i++) {
       const current = path[i];
       const previous = smoothed[smoothed.length - 1];
+      const intermediate = path[i - 1];
+
+      if (!current || !previous || !intermediate) continue;
 
       // Check if we can skip the intermediate point
       const dx = current.x - previous.x;
       const dy = current.y - previous.y;
-      const intermediate = path[i - 1];
 
       // If the intermediate point is on the direct line, we can skip it
       if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
@@ -333,7 +357,10 @@ export class AStar {
       smoothed.push(intermediate);
     }
 
-    smoothed.push(path[path.length - 1]);
+    const lastPoint = path[path.length - 1];
+    if (lastPoint) {
+      smoothed.push(lastPoint);
+    }
     return smoothed;
   }
 }
@@ -354,8 +381,12 @@ export class FlowField {
       this.flowField[x] = [];
       this.costField[x] = [];
       for (let y = 0; y < grid.height; y++) {
-        this.flowField[x][y] = { x: 0, y: 0 };
-        this.costField[x][y] = Infinity;
+        const flowRow = this.flowField[x];
+        const costRow = this.costField[x];
+        if (flowRow && costRow) {
+          flowRow[y] = { x: 0, y: 0 };
+          costRow[y] = Infinity;
+        }
       }
     }
   }
@@ -363,14 +394,19 @@ export class FlowField {
   public generateFlowField(target: Vector2): void {
     // Reset cost field
     for (let x = 0; x < this.grid.width; x++) {
+      const costRow = this.costField[x];
+      if (!costRow) continue;
       for (let y = 0; y < this.grid.height; y++) {
-        this.costField[x][y] = this.grid.isWalkable(x, y) ? Infinity : -1;
+        costRow[y] = this.grid.isWalkable(x, y) ? Infinity : -1;
       }
     }
 
     // Set target cost to 0
     if (this.grid.isWalkable(target.x, target.y)) {
-      this.costField[target.x][target.y] = 0;
+      const targetRow = this.costField[target.x];
+      if (targetRow) {
+        targetRow[target.y] = 0;
+      }
     }
 
     // Dijkstra's algorithm to generate cost field
@@ -378,17 +414,23 @@ export class FlowField {
 
     while (queue.length > 0) {
       const current = queue.shift()!;
-      const currentCost = this.costField[current.x][current.y];
+      const currentRow = this.costField[current.x];
+      if (!currentRow) continue;
+      const currentCost = currentRow[current.y];
+      if (currentCost === undefined) continue;
 
       const neighbors = this.getNeighbors(current);
 
       for (const neighbor of neighbors) {
-        if (this.costField[neighbor.x][neighbor.y] === -1) continue; // Unwalkable
+        const neighborRow = this.costField[neighbor.x];
+        if (!neighborRow) continue;
+        if (neighborRow[neighbor.y] === -1) continue; // Unwalkable
 
         const newCost = currentCost + 1;
 
-        if (newCost < this.costField[neighbor.x][neighbor.y]) {
-          this.costField[neighbor.x][neighbor.y] = newCost;
+        const neighborCost = neighborRow[neighbor.y];
+        if (neighborRow && neighborCost !== undefined && newCost < neighborCost) {
+          neighborRow[neighbor.y] = newCost;
           queue.push(neighbor);
         }
       }
@@ -396,20 +438,28 @@ export class FlowField {
 
     // Generate flow field from cost field
     for (let x = 0; x < this.grid.width; x++) {
+      const costRow = this.costField[x];
+      const flowRow = this.flowField[x];
+      if (!costRow || !flowRow) continue;
       for (let y = 0; y < this.grid.height; y++) {
-        if (this.costField[x][y] === -1 || this.costField[x][y] === Infinity) {
-          this.flowField[x][y] = { x: 0, y: 0 };
+        if (costRow[y] === -1 || costRow[y] === Infinity) {
+          flowRow[y] = { x: 0, y: 0 };
           continue;
         }
 
         let bestDirection = { x: 0, y: 0 };
-        let bestCost = this.costField[x][y];
+        let bestCost = costRow[y];
+        if (bestCost === undefined) continue;
 
         const neighbors = this.getNeighbors({ x, y });
 
         for (const neighbor of neighbors) {
-          if (this.costField[neighbor.x][neighbor.y] < bestCost) {
-            bestCost = this.costField[neighbor.x][neighbor.y];
+          const neighborRow = this.costField[neighbor.x];
+          if (!neighborRow) continue;
+          const neighborCost = neighborRow[neighbor.y];
+          if (neighborCost === undefined) continue;
+          if (neighborCost < bestCost) {
+            bestCost = neighborCost;
             bestDirection = {
               x: neighbor.x - x,
               y: neighbor.y - y,
@@ -426,7 +476,7 @@ export class FlowField {
           bestDirection.y /= length;
         }
 
-        this.flowField[x][y] = bestDirection;
+        flowRow[y] = bestDirection;
       }
     }
   }
@@ -436,7 +486,9 @@ export class FlowField {
       return { x: 0, y: 0 };
     }
 
-    return this.flowField[x][y];
+    const row = this.flowField[x];
+    if (!row) return { x: 0, y: 0 };
+    return row[y] || { x: 0, y: 0 };
   }
 
   public getCost(x: number, y: number): number {
@@ -444,7 +496,9 @@ export class FlowField {
       return Infinity;
     }
 
-    return this.costField[x][y];
+    const row = this.costField[x];
+    if (!row) return Infinity;
+    return row[y] ?? Infinity;
   }
 
   private getNeighbors(pos: Vector2): Vector2[] {
@@ -585,18 +639,18 @@ export class PathfindingManager {
 export function worldToGrid(
   worldPos: Vector2,
   _cellSize: number,
-  gridOffset: Vector2 = { x: 0, _y: 0 },
+  gridOffset: Vector2 = { x: 0, y: 0 },
 ): Vector2 {
   return {
-    x: Math.floor((worldPos.x - gridOffset.x) / cellSize),
-    y: Math.floor((worldPos.y - gridOffset.y) / cellSize),
+    x: Math.floor((worldPos.x - gridOffset.x) / _cellSize),
+    y: Math.floor((worldPos.y - gridOffset.y) / _cellSize),
   };
 }
 
 export function gridToWorld(
   gridPos: Vector2,
-  _cellSize: number,
-  gridOffset: Vector2 = { x: 0, _y: 0 },
+  cellSize: number,
+  gridOffset: Vector2 = { x: 0, y: 0 },
 ): Vector2 {
   return {
     x: gridPos.x * cellSize + cellSize * 0.5 + gridOffset.x,
@@ -604,8 +658,9 @@ export function gridToWorld(
   };
 }
 
-export function simplifyPath(path: Vector2[], _tolerance: number = 1): Vector2[] {
+export function simplifyPath(path: Vector2[], tolerance: number = 1): Vector2[] {
   if (path.length <= 2) return path;
+  if (!path[0] || !path[path.length - 1]) return path;
 
   const simplified: Vector2[] = [path[0]];
 
@@ -613,6 +668,8 @@ export function simplifyPath(path: Vector2[], _tolerance: number = 1): Vector2[]
     const prev = simplified[simplified.length - 1];
     const current = path[i];
     const next = path[i + 1];
+
+    if (!prev || !current || !next) continue;
 
     // Calculate cross product to determine if points are collinear
     const crossProduct =
@@ -623,6 +680,9 @@ export function simplifyPath(path: Vector2[], _tolerance: number = 1): Vector2[]
     }
   }
 
-  simplified.push(path[path.length - 1]);
+  const lastPoint = path[path.length - 1];
+  if (lastPoint) {
+    simplified.push(lastPoint);
+  }
   return simplified;
 }

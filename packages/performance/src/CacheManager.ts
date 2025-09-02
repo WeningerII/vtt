@@ -576,7 +576,7 @@ export class LocalStorageCacheAdapter implements CacheStorageAdapter {
         return parsed.value;
       }
     } catch (error) {
-      logger.warn("LocalStorage cache get error:", error);
+      logger.warn("LocalStorage cache get error:", error as any);
     }
     return undefined;
   }
@@ -590,7 +590,7 @@ export class LocalStorageCacheAdapter implements CacheStorageAdapter {
       };
       localStorage.setItem(this.prefix + key, JSON.stringify(data));
     } catch (error) {
-      logger.warn("LocalStorage cache set error:", error);
+      logger.warn("LocalStorage cache set error:", error as any);
     }
   }
 

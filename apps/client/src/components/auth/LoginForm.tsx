@@ -38,6 +38,7 @@ export function LoginForm() {
 
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle input changes
   const handleChange = (field: keyof LoginFormData, value: string | boolean) => {
@@ -80,6 +81,9 @@ export function LoginForm() {
 
     if (!validateForm()) return;
 
+    setIsSubmitting(true);
+    setErrors({});
+
     try {
       await login(formData.identifier, formData.password);
 
@@ -90,6 +94,13 @@ export function LoginForm() {
     } catch (err) {
       // Error is handled by useAuth hook
       logger.error("Login failed:", err);
+      
+      // Set form-specific error if needed
+      if (err instanceof Error) {
+        setErrors({ general: err.message });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -218,10 +229,11 @@ export function LoginForm() {
             variant="primary"
             size="lg"
             fullWidth
-            loading={loading}
-            rightIcon={!loading && <ArrowRight className="h-4 w-4" />}
+            loading={loading || isSubmitting}
+            disabled={loading || isSubmitting}
+            rightIcon={!(loading || isSubmitting) && <ArrowRight className="h-4 w-4" />}
           >
-            {loading ? t("login.signingIn") : t("login.signIn")}
+            {(loading || isSubmitting) ? t("login.signingIn") : t("login.signIn")}
           </Button>
         </form>
 

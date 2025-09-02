@@ -17,8 +17,8 @@ export interface CircuitBreakerStats {
   state: CircuitState;
   failures: number;
   successes: number;
-  lastFailureTime?: Date;
-  nextRetryTime?: Date;
+  lastFailureTime: Date | undefined;
+  nextRetryTime: Date | undefined;
   totalRequests: number;
   failureRate: number;
 }
@@ -28,8 +28,8 @@ export class CircuitBreaker extends EventEmitter {
   private failures = 0;
   private successes = 0;
   private totalRequests = 0;
-  private lastFailureTime?: Date;
-  private nextRetryTime?: Date;
+  private lastFailureTime: Date | undefined;
+  private nextRetryTime: Date | undefined;
   private halfOpenRequests = 0;
   
   private readonly failureThreshold: number;
@@ -149,7 +149,7 @@ export class CircuitBreaker extends EventEmitter {
     this.state = CircuitState.CLOSED;
     this.failures = 0;
     this.halfOpenRequests = 0;
-    this.nextRetryTime = undefined;
+    this.nextRetryTime = undefined as Date | undefined;
     this.emit('stateChange', { provider: this.name, from: previousState, to: CircuitState.CLOSED });
   }
 

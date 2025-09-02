@@ -74,7 +74,10 @@ export abstract class BehaviorNode {
   public removeChild(child: BehaviorNode): void {
     const index = this.children.indexOf(child);
     if (index >= 0) {
-      this.children[index].parent = null;
+      const childNode = this.children[index];
+      if (childNode) {
+        childNode.parent = null;
+      }
       this.children.splice(index, 1);
     }
   }
@@ -120,7 +123,9 @@ export class SequenceNode extends BehaviorNode {
 
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
-      const status = this.children[this.currentChildIndex].execute();
+      const child = this.children[this.currentChildIndex];
+      if (!child) break;
+      const status = child.execute();
 
       switch (status) {
         case NodeStatus.SUCCESS:
@@ -138,7 +143,7 @@ export class SequenceNode extends BehaviorNode {
     return NodeStatus.SUCCESS;
   }
 
-  reset(): void {
+  override reset(): void {
     super.reset();
     this.currentChildIndex = 0;
   }
@@ -149,7 +154,9 @@ export class SelectorNode extends BehaviorNode {
 
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
-      const status = this.children[this.currentChildIndex].execute();
+      const child = this.children[this.currentChildIndex];
+      if (!child) break;
+      const status = child.execute();
 
       switch (status) {
         case NodeStatus.SUCCESS:
@@ -167,7 +174,7 @@ export class SelectorNode extends BehaviorNode {
     return NodeStatus.FAILURE;
   }
 
-  reset(): void {
+  override reset(): void {
     super.reset();
     this.currentChildIndex = 0;
   }
@@ -398,7 +405,7 @@ export class Blackboard {
   }
 
   has(key: string): boolean {
-    return this.Object.prototype.hasOwnProperty.call(data, key);
+    return Object.prototype.hasOwnProperty.call(this.data, key);
   }
 
   delete(key: string): void {
@@ -411,14 +418,14 @@ export class Blackboard {
     this.observers.clear();
   }
 
-  observe(_key: string, _callback: (value: any) => void): void {
+  observe(key: string, callback: (value: any) => void): void {
     if (!this.observers.has(key)) {
       this.observers.set(key, []);
     }
     this.observers.get(key)!.push(callback);
   }
 
-  unobserve(_key: string, _callback: (value: any) => void): void {
+  unobserve(key: string, callback: (value: any) => void): void {
     const observers = this.observers.get(key);
     if (observers) {
       const index = observers.indexOf(callback);
@@ -687,7 +694,7 @@ export class BehaviorTreeBuilder {
     return this;
   }
 
-  action(_name: string, _actionFn: () => NodeStatus): this {
+  action(name: string, actionFn: () => NodeStatus): this {
     const node = new (class extends ActionNode {
       protected override onUpdate(): NodeStatus {
         return actionFn();
@@ -697,7 +704,7 @@ export class BehaviorTreeBuilder {
     return this;
   }
 
-  condition(_name: string, _conditionFn: () => boolean): this {
+  condition(name: string, conditionFn: () => boolean): this {
     const node = new (class extends ConditionNode {
       protected evaluate(): boolean {
         return conditionFn();
@@ -727,6 +734,6 @@ export class BehaviorTreeBuilder {
 }
 
 // Utility function to create a builder
-export function createBehaviorTreeBuilder(_blackboard?: Blackboard): BehaviorTreeBuilder {
+export function createBehaviorTreeBuilder(blackboard?: Blackboard): BehaviorTreeBuilder {
   return new BehaviorTreeBuilder(blackboard || new Blackboard());
 }

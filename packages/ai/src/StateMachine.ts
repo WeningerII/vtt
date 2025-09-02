@@ -5,15 +5,15 @@ export interface StateContext {
 export interface StateTransition {
   from: string;
   to: string;
-  condition?: (_context: StateContext) => boolean;
-  action?: (_context: StateContext) => void;
+  condition?: (context: StateContext) => boolean;
+  action?: (context: StateContext) => void;
   priority?: number;
 }
 
 export abstract class State {
   public readonly name: string;
-  protected context: StateContext;
-  protected machine: StateMachine;
+  protected context!: StateContext;
+  protected machine!: StateMachine;
 
   // Timing
   protected enterTime = 0;
@@ -223,7 +223,7 @@ export class HierarchicalStateMachine extends StateMachine {
     return this.subMachines.get(stateName) || null;
   }
 
-  public update(deltaTime: number): void {
+  public override update(deltaTime: number): void {
     super.update(deltaTime);
 
     // Update sub-machine if current state has one
@@ -235,7 +235,7 @@ export class HierarchicalStateMachine extends StateMachine {
     }
   }
 
-  public setState(stateName: string): boolean {
+  public override setState(stateName: string): boolean {
     const success = super.setState(stateName);
 
     if (success) {
@@ -286,15 +286,15 @@ export class IdleState extends State {
 export class DelayState extends State {
   private duration: number;
   private elapsed = 0;
-  private onComplete?: () => void;
+  private onComplete: (() => void) | undefined;
 
-  constructor(_name: string, _duration: number, _onComplete?: () => void) {
+  constructor(name: string, duration: number, onComplete?: () => void) {
     super(name);
     this.duration = duration;
     this.onComplete = onComplete;
   }
 
-  public onEnter(): void {
+  public override onEnter(): void {
     super.onEnter();
     this.elapsed = 0;
   }
@@ -316,13 +316,13 @@ export class DelayState extends State {
 }
 
 export class ConditionalState extends State {
-  private condition: (_context: StateContext) => boolean;
-  private onTrue?: () => void;
-  private onFalse?: () => void;
+  private condition: (context: StateContext) => boolean;
+  private onTrue: (() => void) | undefined;
+  private onFalse: (() => void) | undefined;
 
   constructor(
-    _name: string,
-    _condition: (context: StateContext) => boolean,
+    name: string,
+    condition: (context: StateContext) => boolean,
     onTrue?: () => void,
     onFalse?: () => void,
   ) {
@@ -355,12 +355,19 @@ export class StateMachineBuilder {
   }
 
   public transition(
-    _from: string,
-    _to: string,
-    _condition?: (context: StateContext) => boolean,
-    action?: (_context: StateContext) => void,
+    from: string,
+    to: string,
+    condition?: (context: StateContext) => boolean,
+    action?: (context: StateContext) => void,
   ): this {
-    this.machine.addTransition({ from, to, condition, action });
+    const transition: StateTransition = { from, to };
+    if (condition !== undefined) {
+      transition.condition = condition;
+    }
+    if (action !== undefined) {
+      transition.action = action;
+    }
+    this.machine.addTransition(transition);
     return this;
   }
 

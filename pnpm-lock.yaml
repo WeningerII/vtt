@@ -383,13 +383,13 @@ importers:
         version: 8.18.1
       jest:
         specifier: ^29.7.0
-        version: 29.7.0(@types/node@20.19.11)
+        version: 29.7.0(@types/node@24.3.0)
       prisma:
         specifier: ^6.14.0
         version: 6.14.0(magicast@0.3.5)(typescript@5.9.2)
       ts-jest:
         specifier: ^29.4.1
-        version: 29.4.1(@babel/core@7.28.3)(@jest/transform@30.1.1)(@jest/types@30.0.5)(babel-jest@30.1.1(@babel/core@7.28.3))(jest-util@30.0.5)(jest@29.7.0(@types/node@20.19.11))(typescript@5.9.2)
+        version: 29.4.1(@babel/core@7.28.3)(@jest/transform@30.1.1)(@jest/types@30.0.5)(babel-jest@30.1.1(@babel/core@7.28.3))(jest-util@30.0.5)(jest@29.7.0(@types/node@24.3.0))(typescript@5.9.2)
 
   packages/ai: {}
 
@@ -422,12 +422,21 @@ importers:
       '@vtt/core-ecs':
         specifier: workspace:*
         version: link:../core-ecs
+      '@vtt/user-management':
+        specifier: workspace:*
+        version: link:../user-management
+      axios:
+        specifier: ^1.6.2
+        version: 1.11.0
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
       express-validator:
         specifier: ^7.0.1
         version: 7.2.1
+      google-auth-library:
+        specifier: ^9.15.1
+        version: 9.15.1
       helmet:
         specifier: ^7.1.0
         version: 7.2.0
@@ -511,7 +520,7 @@ importers:
         version: 29.5.14
       jest:
         specifier: ^29.0.0
-        version: 29.7.0(@types/node@24.3.0)
+        version: 29.7.0(@types/node@20.19.11)
       typescript:
         specifier: ^5.0.0
         version: 5.9.2
@@ -5663,6 +5672,10 @@ packages:
   gltf-validator@2.0.0-dev.3.10:
     resolution: {integrity: sha512-odJ4k0tRkGXiDGn78yDBg+fBbAIvBnXxh3RwAta0emSxGtyagFE8B4xELB1oYe3S5RD8Ci3uZAsZaascH2LAEQ==}
 
+  google-auth-library@9.15.1:
+    resolution: {integrity: sha512-Jb6Z0+nvECVz+2lzSMt9u98UsoakXxA2HGHMCxh+so3n90XgYWkq5dur19JAJV7ONiJY22yBTyJB1TSkvPq9Ng==}
+    engines: {node: '>=14'}
+
   google-logging-utils@0.0.2:
     resolution: {integrity: sha512-NEgUnEcBiP5HrPzufUkBzJOD/Sxsco3rLNo1F1TNf7ieU8ryUzBhqba8r756CjLX7rn3fHl6iLEwPYuqpoKgQQ==}
     engines: {node: '>=14'}
@@ -5684,6 +5697,10 @@ packages:
   graphql@16.11.0:
     resolution: {integrity: sha512-mS1lbMsxgQj6hge1XZ6p7GPhbrtFwUFYi3wRzXAC/FmYnyXMTvvI3td3rjmQ2u8ewXueaSvRPWaEcgVVOT9Jnw==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  gtoken@7.1.0:
+    resolution: {integrity: sha512-pCcEwRi+TKpMlxAQObHDQ56KawURgyAf6jtIY046fJ5tIv3zDe/LEIubckAO8fj6JnAxLdmWkUfNyulQ2iKdEw==}
+    engines: {node: '>=14.0.0'}
 
   handlebars@4.7.8:
     resolution: {integrity: sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==}
@@ -6457,8 +6474,14 @@ packages:
   jwa@1.4.2:
     resolution: {integrity: sha512-eeH5JO+21J78qMvTIDdBXidBd6nG2kZjg5Ohz/1fpa28Z4CcsWUzJ1ZZyFq/3z3N17aZy+ZuBoHljASbL1WfOw==}
 
+  jwa@2.0.1:
+    resolution: {integrity: sha512-hRF04fqJIP8Abbkq5NKGN0Bbr3JxlQ+qhZufXVr0DvujKy93ZCbXZMHDL4EOtodSbCWxOqR8MS1tXA5hwqCXDg==}
+
   jws@3.2.2:
     resolution: {integrity: sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==}
+
+  jws@4.0.0:
+    resolution: {integrity: sha512-KDncfTmOZoOMTFG4mBlG0qUIOlc03fmzH+ru6RgYVZhPkyiy/92Owlt/8UEN+a4TXR1FQetfIpJE8ApdvdVxTg==}
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -14550,6 +14573,18 @@ snapshots:
 
   gltf-validator@2.0.0-dev.3.10: {}
 
+  google-auth-library@9.15.1:
+    dependencies:
+      base64-js: 1.5.1
+      ecdsa-sig-formatter: 1.0.11
+      gaxios: 6.7.1
+      gcp-metadata: 6.1.1
+      gtoken: 7.1.0
+      jws: 4.0.0
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
+
   google-logging-utils@0.0.2: {}
 
   gopd@1.2.0: {}
@@ -14573,6 +14608,14 @@ snapshots:
   graphemer@1.4.0: {}
 
   graphql@16.11.0: {}
+
+  gtoken@7.1.0:
+    dependencies:
+      gaxios: 6.7.1
+      jws: 4.0.0
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
 
   handlebars@4.7.8:
     dependencies:
@@ -15858,9 +15901,20 @@ snapshots:
       ecdsa-sig-formatter: 1.0.11
       safe-buffer: 5.2.1
 
+  jwa@2.0.1:
+    dependencies:
+      buffer-equal-constant-time: 1.0.1
+      ecdsa-sig-formatter: 1.0.11
+      safe-buffer: 5.2.1
+
   jws@3.2.2:
     dependencies:
       jwa: 1.4.2
+      safe-buffer: 5.2.1
+
+  jws@4.0.0:
+    dependencies:
+      jwa: 2.0.1
       safe-buffer: 5.2.1
 
   keyv@4.5.4:
@@ -17685,12 +17739,12 @@ snapshots:
     dependencies:
       typescript: 5.9.2
 
-  ts-jest@29.4.1(@babel/core@7.28.3)(@jest/transform@30.1.1)(@jest/types@30.0.5)(babel-jest@30.1.1(@babel/core@7.28.3))(jest-util@30.0.5)(jest@29.7.0(@types/node@20.19.11))(typescript@5.9.2):
+  ts-jest@29.4.1(@babel/core@7.28.3)(@jest/transform@30.1.1)(@jest/types@30.0.5)(babel-jest@30.1.1(@babel/core@7.28.3))(jest-util@30.0.5)(jest@29.7.0(@types/node@24.3.0))(typescript@5.9.2):
     dependencies:
       bs-logger: 0.2.6
       fast-json-stable-stringify: 2.1.0
       handlebars: 4.7.8
-      jest: 29.7.0(@types/node@20.19.11)
+      jest: 29.7.0(@types/node@24.3.0)
       json5: 2.2.3
       lodash.memoize: 4.1.2
       make-error: 1.3.6

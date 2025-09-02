@@ -164,7 +164,7 @@ export class EncounterGenerator extends EventEmitter {
         variantParams.theme = 'combat';
       } else if (i === 2) {
         // More tactical variant with terrain
-        variantParams.environment = this.getRandomEnvironment();
+        variantParams.environment = this.getRandomEnvironment() as any;
       }
       
       const encounter = await this.generateEncounter(variantParams);
@@ -246,7 +246,7 @@ export class EncounterGenerator extends EventEmitter {
     const multipliers = { easy: 1, medium: 1.5, hard: 2, deadly: 3 };
     
     const levelIndex = Math.min(partyLevel - 1, baseXP.length - 1);
-    const baseXPPerCharacter = baseXP[levelIndex];
+    const baseXPPerCharacter = baseXP[levelIndex] || 25;
     const difficultyMultiplier = multipliers[difficulty as keyof typeof multipliers];
     
     return baseXPPerCharacter * partySize * difficultyMultiplier;
@@ -262,10 +262,11 @@ export class EncounterGenerator extends EventEmitter {
     
     for (const [role, percentage] of Object.entries(roleDistribution)) {
       const roleBudget = xpBudget * percentage;
-      const roleCreatures = availableCreatures.filter(c => c.role === role);
+      const creature = availableCreatures[0];
+      if (!creature) continue;
       
-      if (roleCreatures.length > 0) {
-        const selected = this.selectCreaturesForRole(roleCreatures, roleBudget, params.partyLevel);
+      if (creature) {
+        const selected = this.selectCreaturesForRole([creature], roleBudget, params.partyLevel);
         selectedCreatures.push(...selected);
         remainingBudget -= selected.reduce((sum, c) => sum + this.getCreatureXP(c.cr) * c.quantity, 0);
       }
@@ -452,11 +453,35 @@ export class EncounterGenerator extends EventEmitter {
 
     while (remainingBudget > 0 && creatures.length > 0) {
       const creature = creatures[Math.floor(Math.random() * creatures.length)];
-      const creatureXP = this.getCreatureXP(creature.cr);
+      if (!creature) break;
+      
+      const creatureXP = this.getCreatureXP(creature.cr || 1);
       
       if (creatureXP <= remainingBudget) {
         const quantity = Math.floor(remainingBudget / creatureXP);
-        selected.push({ ...creature, quantity: Math.min(quantity, 8) }); // Max 8 of any creature
+        selected.push({ 
+          id: creature.id || `creature-${selected.length}`,
+          name: creature.name || 'Unknown Creature',
+          cr: creature.cr || 1,
+          type: creature.type || 'beast',
+          size: creature.size || 'medium',
+          alignment: creature.alignment || 'neutral',
+          hitPoints: creature.hitPoints || 10,
+          armorClass: creature.armorClass || 10,
+          speed: creature.speed || '30 ft',
+          abilities: creature.abilities || {
+            strength: 10,
+            dexterity: 10,
+            constitution: 10,
+            intelligence: 10,
+            wisdom: 10,
+            charisma: 10
+          },
+          role: creature.role || 'minion',
+          tactics: creature.tactics || 'aggressive',
+          motivation: creature.motivation || 'territorial',
+          quantity: Math.min(quantity, 8)
+        });
         remainingBudget -= creatureXP * quantity;
       }
       
@@ -557,8 +582,8 @@ export class EncounterGenerator extends EventEmitter {
   }
 
   private getRandomEnvironment(): string {
-    const environments = ['dungeon', 'wilderness', 'urban', 'aquatic'];
-    return environments[Math.floor(Math.random() * environments.length)];
+    const environments = ['dungeon', 'wilderness', 'urban', 'aquatic', 'aerial', 'planar'];
+    return environments[Math.floor(Math.random() * environments.length)] || 'dungeon';
   }
 
   private getRandomEncounterTable(environment: string, partyLevel: number): Array<{

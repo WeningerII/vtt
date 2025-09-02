@@ -9,19 +9,14 @@
     "types": ["node"],
     "skipLibCheck": true
   },
+  "references": [
+    { "path": "../logging" }
+  ],
   "include": [
-    "src/index.ts"
+    "src/**/*"
   ],
   "exclude": [
     "src/index-broken.ts",
-    "src/ContentGenerator.ts",
-    "src/ProceduralBehaviorGenerator.ts",
-    "src/BehaviorTree.ts",
-    "src/StateMachine.ts",
-    "src/Pathfinding.ts",
-    "src/Agent.ts",
-    "src/NPCBehaviorSystem.ts",
-    "src/npc/**/*",
-    "src/providers/**/*"
+    "**/*.d.ts"
   ]
 }

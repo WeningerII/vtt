@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
 export interface User {
   id: string;
@@ -193,6 +194,7 @@ export class UserManager extends EventEmitter {
   private sessions = new Map<string, Session>();
   private loginAttempts = new Map<string, LoginAttempt[]>();
   private passwordResets = new Map<string, PasswordResetRequest>();
+  private emailService?: any;
   private emailVerifications = new Map<string, EmailVerification>();
 
   constructor(config: UserManagerConfig) {
@@ -220,9 +222,9 @@ export class UserManager extends EventEmitter {
       email: validated.email,
       username: validated.username,
       passwordHash,
-      firstName: validated.firstName,
-      lastName: validated.lastName,
-      timezone: validated.timezone,
+      ...(validated.firstName && { firstName: validated.firstName }),
+      ...(validated.lastName && { lastName: validated.lastName }),
+      ...(validated.timezone && { timezone: validated.timezone }),
       locale: validated.locale,
 
       status: this.config.requireEmailVerification ? "pending_verification" : "active",
@@ -342,12 +344,12 @@ export class UserManager extends EventEmitter {
 
     const sessionId = uuidv4();
     const token = jwt.sign({ userId, sessionId }, this.config.jwtSecret, {
-      expiresIn: this.config.jwtExpiresIn,
-    });
+      expiresIn: this.config.jwtExpiresIn
+    } as jwt.SignOptions);
 
     const refreshToken = jwt.sign({ userId, sessionId, type: "refresh" }, this.config.jwtSecret, {
-      expiresIn: this.config.refreshTokenExpiresIn,
-    });
+      expiresIn: this.config.refreshTokenExpiresIn
+    } as jwt.SignOptions);
 
     const expiresAt = new Date();
     expiresAt.setSeconds(
@@ -415,13 +417,13 @@ export class UserManager extends EventEmitter {
 
       // Create new tokens
       const newToken = jwt.sign({ userId: user.id, sessionId: session.id }, this.config.jwtSecret, {
-        expiresIn: this.config.jwtExpiresIn,
-      });
+        expiresIn: this.config.jwtExpiresIn
+      } as jwt.SignOptions);
 
       const newRefreshToken = jwt.sign(
         { userId: user.id, sessionId: session.id, type: "refresh" },
         this.config.jwtSecret,
-        { expiresIn: this.config.refreshTokenExpiresIn },
+        { expiresIn: this.config.refreshTokenExpiresIn } as jwt.SignOptions
       );
 
       session.token = newToken;
@@ -574,65 +576,106 @@ export class UserManager extends EventEmitter {
   }
 
   // Password reset
-  async requestPasswordReset(email: string): Promise<void> {
-    const user = this.findUserByEmail(email);
-    if (!user) {
-      // Don't reveal if user exists
-      return;
+  async requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const user = Array.from(this.users.values()).find((u) => u.email === email);
+      if (!user) {
+        // Don't reveal if user exists for security, but still return success
+        return { success: true };
+      }
+
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      const resetRequest: PasswordResetRequest = {
+        id: uuidv4(),
+        userId: user.id,
+        token,
+        expiresAt,
+        used: false,
+        createdAt: new Date(),
+      };
+
+      this.passwordResets.set(token, resetRequest);
+
+      // Send password reset email
+      if (this.emailService) {
+        try {
+          const resetUrl = process.env.CLIENT_URL ? 
+            `${process.env.CLIENT_URL}/reset-password` : 
+            'http://localhost:3000/reset-password';
+          
+          await this.emailService.sendPasswordResetEmail(
+            user.email, 
+            user.username || user.email, 
+            token, 
+            resetUrl
+          );
+        } catch (emailError) {
+          console.warn('Failed to send password reset email:', emailError);
+          return { success: false, error: "Failed to send reset email" };
+        }
+      }
+
+      this.emit("passwordResetRequested", user, token);
+      return { success: true };
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      return { success: false, error: "Failed to process password reset request" };
     }
-
-    const token = uuidv4();
-    const expiresAt = new Date();
-    expiresAt.setMilliseconds(expiresAt.getMilliseconds() + this.config.passwordResetExpiresIn);
-
-    const resetRequest: PasswordResetRequest = {
-      id: uuidv4(),
-      userId: user.id,
-      token,
-      expiresAt,
-      used: false,
-      createdAt: new Date(),
-    };
-
-    this.passwordResets.set(token, resetRequest);
-    this.emit("passwordResetRequested", user, token);
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<void> {
-    const resetRequest = this.passwordResets.get(token);
-    if (!resetRequest) {
-      throw new Error("Invalid reset token");
+  async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const resetRequest = this.passwordResets.get(token);
+      if (!resetRequest) {
+        return { success: false, error: "Invalid or expired reset token" };
+      }
+
+      if (resetRequest.used) {
+        return { success: false, error: "Reset token has already been used" };
+      }
+
+      if (resetRequest.expiresAt < new Date()) {
+        this.passwordResets.delete(token);
+        return { success: false, error: "Reset token has expired" };
+      }
+
+      const user = this.users.get(resetRequest.userId);
+      if (!user) {
+        return { success: false, error: "User account not found" };
+      }
+
+      // Validate new password
+      if (newPassword.length < 8 || newPassword.length > 128) {
+        return { success: false, error: "Password must be between 8 and 128 characters" };
+      }
+
+      // Hash new password
+      user.passwordHash = await bcrypt.hash(newPassword, this.config.bcryptRounds);
+      user.updatedAt = new Date();
+
+      resetRequest.used = true;
+      this.passwordResets.delete(token);
+
+      // Revoke all sessions for security
+      await this.revokeAllUserSessions(user.id);
+
+      // Send password reset confirmation email
+      if (this.emailService) {
+        try {
+          await this.emailService.sendPasswordResetConfirmation(user.email, user.username || user.email);
+        } catch (emailError) {
+          console.warn('Failed to send password reset confirmation email:', emailError);
+        }
+      }
+
+      this.emit("passwordReset", user);
+      return { success: true };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      return { success: false, error: "Failed to reset password" };
     }
-
-    if (resetRequest.used) {
-      throw new Error("Reset token already used");
-    }
-
-    if (resetRequest.expiresAt < new Date()) {
-      throw new Error("Reset token expired");
-    }
-
-    const user = this.users.get(resetRequest.userId);
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    // Validate new password
-    if (newPassword.length < 8 || newPassword.length > 128) {
-      throw new Error("Password must be between 8 and 128 characters");
-    }
-
-    // Hash new password
-    user.passwordHash = await bcrypt.hash(newPassword, this.config.bcryptRounds);
-    user.updatedAt = new Date();
-
-    resetRequest.used = true;
-    this.passwordResets.delete(token);
-
-    // Revoke all sessions
-    await this.revokeAllUserSessions(user.id);
-
-    this.emit("passwordReset", user);
   }
 
   // Rate limiting and security
@@ -658,7 +701,7 @@ export class UserManager extends EventEmitter {
       email,
       ip,
       success,
-      failureReason,
+      ...(failureReason && { failureReason }),
       timestamp: new Date(),
     };
 
@@ -687,8 +730,12 @@ export class UserManager extends EventEmitter {
     }
 
     user.subscriptionTier = tier;
-    user.subscriptionId = subscriptionId;
-    user.subscriptionExpiresAt = expiresAt;
+    if (subscriptionId !== undefined) {
+      user.subscriptionId = subscriptionId;
+    }
+    if (expiresAt !== undefined) {
+      user.subscriptionExpiresAt = expiresAt;
+    }
     user.limits = this.getSubscriptionLimits(tier);
     user.updatedAt = new Date();
 

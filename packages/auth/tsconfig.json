@@ -8,7 +8,8 @@
     ],
     "incremental": true,
     "tsBuildInfoFile": "./auth.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"
@@ -18,5 +19,10 @@
     "node_modules",
     "**/*.test.ts",
     "**/*.spec.ts"
+  ],
+  "references": [
+    { "path": "../user-management" },
+    { "path": "../security" },
+    { "path": "../logging" }
   ]
 }

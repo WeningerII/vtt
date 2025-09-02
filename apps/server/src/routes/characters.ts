@@ -2,9 +2,9 @@
  * Character management routes
  */
 
-import { RouteHandler, handleRouteError } from "../types/route";
-import { CharacterService } from "../services/CharacterService";
-import { parseJsonBody } from "../utils/request";
+import { RouteHandler } from "../router/types";
+import { CharacterService } from "../character/CharacterService";
+import { parseJsonBody } from "../utils/json";
 import { extractUserIdFromToken } from "../utils/auth";
 import { CreateCharacterRequest, UpdateCharacterRequest } from "../character/types";
 import { validateRequest, GameSchemas, CommonSchemas } from "../middleware/validation";
@@ -389,26 +389,6 @@ export const characterRestHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// Helper function to parse JSON from request body
-async function parseJsonBody(req: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    let body = "";
-
-    req.on("data", (chunk: any) => {
-      body += chunk.toString();
-    });
-
-    req.on("end", () => {
-      try {
-        resolve(JSON.parse(body || "{}"));
-      } catch (_error) {
-        reject(new Error("Invalid JSON"));
-      }
-    });
-
-    req.on("error", reject);
-  });
-}
 
 // Export character service for use elsewhere
 export { characterService };

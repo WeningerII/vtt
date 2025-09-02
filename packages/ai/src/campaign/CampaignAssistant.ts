@@ -332,7 +332,10 @@ export class CampaignAssistant extends EventEmitter {
     while (selectedHooks.length < count && selectedHooks.length < availableHooks.length) {
       const remainingHooks = availableHooks.filter(h => !selectedHooks.includes(h));
       if (remainingHooks.length > 0) {
-        selectedHooks.push(remainingHooks[Math.floor(Math.random() * remainingHooks.length)]);
+        const randomHook = remainingHooks[Math.floor(Math.random() * remainingHooks.length)];
+        if (randomHook) {
+          selectedHooks.push(randomHook);
+        }
       } else {
         break;
       }

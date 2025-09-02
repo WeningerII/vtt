@@ -3,17 +3,27 @@
  */
 
 // Core managers
-export * from "./AuthManager";
-export * from "./SecurityMiddleware";
-export * from "./SecurityUtils";
-export * from "./AuthorizationManager";
-
-// Auth configuration will be provided by consumers
-
-// Re-export specific classes for convenience
 export { AuthManager } from "./AuthManager";
 export { SecurityMiddleware } from "./SecurityMiddleware";
 export { AuthorizationManager } from "./AuthorizationManager";
+export * from "./SecurityUtils";
+
+// OAuth providers
+export { GoogleOAuthProvider, GoogleUserProfile, type GoogleOAuthConfig } from "./providers/GoogleOAuthProvider";
+export { DiscordOAuthProvider, DiscordOAuthConfig, DiscordUserProfile } from "./providers/DiscordOAuthProvider";
+
+// OAuth state management
+export { 
+  OAuthStateManager, 
+  MemoryStateStorage, 
+  RedisStateStorage,
+  type OAuthState,
+  type StateStorage 
+} from "./utils/OAuthStateManager";
+
+// Auth configuration will be provided by consumers
+
+// Re-export specific classes for convenience - removed duplicates
 export type { User, AuthConfig, AuthTokens, LoginCredentials, RegisterData } from "./types";
 
 // Types and interfaces

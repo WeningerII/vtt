@@ -3,587 +3,256 @@
  * Production-ready integrations with actual AI services
  */
 
-import {
-  AIProvider,
-  TextToImageRequest,
-  TextToImageResult,
-  DepthRequest,
-  DepthResult,
-  SegmentationRequest,
-  SegmentationResult,
-  AIContext,
-} from "../index";
+import { AnthropicClaude4Provider } from './anthropic-claude4';
+import { GeminiProvider } from './google-gemini';
+import { AzureOpenAIProvider } from './azure-openai';
+import { CircuitBreakerProvider } from './CircuitBreakerProvider';
+import { AIProvider, CircuitBreakerConfig } from '../types';
+import { ModelMapper } from '../model-mapper';
 
-export interface StabilityAIConfig {
-  apiKey: string;
-  baseUrl: string;
-  model: string;
-}
+// Enhanced Circuit Breaker Configuration
+const defaultCircuitBreakerConfig: CircuitBreakerConfig = {
+  failureThreshold: 5,
+  resetTimeoutMs: 60000, // 1 minute
+  monitoringWindowMs: 300000, // 5 minutes
+  halfOpenMaxCalls: 3
+};
 
-export class StabilityAIProvider implements AIProvider {
-  name = "stability-ai";
-  private config: StabilityAIConfig;
+// Provider Factory with Circuit Breaker Integration
+export class ProviderFactory {
+  private static instance: ProviderFactory;
+  private modelMapper: ModelMapper;
+  private circuitBreakerConfig: CircuitBreakerConfig;
 
-  constructor(config: StabilityAIConfig) {
-    this.config = config;
+  private constructor(config?: Partial<CircuitBreakerConfig>) {
+    this.modelMapper = new ModelMapper();
+    this.circuitBreakerConfig = { ...defaultCircuitBreakerConfig, ...config };
   }
 
-  capabilities() {
-    return ["textToImage"] as const;
-  }
-
-  async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
-
-    try {
-      const response = await fetch(
-        `${this.config.baseUrl}/v1/generation/${this.config.model}/text-to-image`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${this.config.apiKey}`,
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            text_prompts: [
-              { text: req.prompt, weight: 1 },
-              ...(req.negativePrompt ? [{ text: req.negativePrompt, weight: -1 }] : []),
-            ],
-            cfg_scale: 7,
-            height: req.height || 512,
-            width: req.width || 512,
-            samples: 1,
-            steps: 30,
-            seed: req.seed || Math.floor(Math.random() * 4294967295),
-          }),
-          signal,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`Stability AI API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const artifact = data.artifacts[0];
-
-      if (!artifact) {
-        throw new Error("No image generated");
-      }
-
-      const imageUri = `data:image/png;base64,${artifact.base64}`;
-      const latencyMs = Date.now() - start;
-
-      // Estimate cost (roughly $0.002 per image for SDXL)
-      const costUSD = 0.002;
-
-      return {
-        provider: this.name,
-        model: this.config.model,
-        costUSD,
-        latencyMs,
-        image: {
-          uri: imageUri,
-          width: req.width || 512,
-          height: req.height || 512,
-          mimeType: "image/png",
-        },
-      };
-    } catch (error) {
-      throw new Error(`Stability AI generation failed: ${error.message}`);
+  static getInstance(config?: Partial<CircuitBreakerConfig>): ProviderFactory {
+    if (!ProviderFactory.instance) {
+      ProviderFactory.instance = new ProviderFactory(config);
     }
+    return ProviderFactory.instance;
+  }
+
+  createAnthropicProvider(options: {
+    apiKey: string;
+    baseURL?: string;
+    defaultModel?: string;
+  }): AIProvider {
+    const provider = new AnthropicClaude4Provider(options);
+    return new CircuitBreakerProvider(provider, this.circuitBreakerConfig);
+  }
+
+  createGeminiProvider(options: {
+    apiKey: string;
+    baseURL?: string;
+    projectId?: string;
+    defaultModel?: string;
+  }): AIProvider {
+    const provider = new GeminiProvider(options);
+    return new CircuitBreakerProvider(provider, this.circuitBreakerConfig);
+  }
+
+  createAzureOpenAIProvider(options: {
+    apiKey: string;
+    endpoint: string;
+    deployments: Record<string, any>;
+    registrationKey?: string;
+    apiVersion?: string;
+  }): AIProvider {
+    const provider = new AzureOpenAIProvider(options);
+    return new CircuitBreakerProvider(provider, this.circuitBreakerConfig);
+  }
+
+  getModelMapper(): ModelMapper {
+    return this.modelMapper;
   }
 }
 
-export interface OpenAIConfig {
-  apiKey: string;
-  baseUrl: string;
-}
+// Production Provider Registry
+export class ProductionProviderRegistry {
+  private providers = new Map<string, AIProvider>();
+  private factory: ProviderFactory;
 
-export class OpenAIProvider implements AIProvider {
-  name = "openai";
-  private config: OpenAIConfig;
-
-  constructor(config: OpenAIConfig) {
-    this.config = config;
+  constructor(config?: Partial<CircuitBreakerConfig>) {
+    this.factory = ProviderFactory.getInstance(config);
   }
 
-  capabilities() {
-    return ["textToImage"] as const;
+  registerProvider(name: string, provider: AIProvider): void {
+    this.providers.set(name, provider);
   }
 
-  async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
+  getProvider(name: string): AIProvider | undefined {
+    return this.providers.get(name);
+  }
 
-    try {
-      const response = await fetch(`${this.config.baseUrl}/v1/images/generations`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "dall-e-3",
-          prompt: req.prompt,
-          size: `${req.width || 1024}x${req.height || 1024}`,
-          quality: "hd",
-          n: 1,
-          response_format: "b64_json",
-        }),
-        signal,
-      });
+  getAllProviders(): Map<string, AIProvider> {
+    return new Map(this.providers);
+  }
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const imageData = data.data[0];
-
-      if (!imageData) {
-        throw new Error("No image generated");
-      }
-
-      const imageUri = `data:image/png;base64,${imageData.b64_json}`;
-      const latencyMs = Date.now() - start;
-
-      // DALL-E 3 HD pricing: $0.080 per image
-      const costUSD = 0.08;
-
-      return {
-        provider: this.name,
-        model: "dall-e-3",
-        costUSD,
-        latencyMs,
-        image: {
-          uri: imageUri,
-          width: req.width || 1024,
-          height: req.height || 1024,
-          mimeType: "image/png",
-        },
-      };
-    } catch (error) {
-      throw new Error(`OpenAI generation failed: ${error.message}`);
+  async initializeFromConfig(config: ProviderConfig): Promise<void> {
+    if (config.anthropic?.apiKey) {
+      const options: any = { apiKey: config.anthropic.apiKey };
+      if (config.anthropic.baseURL) options.baseURL = config.anthropic.baseURL;
+      if (config.anthropic.defaultModel) options.defaultModel = config.anthropic.defaultModel;
+      
+      const provider = this.factory.createAnthropicProvider(options);
+      this.registerProvider('anthropic', provider);
     }
-  }
-}
 
-export interface HuggingFaceConfig {
-  apiKey: string;
-  baseUrl: string;
-}
+    if (config.google?.apiKey) {
+      const options: any = { apiKey: config.google.apiKey };
+      if (config.google.baseURL) options.baseURL = config.google.baseURL;
+      if (config.google.projectId) options.projectId = config.google.projectId;
+      if (config.google.defaultModel) options.defaultModel = config.google.defaultModel;
+      
+      const provider = this.factory.createGeminiProvider(options);
+      this.registerProvider('google', provider);
+    }
 
-export class HuggingFaceProvider implements AIProvider {
-  name = "huggingface";
-  private config: HuggingFaceConfig;
-
-  constructor(config: HuggingFaceConfig) {
-    this.config = config;
-  }
-
-  capabilities() {
-    return ["textToImage", "depth", "segmentation"] as const;
-  }
-
-  async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
-
-    try {
-      const response = await fetch(
-        `${this.config.baseUrl}/models/stabilityai/stable-diffusion-xl-base-1.0`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            inputs: req.prompt,
-            parameters: {
-              negative_prompt: req.negativePrompt,
-              width: req.width || 1024,
-              height: req.height || 1024,
-              num_inference_steps: 25,
-              seed: req.seed,
-            },
-          }),
-          signal,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(`HuggingFace API error: ${response.status} ${response.statusText}`);
-      }
-
-      const blob = await response.blob();
-      const base64 = await this.blobToBase64(blob);
-      const imageUri = `data:image/jpeg;base64,${base64}`;
-      const latencyMs = Date.now() - start;
-
-      // HuggingFace inference is typically free/low cost
-      const costUSD = 0.001;
-
-      return {
-        provider: this.name,
-        model: "stable-diffusion-xl-base-1.0",
-        costUSD,
-        latencyMs,
-        image: {
-          uri: imageUri,
-          width: req.width || 1024,
-          height: req.height || 1024,
-          mimeType: "image/jpeg",
-        },
+    if (config.azure?.apiKey && config.azure?.endpoint) {
+      const options: any = {
+        apiKey: config.azure.apiKey,
+        endpoint: config.azure.endpoint,
+        deployments: config.azure.deployments || {}
       };
-    } catch (error) {
-      throw new Error(`HuggingFace generation failed: ${error.message}`);
+      if (config.azure.registrationKey) options.registrationKey = config.azure.registrationKey;
+      if (config.azure.apiVersion) options.apiVersion = config.azure.apiVersion;
+      
+      const provider = this.factory.createAzureOpenAIProvider(options);
+      this.registerProvider('azure', provider);
     }
   }
 
-  async depth(req: DepthRequest, ctx?: AIContext): Promise<DepthResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
-
-    try {
-      // Convert data URI to blob for upload
-      const imageBlob = await this.dataUriToBlob(req.image.uri);
-
-      const response = await fetch(`${this.config.baseUrl}/models/Intel/dpt-large`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.config.apiKey}`,
-        },
-        body: imageBlob,
-        signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HuggingFace Depth API error: ${response.status} ${response.statusText}`);
+  async healthCheckAll(): Promise<Record<string, { status: string; latency?: number }>> {
+    const results: Record<string, { status: string; latency?: number }> = {};
+    
+    for (const [name, provider] of this.providers) {
+      try {
+        const health = await provider.healthCheck();
+        const result: any = { status: health.status };
+        if (health.latency !== undefined) result.latency = health.latency;
+        results[name] = result;
+      } catch (error) {
+        results[name] = {
+          status: 'error'
+        };
       }
-
-      const blob = await response.blob();
-      const base64 = await this.blobToBase64(blob);
-      const depthUri = `data:image/png;base64,${base64}`;
-      const latencyMs = Date.now() - start;
-
-      return {
-        provider: this.name,
-        model: "dpt-large",
-        costUSD: 0.001,
-        latencyMs,
-        depth: {
-          uri: depthUri,
-          mimeType: "image/png",
-        },
-      };
-    } catch (error) {
-      throw new Error(`HuggingFace depth estimation failed: ${error.message}`);
     }
-  }
-
-  async segmentation(req: SegmentationRequest, ctx?: AIContext): Promise<SegmentationResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
-
-    try {
-      const imageBlob = await this.dataUriToBlob(req.image.uri);
-
-      const response = await fetch(
-        `${this.config.baseUrl}/models/facebook/detr-resnet-50-panoptic`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.config.apiKey}`,
-          },
-          body: imageBlob,
-          signal,
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `HuggingFace Segmentation API error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const results = await response.json();
-
-      // Process segmentation results to create mask
-      const maskUri = await this.createSegmentationMask(results);
-      const latencyMs = Date.now() - start;
-
-      const classes: Record<string, number> = {};
-      results.forEach((result: any, _index: number) => {
-        classes[result.label] = result.score;
-      });
-
-      return {
-        provider: this.name,
-        model: "detr-resnet-50-panoptic",
-        costUSD: 0.001,
-        latencyMs,
-        mask: {
-          uri: maskUri,
-          mimeType: "image/png",
-        },
-        classes,
-      };
-    } catch (error) {
-      throw new Error(`HuggingFace segmentation failed: ${error.message}`);
-    }
-  }
-
-  private async blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((_resolve, __reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  private async dataUriToBlob(dataUri: string): Promise<Blob> {
-    const response = await fetch(dataUri);
-    return response.blob();
-  }
-
-  private async createSegmentationMask(results: any[]): Promise<string> {
-    // Create a simple colored mask based on segmentation results
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext("2d")!;
-
-    // Fill with transparent background
-    ctx.fillStyle = "rgba(0,0,0,0)";
-    ctx.fillRect(0, 0, 512, 512);
-
-    // Draw segmentation regions with different colors
-    results.forEach((result: any, _index: number) => {
-      if (result.mask) {
-        const hue = (index * 137.5) % 360; // Golden angle for color distribution
-        ctx.fillStyle = `hsla(${hue}, 70%, 50%, 0.7)`;
-
-        // This is simplified - in reality you'd decode the actual mask data
-        const box = result.box;
-        if (box) {
-          ctx.fillRect(box.xmin, box.ymin, box.xmax - box.xmin, box.ymax - box.ymin);
-        }
-      }
-    });
-
-    return canvas.toDataURL("image/png");
+    
+    return results;
   }
 }
 
-export class ReplicateProvider implements AIProvider {
-  name = "replicate";
-  private apiKey: string;
-
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-  }
-
-  capabilities() {
-    return ["textToImage", "depth"] as const;
-  }
-
-  async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
-
-    try {
-      // Start prediction
-      const response = await fetch("https://api.replicate.com/v1/predictions", {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          version: "ac732df83cea7fff18b8472768c88ad041fa750ff7682a21affe81863cbe77e4", // SDXL
-          input: {
-            prompt: req.prompt,
-            negative_prompt: req.negativePrompt,
-            width: req.width || 1024,
-            height: req.height || 1024,
-            num_inference_steps: 25,
-            seed: req.seed,
-            guidance_scale: 7.5,
-          },
-        }),
-        signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Replicate API error: ${response.status} ${response.statusText}`);
-      }
-
-      const prediction = await response.json();
-
-      // Poll for completion
-      const result = await this.pollPrediction(prediction.id, signal);
-
-      if (result.status === "failed") {
-        throw new Error(`Prediction failed: ${result.error}`);
-      }
-
-      const imageUrl = result.output[0];
-      const latencyMs = Date.now() - start;
-
-      // Convert URL to data URI
-      const imageResponse = await fetch(imageUrl, { signal });
-      const imageBlob = await imageResponse.blob();
-      const base64 = await this.blobToBase64(imageBlob);
-      const imageUri = `data:image/png;base64,${base64}`;
-
-      return {
-        provider: this.name,
-        model: "sdxl",
-        costUSD: 0.0023, // Replicate SDXL pricing
-        latencyMs,
-        image: {
-          uri: imageUri,
-          width: req.width || 1024,
-          height: req.height || 1024,
-          mimeType: "image/png",
-        },
-      };
-    } catch (error) {
-      throw new Error(`Replicate generation failed: ${error.message}`);
-    }
-  }
-
-  async depth(req: DepthRequest, ctx?: AIContext): Promise<DepthResult> {
-    const start = Date.now();
-    const signal = ctx?.signal;
-
-    try {
-      const response = await fetch("https://api.replicate.com/v1/predictions", {
-        method: "POST",
-        headers: {
-          Authorization: `Token ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          version: "cdf5b33e7dd86c9f3ce87b2e5d5b3553e47e96c77dc59d40ed6c4de15e6de6b4", // MiDaS
-          input: {
-            image: req.image.uri,
-          },
-        }),
-        signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Replicate API error: ${response.status} ${response.statusText}`);
-      }
-
-      const prediction = await response.json();
-      const result = await this.pollPrediction(prediction.id, signal);
-
-      if (result.status === "failed") {
-        throw new Error(`Prediction failed: ${result.error}`);
-      }
-
-      const depthUrl = result.output;
-      const latencyMs = Date.now() - start;
-
-      // Convert URL to data URI
-      const depthResponse = await fetch(depthUrl, { signal });
-      const depthBlob = await depthResponse.blob();
-      const base64 = await this.blobToBase64(depthBlob);
-      const depthUri = `data:image/png;base64,${base64}`;
-
-      return {
-        provider: this.name,
-        model: "midas",
-        costUSD: 0.0023,
-        latencyMs,
-        depth: {
-          uri: depthUri,
-          mimeType: "image/png",
-        },
-      };
-    } catch (error) {
-      throw new Error(`Replicate depth estimation failed: ${error.message}`);
-    }
-  }
-
-  private async pollPrediction(id: string, signal?: AbortSignal): Promise<any> {
-    const maxAttempts = 60; // 5 minutes max
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      if (signal?.aborted) {
-        throw new Error("Request aborted");
-      }
-
-      const response = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
-        headers: {
-          Authorization: `Token ${this.apiKey}`,
-        },
-        signal,
-      });
-
-      const prediction = await response.json();
-
-      if (prediction.status === "succeeded" || prediction.status === "failed") {
-        return prediction;
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait 5 seconds
-      attempts++;
-    }
-
-    throw new Error("Prediction timed out");
-  }
-
-  private async blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((_resolve, __reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(",")[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-}
-
-// Provider factory for easy configuration
+// Configuration interface
 export interface ProviderConfig {
-  stability?: StabilityAIConfig;
-  openai?: OpenAIConfig;
-  huggingface?: HuggingFaceConfig;
-  replicate?: { apiKey: string };
+  anthropic?: {
+    apiKey: string;
+    baseURL?: string;
+    defaultModel?: string;
+  };
+  google?: {
+    apiKey: string;
+    baseURL?: string;
+    projectId?: string;
+    defaultModel?: string;
+  };
+  azure?: {
+    apiKey: string;
+    endpoint: string;
+    deployments?: Record<string, any>;
+    registrationKey?: string;
+    apiVersion?: string;
+  };
+  circuitBreaker?: Partial<CircuitBreakerConfig>;
 }
 
-export function createProviders(config: ProviderConfig): AIProvider[] {
-  const providers: AIProvider[] = [];
+// Intelligent Provider Router with Fallback
+export class IntelligentProviderRouter {
+  private registry: ProductionProviderRegistry;
+  private modelMapper: ModelMapper;
+  private providerHealthCache = new Map<string, { status: string; lastCheck: number }>();
+  private healthCheckInterval = 30000; // 30 seconds
 
-  if (config.stability) {
-    providers.push(new StabilityAIProvider(config.stability));
+  constructor(registry: ProductionProviderRegistry) {
+    this.registry = registry;
+    this.modelMapper = ProviderFactory.getInstance().getModelMapper();
+    this.startHealthMonitoring();
   }
 
-  if (config.openai) {
-    providers.push(new OpenAIProvider(config.openai));
+  async selectProvider(
+    category: string,
+    constraints?: { excludeProviders?: string[]; maxCost?: number; maxLatency?: number }
+  ): Promise<{ provider: AIProvider; fallbacks: AIProvider[] }> {
+    const fallbackChain = this.modelMapper.getFallbackChain(category);
+    const availableProviders = fallbackChain.filter(name => {
+      if (constraints?.excludeProviders?.includes(name)) return false;
+      const health = this.providerHealthCache.get(name);
+      return !health || health.status === 'healthy';
+    });
+
+    if (availableProviders.length === 0) {
+      throw new Error(`No healthy providers available for category: ${category}`);
+    }
+
+    const primaryProviderName = availableProviders[0];
+    const primaryProvider = this.registry.getProvider(primaryProviderName!);
+    
+    if (!primaryProvider) {
+      throw new Error(`Provider ${primaryProviderName} not found in registry`);
+    }
+
+    const fallbackProviders = availableProviders.slice(1)
+      .map(name => this.registry.getProvider(name))
+      .filter((p): p is AIProvider => p !== undefined);
+
+    return {
+      provider: primaryProvider,
+      fallbacks: fallbackProviders
+    };
   }
 
-  if (config.huggingface) {
-    providers.push(new HuggingFaceProvider(config.huggingface));
+  private startHealthMonitoring(): void {
+    setInterval(async () => {
+      const healthResults = await this.registry.healthCheckAll();
+      for (const [name, health] of Object.entries(healthResults)) {
+        this.providerHealthCache.set(name, {
+          status: health.status,
+          lastCheck: Date.now()
+        });
+      }
+    }, this.healthCheckInterval);
   }
 
-  if (config.replicate) {
-    providers.push(new ReplicateProvider(config.replicate.apiKey));
+  getHealthStatus(): Record<string, { status: string; lastCheck: number }> {
+    return Object.fromEntries(this.providerHealthCache);
   }
+}
 
-  return providers;
+// Export all provider classes
+export {
+  AnthropicClaude4Provider,
+  GeminiProvider,
+  AzureOpenAIProvider,
+  CircuitBreakerProvider
+};
+
+// Export model mapper
+export { ModelMapper } from '../model-mapper';
+
+// Convenience function for quick setup
+export async function createProductionAISystem(config: ProviderConfig): Promise<{
+  registry: ProductionProviderRegistry;
+  router: IntelligentProviderRouter;
+  modelMapper: ModelMapper;
+}> {
+  const registry = new ProductionProviderRegistry(config.circuitBreaker);
+  await registry.initializeFromConfig(config);
+  
+  const router = new IntelligentProviderRouter(registry);
+  const modelMapper = ProviderFactory.getInstance().getModelMapper();
+
+  return { registry, router, modelMapper };
 }

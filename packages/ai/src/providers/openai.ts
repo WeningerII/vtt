@@ -4,13 +4,19 @@
 
 import {
   AIProvider,
+  AIContext,
+  AICapability,
+  TextGenerationRequest,
+  TextGenerationResult,
+  ImageAnalysisRequest,
+  ImageAnalysisResult,
+  HealthStatus,
+  DepthRequest,
+  DepthResult,
+  SegmentationRequest,
+  SegmentationResult,
   TextToImageRequest,
   TextToImageResult,
-  _DepthRequest,
-  _DepthResult,
-  _SegmentationRequest,
-  _SegmentationResult,
-  AIContext,
 } from "../index";
 
 export interface OpenAIProviderOptions {
@@ -20,7 +26,57 @@ export interface OpenAIProviderOptions {
 }
 
 export class OpenAIProvider implements AIProvider {
-  name = "openai";
+  name = "openai" as const;
+  version = "1.0.0";
+
+  capabilities(): AICapability[] {
+    return [
+      {
+        type: "text",
+        subtype: "generation",
+        models: [
+          {
+            id: "gpt-4",
+            displayName: "GPT-4",
+            contextWindow: 8192,
+            maxOutputTokens: 4096,
+            pricing: {
+              input: 0.03,
+              output: 0.06,
+              currency: "USD",
+              lastUpdated: new Date(),
+            },
+          },
+        ],
+      },
+      {
+        type: "image",
+        subtype: "generation",
+        models: [
+          {
+            id: "dall-e-3",
+            displayName: "DALL-E 3",
+            contextWindow: 4000,
+            maxOutputTokens: 0,
+            pricing: {
+              input: 0.04,
+              output: 0,
+              currency: "USD",
+              lastUpdated: new Date(),
+            },
+          },
+        ],
+      },
+    ];
+  }
+
+  async healthCheck(): Promise<HealthStatus> {
+    return {
+      status: "healthy",
+      lastCheck: new Date(),
+    };
+  }
+
   private apiKey: string;
   private baseURL: string;
   private organization: string | undefined;
@@ -29,10 +85,6 @@ export class OpenAIProvider implements AIProvider {
     this.apiKey = options.apiKey;
     this.baseURL = options.baseURL || "https://api.openai.com/v1";
     this.organization = options.organization;
-  }
-
-  capabilities(): Array<"textToImage" | "depth" | "segmentation"> {
-    return ["textToImage"];
   }
 
   async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
@@ -87,31 +139,19 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  async generateText(
-    prompt: string,
-    options: {
-      model?: string;
-      maxTokens?: number;
-      temperature?: number;
-      systemPrompt?: string;
-    } = {},
-    ctx?: AIContext,
-  ): Promise<{
-    text: string;
-    usage: { promptTokens: number; completionTokens: number; totalTokens: number };
-    model: string;
-    costUSD: number;
-    latencyMs: number;
-  }> {
+  async generateText(req: TextGenerationRequest, ctx?: AIContext): Promise<TextGenerationResult> {
     const start = Date.now();
-    const model = options.model || "gpt-4";
+    const model = req.model || "gpt-4";
+    const maxTokens = req.maxTokens || 150;
+    const temperature = req.temperature || 0.7;
+
+    const messages: any[] = [];
+    if (req.systemPrompt) {
+      messages.push({ role: "system", content: req.systemPrompt });
+    }
+    messages.push({ role: "user", content: req.prompt });
 
     try {
-      const messages = [
-        ...(options.systemPrompt ? [{ role: "system", content: options.systemPrompt }] : []),
-        { role: "user", content: prompt },
-      ];
-
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: "POST",
         headers: {
@@ -122,8 +162,8 @@ export class OpenAIProvider implements AIProvider {
         body: JSON.stringify({
           model,
           messages,
-          max_tokens: options.maxTokens || 1000,
-          temperature: options.temperature || 0.7,
+          max_tokens: maxTokens,
+          temperature,
         }),
         ...(ctx?.signal && { signal: ctx.signal }),
       });
@@ -133,23 +173,24 @@ export class OpenAIProvider implements AIProvider {
       }
 
       const data = await response.json();
-      const text = data.choices[0]?.message?.content || "";
-      const usage = data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+      const choice = data.choices[0];
 
       // Rough cost calculation (varies by model)
       const costPer1kTokens = model.includes("gpt-4") ? 0.03 : 0.002;
-      const costUSD = (usage.total_tokens / 1000) * costPer1kTokens;
+      const costUSD = (data.usage.total_tokens / 1000) * costPer1kTokens;
 
       return {
-        text,
-        usage: {
-          promptTokens: usage.prompt_tokens,
-          completionTokens: usage.completion_tokens,
-          totalTokens: usage.total_tokens,
-        },
+        provider: this.name,
         model,
         costUSD,
         latencyMs: Date.now() - start,
+        tokensUsed: {
+          input: data.usage.prompt_tokens || 0,
+          output: data.usage.completion_tokens || 0,
+          total: data.usage.total_tokens || 0,
+        },
+        text: choice.message?.content || "",
+        finishReason: choice.finish_reason === "stop" ? "stop" : "length",
       };
     } catch (error) {
       throw new Error(
@@ -158,16 +199,7 @@ export class OpenAIProvider implements AIProvider {
     }
   }
 
-  async analyzeImage(
-    imageUrl: string,
-    prompt: string,
-    ctx?: AIContext,
-  ): Promise<{
-    analysis: string;
-    model: string;
-    costUSD: number;
-    latencyMs: number;
-  }> {
+  async analyzeImage(req: ImageAnalysisRequest, ctx?: AIContext): Promise<ImageAnalysisResult> {
     const start = Date.now();
 
     try {
@@ -184,8 +216,16 @@ export class OpenAIProvider implements AIProvider {
             {
               role: "user",
               content: [
-                { type: "text", text: prompt },
-                { type: "image_url", image_url: { url: imageUrl } },
+                {
+                  type: "text",
+                  text: req.prompt,
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: req.image.uri,
+                  },
+                },
               ],
             },
           ],
@@ -202,10 +242,17 @@ export class OpenAIProvider implements AIProvider {
       const analysis = data.choices[0]?.message?.content || "";
 
       return {
-        analysis,
+        provider: this.name,
         model: "gpt-4-vision-preview",
-        costUSD: 0.01, // Approximate cost
+        costUSD: 0.01,
         latencyMs: Date.now() - start,
+        tokensUsed: {
+          input: data.usage?.prompt_tokens || 0,
+          output: data.usage?.completion_tokens || 0,
+          total: data.usage?.total_tokens || 0,
+        },
+        analysis,
+        confidence: 0.9
       };
     } catch (error) {
       throw new Error(

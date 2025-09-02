@@ -453,6 +453,26 @@ components:
               type: string
               example: 75% chance to defeat orc this turn
 
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
 paths:
   # Authentication Endpoints
   /auth/discord:
@@ -461,7 +481,7 @@ paths:
       summary: Initiate Discord OAuth
       description: Redirects to Discord OAuth authorization page
       responses:
-        '302':
+        "302":
           description: Redirect to Discord OAuth
 
   /auth/google:
@@ -470,7 +490,7 @@ paths:
       summary: Initiate Google OAuth
       description: Redirects to Google OAuth authorization page
       responses:
-        '302':
+        "302":
           description: Redirect to Google OAuth
 
   /auth/logout:
@@ -481,10 +501,10 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: Successfully logged out
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /auth/me:
     get:
@@ -494,7 +514,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: User information
           content:
             application/json:
@@ -507,8 +527,8 @@ paths:
                     type: string
                   displayName:
                     type: string
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   # Health & Monitoring
   /api/health:
@@ -517,12 +537,12 @@ paths:
       summary: Comprehensive health check
       description: Returns detailed health status of all system components
       responses:
-        '200':
+        "200":
           description: Health status
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatus'
+                $ref: "#/components/schemas/HealthStatus"
 
   /api/health/live:
     get:
@@ -530,7 +550,7 @@ paths:
       summary: Liveness probe
       description: Simple alive check for Kubernetes liveness probe
       responses:
-        '200':
+        "200":
           description: Service is alive
 
   /api/health/ready:
@@ -539,7 +559,7 @@ paths:
       summary: Readiness probe
       description: Service ready check for Kubernetes readiness probe
       responses:
-        '200':
+        "200":
           description: Service is ready
 
   /api/metrics:
@@ -548,7 +568,7 @@ paths:
       summary: Application metrics
       description: Returns application metrics in JSON format
       responses:
-        '200':
+        "200":
           description: Application metrics
           content:
             application/json:
@@ -561,7 +581,7 @@ paths:
       summary: Prometheus metrics
       description: Returns metrics in Prometheus format
       responses:
-        '200':
+        "200":
           description: Prometheus metrics
           content:
             text/plain:
@@ -591,7 +611,7 @@ paths:
             default: 0
           description: Offset for pagination
       responses:
-        '200':
+        "200":
           description: List of characters
           content:
             application/json:
@@ -601,15 +621,15 @@ paths:
                   characters:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Character'
+                      $ref: "#/components/schemas/Character"
                   total:
                     type: number
                   limit:
                     type: number
                   offset:
                     type: number
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       tags: [Characters]
@@ -622,18 +642,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCharacterRequest'
+              $ref: "#/components/schemas/CreateCharacterRequest"
       responses:
-        '201':
+        "201":
           description: Character created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Character'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Character"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /characters/{id}:
     get:
@@ -650,16 +670,16 @@ paths:
             type: string
           description: Character ID
       responses:
-        '200':
+        "200":
           description: Character details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Character'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Character"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     put:
       tags: [Characters]
@@ -678,18 +698,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateCharacterRequest'
+              $ref: "#/components/schemas/CreateCharacterRequest"
       responses:
-        '200':
+        "200":
           description: Character updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Character'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                $ref: "#/components/schemas/Character"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     delete:
       tags: [Characters]
@@ -704,12 +724,12 @@ paths:
           schema:
             type: string
       responses:
-        '204':
+        "204":
           description: Character deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /characters/{id}/level-up:
     post:
@@ -746,12 +766,12 @@ paths:
                       type: number
                       example: 1
       responses:
-        '200':
+        "200":
           description: Character leveled up successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Character'
+                $ref: "#/components/schemas/Character"
 
   # Campaigns API
   /campaigns:
@@ -762,7 +782,7 @@ paths:
       security:
         - BearerAuth: []
       responses:
-        '200':
+        "200":
           description: List of campaigns
           content:
             application/json:
@@ -772,7 +792,7 @@ paths:
                   campaigns:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Campaign'
+                      $ref: "#/components/schemas/Campaign"
 
     post:
       tags: [Campaigns]
@@ -801,12 +821,12 @@ paths:
                   example: false
               required: [name, description]
       responses:
-        '201':
+        "201":
           description: Campaign created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Campaign'
+                $ref: "#/components/schemas/Campaign"
 
   # Monsters API
   /api/monsters:
@@ -837,7 +857,7 @@ paths:
             type: number
             default: 0
       responses:
-        '200':
+        "200":
           description: List of monsters
           content:
             application/json:
@@ -847,7 +867,7 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Monster'
+                      $ref: "#/components/schemas/Monster"
                   total:
                     type: number
                   limit:
@@ -866,9 +886,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Monster'
+              $ref: "#/components/schemas/Monster"
       responses:
-        '201':
+        "201":
           description: Monster created successfully
 
   # AI Services API
@@ -884,15 +904,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TacticalDecisionRequest'
+              $ref: "#/components/schemas/TacticalDecisionRequest"
       responses:
-        '200':
+        "200":
           description: Tactical decision generated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TacticalDecisionResponse'
-        '429':
+                $ref: "#/components/schemas/TacticalDecisionResponse"
+        "429":
           description: Rate limit exceeded
 
   /api/assistant/query:
@@ -923,7 +943,7 @@ paths:
                       example: beginner
               required: [query]
       responses:
-        '200':
+        "200":
           description: Assistant response
           content:
             application/json:
@@ -959,7 +979,7 @@ paths:
                   format: binary
                   description: Map image file
       responses:
-        '200':
+        "200":
           description: Map uploaded successfully
           content:
             application/json:
@@ -981,29 +1001,6 @@ paths:
                   gridDetected:
                     type: boolean
                     example: true
-
-components:
-  responses:
-    BadRequest:
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    
-    Unauthorized:
-      description: Unauthorized
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-    
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
 
 tags:
   - name: Authentication

@@ -35,8 +35,8 @@ export default function App() {
       try {
         // Load configuration from environment variables
         const appConfig: AppConfig = {
-          serverUrl: import.meta.env?.VITE_SERVER_URL || "http://localhost:3001",
-          wsUrl: import.meta.env?.VITE_WS_URL || "ws://localhost:3001",
+          serverUrl: import.meta.env?.VITE_SERVER_URL || "http://localhost:8080",
+          wsUrl: import.meta.env?.VITE_WS_URL || "ws://localhost:8080",
           version: import.meta.env?.VITE_APP_VERSION || "1.0.0",
           environment: import.meta.env?.MODE === "production" ? "production" : "development",
         };
