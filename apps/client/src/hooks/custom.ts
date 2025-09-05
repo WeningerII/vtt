@@ -1,11 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useLocalStorage, useDebounce, useThrottle } from "usehooks-ts";
-
-// Re-export popular hooks from libraries
-export {
+import { 
   useLocalStorage,
-  useDebounce,
-  useThrottle,
   useMediaQuery,
   useOnClickOutside,
   useInterval,
@@ -13,70 +8,106 @@ export {
   useToggle,
   useCounter,
   useHover,
-  useFetch,
   useScript,
-  useWindowSize,
-  useScrollPosition,
+  useWindowSize
 } from "usehooks-ts";
 
-// Custom auth hook placeholder
-export const useAuth = () => {
-  // This should be implemented based on your auth system
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
+// Re-export available hooks from libraries
+export {
+  useLocalStorage,
+  useMediaQuery,
+  useOnClickOutside,
+  useInterval,
+  useTimeout,
+  useToggle,
+  useCounter,
+  useHover,
+  useScript,
+  useWindowSize,
+} from "usehooks-ts";
 
-  return {
-    isAuthenticated,
-    user,
-    login: async (credentials: any) => {
-      // Implement login logic
-    },
-    logout: () => {
-      setIsAuthenticated(false);
-      setUser(null);
-    },
-  };
-};
-
-// Custom game hook placeholder
-export const useGame = () => {
-  const [gameState, setGameState] = useState(null);
-  const [players, setPlayers] = useState([]);
-
-  return {
-    gameState,
-    players,
-    joinGame: (gameId: string) => {
-      // Implement game join logic
-    },
-    leaveGame: () => {
-      setGameState(null);
-      setPlayers([]);
-    },
-  };
-};
-
-// WebSocket hook
-export const useWebSocket = (url: string) => {
-  const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState(null);
-  const ws = useRef<WebSocket | null>(null);
+// Implement missing hooks that are no longer exported
+export const useDebounce = <T>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
-    ws.current = new WebSocket(url);
-
-    ws.current.onopen = () => setIsConnected(true);
-    ws.current.onclose = () => setIsConnected(false);
-    ws.current.onmessage = (event) => setLastMessage(event.data);
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
     return () => {
-      ws.current?.close();
+      clearTimeout(handler);
     };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
+export const useThrottle = <T>(value: T, interval: number): T => {
+  const [throttledValue, setThrottledValue] = useState(value);
+  const lastExecuted = useRef(Date.now());
+
+  useEffect(() => {
+    if (Date.now() >= lastExecuted.current + interval) {
+      lastExecuted.current = Date.now();
+      setThrottledValue(value);
+    } else {
+      const timerId = setTimeout(() => {
+        lastExecuted.current = Date.now();
+        setThrottledValue(value);
+      }, interval);
+
+      return () => clearTimeout(timerId);
+    }
+  }, [value, interval]);
+
+  return throttledValue;
+};
+
+export const useFetch = <T>(url: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(url);
+        if (!response.ok) {throw new Error('Failed to fetch');}
+        const result = await response.json();
+        setData(result);
+        setError(null);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [url]);
 
-  const sendMessage = useCallback((message: string) => {
-    ws.current?.send(message);
+  return { data, loading, error };
+};
+
+export const useScrollPosition = () => {
+  const [scrollPosition, setScrollPosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const updatePosition = () => {
+      setScrollPosition({ x: window.scrollX, y: window.scrollY });
+    };
+
+    window.addEventListener('scroll', updatePosition);
+    updatePosition();
+
+    return () => window.removeEventListener('scroll', updatePosition);
   }, []);
 
-  return { isConnected, lastMessage, sendMessage };
+  return scrollPosition;
 };
+
+// Note: useAuth is provided by AuthProvider - do not duplicate here
+// Note: useGame is provided by GameProvider - do not duplicate here  
+// Note: useWebSocket is provided by WebSocketProvider - do not duplicate here

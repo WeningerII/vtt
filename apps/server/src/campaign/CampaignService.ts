@@ -46,6 +46,31 @@ export interface GameSession {
   endedAt?: Date;
 }
 
+export interface Player {
+  id: string;
+  userId: string;
+  email: string;
+  displayName: string;
+  role: 'player' | 'gm' | 'spectator';
+  status: 'active' | 'invited' | 'kicked' | 'banned';
+  joinedAt: Date;
+  invitedAt?: Date;
+  invitedBy?: string;
+}
+
+export interface CampaignSettings {
+  id: string;
+  campaignId: string;
+  isPublic: boolean;
+  allowSpectators: boolean;
+  maxPlayers: number;
+  autoAcceptInvites: boolean;
+  requireApproval: boolean;
+  sessionTimeout: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export class CampaignService {
   private campaigns = new Map<string, Campaign>();
 
@@ -114,7 +139,7 @@ export class CampaignService {
   async getCampaign(campaignId: string): Promise<Campaign | null> {
     // Check cache first
     const cached = this.campaigns.get(campaignId);
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     // Load from database
     const dbCampaign = await this.prisma.campaign.findUnique({
@@ -129,7 +154,7 @@ export class CampaignService {
       },
     });
 
-    if (!dbCampaign) return null;
+    if (!dbCampaign) {return null;}
 
     const gameMaster = dbCampaign.members.find((m) => m.role === "GM");
     const players = dbCampaign.members.map((m) => m.userId);
@@ -158,7 +183,7 @@ export class CampaignService {
    */
   async getCampaignWithScenes(campaignId: string): Promise<CampaignWithScenes | null> {
     const campaign = await this.getCampaign(campaignId);
-    if (!campaign) return null;
+    if (!campaign) {return null;}
 
     const scenes = await this.prisma.scene.findMany({
       where: { campaignId },
@@ -220,7 +245,7 @@ export class CampaignService {
       where: { id: sceneId, campaignId },
     });
 
-    if (!scene) return false;
+    if (!scene) {return false;}
 
     // Use internal method for consistent database persistence
     await this.setActiveSceneInternal(campaignId, sceneId);
@@ -261,12 +286,12 @@ export class CampaignService {
     }
 
     // Apply updates
-    if (update.name) campaign.name = update.name;
-    if (update.description !== undefined) campaign.description = update.description;
-    if (update.gameSystem) campaign.gameSystem = update.gameSystem;
-    if (update.isActive !== undefined) campaign.isActive = update.isActive;
-    if (update.players) campaign.players = update.players;
-    if (update.characters) campaign.characters = update.characters;
+    if (update.name) {campaign.name = update.name;}
+    if (update.description !== undefined) {campaign.description = update.description;}
+    if (update.gameSystem) {campaign.gameSystem = update.gameSystem;}
+    if (update.isActive !== undefined) {campaign.isActive = update.isActive;}
+    if (update.players) {campaign.players = update.players;}
+    if (update.characters) {campaign.characters = update.characters;}
 
     campaign.updatedAt = new Date();
     return campaign;
@@ -418,7 +443,7 @@ export class CampaignService {
    */
   async endSession(sessionId: string, userId: string): Promise<boolean> {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return false;
+    if (!session) {return false;}
 
     // Only GM can end session
     if (session.gameMasterId !== userId) {
@@ -437,14 +462,14 @@ export class CampaignService {
    */
   async joinSession(sessionId: string, userId: string): Promise<boolean> {
     const session = this.activeSessions.get(sessionId);
-    if (!session || session.status !== "active") return false;
+    if (!session || session.status !== "active") {return false;}
 
     // Verify user is member of campaign
     const campaign = await this.getCampaign(session.campaignId);
-    if (!campaign) return false;
+    if (!campaign) {return false;}
 
     const isMember = campaign.gameMasterId === userId || campaign.players.includes(userId);
-    if (!isMember) return false;
+    if (!isMember) {return false;}
 
     // Add user to session if not already connected
     if (!session.connectedUsers.includes(userId)) {
@@ -459,7 +484,7 @@ export class CampaignService {
    */
   async leaveSession(sessionId: string, userId: string): Promise<boolean> {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return false;
+    if (!session) {return false;}
 
     // Remove user from connected users
     session.connectedUsers = session.connectedUsers.filter((id) => id !== userId);
@@ -526,5 +551,293 @@ export class CampaignService {
    */
   clearActiveScene(campaignId: string): void {
     this.activeScenes.delete(campaignId);
+  }
+
+  /**
+   * Get campaign players with detailed information
+   */
+  async getCampaignPlayers(campaignId: string): Promise<Player[]> {
+    const members = await this.prisma.campaignMember.findMany({
+      where: { campaignId },
+      include: {
+        user: true,
+      },
+    });
+
+    return members.map(member => ({
+      id: member.id,
+      userId: member.userId,
+      email: member.user.email,
+      displayName: member.user.displayName,
+      role: member.role as 'player' | 'gm' | 'spectator',
+      status: member.status as 'active' | 'invited' | 'kicked' | 'banned',
+      joinedAt: member.joinedAt,
+      invitedAt: member.invitedAt || undefined,
+      invitedBy: member.invitedBy || undefined,
+    }));
+  }
+
+  /**
+   * Invite player by email to campaign
+   */
+  async invitePlayerByEmail(campaignId: string, userId: string, email: string, role: string): Promise<Player> {
+    // Verify user is GM
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign || campaign.gameMasterId !== userId) {
+      throw new Error('Unauthorized: Only campaign GM can invite players');
+    }
+
+    // Find or create user by email
+    let user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Create invited user
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          username: `${email.split('@')[0]  }_${  Math.random().toString(36).substr(2, 4)}`,
+          displayName: email.split('@')[0],
+          passwordHash: '', // Will be set when they accept invitation
+          role: 'player',
+        },
+      });
+    }
+
+    // Check if already a member
+    const existingMember = await this.prisma.campaignMember.findUnique({
+      where: {
+        userId_campaignId: {
+          userId: user.id,
+          campaignId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      throw new Error('User is already a member of this campaign');
+    }
+
+    // Create campaign membership
+    const member = await this.prisma.campaignMember.create({
+      data: {
+        userId: user.id,
+        campaignId,
+        role,
+        status: 'invited',
+        invitedAt: new Date(),
+        invitedBy: userId,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return {
+      id: member.id,
+      userId: member.userId,
+      email: member.user.email,
+      displayName: member.user.displayName,
+      role: member.role as 'player' | 'gm' | 'spectator',
+      status: member.status as 'active' | 'invited' | 'kicked' | 'banned',
+      joinedAt: member.joinedAt,
+      invitedAt: member.invitedAt || undefined,
+      invitedBy: member.invitedBy || undefined,
+    };
+  }
+
+  /**
+   * Update player role or status
+   */
+  async updatePlayer(campaignId: string, userId: string, playerId: string, updates: { role?: string; status?: string }): Promise<boolean> {
+    // Verify user is GM
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign || campaign.gameMasterId !== userId) {
+      throw new Error('Unauthorized: Only campaign GM can update players');
+    }
+
+    // Update player
+    const result = await this.prisma.campaignMember.updateMany({
+      where: {
+        id: playerId,
+        campaignId,
+      },
+      data: updates,
+    });
+
+    return result.count > 0;
+  }
+
+  /**
+   * Add player to campaign (for existing users)
+   */
+  async addPlayer(campaignId: string, userId: string, playerId: string): Promise<boolean> {
+    // Verify user is GM
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign || campaign.gameMasterId !== userId) {
+      throw new Error('Unauthorized: Only campaign GM can add players');
+    }
+
+    // Check if player exists
+    const player = await this.prisma.user.findUnique({ where: { id: playerId } });
+    if (!player) {
+      throw new Error('Player not found');
+    }
+
+    // Check if already a member
+    const existingMember = await this.prisma.campaignMember.findUnique({
+      where: {
+        userId_campaignId: {
+          userId: playerId,
+          campaignId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      throw new Error('Player is already a member of this campaign');
+    }
+
+    // Add player
+    await this.prisma.campaignMember.create({
+      data: {
+        userId: playerId,
+        campaignId,
+        role: 'player',
+        status: 'active',
+      },
+    });
+
+    return true;
+  }
+
+  /**
+   * Remove player from campaign
+   */
+  async removePlayer(campaignId: string, userId: string, playerId: string): Promise<boolean> {
+    // Verify user is GM
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign || campaign.gameMasterId !== userId) {
+      throw new Error('Unauthorized: Only campaign GM can remove players');
+    }
+
+    // Cannot remove GM
+    const member = await this.prisma.campaignMember.findUnique({
+      where: {
+        userId_campaignId: {
+          userId: playerId,
+          campaignId,
+        },
+      },
+    });
+
+    if (member?.role === 'GM') {
+      throw new Error('Cannot remove campaign GM');
+    }
+
+    // Remove player
+    const result = await this.prisma.campaignMember.deleteMany({
+      where: {
+        userId: playerId,
+        campaignId,
+      },
+    });
+
+    return result.count > 0;
+  }
+
+  /**
+   * Get campaign settings
+   */
+  async getCampaignSettings(campaignId: string): Promise<CampaignSettings | null> {
+    const settings = await this.prisma.campaignSettings.findUnique({
+      where: { campaignId },
+    });
+
+    if (!settings) {
+      // Create default settings
+      return await this.createDefaultSettings(campaignId);
+    }
+
+    return {
+      id: settings.id,
+      campaignId: settings.campaignId,
+      isPublic: settings.isPublic,
+      allowSpectators: settings.allowSpectators,
+      maxPlayers: settings.maxPlayers,
+      autoAcceptInvites: settings.autoAcceptInvites,
+      requireApproval: settings.requireApproval,
+      sessionTimeout: settings.sessionTimeout,
+      createdAt: settings.createdAt,
+      updatedAt: settings.updatedAt,
+    };
+  }
+
+  /**
+   * Update campaign settings
+   */
+  async updateCampaignSettings(campaignId: string, userId: string, settings: Partial<CampaignSettings>): Promise<boolean> {
+    // Verify user is GM
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign || campaign.gameMasterId !== userId) {
+      throw new Error('Unauthorized: Only campaign GM can update settings');
+    }
+
+    // Update settings
+    const result = await this.prisma.campaignSettings.upsert({
+      where: { campaignId },
+      update: {
+        ...settings,
+        updatedAt: new Date(),
+      },
+      create: {
+        campaignId,
+        isPublic: settings.isPublic ?? false,
+        allowSpectators: settings.allowSpectators ?? true,
+        maxPlayers: settings.maxPlayers ?? 6,
+        autoAcceptInvites: settings.autoAcceptInvites ?? false,
+        requireApproval: settings.requireApproval ?? true,
+        sessionTimeout: settings.sessionTimeout ?? 240,
+      },
+    });
+
+    return !!result;
+  }
+
+  /**
+   * Create default settings for campaign
+   */
+  async createDefaultSettings(campaignId: string): Promise<CampaignSettings> {
+    const settings = await this.prisma.campaignSettings.create({
+      data: {
+        campaignId,
+        isPublic: false,
+        allowSpectators: true,
+        maxPlayers: 6,
+        autoAcceptInvites: false,
+        requireApproval: true,
+        sessionTimeout: 240,
+      },
+    });
+
+    return {
+      id: settings.id,
+      campaignId: settings.campaignId,
+      isPublic: settings.isPublic,
+      allowSpectators: settings.allowSpectators,
+      maxPlayers: settings.maxPlayers,
+      autoAcceptInvites: settings.autoAcceptInvites,
+      requireApproval: settings.requireApproval,
+      sessionTimeout: settings.sessionTimeout,
+      createdAt: settings.createdAt,
+      updatedAt: settings.updatedAt,
+    };
+  }
+
+  /**
+   * Find user by email
+   */
+  async findUserByEmail(email: string): Promise<any | null> {
+    return await this.prisma.user.findUnique({
+      where: { email },
+    });
   }
 }

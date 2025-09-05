@@ -99,7 +99,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
   // Handle session not found or loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+      <div className="min-h-screen bg-primary flex items-center justify-center">
         <LoadingSpinner size="xl" showLabel label="Loading game session..." />
       </div>
     );
@@ -107,10 +107,10 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+      <div className="min-h-screen bg-primary flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-error mb-4">Session Not Found</h1>
-          <p className="text-text-secondary mb-6">
+          <p className="text-secondary mb-6">
             The game session "{sessionId}" could not be found or you don't have permission to access
             it.
           </p>
@@ -134,8 +134,8 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
           <div className="h-full bg-bg-secondary rounded-lg border border-border-primary flex items-center justify-center">
             <div className="text-center">
               <Map className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-text-primary mb-2">Tactical Map</h3>
-              <p className="text-text-secondary">
+              <h3 className="text-lg font-medium text-primary mb-2">Tactical Map</h3>
+              <p className="text-secondary">
                 Map and grid system will be implemented in the next phase
               </p>
             </div>
@@ -147,7 +147,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
   };
 
   return (
-    <div className="h-screen bg-bg-primary flex flex-col overflow-hidden">
+    <div className="h-screen bg-primary flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-bg-secondary border-b border-border-primary px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
@@ -161,8 +161,8 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
           </Button>
 
           <div>
-            <h1 className="font-semibold text-text-primary">{session.name}</h1>
-            <p className="text-sm text-text-secondary">GM: {session.gamemaster.displayName}</p>
+            <h1 className="font-semibold text-primary">{session.name}</h1>
+            <p className="text-sm text-secondary">GM: {session.gamemaster.displayName}</p>
           </div>
         </div>
 
@@ -213,7 +213,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                       "flex-1 flex items-center justify-center gap-2 px-3 py-3 text-sm font-medium transition-colors border-b-2",
                       activePanel === key
                         ? "text-accent-primary border-accent-primary bg-accent-light"
-                        : "text-text-secondary border-transparent hover:text-text-primary hover:bg-bg-tertiary",
+                        : "text-secondary border-transparent hover:text-primary hover:bg-bg-tertiary",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -231,7 +231,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
         {/* Main Content Area */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Main Content Area - Map/Tactical View */}
-          <div className="flex-1 bg-bg-primary relative">
+          <div className="flex-1 bg-primary relative">
             {activePanel === "map" ? (
               <BattleMap className="h-full" isGM={isGM} />
             ) : (
@@ -240,10 +240,10 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
                   <div className="w-32 h-32 bg-bg-tertiary rounded-lg flex items-center justify-center mb-4 mx-auto">
                     <Map className="h-16 w-16 text-text-tertiary" />
                   </div>
-                  <h3 className="text-xl font-semibold text-text-primary mb-2">
+                  <h3 className="text-xl font-semibold text-primary mb-2">
                     Game Session Active
                   </h3>
-                  <p className="text-text-secondary mb-4">
+                  <p className="text-secondary mb-4">
                     Use the sidebar panels to chat, roll dice, or manage your character.
                   </p>
                   <Button
@@ -283,12 +283,12 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
           <div className="bg-bg-secondary border-t border-border-primary px-4 py-2">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-4">
-                <span className="text-text-secondary">
-                  Session: <span className="text-text-primary">{session.status}</span>
+                <span className="text-secondary">
+                  Session: <span className="text-primary">{session.status}</span>
                 </span>
-                <span className="text-text-secondary">
+                <span className="text-secondary">
                   Players:{" "}
-                  <span className="text-text-primary">
+                  <span className="text-primary">
                     {session.players.filter((p) => p.isConnected).length}/{session.players.length}
                   </span>
                 </span>
@@ -296,8 +296,8 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
 
               <div className="flex items-center gap-4">
                 {user && (
-                  <span className="text-text-secondary">
-                    Playing as: <span className="text-text-primary">{user.displayName}</span>
+                  <span className="text-secondary">
+                    Playing as: <span className="text-primary">{user.displayName}</span>
                   </span>
                 )}
               </div>

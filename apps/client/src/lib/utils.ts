@@ -18,3 +18,16 @@ export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
+
+/**
+ * Generates initials from a full name
+ * @param name - Full name string
+ * @returns Initials (e.g., "John Doe" -> "JD")
+ */
+export function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase())
+    .join('')
+    .substring(0, 2);
+}

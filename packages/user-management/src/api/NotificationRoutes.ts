@@ -107,7 +107,7 @@ export class NotificationRoutes {
         preferences,
       });
     } catch (error) {
-      logger.error("Get preferences error:", error);
+      logger.error("Get preferences error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -117,7 +117,7 @@ export class NotificationRoutes {
       const user = (req as any).user;
       const data = updatePreferencesSchema.parse(req.body);
 
-      await this.notificationManager.updateUserPreferences(user.id, data);
+      await this.notificationManager.updateUserPreferences(user.id, data as any);
 
       res.json({
         success: true,
@@ -129,7 +129,7 @@ export class NotificationRoutes {
         return;
       }
 
-      logger.error("Update preferences error:", error);
+      logger.error("Update preferences error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -149,7 +149,7 @@ export class NotificationRoutes {
         notifications,
       });
     } catch (error) {
-      logger.error("Get in-app notifications error:", error);
+      logger.error("Get in-app notifications error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -165,7 +165,7 @@ export class NotificationRoutes {
         count,
       });
     } catch (error) {
-      logger.error("Get unread count error:", error);
+      logger.error("Get unread count error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -189,7 +189,7 @@ export class NotificationRoutes {
         return;
       }
 
-      logger.error("Mark notifications as read error:", error);
+      logger.error("Mark notifications as read error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -206,7 +206,7 @@ export class NotificationRoutes {
         message: "Notification marked as read",
       });
     } catch (error) {
-      logger.error("Mark notification as read error:", error);
+      logger.error("Mark notification as read error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -216,14 +216,14 @@ export class NotificationRoutes {
       const user = (req as any).user;
       const { notificationId } = req.params;
 
-      await this.notificationManager.deleteInAppNotification(user.id, notificationId);
+      await this.notificationManager.deleteInAppNotification(user.id, notificationId || '');
 
       res.json({
         success: true,
         message: "Notification deleted",
       });
     } catch (error) {
-      logger.error("Delete notification error:", error);
+      logger.error("Delete notification error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -240,7 +240,7 @@ export class NotificationRoutes {
         message: onlyRead ? "Read notifications cleared" : "All notifications cleared",
       });
     } catch (error) {
-      logger.error("Clear notifications error:", error);
+      logger.error("Clear notifications error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -250,14 +250,15 @@ export class NotificationRoutes {
       const user = (req as any).user;
       const data = sendInviteSchema.parse(req.body);
 
-      const results = [];
+      const results: Array<{ email: string; success: boolean; error?: string }> = [];
 
       for (const email of data.emails) {
         try {
-          await this.notificationManager.sendGameInvite(user.id, email, data.gameId, data.message);
+          await this.notificationManager.sendGameInvite(user.id, email, data.gameId, data.message || '');
           results.push({ email, success: true });
         } catch (error) {
-          results.push({ email, success: false, error: error.message });
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          results.push({ email, success: false, error: errorMessage });
         }
       }
 
@@ -273,7 +274,7 @@ export class NotificationRoutes {
         return;
       }
 
-      logger.error("Send game invites error:", error);
+      logger.error("Send game invites error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -292,7 +293,7 @@ export class NotificationRoutes {
         message: "Test email sent",
       });
     } catch (error) {
-      logger.error("Send test email error:", error);
+      logger.error("Send test email error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -327,7 +328,7 @@ export class NotificationRoutes {
         message: "Successfully unsubscribed",
       });
     } catch (error) {
-      logger.error("Unsubscribe error:", error);
+      logger.error("Unsubscribe error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -356,7 +357,7 @@ export class NotificationRoutes {
         message: "Successfully resubscribed",
       });
     } catch (error) {
-      logger.error("Resubscribe error:", error);
+      logger.error("Resubscribe error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -379,7 +380,7 @@ export class NotificationRoutes {
         message: "Device registered for push notifications",
       });
     } catch (error) {
-      logger.error("Register push device error:", error);
+      logger.error("Register push device error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -396,7 +397,7 @@ export class NotificationRoutes {
         message: "Device unregistered from push notifications",
       });
     } catch (error) {
-      logger.error("Unregister push device error:", error);
+      logger.error("Unregister push device error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -419,7 +420,7 @@ export class NotificationRoutes {
         message: "Test push notification sent",
       });
     } catch (error) {
-      logger.error("Send test push error:", error);
+      logger.error("Send test push error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -442,7 +443,7 @@ export class NotificationRoutes {
         history,
       });
     } catch (error) {
-      logger.error("Get notification history error:", error);
+      logger.error("Get notification history error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -464,7 +465,7 @@ export class NotificationRoutes {
         analytics,
       });
     } catch (error) {
-      logger.error("Get notification analytics error:", error);
+      logger.error("Get notification analytics error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }

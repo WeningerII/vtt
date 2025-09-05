@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { SpellEngine } from "./SpellEngine";
+import { SpellEngine } from "./index";
 
 describe("SpellEngine", () => {
   let service: SpellEngine;

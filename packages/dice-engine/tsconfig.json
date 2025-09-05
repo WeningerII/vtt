@@ -5,9 +5,14 @@
     "rootDir": "src",
     "incremental": true,
     "tsBuildInfoFile": "./dice-engine.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "types": []
   },
   "include": [
     "src/**/*"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts"
   ]
 }

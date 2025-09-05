@@ -48,7 +48,7 @@ describe("PC and Monster Integration - End-to-End Workflow", () => {
 
   beforeEach(() => {
     // Reset test IDs
-    testCampaignId = "test-campaign-" + Date.now();
+    testCampaignId = `test-campaign-${  Date.now()}`;
     testCharacterId = "";
     testMonsterId = "";
     testEncounterId = "";
@@ -392,7 +392,7 @@ describe("PC/Monster Integration - Performance Tests", () => {
     console.log("Testing large encounter performance...");
 
     const startTime = Date.now();
-    const campaignId = "perf-test-" + Date.now();
+    const campaignId = `perf-test-${  Date.now()}`;
 
     // Create multiple characters
     const characters = [];

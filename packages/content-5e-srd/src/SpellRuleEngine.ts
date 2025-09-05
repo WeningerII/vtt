@@ -4,7 +4,7 @@
  */
 
 import {
-  _ExecutionContext,
+  ExecutionContext,
   GameEntity,
   ComputationalSpell,
   Vector3D,
@@ -87,7 +87,7 @@ const SPELL_RULES: Rule[] = [
         ctx.eventType === "pre_cast" &&
         ctx.environment.entities &&
         Array.from(ctx.environment.entities.values()).some(
-          (_entity: GameEntity) =>
+          (entity: GameEntity) =>
             entity.conditions.has("ready_counterspell") &&
             isWithinRange(entity, ctx.caster, 60 * 5),
         )
@@ -98,7 +98,7 @@ const SPELL_RULES: Rule[] = [
         e.conditions.has("ready_counterspell"),
       );
 
-      if (!counterspeller) return { type: "log", data: Record<string, any>, continue: true };
+      if (!counterspeller) {return { type: "log", data: {}, continue: true };}
 
       // Execute counterspell logic
       const spellLevel = ctx.spell.metadata.level;
@@ -192,7 +192,7 @@ const SPELL_RULES: Rule[] = [
     action: (ctx) => {
       const legendaryCreature = ctx.targets.find((t) => t.conditions.has("legendary_resistance"));
 
-      if (!legendaryCreature) return { type: "log", data: Record<string, any>, continue: true };
+      if (!legendaryCreature) {return { type: "log", data: {}, continue: true };}
 
       // Check if creature has legendary resistance uses left
       const usesLeft = 3; // Would get from actual creature data
@@ -213,7 +213,7 @@ const SPELL_RULES: Rule[] = [
         }
       }
 
-      return { type: "log", data: Record<string, any>, continue: true };
+      return { type: "log", data: {}, continue: true };
     },
     priority: 750,
   },
@@ -284,14 +284,14 @@ const SPELL_RULES: Rule[] = [
         };
       }
 
-      return { type: "log", data: Record<string, any>, continue: true };
+      return { type: "log", data: {}, continue: true };
     },
     priority: 200,
   },
 ];
 
 // Utility functions for rule calculations
-function isWithinRange(entity1: GameEntity, entity2: GameEntity, _range: number): boolean {
+function isWithinRange(entity1: GameEntity, entity2: GameEntity, range: number): boolean {
   const dx = entity2.position.x - entity1.position.x;
   const dy = entity2.position.y - entity1.position.y;
   const dz = entity2.position.z - entity1.position.z;
@@ -322,9 +322,9 @@ function calculateCover(
       return true; // Simplified
     }).length || 0;
 
-  if (obstaclesBetween === 0) return { type: "none", acBonus: 0, saveBonus: 0 };
-  if (obstaclesBetween === 1) return { type: "half", acBonus: 2, saveBonus: 2 };
-  if (obstaclesBetween === 2) return { type: "three_quarters", acBonus: 5, saveBonus: 5 };
+  if (obstaclesBetween === 0) {return { type: "none", acBonus: 0, saveBonus: 0 };}
+  if (obstaclesBetween === 1) {return { type: "half", acBonus: 2, saveBonus: 2 };}
+  if (obstaclesBetween === 2) {return { type: "three_quarters", acBonus: 5, saveBonus: 5 };}
   return { type: "full", acBonus: Infinity, saveBonus: Infinity };
 }
 
@@ -347,7 +347,7 @@ export class SpellRuleEngine {
 
   addRule(rule: Rule): void {
     this.rules.push(rule);
-    this.rules.sort((_a, _b) => b.priority - a.priority);
+    this.rules.sort((a, b) => b.priority - a.priority);
   }
 
   removeRule(ruleId: string): void {
@@ -416,9 +416,9 @@ export class SpellRuleEngine {
       },
       gameState,
       eventType: "pre_cast",
-      metadata: Record<string, any>,
-      dice: (_sides: number, _count = 1) =>
-        Array.from({ _length: count }, () => Math.floor(Math.random() * sides) + 1),
+      metadata: {},
+      dice: (sides: number, count = 1) =>
+        Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1),
       time: Date.now(),
     };
 
@@ -429,7 +429,7 @@ export class SpellRuleEngine {
 
     const modifications = results
       .filter((r) => r.type === "modify")
-      .reduce((_acc, _r) => ({ ...acc, ...r.data }), {});
+      .reduce((acc, r) => ({ ...acc, ...r.data }), {});
 
     return {
       valid: !prevented,
@@ -536,7 +536,7 @@ export class SpellInteractionCalculator {
     // Dispel Magic, Counterspell, Remove Curse, etc.
     const dispelSpells = ["dispel_magic", "counterspell", "remove_curse", "greater_restoration"];
 
-    if (!dispelSpells.includes(dispelSpell.id)) return false;
+    if (!dispelSpells.includes(dispelSpell.id)) {return false;}
 
     if (dispelSpell.id === "dispel_magic") {
       // Dispel magic affects spells of 3rd level or lower automatically

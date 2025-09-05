@@ -212,7 +212,7 @@ export class GLTFLoader implements AssetLoader<ModelData> {
     baseDir?: string | null,
     binaryData?: ArrayBuffer | null,
   ): ArrayBuffer[] {
-    return buffers.map((buffer, _index) => {
+    return buffers.map((buffer, index) => {
       if (buffer.uri) {
         if (buffer.uri.startsWith("data:")) {
           // Data URI
@@ -239,6 +239,9 @@ export class GLTFLoader implements AssetLoader<ModelData> {
   private createBufferViews(bufferViews: any[], buffers: ArrayBuffer[]): DataView[] {
     return bufferViews.map((bv) => {
       const buffer = buffers[bv.buffer];
+      if (!buffer) {
+        throw new Error(`Buffer ${bv.buffer} not found`);
+      }
       return new DataView(buffer, bv.byteOffset || 0, bv.byteLength);
     });
   }
@@ -317,7 +320,7 @@ export class GLTFLoader implements AssetLoader<ModelData> {
 
     switch (componentType) {
       case 5121: // UNSIGNED_BYTE
-        return new Uint8Array(bytes);
+        return new Uint8Array(bytes) as any;
       case 5123: // UNSIGNED_SHORT
         return new Uint16Array(bytes.buffer, bytes.byteOffset, totalBytes / 2);
       case 5125: // UNSIGNED_INT
@@ -365,7 +368,7 @@ export class GLTFLoader implements AssetLoader<ModelData> {
         stride += 3;
 
         for (let i = 0; i < positions.length; i += 3) {
-          vertexData.push(positions[i], positions[i + 1], positions[i + 2]);
+          vertexData.push(positions[i] ?? 0, positions[i + 1] ?? 0, positions[i + 2] ?? 0);
         }
       }
 
@@ -390,8 +393,8 @@ export class GLTFLoader implements AssetLoader<ModelData> {
         const interleavedData: number[] = [];
 
         for (let i = 0; i < positions.length; i += 3) {
-          interleavedData.push(positions[i], positions[i + 1], positions[i + 2]);
-          interleavedData.push(normals[i], normals[i + 1], normals[i + 2]);
+          interleavedData.push(positions[i] ?? 0, positions[i + 1] ?? 0, positions[i + 2] ?? 0);
+          interleavedData.push(normals[i] ?? 0, normals[i + 1] ?? 1, normals[i + 2] ?? 0);
         }
 
         vertexData.length = 0;
@@ -422,14 +425,14 @@ export class GLTFLoader implements AssetLoader<ModelData> {
         const interleavedData: number[] = [];
 
         for (let i = 0; i < positions.length; i += 3) {
-          interleavedData.push(positions[i], positions[i + 1], positions[i + 2]);
+          interleavedData.push(positions[i] ?? 0, positions[i + 1] ?? 0, positions[i + 2] ?? 0);
 
           if (normals) {
-            interleavedData.push(normals[i], normals[i + 1], normals[i + 2]);
+            interleavedData.push(normals[i] ?? 0, normals[i + 1] ?? 1, normals[i + 2] ?? 0);
           }
 
           const uvIndex = (i / 3) * 2;
-          interleavedData.push(uvs[uvIndex], uvs[uvIndex + 1]);
+          interleavedData.push(uvs[uvIndex] ?? 0, uvs[uvIndex + 1] ?? 0);
         }
 
         vertexData.length = 0;
@@ -496,21 +499,19 @@ export class GLTFLoader implements AssetLoader<ModelData> {
   private parseMaterials(materials: any[]): MaterialData[] {
     return materials.map((material) => ({
       name: material.name || "Unnamed Material",
-      pbrMetallicRoughness: material.pbrMetallicRoughness
-        ? {
-            baseColorFactor: material.pbrMetallicRoughness.baseColorFactor || [1, 1, 1, 1],
-            baseColorTexture: material.pbrMetallicRoughness.baseColorTexture,
-            metallicFactor:
-              material.pbrMetallicRoughness.metallicFactor !== undefined
-                ? material.pbrMetallicRoughness.metallicFactor
-                : 1,
+      pbrMetallicRoughness: {
+        baseColorFactor: material.pbrMetallicRoughness?.baseColorFactor || [1, 1, 1, 1],
+        baseColorTexture: material.pbrMetallicRoughness?.baseColorTexture,
+        metallicFactor:
+          material.pbrMetallicRoughness?.metallicFactor !== undefined
+            ? material.pbrMetallicRoughness.metallicFactor
+            : 1,
             roughnessFactor:
-              material.pbrMetallicRoughness.roughnessFactor !== undefined
+              material.pbrMetallicRoughness?.roughnessFactor !== undefined
                 ? material.pbrMetallicRoughness.roughnessFactor
                 : 1,
-            metallicRoughnessTexture: material.pbrMetallicRoughness.metallicRoughnessTexture,
-          }
-        : undefined,
+            metallicRoughnessTexture: material.pbrMetallicRoughness?.metallicRoughnessTexture,
+          },
       normalTexture: material.normalTexture,
       occlusionTexture: material.occlusionTexture,
       emissiveTexture: material.emissiveTexture,
@@ -523,7 +524,7 @@ export class GLTFLoader implements AssetLoader<ModelData> {
   }
 
   private parseTextures(textures: any[]): TextureReference[] {
-    return textures.map((_texture, __index) => ({
+    return textures.map((texture, index) => ({
       index,
       extras: texture.extras,
     }));
@@ -542,7 +543,7 @@ export class GLTFLoader implements AssetLoader<ModelData> {
     const rootNode: SceneNode = {
       name: sceneData.name || "Scene",
       children: [],
-      transform: Record<string, any>,
+      transform: {} as Record<string, any>,
     };
 
     // Parse root nodes
@@ -620,23 +621,25 @@ export class OBJLoader implements AssetLoader<ModelData> {
 
       switch (command) {
         case "v": // Vertex
-          vertices.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+          vertices.push(parseFloat(parts[1] || "0"), parseFloat(parts[2] || "0"), parseFloat(parts[3] || "0"));
           break;
 
         case "vn": // Normal
-          normals.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+          normals.push(parseFloat(parts[1] || "0"), parseFloat(parts[2] || "0"), parseFloat(parts[3] || "0"));
           break;
 
         case "vt": // Texture coordinate
-          texCoords.push(parseFloat(parts[1]), parseFloat(parts[2]));
+          texCoords.push(parseFloat(parts[1] || "0"), parseFloat(parts[2] || "0"));
           break;
 
         case "f": // Face {
           const face: number[] = [];
           for (let i = 1; i < parts.length; i++) {
-            const indices = parts[i].split("/");
+            const part = parts[i];
+            if (!part) {continue;}
+            const indices = part.split("/");
             face.push(
-              parseInt(indices[0]) - 1, // Vertex index (OBJ is 1-based)
+              parseInt(indices[0] || "0") - 1, // Vertex index (OBJ is 1-based)
               indices[1] ? parseInt(indices[1]) - 1 : -1, // Texture coord index
               indices[2] ? parseInt(indices[2]) - 1 : -1, // Normal index
             );
@@ -645,7 +648,7 @@ export class OBJLoader implements AssetLoader<ModelData> {
           break;
 
         case "usemtl": // Use material
-          currentMaterial = parts[1];
+          currentMaterial = parts[1] || null;
           break;
       }
     }
@@ -665,22 +668,22 @@ export class OBJLoader implements AssetLoader<ModelData> {
         const nIndex = face[i * 3 + 2];
 
         // Position
-        if (vIndex >= 0) {
-          vertexData.push(vertices[vIndex * 3], vertices[vIndex * 3 + 1], vertices[vIndex * 3 + 2]);
+        if (vIndex !== undefined && vIndex >= 0) {
+          vertexData.push(vertices[vIndex * 3] ?? 0, vertices[vIndex * 3 + 1] ?? 0, vertices[vIndex * 3 + 2] ?? 0);
         } else {
           vertexData.push(0, 0, 0);
         }
 
         // Normal
-        if (nIndex >= 0) {
-          vertexData.push(normals[nIndex * 3], normals[nIndex * 3 + 1], normals[nIndex * 3 + 2]);
+        if (nIndex !== undefined && nIndex >= 0) {
+          vertexData.push(normals[nIndex * 3] ?? 0, normals[nIndex * 3 + 1] ?? 1, normals[nIndex * 3 + 2] ?? 0);
         } else {
           vertexData.push(0, 1, 0); // Default up normal
         }
 
         // Texture coordinates
-        if (tIndex >= 0) {
-          vertexData.push(texCoords[tIndex * 2], texCoords[tIndex * 2 + 1]);
+        if (tIndex !== undefined && tIndex >= 0) {
+          vertexData.push(texCoords[tIndex * 2] ?? 0, texCoords[tIndex * 2 + 1] ?? 0);
         } else {
           vertexData.push(0, 0);
         }
@@ -701,24 +704,24 @@ export class OBJLoader implements AssetLoader<ModelData> {
           const tIndex = face[i * 3 + 1];
           const nIndex = face[i * 3 + 2];
 
-          if (vIndex >= 0) {
+          if (vIndex !== undefined && vIndex >= 0) {
             vertexData.push(
-              vertices[vIndex * 3],
-              vertices[vIndex * 3 + 1],
-              vertices[vIndex * 3 + 2],
+              vertices[vIndex * 3] ?? 0,
+              vertices[vIndex * 3 + 1] ?? 0,
+              vertices[vIndex * 3 + 2] ?? 0,
             );
           } else {
             vertexData.push(0, 0, 0);
           }
 
-          if (nIndex >= 0) {
-            vertexData.push(normals[nIndex * 3], normals[nIndex * 3 + 1], normals[nIndex * 3 + 2]);
+          if (nIndex !== undefined && nIndex >= 0) {
+            vertexData.push(normals[nIndex * 3] ?? 0, normals[nIndex * 3 + 1] ?? 1, normals[nIndex * 3 + 2] ?? 0);
           } else {
             vertexData.push(0, 1, 0);
           }
 
-          if (tIndex >= 0) {
-            vertexData.push(texCoords[tIndex * 2], texCoords[tIndex * 2 + 1]);
+          if (tIndex !== undefined && tIndex >= 0) {
+            vertexData.push(texCoords[tIndex * 2] ?? 0, texCoords[tIndex * 2 + 1] ?? 0);
           } else {
             vertexData.push(0, 0);
           }
@@ -768,12 +771,12 @@ export class OBJLoader implements AssetLoader<ModelData> {
       name: "Root",
       children: [],
       meshIndex: 0,
-      transform: Record<string, any>,
+      transform: {} as Record<string, any>,
     };
 
     return {
       meshes: [mesh],
-      materials: [{ name: "Default", extras: Record<string, unknown> }],
+      materials: [{ name: "Default", extras: {} as Record<string, unknown> }],
       textures: [],
       scene: rootNode,
       metadata: {

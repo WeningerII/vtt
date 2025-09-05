@@ -7,7 +7,7 @@
 
 // Core managers
 export { UserManager } from "./UserManager";
-export { BillingManager } from "./BillingManager";
+export { StripeService } from "./services/StripeService";
 export { NotificationManager } from "./NotificationManager";
 
 // Types and interfaces
@@ -20,14 +20,9 @@ export type {
   UserManagerConfig,
 } from "./UserManager";
 
-export type {
-  SubscriptionPlan,
-  Subscription,
-  Invoice,
-  PaymentMethod,
-  UsageRecord,
-  BillingManagerConfig,
-} from "./BillingManager";
+// Stripe types are exported directly from the Stripe SDK
+// These can be imported as: import Stripe from 'stripe';
+// Then used as: Stripe.Subscription, Stripe.Invoice, etc.
 
 export type {
   NotificationTemplate,
@@ -49,11 +44,11 @@ export const _UserManagementUtils = {
     notifications: any;
   }) => {
     const { UserManager } = await import("./UserManager");
-    const { BillingManager } = await import("./BillingManager");
+    const { StripeService } = await import("./services/StripeService");
     const { NotificationManager } = await import("./NotificationManager");
 
     const userManager = new UserManager(config.userManager);
-    const billingManager = new BillingManager(config.billing, userManager);
+    const stripeService = new StripeService(config.billing.stripeSecretKey, config.billing.webhookSecret);
     const notificationManager = new NotificationManager(config.notifications, userManager);
 
     // Wire up event handlers
@@ -62,33 +57,19 @@ export const _UserManagementUtils = {
     });
 
     userManager.on("passwordResetRequested", async (user: any, _token: string) => {
-      await notificationManager.sendPasswordResetEmail(user.id, token);
+      await notificationManager.sendPasswordResetEmail(user.id, _token);
     });
 
     userManager.on("emailVerificationSent", async (user: any, _token: string) => {
-      await notificationManager.sendEmailVerification(user.id, token);
+      await notificationManager.sendEmailVerification(user.id, _token);
     });
 
-    billingManager.on("subscriptionCreated", async (subscription: any) => {
-      await notificationManager.sendInApp(
-        subscription.userId,
-        "success",
-        "Subscription Active",
-        "Your subscription has been activated successfully!",
-      );
-    });
-
-    billingManager.on("invoicePaymentFailed", async (invoice: any) => {
-      await notificationManager.sendEmail(invoice.userId, "payment-failed", {
-        amount: invoice.amount,
-        currency: invoice.currency,
-        retryUrl: "/billing/retry-payment",
-      });
-    });
+    // Note: StripeService doesn't have event emitters like the old BillingManager
+    // Event handling should be done through Stripe webhooks in your API routes
 
     return {
       userManager,
-      billingManager,
+      stripeService,
       notificationManager,
     };
   },

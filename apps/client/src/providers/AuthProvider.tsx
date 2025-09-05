@@ -54,10 +54,10 @@ export function useAuth() {
 
 interface AuthProviderProps {
   children: React.ReactNode;
-  serverUrl: string;
+  serverUrl?: string;
 }
 
-export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
+export function AuthProvider({ children, serverUrl = import.meta.env?.VITE_SERVER_URL || 'http://localhost:8080' }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -87,20 +87,74 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
     setState((prev) => ({ ...prev, isLoading }));
   }, []);
 
+  const refreshAuth = useCallback(async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
+      setUser(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${serverUrl}/api/v1/auth/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.tokens) {
+        localStorage.setItem("accessToken", data.tokens.accessToken);
+        localStorage.setItem("refreshToken", data.tokens.refreshToken);
+
+        // Fetch updated user data
+        const userResponse = await fetch(`${serverUrl}/api/v1/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${data.tokens.accessToken}`,
+          },
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          setUser(userData.user || userData.data);
+        }
+      } else {
+        // Refresh failed, logout user
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        setUser(null);
+      }
+    } catch (error) {
+      logger.error("Token refresh failed:", error);
+      setUser(null);
+    }
+  }, [serverUrl, setUser]);
+
   // Check for existing session on mount
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const response = await fetch(`${serverUrl}/auth/me`, {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          setUser(null);
+          return;
+        }
+
+        const response = await fetch(`${serverUrl}/api/v1/auth/me`, {
           credentials: "include",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
+            Authorization: `Bearer ${token}`,
           },
         });
 
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData.user);
+          setUser(userData.user || userData.data);
+        } else if (response.status === 401) {
+          // Token expired, try to refresh
+          await refreshAuth();
         } else {
           // Clear any stale tokens
           localStorage.removeItem("accessToken");
@@ -109,12 +163,29 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
         }
       } catch (error) {
         logger.error("Auth check failed:", error);
-        setUser(null);
+        // Try refresh token before giving up
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (refreshToken) {
+          await refreshAuth();
+        } else {
+          setUser(null);
+        }
       }
     };
 
     checkAuthStatus();
-  }, [serverUrl, setUser]);
+  }, [serverUrl, setUser, refreshAuth]);
+
+  // Listen for auth refresh requests from API client
+  useEffect(() => {
+    const handleRefreshNeeded = async () => {
+      logger.info("Auth refresh requested by API client");
+      await refreshAuth();
+    };
+
+    window.addEventListener("auth:refresh-needed", handleRefreshNeeded);
+    return () => window.removeEventListener("auth:refresh-needed", handleRefreshNeeded);
+  }, [refreshAuth]);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -122,7 +193,7 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
       clearError();
 
       try {
-        const response = await fetch(`${serverUrl}/auth/login`, {
+        const response = await fetch(`${serverUrl}/api/v1/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -141,6 +212,7 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
         if (data.tokens) {
           localStorage.setItem("accessToken", data.tokens.accessToken);
           localStorage.setItem("refreshToken", data.tokens.refreshToken);
+          logger.info("Login successful - tokens stored");
         }
 
         setUser(data.user);
@@ -157,7 +229,7 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
       clearError();
 
       try {
-        const response = await fetch(`${serverUrl}/auth/register`, {
+        const response = await fetch(`${serverUrl}/api/v1/auth/register`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -175,6 +247,7 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
         if (result.tokens) {
           localStorage.setItem("accessToken", result.tokens.accessToken);
           localStorage.setItem("refreshToken", result.tokens.refreshToken);
+          logger.info("Registration successful - tokens stored");
           setUser(result.user);
         }
       } catch (error) {
@@ -188,7 +261,7 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
     setLoading(true);
 
     try {
-      await fetch(`${serverUrl}/auth/logout`, {
+      await fetch(`${serverUrl}/api/v1/auth/logout`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -201,6 +274,7 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
       // Clear local state regardless of server response
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      logger.info("Logout complete - tokens cleared");
       setUser(null);
     }
   }, [serverUrl, setLoading, setUser]);
@@ -208,55 +282,11 @@ export function AuthProvider({ children, serverUrl }: AuthProviderProps) {
   const loginWithProvider = useCallback(
     (provider: "discord" | "google") => {
       // Redirect to OAuth provider
-      window.location.href = `${serverUrl}/auth/${provider}`;
+      window.location.href = `${serverUrl}/api/v1/auth/${provider}`;
     },
     [serverUrl],
   );
 
-  const refreshAuth = useCallback(async () => {
-    const refreshToken = localStorage.getItem("refreshToken");
-    if (!refreshToken) {
-      setUser(null);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${serverUrl}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.tokens) {
-        localStorage.setItem("accessToken", data.tokens.accessToken);
-        localStorage.setItem("refreshToken", data.tokens.refreshToken);
-
-        // Fetch updated user data
-        const userResponse = await fetch(`${serverUrl}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${data.tokens.accessToken}`,
-          },
-        });
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          setUser(userData.user);
-        }
-      } else {
-        // Refresh failed, logout user
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        setUser(null);
-      }
-    } catch (error) {
-      logger.error("Token refresh failed:", error);
-      setUser(null);
-    }
-  }, [serverUrl, setUser]);
 
   // Set up token refresh interval
   useEffect(() => {

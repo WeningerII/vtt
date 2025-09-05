@@ -10,7 +10,7 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
 import JSZip from "jszip";
-import { AssetManager, _AssetMetadata } from "./AssetManager";
+import { AssetManager, AssetMetadata } from "./AssetManager";
 import { Campaign } from "./CampaignBuilder";
 import { Scene } from "./ContentEditor";
 
@@ -227,7 +227,7 @@ export class PublishingManager extends EventEmitter {
     // Validate scenes
     for (let i = 0; i < pkg.scenes.length; i++) {
       const scene = pkg.scenes[i];
-      if (!scene) continue;
+      if (!scene) {continue;}
       const sceneErrors = await this.validateScene(scene);
 
       sceneErrors.forEach((error) => {
@@ -243,7 +243,7 @@ export class PublishingManager extends EventEmitter {
     // Validate campaigns
     for (let i = 0; i < pkg.campaigns.length; i++) {
       const campaign = pkg.campaigns[i];
-      if (!campaign) continue;
+      if (!campaign) {continue;}
       const campaignErrors = await this.validateCampaign(campaign);
 
       campaignErrors.forEach((error) => {
@@ -350,7 +350,7 @@ export class PublishingManager extends EventEmitter {
               zip.file(thumbnailPath, thumbnailData);
             }
           } catch (error) {
-            logger.warn(`Failed to include asset ${assetId}:`, error);
+            logger.warn(`Failed to include asset ${assetId}:`, error as Record<string, any>);
           }
         }
       }
@@ -673,7 +673,7 @@ export class PublishingManager extends EventEmitter {
     lastModified: Date;
   } | null {
     const pkg = this.packages.get(packageId);
-    if (!pkg) return null;
+    if (!pkg) {return null;}
 
     return {
       downloads: pkg.downloads,
@@ -697,12 +697,12 @@ export class PublishingManager extends EventEmitter {
 
     return {
       totalPackages: packages.length,
-      totalDownloads: packages.reduce((_sum, _pkg) => sum + pkg.downloads, 0),
+      totalDownloads: packages.reduce((_sum, _pkg) => _sum + _pkg.downloads, 0),
       averageRating:
         packages.length > 0
-          ? packages.reduce((_sum, _pkg) => sum + pkg.rating, 0) / packages.length
+          ? packages.reduce((_sum, _pkg) => _sum + _pkg.rating, 0) / packages.length
           : 0,
-      totalSize: packages.reduce((_sum, _pkg) => sum + pkg.size, 0),
+      totalSize: packages.reduce((_sum, _pkg) => _sum + _pkg.size, 0),
       byCategory: this.groupBy(packages, "category"),
       bySystem: this.groupBy(packages, "system"),
     };

@@ -16,6 +16,14 @@ export interface Combatant {
     temporary: number;
   };
   armorClass: number;
+  abilities?: {
+    strength: number;
+    dexterity: number;
+    constitution: number;
+    intelligence: number;
+    wisdom: number;
+    charisma: number;
+  };
   conditions: Array<{
     name: string;
     duration: number;
@@ -68,7 +76,7 @@ export const CombatTracker: React.FC<CombatTrackerProps> = memo(({
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (readOnly) return;
+      if (readOnly) {return;}
 
       // Keyboard shortcuts
       switch (e.key) {
@@ -109,6 +117,14 @@ export const CombatTracker: React.FC<CombatTrackerProps> = memo(({
     initiative: 10,
     hitPoints: { current: 10, max: 10, temporary: 0 },
     armorClass: 10,
+    abilities: {
+      strength: 10,
+      dexterity: 10,
+      constitution: 10,
+      intelligence: 10,
+      wisdom: 10,
+      charisma: 10,
+    },
     conditions: [],
     isActive: true,
     isVisible: true,
@@ -130,6 +146,14 @@ export const CombatTracker: React.FC<CombatTrackerProps> = memo(({
         initiative: 10,
         hitPoints: { current: 10, max: 10, temporary: 0 },
         armorClass: 10,
+        abilities: {
+          strength: 10,
+          dexterity: 10,
+          constitution: 10,
+          intelligence: 10,
+          wisdom: 10,
+          charisma: 10,
+        },
         conditions: [],
         isActive: true,
         isVisible: true,
@@ -140,7 +164,9 @@ export const CombatTracker: React.FC<CombatTrackerProps> = memo(({
 
   const rollInitiative = useCallback((combatant: Combatant) => {
     const roll = Math.floor(Math.random() * 20) + 1;
-    const dexMod = Math.floor((10 - 10) / 2); // Simplified - would use actual dex modifier
+    // Calculate D&D 5e ability modifier: (ability - 10) / 2, rounded down
+    const dexterity = combatant.abilities?.dexterity || 10;
+    const dexMod = Math.floor((dexterity - 10) / 2);
     onInitiativeChange(combatant.id, roll + dexMod);
   }, [onInitiativeChange]);
 
@@ -149,10 +175,10 @@ export const CombatTracker: React.FC<CombatTrackerProps> = memo(({
   }, []);
 
   const getHealthBarColor = useCallback((percentage: number) => {
-    if (percentage <= 0) return "dead";
-    if (percentage <= 25) return "critical";
-    if (percentage <= 50) return "bloodied";
-    if (percentage <= 75) return "injured";
+    if (percentage <= 0) {return "dead";}
+    if (percentage <= 25) {return "critical";}
+    if (percentage <= 50) {return "bloodied";}
+    if (percentage <= 75) {return "injured";}
     return "healthy";
   }, []);
 

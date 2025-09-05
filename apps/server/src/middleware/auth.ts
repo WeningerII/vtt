@@ -4,31 +4,10 @@
 
 import { RouteHandler, Middleware } from "../router/types";
 import { logger } from "@vtt/logging";
-import { AuthManager } from "@vtt/auth";
+import { getAuthManager } from "../auth/auth-manager";
 
-const authManager = new AuthManager({
-  jwtSecret: process.env.JWT_SECRET || "dev-secret-key",
-  jwtExpiration: "7d",
-  refreshTokenExpiration: "30d",
-  bcryptRounds: 12,
-  rateLimits: {
-    login: { windowMs: 15 * 60 * 1000, maxRequests: 5 },
-    register: { windowMs: 60 * 60 * 1000, maxRequests: 3 },
-    passwordReset: { windowMs: 60 * 60 * 1000, maxRequests: 3 },
-    general: { windowMs: 15 * 60 * 1000, maxRequests: 100 },
-  },
-  security: {
-    requireTwoFactor: false,
-    sessionTimeout: 60,
-    maxFailedAttempts: 5,
-    lockoutDuration: 15,
-    requireEmailVerification: false,
-    allowGuestAccess: true,
-    enforcePasswordComplexity: false,
-    enableAuditLogging: false,
-  },
-  oauth: {},
-});
+// Use shared AuthManager instance
+const authManager = getAuthManager();
 
 /**
  * Middleware to require authentication for protected routes
@@ -52,21 +31,17 @@ export const requireAuth: Middleware = async (ctx, next) => {
     }
 
     // Verify JWT token
-    const securityContext = await authManager.validateToken(
-      token,
-      ctx.req.socket.remoteAddress || "unknown",
-      ctx.req.headers["user-agent"] || "unknown",
-    );
+    const user = await authManager.verifyAccessToken(token);
 
-    if (!securityContext) {
+    if (!user) {
       ctx.res.writeHead(401, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Invalid or expired token" }));
       return;
     }
 
     // Add user info to request context
-    (ctx.req as any).user = securityContext.user;
-    (ctx.req as any).session = securityContext.session;
+    (ctx.req as any).user = user;
+    (ctx.req as any).session = { token };
 
     // Call next middleware/handler - THIS IS CRITICAL!
     await next();
@@ -138,14 +113,10 @@ export const optionalAuth: Middleware = async (ctx, next) => {
 
     if (token) {
       try {
-        const securityContext = await authManager.validateToken(
-          token,
-          ctx.req.socket.remoteAddress || "unknown",
-          ctx.req.headers["user-agent"] || "unknown",
-        );
-        if (securityContext) {
-          (ctx.req as any).user = securityContext.user;
-          (ctx.req as any).session = securityContext.session;
+        const user = await authManager.verifyAccessToken(token);
+        if (user) {
+          (ctx.req as any).user = user;
+          (ctx.req as any).session = { token };
         }
       } catch (_error) {
         // Ignore errors for optional auth

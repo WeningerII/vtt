@@ -68,15 +68,15 @@ export class AnimationSystem {
 
     // Elastic
     easeInElastic: (t: number) => {
-      if (t === 0) return 0;
-      if (t === 1) return 1;
+      if (t === 0) {return 0;}
+      if (t === 1) {return 1;}
       const p = 0.3;
       const s = p / 4;
       return -(Math.pow(2, 10 * (t -= 1)) * Math.sin(((t - s) * (2 * Math.PI)) / p));
     },
     easeOutElastic: (t: number) => {
-      if (t === 0) return 0;
-      if (t === 1) return 1;
+      if (t === 0) {return 0;}
+      if (t === 1) {return 1;}
       const p = 0.3;
       const s = p / 4;
       return Math.pow(2, -10 * t) * Math.sin(((t - s) * (2 * Math.PI)) / p) + 1;
@@ -111,14 +111,14 @@ export class AnimationSystem {
   }
 
   private start(): void {
-    if (this.isRunning) return;
+    if (this.isRunning) {return;}
     this.isRunning = true;
     this.lastTime = performance.now();
     this.update();
   }
 
   private update(): void {
-    if (!this.isRunning) return;
+    if (!this.isRunning) {return;}
 
     const currentTime = performance.now();
     const deltaTime = currentTime - this.lastTime;
@@ -126,13 +126,14 @@ export class AnimationSystem {
 
     // Update animations
     for (const [id, animation] of this.animations) {
-      if (!animation.isPlaying || animation.isPaused) continue;
+      if (!animation.isPlaying || animation.isPaused) {continue;}
 
       animation.currentTime += deltaTime;
 
-      if (animation.currentTime >= animation.config.delay) {
+      const delay = animation.config.delay ?? 0;
+      if (animation.currentTime >= delay) {
         const progress = Math.min(
-          (animation.currentTime - animation.config.delay) / animation.config.duration,
+          (animation.currentTime - delay) / animation.config.duration,
           1,
         );
 
@@ -159,7 +160,7 @@ export class AnimationSystem {
 
     // Update timelines
     for (const [id, timeline] of this.timelines) {
-      if (!timeline.isPlaying || timeline.isPaused) continue;
+      if (!timeline.isPlaying || timeline.isPaused) {continue;}
 
       timeline.currentTime += deltaTime;
       const normalizedTime = timeline.currentTime / timeline.duration;
@@ -191,22 +192,24 @@ export class AnimationSystem {
   }
 
   private evaluateTrack(track: AnimationTrack, time: number): any {
-    if (track.keyframes.length === 0) return null;
-    if (track.keyframes.length === 1) return track.keyframes[0].value;
+    if (track.keyframes.length === 0) {return null;}
+    if (track.keyframes.length === 1) {return track.keyframes[0]?.value;}
 
     // Find surrounding keyframes
     let keyframe1 = track.keyframes[0];
     let keyframe2 = track.keyframes[track.keyframes.length - 1];
 
     for (let i = 0; i < track.keyframes.length - 1; i++) {
-      if (time >= track.keyframes[i].time && time <= track.keyframes[i + 1].time) {
-        keyframe1 = track.keyframes[i];
-        keyframe2 = track.keyframes[i + 1];
+      const currentFrame = track.keyframes[i];
+      const nextFrame = track.keyframes[i + 1];
+      if (currentFrame && nextFrame && time >= currentFrame.time && time <= nextFrame.time) {
+        keyframe1 = currentFrame;
+        keyframe2 = nextFrame;
         break;
       }
     }
 
-    if (keyframe1 === keyframe2) return keyframe1.value;
+    if (!keyframe1 || !keyframe2 || keyframe1 === keyframe2) {return keyframe1?.value;}
 
     // Interpolate between keyframes
     const duration = keyframe2.time - keyframe1.time;
@@ -263,7 +266,7 @@ export class AnimationSystem {
     }
 
     if (Array.isArray(from) && Array.isArray(to) && from.length === to.length) {
-      return from.map((_val, __i) => this.interpolateValues(val, to[i], t));
+      return from.map((_val, __i) => this.interpolateValues(_val, to[__i], t));
     }
 
     if (typeof from === "object" && typeof to === "object") {
@@ -286,11 +289,16 @@ export class AnimationSystem {
     let obj = target;
 
     for (let i = 0; i < props.length - 1; i++) {
-      obj = obj[props[i]];
-      if (!obj) return;
+      const prop = props[i];
+      if (!prop) {return;}
+      obj = obj[prop];
+      if (!obj) {return;}
     }
 
-    obj[props[props.length - 1]] = value;
+    const finalProp = props[props.length - 1];
+    if (finalProp) {
+      obj[finalProp] = value;
+    }
   }
 
   private resolveEasing(easing: EasingFunction | string): EasingFunction {
@@ -468,7 +476,7 @@ export class AnimationSystem {
 
     for (const prop of props) {
       obj = obj[prop];
-      if (obj === undefined) return undefined;
+      if (obj === undefined) {return undefined;}
     }
 
     return obj;
@@ -480,11 +488,13 @@ export class AnimationSystem {
 
     const runNext = () => {
       if (currentIndex >= animations.length) {
-        if (config?.onComplete) config.onComplete();
+        if (config?.onComplete) {config.onComplete();}
         return;
       }
 
-      const result = animations[currentIndex]();
+      const animationFn = animations[currentIndex];
+      if (!animationFn) {return;}
+      const result = animationFn();
       const animIds = Array.isArray(result) ? result : [result];
 
       // Wait for all animations to complete
@@ -534,7 +544,7 @@ export class AnimationSystem {
     const staggerTime = config.stagger || 0.1;
     const animIds: string[] = [];
 
-    targets.forEach((_target, __index) => {
+    targets.forEach((target, index) => {
       const staggeredConfig = {
         ...config,
         delay: (config.delay || 0) + index * staggerTime,

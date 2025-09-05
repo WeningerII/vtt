@@ -3,7 +3,7 @@
  * Handles item crafting, recipes, skill checks, and tool requirements
  */
 
-import { _BaseItem, _Tool, ItemCost } from "./index.js";
+import { BaseItem, Tool, ItemCost } from "./index.js";
 
 export interface CraftingRecipe {
   id: string;
@@ -100,7 +100,7 @@ export class CraftingSystem {
     workspaceId?: string,
   ): CraftingAttempt | null {
     const recipe = this.recipes.get(recipeId);
-    if (!recipe) return null;
+    if (!recipe) {return null;}
 
     // Check if crafter has required tools
     const hasRequiredTools = recipe.tools.every(
@@ -109,7 +109,7 @@ export class CraftingSystem {
         (workspaceId && this.workspaces.get(workspaceId)?.availableTools.includes(toolId)),
     );
 
-    if (!hasRequiredTools) return null;
+    if (!hasRequiredTools) {return null;}
 
     const attempt: CraftingAttempt = {
       id: `craft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -137,10 +137,10 @@ export class CraftingSystem {
     skillModifiers: Record<string, number>,
   ): SkillCheckResult[] {
     const attempt = this.activeAttempts.get(attemptId);
-    if (!attempt) return [];
+    if (!attempt) {return [];}
 
     const recipe = this.recipes.get(attempt.recipeId);
-    if (!recipe) return [];
+    if (!recipe) {return [];}
 
     const workspace = attempt.workspace ? this.workspaces.get(attempt.workspace) : undefined;
     const qualityBonus = workspace?.qualityBonus || 0;
@@ -176,10 +176,10 @@ export class CraftingSystem {
    */
   completeCrafting(attemptId: string, hoursSpent: number): CraftingAttempt | null {
     const attempt = this.activeAttempts.get(attemptId);
-    if (!attempt) return null;
+    if (!attempt) {return null;}
 
     const recipe = this.recipes.get(attempt.recipeId);
-    if (!recipe) return null;
+    if (!recipe) {return null;}
 
     attempt.timeSpent = hoursSpent;
     attempt.endTime = new Date();

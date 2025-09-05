@@ -293,7 +293,7 @@ export class IntegratedVisionAI {
 
   private extractArrayFromText(text: string, key: string): string[] {
     const extracted = this.extractFromText(text, key);
-    if (!extracted) return [];
+    if (!extracted) {return [];}
     return extracted.split(/[,;]/).map(item => item.trim()).filter(Boolean);
   }
 }

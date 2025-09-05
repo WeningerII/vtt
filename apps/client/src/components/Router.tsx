@@ -14,6 +14,7 @@ const RegisterPage = lazy(() =>
   import("../pages/RegisterPage").then((m) => ({ default: m.RegisterPage })),
 );
 const Dashboard = lazy(() => import("../pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const LandingPage = lazy(() => import("../pages/LandingPage").then((m) => ({ default: m.LandingPage })));
 const GameSession = lazy(() =>
   import("../pages/GameSession").then((m) => ({ default: m.GameSession })),
 );
@@ -47,13 +48,13 @@ function parseRoute(path: string): { route: Route; params: RouteParams } {
   const cleanPath = (parts.length > 0 ? parts[0] : "") as string; // Remove query params, ensure string
 
   // Simple route matching
-  if (cleanPath === "/" || cleanPath === "") return { route: "/", params: {} };
-  if (cleanPath === "/login") return { route: "/login", params: {} };
-  if (cleanPath === "/register") return { route: "/register", params: {} };
-  if (cleanPath === "/dashboard") return { route: "/dashboard", params: {} };
-  if (cleanPath === "/characters") return { route: "/characters", params: {} };
-  if (cleanPath === "/campaigns") return { route: "/campaigns", params: {} };
-  if (cleanPath === "/settings") return { route: "/settings", params: {} };
+  if (cleanPath === "/" || cleanPath === "") {return { route: "/", params: {} };}
+  if (cleanPath === "/login") {return { route: "/login", params: {} };}
+  if (cleanPath === "/register") {return { route: "/register", params: {} };}
+  if (cleanPath === "/dashboard") {return { route: "/dashboard", params: {} };}
+  if (cleanPath === "/characters") {return { route: "/characters", params: {} };}
+  if (cleanPath === "/campaigns") {return { route: "/campaigns", params: {} };}
+  if (cleanPath === "/settings") {return { route: "/settings", params: {} };}
 
   // Dynamic routes
   const sessionMatch = cleanPath.match(/^\/session\/([^/]+)$/);
@@ -107,20 +108,15 @@ export function Router() {
     setCurrentPath(path);
   };
 
-  // Redirect logic
+  // Optional redirect logic for authenticated users on auth pages only
   useEffect(() => {
     const { route } = parseRoute(currentPath);
 
-    // Redirect to dashboard if authenticated and on auth pages
-    if (isAuthenticated && (route === "/login" || route === "/register" || route === "/")) {
+    // Redirect authenticated users away from login/register pages
+    if (isAuthenticated && (route === "/login" || route === "/register")) {
       navigate("/dashboard", true);
     }
-
-    // Redirect to login if not authenticated and trying to access protected routes
-    if (!isAuthenticated && !authLoading && !["/login", "/register"].includes(route)) {
-      navigate("/login", true);
-    }
-  }, [isAuthenticated, authLoading, currentPath, navigate]);
+  }, [isAuthenticated, currentPath]); // Removed navigate and authLoading to prevent infinite loops
 
   if (isLoading || authLoading) {
     return (
@@ -139,6 +135,14 @@ export function Router() {
   // Render appropriate component based on route with lazy loading
   const renderRoute = () => {
     switch (route) {
+      case "/":
+        // Root route: show Landing for guests, Dashboard for authenticated users
+        return isAuthenticated ? (
+          <Dashboard router={routerContext} />
+        ) : (
+          <LandingPage router={routerContext} />
+        );
+
       case "/login":
         return <LoginPage router={routerContext} />;
 

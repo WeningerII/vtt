@@ -297,14 +297,14 @@ export class MonsterStatblockAdapter {
    * Calculate proficiency bonus from challenge rating
    */
   private static calculateProficiencyBonus(challengeRating: number): number {
-    if (challengeRating < 1) return 2;
-    if (challengeRating < 5) return 2;
-    if (challengeRating < 9) return 3;
-    if (challengeRating < 13) return 4;
-    if (challengeRating < 17) return 5;
-    if (challengeRating < 21) return 6;
-    if (challengeRating < 25) return 7;
-    if (challengeRating < 29) return 8;
+    if (challengeRating < 1) {return 2;}
+    if (challengeRating < 5) {return 2;}
+    if (challengeRating < 9) {return 3;}
+    if (challengeRating < 13) {return 4;}
+    if (challengeRating < 17) {return 5;}
+    if (challengeRating < 21) {return 6;}
+    if (challengeRating < 25) {return 7;}
+    if (challengeRating < 29) {return 8;}
     return 9;
   }
 

@@ -159,7 +159,7 @@ export class SpellcastingSystem {
 
   private rollSavingThrow(entityId: EntityId, save: { ability: string; dc: number }): boolean {
     const stats = this.statsStore.get(entityId);
-    if (!stats) return false;
+    if (!stats) {return false;}
 
     const abilityMod = stats.abilityModifiers[save.ability.toLowerCase()] || 0;
     const roll = Math.floor(Math.random() * 20) + 1;
@@ -169,7 +169,7 @@ export class SpellcastingSystem {
   private rollDice(expression: string): number {
     // Simple dice rolling implementation
     const match = expression.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) return 0;
+    if (!match) {return 0;}
 
     const [, numDice, sides, modifier] = match;
     let total = 0;

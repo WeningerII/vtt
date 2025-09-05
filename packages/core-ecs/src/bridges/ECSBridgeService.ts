@@ -269,14 +269,14 @@ export class ECSBridgeService {
    * Sync ECS stats back to character service
    */
   async syncStatsToCharacter(entityId: number): Promise<void> {
-    if (!this.characterService) return;
+    if (!this.characterService) {return;}
 
     const externalId = this.reverseEntityMap.get(entityId);
-    if (!externalId || !externalId.startsWith("char")) return;
+    if (!externalId || !externalId.startsWith("char")) {return;}
 
     const characterId = externalId.substring(5);
     const stats = this.statsStore.get(entityId);
-    if (!stats) return;
+    if (!stats) {return;}
 
     // Convert ECS stats format back to character format
     const characterUpdates = {
@@ -297,10 +297,10 @@ export class ECSBridgeService {
    * Sync character changes back to CharacterService
    */
   async syncCharacterToService(characterId: string): Promise<void> {
-    if (!this.characterService) return;
+    if (!this.characterService) {return;}
 
     const entityId = this.entityMap.get(characterId);
-    if (!entityId) return;
+    if (!entityId) {return;}
 
     const health = this.healthStore.get(entityId);
     const _conditions = this.conditionsStore.get(entityId);
@@ -328,7 +328,7 @@ export class ECSBridgeService {
     _damageType: string = "untyped",
   ): Promise<boolean> {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) return false;
+    if (!entityId) {return false;}
 
     const success = this.healthStore.takeDamage(entityId, damage);
 
@@ -349,7 +349,7 @@ export class ECSBridgeService {
    */
   async applyHealing(externalId: string, healing: number): Promise<boolean> {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) return false;
+    if (!entityId) {return false;}
 
     const success = this.healthStore.heal(entityId, healing);
 
@@ -367,7 +367,7 @@ export class ECSBridgeService {
    */
   applyCondition(externalId: string, condition: Condition): boolean {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) return false;
+    if (!entityId) {return false;}
 
     this.conditionsStore.add(entityId, condition);
     return true;
@@ -378,7 +378,7 @@ export class ECSBridgeService {
    */
   removeCondition(externalId: string, conditionType: string): boolean {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) return false;
+    if (!entityId) {return false;}
 
     this.conditionsStore.remove(entityId, conditionType as any);
     return true;
@@ -389,14 +389,14 @@ export class ECSBridgeService {
    */
   getEntityData(externalId: string): EntityData | null {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) return null;
+    if (!entityId) {return null;}
 
     const health = this.healthStore.get(entityId);
     const stats = this.statsStore.get(entityId);
     const conditions = this.conditionsStore.get(entityId);
     const combat = this.combatStore.get(entityId);
 
-    if (!health || !stats) return null;
+    if (!health || !stats) {return null;}
 
     return {
       id: externalId,
@@ -419,7 +419,7 @@ export class ECSBridgeService {
    */
   removeEntity(externalId: string): boolean {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) return false;
+    if (!entityId) {return false;}
 
     // Remove from all component stores
     this.healthStore.remove(entityId);
@@ -462,7 +462,7 @@ export class ECSBridgeService {
    * Calculate HP from D&D hit dice string (e.g., "4d8+4")
    */
   private calculateHPFromString(hpString: string | number): number {
-    if (typeof hpString === "number") return hpString;
+    if (typeof hpString === "number") {return hpString;}
 
     // Simple parsing for formats like "4d8+4" or "58 (9d8 + 18)"
     const match = hpString.toString().match(/(\d+)(?:\s*\([^)]+\))?/);

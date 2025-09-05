@@ -67,7 +67,7 @@ export class RedisStateStorage implements StateStorage {
 
   async retrieve(key: string): Promise<OAuthState | null> {
     const data = await this.redis.get(`oauth_state:${key}`);
-    if (!data) return null;
+    if (!data) {return null;}
     
     const state = JSON.parse(data);
     return {
@@ -204,7 +204,7 @@ export class OAuthStateManager {
    */
   async getStateInfo(stateValue: string): Promise<Omit<OAuthState, 'value'> | null> {
     const state = await this.storage.retrieve(stateValue);
-    if (!state) return null;
+    if (!state) {return null;}
     
     const { value, ...info } = state;
     return info;

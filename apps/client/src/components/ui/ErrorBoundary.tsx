@@ -6,7 +6,7 @@
 import React, { Component, ErrorInfo, ReactNode, PropsWithChildren } from 'react';
 import { Button } from './Button';
 import { Card } from './Card';
-import { AlertTriangle, RotateCcw, Home, Settings } from './Icons';
+import { AlertTriangle, RotateCcw, Home, Settings, Bug, RefreshCw } from 'lucide-react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -14,6 +14,7 @@ interface ErrorBoundaryState {
   errorInfo: ErrorInfo | null;
   errorId: string;
   retryCount: number;
+  showDetailsOpen: boolean;
 }
 
 interface ErrorBoundaryProps {
@@ -135,6 +136,7 @@ export class ErrorBoundary extends Component<
       errorInfo: null,
       errorId: '',
       retryCount: 0,
+      showDetailsOpen: false,
     };
   }
 
@@ -146,7 +148,7 @@ export class ErrorBoundary extends Component<
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { onError, level = 'component', name } = this.props;
     const errorId = this.state.errorId || generateErrorId();
 
@@ -162,7 +164,7 @@ export class ErrorBoundary extends Component<
     onError?.(error, errorInfo, errorId);
   }
 
-  componentDidUpdate(prevProps: PropsWithChildren<ErrorBoundaryProps>) {
+  override componentDidUpdate(prevProps: PropsWithChildren<ErrorBoundaryProps>) {
     const { resetOnPropsChange, children } = this.props;
     const { hasError } = this.state;
 
@@ -172,7 +174,7 @@ export class ErrorBoundary extends Component<
     }
   }
 
-  componentWillUnmount() {
+  override componentWillUnmount() {
     if (this.resetTimeoutId) {
       clearTimeout(this.resetTimeoutId);
     }
@@ -189,6 +191,7 @@ export class ErrorBoundary extends Component<
         errorInfo: null,
         errorId: '',
         retryCount: prevState.retryCount + 1,
+        showDetailsOpen: false,
       }));
     }
   };
@@ -200,6 +203,7 @@ export class ErrorBoundary extends Component<
       errorInfo: null,
       errorId: '',
       retryCount: 0,
+      showDetailsOpen: false,
     });
   };
 
@@ -207,13 +211,20 @@ export class ErrorBoundary extends Component<
     window.location.href = '/';
   };
 
-  render() {
+  handleToggleDetails = () => {
+    this.setState(prevState => ({
+      showDetailsOpen: !prevState.showDetailsOpen
+    }));
+  };
+
+  override render() {
     const { 
       hasError, 
       error, 
       errorInfo, 
       errorId, 
-      retryCount 
+      retryCount,
+      showDetailsOpen 
     } = this.state;
     
     const {
@@ -233,7 +244,6 @@ export class ErrorBoundary extends Component<
       }
 
       const canRetry = allowRetry && retryCount < maxRetries;
-      const [showDetailsOpen, setShowDetailsOpen] = React.useState(false);
 
       return (
         <div className="flex flex-col items-center justify-center min-h-[300px] p-6 text-center">
@@ -248,7 +258,7 @@ export class ErrorBoundary extends Component<
 
               {/* Error Message */}
               <div className="space-y-2">
-                <h2 className="text-xl font-semibold text-text-primary">
+                <h2 className="text-xl font-semibold text-primary">
                   {level === 'page' ? 'Page Error' : 
                    level === 'section' ? 'Section Unavailable' : 
                    'Something went wrong'}
@@ -312,7 +322,7 @@ export class ErrorBoundary extends Component<
                   error={error}
                   errorInfo={errorInfo}
                   errorId={errorId}
-                  onToggle={() => setShowDetailsOpen(!showDetailsOpen)}
+                  onToggle={this.handleToggleDetails}
                   isOpen={showDetailsOpen}
                 />
               )}

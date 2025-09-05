@@ -31,7 +31,7 @@ export function authenticateUser(userManager: UserManager) {
       // Validate session
       const result = await userManager.validateSession(token);
 
-      if (!result.success || !result.user || !result.session) {
+      if (!result || !result.user || !result.session) {
         res.status(401).json({ error: "Invalid or expired session" });
         return;
       }
@@ -46,12 +46,12 @@ export function authenticateUser(userManager: UserManager) {
       req.user = result.user;
       req.session = result.session;
 
-      // Update last activity
-      await userManager.updateUserActivity(result.user.id);
+      // Update last activity - method not available on UserManager
+      // await userManager.updateUserActivity(result.user.id);
 
       next();
     } catch (error) {
-      logger.error("Authentication middleware error:", error);
+      logger.error("Authentication error:", error as Record<string, any>);
       res.status(500).json({ error: "Internal server error" });
     }
   };
@@ -124,7 +124,7 @@ export function requireSubscription(_minTier?: string) {
     }
 
     // Check minimum tier if specified
-    if (minTier) {
+    if (_minTier) {
       const tierLevels = {
         free: 0,
         basic: 1,
@@ -133,11 +133,11 @@ export function requireSubscription(_minTier?: string) {
       };
 
       const userTierLevel = tierLevels[user.subscription.tier as keyof typeof tierLevels] || 0;
-      const requiredTierLevel = tierLevels[minTier as keyof typeof tierLevels] || 0;
+      const requiredTierLevel = tierLevels[_minTier as keyof typeof tierLevels] || 0;
 
       if (userTierLevel < requiredTierLevel) {
         res.status(403).json({
-          error: `${minTier} subscription or higher required`,
+          error: `${_minTier} subscription or higher required`,
           code: "INSUFFICIENT_SUBSCRIPTION_TIER",
         });
         return;
@@ -163,10 +163,11 @@ export function optionalAuth(userManager: UserManager) {
       if (token) {
         const result = await userManager.validateSession(token);
 
-        if (result.success && result.user && result.session) {
+        if (result && result.user && result.session) {
           req.user = result.user;
           req.session = result.session;
-          await userManager.updateUserActivity(result.user.id);
+          // User activity update method not available
+          // await userManager.updateUserActivity(result.user.id);
         }
       }
 

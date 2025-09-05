@@ -158,14 +158,14 @@ export const MonsterBrowser: React.FC<MonsterBrowserProps> = memo(({onSelectMons
   }, [multiSelect, onSelectMonster]);
 
   const handleAddToEncounter = useCallback(async (monster: Monster) => {
-    if (!onAddToEncounter) return;
+    if (!onAddToEncounter) {return;}
 
     const instanceName = prompt(`Instance name for ${monster.name}:`, monster.name);
     if (instanceName !== null) {
       try {
         await onAddToEncounter(monster.id, instanceName);
       } catch (error) {
-        logger.error('Failed to add monster to encounter:', error);
+        logger.error('Failed to add monster to encounter:', error as any);
         alert('Failed to add monster to encounter');
       }
     }
@@ -175,9 +175,9 @@ export const MonsterBrowser: React.FC<MonsterBrowserProps> = memo(({onSelectMons
     const parts = cr.split('/');
     const numericCR = parts.length === 2 ? parseFloat(parts[0]!) / parseFloat(parts[1]!) : parseFloat(cr);
     
-    if (numericCR < 1) return '#28a745'; // Green for easy
-    if (numericCR < 5) return '#ffc107'; // Yellow for moderate  
-    if (numericCR < 10) return '#fd7e14'; // Orange for hard
+    if (numericCR < 1) {return '#28a745';} // Green for easy
+    if (numericCR < 5) {return '#ffc107';} // Yellow for moderate  
+    if (numericCR < 10) {return '#fd7e14';} // Orange for hard
     return '#dc3545'; // Red for deadly
   };
 

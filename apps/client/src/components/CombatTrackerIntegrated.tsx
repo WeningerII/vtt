@@ -3,7 +3,6 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useEncounter } from '../hooks/useEncounter';
 import { logger } from "@vtt/logging";
 import { useEncounter, CombatActor, EncounterData } from "../hooks/useEncounter";
 import { useCharacter } from "../hooks/useCharacter";
@@ -39,50 +38,93 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
     addCharacterToEncounter,
     addMonsterToEncounter,
     updateActorHealth,
+    nextTurn,
+    previousTurn,
+    updateActorInitiative,
   } = useEncounter();
 
   const { characters } = useCharacter();
 
   const [showAddDialog, setShowAddDialog] = useState(false);
 
+  // Combat management functions  
+  const handleStartCombat = useCallback(async () => {
+    if (!encounter?.id) {return;}
+
+    try {
+      await startEncounter(encounter.id);
+    } catch (error) {
+      logger.error("Failed to start encounter:", error as any);
+    }
+  }, [encounter?.id, startEncounter]);
+
+  const handleEndCombat = useCallback(async () => {
+    if (!encounter?.id) {return;}
+
+    try {
+      await endEncounter(encounter.id);
+    } catch (error) {
+      logger.error("Failed to end encounter:", error as any);
+    }
+  }, [encounter?.id, endEncounter]);
+
+  // Turn management functions
+  const handleNextTurn = useCallback(async () => {
+    if (!encounter?.id || !encounter.isActive) {return;}
+    try {
+      await nextTurn(encounter.id);
+    } catch (error) {
+      logger.error("Failed to advance turn:", error as any);
+    }
+  }, [encounter?.id, encounter?.isActive, nextTurn]);
+
+  const handlePreviousTurn = useCallback(async () => {
+    if (!encounter?.id || !encounter.isActive) {return;}
+    try {
+      await previousTurn(encounter.id);
+    } catch (error) {
+      logger.error("Failed to go to previous turn:", error as any);
+    }
+  }, [encounter?.id, encounter?.isActive, previousTurn]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (readOnly) return;
+      if (readOnly) {return;}
 
       // Keyboard shortcuts
       switch (e.key) {
         case "n":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            onNextTurn();
+            handleNextTurn();
           }
           break;
         case "p":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            onPreviousTurn();
+            handlePreviousTurn();
           }
           break;
         case "s":
           if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            if (isActive) {
-              onEndCombat();
+            if (encounter?.isActive) {
+              handleEndCombat();
             } else {
-              onStartCombat();
+              handleStartCombat();
             }
           }
           break;
         case "Escape":
-          setShowAddForm(false);
+          setShowAddDialog(false);
           break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isActive, readOnly, onNextTurn, onPreviousTurn, onStartCombat, onEndCombat]);
+  }, [encounter?.isActive, readOnly, handleNextTurn, handlePreviousTurn, handleStartCombat, handleEndCombat]);
   const [addCombatantData, setAddCombatantData] = useState<AddCombatantData>({
     type: "character",
     id: "",
@@ -112,36 +154,17 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
           monsters: [],
         });
       } catch (error) {
-        logger.error("Failed to create encounter:", error);
+        logger.error("Failed to add combatant to encounter:", error as any);
       }
     },
     [createEncounter, campaignId],
   );
 
-  const handleStartCombat = useCallback(async () => {
-    if (!encounter?.id) return;
-
-    try {
-      await startEncounter(encounter.id);
-    } catch (error) {
-      logger.error("Failed to start encounter:", error);
-    }
-  }, [encounter?.id, startEncounter]);
-
-  const handleEndCombat = useCallback(async () => {
-    if (!encounter?.id) return;
-
-    try {
-      await endEncounter(encounter.id);
-    } catch (error) {
-      logger.error("Failed to end encounter:", error);
-    }
-  }, [encounter?.id, endEncounter]);
 
   const handleHealthChange = useCallback(
     async (actorId: string, current: number, temporary: number = 0) => {
       const actor = encounter?.actors.find((a) => a.id === actorId);
-      if (!actor) return;
+      if (!actor) {return;}
 
       try {
         await updateActorHealth(actorId, {
@@ -150,14 +173,27 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
           temporary,
         });
       } catch (error) {
-        logger.error("Failed to update actor health:", error);
+        logger.error("Failed to update actor health:", error as any);
       }
     },
     [encounter?.actors, updateActorHealth],
   );
 
+  const handleInitiativeChange = useCallback(
+    async (actorId: string, newInitiative: number) => {
+      if (!encounter?.id) {return;}
+      
+      try {
+        await updateActorInitiative(encounter.id, actorId, newInitiative);
+      } catch (error) {
+        logger.error("Failed to roll initiative:", error as any);
+      }
+    },
+    [encounter?.id, updateActorInitiative],
+  );
+
   const handleAddCombatant = useCallback(async () => {
-    if (!encounter?.id || !addCombatantData.id) return;
+    if (!encounter?.id || !addCombatantData.id) {return;}
 
     try {
       if (addCombatantData.type === "character") {
@@ -169,24 +205,24 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
       setShowAddDialog(false);
       setAddCombatantData({ type: "character", id: "" });
     } catch (error) {
-      logger.error("Failed to add combatant:", error);
+      logger.error("Failed to update combatant:", error as any);
     }
   }, [encounter?.id, addCombatantData, addCharacterToEncounter, addMonsterToEncounter]);
 
   const getHealthBarColor = (actor: CombatActor): string => {
     const percentage = (actor.hitPoints.current / actor.hitPoints.max) * 100;
-    if (percentage <= 25) return "#dc3545"; // Red
-    if (percentage <= 50) return "#fd7e14"; // Orange
-    if (percentage <= 75) return "#ffc107"; // Yellow
+    if (percentage <= 25) {return "#dc3545";} // Red
+    if (percentage <= 50) {return "#fd7e14";} // Orange
+    if (percentage <= 75) {return "#ffc107";} // Yellow
     return "#28a745"; // Green
   };
 
   const getHealthStatus = (actor: CombatActor): string => {
     const percentage = (actor.hitPoints.current / actor.hitPoints.max) * 100;
-    if (actor.hitPoints.current <= 0) return "Unconscious";
-    if (percentage <= 25) return "Critical";
-    if (percentage <= 50) return "Bloodied";
-    if (percentage <= 75) return "Injured";
+    if (actor.hitPoints.current <= 0) {return "Unconscious";}
+    if (percentage <= 25) {return "Critical";}
+    if (percentage <= 50) {return "Bloodied";}
+    if (percentage <= 75) {return "Injured";}
     return "Healthy";
   };
 
@@ -232,6 +268,27 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
               Start Combat
             </button>
           )}
+          
+          {encounter.isActive && (
+            <div className="turn-controls">
+              <button 
+                onClick={handlePreviousTurn} 
+                disabled={readOnly}
+                className="turn-btn prev-turn"
+                title="Previous Turn (Ctrl+P)"
+              >
+                ← Prev
+              </button>
+              <button 
+                onClick={handleNextTurn} 
+                disabled={readOnly}
+                className="turn-btn next-turn"
+                title="Next Turn (Ctrl+N)"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -253,8 +310,7 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
                   value={actor.initiative}
                   onChange={(e) => {
                     const newInitiative = parseInt(e.target.value) || 0;
-                    // Initiative change would be handled here
-                    logger.info("Initiative change:", { actorId: actor.id, newInitiative });
+                    handleInitiativeChange(actor.id, newInitiative);
                   }}
                   disabled={readOnly}
                   className="initiative-input"
@@ -339,7 +395,7 @@ export const CombatTrackerIntegrated: React.FC<CombatTrackerIntegratedProps> = (
                       {actor.actions.slice(0, 3).map((action) => (
                         <div key={action.id} className="action-item">
                           <span className="action-name">{action.name}</span>
-                          <span className="action-type">({action.type.replace("", " ")})</span>
+                          <span className="action-type">({action.type.replace(/([A-Z])/g, ' $1').trim()})</span>
                         </div>
                       ))}
                       {actor.actions.length > 3 && (

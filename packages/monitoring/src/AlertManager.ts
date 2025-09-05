@@ -70,7 +70,7 @@ export class AlertManager extends EventEmitter {
   }
 
   start(): void {
-    if (this.intervalId) return;
+    if (this.intervalId) {return;}
 
     this.intervalId = setInterval(async () => {
       await this.evaluateAlerts();
@@ -95,7 +95,7 @@ export class AlertManager extends EventEmitter {
     };
 
     for (const rule of this.config.rules) {
-      if (!rule.enabled) continue;
+      if (!rule.enabled) {continue;}
 
       try {
         const shouldAlert = await rule.condition.evaluate(context);
@@ -248,7 +248,7 @@ export class AlertManager extends EventEmitter {
     const ruleIndex = this.config.rules.findIndex((r) => r.name === ruleName);
     if (ruleIndex !== -1) {
       const currentRule = this.config.rules[ruleIndex];
-      if (!currentRule) return false;
+      if (!currentRule) {return false;}
 
       this.config.rules[ruleIndex] = {
         name: currentRule.name,
@@ -306,7 +306,7 @@ export class MetricThresholdCondition implements AlertCondition {
     }
 
     const latestValue = values[values.length - 1]?.value;
-    if (latestValue === undefined) return false;
+    if (latestValue === undefined) {return false;}
 
     switch (this.operator) {
       case ">":

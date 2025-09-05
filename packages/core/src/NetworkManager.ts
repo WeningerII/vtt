@@ -55,7 +55,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
   private connectionState: ConnectionState = 'disconnected';
   private messageRoutes = new Map<string, MessageRoute[]>();
   private messageQueue: QueuedMessage[] = [];
-  private pendingMessages = new Map<string, { resolve: (_...args: any[]) => any; reject: (_...args: any[]) => any; timeout: NodeJS.Timeout }>();
+  private pendingMessages = new Map<string, { resolve: (...args: any[]) => any; reject: (...args: any[]) => any; timeout: NodeJS.Timeout }>();
   
   private reconnectAttempts = 0;
   private reconnectTimer: NodeJS.Timeout | undefined;
@@ -151,7 +151,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
    * Send message and wait for response
    */
   async sendAndWait<T = any>(message: NetworkMessage, timeout?: number): Promise<T> {
-    return new Promise((_resolve, __reject) => {
+    return new Promise((resolve, reject) => {
       if (!message.id) {
         message.id = this.generateMessageId();
       }
@@ -183,7 +183,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
 
     const routes = this.messageRoutes.get(type)!;
     routes.push(route);
-    routes.sort((_a, _b) => b.priority - a.priority);
+    routes.sort((a, b) => b.priority - a.priority);
 
     return () => {
       const index = routes.indexOf(route);
@@ -197,7 +197,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
    * Subscribe once to message type
    */
   subscribeOnce(type: string, handler: MessageHandler): () => void {
-    const unsubscribe = this.subscribe(_type, (message) => {
+    const unsubscribe = this.subscribe(type, (message) => {
       handler(message);
       unsubscribe();
     });
@@ -222,7 +222,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
 
     const routes = this.messageRoutes.get(routeKey)!;
     routes.push(route);
-    routes.sort((_a, _b) => b.priority - a.priority);
+    routes.sort((a, b) => b.priority - a.priority);
 
     return () => {
       const index = routes.indexOf(route);
@@ -251,7 +251,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
    */
   getLatency(): number {
     return this.latencyMeasurements.length > 0 
-      ? this.latencyMeasurements.reduce((_a, _b) => a + b) / this.latencyMeasurements.length 
+      ? this.latencyMeasurements.reduce((a, b) => a + b) / this.latencyMeasurements.length 
       : 0;
   }
 
@@ -305,7 +305,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
   // Private helper methods
 
   private async establishConnection(url: string, options: ConnectionOptions): Promise<void> {
-    return new Promise((_resolve, __reject) => {
+    return new Promise((resolve, reject) => {
       try {
         this.ws = new WebSocket(url);
         
@@ -324,7 +324,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
           this.handleDisconnection(event);
         };
 
-        this.ws.onerror = (_error) => {
+        this.ws.onerror = (error) => {
           clearTimeout(timeout);
           reject(error);
         };
@@ -360,7 +360,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectTimer) return;
+    if (this.reconnectTimer) {return;}
     
     this.reconnectAttempts++;
     this.stats.reconnectCount++;
@@ -369,7 +369,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
     const delay = this.config.reconnectInterval * Math.pow(1.5, this.reconnectAttempts - 1);
     
     this.reconnectTimer = setTimeout(() => {
-      this.reconnectTimer = undefined as NodeJS.Timeout | undefined;
+      this.reconnectTimer = undefined;
       // Would reconnect with stored URL and options
     }, delay);
   }
@@ -405,7 +405,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
       this.routeMessage(message);
 
     } catch (error) {
-      logger.error('Failed to parse incoming message:', error);
+      logger.error('Failed to parse incoming message:', error as Record<string, any>);
       this.stats.errorCount++;
     }
   }
@@ -429,14 +429,14 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
             }
           }
         } catch (error) {
-          logger.error(`Error in message handler for ${message.type}:`, error);
+          logger.error(`Error in message handler for ${message.type}:`, error as Record<string, any>);
         }
       }
     }
 
     // Check pattern matches
     for (const [key, routes] of this.messageRoutes) {
-      if (key === message.type) continue; // Already handled above
+      if (key === message.type) {continue;} // Already handled above
       
       for (const route of routes) {
         if (route.pattern instanceof RegExp && route.pattern.test(message.type)) {
@@ -444,7 +444,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
             route.handler(message);
             handled = true;
           } catch (error) {
-            logger.error(`Error in pattern handler ${route.pattern}:`, error);
+            logger.error(`Error in pattern handler ${route.pattern}:`, error as Record<string, any>);
           }
         }
       }
@@ -476,7 +476,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
       this.stats.bytesTransmitted += data.length;
       
     } catch (error) {
-      logger.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error as Record<string, any>);
       this.queueMessage(message);
       this.stats.errorCount++;
     }
@@ -491,7 +491,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
     };
 
     this.messageQueue.push(queuedMessage);
-    this.messageQueue.sort((_a, _b) => b.priority - a.priority);
+    this.messageQueue.sort((a, b) => b.priority - a.priority);
 
     // Limit queue size
     if (this.messageQueue.length > 1000) {
@@ -519,7 +519,6 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
 
   private setConnectionState(state: ConnectionState): void {
     if (this.connectionState !== state) {
-      const _previousState = this.connectionState;
       this.connectionState = state;
       this.emit('ready', undefined); // Generic event for connection state changes
     }
@@ -564,7 +563,7 @@ export class UnifiedNetworkManager extends EventEmitter<SystemEvents> implements
     
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = undefined as NodeJS.Timeout | undefined;
+      this.heartbeatTimer = undefined;
     }
   }
 

@@ -127,7 +127,7 @@ export class FocusManager {
     const lastElement = focusableElements[focusableElements.length - 1];
 
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
+      if (e.key !== "Tab") {return;}
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
@@ -255,8 +255,8 @@ export class KeyboardNavigation {
 
     // Handle wrapping and bounds
     if (wrap) {
-      if (newIndex < 0) newIndex = items.length - 1;
-      if (newIndex >= items.length) newIndex = 0;
+      if (newIndex < 0) {newIndex = items.length - 1;}
+      if (newIndex >= items.length) {newIndex = 0;}
     } else {
       newIndex = Math.max(0, Math.min(items.length - 1, newIndex));
     }

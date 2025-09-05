@@ -155,7 +155,7 @@ export class EquipmentEffectsEngine {
 
     for (const item of equippedItems) {
       // Check attunement requirement
-      if (item.requiresAttunement && !item.attuned) continue;
+      if (item.requiresAttunement && !item.attuned) {continue;}
 
       for (const effect of item.effects) {
         if (effect.type === "passive") {
@@ -178,7 +178,7 @@ export class EquipmentEffectsEngine {
     const results: EquipmentActivationResult[] = [];
 
     for (const item of equippedItems) {
-      if (item.requiresAttunement && !item.attuned) continue;
+      if (item.requiresAttunement && !item.attuned) {continue;}
 
       for (const effect of item.effects) {
         if (effect.type === "triggered" && effect.trigger) {
@@ -262,7 +262,7 @@ export class EquipmentEffectsEngine {
     };
 
     for (const item of equippedItems) {
-      if (item.requiresAttunement && !item.attuned) continue;
+      if (item.requiresAttunement && !item.attuned) {continue;}
 
       // Base armor/shield bonuses
       if (item.type === "armor" && item.baseStats?.ac) {

@@ -277,7 +277,7 @@ export const BattleMap = memo<BattleMapProps>(({ className, isGM = false }) => {
 
   const snapToGridCoords = useCallback(
     (x: number, y: number) => {
-      if (!snapToGrid) return { x, y };
+      if (!snapToGrid) {return { x, y };}
       return {
         x: Math.round(x / GRID_SIZE) * GRID_SIZE,
         y: Math.round(y / GRID_SIZE) * GRID_SIZE,
@@ -359,7 +359,7 @@ export const BattleMap = memo<BattleMapProps>(({ className, isGM = false }) => {
 
   const handleMapClick = useCallback(
     (event: React.MouseEvent) => {
-      if (!mapRef.current) return;
+      if (!mapRef.current) {return;}
 
       const rect = mapRef.current.getBoundingClientRect();
       const x = (event.clientX - rect.left - pan.x) / zoom;
@@ -595,7 +595,7 @@ export const BattleMap = memo<BattleMapProps>(({ className, isGM = false }) => {
 
   // Memoized grid rendering - only recalculate when grid settings change
   const renderedGrid = useMemo(() => {
-    if (!showGrid) return null;
+    if (!showGrid) {return null;}
 
     const lines: React.ReactElement[] = [];
     const { mapWidth, mapHeight } = gridDimensions;

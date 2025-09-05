@@ -86,7 +86,7 @@ export class InMemoryAssetRepository implements AssetRepository {
   }
 
   private applyQuery(assets: Asset[], query?: AssetSearchQuery): Asset[] {
-    if (!query) return assets;
+    if (!query) {return assets;}
 
     let filtered = assets;
 
@@ -223,7 +223,7 @@ export class DatabaseAssetRepository implements AssetRepository {
 
     // Build SET clause dynamically
     Object.entries(updates).forEach(([_key, _value]) => {
-      if (_key === "id" || _key === "createdAt") return; // Skip immutable fields
+      if (_key === "id" || _key === "createdAt") {return;} // Skip immutable fields
 
       const columnName = this.camelToSnake(_key);
       setClauses.push(`${columnName} = ?`);
@@ -301,7 +301,7 @@ export class DatabaseAssetRepository implements AssetRepository {
     }
 
     if (conditions.length > 0) {
-      sql += " AND " + conditions.join(" AND ");
+      sql += ` AND ${  conditions.join(" AND ")}`;
     }
 
     sql += " ORDER BY created_at DESC";
@@ -350,7 +350,7 @@ export class DatabaseAssetRepository implements AssetRepository {
   private async executeQuery(sql: string, params: any[] = []): Promise<any[]> {
     // Simplified database query execution
     // In production, use proper database driver
-    logger.info("Executing SQL:", sql, "with params:", params);
+    logger.info("Executing SQL:", { sql, params });
 
     // Mock implementation
     return [];

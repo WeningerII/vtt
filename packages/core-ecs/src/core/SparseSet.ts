@@ -38,10 +38,10 @@ export class SparseSet<T> {
    * Get a component for an entity
    */
   get(entityId: number): T | undefined {
-    if (entityId >= this.sparse.length) return undefined;
+    if (entityId >= this.sparse.length) {return undefined;}
 
     const denseIndex = this.sparse[entityId];
-    if (denseIndex === undefined || denseIndex === -1 || denseIndex >= this.size) return undefined;
+    if (denseIndex === undefined || denseIndex === -1 || denseIndex >= this.size) {return undefined;}
 
     return this.components[denseIndex]!;
   }
@@ -50,10 +50,10 @@ export class SparseSet<T> {
    * Check if an entity has a component
    */
   has(entityId: number): boolean {
-    if (entityId >= this.sparse.length) return false;
+    if (entityId >= this.sparse.length) {return false;}
 
     const denseIndex = this.sparse[entityId];
-    if (denseIndex === undefined) return false;
+    if (denseIndex === undefined) {return false;}
     return denseIndex !== -1 && denseIndex < this.size && this.dense[denseIndex] === entityId;
   }
 
@@ -61,7 +61,7 @@ export class SparseSet<T> {
    * Remove a component for an entity
    */
   delete(entityId: number): boolean {
-    if (!this.has(entityId)) return false;
+    if (!this.has(entityId)) {return false;}
 
     const denseIndex = this.sparse[entityId]!;
     const lastIndex = this.size - 1;
@@ -249,11 +249,11 @@ export class MultiSparseSet {
    * Get all entities that have ALL specified components
    */
   getEntitiesWithComponents(componentTypes: string[]): number[] {
-    if (componentTypes.length === 0) return [];
+    if (componentTypes.length === 0) {return [];}
 
     const firstType = componentTypes[0]!;
     const firstSet = this.sparseSets.get(firstType);
-    if (!firstSet) return [];
+    if (!firstSet) {return [];}
 
     const candidates = firstSet.entities();
 

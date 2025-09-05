@@ -82,7 +82,7 @@ export class StateMachine {
 
   public setState(stateName: string): boolean {
     const newState = this.states.get(stateName);
-    if (!newState) return false;
+    if (!newState) {return false;}
 
     const oldStateName = this.currentState?.name || "none";
 
@@ -119,7 +119,7 @@ export class StateMachine {
   }
 
   public start(initialState: string): boolean {
-    if (!this.states.has(initialState)) return false;
+    if (!this.states.has(initialState)) {return false;}
 
     this.isRunning = true;
     return this.setState(initialState);
@@ -134,7 +134,7 @@ export class StateMachine {
   }
 
   public update(deltaTime: number): void {
-    if (!this.isRunning || !this.currentState) return;
+    if (!this.isRunning || !this.currentState) {return;}
 
     // Update current state
     this.currentState.onUpdate(deltaTime);
@@ -144,10 +144,10 @@ export class StateMachine {
   }
 
   private checkTransitions(): void {
-    if (!this.currentState) return;
+    if (!this.currentState) {return;}
 
     for (const transition of this.transitions) {
-      if (transition.from !== this.currentState.name) continue;
+      if (transition.from !== this.currentState.name) {continue;}
 
       if (!transition.condition || transition.condition(this.context)) {
         if (transition.action) {
@@ -334,9 +334,9 @@ export class ConditionalState extends State {
 
   public onUpdate(_deltaTime: number): void {
     if (this.condition(this.context)) {
-      if (this.onTrue) this.onTrue();
+      if (this.onTrue) {this.onTrue();}
     } else {
-      if (this.onFalse) this.onFalse();
+      if (this.onFalse) {this.onFalse();}
     }
   }
 }

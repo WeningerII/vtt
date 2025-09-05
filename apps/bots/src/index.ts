@@ -1,4 +1,4 @@
-import { Client, Protocol, MessageType } from "@vtt/net";
+import { Client, _Protocol as Protocol, MessageType } from "@vtt/net";
 import { logger } from "@vtt/logging";
 
 /**
@@ -6,8 +6,8 @@ import { logger } from "@vtt/logging";
  */
 async function runBot() {
   const client = new Client("ws://localhost:8080");
-  client.onMessage((_msg: unknown) => {
-    logger.info("Bot received", msg);
+  client.onMessage((msg: unknown) => {
+    logger.info("Bot received", { message: msg });
   });
   // Wait until socket is open before sending
   setTimeout(() => {

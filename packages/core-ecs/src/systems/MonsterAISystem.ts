@@ -104,7 +104,7 @@ export class MonsterAISystem {
         adaptiveBehavior,
         healthPercent,
       );
-      if (attackDecision) decisions.push(attackDecision);
+      if (attackDecision) {decisions.push(attackDecision);}
     }
 
     // Consider spellcasting
@@ -116,7 +116,7 @@ export class MonsterAISystem {
         adaptiveBehavior,
         healthPercent,
       );
-      if (spellDecision) decisions.push(spellDecision);
+      if (spellDecision) {decisions.push(spellDecision);}
     }
 
     // Consider movement (tactical repositioning)
@@ -127,7 +127,7 @@ export class MonsterAISystem {
       adaptiveBehavior,
       healthPercent,
     );
-    if (moveDecision) decisions.push(moveDecision);
+    if (moveDecision) {decisions.push(moveDecision);}
 
     // Use learning system to potentially override decision
     if (availableActions.length > 0) {
@@ -165,14 +165,14 @@ export class MonsterAISystem {
     }
 
     const remaining = this.combatStore.getLegendaryActionsRemaining(entityId);
-    if (remaining <= 0) return null;
+    if (remaining <= 0) {return null;}
 
     // Simple AI: use cheapest available legendary action
     const availableActions = monsterData.legendaryActions.filter(
       (action: LegendaryAction) => action.cost <= remaining,
     );
 
-    if (availableActions.length === 0) return null;
+    if (availableActions.length === 0) {return null;}
 
     // Prefer attack actions, then movement
     const preferredAction =
@@ -198,9 +198,9 @@ export class MonsterAISystem {
     let aggressiveness = Math.min(0.3 + cr * 0.1, 1.0);
 
     // Adjust based on monster type
-    if (monsterData.type?.toLowerCase().includes("undead")) aggressiveness += 0.2;
-    if (monsterData.type?.toLowerCase().includes("fiend")) aggressiveness += 0.3;
-    if (monsterData.type?.toLowerCase().includes("beast")) aggressiveness += 0.1;
+    if (monsterData.type?.toLowerCase().includes("undead")) {aggressiveness += 0.2;}
+    if (monsterData.type?.toLowerCase().includes("fiend")) {aggressiveness += 0.3;}
+    if (monsterData.type?.toLowerCase().includes("beast")) {aggressiveness += 0.1;}
 
     return Math.min(aggressiveness, 1.0);
   }
@@ -230,7 +230,7 @@ export class MonsterAISystem {
     behavior: AIBehavior,
     healthPercent: number,
   ): AIDecision | null {
-    if (targets.length === 0) return null;
+    if (targets.length === 0) {return null;}
 
     // Choose target based on AI behavior
     const targetId = this.selectBestTarget(entityId, targets, behavior);
@@ -252,7 +252,7 @@ export class MonsterAISystem {
     behavior: AIBehavior,
     healthPercent: number,
   ): AIDecision | null {
-    if (targets.length === 0) return null;
+    if (targets.length === 0) {return null;}
 
     const targetId = this.selectBestTarget(entityId, targets, behavior);
 
@@ -278,7 +278,7 @@ export class MonsterAISystem {
       behavior.selfPreservation * (1 - healthPercent) * 6 + behavior.intelligence * 2;
 
     // Only consider movement if health is low or very tactical
-    if (movePriority < 4) return null;
+    if (movePriority < 4) {return null;}
 
     return {
       entityId,
@@ -292,7 +292,7 @@ export class MonsterAISystem {
     targets: EntityId[],
     behavior: AIBehavior,
   ): EntityId {
-    if (targets.length === 1) return targets[0]!;
+    if (targets.length === 1) {return targets[0]!;}
 
     // Intelligent monsters prefer low-health targets, aggressive ones prefer closest/strongest
     if (behavior.intelligence > 0.6) {
@@ -301,7 +301,7 @@ export class MonsterAISystem {
         const bestHealth = this.healthStore.get(best);
         const currentHealth = this.healthStore.get(current);
 
-        if (!bestHealth || !currentHealth) return best;
+        if (!bestHealth || !currentHealth) {return best;}
 
         const bestPercent = bestHealth.current / bestHealth.max;
         const currentPercent = currentHealth.current / currentHealth.max;

@@ -15,7 +15,7 @@
     "@vtt/core-schemas": "workspace:*"
   },
   "devDependencies": {
-    "vitest": "^1.0.0",
-    "@vtt/content-5e-srd": "workspace:*"
+    "@vtt/content-5e-srd": "workspace:*",
+    "vitest": "^1.0.0"
   }
 }

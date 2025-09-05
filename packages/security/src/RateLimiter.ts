@@ -308,7 +308,7 @@ export class AdaptiveRateLimiter extends RateLimiter {
 
   private startAdaptation(): void {
     setInterval(() => {
-      if (!this.systemLoadMonitor) return;
+      if (!this.systemLoadMonitor) {return;}
 
       const systemLoad = this.systemLoadMonitor();
 

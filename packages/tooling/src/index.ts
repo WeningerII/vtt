@@ -8,9 +8,9 @@ import { logger } from "@vtt/logging";
  */
 
 export function buildAtlas(_inputDir: string, _outputFile: string): void {
-  logger.info(`Building atlas from ${inputDir} into ${outputFile} (stub)`);
+  logger.info(`Building atlas from ${_inputDir} into ${_outputFile} (stub)`);
 }
 
 export function bakeNavmesh(_mapFile: string, _outputFile: string): void {
-  logger.info(`Baking navmesh from ${mapFile} into ${outputFile} (stub)`);
+  logger.info(`Baking navmesh from ${_mapFile} into ${_outputFile} (stub)`);
 }

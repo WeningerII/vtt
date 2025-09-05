@@ -62,7 +62,7 @@ export async function csrfMiddleware(ctx: Context, next: Next): Promise<void> {
  * Helper function to get cookie value
  */
 function getCookie(cookieHeader: string | undefined, name: string): string | null {
-  if (!cookieHeader) return null;
+  if (!cookieHeader) {return null;}
 
   const cookies = cookieHeader.split(";").map((c) => c.trim());
   for (const cookie of cookies) {
@@ -91,11 +91,11 @@ function setCookie(
 ): void {
   const parts = [`${name}=${value}`];
 
-  if (options.httpOnly) parts.push("HttpOnly");
-  if (options.secure) parts.push("Secure");
-  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
-  if (options.path) parts.push(`Path=${options.path}`);
-  if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`);
+  if (options.httpOnly) {parts.push("HttpOnly");}
+  if (options.secure) {parts.push("Secure");}
+  if (options.sameSite) {parts.push(`SameSite=${options.sameSite}`);}
+  if (options.path) {parts.push(`Path=${options.path}`);}
+  if (options.maxAge) {parts.push(`Max-Age=${options.maxAge}`);}
 
   const existingCookies = res.getHeader("Set-Cookie") || [];
   const cookies = Array.isArray(existingCookies) ? existingCookies : [existingCookies];

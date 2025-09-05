@@ -12,8 +12,8 @@ ws.on("open", () => {
 });
 
 ws.on("message", (_data: RawData) => {
-  const text = typeof data === "string" ? data : data.toString("utf-8");
-  logger.info("[bot] recv:", text);
+  const text = typeof _data === "string" ? _data : _data.toString("utf-8");
+  logger.info("[bot] recv:", { message: text });
   try {
     const msg = JSON.parse(text as string);
     if (msg?.type === "ECHO") {
@@ -25,7 +25,7 @@ ws.on("message", (_data: RawData) => {
   }
 });
 
-ws.on("error", (_e: Error) => logger.error("[bot] error", e));
+ws.on("error", (_e: Error) => logger.error("[bot] error", { error: _e }));
 
 setTimeout(() => {
   if (!gotEcho) {

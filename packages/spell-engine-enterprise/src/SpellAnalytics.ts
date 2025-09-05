@@ -157,11 +157,11 @@ class MetricsCollector {
   }
 
   private matchesQuery(series: MetricSeries, query: MetricsQuery): boolean {
-    if (query.metricName && series.name !== query.metricName) return false;
+    if (query.metricName && series.name !== query.metricName) {return false;}
 
     if (query.labels) {
       for (const [key, value] of Object.entries(query.labels)) {
-        if (series.labels[key] !== value) return false;
+        if (series.labels[key] !== value) {return false;}
       }
     }
 
@@ -169,7 +169,7 @@ class MetricsCollector {
   }
 
   private filterByTimeRange(series: MetricSeries, timeRange?: TimeRange): MetricSeries {
-    if (!timeRange) return series;
+    if (!timeRange) {return series;}
 
     const filtered = {
       ...series,
@@ -310,7 +310,7 @@ class PerformanceProfiler {
   }
 
   private analyzeMemoryTrend(profiles: PerformanceProfile[]): MemoryTrend {
-    if (profiles.length < 2) return { isIncreasing: false, rate: 0 };
+    if (profiles.length < 2) {return { isIncreasing: false, rate: 0 };}
 
     const sorted = profiles.sort((_a, _b) => a.timestamp - b.timestamp);
     const first = sorted[0];
@@ -507,7 +507,7 @@ class AnomalyDetector {
     baseline: number,
     stdDev: number,
   ): { severity: "warning" | "critical"; deviations: number } | null {
-    if (stdDev === 0) return null; // Not enough data
+    if (stdDev === 0) {return null;} // Not enough data
 
     const deviations = Math.abs(duration - baseline) / stdDev;
 

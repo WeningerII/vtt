@@ -82,9 +82,9 @@ export class MechanicalEffectsIntegrator {
       context.actionType,
     );
 
-    if (conditionEffects.advantage) result.advantage = true;
-    if (conditionEffects.disadvantage) result.disadvantage = true;
-    if (conditionEffects.prevented) result.prevented = true;
+    if (conditionEffects.advantage) {result.advantage = true;}
+    if (conditionEffects.disadvantage) {result.disadvantage = true;}
+    if (conditionEffects.prevented) {result.prevented = true;}
 
     // Add condition modifiers
     conditionEffects.modifiers.forEach((modifier) => {
@@ -105,7 +105,7 @@ export class MechanicalEffectsIntegrator {
   private applyEquipmentEffects(context: MechanicalEffectContext, result: MechanicalResult): void {
     // Get equipment bonuses
     const characterData = this.getCharacterData(context.entityId);
-    if (!characterData) return;
+    if (!characterData) {return;}
 
     const equipmentBonuses = equipmentEffectsEngine.calculateEquipmentBonuses(
       context.entityId,
@@ -169,7 +169,7 @@ export class MechanicalEffectsIntegrator {
 
   private applySpellEffects(context: MechanicalEffectContext, result: MechanicalResult): void {
     const characterData = this.getCharacterData(context.entityId);
-    if (!characterData?.concentrationSpell) return;
+    if (!characterData?.concentrationSpell) {return;}
 
     const concentrationSpell = characterData.concentrationSpell;
 
@@ -432,7 +432,7 @@ export class MechanicalEffectsIntegrator {
       conditionEffects.forEach((effect) => {
         effects.push({
           type: effect.type,
-          effect: effect,
+          effect,
           source: "condition",
         });
       });
@@ -441,7 +441,7 @@ export class MechanicalEffectsIntegrator {
       turnEndResult.effects.forEach((effect) => {
         effects.push({
           type: effect.type,
-          effect: effect,
+          effect,
           source: "condition",
         });
       });

@@ -60,7 +60,7 @@ export interface AISystemMetrics {
     costSaved: number;
   };
   providers: {
-    healthStatus: Record<string, string>;
+    healthStatus: Record<string, { status: string; lastCheck: number; }>;
     totalRequests: number;
     failoverEvents: number;
   };
@@ -79,11 +79,11 @@ export interface AISystemEvent {
  */
 export class UnifiedAISystem extends EventEmitter {
   private config: UnifiedAIConfig;
-  private providerRegistry: ProductionProviderRegistry;
-  private providerRouter: IntelligentProviderRouter;
-  private aiContentCache: AIContentCache;
-  private dynamicNPCManager: DynamicNPCManager;
-  private visionAIIntegration: VisionAIIntegration;
+  private providerRegistry!: ProductionProviderRegistry;
+  private providerRouter!: IntelligentProviderRouter;
+  private aiContentCache!: AIContentCache;
+  private dynamicNPCManager!: DynamicNPCManager;
+  private visionAIIntegration!: VisionAIIntegration;
   
   // Core systems (injected)
   private campaignAssistant: CampaignAssistant;
@@ -355,7 +355,10 @@ export class UnifiedAISystem extends EventEmitter {
   getMetrics(): AISystemMetrics {
     return {
       ...this.metrics,
-      cache: this.aiContentCache.getAnalytics(),
+      cache: {
+        ...this.aiContentCache.getAnalytics(),
+        costSaved: this.aiContentCache.getAnalytics().estimatedCostSaved
+      },
       providers: {
         healthStatus: this.providerRouter.getHealthStatus(),
         totalRequests: this.metrics.providers.totalRequests,
@@ -477,7 +480,7 @@ export class UnifiedAISystem extends EventEmitter {
   private handleThreatDetection(analysis: TokenAnalysis, context?: any): void {
     // Notify all NPCs in the area about the threat
     const nearbyNPCs = this.npcBehaviorSystem.getActiveNPCs().filter(npc => {
-      if (!context?.observerId) return false;
+      if (!context?.observerId) {return false;}
       const distance = this.calculateDistance(npc.position, context);
       return distance <= 100; // Within 100 units
     });
@@ -498,7 +501,7 @@ export class UnifiedAISystem extends EventEmitter {
 
   private async updateNPCKnowledge(observerId: EntityId, analysis: TokenAnalysis): Promise<void> {
     const npc = this.npcBehaviorSystem.getNPC(observerId.toString());
-    if (!npc) return;
+    if (!npc) {return;}
 
     // Add to NPC memory
     npc.behaviorState.memory.push({

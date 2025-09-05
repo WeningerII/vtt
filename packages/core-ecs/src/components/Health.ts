@@ -38,7 +38,7 @@ export class HealthStore {
 
   remove(entity: number): void {
     const index = this.findIndex(entity);
-    if (index === -1) return;
+    if (index === -1) {return;}
 
     // Move last element to this position
     const lastIndex = this.count - 1;
@@ -57,7 +57,7 @@ export class HealthStore {
 
   get(entity: number): HealthData | null {
     const index = this.findIndex(entity);
-    if (index === -1) return null;
+    if (index === -1) {return null;}
 
     return {
       current: this.current[index] || 0,
@@ -68,16 +68,16 @@ export class HealthStore {
 
   set(entity: number, data: Partial<HealthData>): void {
     const index = this.findIndex(entity);
-    if (index === -1) return;
+    if (index === -1) {return;}
 
-    if (data.current !== undefined) this.current[index] = data.current;
-    if (data.max !== undefined) this.max[index] = data.max;
-    if (data.temporary !== undefined) this.temporary[index] = data.temporary;
+    if (data.current !== undefined) {this.current[index] = data.current;}
+    if (data.max !== undefined) {this.max[index] = data.max;}
+    if (data.temporary !== undefined) {this.temporary[index] = data.temporary;}
   }
 
   takeDamage(entity: number, damage: number): boolean {
     const index = this.findIndex(entity);
-    if (index === -1) return false;
+    if (index === -1) {return false;}
 
     // Apply temporary hit points first
     const tempHP = this.temporary[index] || 0;
@@ -95,7 +95,7 @@ export class HealthStore {
 
   heal(entity: number, healing: number): boolean {
     const index = this.findIndex(entity);
-    if (index === -1) return false;
+    if (index === -1) {return false;}
 
     const currentHP = this.current[index] || 0;
     const maxHP = this.max[index] || 0;
@@ -114,13 +114,13 @@ export class HealthStore {
 
   isDead(entity: number): boolean {
     const index = this.findIndex(entity);
-    if (index === -1) return false;
+    if (index === -1) {return false;}
     return (this.current[index] || 0) <= 0;
   }
 
   getHealthPercentage(entity: number): number {
     const index = this.findIndex(entity);
-    if (index === -1) return 0;
+    if (index === -1) {return 0;}
     const current = this.current[index] || 0;
     const max = this.max[index] || 1;
     return current / max;
@@ -128,7 +128,7 @@ export class HealthStore {
 
   private findIndex(entity: number): number {
     for (let i = 0; i < this.count; i++) {
-      if (this.entities[i] === entity) return i;
+      if (this.entities[i] === entity) {return i;}
     }
     return -1;
   }

@@ -9,7 +9,12 @@
     ],
     "incremental": true,
     "tsBuildInfoFile": "./security.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@vtt/*": ["../../packages/*/src"]
+    }
   },
   "include": [
     "src/**/*"
@@ -20,5 +25,8 @@
     "src/__tests__",
     "**/*.test.ts",
     "**/*.spec.ts"
+  ],
+  "references": [
+    { "path": "../logging" }
   ]
 }

@@ -338,7 +338,7 @@ export class SpellEngine {
 
   private hasSpellSlot(caster: any, level: number): boolean {
     const slots = caster.spellSlots;
-    if (!slots || !slots[level]) return false;
+    if (!slots || !slots[level]) {return false;}
     return slots[level].current > 0;
   }
 
@@ -371,9 +371,9 @@ export class SpellEngine {
 
   private parseDuration(duration: string): number {
     // Parse duration strings into rounds/minutes
-    if (duration.includes("1 minute")) return 10; // 10 rounds
-    if (duration.includes("10 minutes")) return 100; // 100 rounds
-    if (duration.includes("1 hour")) return 600; // 600 rounds
+    if (duration.includes("1 minute")) {return 10;} // 10 rounds
+    if (duration.includes("10 minutes")) {return 100;} // 100 rounds
+    if (duration.includes("1 hour")) {return 600;} // 600 rounds
     return 1; // Default to 1 round
   }
 
@@ -394,7 +394,7 @@ export class SpellEngine {
    * Check concentration when taking damage
    */
   checkConcentration(caster: any, damage: number): boolean {
-    if (!caster.concentrationSpell) return true;
+    if (!caster.concentrationSpell) {return true;}
 
     const dc = Math.max(10, Math.floor(damage / 2));
     const constitutionSave = caster.abilities?.CON?.modifier || 0;
@@ -517,3 +517,4 @@ export const D5E_SPELLS: Record<string, Spell> = {
 
 // Export singleton instance
 export const _spellEngine = new SpellEngine();
+export const spellEngine = _spellEngine;

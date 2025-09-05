@@ -10,9 +10,9 @@ async function generateEncounterContent(
 
   return {
     id: `encounter_${Date.now()}`,
-    difficulty: difficulty,
-    partyLevel: partyLevel,
-    partySize: partySize,
+    difficulty,
+    partyLevel,
+    partySize,
     totalXP: partyLevel * partySize * 100,
     enemies: [
       { name: "Goblin Ambusher", count: 3, cr: 0.25 },
@@ -35,7 +35,7 @@ async function generateCampaignContent(
   return {
     id: `campaign_${Date.now()}`,
     title: "The Shattered Crown",
-    duration: duration,
+    duration,
     levels: `${startLevel} to ${endLevel}`,
     acts: [
       {
@@ -77,9 +77,9 @@ async function enhanceTextContent(
   switch (enhancement) {
     case "improve":
       enhanced = originalText.replace(/\b\w+/g, (word) => {
-        if (word === "good") return "excellent";
-        if (word === "bad") return "terrible";
-        if (word === "big") return "massive";
+        if (word === "good") {return "excellent";}
+        if (word === "bad") {return "terrible";}
+        if (word === "big") {return "massive";}
         return word;
       });
       break;
@@ -88,10 +88,10 @@ async function enhanceTextContent(
       break;
     case "summarize":
       enhanced =
-        originalText
+        `${originalText
           .split(" ")
           .slice(0, Math.ceil(originalText.split(" ").length / 2))
-          .join(" ") + "...";
+          .join(" ")  }...`;
       break;
     default:
       enhanced = `Enhanced version: ${originalText}`;

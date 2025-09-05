@@ -830,7 +830,7 @@ export class ProfessionalUIFramework {
   // Rendering
   render(containerId: string): void {
     const container = document.getElementById(containerId);
-    if (!container) return;
+    if (!container) {return;}
 
     const layout = this.layouts.get(this.currentLayout);
     if (layout) {
@@ -919,7 +919,7 @@ export class ProfessionalUIFramework {
   // Animation
   animateComponent(componentId: string, animation: Animation): Promise<void> {
     const component = this.components.get(componentId);
-    if (!component) return Promise.resolve();
+    if (!component) {return Promise.resolve();}
 
     this.stats.animationsPlayed++;
     return this.animationEngine.animate(component, animation);

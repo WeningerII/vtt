@@ -89,7 +89,7 @@ const Modal = memo<ModalProps>(({
   const descId = useRef(`modal-desc-${Math.random().toString(36).slice(2, 9)}`).current;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {return;}
 
     // Focus management
     const previousActiveElement = document.activeElement as HTMLElement;
@@ -104,7 +104,7 @@ const Modal = memo<ModalProps>(({
 
     // Focus trap
     const handleTab = (e: KeyboardEvent) => {
-      if (e.key !== "Tab" || !modalRef.current) return;
+      if (e.key !== "Tab" || !modalRef.current) {return;}
 
       const focusableElements = modalRef.current.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -134,7 +134,7 @@ const Modal = memo<ModalProps>(({
     };
   }, [isOpen, closeOnEscape, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {

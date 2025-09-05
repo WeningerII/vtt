@@ -417,7 +417,7 @@ export class CacheManager extends EventEmitter {
     const targetSize = Math.max(newEntrySize, this.config.maxMemorySize * 0.1);
 
     for (const [key, entry] of entries) {
-      if (freedSize >= targetSize) break;
+      if (freedSize >= targetSize) {break;}
 
       keysToEvict.push(key);
       freedSize += entry.size;
@@ -476,7 +476,7 @@ export class CacheManager extends EventEmitter {
   }
 
   private isExpired(entry: CacheEntry): boolean {
-    if (!entry.ttl) return false;
+    if (!entry.ttl) {return false;}
     return Date.now() - entry.createdAt.getTime() > entry.ttl;
   }
 

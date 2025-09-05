@@ -196,7 +196,7 @@ export class GoogleOAuthProvider {
 
       return {
         success: true,
-        user: user,
+        user,
         session: sessionResult
       };
 

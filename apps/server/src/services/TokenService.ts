@@ -52,10 +52,10 @@ export class TokenService {
     const { sceneId, actorId, disposition, isVisible, layer, limit = 100, offset = 0 } = options;
 
     const where: any = { sceneId };
-    if (actorId) where.actorId = actorId;
-    if (disposition) where.disposition = disposition;
-    if (isVisible !== undefined) where.isVisible = isVisible;
-    if (layer !== undefined) where.layer = layer;
+    if (actorId) {where.actorId = actorId;}
+    if (disposition) {where.disposition = disposition;}
+    if (isVisible !== undefined) {where.isVisible = isVisible;}
+    if (layer !== undefined) {where.layer = layer;}
 
     const [items, total] = await Promise.all([
       this.prisma.token.findMany({
@@ -208,8 +208,8 @@ export class TokenService {
 
     // Determine disposition based on actor kind
     let disposition: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN" = "NEUTRAL";
-    if (actor.kind === "PC") disposition = "FRIENDLY";
-    else if (actor.kind === "MONSTER") disposition = "HOSTILE";
+    if (actor.kind === "PC") {disposition = "FRIENDLY";}
+    else if (actor.kind === "MONSTER") {disposition = "HOSTILE";}
 
     return this.createToken({
       name: options.name || actor.name,
@@ -231,17 +231,17 @@ export class TokenService {
 
   async updateToken(id: string, request: UpdateTokenRequest) {
     const data: any = {};
-    if (request.name !== undefined) data.name = request.name;
-    if (request.x !== undefined) data.x = request.x;
-    if (request.y !== undefined) data.y = request.y;
-    if (request.width !== undefined) data.width = request.width;
-    if (request.height !== undefined) data.height = request.height;
-    if (request.rotation !== undefined) data.rotation = request.rotation;
-    if (request.scale !== undefined) data.scale = request.scale;
-    if (request.disposition !== undefined) data.disposition = request.disposition;
-    if (request.isVisible !== undefined) data.isVisible = request.isVisible;
-    if (request.isLocked !== undefined) data.isLocked = request.isLocked;
-    if (request.layer !== undefined) data.layer = request.layer;
+    if (request.name !== undefined) {data.name = request.name;}
+    if (request.x !== undefined) {data.x = request.x;}
+    if (request.y !== undefined) {data.y = request.y;}
+    if (request.width !== undefined) {data.width = request.width;}
+    if (request.height !== undefined) {data.height = request.height;}
+    if (request.rotation !== undefined) {data.rotation = request.rotation;}
+    if (request.scale !== undefined) {data.scale = request.scale;}
+    if (request.disposition !== undefined) {data.disposition = request.disposition;}
+    if (request.isVisible !== undefined) {data.isVisible = request.isVisible;}
+    if (request.isLocked !== undefined) {data.isLocked = request.isLocked;}
+    if (request.layer !== undefined) {data.layer = request.layer;}
 
     return this.prisma.token.update({
       where: { id },
@@ -260,7 +260,7 @@ export class TokenService {
 
   async moveToken(id: string, x: number, y: number, rotation?: number) {
     const data: any = { x, y };
-    if (rotation !== undefined) data.rotation = rotation;
+    if (rotation !== undefined) {data.rotation = rotation;}
 
     return this.updateToken(id, data);
   }

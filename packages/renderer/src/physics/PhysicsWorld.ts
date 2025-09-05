@@ -95,14 +95,14 @@ export class RigidBody {
     const localMax = vec3.copy(vec3.create(), this.shape.bounds.max);
 
     const corners = [
-      vec3.fromValues(localMin[0], localMin[1], localMin[2]),
-      vec3.fromValues(localMax[0], localMin[1], localMin[2]),
-      vec3.fromValues(localMin[0], localMax[1], localMin[2]),
-      vec3.fromValues(localMax[0], localMax[1], localMin[2]),
-      vec3.fromValues(localMin[0], localMin[1], localMax[2]),
-      vec3.fromValues(localMax[0], localMin[1], localMax[2]),
-      vec3.fromValues(localMin[0], localMax[1], localMax[2]),
-      vec3.fromValues(localMax[0], localMax[1], localMax[2]),
+      vec3.fromValues(localMin[0] ?? 0, localMin[1] ?? 0, localMin[2] ?? 0),
+      vec3.fromValues(localMax[0] ?? 0, localMin[1] ?? 0, localMin[2] ?? 0),
+      vec3.fromValues(localMin[0] ?? 0, localMax[1] ?? 0, localMin[2] ?? 0),
+      vec3.fromValues(localMax[0] ?? 0, localMax[1] ?? 0, localMin[2] ?? 0),
+      vec3.fromValues(localMin[0] ?? 0, localMin[1] ?? 0, localMax[2] ?? 0),
+      vec3.fromValues(localMax[0] ?? 0, localMin[1] ?? 0, localMax[2] ?? 0),
+      vec3.fromValues(localMin[0] ?? 0, localMax[1] ?? 0, localMax[2] ?? 0),
+      vec3.fromValues(localMax[0] ?? 0, localMax[1] ?? 0, localMax[2] ?? 0),
     ];
 
     const worldMin = vec3.fromValues(Infinity, Infinity, Infinity);
@@ -121,7 +121,7 @@ export class RigidBody {
   }
 
   applyForce(force: vec3, point?: vec3): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
 
     vec3.add(this.force, this.force, force);
 
@@ -133,7 +133,7 @@ export class RigidBody {
   }
 
   applyImpulse(impulse: vec3, point?: vec3): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
 
     const deltaV = vec3.scale(vec3.create(), impulse, this.invMass);
     vec3.add(this.config.velocity, this.config.velocity, deltaV);
@@ -213,7 +213,7 @@ export class PhysicsWorld {
 
   private integrateVelocities(dt: number): void {
     for (const body of this.bodies.values()) {
-      if (body.config.isStatic) continue;
+      if (body.config.isStatic) {continue;}
 
       if (body.config.gravityScale > 0) {
         const gravityForce = vec3.scale(
@@ -274,9 +274,9 @@ export class PhysicsWorld {
 
   private worldToCell(position: vec3): { x: number; y: number; z: number } {
     return {
-      x: Math.floor(position[0] / this.cellSize),
-      y: Math.floor(position[1] / this.cellSize),
-      z: Math.floor(position[2] / this.cellSize),
+      x: Math.floor((position[0] ?? 0) / this.cellSize),
+      y: Math.floor((position[1] ?? 0) / this.cellSize),
+      z: Math.floor((position[2] ?? 0) / this.cellSize),
     };
   }
 
@@ -292,13 +292,15 @@ export class PhysicsWorld {
           const bodyA = bodiesArray[i];
           const bodyB = bodiesArray[j];
 
+          if (!bodyA || !bodyB) {continue;}
+
           const pairKey =
             bodyA.id < bodyB.id ? `${bodyA.id}-${bodyB.id}` : `${bodyB.id}-${bodyA.id}`;
 
           if (!processed.has(pairKey)) {
             processed.add(pairKey);
 
-            if (bodyA.config.isStatic && bodyB.config.isStatic) continue;
+            if (bodyA.config.isStatic && bodyB.config.isStatic) {continue;}
 
             if (this.aabbOverlap(bodyA.getWorldBounds(), bodyB.getWorldBounds())) {
               pairs.push([bodyA, bodyB]);
@@ -313,13 +315,15 @@ export class PhysicsWorld {
   }
 
   private aabbOverlap(a: { min: vec3; max: vec3 }, b: { min: vec3; max: vec3 }): boolean {
+    if (!a || !b || !a.min || !a.max || !b.min || !b.max) {return false;}
+    
     return (
-      a.min[0] <= b.max[0] &&
-      a.max[0] >= b.min[0] &&
-      a.min[1] <= b.max[1] &&
-      a.max[1] >= b.min[1] &&
-      a.min[2] <= b.max[2] &&
-      a.max[2] >= b.min[2]
+      (a.min?.[0] ?? 0) <= (b.max?.[0] ?? 0) &&
+      (a.max?.[0] ?? 0) >= (b.min?.[0] ?? 0) &&
+      (a.min?.[1] ?? 0) <= (b.max?.[1] ?? 0) &&
+      (a.max?.[1] ?? 0) >= (b.min?.[1] ?? 0) &&
+      (a.min?.[2] ?? 0) <= (b.max?.[2] ?? 0) &&
+      (a.max?.[2] ?? 0) >= (b.min?.[2] ?? 0)
     );
   }
 
@@ -404,7 +408,7 @@ export class PhysicsWorld {
 
   private integratePositions(dt: number): void {
     for (const body of this.bodies.values()) {
-      if (body.config.isStatic) continue;
+      if (body.config.isStatic) {continue;}
 
       vec3.scaleAndAdd(body.config.position, body.config.position, body.config.velocity, dt);
 
@@ -471,7 +475,7 @@ export class PhysicsWorld {
     maxDistance: number,
     bounds: { min: vec3; max: vec3 },
   ): RaycastResult {
-    const invDir = vec3.fromValues(1 / direction[0], 1 / direction[1], 1 / direction[2]);
+    const invDir = vec3.fromValues(1 / (direction[0] ?? 1), 1 / (direction[1] ?? 1), 1 / (direction[2] ?? 1));
 
     const t1 = vec3.multiply(
       vec3.create(),
@@ -484,15 +488,17 @@ export class PhysicsWorld {
       invDir,
     );
 
-    const tmin = vec3.max(vec3.create(), vec3.min(vec3.create(), t1, t2), vec3.create());
-    const tmax = vec3.min(
-      vec3.create(),
-      vec3.max(vec3.create(), t1, t2),
-      vec3.fromValues(maxDistance, maxDistance, maxDistance),
-    );
+    const tmin = vec3.create();
+    const tmax = vec3.create();
+    
+    // Calculate component-wise min/max
+    for (let i = 0; i < 3; i++) {
+      tmin[i] = Math.max(Math.min(t1[i] ?? 0, t2[i] ?? 0), 0);
+      tmax[i] = Math.min(Math.max(t1[i] ?? 0, t2[i] ?? 0), maxDistance);
+    }
 
-    const tmaxScalar = Math.min(tmax[0], tmax[1], tmax[2]);
-    const tminScalar = Math.max(Math.max(tmin[0], tmin[1], tmin[2]), 0);
+    const tmaxScalar = Math.min(tmax[0] ?? 0, tmax[1] ?? 0, tmax[2] ?? 0);
+    const tminScalar = Math.max(Math.max(tmin[0] ?? 0, tmin[1] ?? 0, tmin[2] ?? 0), 0);
 
     if (tminScalar <= tmaxScalar && tmaxScalar >= 0) {
       const distance = tminScalar;

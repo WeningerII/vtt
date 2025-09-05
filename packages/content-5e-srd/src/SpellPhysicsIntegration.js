@@ -5,22 +5,22 @@
 // 3D Geometry calculations
 export class GeometryCalculator {
     static getEntitiesInSphere(center, radius, entities) {
-        return entities.filter(entity => {
+        return entities.filter((entity) => {
             const distance = this.distance(center, entity.position);
             return distance <= radius;
         });
     }
     static getEntitiesInCube(center, size, entities) {
         const halfSize = size / 2;
-        return entities.filter(entity => {
-            return Math.abs(entity.position.x - center.x) <= halfSize &&
+        return entities.filter((entity) => {
+            return (Math.abs(entity.position.x - center.x) <= halfSize &&
                 Math.abs(entity.position.y - center.y) <= halfSize &&
-                Math.abs(entity.position.z - center.z) <= halfSize;
+                Math.abs(entity.position.z - center.z) <= halfSize);
         });
     }
     static getEntitiesInCone(apex, direction, angle, length, entities) {
         const normalizedDirection = this.normalize(direction);
-        return entities.filter(entity => {
+        return entities.filter((entity) => {
             const toEntity = this.subtract(entity.position, apex);
             const distance = this.magnitude(toEntity);
             if (distance > length)
@@ -32,7 +32,7 @@ export class GeometryCalculator {
         });
     }
     static getEntitiesInLine(start, end, width, entities) {
-        return entities.filter(entity => {
+        return entities.filter((entity) => {
             const distance = this.distancePointToLine(entity.position, start, end);
             return distance <= width / 2;
         });
@@ -48,9 +48,7 @@ export class GeometryCalculator {
         return this.distance(point, projection);
     }
     static distance(a, b) {
-        return Math.sqrt(Math.pow(b.x - a.x, 2) +
-            Math.pow(b.y - a.y, 2) +
-            Math.pow(b.z - a.z, 2));
+        return Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2) + Math.pow(b.z - a.z, 2));
     }
     static add(a, b) {
         return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
@@ -75,7 +73,7 @@ export class GeometryCalculator {
         return {
             x: a.y * b.z - a.z * b.y,
             y: a.z * b.x - a.x * b.z,
-            z: a.x * b.y - a.y * b.x
+            z: a.x * b.y - a.y * b.x,
         };
     }
 }
@@ -99,24 +97,24 @@ export class PhysicsSpellExecutor {
     }
     convertToPhysicsEffect(effect, spell, ctx) {
         switch (effect.type) {
-            case 'damage':
+            case "damage":
                 if (effect.areaOfEffect) {
                     return this.createAreaDamagePhysics(effect, spell, ctx);
                 }
                 else {
                     return this.createProjectilePhysics(effect, spell, ctx);
                 }
-            case 'movement':
+            case "movement":
                 return this.createForcePhysics(effect, spell, ctx);
-            case 'geometry':
+            case "geometry":
                 return this.createGeometryPhysics(effect, spell, ctx);
             default:
                 return null;
         }
     }
-    createProjectilePhysics(effect, spell, ctx) {
+    createProjectilePhysics(effect, _spell, _ctx) {
         return {
-            type: 'projectile',
+            type: "projectile",
             duration: () => 5000, // 5 second max flight time
             physics: {
                 velocity: (ctx) => {
@@ -141,16 +139,16 @@ export class PhysicsSpellExecutor {
                     if (targetEntity && effect.targetFilter(targetEntity, ctx)) {
                         this.applyDamageEffect(effect, targetEntity, ctx);
                     }
-                }
-            }
+                },
+            },
         };
     }
     createAreaDamagePhysics(effect, spell, ctx) {
         return {
-            type: 'area_field',
+            type: "area_field",
             duration: () => 100, // Instantaneous explosion
             physics: {
-                fieldStrength: (position, time) => {
+                fieldStrength: (position, _time) => {
                     // Field strength diminishes over time and distance from center
                     const center = ctx.targets[0]?.position || ctx.caster.position;
                     const distance = GeometryCalculator.distance(position, center);
@@ -161,24 +159,24 @@ export class PhysicsSpellExecutor {
                     const distanceDecay = Math.max(0, 1 - distance / radius);
                     return timeDecay * distanceDecay;
                 },
-                fieldGradient: (position, time) => {
+                fieldGradient: (position, _time) => {
                     // Push outward from center
                     const center = ctx.targets[0]?.position || ctx.caster.position;
                     const direction = GeometryCalculator.subtract(position, center);
                     const normalized = GeometryCalculator.normalize(direction);
                     const strength = this.physics.fieldStrength(position, time);
                     return GeometryCalculator.multiply(normalized, strength * 1000);
-                }
-            }
+                },
+            },
         };
     }
-    createForcePhysics(effect, spell, ctx) {
+    createForcePhysics(effect, _spell, _ctx) {
         return {
-            type: 'force_application',
-            duration: (ctx) => effect.duration ? effect.duration(ctx) : 1000,
+            type: "force_application",
+            duration: (ctx) => (effect.duration ? effect.duration(ctx) : 1000),
             physics: {
                 velocity: (ctx) => {
-                    if (effect.mode === 'teleport') {
+                    if (effect.mode === "teleport") {
                         // Instant displacement
                         return { x: 0, y: 0, z: 0 };
                     }
@@ -186,19 +184,19 @@ export class PhysicsSpellExecutor {
                     const direction = effect.direction ? effect.direction(ctx) : { x: 1, y: 0, z: 0 };
                     const normalized = GeometryCalculator.normalize(direction);
                     return GeometryCalculator.multiply(normalized, magnitude);
-                }
-            }
+                },
+            },
         };
     }
-    createGeometryPhysics(effect, spell, ctx) {
+    createGeometryPhysics(effect, _spell, _ctx) {
         return {
-            type: 'transformation',
-            duration: (ctx) => effect.duration ? effect.duration(ctx) : 60000,
+            type: "transformation",
+            duration: (ctx) => (effect.duration ? effect.duration(ctx) : 60000),
             physics: {
                 // Create physical barriers, walls, etc.
                 mass: () => Infinity, // Immovable
-                velocity: () => ({ x: 0, y: 0, z: 0 })
-            }
+                velocity: () => ({ x: 0, y: 0, z: 0 }),
+            },
         };
     }
     // Physics simulation update loop
@@ -219,13 +217,13 @@ export class PhysicsSpellExecutor {
     }
     updateEffect(effect, deltaTime, elapsed) {
         switch (effect.physicsEffect.type) {
-            case 'projectile':
+            case "projectile":
                 this.updateProjectile(effect, deltaTime);
                 break;
-            case 'area_field':
+            case "area_field":
                 this.updateAreaField(effect, elapsed);
                 break;
-            case 'force_application':
+            case "force_application":
                 this.updateForceApplication(effect, deltaTime);
                 break;
         }
@@ -340,7 +338,7 @@ export class PhysicsSpellExecutor {
                     if (velocityAlongNormal > 0)
                         continue; // Objects separating
                     const restitution = 0.8; // Bounciness
-                    const impulse = -(1 + restitution) * velocityAlongNormal / (1 / entity.mass + 1 / other.mass);
+                    const impulse = (-(1 + restitution) * velocityAlongNormal) / (1 / entity.mass + 1 / other.mass);
                     const impulseVector = GeometryCalculator.multiply(collision.normal, impulse);
                     entity.velocity = GeometryCalculator.add(entity.velocity, GeometryCalculator.multiply(impulseVector, 1 / entity.mass));
                     other.velocity = GeometryCalculator.subtract(other.velocity, GeometryCalculator.multiply(impulseVector, 1 / other.mass));
@@ -351,7 +349,8 @@ export class PhysicsSpellExecutor {
     findEntityAtPosition(position) {
         for (const entity of this.physicsWorld.entities.values()) {
             const distance = GeometryCalculator.distance(position, entity.position);
-            if (distance < 1.0) { // Within 1 unit
+            if (distance < 1.0) {
+                // Within 1 unit
                 return entity;
             }
         }
@@ -361,35 +360,36 @@ export class PhysicsSpellExecutor {
         const damage = effect.amount(ctx);
         target.hitPoints.current = Math.max(0, target.hitPoints.current - damage);
         // Apply physics impact
-        const impulse = GeometryCalculator.multiply(GeometryCalculator.normalize(GeometryCalculator.subtract(target.position, ctx.caster.position)), damage * 10 // Convert damage to impulse
-        );
+        const impulse = GeometryCalculator.multiply(GeometryCalculator.normalize(GeometryCalculator.subtract(target.position, ctx.caster.position)), damage * 10);
         target.velocity = GeometryCalculator.add(target.velocity, GeometryCalculator.multiply(impulse, 1 / target.mass));
     }
     createActiveEffect(physicsEffect, ctx) {
         const id = `effect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         let entity;
-        if (physicsEffect.type === 'projectile') {
+        if (physicsEffect.type === "projectile") {
             // Create a physics entity for the projectile
             entity = {
                 id: `${id}_projectile`,
                 position: { ...ctx.caster.position },
                 hitPoints: { current: 1, maximum: 1 },
                 armorClass: 0,
-                savingThrows: Record<string, unknown>,
+                savingThrows: (Record),
                 conditions: new Set(),
                 resistances: new Set(),
                 immunities: new Set(),
                 vulnerabilities: new Set(),
-                velocity: physicsEffect.physics.velocity ? physicsEffect.physics.velocity(ctx) : { x: 0, y: 0, z: 0 },
+                velocity: physicsEffect.physics.velocity
+                    ? physicsEffect.physics.velocity(ctx)
+                    : { x: 0, y: 0, z: 0 },
                 acceleration: { x: 0, y: 0, z: 0 },
                 mass: physicsEffect.physics.mass ? physicsEffect.physics.mass(ctx) : 1,
                 boundingBox: {
                     min: { x: -0.1, y: -0.1, z: -0.1 },
-                    max: { x: 0.1, y: 0.1, z: 0.1 }
+                    max: { x: 0.1, y: 0.1, z: 0.1 },
                 },
                 collisionMask: 1,
                 forces: [],
-                isStatic: false
+                isStatic: false,
             };
             this.physicsWorld.entities.set(entity.id, entity);
         }
@@ -398,7 +398,7 @@ export class PhysicsSpellExecutor {
             physicsEffect,
             context: ctx,
             startTime: Date.now(),
-            entity
+            entity,
         };
     }
     removeEffect(id) {

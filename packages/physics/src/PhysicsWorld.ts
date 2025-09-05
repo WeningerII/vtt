@@ -2,7 +2,7 @@
  * Physics World - manages all rigid bodies and simulates physics
  */
 
-import { RigidBody, Vector2 } from "./RigidBody";
+import { RigidBody, Vector2, RigidBodyConfig } from "./RigidBody";
 import { SpatialGrid } from "./SpatialGrid";
 import { EventEmitter } from "events";
 
@@ -126,7 +126,7 @@ export class PhysicsWorld extends EventEmitter {
    * Apply gravity to all dynamic bodies
    */
   private applyGravity(): void {
-    if (this.config.gravity.x === 0 && this.config.gravity.y === 0) return;
+    if (this.config.gravity.x === 0 && this.config.gravity.y === 0) {return;}
 
     for (const body of this.bodies.values()) {
       if (!body.config.isStatic) {
@@ -172,7 +172,7 @@ export class PhysicsWorld extends EventEmitter {
       const bodyA = this.bodies.get(idA);
       const bodyB = this.bodies.get(idB);
 
-      if (!bodyA || !bodyB || !bodyA.shouldCollideWith(bodyB)) continue;
+      if (!bodyA || !bodyB || !bodyA.shouldCollideWith(bodyB)) {continue;}
 
       const collision = this.checkAABBCollision(bodyA, bodyB);
       if (collision) {
@@ -195,7 +195,7 @@ export class PhysicsWorld extends EventEmitter {
     const overlapX = Math.min(aabbA.maxX, aabbB.maxX) - Math.max(aabbA.minX, aabbB.minX);
     const overlapY = Math.min(aabbA.maxY, aabbB.maxY) - Math.max(aabbA.minY, aabbB.minY);
 
-    if (overlapX <= 0 || overlapY <= 0) return null;
+    if (overlapX <= 0 || overlapY <= 0) {return null;}
 
     // Calculate collision normal and penetration
     let normal: Vector2;
@@ -243,7 +243,7 @@ export class PhysicsWorld extends EventEmitter {
    */
   private constrainVelocities(): void {
     for (const body of this.bodies.values()) {
-      if (body.config.isStatic) continue;
+      if (body.config.isStatic) {continue;}
 
       // Max velocity constraint
       const speed = Math.sqrt(
@@ -299,7 +299,7 @@ export class PhysicsWorld extends EventEmitter {
   } {
     // Normalize direction
     const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-    if (length === 0) return { hit: false };
+    if (length === 0) {return { hit: false };}
 
     const normalizedDir = { x: direction.x / length, y: direction.y / length };
 
@@ -380,6 +380,55 @@ export class PhysicsWorld extends EventEmitter {
       activeBodyCount: activeBodies.length,
       gridStats: this.spatialGrid.getStats(),
     };
+  }
+
+  /**
+   * Create a new rigid body
+   */
+  createBody(config: {
+    position: Vector2;
+    type: "static" | "dynamic" | "kinematic";
+    size?: Vector2;
+    mass?: number;
+    friction?: number;
+    restitution?: number;
+    isTrigger?: boolean;
+    layer?: number;
+    mask?: number;
+  }): RigidBody {
+    const bodyConfig: RigidBodyConfig = {
+      mass: config.mass || (config.type === "static" ? 0 : 1),
+      friction: config.friction || 0.3,
+      restitution: config.restitution || 0.2,
+      isStatic: config.type === "static",
+      isTrigger: config.isTrigger || false,
+      layer: config.layer || 1,
+      mask: config.mask || 0xFFFFFFFF,
+    };
+
+    const size = config.size || { x: 32, y: 32 };
+    const body = new RigidBody(
+      this.getNextBodyId(),
+      config.position.x,
+      config.position.y,
+      size.x,
+      size.y,
+      bodyConfig
+    );
+
+    this.addBody(body);
+    return body;
+  }
+
+  /**
+   * Get next available body ID
+   */
+  private getNextBodyId(): number {
+    let id = 1;
+    while (this.bodies.has(id)) {
+      id++;
+    }
+    return id;
   }
 
   /**

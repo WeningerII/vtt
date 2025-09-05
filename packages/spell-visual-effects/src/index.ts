@@ -8,7 +8,7 @@ export * from "./PhysicsVisualBridge";
 
 export interface VisualEffect {
   id: string;
-  type: "particle" | "mesh" | "light" | "shockwave" | "beam" | "aura" | "animation";
+  type: "particle" | "mesh" | "light" | "shockwave" | "beam" | "aura" | "animation" | "explosion";
   spellId: string;
   duration: number;
 
@@ -56,6 +56,31 @@ export interface AudioEffect {
   rolloffFactor?: number;
 }
 
+export interface VisualEffectTemplate {
+  type: "particle" | "mesh" | "light" | "shockwave" | "beam" | "aura" | "animation" | "explosion";
+  duration?: number;
+  
+  // Visual properties  
+  color?: string;
+  intensity?: number;
+  scale?: number;
+  opacity?: number;
+
+  // Animation properties
+  animationType?: "fade" | "grow" | "pulse" | "rotate" | "travel" | "explosion";
+  animationDuration?: number;
+  easing?: "linear" | "ease-in" | "ease-out" | "bounce";
+
+  // Particle-specific
+  particleCount?: number;
+  particleSpread?: number;
+  particleVelocity?: { x: number; y: number; z?: number };
+
+  // Cleanup
+  autoDestroy?: boolean;
+  fadeOut?: boolean;
+}
+
 export interface SpellVisualTemplate {
   spellId: string;
   spellName: string;
@@ -63,10 +88,10 @@ export interface SpellVisualTemplate {
   audioEffects: Partial<AudioEffect>[];
 
   // Timing
-  castingEffects?: VisualEffect[]; // During casting
-  projectileEffects?: VisualEffect[]; // For projectile spells
-  impactEffects?: VisualEffect[]; // On impact/effect
-  persistentEffects?: VisualEffect[]; // Duration effects
+  castingEffects?: VisualEffectTemplate[]; // During casting
+  projectileEffects?: VisualEffectTemplate[]; // For projectile spells
+  impactEffects?: VisualEffectTemplate[]; // On impact/effect
+  persistentEffects?: VisualEffectTemplate[]; // Duration effects
 }
 
 export class SpellVisualEffectsManager extends EventEmitter {
@@ -98,19 +123,20 @@ export class SpellVisualEffectsManager extends EventEmitter {
     duration: number = 1000,
   ): string[] {
     const template = this.spellTemplates.get(spellId);
-    if (!template?.castingEffects) return [];
+    if (!template?.castingEffects) {return [];}
 
     const effectIds: string[] = [];
 
     for (const effectTemplate of template.castingEffects) {
+      const { type, duration: templateDuration, ...templateRest } = effectTemplate;
       const effect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || "particle",
         spellId,
-        duration,
+        duration: templateDuration || duration,
         position,
         followEntity: casterId,
-        ...effectTemplate,
+        type,
+        ...templateRest,
       };
 
       this.activeEffects.set(effect.id, effect);
@@ -137,21 +163,22 @@ export class SpellVisualEffectsManager extends EventEmitter {
     travelTime: number = 1000,
   ): string[] {
     const template = this.spellTemplates.get(spellId);
-    if (!template?.projectileEffects) return [];
+    if (!template?.projectileEffects) {return [];}
 
     const effectIds: string[] = [];
 
     for (const effectTemplate of template.projectileEffects) {
+      const { type, ...templateRest } = effectTemplate;
       const effect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || "beam",
         spellId,
         duration: travelTime,
         position: startPosition,
         targetPosition: endPosition,
         animationType: "travel",
         animationDuration: travelTime,
-        ...effectTemplate,
+        type: type || "beam",
+        ...templateRest,
       };
 
       this.activeEffects.set(effect.id, effect);
@@ -172,20 +199,21 @@ export class SpellVisualEffectsManager extends EventEmitter {
     targets: string[] = [],
   ): string[] {
     const template = this.spellTemplates.get(spellId);
-    if (!template?.impactEffects) return [];
+    if (!template?.impactEffects) {return [];}
 
     const effectIds: string[] = [];
 
     for (const effectTemplate of template.impactEffects) {
       // Create effect at impact position
+      const { type, ...templateRest } = effectTemplate;
       const mainEffect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || "explosion",
         spellId,
         duration: effectTemplate.duration || 1000,
         position: impactPosition,
         animationType: effectTemplate.animationType || "explosion",
-        ...effectTemplate,
+        type: type || "explosion",
+        ...templateRest,
       };
 
       this.activeEffects.set(mainEffect.id, mainEffect);
@@ -194,14 +222,15 @@ export class SpellVisualEffectsManager extends EventEmitter {
 
       // Create effects on targets if specified
       targets.forEach((targetId) => {
+        const { type, ...templateRest } = effectTemplate;
         const targetEffect: VisualEffect = {
           id: this.generateEffectId(),
-          type: effectTemplate.type || "aura",
           spellId,
           duration: effectTemplate.duration || 1000,
           followEntity: targetId,
+          type: type || "aura",
           scale: (effectTemplate.scale || 1.0) * 0.7, // Smaller for individual targets
-          ...effectTemplate,
+          ...templateRest,
         };
 
         this.activeEffects.set(targetEffect.id, targetEffect);
@@ -218,20 +247,21 @@ export class SpellVisualEffectsManager extends EventEmitter {
    */
   createPersistentEffect(spellId: string, entityId: string, duration: number): string[] {
     const template = this.spellTemplates.get(spellId);
-    if (!template?.persistentEffects) return [];
+    if (!template?.persistentEffects) {return [];}
 
     const effectIds: string[] = [];
 
     for (const effectTemplate of template.persistentEffects) {
+      const { type, duration: templateDuration, ...templateRest } = effectTemplate;
       const effect: VisualEffect = {
         id: this.generateEffectId(),
-        type: effectTemplate.type || "aura",
         spellId,
-        duration,
+        duration: templateDuration || duration,
         followEntity: entityId,
         autoDestroy: true,
         fadeOut: true,
-        ...effectTemplate,
+        type: type || "aura",
+        ...templateRest,
       };
 
       this.activeEffects.set(effect.id, effect);
@@ -253,18 +283,19 @@ export class SpellVisualEffectsManager extends EventEmitter {
    */
   playSpellAudio(spellId: string, position?: { x: number; y: number; z?: number }): string[] {
     const template = this.spellTemplates.get(spellId);
-    if (!template?.audioEffects) return [];
+    if (!template?.audioEffects) {return [];}
 
     const audioIds: string[] = [];
 
     for (const audioTemplate of template.audioEffects) {
+      const { type, ...audioTemplateRest } = audioTemplate;
       const audio: AudioEffect = {
         id: this.generateEffectId(),
-        type: audioTemplate.type || "sfx",
         spellId,
         audioFile: audioTemplate.audioFile || `spells/${spellId}.mp3`,
-        position,
-        ...audioTemplate,
+        type: type || "sfx",
+        ...(position && { position }),
+        ...audioTemplateRest,
       };
 
       this.activeAudio.set(audio.id, audio);
@@ -293,7 +324,7 @@ export class SpellVisualEffectsManager extends EventEmitter {
    */
   destroyEffect(effectId: string, fadeOut: boolean = false): void {
     const effect = this.activeEffects.get(effectId);
-    if (!effect) return;
+    if (!effect) {return;}
 
     if (fadeOut && effect.fadeOut) {
       // Trigger fade out animation

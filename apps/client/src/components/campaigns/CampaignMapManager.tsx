@@ -3,7 +3,17 @@
  */
 import React, { useState, useEffect } from 'react'
 import { logger } from '@vtt/logging';
-import { Pause as PauseIcon, Play as PlayIcon, Plus as PlusIcon, Settings as SettingsIcon, Users as UsersIcon } from 'lucide-react';
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const PauseIcon = MockIcon;
+const PlayIcon = MockIcon;
+const PlusIcon = MockIcon;
+const SettingsIcon = MockIcon;
+const UsersIcon = MockIcon;
 
 // Using placeholder icons - replace with actual icon library
 const Plus = () => <span>+</span>;
@@ -56,7 +66,7 @@ function CreateSceneModal({ isOpen: _isOpen, onClose: _onClose, onSubmit, availa
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sceneName.trim()) return;
+    if (!sceneName.trim()) {return;}
     
     onSubmit(sceneName.trim(), selectedMapId || undefined);
     setSceneName('');
@@ -64,7 +74,7 @@ function CreateSceneModal({ isOpen: _isOpen, onClose: _onClose, onSubmit, availa
     _onClose();
   };
 
-  if (!_isOpen) return null;
+  if (!_isOpen) {return null;}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -127,7 +137,7 @@ function SceneSettingsModal({ isOpen, onClose, onSubmit, scene, availableMaps }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!scene || !sceneName.trim()) return;
+    if (!scene || !sceneName.trim()) {return;}
     
     const updates: { name?: string; mapId?: string | null; } = {};
     
@@ -149,7 +159,7 @@ function SceneSettingsModal({ isOpen, onClose, onSubmit, scene, availableMaps }:
     onClose();
   };
 
-  if (!isOpen || !scene) return null;
+  if (!isOpen || !scene) {return null;}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -255,7 +265,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
 
   const handleDuplicateScene = async (sceneId: string) => {
     const scene = scenes.find(s => s.id === sceneId);
-    if (!scene) return;
+    if (!scene) {return;}
     
     try {
       const response = await fetch(`/api/campaigns/${_campaignId}/scenes`, {
@@ -364,7 +374,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
   */
 
   const handleDeleteScene = async (sceneId: string) => {
-    if (!isGM || !confirm('Are you sure you want to delete this scene?')) return;
+    if (!isGM || !confirm('Are you sure you want to delete this scene?')) {return;}
 
     try {
       const response = await fetch(`/api/maps/scenes/${sceneId}`, {

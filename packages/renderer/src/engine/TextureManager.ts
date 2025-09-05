@@ -151,7 +151,7 @@ export class TextureManager {
 
     for (let i = 0; i < 6; i++) {
       gl.texImage2D(
-        faces[i],
+        faces[i] ?? gl.TEXTURE_CUBE_MAP_POSITIVE_X,
         0,
         gl.RGBA,
         1,
@@ -159,7 +159,7 @@ export class TextureManager {
         0,
         gl.RGBA,
         gl.UNSIGNED_BYTE,
-        new Uint8Array(colors[i]),
+        new Uint8Array(colors[i] ?? [255, 255, 255]),
       );
     }
 
@@ -192,7 +192,7 @@ export class TextureManager {
       this.textures.set(path, texture);
       return texture;
     } catch (error) {
-      logger.error(`Failed to load texture: ${path}`, error);
+      logger.error(`Failed to load texture: ${path}`, error as Record<string, any>);
       // Return missing texture fallback
       return this.defaultTextures.get("missing")!;
     } finally {
@@ -341,8 +341,8 @@ export class TextureManager {
       const image = new Image();
       image.crossOrigin = "anonymous";
 
-      image.onload = () => resolve(image);
-      image.onerror = (_error) => reject(new Error(`Failed to load image: ${src}`));
+      image.onload = () => _resolve(image);
+      image.onerror = (_error) => __reject(new Error(`Failed to load image: ${src}`));
 
       image.src = src;
     });

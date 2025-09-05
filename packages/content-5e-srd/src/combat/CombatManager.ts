@@ -171,7 +171,7 @@ export class CombatManager extends EventEmitter {
 
     const currentParticipant = encounter.participants[encounter.currentTurn];
     this.emit('turnChanged', encounter, currentParticipant);
-    logger.debug(`Turn advanced in ${encounterId}: ${currentParticipant.name}`);
+    logger.debug(`Turn advanced in ${encounterId}: ${currentParticipant?.name || 'Unknown'}`);
 
     return true;
   }
@@ -254,14 +254,16 @@ export class CombatManager extends EventEmitter {
       for (const diceGroup of diceMatch) {
         const [count, sides] = diceGroup.split('d').map(Number);
         
-        for (let i = 0; i < count; i++) {
-          const roll = Math.floor(Math.random() * sides) + 1;
-          total += roll;
-          
-          // Double dice on critical hit
-          if (critical) {
-            const critRoll = Math.floor(Math.random() * sides) + 1;
-            total += critRoll;
+        if (count && sides) {
+          for (let i = 0; i < count; i++) {
+            const roll = Math.floor(Math.random() * sides) + 1;
+            total += roll;
+            
+            // Double dice on critical hit
+            if (critical) {
+              const critRoll = Math.floor(Math.random() * sides) + 1;
+              total += critRoll;
+            }
           }
         }
       }

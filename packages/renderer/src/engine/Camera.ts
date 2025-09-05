@@ -1,4 +1,4 @@
-import { mat4, vec3, quat } from "gl-matrix";
+import { mat4, vec3, quat, vec4 } from "gl-matrix";
 
 export enum CameraType {
   PERSPECTIVE = "perspective",
@@ -29,7 +29,7 @@ export class Camera {
   public inverseViewMatrix = mat4.create();
   public inverseProjectionMatrix = mat4.create();
 
-  private settings: CameraSettings;
+  public settings: CameraSettings;
   private dirty = true;
   private frustumPlanes = new Float32Array(24); // 6 planes * 4 components
 
@@ -41,6 +41,44 @@ export class Camera {
   setPosition(x: number, y: number, z: number): void {
     vec3.set(this.position, x, y, z);
     this.dirty = true;
+  }
+
+  getPosition(): vec3 {
+    return this.position;
+  }
+
+  get near(): number {
+    return this.settings.near;
+  }
+
+  get far(): number {
+    return this.settings.far;
+  }
+
+  get aspect(): number {
+    return this.settings.aspect || 1.0;
+  }
+
+  get fov(): number {
+    return this.settings.fov || Math.PI / 4;
+  }
+
+  getForward(): vec3 {
+    const forward = vec3.create();
+    vec3.transformQuat(forward, vec3.fromValues(0, 0, -1), this.rotation);
+    return forward;
+  }
+
+  getRight(): vec3 {
+    const right = vec3.create();
+    vec3.transformQuat(right, vec3.fromValues(1, 0, 0), this.rotation);
+    return right;
+  }
+
+  getUp(): vec3 {
+    const up = vec3.create();
+    vec3.transformQuat(up, vec3.fromValues(0, 1, 0), this.rotation);
+    return up;
   }
 
   setRotation(x: number, y: number, z: number, w: number): void {
@@ -136,7 +174,7 @@ export class Camera {
   }
 
   updateMatrices(): void {
-    if (!this.dirty) return;
+    if (!this.dirty) {return;}
 
     // Update view matrix from position and rotation
     const translationMatrix = mat4.create();
@@ -194,55 +232,56 @@ export class Camera {
     const vp = this.viewProjectionMatrix;
 
     // Left plane
-    this.frustumPlanes[0] = vp[3] + vp[0];
-    this.frustumPlanes[1] = vp[7] + vp[4];
-    this.frustumPlanes[2] = vp[11] + vp[8];
-    this.frustumPlanes[3] = vp[15] + vp[12];
+    this.frustumPlanes[0] = (vp[3] ?? 0) + (vp[0] ?? 0);
+    this.frustumPlanes[1] = (vp[7] ?? 0) + (vp[4] ?? 0);
+    this.frustumPlanes[2] = (vp[11] ?? 0) + (vp[8] ?? 0);
+    this.frustumPlanes[3] = (vp[15] ?? 0) + (vp[12] ?? 0);
 
     // Right plane
-    this.frustumPlanes[4] = vp[3] - vp[0];
-    this.frustumPlanes[5] = vp[7] - vp[4];
-    this.frustumPlanes[6] = vp[11] - vp[8];
-    this.frustumPlanes[7] = vp[15] - vp[12];
-
-    // Bottom plane
-    this.frustumPlanes[8] = vp[3] + vp[1];
-    this.frustumPlanes[9] = vp[7] + vp[5];
-    this.frustumPlanes[10] = vp[11] + vp[9];
-    this.frustumPlanes[11] = vp[15] + vp[13];
+    this.frustumPlanes[4] = (vp[3] ?? 0) - (vp[0] ?? 0);
+    this.frustumPlanes[5] = (vp[7] ?? 0) - (vp[4] ?? 0);
+    this.frustumPlanes[6] = (vp[11] ?? 0) - (vp[8] ?? 0);
+    this.frustumPlanes[7] = (vp[15] ?? 0) - (vp[12] ?? 0);
 
     // Top plane
-    this.frustumPlanes[12] = vp[3] - vp[1];
-    this.frustumPlanes[13] = vp[7] - vp[5];
-    this.frustumPlanes[14] = vp[11] - vp[9];
-    this.frustumPlanes[15] = vp[15] - vp[13];
+    this.frustumPlanes[8] = (vp[3] ?? 0) - (vp[1] ?? 0);
+    this.frustumPlanes[9] = (vp[7] ?? 0) - (vp[5] ?? 0);
+    this.frustumPlanes[10] = (vp[11] ?? 0) - (vp[9] ?? 0);
+    this.frustumPlanes[11] = (vp[15] ?? 0) - (vp[13] ?? 0);
+
+    // Bottom plane
+    this.frustumPlanes[12] = (vp[3] ?? 0) + (vp[1] ?? 0);
+    this.frustumPlanes[13] = (vp[7] ?? 0) + (vp[5] ?? 0);
+    this.frustumPlanes[14] = (vp[11] ?? 0) + (vp[9] ?? 0);
+    this.frustumPlanes[15] = (vp[15] ?? 0) + (vp[13] ?? 0);
 
     // Near plane
-    this.frustumPlanes[16] = vp[3] + vp[2];
-    this.frustumPlanes[17] = vp[7] + vp[6];
-    this.frustumPlanes[18] = vp[11] + vp[10];
-    this.frustumPlanes[19] = vp[15] + vp[14];
+    this.frustumPlanes[16] = (vp[3] ?? 0) + (vp[2] ?? 0);
+    this.frustumPlanes[17] = (vp[7] ?? 0) + (vp[6] ?? 0);
+    this.frustumPlanes[18] = (vp[11] ?? 0) + (vp[10] ?? 0);
+    this.frustumPlanes[19] = (vp[15] ?? 0) + (vp[14] ?? 0);
 
     // Far plane
-    this.frustumPlanes[20] = vp[3] - vp[2];
-    this.frustumPlanes[21] = vp[7] - vp[6];
-    this.frustumPlanes[22] = vp[11] - vp[10];
-    this.frustumPlanes[23] = vp[15] - vp[14];
+    this.frustumPlanes[20] = (vp[3] ?? 0) - (vp[2] ?? 0);
+    this.frustumPlanes[21] = (vp[7] ?? 0) - (vp[6] ?? 0);
+    this.frustumPlanes[22] = (vp[11] ?? 0) - (vp[10] ?? 0);
+    this.frustumPlanes[23] = (vp[15] ?? 0) - (vp[14] ?? 0);
 
     // Normalize planes
     for (let i = 0; i < 6; i++) {
       const offset = i * 4;
-      const length = Math.sqrt(
-        this.frustumPlanes[offset] * this.frustumPlanes[offset] +
-          this.frustumPlanes[offset + 1] * this.frustumPlanes[offset + 1] +
-          this.frustumPlanes[offset + 2] * this.frustumPlanes[offset + 2],
-      );
+      const p0 = this.frustumPlanes[offset] ?? 0;
+      const p1 = this.frustumPlanes[offset + 1] ?? 0;
+      const p2 = this.frustumPlanes[offset + 2] ?? 0;
+      const p3 = this.frustumPlanes[offset + 3] ?? 0;
+      
+      const length = Math.sqrt(p0 * p0 + p1 * p1 + p2 * p2);
 
       if (length > 0) {
-        this.frustumPlanes[offset] /= length;
-        this.frustumPlanes[offset + 1] /= length;
-        this.frustumPlanes[offset + 2] /= length;
-        this.frustumPlanes[offset + 3] /= length;
+        this.frustumPlanes[offset] = p0 / length;
+        this.frustumPlanes[offset + 1] = p1 / length;
+        this.frustumPlanes[offset + 2] = p2 / length;
+        this.frustumPlanes[offset + 3] = p3 / length;
       }
     }
   }
@@ -252,12 +291,12 @@ export class Camera {
     for (let i = 0; i < 6; i++) {
       const offset = i * 4;
       const distance =
-        this.frustumPlanes[offset] * point[0] +
-        this.frustumPlanes[offset + 1] * point[1] +
-        this.frustumPlanes[offset + 2] * point[2] +
-        this.frustumPlanes[offset + 3];
+        (this.frustumPlanes[offset] ?? 0) * (point[0] ?? 0) +
+        (this.frustumPlanes[offset + 1] ?? 0) * (point[1] ?? 0) +
+        (this.frustumPlanes[offset + 2] ?? 0) * (point[2] ?? 0) +
+        (this.frustumPlanes[offset + 3] ?? 0);
 
-      if (distance < 0) return false;
+      if (distance < 0) {return false;}
     }
     return true;
   }
@@ -266,12 +305,12 @@ export class Camera {
     for (let i = 0; i < 6; i++) {
       const offset = i * 4;
       const distance =
-        this.frustumPlanes[offset] * center[0] +
-        this.frustumPlanes[offset + 1] * center[1] +
-        this.frustumPlanes[offset + 2] * center[2] +
-        this.frustumPlanes[offset + 3];
+        (this.frustumPlanes[offset] ?? 0) * (center[0] ?? 0) +
+        (this.frustumPlanes[offset + 1] ?? 0) * (center[1] ?? 0) +
+        (this.frustumPlanes[offset + 2] ?? 0) * (center[2] ?? 0) +
+        (this.frustumPlanes[offset + 3] ?? 0);
 
-      if (distance < -radius) return false;
+      if (distance < -radius) {return false;}
     }
     return true;
   }
@@ -279,15 +318,14 @@ export class Camera {
   isAABBInFrustum(min: vec3, max: vec3): boolean {
     for (let i = 0; i < 6; i++) {
       const offset = i * 4;
-      const nx = this.frustumPlanes[offset];
-      const ny = this.frustumPlanes[offset + 1];
-      const nz = this.frustumPlanes[offset + 2];
-      const d = this.frustumPlanes[offset + 3];
+      const nx = this.frustumPlanes[offset] ?? 0;
+      const ny = this.frustumPlanes[offset + 1] ?? 0;
+      const nz = this.frustumPlanes[offset + 2] ?? 0;
+      const d = this.frustumPlanes[offset + 3] ?? 0;
 
-      // Find the positive vertex (farthest along the normal)
-      const px = nx > 0 ? max[0] : min[0];
-      const py = ny > 0 ? max[1] : min[1];
-      const pz = nz > 0 ? max[2] : min[2];
+      const px = nx > 0 ? (max[0] ?? 0) : (min[0] ?? 0);
+      const py = ny > 0 ? (max[1] ?? 0) : (min[1] ?? 0);
+      const pz = nz > 0 ? (max[2] ?? 0) : (min[2] ?? 0);
 
       if (nx * px + ny * py + nz * pz + d < 0) {
         return false;
@@ -320,7 +358,7 @@ export class Camera {
     const worldCoords = vec4.create();
     vec4.transformMat4(worldCoords, eyeCoords, this.inverseViewMatrix);
 
-    const direction = vec3.fromValues(worldCoords[0], worldCoords[1], worldCoords[2]);
+    const direction = vec3.fromValues(worldCoords[0] ?? 0, worldCoords[1] ?? 0, worldCoords[2] ?? 0);
     vec3.normalize(direction, direction);
 
     return {

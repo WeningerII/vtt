@@ -91,7 +91,7 @@ export class AuthRoutes {
     this.router.post("/refresh", this.refreshToken.bind(this));
 
     // Password reset request
-    this.router.post("/reset-password", this.resetPassword.bind(this));
+    this.router.post("/reset-password", this.requestPasswordReset.bind(this));
 
     // Password reset confirmation
     this.router.post("/reset-password/confirm", this.confirmResetPassword.bind(this));
@@ -116,22 +116,17 @@ export class AuthRoutes {
     try {
       const data = registerSchema.parse(req.body);
 
-      const result = await this.userManager.createUser({
+      const user = await this.userManager.createUser({
         username: data.username,
         email: data.email,
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
         timezone: data.timezone,
+        locale: "en-US",
       });
 
-      if (!result.success) {
-        res.status(400).json({ error: result.error });
-        return;
-      }
-
       // Send welcome email and verification
-      const user = result.user!;
       await this.notificationManager.sendWelcomeEmail(user.id);
 
       if (!user.emailVerified) {
@@ -155,7 +150,7 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Registration error:", error);
+      logger.error("Registration error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -166,24 +161,22 @@ export class AuthRoutes {
       const clientIp = req.ip || req.connection.remoteAddress || "unknown";
       const userAgent = req.get("User-Agent") || "unknown";
 
-      const result = await this.userManager.login(
-        data.identifier,
-        data.password,
-        clientIp,
-        userAgent,
-        data.rememberMe,
-      );
+      const result = await this.userManager.authenticateUser({
+        email: data.identifier,
+        password: data.password,
+        remember: data.rememberMe || false,
+        deviceInfo: {
+          userAgent,
+          ip: clientIp,
+          platform: req.get('sec-ch-ua-platform') || 'unknown',
+          browser: userAgent.split('/')[0] || 'unknown'
+        }
+      });
 
-      if (!result.success) {
-        res.status(401).json({ error: result.error });
-        return;
-      }
+      const { user, session } = result;
 
-      const session = result.session!;
-      const user = result.user!;
-
-      // Set HTTP-only cookie for session
-      res.cookie("sessionToken", session.token, {
+      // Set session cookie
+      res.cookie("session", session.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -199,13 +192,12 @@ export class AuthRoutes {
           firstName: user.firstName,
           lastName: user.lastName,
           emailVerified: user.emailVerified,
-          role: user.role,
-          subscription: user.subscription,
+          subscriptionTier: user.subscriptionTier,
+          subscriptionStatus: user.subscriptionStatus,
         },
-        session: {
-          id: session.id,
-          expiresAt: session.expiresAt,
-        },
+        token: session.token,
+        refreshToken: session.refreshToken,
+        expiresAt: session.expiresAt,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -213,7 +205,7 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Login error:", error);
+      logger.error("Login error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -224,13 +216,13 @@ export class AuthRoutes {
         req.cookies.sessionToken || req.headers.authorization?.replace("Bearer ", "");
 
       if (sessionToken) {
-        await this.userManager.logout(sessionToken);
+        await this.userManager.revokeSession(sessionToken);
       }
 
       res.clearCookie("sessionToken");
       res.json({ success: true });
     } catch (error) {
-      logger.error("Logout error:", error);
+      logger.error("Logout error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -238,30 +230,29 @@ export class AuthRoutes {
   private async refreshToken(req: Request, res: Response): Promise<void> {
     try {
       const data = refreshTokenSchema.parse(req.body);
+      const sessionToken = data.refreshToken;
 
-      const result = await this.userManager.refreshSession(data.refreshToken);
+      // Refresh the session using the refresh token
+      const newSession = await this.userManager.refreshSession(sessionToken);
 
-      if (!result.success) {
-        res.status(401).json({ error: result.error });
+      if (!newSession) {
+        res.status(401).json({ error: "Invalid session" });
         return;
       }
 
-      const session = result.session!;
-
       // Update HTTP-only cookie
-      res.cookie("sessionToken", session.token, {
+      res.cookie("session", newSession.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: session.expiresAt.getTime() - Date.now(),
+        maxAge: newSession.expiresAt.getTime() - Date.now(),
       });
 
       res.json({
         success: true,
-        session: {
-          id: session.id,
-          expiresAt: session.expiresAt,
-        },
+        token: newSession.token,
+        refreshToken: newSession.refreshToken,
+        expiresAt: newSession.expiresAt,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -269,29 +260,30 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Token refresh error:", error);
+      logger.error("Token refresh error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
 
-  private async resetPassword(req: Request, res: Response): Promise<void> {
+  private async requestPasswordReset(req: Request, res: Response): Promise<void> {
     try {
-      const data = resetPasswordSchema.parse(req.body);
-
-      const _result = await this.userManager.requestPasswordReset(data.email);
-
-      // Always return success to prevent email enumeration
-      res.json({
-        success: true,
-        message: "If an account with that email exists, a password reset link has been sent.",
-      });
+      const data = z.object({ email: z.string().email() }).parse(req.body);
+      
+      const result = await this.userManager.requestPasswordReset(data.email);
+      
+      if (!result.success) {
+        res.status(500).json({ error: result.error || "Failed to send reset email" });
+        return;
+      }
+      
+      res.json({ success: true, message: "Password reset email sent." });
     } catch (error) {
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Validation failed", details: error.errors });
         return;
       }
-
-      logger.error("Password reset error:", error);
+      
+      logger.error("Password reset request error:", { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -301,9 +293,8 @@ export class AuthRoutes {
       const data = confirmResetSchema.parse(req.body);
 
       const result = await this.userManager.resetPassword(data.token, data.newPassword);
-
       if (!result.success) {
-        res.status(400).json({ error: result.error });
+        res.status(400).json({ error: result.error || "Password reset failed" });
         return;
       }
 
@@ -314,7 +305,7 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Password reset confirmation error:", error);
+      logger.error("Password reset confirmation error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -323,12 +314,9 @@ export class AuthRoutes {
     try {
       const data = verifyEmailSchema.parse(req.body);
 
-      const result = await this.userManager.verifyEmail(data.token);
+      const token = data.token;
 
-      if (!result.success) {
-        res.status(400).json({ error: result.error });
-        return;
-      }
+      await this.userManager.verifyEmail(token);
 
       res.json({ success: true, message: "Email successfully verified." });
     } catch (error) {
@@ -337,7 +325,7 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Email verification error:", error);
+      logger.error("Email verification error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -363,7 +351,7 @@ export class AuthRoutes {
         message: "Verification email sent.",
       });
     } catch (error) {
-      logger.error("Resend verification error:", error);
+      logger.error("Resend verification error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -386,14 +374,13 @@ export class AuthRoutes {
           firstName: user.firstName,
           lastName: user.lastName,
           emailVerified: user.emailVerified,
-          role: user.role,
-          subscription: user.subscription,
-          createdAt: user.createdAt,
+          subscriptionTier: user.subscriptionTier,
+          subscriptionStatus: user.subscriptionStatus,
           lastLoginAt: user.lastLoginAt,
         },
       });
     } catch (error) {
-      logger.error("Get current user error:", error);
+      logger.error("Get current user error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -417,14 +404,11 @@ export class AuthRoutes {
 
       const result = await this.userManager.updateUser(user.id, updateData);
 
-      if (!result.success) {
-        res.status(400).json({ error: result.error });
-        return;
-      }
+      const updatedUser = result;
 
       res.json({
         success: true,
-        user: result.user,
+        user: updatedUser,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -432,7 +416,7 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Update profile error:", error);
+      logger.error("Update profile error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }
@@ -453,14 +437,18 @@ export class AuthRoutes {
         })
         .parse(req.body);
 
-      const result = await this.userManager.changePassword(
-        user.id,
-        data.currentPassword,
-        data.newPassword,
-      );
-
-      if (!result.success) {
-        res.status(400).json({ error: result.error });
+      try {
+        await this.userManager.changePassword(
+          user.id,
+          data.currentPassword,
+          data.newPassword
+        );
+      } catch (changeError) {
+        if (changeError instanceof Error) {
+          res.status(400).json({ error: changeError.message });
+        } else {
+          res.status(400).json({ error: "Password change failed" });
+        }
         return;
       }
 
@@ -471,7 +459,7 @@ export class AuthRoutes {
         return;
       }
 
-      logger.error("Change password error:", error);
+      logger.error("Change password error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       res.status(500).json({ error: "Internal server error" });
     }
   }

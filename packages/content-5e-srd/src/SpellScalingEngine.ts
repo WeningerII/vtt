@@ -240,30 +240,30 @@ export class SpellScalingEngine {
   }
 
   /**
+   * Add dice expressions together
+   */
+  private addDice(baseDice: string, bonusDice: string): string {
+    if (!baseDice) {return bonusDice || "";}
+    if (!bonusDice) {return baseDice;}
+    return `${baseDice}+${bonusDice}`;
+  }
+
+  /**
    * Multiply dice expression by a factor
    */
   private multiplyDice(diceExpression: string, multiplier: number): string {
-    if (multiplier <= 0) return "";
-    if (multiplier === 1) return diceExpression;
+    if (multiplier <= 0) {return "";}
+    if (multiplier === 1) {return diceExpression;}
 
     // Handle expressions like "1d6", "2d8+1", etc.
     const diceRegex = /(\d+)d(\d+)(\+\d+)?/g;
 
-    return diceExpression.replace(diceRegex, (match, _numDice, _diceSize, _bonus) => {
+    return diceExpression.replace(diceRegex, (match, numDice, diceSize, bonusString) => {
       const newNumDice = parseInt(numDice) * multiplier;
-      const bonusPart = bonus || "";
+      const bonus = parseInt(bonusString) || 0;
+      const bonusPart = bonus ? `+${bonus}` : "";
       return `${newNumDice}d${diceSize}${bonusPart}`;
     });
-  }
-
-  /**
-   * Add two dice expressions together
-   */
-  private addDice(baseDice: string, bonusDice: string): string {
-    if (!bonusDice) return baseDice;
-    if (!baseDice) return bonusDice;
-
-    return `${baseDice}+${bonusDice}`;
   }
 
   /**
@@ -279,7 +279,7 @@ export class SpellScalingEngine {
       const diceSize = parseInt(match[2]);
       const bonus = match[3] ? parseInt(match[3]) : 0;
 
-      total += (numDice * (diceSize + 1)) / 2 + bonus;
+      total += numDice * (diceSize / 2 + 0.5) + bonus;
     }
 
     // Handle standalone bonuses like "+5"
@@ -297,12 +297,12 @@ export class SpellScalingEngine {
    * Get all possible upcasting levels for a spell
    */
   getAvailableUpcastLevels(spell: SRDSpell, availableSlots: Record<number, number>): number[] {
-    if (spell.level === 0) return [0]; // Cantrips don't upcast with slots
+    if (spell.level === 0) {return [0];} // Cantrips don't upcast with slots
 
     const levels: number[] = [];
 
     for (let level = spell.level; level <= 9; level++) {
-      if (availableSlots[level] && availableSlots[level] > 0) {
+      if (availableSlots[level] && (availableSlots[level] || 0) > 0) {
         levels.push(level);
       }
     }
@@ -342,8 +342,8 @@ export class SpellScalingEngine {
       if (scaledEffect.additionalTargets) {
         effectiveness += scaledEffect.additionalTargets * 2; // Additional targets are valuable
         recommendation +=
-          (recommendation ? ", " : "") +
-          `+${scaledEffect.additionalTargets} target${scaledEffect.additionalTargets > 1 ? "s" : ""}`;
+          `${recommendation ? ", " : "" 
+          }+${scaledEffect.additionalTargets} target${scaledEffect.additionalTargets > 1 ? "s" : ""}`;
       }
 
       if (scaledEffect.enhancedEffects && scaledEffect.enhancedEffects.length > 0) {
@@ -358,7 +358,7 @@ export class SpellScalingEngine {
       recommendations.push({ level, effectiveness, recommendation });
     }
 
-    return recommendations.sort((_a, _b) => b.effectiveness - a.effectiveness);
+    return recommendations.sort((a, b) => b.effectiveness - a.effectiveness);
   }
 }
 

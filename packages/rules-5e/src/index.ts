@@ -2,7 +2,7 @@ import { Monster, MonsterSchema, ChallengeRating } from "@vtt/core-schemas";
 import { EventEmitter } from "events";
 
 // Export additional systems
-export { DiceRoller, diceRoller } from "./DiceRoller";
+export { DiceRoller, _diceRoller as diceRoller } from "./DiceRoller";
 export { SpellSystem } from "./SpellSystem";
 export { ActionSystem } from "./ActionSystem";
 export type { DiceRoll, RollResult } from "./DiceRoller";
@@ -15,7 +15,7 @@ export type CompiledMonster = Monster & {
   passivePerception: number;
 };
 
-export function abilityMod(_score: number): number {
+export function abilityMod(score: number): number {
   return Math.floor((score - 10) / 2);
 }
 
@@ -56,7 +56,7 @@ export const CR_XP_MAP: Record<ChallengeRating, number> = {
   "30": 155000,
 };
 
-export function crToProficiency(_cr: ChallengeRating): number {
+export function crToProficiency(cr: ChallengeRating): number {
   // Typical MM guidance for proficiency by CR bands
   switch (cr) {
     case "0":
@@ -104,7 +104,7 @@ export function crToProficiency(_cr: ChallengeRating): number {
   }
 }
 
-export function compileMonster(_mon: Monster): CompiledMonster {
+export function compileMonster(mon: Monster): CompiledMonster {
   // Validate upfront
   const parsed = MonsterSchema.parse(mon);
 
@@ -176,7 +176,7 @@ export class CombatEngine extends EventEmitter {
   }
 
   nextTurn(): void {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     this.currentTurnIndex++;
     if (this.currentTurnIndex >= this.turnOrder.length) {
@@ -186,7 +186,7 @@ export class CombatEngine extends EventEmitter {
   }
 
   getCurrentCombatant(): Combatant | null {
-    if (!this.isActive || this.turnOrder.length === 0) return null;
+    if (!this.isActive || this.turnOrder.length === 0) {return null;}
     const id = this.turnOrder[this.currentTurnIndex];
     return this.combatants.find((c) => c.id === id) || null;
   }
@@ -212,7 +212,7 @@ export class CombatEngine extends EventEmitter {
   }
 
   private sortInitiative(): void {
-    this.combatants.sort((_a, _b) => b.initiative - a.initiative);
+    this.combatants.sort((a, b) => b.initiative - a.initiative);
     this.turnOrder = this.combatants.map((c) => c.id);
   }
 }

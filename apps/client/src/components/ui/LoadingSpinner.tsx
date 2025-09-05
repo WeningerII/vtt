@@ -47,7 +47,7 @@ export interface LoadingSpinnerProps {
   fullScreen?: boolean;
 }
 
-export const LoadingSpinner = React.memo(function LoadingSpinner({
+export const LoadingSpinner = React.memo(({
   variant = "primary",
   size = "md",
   speed = "normal",
@@ -55,7 +55,7 @@ export const LoadingSpinner = React.memo(function LoadingSpinner({
   className,
   label = "Loading...",
   showLabel = false,
-}: LoadingSpinnerProps): JSX.Element {
+}: LoadingSpinnerProps): JSX.Element => {
   const content = (
     <div className="flex flex-col items-center gap-3">
       <div

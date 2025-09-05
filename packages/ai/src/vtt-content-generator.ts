@@ -148,7 +148,7 @@ Format as JSON with structured campaign information.`;
     for (const provider of providers) {
       try {
         const request: TextGenerationRequest = {
-          prompt: prompt,
+          prompt,
           maxTokens: 2000,
           temperature: 0.7,
           outputFormat: 'json'

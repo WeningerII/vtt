@@ -1,1 +1,0 @@
-{"version":3,"file":"Broadphase.d.ts","sourceRoot":"","sources":["../src/Broadphase.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AACH,qBAAa,UAAU;IACrB,OAAO,CAAC,OAAO,CAAiB;IAChC,GAAG,CAAC,GAAG,EAAE,OAAO,GAAG,IAAI;IAGvB,KAAK,IAAI,KAAK,CAAC,CAAC,OAAO,EAAE,OAAO,CAAC,CAAC;CASnC"}

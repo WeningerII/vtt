@@ -284,9 +284,9 @@ export class ProceduralBehaviorGenerator {
     }
 
     // Bonus for matching tags
-    if (template.tags.includes(options.creatureType)) score += 5;
-    if (template.tags.includes(options.role)) score += 3;
-    if (template.tags.includes(options.environment)) score += 2;
+    if (template.tags.includes(options.creatureType)) {score += 5;}
+    if (template.tags.includes(options.role)) {score += 3;}
+    if (template.tags.includes(options.environment)) {score += 2;}
 
     return score;
   }

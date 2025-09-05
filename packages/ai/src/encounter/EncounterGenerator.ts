@@ -263,7 +263,7 @@ export class EncounterGenerator extends EventEmitter {
     for (const [role, percentage] of Object.entries(roleDistribution)) {
       const roleBudget = xpBudget * percentage;
       const creature = availableCreatures[0];
-      if (!creature) continue;
+      if (!creature) {continue;}
       
       if (creature) {
         const selected = this.selectCreaturesForRole([creature], roleBudget, params.partyLevel);
@@ -453,7 +453,7 @@ export class EncounterGenerator extends EventEmitter {
 
     while (remainingBudget > 0 && creatures.length > 0) {
       const creature = creatures[Math.floor(Math.random() * creatures.length)];
-      if (!creature) break;
+      if (!creature) {break;}
       
       const creatureXP = this.getCreatureXP(creature.cr || 1);
       

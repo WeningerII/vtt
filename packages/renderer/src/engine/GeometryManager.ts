@@ -122,7 +122,7 @@ export class GeometryManager {
       indexCount: data.indices.length,
       vertexCount: data.vertices.length / this.getVertexStride(data.attributes),
       drawMode: data.drawMode || gl.TRIANGLES,
-      instanceCount: data.instanceCount,
+      instanceCount: data.instanceCount ?? 1,
       boundingBox,
       boundingSphere,
     };
@@ -164,16 +164,16 @@ export class GeometryManager {
       maxZ = -Infinity;
 
     for (let i = offset; i < vertices.length; i += stride) {
-      const x = vertices[i];
-      const y = vertices[i + 1];
-      const z = vertices[i + 2];
+      const x = vertices[i] ?? 0;
+      const y = vertices[i + 1] ?? 0;
+      const z = vertices[i + 2] ?? 0;
 
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (z < minZ) minZ = z;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
-      if (z > maxZ) maxZ = z;
+      if (x < minX) {minX = x;}
+      if (y < minY) {minY = y;}
+      if (z < minZ) {minZ = z;}
+      if (x > maxX) {maxX = x;}
+      if (y > maxY) {maxY = y;}
+      if (z > maxZ) {maxZ = z;}
     }
 
     return {

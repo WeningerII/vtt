@@ -9,422 +9,409 @@ import { useGame } from "../providers/GameProvider";
 import { useWebSocket } from "../providers/WebSocketProvider";
 import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/LoadingSpinner";
+import { WelcomeModal } from "../components/onboarding/WelcomeModal";
+import { CreateSessionModal } from "../components/sessions/CreateSessionModal";
 import { useTranslation } from "@vtt/i18n";
 import { Plus, Users, Play, Settings, Crown, Clock, Globe, Lock, Eye, Zap } from "lucide-react";
+import { sessionsService, GameSessionInfo } from "../services/sessions";
 
 interface DashboardProps {
-  router: {
-    navigate: (_path: string) => void;
+  router?: {
+    navigate: (path: string, replace?: boolean) => void;
     currentPath: string;
+    params: Record<string, string>;
   };
 }
 
-interface GameSessionInfo {
-  id: string;
-  name: string;
-  description: string;
-  gamemaster: {
-    id: string;
-    username: string;
-    displayName: string;
-    avatar?: string;
-  };
-  players: Array<{
-    id: string;
-    username: string;
-    displayName: string;
-    avatar?: string;
-    isConnected: boolean;
-  }>;
-  status: "waiting" | "active" | "paused" | "ended";
-  settings: {
-    maxPlayers: number;
-    isPrivate: boolean;
-    allowSpectators: boolean;
-  };
-  createdAt: string;
-  lastActivity: string;
-}
+// GameSessionInfo is now imported from services/sessions
 
-export function Dashboard({ router }: DashboardProps) {
+export const Dashboard: React.FC<DashboardProps> = ({ router }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const { session, joinSession, isLoading: gameLoading } = useGame();
-  const { isConnected, latency } = useWebSocket();
+  const { user, isAuthenticated } = useAuth();
+  const { joinSession } = useGame();
+  const { isConnected } = useWebSocket();
+
+  // State management
   const [sessions, setSessions] = useState<GameSessionInfo[]>([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'active' | 'waiting' | 'joinable'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filter, setFilter] = useState<"all" | "active" | "waiting" | "joinable">("all");
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => {
+    return !localStorage.getItem('vtt-welcome-seen');
+  });
+  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
 
-  // Simulate fetching sessions (replace with actual API call)
+  // Check if user is first-time visitor
   useEffect(() => {
-    const fetchSessions = async () => {
+    const hasSeenWelcome = localStorage.getItem('vtt-welcome-seen');
+    if (!hasSeenWelcome && !isAuthenticated) {
+      setShowWelcomeModal(true);
+    }
+  }, [isAuthenticated]);
+
+  // Fetch sessions from API with real-time updates
+  useEffect(() => {
+    const fetchSessionsData = async () => {
       setIsLoadingSessions(true);
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Mock session data
-      const mockSessions: GameSessionInfo[] = [
-        {
-          id: "1",
-          name: "Lost Mines of Phandelver",
-          description: "A classic D&D 5e adventure for new players",
-          gamemaster: {
-            id: "gm1",
-            username: "dmmaster",
-            displayName: "Dungeon Master Dave",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=dmmaster",
-          },
-          players: [
-            {
-              id: "p1",
-              username: "ranger_rick",
-              displayName: "Rick the Ranger",
-              avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=ranger_rick",
-              isConnected: true,
-            },
-            {
-              id: "p2",
-              username: "wizard_wanda",
-              displayName: "Wanda the Wise",
-              avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=wizard_wanda",
-              isConnected: false,
-            },
-          ],
-          status: "active",
-          settings: {
-            maxPlayers: 4,
-            isPrivate: false,
-            allowSpectators: true,
-          },
-          createdAt: "2024-01-15T10:00:00Z",
-          lastActivity: "2024-01-15T14:30:00Z",
-        },
-        {
-          id: "2",
-          name: "Cyberpunk Red Campaign",
-          description: "Night City awaits in this ongoing cyberpunk adventure",
-          gamemaster: {
-            id: "gm2",
-            username: "neon_gm",
-            displayName: "Neon NetRunner",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=neon_gm",
-          },
-          players: [],
-          status: "waiting",
-          settings: {
-            maxPlayers: 5,
-            isPrivate: true,
-            allowSpectators: false,
-          },
-          createdAt: "2024-01-15T09:00:00Z",
-          lastActivity: "2024-01-15T09:00:00Z",
-        },
-      ];
-
-      setSessions(mockSessions);
-      setIsLoadingSessions(false);
+      setSessionsError(null);
+      
+      try {
+        const filterOptions = {
+          status: filter as 'all' | 'active' | 'waiting' | 'joinable'
+        };
+        
+        const sessionsList = await sessionsService.getSessions(filterOptions);
+        setSessions(sessionsList);
+        
+        logger.info(`Fetched ${sessionsList.length} sessions with filter: ${filter}`);
+      } catch (error: any) {
+        logger.error("Failed to fetch sessions:", error);
+        
+        // Provide specific error messages based on the error type
+        if (error.message?.includes("log in")) {
+          setSessionsError("Please log in to view game sessions.");
+        } else if (error.message?.includes("Network")) {
+          setSessionsError("Network error. Please check your connection and try again.");
+        } else {
+          setSessionsError(error.message || "Failed to load sessions. Please try again.");
+        }
+        
+        setSessions([]); // Clear sessions on error
+      } finally {
+        setIsLoadingSessions(false);
+      }
     };
 
-    fetchSessions();
-  }, []);
-
-  const filteredSessions = sessions.filter((session) => {
-    switch (filter) {
-      case "active":
-        return session.status === "active";
-      case "waiting":
-        return session.status === "waiting";
-      case "joinable":
-        return session.status === "waiting" && !session.settings.isPrivate;
-      default:
-        return true;
+    // Only fetch sessions if user is authenticated
+    if (isAuthenticated) {
+      fetchSessionsData();
+    } else {
+      setIsLoadingSessions(false);
+      setSessions([]);
+      setSessionsError(null);
     }
-  });
+  }, [filter, isAuthenticated]); // Re-fetch when filter changes or auth status changes
 
-  const handleJoinSession = async (_sessionId: string) => {
+  // Sessions are already filtered by the server API based on the filter parameter
+  // No need for client-side filtering to avoid redundancy
+  const filteredSessions = sessions;
+
+  const handleJoinSession = async (sessionId: string) => {
+    // Show loading state for the specific session
+    setIsLoadingSessions(true);
+    clearError();
+    
     try {
-      await joinSession(_sessionId);
-      router.navigate(`/session/${_sessionId}`);
-    } catch (error) {
-      logger.error("Failed to join session:", error);
+      // First join via HTTP API to get server authorization
+      await sessionsService.joinSession(sessionId);
+      logger.info(`Successfully joined session via HTTP API: ${sessionId}`);
+      
+      // Navigate to session immediately - don't wait for WebSocket
+      router?.navigate(`/session/${sessionId}`);
+      
+      // Join via WebSocket for real-time updates (non-blocking)
+      if (isConnected) {
+        try {
+          await joinSession(sessionId);
+          logger.info(`Successfully joined session via WebSocket: ${sessionId}`);
+        } catch (wsError) {
+          logger.warn("WebSocket join failed, but HTTP join succeeded:", wsError);
+          // Don't show error to user - they can still use the session
+        }
+      } else {
+        logger.warn("WebSocket not connected - joined via HTTP only");
+        // Show info message that real-time features may be limited
+        setSessionsError("Joined session successfully. Real-time features may be limited until connection is restored.");
+        setTimeout(() => setSessionsError(null), 5000);
+      }
+      
+    } catch (error: any) {
+      logger.error("Failed to join session via HTTP API:", error);
+      
+      // Set a temporary error message that will be shown in the UI
+      const errorMessage = error.message || "Failed to join session. Please try again.";
+      setSessionsError(errorMessage);
+      
+      // Refresh sessions list in case session state changed
+      try {
+        const filterOptions = {
+          status: filter as 'all' | 'active' | 'waiting' | 'joinable'
+        };
+        const updatedSessions = await sessionsService.getSessions(filterOptions);
+        setSessions(updatedSessions);
+      } catch (refreshError) {
+        logger.warn("Failed to refresh sessions after join error:", refreshError);
+      }
+      
+      // Clear the error after 8 seconds to give user time to read it
+      setTimeout(() => {
+        setSessionsError(null);
+      }, 8000);
+    } finally {
+      setIsLoadingSessions(false);
     }
+  };
+
+  // Add helper function to clear errors
+  const clearError = () => {
+    setSessionsError(null);
   };
 
   const handleCreateSession = () => {
     setShowCreateModal(true);
   };
+  
+  const handleSessionCreated = async (sessionId: string) => {
+    logger.info(`Session created with ID: ${sessionId}`);
+    
+    // Refresh sessions list to show the new session
+    setIsLoadingSessions(true);
+    try {
+      const filterOptions = {
+        status: filter as 'all' | 'active' | 'waiting' | 'joinable'
+      };
+      const updatedSessions = await sessionsService.getSessions(filterOptions);
+      setSessions(updatedSessions);
+      
+      // Auto-join the created session if WebSocket is connected
+      if (isConnected) {
+        await joinSession(sessionId);
+      }
+    } catch (error: any) {
+      logger.error("Failed to refresh sessions after creation:", error);
+      // Don't show error for refresh failure, just log it
+    } finally {
+      setIsLoadingSessions(false);
+    }
+    
+    // Navigate to the new session
+    router?.navigate(`/session/${sessionId}`);
+  };
 
-  const getStatusIcon = (_status: string) => {
-    switch (_status) {
+  const handleWelcomeComplete = () => {
+    localStorage.setItem('vtt-welcome-seen', 'true');
+    setShowWelcomeModal(false);
+  };
+
+  const handleWelcomeClose = () => {
+    localStorage.setItem('vtt-welcome-seen', 'true');
+    setShowWelcomeModal(false);
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
       case "active":
         return <Play className="h-4 w-4 text-success" />;
       case "waiting":
         return <Clock className="h-4 w-4 text-warning" />;
       case "paused":
-        return <Clock className="h-4 w-4 text-text-secondary" />;
+        return <Clock className="h-4 w-4 text-secondary" />;
       default:
         return <Clock className="h-4 w-4 text-text-tertiary" />;
     }
   };
 
-  const getStatusColor = (_status: string) => {
-    switch (_status) {
+  const getStatusColor = (status: string) => {
+    switch (status) {
       case "active":
         return "text-success";
       case "waiting":
         return "text-warning";
       case "paused":
-        return "text-text-secondary";
+        return "text-secondary";
       default:
         return "text-text-tertiary";
     }
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-primary mb-4">Welcome to VTT</h1>
+          <p className="text-secondary mb-6">Please log in to access your dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-bg-primary">
-      {/* Header */}
-      <header className="bg-bg-secondary border-b border-border-primary">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-bg-primary p-6">
+      {/* Dashboard Header */}
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">
-              Welcome back, {user?.displayName}!
-            </h1>
-            <p className="text-text-secondary">Ready for your next adventure?</p>
+            <h1 className="text-2xl font-bold text-primary">Welcome back, {user?.displayName}!</h1>
+            <p className="text-secondary">Ready for your next adventure?</p>
           </div>
-
           <div className="flex items-center gap-4">
-            {/* Connection Status */}
-            <div className="flex items-center gap-2 text-sm">
-              <div className={`h-2 w-2 rounded-full ${isConnected ? "bg-success" : "bg-error"}`} />
-              <span className="text-text-secondary">
-                {isConnected ? `Connected (${latency}ms)` : "Disconnected"}
-              </span>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
+              isConnected ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-success' : 'bg-warning'
+              }`} />
+              {isConnected ? 'Real-time Connected' : 'Limited Mode'}
             </div>
-
-            {/* Quick Actions */}
             <Button
+              onClick={handleCreateSession}
               variant="primary"
               leftIcon={<Plus className="h-4 w-4" />}
-              onClick={handleCreateSession}
             >
               Create Session
             </Button>
-
-            <Button
-              variant="ghost"
-              leftIcon={<Settings className="h-4 w-4" />}
-              onClick={() => router.navigate("/settings")}
-            >
-              Settings
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Current Session Banner */}
-        {session && (
-          <div className="mb-8 p-6 bg-gradient-to-r from-accent-primary/10 to-accent-hover/10 border border-accent-primary/20 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-text-primary mb-1">
-                  Currently Playing: {session.name}
-                </h2>
-                <p className="text-text-secondary">
-                  GM: {session.gamemaster.displayName} • {session.players.length} players
-                </p>
-              </div>
-              <Button
-                variant="primary"
-                leftIcon={<Play className="h-4 w-4" />}
-                onClick={() => router.navigate(`/session/${session.id}`)}
-              >
-                Resume Game
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-bg-secondary border border-border-primary rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-accent-light rounded-lg">
-                <Users className="h-6 w-6 text-accent-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-text-primary">
-                  {sessions.filter((s) => s.status === "active").length}
-                </p>
-                <p className="text-text-secondary">Active Sessions</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-bg-secondary border border-border-primary rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-warning-light rounded-lg">
-                <Clock className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-text-primary">
-                  {sessions.filter((s) => s.status === "waiting").length}
-                </p>
-                <p className="text-text-secondary">Waiting for Players</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-bg-secondary border border-border-primary rounded-lg p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-success-light rounded-lg">
-                <Zap className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-text-primary">
-                  {isConnected ? latency : "—"}
-                  <span className="text-sm font-normal">ms</span>
-                </p>
-                <p className="text-text-secondary">Server Latency</p>
-              </div>
-            </div>
           </div>
         </div>
 
         {/* Session Browser */}
-        <div className="bg-bg-secondary border border-border-primary rounded-xl p-6">
+        <div className="bg-bg-secondary rounded-lg border border-border-primary p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-text-primary">Game Sessions</h2>
-
-            {/* Filter Tabs */}
-            <div className="flex bg-bg-tertiary rounded-lg p-1">
-              {(
-                [
-                  { key: "all", label: "All" },
-                  { key: "active", label: "Active" },
-                  { key: "waiting", label: "Waiting" },
-                  { key: "joinable", label: "Joinable" },
-                ] as const
-              ).map(({ key, label }) => (
-                <button
-                  key={key}
-                  aria-label={`Filter ${label}`}
-                  onClick={() => setFilter(key as any)}
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    filter === key
-                      ? "bg-accent-primary text-white"
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
+            <h2 className="text-xl font-semibold text-primary">Game Sessions</h2>
+            <div className="flex items-center gap-2">
+              {(['all', 'active', 'waiting', 'joinable'] as const).map((filterType) => (
+                <Button
+                  key={filterType}
+                  variant={filter === filterType ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setFilter(filterType)}
                 >
-                  {label}
-                </button>
+                  {filterType.charAt(0).toUpperCase() + filterType.slice(1)}
+                </Button>
               ))}
             </div>
           </div>
 
-          {/* Session List */}
-          {isLoadingSessions ? (
+          {sessionsError ? (
+            <div className="text-center py-12">
+              <div className="text-danger mb-4">
+                <Settings className="h-12 w-12 mx-auto mb-2" />
+              </div>
+              <h3 className="text-lg font-medium text-primary mb-2">
+                {sessionsError.includes("log in") ? "Authentication Required" : "Connection Error"}
+              </h3>
+              <p className="text-secondary mb-6">{sessionsError}</p>
+              <div className="flex gap-4 justify-center">
+                {sessionsError.includes("log in") ? (
+                  <Button
+                    onClick={() => router?.navigate("/login")}
+                    variant="primary"
+                  >
+                    Log In
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="primary"
+                  >
+                    Retry
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : isLoadingSessions ? (
             <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="p-4 border border-border-primary rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <Skeleton className="h-5 w-48 mb-2" />
-                      <Skeleton className="h-4 w-64 mb-2" />
-                      <Skeleton className="h-4 w-32" />
-                    </div>
-                    <Skeleton className="h-10 w-24" />
-                  </div>
-                </div>
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full" />
               ))}
             </div>
           ) : filteredSessions.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-text-primary mb-2">No sessions found</h3>
-              <p className="text-text-secondary mb-4">
-                {filter === "all"
-                  ? "There are no active sessions right now."
-                  : `No sessions match the "${filter}" filter.`}
+              <h3 className="text-lg font-medium text-primary mb-2">No sessions found</h3>
+              <p className="text-secondary mb-6">
+                {filter === 'all' 
+                  ? 'No game sessions are currently available.' 
+                  : `No ${filter} sessions found. Try a different filter.`
+                }
               </p>
-              <Button variant="primary" onClick={handleCreateSession}>
-                Create Your First Session
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  onClick={handleCreateSession}
+                  variant="primary"
+                  leftIcon={<Plus className="h-4 w-4" />}
+                >
+                  Create Your First Session
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => router?.navigate("/login")}
+                  variant="primary"
+                >
+                  Log In to Create Sessions
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredSessions.map((sessionInfo) => (
+              {filteredSessions.map((session) => (
                 <div
-                  key={sessionInfo.id}
-                  className="p-4 border border-border-primary rounded-lg hover:border-border-hover transition-colors"
+                  key={session.id}
+                  className="bg-bg-tertiary rounded-lg border border-border-secondary p-4 hover:border-border-primary transition-colors"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-medium text-text-primary">
-                          {sessionInfo.name}
-                        </h3>
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(sessionInfo.status)}
-                          <span
-                            className={`text-sm capitalize ${getStatusColor(sessionInfo.status)}`}
-                          >
-                            {sessionInfo.status}
+                        <h3 className="text-lg font-semibold text-primary">{session.name}</h3>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(session.status)}
+                          <span className={`text-sm font-medium ${getStatusColor(session.status)}`}>
+                            {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {sessionInfo.settings.isPrivate ? (
-                            <Lock className="h-4 w-4 text-text-tertiary" />
-                          ) : (
-                            <Globe className="h-4 w-4 text-text-tertiary" />
-                          )}
-                          {sessionInfo.settings.allowSpectators && (
-                            <Eye className="h-4 w-4 text-text-tertiary" />
-                          )}
-                        </div>
+                        {session.settings.isPrivate && (
+                          <Lock className="h-4 w-4 text-text-tertiary" />
+                        )}
                       </div>
-
-                      <p className="text-text-secondary mb-3">{sessionInfo.description}</p>
-
-                      <div className="flex items-center gap-6 text-sm text-text-tertiary">
+                      <p className="text-secondary text-sm mb-3">{session.description}</p>
+                      <div className="flex items-center gap-4 text-sm text-text-tertiary">
                         <div className="flex items-center gap-1">
-                          <Crown className="h-4 w-4" />
-                          <span>GM: {sessionInfo.gamemaster.displayName}</span>
+                          <Crown className="h-3 w-3" />
+                          <span>{session.gamemaster.displayName}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span>
-                            {sessionInfo.players.length}/{sessionInfo.settings.maxPlayers} players
-                          </span>
+                          <Users className="h-3 w-3" />
+                          <span>{session.players.length}/{session.maxPlayers}</span>
                         </div>
-                        <div>
-                          Last active: {new Date(sessionInfo.lastActivity).toLocaleDateString()}
+                        <div className="flex items-center gap-1">
+                          <Settings className="h-3 w-3" />
+                          <span>{session.system}</span>
                         </div>
                       </div>
                     </div>
-
                     <div className="flex items-center gap-2">
-                      {sessionInfo.status === "waiting" && !sessionInfo.settings.isPrivate && (
+                      {session.status === 'waiting' && isAuthenticated && (
                         <Button
+                          onClick={() => handleJoinSession(session.id)}
                           variant="primary"
                           size="sm"
-                          onClick={() => handleJoinSession(sessionInfo.id)}
-                          disabled={gameLoading}
                         >
                           Join Game
                         </Button>
                       )}
-
-                      {sessionInfo.status === "active" && sessionInfo.settings.allowSpectators && (
+                      {session.status === 'waiting' && !isAuthenticated && (
                         <Button
-                          variant="secondary"
+                          onClick={() => router?.navigate("/login")}
+                          variant="primary"
                           size="sm"
-                          leftIcon={<Eye className="h-4 w-4" />}
-                          onClick={() => handleJoinSession(sessionInfo.id)}
                         >
-                          Spectate
+                          Log In to Join
+                        </Button>
+                      )}
+                      {session.settings.allowSpectators && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          leftIcon={<Eye className="h-3 w-3" />}
+                          onClick={() => {
+                            if (isAuthenticated) {
+                              // Handle spectate functionality
+                              router?.navigate(`/session/${session.id}?spectate=true`);
+                            } else {
+                              router?.navigate("/login");
+                            }
+                          }}
+                        >
+                          {isAuthenticated ? "Spectate" : "Log In to Spectate"}
                         </Button>
                       )}
                     </div>
@@ -436,25 +423,19 @@ export function Dashboard({ router }: DashboardProps) {
         </div>
       </div>
 
-      {/* Create Session Modal (placeholder) */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-bg-overlay flex items-center justify-center z-50 p-4">
-          <div className="bg-bg-secondary border border-border-primary rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Create New Session</h3>
-            <p className="text-text-secondary mb-4">
-              Session creation will be implemented in the next phase.
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setShowCreateModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" disabled>
-                Coming Soon
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Welcome Modal */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={handleWelcomeClose}
+        onComplete={handleWelcomeComplete}
+      />
+      
+      {/* Create Session Modal */}
+      <CreateSessionModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSessionCreated={handleSessionCreated}
+      />
     </div>
   );
-}
+};

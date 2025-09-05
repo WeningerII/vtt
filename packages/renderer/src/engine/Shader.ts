@@ -83,9 +83,10 @@ export class ShaderProgram {
     gl.attachShader(program, vertexShader.getShader());
     gl.attachShader(program, fragmentShader.getShader());
 
+    // Note: WebGL2 doesn't support geometry shaders natively
+    // This would require a WebGL extension like WEBGL_geometry_shader (not widely supported)
     if (geometrySource) {
-      const geometryShader = new Shader(gl, geometrySource, gl.GEOMETRY_SHADER);
-      gl.attachShader(program, geometryShader.getShader());
+      console.warn("Geometry shaders are not supported in WebGL2");
     }
 
     gl.linkProgram(program);

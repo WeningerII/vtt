@@ -99,7 +99,7 @@ function clampTo64(_n: number) {
 
 function buildPrompts(_prompt: string, _negative?: string) {
   const arr: Array<{ text: string; weight?: number }> = [{ text: String(_prompt ?? "") }];
-  if (_negative && _negative.trim().length) arr.push({ text: _negative, weight: -1 });
+  if (_negative && _negative.trim().length) {arr.push({ text: _negative, weight: -1 });}
   return arr;
 }
 

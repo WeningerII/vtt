@@ -327,23 +327,6 @@ export const LEVEL_7_SPELLS: Record<string, SRDSpell> = {
     tags: ["teleportation", "long_distance", "multiple_targets", "familiarity_based"],
   },
 
-  etherealness: {
-    id: "etherealness",
-    name: "Etherealness",
-    level: 7,
-    school: "transmutation",
-    castingTime: "1 action",
-    range: "Self",
-    components: ["V", "S"],
-    duration: "8 hours",
-    description:
-      "You step into the border regions of the Ethereal Plane, in the area where it overlaps with your current plane.",
-    concentration: false,
-    ritual: false,
-    classes: ["Bard", "Cleric", "Sorcerer", "Warlock", "Wizard"],
-    source: "SRD 5.1",
-    tags: ["transmutation", "ethereal", "plane_shift", "long_duration"],
-  },
 
   mordenkaiensSword: {
     id: "mordenkainens_sword",
@@ -366,49 +349,4 @@ export const LEVEL_7_SPELLS: Record<string, SRDSpell> = {
     tags: ["evocation", "force", "weapon", "concentration", "costly_components"],
   },
 
-  planeShift: {
-    id: "plane_shift",
-    name: "Plane Shift",
-    level: 7,
-    school: "conjuration",
-    castingTime: "1 action",
-    range: "Touch",
-    components: ["V", "S", "M"],
-    materialComponent:
-      "a forked, metal rod worth at least 250 gp, attuned to a particular plane of existence",
-    duration: "Instantaneous",
-    description:
-      "You and up to eight willing creatures who link hands in a circle are transported to a different plane of existence.",
-    savingThrow: { ability: "CHA", dc: 0 },
-    concentration: false,
-    ritual: false,
-    classes: ["Cleric", "Druid", "Sorcerer", "Warlock", "Wizard"],
-    source: "SRD 5.1",
-    tags: [
-      "conjuration",
-      "planar_travel",
-      "charisma_save",
-      "costly_components",
-      "multiple_targets",
-    ],
-  },
-
-  regenerate: {
-    id: "regenerate",
-    name: "Regenerate",
-    level: 7,
-    school: "transmutation",
-    castingTime: "1 minute",
-    range: "Touch",
-    components: ["V", "S", "M"],
-    materialComponent: "a prayer wheel and holy water",
-    duration: "1 hour",
-    description: "You touch a creature and stimulate its natural healing ability.",
-    healing: { diceExpression: "4d8+15", scalingDice: "0" },
-    concentration: false,
-    ritual: false,
-    classes: ["Bard", "Cleric", "Druid"],
-    source: "SRD 5.1",
-    tags: ["transmutation", "healing", "regeneration", "limb_restoration", "touch"],
-  },
 };

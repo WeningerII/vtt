@@ -375,7 +375,7 @@ export class ContentInjectionService {
    */
   async removeInjectedContent(contentId: string): Promise<boolean> {
     const content = this.injectedContent.get(contentId);
-    if (!content) return false;
+    if (!content) {return false;}
 
     try {
       // Mark as inactive

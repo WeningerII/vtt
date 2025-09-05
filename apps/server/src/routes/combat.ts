@@ -24,11 +24,11 @@ function extractSpellSlots(character: any): Record<string, number> {
 
   if (spellcaster) {
     // Basic spell slot calculation
-    if (level >= 1) spellSlots["1"] = Math.min(4, 1 + Math.floor(level / 2));
-    if (level >= 3) spellSlots["2"] = Math.min(3, Math.floor((level - 2) / 2));
-    if (level >= 5) spellSlots["3"] = Math.min(3, Math.floor((level - 4) / 3));
-    if (level >= 7) spellSlots["4"] = Math.min(3, Math.floor((level - 6) / 4));
-    if (level >= 9) spellSlots["5"] = Math.min(2, Math.floor((level - 8) / 5));
+    if (level >= 1) {spellSlots["1"] = Math.min(4, 1 + Math.floor(level / 2));}
+    if (level >= 3) {spellSlots["2"] = Math.min(3, Math.floor((level - 2) / 2));}
+    if (level >= 5) {spellSlots["3"] = Math.min(3, Math.floor((level - 4) / 3));}
+    if (level >= 7) {spellSlots["4"] = Math.min(3, Math.floor((level - 6) / 4));}
+    if (level >= 9) {spellSlots["5"] = Math.min(2, Math.floor((level - 8) / 5));}
   }
 
   return spellSlots;
@@ -55,7 +55,7 @@ function calculateMovementSpeed(character: any): number {
 }
 
 function calculateThreatLevel(enemies: any[]): string {
-  if (!enemies || enemies.length === 0) return "low";
+  if (!enemies || enemies.length === 0) {return "low";}
 
   // Calculate total challenge rating
   const totalCR = enemies.reduce((sum, enemy) => {
@@ -64,9 +64,9 @@ function calculateThreatLevel(enemies: any[]): string {
   }, 0);
 
   // Determine threat level based on total CR
-  if (totalCR < 2) return "low";
-  if (totalCR < 5) return "moderate";
-  if (totalCR < 10) return "high";
+  if (totalCR < 2) {return "low";}
+  if (totalCR < 5) {return "moderate";}
+  if (totalCR < 10) {return "high";}
   return "extreme";
 }
 

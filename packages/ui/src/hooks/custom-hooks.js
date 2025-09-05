@@ -1,0 +1,56 @@
+import { useEffect, useState, useRef, useCallback } from "react";
+// Re-export popular hooks from libraries
+export { useLocalStorage, useMediaQuery, useOnClickOutside, useInterval, useTimeout, useToggle, useCounter, useHover, useScript, useWindowSize, } from "usehooks-ts";
+// Custom auth hook placeholder
+export const useAuth = () => {
+    // This should be implemented based on your auth system
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
+    return {
+        isAuthenticated,
+        user,
+        login: async (credentials) => {
+            // Implement login logic
+        },
+        logout: () => {
+            setIsAuthenticated(false);
+            setUser(null);
+        },
+    };
+};
+// Custom game hook placeholder
+export const useGame = () => {
+    const [gameState, setGameState] = useState(null);
+    const [players, setPlayers] = useState([]);
+    return {
+        gameState,
+        players,
+        joinGame: (gameId) => {
+            // Implement game join logic
+        },
+        leaveGame: () => {
+            setGameState(null);
+            setPlayers([]);
+        },
+    };
+};
+// WebSocket hook
+export const useWebSocket = (url) => {
+    const [isConnected, setIsConnected] = useState(false);
+    const [lastMessage, setLastMessage] = useState(null);
+    const ws = useRef(null);
+    useEffect(() => {
+        ws.current = new WebSocket(url);
+        ws.current.onopen = () => setIsConnected(true);
+        ws.current.onclose = () => setIsConnected(false);
+        ws.current.onmessage = (event) => setLastMessage(event.data);
+        return () => {
+            ws.current?.close();
+        };
+    }, [url]);
+    const sendMessage = useCallback((message) => {
+        ws.current?.send(message);
+    }, []);
+    return { isConnected, lastMessage, sendMessage };
+};
+//# sourceMappingURL=custom-hooks.js.map

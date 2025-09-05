@@ -3,7 +3,7 @@
  */
 import React, { useState } from 'react';
 import { logger } from '@vtt/logging';
-import { useRouter } from 'next/router';
+import { useRouter } from '../Router';
 import {
   Home,
   Users,
@@ -54,7 +54,7 @@ export function DashboardLayout({ children, title, action }: DashboardLayoutProp
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/');
+      router.navigate('/');
     } catch (error) {
       logger.error('Logout failed:', error);
     }
@@ -62,9 +62,9 @@ export function DashboardLayout({ children, title, action }: DashboardLayoutProp
 
   const isCurrentPage = (href: string) => {
     if (href === '/dashboard') {
-      return router.pathname === '/dashboard';
+      return router.currentPath === '/dashboard';
     }
-    return router.pathname.startsWith(href);
+    return router.currentPath.startsWith(href);
   };
 
   return (
@@ -200,11 +200,11 @@ export function DashboardLayout({ children, title, action }: DashboardLayoutProp
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                 >
                   <div className="h-8 w-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
-                    {user ? getInitials(`${user.firstName} ${user.lastName}`) : 'U'}
+                    {user ? getInitials(user.displayName || user.username) : 'U'}
                   </div>
                   <span className="hidden lg:flex lg:items-center">
                     <span className="ml-2 text-sm font-medium text-neutral-900">
-                      {user?.firstName} {user?.lastName}
+                      {user?.displayName || user?.username}
                     </span>
                   </span>
                 </Button>
@@ -214,7 +214,7 @@ export function DashboardLayout({ children, title, action }: DashboardLayoutProp
                   <div className="absolute right-0 mt-2 w-48 origin-top-right">
                     <Card className="py-1 shadow-lg ring-1 ring-black ring-opacity-5">
                       <div className="px-4 py-2 border-b">
-                        <p className="text-sm font-medium text-neutral-900">{user?.firstName} {user?.lastName}</p>
+                        <p className="text-sm font-medium text-neutral-900">{user?.displayName || user?.username}</p>
                         <p className="text-xs text-neutral-500">{user?.email}</p>
                       </div>
                       <a

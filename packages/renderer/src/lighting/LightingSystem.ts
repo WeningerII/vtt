@@ -186,7 +186,7 @@ export class LightingSystem extends EventEmitter {
 
     // Calculate contribution from each light
     for (const light of this.lights.values()) {
-      if (!light.enabled) continue;
+      if (!light.enabled) {continue;}
 
       const contribution = this.calculateLightContribution(light, x, y, z);
       const shadowFactor = this.calculateShadowFactor(light, x, y, z);
@@ -228,7 +228,7 @@ export class LightingSystem extends EventEmitter {
    */
   getLightsInArea(bounds: { x: number; y: number; width: number; height: number }): Light[] {
     return Array.from(this.lights.values()).filter(light => {
-      if (!light.enabled) return false;
+      if (!light.enabled) {return false;}
 
       const distance = Math.sqrt(
         Math.pow(light.position.x - (bounds.x + bounds.width / 2), 2) +
@@ -424,7 +424,7 @@ export class LightingSystem extends EventEmitter {
 
     // Simplified shadow calculation - would use proper shadow mapping in production
     for (const caster of this.shadowCasters.values()) {
-      if (!caster.castsShadows) continue;
+      if (!caster.castsShadows) {continue;}
 
       if (this.isPointInShadowOfCaster(light, caster, x, y, z)) {
         return 0.2; // 20% light in shadow

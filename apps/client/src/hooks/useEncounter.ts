@@ -65,18 +65,21 @@ interface UseEncounterReturn {
   encounter: EncounterData | null;
   isLoading: boolean;
   error: string | null;
-  createEncounter: (_data: CreateEncounterData) => Promise<EncounterData>;
-  getEncounter: (_id: string) => Promise<EncounterData | null>;
-  startEncounter: (_id: string) => Promise<void>;
-  endEncounter: (_id: string) => Promise<void>;
-  addCharacterToEncounter: (_encounterId: string, _characterId: string) => Promise<CombatActor>;
+  createEncounter: (data: CreateEncounterData) => Promise<EncounterData>;
+  getEncounter: (id: string) => Promise<EncounterData | null>;
+  startEncounter: (id: string) => Promise<void>;
+  endEncounter: (id: string) => Promise<void>;
+  nextTurn: (encounterId: string) => Promise<void>;
+  previousTurn: (encounterId: string) => Promise<void>;
+  updateActorInitiative: (encounterId: string, actorId: string, initiative: number) => Promise<void>;
+  addCharacterToEncounter: (encounterId: string, characterId: string) => Promise<CombatActor>;
   addMonsterToEncounter: (
-    _encounterId: string,
-    _monsterId: string,
-    _instanceName?: string,
+    encounterId: string,
+    monsterId: string,
+    instanceName?: string,
   ) => Promise<CombatActor>;
   updateActorHealth: (
-    _actorId: string,
+    actorId: string,
     health: { current: number; max: number; temporary?: number },
   ) => Promise<void>;
 }
@@ -285,7 +288,7 @@ export const useEncounter = (): UseEncounterReturn => {
           // Update local state
           if (encounter) {
             setEncounter((prev) => {
-              if (!prev) return prev;
+              if (!prev) {return prev;}
 
               return {
                 ...prev,
@@ -317,6 +320,96 @@ export const useEncounter = (): UseEncounterReturn => {
     [apiCall, encounter?.id],
   );
 
+  const nextTurn = useCallback(
+    async (encounterId: string): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await apiCall(`/encounters/${encounterId}/next-turn`, {
+          method: "POST",
+        });
+
+        if (result.success) {
+          setEncounter(result.encounter);
+        } else {
+          throw new Error(result.error || "Failed to advance turn");
+        }
+      } catch (err: any) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiCall],
+  );
+
+  const previousTurn = useCallback(
+    async (encounterId: string): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await apiCall(`/encounters/${encounterId}/previous-turn`, {
+          method: "POST",
+        });
+
+        if (result.success) {
+          setEncounter(result.encounter);
+        } else {
+          throw new Error(result.error || "Failed to go to previous turn");
+        }
+      } catch (err: any) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiCall],
+  );
+
+  const updateActorInitiative = useCallback(
+    async (encounterId: string, actorId: string, initiative: number): Promise<void> => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await apiCall(`/encounters/${encounterId}/actors/${actorId}/initiative`, {
+          method: "PUT",
+          body: JSON.stringify({ initiative }),
+        });
+
+        if (result.success) {
+          // Update local state
+          if (encounter) {
+            setEncounter((prev) => {
+              if (!prev) {return prev;}
+
+              const updatedActors = prev.actors.map((actor) =>
+                actor.id === actorId ? { ...actor, initiative } : actor,
+              );
+
+              return {
+                ...prev,
+                actors: updatedActors.sort((a, b) => b.initiative - a.initiative),
+              };
+            });
+          }
+        } else {
+          throw new Error(result.error || "Failed to update initiative");
+        }
+      } catch (err: any) {
+        setError(err.message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiCall, encounter],
+  );
+
   return {
     encounter,
     isLoading,
@@ -325,6 +418,9 @@ export const useEncounter = (): UseEncounterReturn => {
     getEncounter,
     startEncounter,
     endEncounter,
+    nextTurn,
+    previousTurn,
+    updateActorInitiative,
     addCharacterToEncounter,
     addMonsterToEncounter,
     updateActorHealth,

@@ -115,8 +115,8 @@ export class RedisWebSocketAdapter extends EventEmitter {
       lastActivity: new Date()
     } as SessionInfo;
     
-    if (info.userId) sessionData.userId = info.userId;
-    if (info.gameId) sessionData.gameId = info.gameId;
+    if (info.userId) {sessionData.userId = info.userId;}
+    if (info.gameId) {sessionData.gameId = info.gameId;}
 
     await this.client.set(sessionKey, JSON.stringify(sessionData), {
       EX: 300 // Expire after 5 minutes of inactivity
@@ -284,7 +284,7 @@ export class RedisWebSocketAdapter extends EventEmitter {
         
         for (const key of keys) {
           const data = await this.client.get(key);
-          if (!data) continue;
+          if (!data) {continue;}
           
           const serverInfo = JSON.parse(data);
           const age = Date.now() - serverInfo.timestamp;

@@ -127,7 +127,7 @@ export class VisualEffectsSystem extends EventEmitter {
       autoDestroy: template.config.autoDestroy !== false,
       fadeIn: template.config.fadeIn || 0,
       fadeOut: template.config.fadeOut || 0,
-      targetId: options?.targetId,
+      targetId: options?.targetId ?? '',
       followTarget: template.config.followTarget || false,
       attachToTarget: template.config.attachToTarget || false,
       affectsGameplay: template.config.affectsGameplay || false,
@@ -250,10 +250,10 @@ export class VisualEffectsSystem extends EventEmitter {
       case 'fireball':
         // Launch effect
         const launchId = this.createEffect('fire_projectile', casterPosition, {
-          targetId: targetId,
+          targetId: targetId ?? '',
           data: { targetPosition },
         });
-        if (launchId) effectIds.push(launchId);
+        if (launchId) {effectIds.push(launchId);}
 
         // Explosion effect (delayed)
         if (targetPosition) {
@@ -261,7 +261,7 @@ export class VisualEffectsSystem extends EventEmitter {
             const explosionId = this.createEffect('fire_explosion', targetPosition, {
               scale: 2.0,
             });
-            if (explosionId) effectIds.push(explosionId);
+            if (explosionId) {effectIds.push(explosionId);}
           }, 1000);
         }
         break;
@@ -271,35 +271,35 @@ export class VisualEffectsSystem extends EventEmitter {
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
             const missileId = this.createEffect('magic_missile', casterPosition, {
-              targetId: targetId,
+              targetId: targetId ?? '',
               data: { delay: i * 200 },
             });
-            if (missileId) effectIds.push(missileId);
+            if (missileId) {effectIds.push(missileId);}
           }, i * 200);
         }
         break;
 
       case 'healing word':
         const healId = this.createEffect('healing_sparkles', targetPosition || casterPosition, {
-          targetId: targetId,
+          targetId: targetId ?? '',
         });
-        if (healId) effectIds.push(healId);
+        if (healId) {effectIds.push(healId);}
         break;
 
       case 'shield':
         const shieldId = this.createEffect('magical_shield', casterPosition, {
-          targetId: targetId,
+          targetId: targetId ?? '',
           duration: 6000, // 1 round
         });
-        if (shieldId) effectIds.push(shieldId);
+        if (shieldId) {effectIds.push(shieldId);}
         break;
 
       default:
         // Generic spell effect
         const genericId = this.createEffect('generic_spell', casterPosition, {
-          targetId: targetId,
+          targetId: targetId ?? '',
         });
-        if (genericId) effectIds.push(genericId);
+        if (genericId) {effectIds.push(genericId);}
         break;
     }
 
@@ -320,7 +320,7 @@ export class VisualEffectsSystem extends EventEmitter {
     // Impact effect
     const impactTemplate = hit ? 'weapon_hit' : 'weapon_miss';
     const impactId = this.createEffect(impactTemplate, targetPosition);
-    if (impactId) effectIds.push(impactId);
+    if (impactId) {effectIds.push(impactId);}
 
     // Weapon-specific effects
     switch (weaponType.toLowerCase()) {
@@ -330,7 +330,7 @@ export class VisualEffectsSystem extends EventEmitter {
         const slashId = this.createEffect('sword_slash', attackerPosition, {
           data: { targetPosition },
         });
-        if (slashId) effectIds.push(slashId);
+        if (slashId) {effectIds.push(slashId);}
         break;
 
       case 'bow':
@@ -339,7 +339,7 @@ export class VisualEffectsSystem extends EventEmitter {
         const arrowId = this.createEffect('arrow_trail', attackerPosition, {
           data: { targetPosition },
         });
-        if (arrowId) effectIds.push(arrowId);
+        if (arrowId) {effectIds.push(arrowId);}
         break;
 
       case 'staff':
@@ -347,7 +347,7 @@ export class VisualEffectsSystem extends EventEmitter {
         const magicId = this.createEffect('magic_bolt', attackerPosition, {
           data: { targetPosition },
         });
-        if (magicId) effectIds.push(magicId);
+        if (magicId) {effectIds.push(magicId);}
         break;
     }
 

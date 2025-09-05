@@ -454,7 +454,7 @@ export class VisualScriptingEngine {
     inputId: string,
   ): void {
     const script = this.scripts.get(scriptId);
-    if (!script) throw new Error("Script not found");
+    if (!script) {throw new Error("Script not found");}
 
     const connection: Connection = {
       nodeId: fromNodeId,
@@ -674,7 +674,7 @@ export class VisualScriptingEngine {
 
   getDebugInfo(scriptId: string): DebugInfo | null {
     const context = this.executionContexts.get(scriptId);
-    if (!context) return null;
+    if (!context) {return null;}
 
     return {
       currentNode: context.currentNode,
@@ -690,7 +690,7 @@ export class VisualScriptingEngine {
   private rollDice(formula: string): { total: number; rolls: number[] } {
     // Simple dice rolling implementation
     const match = formula.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) return { total: 0, rolls: [] };
+    if (!match) {return { total: 0, rolls: [] };}
 
     const count = parseInt(match[1]);
     const sides = parseInt(match[2]);

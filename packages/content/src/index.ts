@@ -6,6 +6,11 @@
  */
 
 // Core managers
+import { AssetManager } from "./AssetManager";
+import { ContentEditor } from "./ContentEditor";
+import { CampaignBuilder } from "./CampaignBuilder";
+import { PublishingManager } from "./PublishingManager";
+
 export { AssetManager } from "./AssetManager";
 export { ContentEditor } from "./ContentEditor";
 export { CampaignBuilder } from "./CampaignBuilder";
@@ -50,11 +55,6 @@ export const _ContentUtils = {
       website?: string;
     };
   }) => {
-    import { AssetManager } from "./AssetManager";
-    import { ContentEditor } from "./ContentEditor";
-    import { CampaignBuilder } from "./CampaignBuilder";
-    import { PublishingManager } from "./PublishingManager";
-
     const assetManager = new AssetManager(config?.assetStoragePath || "./assets");
 
     const contentEditor = new ContentEditor(assetManager);
@@ -97,7 +97,7 @@ export const _ContentUtils = {
    */
   validateAssetType: (filename: string, expectedType?: string): boolean => {
     const ext = filename.toLowerCase().split(".").pop();
-    if (!ext) return false;
+    if (!ext) {return false;}
 
     const typeMap: Record<string, string[]> = {
       image: ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "tiff"],
@@ -119,13 +119,13 @@ export const _ContentUtils = {
    * Calculate file size in human readable format
    */
   formatFileSize: (bytes: number): string => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) {return "0 Bytes";}
 
     const k = 1024;
     const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))  } ${  sizes[i]}`;
   },
 
   /**

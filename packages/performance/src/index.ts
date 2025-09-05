@@ -143,13 +143,13 @@ export class PerformanceUtils {
     return ((...args: any[]) => {
       const later = () => {
         timeout = null;
-        if (!immediate) func(...args);
+        if (!immediate) {func(...args);}
       };
 
       const callNow = immediate && !timeout;
-      if (timeout) clearTimeout(timeout);
+      if (timeout) {clearTimeout(timeout);}
       timeout = setTimeout(later, wait);
-      if (callNow) func(...args);
+      if (callNow) {func(...args);}
     }) as T;
   }
 

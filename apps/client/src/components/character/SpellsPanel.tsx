@@ -67,11 +67,11 @@ const SPELL_LEVELS = [
   { value: 9, label: "9th Level" },
 ];
 
-export const SpellsPanel = memo(function SpellsPanel({
+export const SpellsPanel = memo(({
   character,
   isEditing,
   onUpdate,
-}: SpellsPanelProps): JSX.Element {
+}: SpellsPanelProps): JSX.Element => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState<number | "all">("all");
   const [filterSchool, setFilterSchool] = useState<string | "all">("all");
@@ -109,7 +109,7 @@ export const SpellsPanel = memo(function SpellsPanel({
   };
 
   const addOrUpdateSpell = () => {
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {return;}
 
     const newSpell: Spell = {
       id: editingSpell?.id || `spell_${Date.now()}`,
@@ -220,19 +220,19 @@ export const SpellsPanel = memo(function SpellsPanel({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Book className="h-6 w-6 text-accent-primary mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">{knownSpells.length}</div>
+          <div className="text-lg font-bold text-primary">{knownSpells.length}</div>
           <div className="text-xs text-text-secondary">Known Spells</div>
         </div>
 
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Star className="h-6 w-6 text-warning mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">{preparedSpells.length}</div>
+          <div className="text-lg font-bold text-primary">{preparedSpells.length}</div>
           <div className="text-xs text-text-secondary">Prepared</div>
         </div>
 
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Zap className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">
+          <div className="text-lg font-bold text-primary">
             {preparedSpells.filter((s) => s.level === 0).length}
           </div>
           <div className="text-xs text-text-secondary">Cantrips</div>
@@ -240,7 +240,7 @@ export const SpellsPanel = memo(function SpellsPanel({
 
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Filter className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">
+          <div className="text-lg font-bold text-primary">
             {new Set(character.spells.map((s) => s.school)).size}
           </div>
           <div className="text-xs text-text-secondary">Schools</div>
@@ -265,7 +265,7 @@ export const SpellsPanel = memo(function SpellsPanel({
             onChange={(e) =>
               setFilterLevel(e.target.value === "all" ? "all" : parseInt(e.target.value))
             }
-            className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary text-sm"
+            className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary text-sm"
           >
             <option value="all">All Levels</option>
             {SPELL_LEVELS.map(({ value, label }) => (
@@ -278,7 +278,7 @@ export const SpellsPanel = memo(function SpellsPanel({
           <select
             value={filterSchool}
             onChange={(e) => setFilterSchool(e.target.value)}
-            className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary text-sm"
+            className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary text-sm"
           >
             <option value="all">All Schools</option>
             {SPELL_SCHOOLS.map((school) => (
@@ -314,7 +314,7 @@ export const SpellsPanel = memo(function SpellsPanel({
       {showAddForm && isEditing && (
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-text-primary">
+            <h3 className="text-lg font-semibold text-primary">
               {editingSpell ? "Edit Spell" : "Add Spell"}
             </h3>
             <Button variant="ghost" size="sm" onClick={resetForm}>
@@ -324,7 +324,7 @@ export const SpellsPanel = memo(function SpellsPanel({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
+              <label className="block text-sm font-medium text-primary mb-1">Name</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -333,13 +333,13 @@ export const SpellsPanel = memo(function SpellsPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Level</label>
+              <label className="block text-sm font-medium text-primary mb-1">Level</label>
               <select
                 value={formData.level}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, level: parseInt(e.target.value) }))
                 }
-                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary"
               >
                 {SPELL_LEVELS.map(({ value, label }) => (
                   <option key={value} value={value}>
@@ -350,11 +350,11 @@ export const SpellsPanel = memo(function SpellsPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">School</label>
+              <label className="block text-sm font-medium text-primary mb-1">School</label>
               <select
                 value={formData.school}
                 onChange={(e) => setFormData((prev) => ({ ...prev, school: e.target.value }))}
-                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary"
               >
                 {SPELL_SCHOOLS.map((school) => (
                   <option key={school} value={school}>
@@ -365,7 +365,7 @@ export const SpellsPanel = memo(function SpellsPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
+              <label className="block text-sm font-medium text-primary mb-1">
                 Casting Time
               </label>
               <Input
@@ -376,7 +376,7 @@ export const SpellsPanel = memo(function SpellsPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Range</label>
+              <label className="block text-sm font-medium text-primary mb-1">Range</label>
               <Input
                 value={formData.range}
                 onChange={(e) => setFormData((prev) => ({ ...prev, range: e.target.value }))}
@@ -385,7 +385,7 @@ export const SpellsPanel = memo(function SpellsPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Duration</label>
+              <label className="block text-sm font-medium text-primary mb-1">Duration</label>
               <Input
                 value={formData.duration}
                 onChange={(e) => setFormData((prev) => ({ ...prev, duration: e.target.value }))}
@@ -395,7 +395,7 @@ export const SpellsPanel = memo(function SpellsPanel({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-2">Components</label>
+            <label className="block text-sm font-medium text-primary mb-2">Components</label>
             <div className="flex gap-2">
               {SPELL_COMPONENTS.map((component) => (
                 <button
@@ -405,7 +405,7 @@ export const SpellsPanel = memo(function SpellsPanel({
                     "px-3 py-2 rounded border text-sm font-medium transition-colors",
                     formData.components.includes(component)
                       ? "bg-accent-primary text-white border-accent-primary"
-                      : "bg-bg-secondary text-text-primary border-border-primary hover:border-accent-primary",
+                      : "bg-bg-secondary text-primary border-border-primary hover:border-accent-primary",
                   )}
                 >
                   {component}
@@ -415,11 +415,11 @@ export const SpellsPanel = memo(function SpellsPanel({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
+            <label className="block text-sm font-medium text-primary mb-1">Description</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary resize-none"
+              className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary resize-none"
               rows={4}
               placeholder="Spell description..."
             />
@@ -433,7 +433,7 @@ export const SpellsPanel = memo(function SpellsPanel({
                 onChange={(e) => setFormData((prev) => ({ ...prev, known: e.target.checked }))}
                 className="rounded border-border-primary"
               />
-              <span className="text-sm text-text-primary">Known</span>
+              <span className="text-sm text-primary">Known</span>
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -442,7 +442,7 @@ export const SpellsPanel = memo(function SpellsPanel({
                 onChange={(e) => setFormData((prev) => ({ ...prev, prepared: e.target.checked }))}
                 className="rounded border-border-primary"
               />
-              <span className="text-sm text-text-primary">Prepared</span>
+              <span className="text-sm text-primary">Prepared</span>
             </label>
           </div>
 
@@ -461,11 +461,11 @@ export const SpellsPanel = memo(function SpellsPanel({
       <div className="space-y-4">
         {SPELL_LEVELS.map(({ value: level, label }) => {
           const levelSpells = spellsByLevel[level] || [];
-          if (levelSpells.length === 0) return null;
+          if (levelSpells.length === 0) {return null;}
 
           return (
             <div key={level} className="space-y-2">
-              <h3 className="text-lg font-semibold text-text-primary border-b border-border-primary pb-2">
+              <h3 className="text-lg font-semibold text-primary border-b border-border-primary pb-2">
                 {label} ({levelSpells.length})
               </h3>
 
@@ -514,7 +514,7 @@ export const SpellsPanel = memo(function SpellsPanel({
 
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-medium text-text-primary">{spell.name}</h4>
+                            <h4 className="font-medium text-primary">{spell.name}</h4>
                             {spell.prepared && (
                               <span className="text-xs bg-accent-primary text-white px-2 py-1 rounded">
                                 Prepared
@@ -525,7 +525,7 @@ export const SpellsPanel = memo(function SpellsPanel({
                                 Unknown
                               </span>
                             )}
-                            <span className="text-xs bg-bg-primary text-text-tertiary px-2 py-1 rounded">
+                            <span className="text-xs bg-primary text-text-tertiary px-2 py-1 rounded">
                               {spell.school}
                             </span>
                           </div>
@@ -576,7 +576,7 @@ export const SpellsPanel = memo(function SpellsPanel({
       {filteredSpells.length === 0 && (
         <div className="text-center py-8">
           <Book className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">No Spells Found</h3>
+          <h3 className="text-lg font-medium text-primary mb-2">No Spells Found</h3>
           <p className="text-text-secondary">
             {searchTerm
               ? `No spells match "${searchTerm}"`

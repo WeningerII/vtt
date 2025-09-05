@@ -111,7 +111,7 @@ export class CombatEngine {
   // Dice rolling utility
   private rollDice(diceString: string): { total: number; rolls: number[] } {
     const match = diceString.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) throw new Error(`Invalid dice string: ${diceString}`);
+    if (!match) {throw new Error(`Invalid dice string: ${diceString}`);}
 
     const count = parseInt(match[1]!);
     const sides = parseInt(match[2]!);
@@ -166,7 +166,7 @@ export class CombatEngine {
 
     // Sort by initiative (descending), with dexterity as tiebreaker
     initiatives.sort((a, b) => {
-      if (a.initiative !== b.initiative) return b.initiative - a.initiative;
+      if (a.initiative !== b.initiative) {return b.initiative - a.initiative;}
 
       const combatantA = this.combatants.get(a.id)!;
       const combatantB = this.combatants.get(b.id)!;
@@ -196,7 +196,7 @@ export class CombatEngine {
   }
 
   public nextTurn(): void {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     const currentCombatant = this.getCurrentCombatant();
     if (currentCombatant) {
@@ -265,7 +265,7 @@ export class CombatEngine {
   }
 
   public getCurrentCombatant(): Combatant | null {
-    if (!this.isActive || this.turnOrder.length === 0) return null;
+    if (!this.isActive || this.turnOrder.length === 0) {return null;}
     const id = this.turnOrder[this.currentTurnIndex];
     return id ? this.combatants.get(id) || null : null;
   }
@@ -500,8 +500,8 @@ export class CombatEngine {
 
     const saveResult = success ? "succeeds" : "fails";
     const message =
-      `${target.name} ${saveResult} the saving throw against ${spell.name}` +
-      (totalDamage > 0 ? ` and takes ${totalDamage} damage` : "");
+      `${target.name} ${saveResult} the saving throw against ${spell.name}${ 
+      totalDamage > 0 ? ` and takes ${totalDamage} damage` : ""}`;
 
     return {
       success: true,
@@ -648,7 +648,7 @@ export class CombatEngine {
 
   public applyDamage(combatantId: string, damage: number, damageType?: string): void {
     const combatant = this.combatants.get(combatantId);
-    if (!combatant) return;
+    if (!combatant) {return;}
 
     // Apply temporary hit points first
     if (combatant.stats.hitPoints.temporary > 0) {
@@ -675,7 +675,7 @@ export class CombatEngine {
 
   public heal(combatantId: string, healing: number): void {
     const combatant = this.combatants.get(combatantId);
-    if (!combatant) return;
+    if (!combatant) {return;}
 
     const oldHitPoints = combatant.stats.hitPoints.current;
     combatant.stats.hitPoints.current = Math.min(
@@ -701,14 +701,14 @@ export class CombatEngine {
   }
 
   // Event system
-  public on(_event: string, _handler: (...args: any[]) => any): void {
+  public on(event: string, handler: (...args: any[]) => any): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  public off(_event: string, _handler: (...args: any[]) => any): void {
+  public off(event: string, handler: (...args: any[]) => any): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);

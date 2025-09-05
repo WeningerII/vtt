@@ -71,7 +71,7 @@ export class OptimizationEngine {
 
   // Automatic optimization monitoring
   startAutoOptimization(): void {
-    if (!this.config.autoOptimize) return;
+    if (!this.config.autoOptimize) {return;}
 
     setInterval(async () => {
       await this.runOptimizationCycle();
@@ -79,13 +79,13 @@ export class OptimizationEngine {
   }
 
   private async runOptimizationCycle(): Promise<void> {
-    if (this.isOptimizing) return;
+    if (this.isOptimizing) {return;}
 
     const now = Date.now();
     const timeSinceLastOptimization = now - this.lastOptimization;
     const minInterval = 1000 / this.config.maxOptimizationsPerSecond;
 
-    if (timeSinceLastOptimization < minInterval) return;
+    if (timeSinceLastOptimization < minInterval) {return;}
 
     this.isOptimizing = true;
 
@@ -336,10 +336,10 @@ export class OptimizationEngine {
   }
 
   private categorizeBottleneck(name: string): string {
-    if (name.toLowerCase().includes("render")) return "Renderer";
-    if (name.toLowerCase().includes("physics")) return "Physics";
-    if (name.toLowerCase().includes("network")) return "Network";
-    if (name.toLowerCase().includes("ecs")) return "ECS";
+    if (name.toLowerCase().includes("render")) {return "Renderer";}
+    if (name.toLowerCase().includes("physics")) {return "Physics";}
+    if (name.toLowerCase().includes("network")) {return "Network";}
+    if (name.toLowerCase().includes("ecs")) {return "ECS";}
     return "System";
   }
 
@@ -417,7 +417,7 @@ export class OptimizationEngine {
 
   // Reporting and analytics
   getOptimizationHistory(timeWindowMs?: number): typeof this.optimizationHistory {
-    if (!timeWindowMs) return [...this.optimizationHistory];
+    if (!timeWindowMs) {return [...this.optimizationHistory];}
 
     const cutoff = Date.now() - timeWindowMs;
     return this.optimizationHistory.filter((h) => h.timestamp >= cutoff);

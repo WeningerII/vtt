@@ -87,7 +87,7 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
         try {
           listener(data);
         } catch (error) {
-          logger.error(`Error in event listener for ${String(event)}:`, error);
+          logger.error(`Error in event listener for ${String(event)}:`, error as Record<string, any>);
         }
       }
     }
@@ -103,7 +103,7 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
         try {
           listener(data);
         } catch (error) {
-          logger.error(`Error in one-time event listener for ${String(event)}:`, error);
+          logger.error(`Error in one-time event listener for ${String(event)}:`, error as Record<string, any>);
         }
       }
     }
@@ -168,7 +168,7 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
     if (eventMap) {
       // Pipe specific events with mapping
       for (const [sourceEvent, targetEvent] of Object.entries(eventMap)) {
-        const listener = (_data: any) => this.emit(targetEvent as keyof TEvents, data);
+        const listener = (_data: any) => this.emit(targetEvent as keyof TEvents, _data);
         other.on(sourceEvent as keyof TOther, listener);
         unsubscribers.push(() => other.off(sourceEvent as keyof TOther, listener));
       }
@@ -176,7 +176,7 @@ export class EventEmitter<TEvents extends EventMap = EventMap> {
       // Pipe all events (assuming compatible event maps)
       const otherEventNames = other.eventNames();
       for (const event of otherEventNames) {
-        const listener = (_data: any) => this.emit(event as keyof TEvents, data);
+        const listener = (_data: any) => this.emit(event as keyof TEvents, _data);
         other.on(event, listener);
         unsubscribers.push(() => other.off(event, listener));
       }

@@ -143,7 +143,7 @@ export class UnifiedStateManager<TState = any>
     this.notifyListeners(this.currentState, previousState);
 
     // Emit events
-    this.emit("stateChanged", { newState: this.currentState, previousState: previousState });
+    this.emit("stateChanged", { newState: this.currentState, previousState });
     this.emit("stateLoaded", { timestamp: snapshot.timestamp });
   }
 
@@ -257,7 +257,7 @@ export class UnifiedStateManager<TState = any>
 
       this.emit("stateChanged", { newState: this.currentState, previousState: this.currentState });
     } catch (error) {
-      logger.error("Failed to save state:", error);
+      logger.warn("Failed to execute undo:", error as Record<string, any>);
       throw error;
     }
   }
@@ -294,9 +294,9 @@ export class UnifiedStateManager<TState = any>
       // Notify listeners
       this.notifyListeners(this.currentState, previousState);
 
-      this.emit("stateChanged", { newState: this.currentState, previousState: this.currentState });
+      this.emit("stateChanged", { newState: this.currentState, previousState });
     } catch (error) {
-      logger.error("Failed to load state:", error);
+      logger.error("Failed to load state:", error as Record<string, any>);
       throw error;
     }
   }
@@ -312,7 +312,7 @@ export class UnifiedStateManager<TState = any>
     this.stateListeners.clear();
 
     try {
-      updates();
+      _updates();
     } finally {
       // Restore listeners
       this.stateListeners = originalListeners;
@@ -321,7 +321,7 @@ export class UnifiedStateManager<TState = any>
     // Send single notification for all changes
     this.notifyListeners(this.currentState, previousState);
 
-    this.emit("stateChanged", { newState: this.currentState, previousState: previousState });
+    this.emit("stateChanged", { newState: this.currentState, previousState });
   }
 
   /**
@@ -329,11 +329,11 @@ export class UnifiedStateManager<TState = any>
    */
   getHistoryInfo(): { undoSteps: number; redoSteps: number; totalMemory: number } {
     const undoMemory = this.undoStack.reduce(
-      (_total, _snapshot) => total + JSON.stringify(snapshot.state).length,
+      (total, snapshot) => total + JSON.stringify(snapshot.state).length,
       0,
     );
     const redoMemory = this.redoStack.reduce(
-      (_total, _snapshot) => total + JSON.stringify(snapshot.state).length,
+      (total, snapshot) => total + JSON.stringify(snapshot.state).length,
       0,
     );
 
@@ -382,7 +382,7 @@ export class UnifiedStateManager<TState = any>
       try {
         listener(newState, previousState);
       } catch (error) {
-        logger.error("Error in state listener:", error);
+        logger.error("Error in state listener:", error as Record<string, any>);
       }
     }
   }

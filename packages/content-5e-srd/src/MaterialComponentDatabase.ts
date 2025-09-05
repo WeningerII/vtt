@@ -476,9 +476,9 @@ export class MaterialComponentValidator {
 
   static getComponentCost(spellId: string): number {
     const requirement = SPELL_MATERIAL_REQUIREMENTS[spellId];
-    if (!requirement) return 0;
+    if (!requirement) {return 0;}
 
-    return requirement.components.reduce((_total, _component) => total + (component.cost || 0), 0);
+    return requirement.components.reduce((total, component) => total + (component.cost || 0), 0);
   }
 
   static consumeComponents(
@@ -486,7 +486,7 @@ export class MaterialComponentValidator {
     availableComponents: MaterialComponent[],
   ): MaterialComponent[] {
     const requirement = SPELL_MATERIAL_REQUIREMENTS[spellId];
-    if (!requirement) return availableComponents;
+    if (!requirement) {return availableComponents;}
 
     const consumed = requirement.components.filter((comp) => comp.consumed);
     return availableComponents.filter(

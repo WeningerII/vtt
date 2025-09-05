@@ -106,16 +106,18 @@ export class VisionAIIntegration extends EventEmitter {
 
       const prompt = this.buildTokenAnalysisPrompt(context);
       
+      if (!this.config.aiProvider) {return null;}
+
       const response = await this.config.aiProvider.analyzeImage({
-        image: imageData,
-        prompt: prompt,
+        image: imageData as any, // Type assertion for compatibility
+        prompt,
         maxTokens: 600,
         model: 'claude-3-sonnet'
       });
 
       this.pendingAnalysis.delete(cacheKey);
 
-      if (response.success && response.analysis) {
+      if (response && response.analysis) {
         const analysis = this.parseTokenAnalysis(response.analysis, entityId, context);
         
         if (analysis) {
@@ -138,7 +140,7 @@ export class VisionAIIntegration extends EventEmitter {
 
       return null;
     } catch (error) {
-      logger.error(`Error analyzing token ${entityId}:`, error);
+      logger.error(`Error analyzing token ${entityId}:`, error as Error);
       this.pendingAnalysis.delete(`token_${entityId}_${this.hashImageData(imageData)}`);
       return null;
     }
@@ -168,14 +170,16 @@ export class VisionAIIntegration extends EventEmitter {
 
       const prompt = this.buildMapAnalysisPrompt(context);
       
+      if (!this.config.aiProvider) {return null;}
+
       const response = await this.config.aiProvider.analyzeImage({
-        image: imageData,
-        prompt: prompt,
+        image: imageData as any, // Type assertion for compatibility
+        prompt,
         maxTokens: 800,
         model: 'claude-3-sonnet'
       });
 
-      if (response.success && response.analysis) {
+      if (response && response.analysis) {
         const analysis = this.parseMapAnalysis(response.analysis, sceneId);
         
         if (analysis) {
@@ -195,7 +199,7 @@ export class VisionAIIntegration extends EventEmitter {
 
       return null;
     } catch (error) {
-      logger.error(`Error analyzing map ${sceneId}:`, error);
+      logger.error(`Error analyzing map ${sceneId}:`, error as Error);
       return null;
     }
   }
@@ -215,11 +219,11 @@ export class VisionAIIntegration extends EventEmitter {
     const events: VisionEvent[] = [];
     const observer = this.config.visionStore.get(observerId);
     
-    if (!observer) return events;
+    if (!observer) {return events;}
 
     for (const entity of visibleEntities) {
       // Check if entity is within detection range
-      if (entity.distance > this.config.maxAnalysisDistance) continue;
+      if (entity.distance > this.config.maxAnalysisDistance) {continue;}
 
       // Can the observer actually see this entity?
       const canSee = this.config.visionStore.canSeeEntity(
@@ -229,7 +233,7 @@ export class VisionAIIntegration extends EventEmitter {
         entity.lightLevel
       );
 
-      if (!canSee) continue;
+      if (!canSee) {continue;}
 
       // Check if this is a new sighting
       const wasVisible = this.wasEntityVisible(observerId, entity.id);
@@ -310,7 +314,7 @@ export class VisionAIIntegration extends EventEmitter {
     includeAnalysis: boolean = true
   ): Promise<string> {
     const observer = this.config.visionStore.get(observerId);
-    if (!observer) return "You cannot see anything.";
+    if (!observer) {return "You cannot see anything.";}
 
     const recentEvents = this.visionEventHistory
       .filter(e => e.observerId === observerId && Date.now() - e.timestamp < 30000)
@@ -337,18 +341,20 @@ ${visibleAnalyses.map(a => `- ${a.species} at distance ${a.confidence}, threat l
 
 Generate a 2-3 sentence description of what the character observes, focusing on the most important or threatening elements first.`;
 
+      if (!this.config.aiProvider) {return 'Unable to generate vision description';}
+
       const response = await this.config.aiProvider.generateText({
         prompt,
-        maxTokens: 200,
+        maxTokens: 400,
         temperature: 0.7,
-        model: 'claude-3-haiku'
+        model: 'claude-3-sonnet'
       });
 
-      if (response.success && response.text) {
+      if (response && response.text) {
         return response.text;
       }
     } catch (error) {
-      logger.error('Error generating vision description:', error);
+      logger.error('Error generating vision description:', error as Error);
     }
 
     return this.generateBasicVisionDescription(observer);
@@ -359,7 +365,7 @@ Generate a 2-3 sentence description of what the character observes, focusing on 
    */
   updateFogOfWar(observerId: EntityId, mapAnalysis: MapAnalysis): void {
     const observer = this.config.visionStore.get(observerId);
-    if (!observer || !observer.fogOfWarEnabled) return;
+    if (!observer || !observer.fogOfWarEnabled) {return;}
 
     // Reveal areas based on analysis
     for (const point of mapAnalysis.interestPoints) {
@@ -442,7 +448,7 @@ Return analysis in JSON format:
         confidence: parsed.confidence || 0.5
       };
     } catch (error) {
-      logger.warn('Failed to parse token analysis:', error);
+      logger.warn('Failed to parse token analysis:', error as Error);
       return null;
     }
   }
@@ -460,14 +466,14 @@ Return analysis in JSON format:
         suggestedMusic: parsed.suggestedMusic || []
       };
     } catch (error) {
-      logger.warn('Failed to parse map analysis:', error);
+      logger.warn('Failed to parse map analysis:', error as Error);
       return null;
     }
   }
 
   private updateVisionDataFromAnalysis(entityId: EntityId, analysis: TokenAnalysis): void {
     const vision = this.config.visionStore.get(entityId);
-    if (!vision) return;
+    if (!vision) {return;}
 
     // Update invisibility detection based on magical auras
     if (analysis.magicalAuras.some(aura => aura.toLowerCase().includes('invisible'))) {
@@ -535,12 +541,12 @@ Return analysis in JSON format:
   }
 
   private generateBasicVisionDescription(observer: VisionData): string {
-    if (observer.isBlinded) return "You are blinded and cannot see anything.";
+    if (observer.isBlinded) {return "You are blinded and cannot see anything.";}
     
     const capabilities = [];
-    if (observer.darkvisionRange > 0) capabilities.push(`darkvision (${observer.darkvisionRange} units)`);
-    if (observer.truesightRange > 0) capabilities.push(`truesight (${observer.truesightRange} units)`);
-    if (observer.blindsightRange > 0) capabilities.push(`blindsight (${observer.blindsightRange} units)`);
+    if (observer.darkvisionRange > 0) {capabilities.push(`darkvision (${observer.darkvisionRange} units)`);}
+    if (observer.truesightRange > 0) {capabilities.push(`truesight (${observer.truesightRange} units)`);}
+    if (observer.blindsightRange > 0) {capabilities.push(`blindsight (${observer.blindsightRange} units)`);}
     
     let description = `You can see clearly within ${observer.sightRange} units.`;
     if (capabilities.length > 0) {

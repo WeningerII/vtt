@@ -1,4 +1,7 @@
-import type { GPUDevice } from "@webgpu/types";
+// import type { GPUDevice } from "@webgpu/types";
+type GPUDevice = any; // Fallback type until WebGPU types are properly configured
+type GPUComputePipeline = any;
+type GPUBuffer = any;
 /**
  * Advanced Physics Engine - Triple A Quality Browser-Optimized Physics
  * High-performance physics simulation with WASM acceleration and GPU compute
@@ -227,7 +230,7 @@ export class AdvancedPhysicsEngine {
   }
 
   private async initializeGPUCompute(): Promise<void> {
-    if (!this.device) return;
+    if (!this.device) {return;}
 
     // Particle simulation compute shader
     const particleShader = this.device.createShaderModule({
@@ -532,7 +535,7 @@ export class AdvancedPhysicsEngine {
 
   private integrateMotion(dt: number): void {
     for (const body of this.rigidBodies.values()) {
-      if (body.type !== "dynamic" || body.sleeping) continue;
+      if (body.type !== "dynamic" || body.sleeping) {continue;}
 
       // Linear integration
       body.velocity[0] += body.forces[0] * body.inverseMass * dt;
@@ -596,24 +599,28 @@ export class AdvancedPhysicsEngine {
     system.particles.forEach((particle) => {
       if (particle.life > 0) {
         // Apply forces
-        const totalForce = [0, 0, 0];
+        const totalForce: [number, number, number] = [0, 0, 0];
         for (const force of system.forces) {
           const f = this.calculateForceOnParticle(particle, force);
-          totalForce[0] += f[0];
-          totalForce[1] += f[1];
-          totalForce[2] += f[2];
+          if (f) {
+            totalForce[0] += f[0];
+            totalForce[1] += f[1];
+            totalForce[2] += f[2];
+          }
         }
 
         // Integrate
-        const acceleration = [
+        const acceleration: [number, number, number] = [
           totalForce[0] / particle.mass,
           totalForce[1] / particle.mass,
           totalForce[2] / particle.mass,
         ];
 
-        particle.velocity[0] += acceleration[0] * dt;
-        particle.velocity[1] += acceleration[1] * dt;
-        particle.velocity[2] += acceleration[2] * dt;
+        if (particle.velocity) {
+          particle.velocity[0] += acceleration[0] * dt;
+          particle.velocity[1] += acceleration[1] * dt;
+          particle.velocity[2] += acceleration[2] * dt;
+        }
 
         particle.position[0] += particle.velocity[0] * dt;
         particle.position[1] += particle.velocity[1] * dt;
@@ -636,7 +643,7 @@ export class AdvancedPhysicsEngine {
     const dz = particle.position[2] - force.position[2];
     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    if (distance > force.radius) return [0, 0, 0];
+    if (distance > force.radius) {return [0, 0, 0];}
 
     const strength = force.strength * (1 - distance / force.radius);
 
@@ -693,7 +700,7 @@ export class AdvancedPhysicsEngine {
 
   private updateSleeping(): void {
     for (const body of this.rigidBodies.values()) {
-      if (body.type !== "dynamic") continue;
+      if (body.type !== "dynamic") {continue;}
 
       const speed = Math.sqrt(
         body.velocity[0] ** 2 +
@@ -726,7 +733,7 @@ export class AdvancedPhysicsEngine {
     this.stats.rigidBodies = this.rigidBodies.size;
     this.stats.constraints = this.constraints.size;
     this.stats.particles = Array.from(this.particleSystems.values()).reduce(
-      (_sum, _sys) => sum + sys.particles.length,
+      (_sum, _sys) => _sum + _sys.particles.length,
       0,
     );
   }

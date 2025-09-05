@@ -6,7 +6,52 @@ import React, { memo } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { cn } from "../../lib/utils";
-import { Character } from "../../types/character";
+// Define Character interface locally until core-schemas export is fixed
+interface Ability {
+  name: string;
+  value: number;
+  modifier: number;
+}
+
+interface Skill {
+  name: string;
+  ability: string;
+  proficient: boolean;
+  expertise?: boolean;
+  value: number;
+  modifier: number;
+}
+
+interface SavingThrow {
+  proficient: boolean;
+  value: number;
+}
+
+interface HitPoints {
+  current: number;
+  max: number;
+  temporary: number;
+}
+
+interface Character {
+  id: string;
+  name: string;
+  race: string;
+  class: string;
+  level: number;
+  background: string;
+  experience: number;
+  hitPoints: HitPoints;
+  maxHitPoints: number; // Legacy property for backward compatibility
+  tempHitPoints: number; // Legacy property for backward compatibility
+  armorClass: number;
+  proficiencyBonus: number;
+  speed: number;
+  inspiration: boolean;
+  abilities: Record<string, Ability>;
+  skills: Record<string, Skill>;
+  savingThrows: Record<string, SavingThrow>;
+}
 
 interface AbilityScoresProps {
   character: Character;
@@ -33,20 +78,29 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
   };
 
   const updateAbilityScore = (ability: keyof Character["abilities"], value: number) => {
+    const clampedValue = Math.max(1, Math.min(30, value));
+    const modifier = getModifier(clampedValue);
+    
     const newAbilities = {
       ...character.abilities,
-      [ability]: Math.max(1, Math.min(30, value)),
+      [ability]: {
+        name: character.abilities[ability]?.name || ability,
+        value: clampedValue,
+        modifier,
+      },
     };
 
     // Recalculate saving throws
     const newSavingThrows = { ...character.savingThrows };
-    const modifier = getModifier(value);
     const profBonus = character.proficiencyBonus;
+    const currentSavingThrow = newSavingThrows[ability];
 
-    newSavingThrows[ability] = {
-      ...newSavingThrows[ability],
-      value: modifier + (newSavingThrows[ability].proficient ? profBonus : 0),
-    };
+    if (currentSavingThrow) {
+      newSavingThrows[ability] = {
+        ...currentSavingThrow,
+        value: modifier + (currentSavingThrow.proficient ? profBonus : 0),
+      };
+    }
 
     onUpdate({
       abilities: newAbilities,
@@ -55,14 +109,19 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
   };
 
   const toggleSavingThrowProficiency = (ability: keyof Character["savingThrows"]) => {
-    const currentProf = character.savingThrows[ability].proficient;
-    const modifier = getModifier(character.abilities[ability]);
+    const currentSavingThrow = character.savingThrows[ability];
+    const abilityScore = character.abilities[ability];
+    
+    if (!currentSavingThrow || !abilityScore) {return;}
+    
+    const currentProf = currentSavingThrow.proficient;
+    const modifier = getModifier(abilityScore.value);
     const profBonus = character.proficiencyBonus;
 
     const newSavingThrows = {
       ...character.savingThrows,
       [ability]: {
-        ...character.savingThrows[ability],
+        ...currentSavingThrow,
         proficient: !currentProf,
         value: modifier + (!currentProf ? profBonus : 0),
       },
@@ -72,8 +131,16 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
   };
 
   const toggleSkillProficiency = (skill: keyof Character["skills"]) => {
-    const newSkills = { ...character.skills };
-    newSkills[skill] = { ...newSkills[skill], proficient: !newSkills[skill].proficient };
+    const currentSkill = character.skills[skill];
+    if (!currentSkill) {return;}
+    
+    const newSkills = { 
+      ...character.skills,
+      [skill]: { 
+        ...currentSkill, 
+        proficient: !currentSkill.proficient 
+      }
+    };
     onUpdate({ skills: newSkills });
   };
 
@@ -86,7 +153,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
       {/* Basic Character Info */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
+          <label className="block text-sm font-medium text-primary mb-1">Name</label>
           {isEditing ? (
             <Input
               value={character.name}
@@ -94,14 +161,14 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               placeholder="Character name"
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary">
               {character.name}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Class</label>
+          <label className="block text-sm font-medium text-primary mb-1">Class</label>
           {isEditing ? (
             <Input
               value={character.class}
@@ -109,14 +176,14 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               placeholder="Character class"
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary">
               {character.class}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Race</label>
+          <label className="block text-sm font-medium text-primary mb-1">Race</label>
           {isEditing ? (
             <Input
               value={character.race}
@@ -124,14 +191,14 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               placeholder="Character race"
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary">
               {character.race}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Background</label>
+          <label className="block text-sm font-medium text-primary mb-1">Background</label>
           {isEditing ? (
             <Input
               value={character.background}
@@ -139,7 +206,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               placeholder="Character background"
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary">
               {character.background}
             </div>
           )}
@@ -149,7 +216,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
       {/* Level and Experience */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Level</label>
+          <label className="block text-sm font-medium text-primary mb-1">Level</label>
           {isEditing ? (
             <Input
               type="number"
@@ -159,14 +226,14 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               onChange={(e) => updateCharacterField("level", parseInt(e.target.value) || 1)}
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary text-center text-lg font-bold">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary text-center text-lg font-bold">
               {character.level}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Experience</label>
+          <label className="block text-sm font-medium text-primary mb-1">Experience</label>
           {isEditing ? (
             <Input
               type="number"
@@ -175,23 +242,23 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               onChange={(e) => updateCharacterField("experience", parseInt(e.target.value) || 0)}
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary">
               {character.experience.toLocaleString()}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">
+          <label className="block text-sm font-medium text-primary mb-1">
             Proficiency Bonus
           </label>
-          <div className="p-2 bg-bg-tertiary rounded border text-text-primary text-center font-mono">
+          <div className="p-2 bg-bg-tertiary rounded border text-primary text-center font-mono">
             {formatModifier(character.proficiencyBonus)}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Inspiration</label>
+          <label className="block text-sm font-medium text-primary mb-1">Inspiration</label>
           <button
             onClick={() => updateCharacterField("inspiration", !character.inspiration)}
             disabled={!isEditing}
@@ -212,7 +279,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
       {/* Health and Defense */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Armor Class</label>
+          <label className="block text-sm font-medium text-primary mb-1">Armor Class</label>
           {isEditing ? (
             <Input
               type="number"
@@ -221,59 +288,59 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               onChange={(e) => updateCharacterField("armorClass", parseInt(e.target.value) || 10)}
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary text-center text-lg font-bold">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary text-center text-lg font-bold">
               {character.armorClass}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Hit Points</label>
+          <label className="block text-sm font-medium text-primary mb-1">Hit Points</label>
           {isEditing ? (
             <div className="flex gap-1">
               <Input
                 type="number"
                 min="0"
-                value={character.hitPoints}
-                onChange={(e) => updateCharacterField("hitPoints", parseInt(e.target.value) || 0)}
+                value={character.hitPoints.current}
+                onChange={(e) => updateCharacterField("hitPoints", { ...character.hitPoints, current: parseInt(e.target.value) || 0 })}
                 placeholder="Current"
               />
               <Input
                 type="number"
                 min="1"
-                value={character.maxHitPoints}
+                value={character.hitPoints.max}
                 onChange={(e) =>
-                  updateCharacterField("maxHitPoints", parseInt(e.target.value) || 1)
+                  updateCharacterField("hitPoints", { ...character.hitPoints, max: parseInt(e.target.value) || 1 })
                 }
                 placeholder="Max"
               />
             </div>
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary text-center">
-              <span className="text-lg font-bold">{character.hitPoints}</span>
-              <span className="text-text-secondary">/{character.maxHitPoints}</span>
+            <div className="p-2 bg-bg-tertiary rounded border text-primary text-center">
+              <span className="text-lg font-bold">{character.hitPoints.current}</span>
+              <span className="text-text-secondary">/{character.hitPoints.max}</span>
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Temp HP</label>
+          <label className="block text-sm font-medium text-primary mb-1">Temp HP</label>
           {isEditing ? (
             <Input
               type="number"
               min="0"
-              value={character.tempHitPoints}
-              onChange={(e) => updateCharacterField("tempHitPoints", parseInt(e.target.value) || 0)}
+              value={character.hitPoints.temporary}
+              onChange={(e) => updateCharacterField("hitPoints", { ...character.hitPoints, temporary: parseInt(e.target.value) || 0 })}
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary text-center">
-              {character.tempHitPoints}
+            <div className="p-2 bg-bg-tertiary rounded border text-primary text-center">
+              {character.hitPoints.temporary}
             </div>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-primary mb-1">Speed</label>
+          <label className="block text-sm font-medium text-primary mb-1">Speed</label>
           {isEditing ? (
             <Input
               type="number"
@@ -282,7 +349,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
               onChange={(e) => updateCharacterField("speed", parseInt(e.target.value) || 30)}
             />
           ) : (
-            <div className="p-2 bg-bg-tertiary rounded border text-text-primary text-center">
+            <div className="p-2 bg-bg-tertiary rounded border text-primary text-center">
               {character.speed} ft
             </div>
           )}
@@ -291,10 +358,12 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
 
       {/* Ability Scores */}
       <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4">Ability Scores</h3>
+        <h3 className="text-lg font-semibold text-primary mb-4">Ability Scores</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {ABILITIES.map(({ key, label, shortLabel }) => {
-            const score = character.abilities[key as keyof Character["abilities"]];
+            const ability = character.abilities[key as keyof Character["abilities"]];
+            if (!ability) {return null;}
+            const score = ability.value;
             const modifier = getModifier(score);
 
             return (
@@ -319,7 +388,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
                       className="text-center font-bold text-lg mb-2"
                     />
                   ) : (
-                    <div className="text-lg font-bold text-text-primary mb-2">{score}</div>
+                    <div className="text-lg font-bold text-primary mb-2">{score}</div>
                   )}
 
                   <div className="text-sm font-mono text-text-secondary">
@@ -334,10 +403,11 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
 
       {/* Saving Throws */}
       <div>
-        <h3 className="text-lg font-semibold text-text-primary mb-4">Saving Throws</h3>
+        <h3 className="text-lg font-semibold text-primary mb-4">Saving Throws</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {ABILITIES.map(({ key, shortLabel }) => {
             const savingThrow = character.savingThrows[key as keyof Character["savingThrows"]];
+            if (!savingThrow) {return null;}
 
             return (
               <div key={key} className="flex items-center gap-3 p-2 bg-bg-tertiary rounded border">
@@ -359,7 +429,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
                 </button>
 
                 <div className="flex-1 flex justify-between items-center">
-                  <span className="text-sm text-text-primary">{shortLabel}</span>
+                  <span className="text-sm text-primary">{shortLabel}</span>
                   <span className="font-mono text-sm text-text-secondary">
                     {formatModifier(savingThrow.value)}
                   </span>

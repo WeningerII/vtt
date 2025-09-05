@@ -49,11 +49,11 @@ const SKILLS_DATA = {
   Survival: { ability: "wisdom", description: "Follow tracks, hunt, guide others, avoid hazards" },
 } as const;
 
-export const SkillsPanel = memo(function SkillsPanel({
+export const SkillsPanel = memo(({
   character,
   isEditing,
   onUpdate,
-}: SkillsPanelProps): JSX.Element {
+}: SkillsPanelProps): JSX.Element => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterBy, setFilterBy] = useState<"all" | "proficient" | "expertise">("all");
 
@@ -67,13 +67,13 @@ export const SkillsPanel = memo(function SkillsPanel({
 
   const getSkillModifier = (skillName: string): number => {
     const skillData = SKILLS_DATA[skillName as keyof typeof SKILLS_DATA];
-    if (!skillData) return 0;
+    if (!skillData) {return 0;}
 
     const abilityScore = character.abilities[skillData.ability as keyof Character["abilities"]];
     const baseModifier = getModifier(abilityScore);
     const skill = character.skills[skillName];
 
-    if (!skill) return baseModifier;
+    if (!skill) {return baseModifier;}
 
     let modifier = baseModifier;
     if (skill.proficient) {
@@ -111,7 +111,7 @@ export const SkillsPanel = memo(function SkillsPanel({
       expertise: false,
       value: 0,
     };
-    if (!currentSkill.proficient) return; // Can't have expertise without proficiency
+    if (!currentSkill.proficient) {return;} // Can't have expertise without proficiency
 
     const newSkills = {
       ...character.skills,
@@ -258,7 +258,7 @@ export const SkillsPanel = memo(function SkillsPanel({
                   {/* Skill Info */}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-text-primary">{skillName}</h4>
+                      <h4 className="font-medium text-primary">{skillName}</h4>
                       <span className="text-xs text-text-tertiary bg-bg-primary px-2 py-1 rounded">
                         {abilityName}
                       </span>
@@ -268,7 +268,7 @@ export const SkillsPanel = memo(function SkillsPanel({
 
                   {/* Modifier */}
                   <div className="text-right">
-                    <div className="font-mono text-lg font-bold text-text-primary">
+                    <div className="font-mono text-lg font-bold text-primary">
                       {formatModifier(modifier)}
                     </div>
                     {skill.proficient && (
@@ -287,7 +287,7 @@ export const SkillsPanel = memo(function SkillsPanel({
       {filteredSkills.length === 0 && (
         <div className="text-center py-8">
           <Circle className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">No Skills Found</h3>
+          <h3 className="text-lg font-medium text-primary mb-2">No Skills Found</h3>
           <p className="text-text-secondary">
             {searchTerm
               ? `No skills match "${searchTerm}"`
@@ -300,10 +300,10 @@ export const SkillsPanel = memo(function SkillsPanel({
 
       {/* Skills Summary */}
       <div className="bg-bg-tertiary rounded-lg border border-border-primary p-4 mt-6">
-        <h4 className="font-medium text-text-primary mb-3">Skills Summary</h4>
+        <h4 className="font-medium text-primary mb-3">Skills Summary</h4>
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
-            <div className="text-2xl font-bold text-text-primary">
+            <div className="text-2xl font-bold text-primary">
               {Object.values(character.skills).filter((skill) => skill.proficient).length}
             </div>
             <div className="text-sm text-text-secondary">Proficient</div>
@@ -315,7 +315,7 @@ export const SkillsPanel = memo(function SkillsPanel({
             <div className="text-sm text-text-secondary">Expertise</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-text-primary">
+            <div className="text-2xl font-bold text-primary">
               {Object.keys(SKILLS_DATA).length}
             </div>
             <div className="text-sm text-text-secondary">Total Skills</div>

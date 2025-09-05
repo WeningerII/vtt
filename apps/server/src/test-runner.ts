@@ -33,7 +33,7 @@ class SimpleTestRunner {
   private findFiles(dir: string, include: RegExp, exclude?: RegExp): string[] {
     const files: string[] = [];
 
-    if (!existsSync(dir)) return files;
+    if (!existsSync(dir)) {return files;}
 
     const items = readdirSync(dir);
 

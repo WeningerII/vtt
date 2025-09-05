@@ -61,7 +61,7 @@ export class PerformanceProfilerImpl implements PerformanceProfiler {
   }
 
   getMemoryDelta(): MemoryMeasurement | null {
-    if (!this.memoryStart || !(performance as any).memory) return null;
+    if (!this.memoryStart || !(performance as any).memory) {return null;}
     
     const current = (performance as any).memory;
     return {
@@ -151,7 +151,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
 
   private startGCTracking(): void {
     try {
-      this.gcObserver = new PerformanceObserver((_list) => {
+      this.gcObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           if (entry.entryType === 'gc') {
             this.emit('gc_detected', {
@@ -217,11 +217,11 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
   /**
    * Measure a synchronous operation
    */
-  measure<T>(name: string, _fn: () => T): T {
+  measure<T>(name: string, callback: () => T): T {
     const profiler = this.startProfiler(name);
     
     try {
-      const result = fn();
+      const result = callback();
       this.endProfiling(profiler);
       return result;
     } catch (error) {
@@ -233,11 +233,11 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
   /**
    * Measure an asynchronous operation
    */
-  async measureAsync<T>(name: string, _fn: () => Promise<T>): Promise<T> {
+  async measureAsync<T>(name: string, callback: () => Promise<T>): Promise<T> {
     const profiler = this.startProfiler(name);
     
     try {
-      const result = await fn();
+      const result = await callback();
       this.endProfiling(profiler);
       return result;
     } catch (error) {
@@ -279,7 +279,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
   /**
    * Track FPS
    */
-  trackFPS(_fps: number, _frameTime: number): void {
+  trackFPS(fps: number, frameTime: number): void {
     this.endFrame();
   }
 
@@ -288,20 +288,20 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
    */
   getStats(): PerformanceStats {
     const durations = this.measurements.map(m => m.duration);
-    const sortedDurations = durations.sort((_a, __b) => a - b);
+    const sortedDurations = durations.sort((a, b) => a - b);
     const frameTimes = this.frameTimes.length > 0 ? this.frameTimes : [0];
     
     return {
       totalMeasurements: this.measurements.length,
-      averageDuration: durations.length > 0 ? durations.reduce((_a, __b) => a + b, 0) / durations.length : 0,
-      averageFrameTime: frameTimes.reduce((_a, __b) => a + b, 0) / frameTimes.length,
+      averageDuration: durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
+      averageFrameTime: frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length,
       minDuration: durations.length > 0 ? Math.min(...durations) : 0,
       maxDuration: durations.length > 0 ? Math.max(...durations) : 0,
       p50: sortedDurations[Math.floor(sortedDurations.length * 0.5)] || 0,
       p95: sortedDurations[Math.floor(sortedDurations.length * 0.95)] || 0,
       p99: sortedDurations[Math.floor(sortedDurations.length * 0.99)] || 0,
       counters: Object.fromEntries(this.counters),
-      gauges: Record<string, any>
+      gauges: {} as Record<string, any>
     };
   }
 
@@ -332,7 +332,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
    * Increment a counter
    */
   incrementCounter(name: string, tags?: Record<string, string>): void {
-    const key = tags ? `${name}:${Object.entries(tags).map([k, _v] => `${k}=${v}`).join(',')}` : name;
+    const key = tags ? `${name}:${Object.entries(tags).map(([k, v]) => `${k}=${v}`).join(',')}` : name;
     const current = this.counters.get(key) || 0;
     this.counters.set(key, current + 1);
   }
@@ -348,7 +348,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
    * End frame timing and track FPS
    */
   endFrame(): void {
-    if (this.frameStartTime === 0) return;
+    if (this.frameStartTime === 0) {return;}
     
     const frameTime = performance.now() - this.frameStartTime;
     this.frameTimes.push(frameTime);
@@ -416,7 +416,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
    * Start memory monitoring
    */
   startMemoryMonitoring(): void {
-    if (this.isMonitoringMemory) return;
+    if (this.isMonitoringMemory) {return;}
     
     this.isMonitoringMemory = true;
     
@@ -533,7 +533,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
     if (this.config.enableGCTracking && typeof PerformanceObserver !== 'undefined') {
       try {
         this.gcObserver = new PerformanceObserver((_list) => {
-          const entries = list.getEntries();
+          const entries = _list.getEntries();
           for (const entry of entries) {
             if (entry.entryType === 'measure' && entry.name.includes('gc')) {
               this.recordMetric('garbage_collection', entry.duration, {
@@ -545,7 +545,7 @@ export class PerformanceMonitorImpl extends EventEmitter<PerformanceEvents> impl
         
         this.gcObserver.observe({ entryTypes: ['measure', 'navigation', 'paint'] });
       } catch (error) {
-        logger.warn('Failed to initialize performance observer:', error);
+        logger.warn('Failed to initialize performance observer:', error as Record<string, any>);
       }
     }
   }

@@ -118,7 +118,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({
 
       setGames(mockGames);
     } catch (error) {
-      logger.error("Failed to load games:", error);
+      logger.error("Failed to load games:", error as any);
     } finally {
       setLoading(false);
     }
@@ -142,7 +142,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({
     })
     .filter((game) => {
       // Apply search
-      if (!searchTerm) return true;
+      if (!searchTerm) {return true;}
       const search = searchTerm.toLowerCase();
       return (
         game.name.toLowerCase().includes(search) ||
@@ -167,7 +167,7 @@ export const GameLobby: React.FC<GameLobbyProps> = ({
       ended: "Ended",
     };
 
-    return <span className={`status-badge ${statusClasses[status]}`}>{statusLabels[status]}</span>;
+    return <span className={`status-badge ${statusClasses[_status]}`}>{statusLabels[_status]}</span>;
   };
 
   const canJoinGame = (game: GameSession) => {

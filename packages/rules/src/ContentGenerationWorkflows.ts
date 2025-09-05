@@ -108,7 +108,7 @@ export class ContentGenerationWorkflowEngine {
    */
   async evaluateContentRule(ruleId: string, context: RuleContext): Promise<void> {
     const rule = this.contentRules.get(ruleId);
-    if (!rule) return;
+    if (!rule) {return;}
 
     // Check cooldown
     if (rule.cooldown) {
@@ -327,7 +327,7 @@ export class ContentGenerationWorkflowEngine {
   ): Promise<boolean> {
     for (const condition of trigger.conditions) {
       const result = await this.ruleEngine.evaluateCondition(condition, { ...context, eventData });
-      if (!result) return false;
+      if (!result) {return false;}
     }
     return true;
   }

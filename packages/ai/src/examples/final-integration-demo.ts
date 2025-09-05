@@ -182,7 +182,7 @@ class FinalNPCManager {
     }
     const hist = this.history.get(npcId)!;
     hist.push(entry);
-    if (hist.length > 20) hist.shift();
+    if (hist.length > 20) {hist.shift();}
   }
 
   getMetrics() {
@@ -324,7 +324,7 @@ async function runFinalDemo(): Promise<void> {
     const metrics = npcManager.getMetrics();
     console.log(JSON.stringify(metrics, null, 2));
 
-    console.log('\n' + '=' .repeat(60));
+    console.log(`\n${  '=' .repeat(60)}`);
     console.log('✅ Final Integration Demo Complete!');
     console.log('\n🎉 Successfully Demonstrated:');
     console.log('• Dynamic NPC behavior generation with context awareness');

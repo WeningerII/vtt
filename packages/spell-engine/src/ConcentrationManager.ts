@@ -85,7 +85,7 @@ export class ConcentrationManager extends EventEmitter {
    */
   endConcentration(casterId: string, reason: string): boolean {
     const concentration = this.concentratingCasters.get(casterId);
-    if (!concentration) return false;
+    if (!concentration) {return false;}
 
     // Remove effects
     const effects = this.concentrationEffects.get(concentration.id) || [];
@@ -109,7 +109,7 @@ export class ConcentrationManager extends EventEmitter {
     damage?: number,
   ): ConcentrationCheck | null {
     const concentration = this.concentratingCasters.get(casterId);
-    if (!concentration) return null;
+    if (!concentration) {return null;}
 
     let dc = 10;
 
@@ -184,7 +184,7 @@ export class ConcentrationManager extends EventEmitter {
     proficiencyBonus: number = 0,
   ): boolean {
     const check = this.checkQueue[checkIndex];
-    if (!check) return false;
+    if (!check) {return false;}
 
     const totalRoll = constitutionSave + proficiencyBonus;
     const success = totalRoll >= check.dc;

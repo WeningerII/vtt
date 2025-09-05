@@ -19,5 +19,8 @@
     "dist",
     "src/**/*.test.ts",
     "src/__tests__/**/*"
+  ],
+  "references": [
+    { "path": "../logging" }
   ]
 }

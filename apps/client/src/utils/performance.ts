@@ -1,8 +1,24 @@
 /**
- * Performance monitoring utilities for React components and application metrics
+ * VTT Performance Monitoring and Core Web Vitals Tracking
+ * Enhanced with comprehensive performance monitoring for the VTT application
  */
 
 import React, { useEffect, useRef, useState, type ComponentType } from "react";
+
+// Core Web Vitals interfaces
+interface CoreWebVitals {
+  lcp: number | null; // Largest Contentful Paint
+  fid: number | null; // First Input Delay
+  cls: number | null; // Cumulative Layout Shift
+  fcp: number | null; // First Contentful Paint
+  ttfb: number | null; // Time to First Byte
+}
+
+interface VTTPerformanceMetrics extends PerformanceMetrics {
+  webVitals?: Partial<CoreWebVitals>;
+  frameRate?: number;
+  memoryPressure?: 'low' | 'medium' | 'high';
+}
 
 // Performance metrics interface
 interface PerformanceMetrics {
@@ -42,7 +58,7 @@ class PerformanceMonitor {
 
   getAverageRenderTime(componentName: string): number {
     const componentMetrics = this.getMetrics(componentName);
-    if (componentMetrics.length === 0) return 0;
+    if (componentMetrics.length === 0) {return 0;}
 
     const totalTime = componentMetrics.reduce((sum, metric) => sum + metric.renderTime, 0);
     return totalTime / componentMetrics.length;
@@ -131,7 +147,7 @@ export function useRenderPerformance(componentName: string, props?: any) {
 // Hook for detecting memory leaks
 export function useMemoryLeak(componentName: string) {
   const [memoryUsage, setMemoryUsage] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (
@@ -237,10 +253,10 @@ export function PerformanceDashboard() {
       }
 
       const stat = stats[metric.componentName];
-      if (stat) stat.count++;
-      if (stat) stat.totalTime += metric.renderTime;
-      if (stat) stat.maxTime = Math.max(stat.maxTime, metric.renderTime);
-      if (stat) stat.minTime = Math.min(stat.minTime, metric.renderTime);
+      if (stat) {stat.count++;}
+      if (stat) {stat.totalTime += metric.renderTime;}
+      if (stat) {stat.maxTime = Math.max(stat.maxTime, metric.renderTime);}
+      if (stat) {stat.minTime = Math.min(stat.minTime, metric.renderTime);}
 
       return stats;
     },

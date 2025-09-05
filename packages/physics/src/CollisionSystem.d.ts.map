@@ -1,1 +1,1 @@
-{"version":3,"file":"CollisionSystem.d.ts","sourceRoot":"","sources":["CollisionSystem.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,eAAe,CAAC;AAE3C;;;;;;;;;;GAUG;AACH,qBAAa,eAAe;IAC1B,MAAM,CAAC,KAAK,EAAE,KAAK,GAAG,IAAI;CAwC3B"}
+{"version":3,"file":"CollisionSystem.d.ts","sourceRoot":"","sources":["CollisionSystem.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,eAAe,CAAC;AAE3C;;;GAGG;AACH,qBAAa,eAAe;IAC1B,MAAM,CAAC,KAAK,EAAE,KAAK,GAAG,IAAI;CAK3B"}

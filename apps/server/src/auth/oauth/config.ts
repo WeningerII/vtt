@@ -71,7 +71,7 @@ export class OAuthManager {
                   ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
                   : undefined,
                 accessToken,
-                refreshToken: refreshToken,
+                refreshToken,
               };
 
               const user = await this.handleOAuthLogin(oauthProfile);
@@ -105,7 +105,7 @@ export class OAuthManager {
                 displayName: profile.displayName,
                 avatar: profile.photos?.[0]?.value,
                 accessToken,
-                refreshToken: refreshToken,
+                refreshToken,
               };
 
               const user = await this.handleOAuthLogin(oauthProfile);

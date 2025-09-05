@@ -107,7 +107,7 @@ export class ActionSystem {
    */
   canUseAction(entityId: string, actionType: ActionType): boolean {
     const resources = this.actionResources.get(entityId);
-    if (!resources) return false;
+    if (!resources) {return false;}
 
     const resource = resources.find((r) => r.type === actionType);
     return resource ? !resource.used : false;
@@ -118,10 +118,10 @@ export class ActionSystem {
    */
   useAction(entityId: string, actionType: ActionType): boolean {
     const resources = this.actionResources.get(entityId);
-    if (!resources) return false;
+    if (!resources) {return false;}
 
     const resource = resources.find((r) => r.type === actionType);
-    if (!resource || resource.used) return false;
+    if (!resource || resource.used) {return false;}
 
     resource.used = true;
     return true;
@@ -356,7 +356,7 @@ export class ActionSystem {
    * Check if attack roll is a critical hit
    */
   private isCriticalHit(attackRoll: RollResult, criticalRange: number = 20): boolean {
-    if (attackRoll.rolls.length === 0) return false;
+    if (attackRoll.rolls.length === 0) {return false;}
     const naturalRoll = attackRoll.rolls[0];
     return naturalRoll !== undefined && naturalRoll >= criticalRange;
   }
@@ -380,7 +380,7 @@ export class ActionSystem {
    */
   hasUsedAction(entityId: string, actionType: ActionType): boolean {
     const resources = this.actionResources.get(entityId);
-    if (!resources) return false;
+    if (!resources) {return false;}
 
     const resource = resources.find((r) => r.type === actionType);
     return resource ? resource.used : false;

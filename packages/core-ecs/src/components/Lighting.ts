@@ -158,7 +158,7 @@ export class LightingStore {
 
     // Calculate contribution from all light sources
     for (const { light } of this.getAllLightSources()) {
-      if (!light.enabled) continue;
+      if (!light.enabled) {continue;}
 
       // This is a simplified calculation - in a real implementation,
       // you'd need the actual position of the light source

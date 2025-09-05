@@ -136,7 +136,7 @@ export class FogOfWarManager {
     y4: number,
   ): { x: number; y: number } | null {
     const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    if (Math.abs(denom) < 0.0001) return null;
+    if (Math.abs(denom) < 0.0001) {return null;}
 
     const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
     const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
@@ -260,7 +260,7 @@ export class FogOfWarManager {
    * Check if a point is in explored area
    */
   isPointExplored(x: number, y: number): boolean {
-    if (!this.settings.enabled) return true;
+    if (!this.settings.enabled) {return true;}
 
     for (const area of this.exploredAreas.values()) {
       if (this.pointInPolygon(x, y, area.points)) {
@@ -293,7 +293,7 @@ export class FogOfWarManager {
    * Update vision for all sources and auto-reveal areas
    */
   updateVision(): void {
-    if (!this.settings.enabled || !this.settings.autoReveal) return;
+    if (!this.settings.enabled || !this.settings.autoReveal) {return;}
 
     for (const source of this.visionSources.values()) {
       const visionPolygon = this.calculateVisionPolygon(source.id);
@@ -327,10 +327,10 @@ export class FogOfWarManager {
    */
   canTokenSeeToken(fromTokenId: string, toX: number, toY: number): boolean {
     const source = Array.from(this.visionSources.values()).find((s) => s.tokenId === fromTokenId);
-    if (!source) return false;
+    if (!source) {return false;}
 
     const distance = Math.sqrt((toX - source.x) ** 2 + (toY - source.y) ** 2);
-    if (distance > source.radius) return false;
+    if (distance > source.radius) {return false;}
 
     const lineOfSight = this.calculateLineOfSight(source.x, source.y, toX, toY);
     return lineOfSight.visible;
@@ -346,7 +346,7 @@ export class FogOfWarManager {
     const visibleTokenIds: string[] = [];
 
     for (const token of allTokens) {
-      if (token.id === fromTokenId) continue;
+      if (token.id === fromTokenId) {continue;}
 
       if (this.canTokenSeeToken(fromTokenId, token.x, token.y)) {
         visibleTokenIds.push(token.id);

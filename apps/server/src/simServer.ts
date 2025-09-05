@@ -39,17 +39,17 @@ function tick(_dt: number) {
   for (const id of ids) {
     const x = w.transforms.x[id],
       y = w.transforms.y[id];
-    if (x < -BOUNDS || x > BOUNDS) w.movement.vx[id] = -w.movement.vx[id];
-    if (y < -BOUNDS || y > BOUNDS) w.movement.vy[id] = -w.movement.vy[id];
+    if (x < -BOUNDS || x > BOUNDS) {w.movement.vx[id] = -w.movement.vx[id];}
+    if (y < -BOUNDS || y > BOUNDS) {w.movement.vy[id] = -w.movement.vy[id];}
   }
   const now = Date.now();
   for (const c of clients) {
-    if (c.ws.readyState !== c.ws.OPEN) continue;
+    if (c.ws.readyState !== c.ws.OPEN) {continue;}
     const visible = [];
     let sent = 0;
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
-      if (!aoiFilter(c, id)) continue;
+      if (!aoiFilter(c, id)) {continue;}
       visible.push({
         id,
         x: +w.transforms.x[id].toFixed(2),
@@ -57,7 +57,7 @@ function tick(_dt: number) {
         size: w.appearance?.size?.[id] ?? 10,
         color: w.appearance.color[id] || "hsl(200 70% 60%)",
       });
-      if (++sent >= 2500) break;
+      if (++sent >= 2500) {break;}
     }
     c.ws.send(JSON.stringify({ type: "SNAPSHOT", t: now, ents: visible }));
   }

@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from "events";
-import { AssetManager, _AssetMetadata } from "./AssetManager";
+import { AssetManager, AssetMetadata } from "./AssetManager";
 import { Scene } from "./ContentEditor";
 
 export interface Character {
@@ -372,7 +372,7 @@ export class CampaignBuilder extends EventEmitter {
 
   updateCharacter(characterId: string, updates: Partial<Character>): void {
     const character = this.campaign.characters.find((c) => c.id === characterId);
-    if (!character) return;
+    if (!character) {return;}
 
     Object.assign(character, updates, { modified: new Date() });
     this.updateCampaign({});
@@ -381,7 +381,7 @@ export class CampaignBuilder extends EventEmitter {
 
   removeCharacter(characterId: string): void {
     const index = this.campaign.characters.findIndex((c) => c.id === characterId);
-    if (index === -1) return;
+    if (index === -1) {return;}
 
     const character = this.campaign.characters[index];
     this.campaign.characters.splice(index, 1);
@@ -406,7 +406,7 @@ export class CampaignBuilder extends EventEmitter {
 
   updateQuestStatus(questId: string, status: Quest["status"]): void {
     const quest = this.campaign.quests.find((q) => q.id === questId);
-    if (!quest) return;
+    if (!quest) {return;}
 
     quest.status = status;
     quest.modified = new Date();
@@ -416,10 +416,10 @@ export class CampaignBuilder extends EventEmitter {
 
   completeQuestObjective(questId: string, objectiveId: string): void {
     const quest = this.campaign.quests.find((q) => q.id === questId);
-    if (!quest) return;
+    if (!quest) {return;}
 
     const objective = quest.objectives.find((o) => o.id === objectiveId);
-    if (!objective) return;
+    if (!objective) {return;}
 
     objective.completed = true;
     quest.modified = new Date();
@@ -462,7 +462,7 @@ export class CampaignBuilder extends EventEmitter {
     const location1 = this.campaign.locations.find((l) => l.id === locationId1);
     const location2 = this.campaign.locations.find((l) => l.id === locationId2);
 
-    if (!location1 || !location2) return;
+    if (!location1 || !location2) {return;}
 
     // Add connection from location1 to location2
     location1.connections.push({
@@ -509,7 +509,7 @@ export class CampaignBuilder extends EventEmitter {
     const faction1 = this.campaign.factions.find((f) => f.id === factionId1);
     const faction2 = this.campaign.factions.find((f) => f.id === factionId2);
 
-    if (!faction1 || !faction2) return;
+    if (!faction1 || !faction2) {return;}
 
     // Remove existing relationships
     faction1.allies = faction1.allies.filter((id) => id !== factionId2);
@@ -576,7 +576,7 @@ export class CampaignBuilder extends EventEmitter {
     };
 
     this.campaign.timeline.push(event);
-    this.campaign.timeline.sort((_a, _b) => a.date.localeCompare(b.date));
+    this.campaign.timeline.sort((_a, _b) => _a.date.localeCompare(_b.date));
     this.updateCampaign({});
     this.emit("timelineEventAdded", event);
   }
@@ -754,23 +754,23 @@ export class CampaignBuilder extends EventEmitter {
         total: this.campaign.locations.length,
         byType: this.groupBy(this.campaign.locations, "type"),
         connections:
-          this.campaign.locations.reduce((_sum, _loc) => sum + loc.connections.length, 0) / 2,
+          this.campaign.locations.reduce((_sum, _loc) => _sum + _loc.connections.length, 0) / 2,
       },
       factions: {
         total: this.campaign.factions.length,
         byType: this.groupBy(this.campaign.factions, "type"),
         relationships: {
-          allies: this.campaign.factions.reduce((_sum, _f) => sum + f.allies.length, 0) / 2,
-          enemies: this.campaign.factions.reduce((_sum, _f) => sum + f.enemies.length, 0) / 2,
-          neutral: this.campaign.factions.reduce((_sum, _f) => sum + f.neutrals.length, 0) / 2,
+          allies: this.campaign.factions.reduce((_sum, _f) => _sum + _f.allies.length, 0) / 2,
+          enemies: this.campaign.factions.reduce((_sum, _f) => _sum + _f.enemies.length, 0) / 2,
+          neutral: this.campaign.factions.reduce((_sum, _f) => _sum + _f.neutrals.length, 0) / 2,
         },
       },
       sessions: {
         total: this.campaign.sessions.length,
-        totalDuration: this.campaign.sessions.reduce((_sum, _s) => sum + s.duration, 0),
+        totalDuration: this.campaign.sessions.reduce((_sum, _s) => _sum + _s.duration, 0),
         averageDuration:
           this.campaign.sessions.length > 0
-            ? this.campaign.sessions.reduce((_sum, _s) => sum + s.duration, 0) /
+            ? this.campaign.sessions.reduce((_sum, _s) => _sum + _s.duration, 0) /
               this.campaign.sessions.length
             : 0,
       },

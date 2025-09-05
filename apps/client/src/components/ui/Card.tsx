@@ -7,15 +7,15 @@ import { cn } from '../../lib/utils';
 
 const cardVariants = cva(
   [
-    'rounded-xl bg-white transition-all duration-200',
-    'border border-neutral-200'
+    'rounded-xl bg-white/5 backdrop-blur-md transition-all duration-200',
+    'border border-white/10'
   ],
   {
     variants: {
       variant: {
-        default: 'shadow-sm hover:shadow-md',
-        elevated: 'shadow-lg hover:shadow-xl',
-        outline: 'border-2 shadow-none hover:border-neutral-300',
+        default: 'shadow-sm hover:shadow-md hover:bg-white/10',
+        elevated: 'shadow-lg hover:shadow-xl hover:bg-white/10',
+        outline: 'border-2 shadow-none hover:border-white/20',
         ghost: 'border-none shadow-none bg-transparent'
       },
       padding: {
@@ -68,7 +68,7 @@ const CardTitle = forwardRef<
 >(({ className, children, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn('font-semibold text-xl text-neutral-900 leading-none tracking-tight', className)}
+    className={cn('font-semibold text-xl text-white leading-none tracking-tight', className)}
     {...props}
   >
     {children}
@@ -82,7 +82,7 @@ const CardDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn('text-sm text-neutral-600 leading-relaxed', className)}
+    className={cn('text-sm text-gray-300 leading-relaxed', className)}
     {...props}
   />
 ));

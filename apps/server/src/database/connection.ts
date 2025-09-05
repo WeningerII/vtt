@@ -47,7 +47,7 @@ class DatabaseManager {
   }
 
   static async connect(): Promise<void> {
-    if (DatabaseManager.isConnected || DatabaseManager.isMock) return;
+    if (DatabaseManager.isConnected || DatabaseManager.isMock) {return;}
 
     try {
       const prisma = DatabaseManager.getInstance();
@@ -61,8 +61,8 @@ class DatabaseManager {
   }
 
   static async disconnect(): Promise<void> {
-    if (DatabaseManager.isMock) return;
-    if (!DatabaseManager.isConnected || !DatabaseManager.instance) return;
+    if (DatabaseManager.isMock) {return;}
+    if (!DatabaseManager.isConnected || !DatabaseManager.instance) {return;}
 
     try {
       await DatabaseManager.instance.$disconnect();
@@ -75,7 +75,7 @@ class DatabaseManager {
 
   static async healthCheck(): Promise<boolean> {
     try {
-      if (DatabaseManager.isMock) return true;
+      if (DatabaseManager.isMock) {return true;}
       const prisma = DatabaseManager.getInstance();
       await prisma.$queryRaw`SELECT 1`;
       return true;

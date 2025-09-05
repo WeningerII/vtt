@@ -376,7 +376,7 @@ describe("GridManager", () => {
 
       gridManager.on("coordinatesCalculated", () => {
         eventCount++;
-        if (eventCount === 2) done();
+        if (eventCount === 2) {done();}
       });
 
       gridManager.snapToGrid({ x: 100, y: 100 });

@@ -37,6 +37,8 @@ export class MonsterService {
     // Clear monster cache since we're doing bulk updates
     cacheManager.clearAll();
 
+    // Use imported SRD monsters
+    
     for (const monster of SRDMonsters) {
       const stableId = monster.id;
       const existedBefore = await this.prisma.monster.findUnique({
@@ -172,9 +174,9 @@ export class MonsterService {
     }
 
     const data: any = {};
-    if (request.name !== undefined) data.name = request.name;
-    if (request.statblock !== undefined) data.statblock = request.statblock;
-    if (request.tags !== undefined) data.tags = request.tags;
+    if (request.name !== undefined) {data.name = request.name;}
+    if (request.statblock !== undefined) {data.statblock = request.statblock;}
+    if (request.tags !== undefined) {data.tags = request.tags;}
 
     const updatedMonster = await this.prisma.monster.update({
       where: { id: monster.id },

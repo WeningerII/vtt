@@ -225,7 +225,7 @@ export class CombatWebSocketManager {
     const { encounterId, actorId, health } = message.payload;
 
     try {
-      await this.actorService.updateActorHealth(actorId, health);
+      await this.actorService.updateActorHealth(encounterId, actorId, health);
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
@@ -316,8 +316,8 @@ export class CombatWebSocketManager {
     const { encounterId, actorId } = message.payload;
 
     try {
-      // Remove actor from encounter
-      // await this.actorService.removeActorFromEncounter(encounterId, actorId);
+      // Remove token from encounter
+      await this.actorService.removeTokenFromEncounter(encounterId, actorId);
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
@@ -341,8 +341,15 @@ export class CombatWebSocketManager {
     const { encounterId, actorId, initiative } = message.payload;
 
     try {
-      // Update actor initiative
-      // await this.actorService.updateActorInitiative(encounterId, actorId, initiative);
+      // Update token initiative through CombatManager if active
+      const encounter = await this.actorService.getEncounter(encounterId);
+      if (encounter?.isActive) {
+        // If combat is active, the CombatManager should handle this
+        logger.info(`Initiative update for active combat ${encounterId} - this should be handled by CombatManager`);
+      } else {
+        // Update database directly for planning phase
+        await this.actorService.updateTokenInitiative(encounterId, actorId, initiative);
+      }
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
@@ -366,15 +373,18 @@ export class CombatWebSocketManager {
     const { encounterId } = message.payload;
 
     try {
-      // Advance to next turn
-      // const nextActor = await this.actorService.advanceToNextTurn(encounterId);
-
-      const encounter = await this.actorService.getEncounter(encounterId);
+      // Advance to next turn via CombatManager integration
+      const turnData = await this.actorService.nextTurn(encounterId);
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
         type: "TURN_ADVANCED",
-        payload: { encounter, advancedBy: userId },
+        payload: { 
+          currentTurn: turnData?.currentTurn,
+          currentRound: turnData?.currentRound,
+          currentCombatant: turnData?.currentCombatant,
+          advancedBy: userId 
+        },
       });
     } catch (error) {
       logger.error("Next turn error:", error as Error);
@@ -393,8 +403,8 @@ export class CombatWebSocketManager {
     const { encounterId, actorId, condition } = message.payload;
 
     try {
-      // Apply condition to actor
-      // await this.actorService.applyConditionToActor(encounterId, actorId, condition);
+      // Apply condition via CombatManager if combat is active
+      await this.actorService.applyCondition(encounterId, actorId, condition.name, condition.duration, `Applied by ${userId}`);
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
@@ -415,16 +425,16 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorId, conditionId } = message.payload;
+    const { encounterId, actorId, condition } = message.payload;
 
     try {
-      // Remove condition from actor
-      // await this.actorService.removeConditionFromActor(encounterId, actorId, conditionId);
+      // Remove condition via CombatManager if combat is active
+      await this.actorService.removeCondition(encounterId, actorId, condition.name || condition);
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
         type: "CONDITION_REMOVED",
-        payload: { actorId, conditionId, removedBy: userId },
+        payload: { actorId, condition, removedBy: userId },
       });
     } catch (error) {
       logger.error("Remove condition error:", error as Error);
@@ -437,7 +447,7 @@ export class CombatWebSocketManager {
    */
   private broadcastToEncounter(encounterId: string, message: CombatWebSocketMessage): void {
     const subscriptions = this.subscriptions.get(encounterId);
-    if (!subscriptions) return;
+    if (!subscriptions) {return;}
 
     subscriptions.forEach((subscription) => {
       if (subscription.ws.readyState === WebSocket.OPEN) {

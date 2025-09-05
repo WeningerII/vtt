@@ -12,9 +12,9 @@ export * from './providers/google-gemini';
 export * from './providers/azure-openai';
 export * from './providers/CircuitBreakerProvider';
 
-// Legacy provider implementations (for backward compatibility)
-export * from './providers/openai';
-export * from './providers/anthropic';
+// Legacy provider implementations (for backward compatibility) - avoid conflicts
+export { OpenAIProvider as LegacyOpenAIProvider } from './providers/openai';
+export { AnthropicProvider as LegacyAnthropicProvider } from './providers/anthropic';
 export * from './providers/stability';
 
 // Model mapping and intelligent routing
@@ -33,6 +33,9 @@ export * from './ContentGenerator';
 export * from './Agent';
 export * from './npc/AIEntity';
 export * from './NPCBehaviorSystem';
+
+// AI Engine and stubs for missing components - avoid conflicts with NPCBehaviorSystem
+export { AIBehaviorEngine, BehaviorTreeNode } from './ai-stubs';
 
 // Pathfinding and spatial AI
 export * from './Pathfinding';
@@ -54,9 +57,12 @@ export { VisionAIIntegration } from './VisionAIIntegration';
 export { AIContentCache } from './AIContentCache';
 export { UnifiedAISystem } from './UnifiedAISystem';
 
-// Type-Safe AI Integration (Production Ready)
+// Type-Safe AI Integration (Production Ready) - avoid conflicts
 export { TypeSafeDynamicNPCManager } from './TypeSafeDynamicNPCManager';
-export * from './types/AIIntegration';
+export { 
+  ProviderMetrics as AIProviderMetrics,
+  ActionResult as AIActionResult
+} from './types/AIIntegration';
 
 // Production examples and utilities
 export * from './examples/production-setup';
@@ -149,7 +155,7 @@ export class AIRegistry {
     const availableProviders = this.list().map(p => p.name);
     const category = this.modelMapper.getBestCategoryForTask(requiredCapabilities, constraints);
     
-    if (!category) return null;
+    if (!category) {return null;}
     
     const preferredProviders = this.modelMapper.getProviderPreference(
       category,
@@ -200,14 +206,14 @@ export class AIRouter {
       .byCapability(cap)
       .filter((p) => !(this.policy.forbid ?? []).includes(p.name));
 
-    if (candidates.length === 0) throw new Error(`No providers registered with capability ${cap}`);
+    if (candidates.length === 0) {throw new Error(`No providers registered with capability ${cap}`);}
 
     const preferred = (this.policy.preferred ?? []).find((n) =>
       candidates.some((c) => c.name === n),
     );
     if (preferred) {
       const found = candidates.find((c) => c.name === preferred);
-      if (found) return found;
+      if (found) {return found;}
     }
 
     const weights = candidates.map((c) => ({
@@ -218,7 +224,7 @@ export class AIRouter {
     let r = Math.random() * total;
     for (const { p, w } of weights) {
       r -= w;
-      if (r <= 0) return p;
+      if (r <= 0) {return p;}
     }
     return candidates[0]!; // Safe because we checked candidates.length > 0 above
   }
@@ -226,15 +232,15 @@ export class AIRouter {
   // Enhanced routing methods for modern providers
   async generateText(req: TextGenerationRequest, ctx?: AIContext): Promise<TextGenerationResult> {
     const constraints: TaskConstraints = {};
-    if (ctx?.budgetUSD !== undefined) constraints.maxCost = ctx.budgetUSD;
-    if (ctx?.timeoutMs !== undefined) constraints.maxLatency = ctx.timeoutMs;
+    if (ctx?.budgetUSD !== undefined) {constraints.maxCost = ctx.budgetUSD;}
+    if (ctx?.timeoutMs !== undefined) {constraints.maxLatency = ctx.timeoutMs;}
     
     const provider = this.registry.getBestProviderForTask(['text'], constraints);
     
-    if (!provider) throw new Error('No suitable text generation provider available');
+    if (!provider) {throw new Error('No suitable text generation provider available');}
     
     const p = this.registry.get(provider);
-    if (!p?.generateText) throw new Error(`Provider ${provider} lacks text generation`);
+    if (!p?.generateText) {throw new Error(`Provider ${provider} lacks text generation`);}
     
     return p.generateText(req, ctx);
   }
@@ -242,10 +248,10 @@ export class AIRouter {
   async generateImage(req: ImageGenerationRequest, ctx?: AIContext): Promise<ImageGenerationResult> {
     const provider = this.registry.getBestProviderForTask(['image-generation']);
     
-    if (!provider) throw new Error('No suitable image generation provider available');
+    if (!provider) {throw new Error('No suitable image generation provider available');}
     
     const p = this.registry.get(provider);
-    if (!p?.generateImage) throw new Error(`Provider ${provider} lacks image generation`);
+    if (!p?.generateImage) {throw new Error(`Provider ${provider} lacks image generation`);}
     
     return p.generateImage(req, ctx);
   }
@@ -253,19 +259,19 @@ export class AIRouter {
   // Legacy methods for backward compatibility
   async textToImage(req: TextToImageRequest, ctx?: AIContext): Promise<TextToImageResult> {
     const p = this.pick("textToImage") as any;
-    if (!p.textToImage) throw new Error(`Provider ${p.name} lacks textToImage`);
+    if (!p.textToImage) {throw new Error(`Provider ${p.name} lacks textToImage`);}
     return p.textToImage(req, ctx);
   }
 
   async depth(req: DepthRequest, ctx?: AIContext): Promise<DepthResult> {
     const p = this.pick("depth") as any;
-    if (!p.depth) throw new Error(`Provider ${p.name} lacks depth`);
+    if (!p.depth) {throw new Error(`Provider ${p.name} lacks depth`);}
     return p.depth(req, ctx);
   }
 
   async segmentation(req: SegmentationRequest, ctx?: AIContext): Promise<SegmentationResult> {
     const p = this.pick("segmentation") as any;
-    if (!p.segmentation) throw new Error(`Provider ${p.name} lacks segmentation`);
+    if (!p.segmentation) {throw new Error(`Provider ${p.name} lacks segmentation`);}
     return p.segmentation(req, ctx);
   }
 }

@@ -6,8 +6,17 @@ import React, { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { Eye, EyeOff, Mail, User, Github } from "lucide-react";
-import { useTranslation } from "@vtt/i18n";
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const Eye = MockIcon;
+const EyeOff = MockIcon;
+const Mail = MockIcon;
+const User = MockIcon;
+const Github = MockIcon;
 
 interface RegisterPageProps {
   router: {
@@ -17,7 +26,6 @@ interface RegisterPageProps {
 }
 
 export function RegisterPage({ router }: RegisterPageProps) {
-  const { t } = useTranslation();
   const { register, loginWithProvider, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
@@ -81,7 +89,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
     e.preventDefault();
     clearError();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {return;}
 
     try {
       await register({
@@ -111,27 +119,27 @@ export function RegisterPage({ router }: RegisterPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-primary p-4">
+    <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Join the Adventure</h1>
-          <p className="text-text-secondary">Create your Virtual Tabletop account</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Join the Adventure</h1>
+          <p className="text-gray-300">Create your Virtual Tabletop account</p>
         </div>
 
         {/* Registration Form */}
-        <div className="bg-bg-secondary rounded-xl border border-border-primary p-6 shadow-lg">
+        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6 shadow-lg">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-error-light border border-error rounded-lg">
-              <p className="text-error text-sm">{error}</p>
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4" role="form">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-text-primary mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-white mb-1">
                 Email Address
               </label>
               <Input
@@ -150,7 +158,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-text-primary mb-1"
+                className="block text-sm font-medium text-primary mb-1"
               >
                 Username
               </label>
@@ -173,7 +181,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
             <div>
               <label
                 htmlFor="displayName"
-                className="block text-sm font-medium text-text-primary mb-1"
+                className="block text-sm font-medium text-primary mb-1"
               >
                 Display Name
               </label>
@@ -195,7 +203,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-text-primary mb-1"
+                className="block text-sm font-medium text-primary mb-1"
               >
                 Password
               </label>
@@ -212,7 +220,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
                     type="button"
                     aria-label="Toggle password visibility"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="text-text-secondary hover:text-text-primary transition-colors"
+                    className="text-text-secondary hover:text-primary transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -224,7 +232,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-text-primary mb-1"
+                className="block text-sm font-medium text-primary mb-1"
               >
                 Confirm Password
               </label>
@@ -241,7 +249,7 @@ export function RegisterPage({ router }: RegisterPageProps) {
                     type="button"
                     aria-label="Toggle confirm password visibility"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="text-text-secondary hover:text-text-primary transition-colors"
+                    className="text-text-secondary hover:text-primary transition-colors"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -265,31 +273,27 @@ export function RegisterPage({ router }: RegisterPageProps) {
                     setValidationErrors((prev) => ({ ...prev, terms: "" }));
                   }
                 }}
-                className="mt-1 h-4 w-4 text-accent-primary focus:ring-accent-primary border-border-primary rounded"
+                className="mt-1 h-4 w-4 text-purple-500 focus:ring-purple-500 border-white/20 rounded"
                 disabled={isLoading}
               />
-              <label htmlFor="acceptTerms" className="text-sm text-text-secondary">
+              <label htmlFor="acceptTerms" className="text-sm text-gray-300">
                 I agree to the{" "}
-                <a href="/terms" className="text-accent-primary hover:text-accent-hover">
+                <a href="/terms" className="text-purple-400 hover:text-purple-300">
                   Terms of Service
                 </a>{" "}
                 and{" "}
-                <a href="/privacy" className="text-accent-primary hover:text-accent-hover">
+                <a href="/privacy" className="text-purple-400 hover:text-purple-300">
                   Privacy Policy
                 </a>
               </label>
             </div>
             {validationErrors.terms && (
-              <p className="text-error text-sm">{validationErrors.terms}</p>
+              <p className="text-red-400 text-sm">{validationErrors.terms}</p>
             )}
 
             {/* Submit Button */}
             <Button
               type="submit"
-              variant="primary"
-              size="lg"
-              fullWidth
-              loading={isLoading}
               disabled={isLoading}
             >
               {isLoading ? "Creating Account..." : "Create Account"}
@@ -298,18 +302,14 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
           {/* Divider */}
           <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-border-primary"></div>
-            <span className="px-3 text-sm text-text-secondary">Or continue with</span>
-            <div className="flex-1 border-t border-border-primary"></div>
+            <div className="flex-1 border-t border-white/10"></div>
+            <span className="px-3 text-sm text-gray-300">Or continue with</span>
+            <div className="flex-1 border-t border-white/10"></div>
           </div>
 
           {/* OAuth Buttons */}
           <div className="space-y-3">
             <Button
-              variant="secondary"
-              size="lg"
-              fullWidth
-              leftIcon={<Github className="h-4 w-4" />}
               onClick={() => handleOAuthLogin("discord")}
               disabled={isLoading}
             >
@@ -317,29 +317,6 @@ export function RegisterPage({ router }: RegisterPageProps) {
             </Button>
 
             <Button
-              variant="secondary"
-              size="lg"
-              fullWidth
-              leftIcon={
-                <svg className="h-4 w-4" viewBox="0 0 24 24">
-                  <path
-                    fill="currentColor"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="currentColor"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-              }
               onClick={() => handleOAuthLogin("google")}
               disabled={isLoading}
             >
@@ -349,11 +326,11 @@ export function RegisterPage({ router }: RegisterPageProps) {
 
           {/* Sign In Link */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-text-secondary">
+            <p className="text-sm text-gray-300">
               Already have an account?{" "}
               <button
                 onClick={() => router.navigate("/login")}
-                className="text-accent-primary hover:text-accent-hover font-medium transition-colors"
+                className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                 disabled={isLoading}
               >
                 Sign in

@@ -307,7 +307,7 @@ export class AILearningSystem {
     let maxValue = 0;
 
     for (const [key, qValue] of this.qValues) {
-      if (key.startsWith(stateKey + ":")) {
+      if (key.startsWith(`${stateKey  }:`)) {
         maxValue = Math.max(maxValue, qValue.value);
       }
     }

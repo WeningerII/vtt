@@ -168,7 +168,7 @@ export class ScriptingEngine {
 
   public unloadScript(scriptId: string): boolean {
     const module = this.modules.get(scriptId);
-    if (!module) return false;
+    if (!module) {return false;}
 
     try {
       // Deactivate if active
@@ -201,7 +201,7 @@ export class ScriptingEngine {
 
   public activateScript(scriptId: string): boolean {
     const module = this.modules.get(scriptId);
-    if (!module || module.isActive) return false;
+    if (!module || module.isActive) {return false;}
 
     try {
       // Call onActivate if it exists
@@ -224,7 +224,7 @@ export class ScriptingEngine {
 
   public deactivateScript(scriptId: string): boolean {
     const module = this.modules.get(scriptId);
-    if (!module || !module.isActive) return false;
+    if (!module || !module.isActive) {return false;}
 
     try {
       // Call onDeactivate if it exists
@@ -357,7 +357,7 @@ export class ScriptingEngine {
 
   public async executeHook(hookName: string, data: any = {}): Promise<void> {
     const hookList = this.hooks.get(hookName);
-    if (!hookList) return;
+    if (!hookList) {return;}
 
     for (const hook of hookList) {
       try {
@@ -375,7 +375,7 @@ export class ScriptingEngine {
 
   private async executeScriptHook(scriptId: string, hookName: string, data: any): Promise<void> {
     const module = this.modules.get(scriptId);
-    if (!module || !module.isActive || !module.instance) return;
+    if (!module || !module.isActive || !module.instance) {return;}
 
     const hookMethod = `on${hookName.charAt(0).toUpperCase() + hookName.slice(1).replace(".", "")}`;
 
@@ -503,7 +503,7 @@ export class ScriptingEngine {
 
   public getScriptStats(scriptId: string) {
     const module = this.modules.get(scriptId);
-    if (!module) return null;
+    if (!module) {return null;}
 
     return {
       id: module.manifest.id,
@@ -580,7 +580,7 @@ export class ScriptEventSystem {
         try {
           listener.callback(data);
         } catch (error) {
-          logger.error(`Event listener error in script ${listener.scriptId}:`, error);
+          logger.error(`Event listener error in script ${listener.scriptId}:`, error as Record<string, any>);
         }
       }
     }
@@ -643,35 +643,35 @@ export class RestrictedGameAPI extends GameAPI {
     this.permissions = permissions;
   }
 
-  public getGameState(): any {
+  public override getGameState(): any {
     if (!this.permissions.canAccessGameState) {
       throw new Error("Permission denied: gamestate.read");
     }
     return this.baseAPI.getGameState();
   }
 
-  public getEntities(): Map<string, any> {
+  public override getEntities(): Map<string, any> {
     if (!this.permissions.canModifyEntities) {
       return new Map(); // Return empty map if no permission
     }
     return this.baseAPI.getEntities();
   }
 
-  public createEntity(data: any): string {
+  public override createEntity(data: any): string {
     if (!this.permissions.canModifyEntities) {
       throw new Error("Permission denied: entities.write");
     }
     return this.baseAPI.createEntity(data);
   }
 
-  public updateEntity(id: string, data: any): boolean {
+  public override updateEntity(id: string, data: any): boolean {
     if (!this.permissions.canModifyEntities) {
       throw new Error("Permission denied: entities.write");
     }
     return this.baseAPI.updateEntity(id, data);
   }
 
-  public deleteEntity(id: string): boolean {
+  public override deleteEntity(id: string): boolean {
     if (!this.permissions.canModifyEntities) {
       throw new Error("Permission denied: entities.write");
     }

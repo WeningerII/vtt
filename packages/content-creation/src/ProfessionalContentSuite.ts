@@ -580,7 +580,7 @@ export class ProfessionalContentSuite {
 
   updateAsset(id: string, updates: Partial<ContentAsset>): ContentAsset | null {
     const asset = this.assets.get(id);
-    if (!asset) return null;
+    if (!asset) {return null;}
 
     Object.assign(asset, updates);
     asset.modified = new Date();
@@ -645,7 +645,7 @@ export class ProfessionalContentSuite {
   }
 
   private sortResults(results: ContentAsset[], sort?: SortOption): ContentAsset[] {
-    if (!sort) return results;
+    if (!sort) {return results;}
 
     return results.sort((_a, _b) => {
       let comparison = 0;
@@ -705,7 +705,7 @@ export class ProfessionalContentSuite {
 
   async enhanceWithAI(assetId: string, enhancement: string): Promise<ContentAsset | null> {
     const asset = this.getAsset(assetId);
-    if (!asset) return null;
+    if (!asset) {return null;}
 
     const enhanced = await this.aiAssistant.enhance(asset, enhancement);
     return this.updateAsset(assetId, { content: enhanced });
@@ -954,7 +954,7 @@ class MapGenerator {
     let count = 0;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
-        if (dx === 0 && dy === 0) continue;
+        if (dx === 0 && dy === 0) {continue;}
         const nx = x + dx,
           ny = y + dy;
         if (nx < 0 || ny < 0 || nx >= grid[0].length || ny >= grid.length || grid[ny][nx]) {

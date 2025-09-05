@@ -62,7 +62,7 @@ export class MathHelpers {
    * Weighted random selection
    */
   static weightedRandom<T>(items: Array<{ item: T; weight: number }>): T {
-    const totalWeight = items.reduce((_sum, _item) => sum + item.weight, 0);
+    const totalWeight = items.reduce((_sum, _item) => _sum + _item.weight, 0);
     let random = Math.random() * totalWeight;
 
     for (const item of items) {
@@ -103,7 +103,7 @@ export class DiceRoller {
       rolls.push(Math.floor(Math.random() * sides) + 1);
     }
 
-    const total = rolls.reduce((_sum, __roll) => sum + roll, 0) + modifier;
+    const total = rolls.reduce((_sum, _roll) => _sum + _roll, 0) + modifier;
 
     return { total, rolls, modifier };
   }
@@ -177,7 +177,7 @@ export class EntityManager {
    */
   getEntitiesByType(type: string): any[] {
     const group = this.entityGroups.get(type);
-    if (!group) return [];
+    if (!group) {return [];}
 
     return Array.from(group)
       .map((id) => this.entities.get(id))
@@ -201,7 +201,7 @@ export class EntityManager {
    * Find entities within range
    */
   findEntitiesInRange(centerX: number, centerY: number, range: number): any[] {
-    const result = [];
+    const result: any[] = [];
 
     for (const entity of this.entities.values()) {
       if (entity.position) {
@@ -313,7 +313,7 @@ export class StateMachine<T extends string> {
    * Go back to previous state
    */
   async goBack(data?: any): Promise<boolean> {
-    if (this.history.length === 0) return false;
+    if (this.history.length === 0) {return false;}
 
     const previousState = this.history.pop()!;
     return await this.transition(previousState, data);
@@ -343,7 +343,7 @@ export class CooldownManager {
    */
   isOnCooldown(key: string): boolean {
     const endTime = this.cooldowns.get(key);
-    if (!endTime) return false;
+    if (!endTime) {return false;}
 
     if (Date.now() >= endTime) {
       this.cooldowns.delete(key);
@@ -358,7 +358,7 @@ export class CooldownManager {
    */
   getRemainingTime(key: string): number {
     const endTime = this.cooldowns.get(key);
-    if (!endTime) return 0;
+    if (!endTime) {return 0;}
 
     const remaining = endTime - Date.now();
     return Math.max(0, remaining);
@@ -452,7 +452,7 @@ export class ResourcePool {
    * Update based on regeneration rate
    */
   private updateRegeneration(): void {
-    if (this.regenerationRate <= 0) return;
+    if (this.regenerationRate <= 0) {return;}
 
     const now = Date.now();
     const deltaSeconds = (now - this.lastRegenTime) / 1000;
@@ -676,7 +676,7 @@ export class Pathfinder {
         ];
 
     for (const [dx, dy] of directions) {
-      if (dx === undefined || dy === undefined) continue;
+      if (dx === undefined || dy === undefined) {continue;}
       const x = node.x + dx;
       const y = node.y + dy;
 

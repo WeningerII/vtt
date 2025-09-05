@@ -140,7 +140,7 @@ export class VisionStore {
     targetVision?: VisionData
   ): boolean {
     const observerVision = this.data.get(observerId);
-    if (!observerVision || (observerVision.isBlinded && !observerVision.immuneToBlindness)) return false;
+    if (!observerVision || (observerVision.isBlinded && !observerVision.immuneToBlindness)) {return false;}
 
     // Get target vision data if not provided
     const targetData = targetVision || this.data.get(targetId);
@@ -148,9 +148,9 @@ export class VisionStore {
     // Check target invisibility
     if (targetData?.isInvisible) {
       // Can only see invisible with truesight, blindsight, or special ability
-      if (distance <= observerVision.truesightRange) return true;
-      if (distance <= observerVision.blindsightRange) return true;
-      if (observerVision.canSeeInvisible && !targetData.immuneToInvisibilityDetection) return true;
+      if (distance <= observerVision.truesightRange) {return true;}
+      if (distance <= observerVision.blindsightRange) {return true;}
+      if (observerVision.canSeeInvisible && !targetData.immuneToInvisibilityDetection) {return true;}
       return false;
     }
 
@@ -166,10 +166,10 @@ export class VisionStore {
     }
 
     // Truesight sees everything within range
-    if (distance <= observerVision.truesightRange) return true;
+    if (distance <= observerVision.truesightRange) {return true;}
 
     // Blindsight doesn't need light
-    if (distance <= observerVision.blindsightRange) return true;
+    if (distance <= observerVision.blindsightRange) {return true;}
 
     // Devil's sight penetrates magical darkness
     if (observerVision.hasDevilsSight && observerVision.hasMagicalDarkness) {
@@ -177,10 +177,10 @@ export class VisionStore {
     }
 
     // Normal sight in adequate light
-    if (lightLevel >= 0.5 && distance <= observerVision.sightRange) return true;
+    if (lightLevel >= 0.5 && distance <= observerVision.sightRange) {return true;}
 
     // Darkvision in dim light or darkness  
-    if (lightLevel < 0.5 && distance <= observerVision.darkvisionRange) return true;
+    if (lightLevel < 0.5 && distance <= observerVision.darkvisionRange) {return true;}
 
     return false;
   }

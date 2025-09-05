@@ -43,7 +43,7 @@ export class VisionSystem {
 
   calculateVisibility(entityId: EntityId, x: number, y: number): void {
     const visionData = this.vision.get(entityId);
-    if (!visionData) return;
+    if (!visionData) {return;}
 
     const visibleCells = new Set<string>();
 
@@ -134,18 +134,18 @@ export class VisionSystem {
 
   getVisibleEntities(observerId: EntityId): EntityId[] {
     const observerVision = this.vision.get(observerId);
-    if (!observerVision) return [];
+    if (!observerVision) {return [];}
 
     const visibleEntities: EntityId[] = [];
     const observerTransform = this.world.transforms.get(observerId);
-    if (!observerTransform) return [];
+    if (!observerTransform) {return [];}
 
     // Check all other entities
     for (const entityId of this.world.getEntities()) {
-      if (entityId === observerId) continue;
+      if (entityId === observerId) {continue;}
 
       const targetTransform = this.world.transforms.get(entityId);
-      if (!targetTransform) continue;
+      if (!targetTransform) {continue;}
 
       const distance = Math.sqrt(
         (targetTransform.x - observerTransform.x) ** 2 +
@@ -177,7 +177,7 @@ export class VisionSystem {
     lightLevel: number,
   ): boolean {
     const visionData = this.vision.get(observerId);
-    if (!visionData) return false;
+    if (!visionData) {return false;}
 
     // Use the enhanced canSeeEntity method from VisionStore
     const targetVision = this.vision.get(targetId);
@@ -222,10 +222,10 @@ export class VisionSystem {
   // Update all vision calculations
   update(_deltaTime: number): void {
     for (const entityId of this.world.getEntities()) {
-      if (!this.vision.has(entityId)) continue;
+      if (!this.vision.has(entityId)) {continue;}
 
       const transform = this.world.transforms.get(entityId);
-      if (!transform) continue;
+      if (!transform) {continue;}
 
       const gridX = Math.floor(transform.x / this.gridSize);
       const gridY = Math.floor(transform.y / this.gridSize);
@@ -237,7 +237,7 @@ export class VisionSystem {
   // Fog of war management
   revealArea(entityId: EntityId, centerX: number, centerY: number, radius: number): void {
     const visionData = this.vision.get(entityId);
-    if (!visionData || !visionData.fogOfWarEnabled) return;
+    if (!visionData || !visionData.fogOfWarEnabled) {return;}
 
     for (let x = centerX - radius; x <= centerX + radius; x++) {
       for (let y = centerY - radius; y <= centerY + radius; y++) {

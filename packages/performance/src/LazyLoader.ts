@@ -108,7 +108,7 @@ export class LazyLoader extends EventEmitter {
    */
   unregister(itemId: string): void {
     const item = this.items.get(itemId);
-    if (!item) return;
+    if (!item) {return;}
 
     // Remove from all groups
     for (const group of this.groups.values()) {
@@ -216,15 +216,15 @@ export class LazyLoader extends EventEmitter {
     const items: LazyLoadable[] = [];
 
     for (const group of this.groups.values()) {
-      if (criteria.groupIds && !criteria.groupIds.includes(group.id)) continue;
+      if (criteria.groupIds && !criteria.groupIds.includes(group.id)) {continue;}
 
       for (const item of group.items) {
-        if (criteria.priority && item.priority < criteria.priority) continue;
+        if (criteria.priority && item.priority < criteria.priority) {continue;}
 
         if (criteria.distance && this.context.userPosition) {
           // Simple distance check - in real use would be more sophisticated
           const distance = Math.abs(item.priority - 1) * 1000; // Mock distance
-          if (distance > criteria.distance) continue;
+          if (distance > criteria.distance) {continue;}
         }
 
         if (!this.loadedData.has(item.id)) {
@@ -365,7 +365,7 @@ export class LazyLoader extends EventEmitter {
     const targetReduction = usage.estimatedMemoryUsage * 0.3; // Free 30%
 
     for (const item of loadedItems) {
-      if (freedMemory >= targetReduction) break;
+      if (freedMemory >= targetReduction) {break;}
 
       this.unload(item.id);
       freedMemory += item.estimatedSize;
@@ -471,14 +471,14 @@ export class LazyLoader extends EventEmitter {
     this.strategies.set("distance", {
       name: "distance",
       shouldLoad: (item, context) => {
-        if (!context.userPosition) return item.priority > 0.5;
+        if (!context.userPosition) {return item.priority > 0.5;}
 
         // Mock distance calculation
         const distance = Math.abs(item.priority - 0.5) * 100;
         return distance < 50; // Within 50 units
       },
       getPriority: (item, context) => {
-        if (!context.userPosition) return item.priority;
+        if (!context.userPosition) {return item.priority;}
 
         const distance = Math.abs(item.priority - 0.5) * 100;
         return Math.max(0, 1 - distance / 100) * item.priority;

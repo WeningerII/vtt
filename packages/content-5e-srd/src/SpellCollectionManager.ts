@@ -79,7 +79,7 @@ export class SpellCollectionManager {
     updates: Partial<Omit<SpellCollection, "id" | "createdAt" | "version">>,
   ): SpellCollection | undefined {
     const collection = this.collections.get(id);
-    if (!collection) return undefined;
+    if (!collection) {return undefined;}
 
     const updated = {
       ...collection,
@@ -103,7 +103,7 @@ export class SpellCollectionManager {
    */
   addSpellsToCollection(collectionId: string, spellIds: string[]): boolean {
     const collection = this.collections.get(collectionId);
-    if (!collection) return false;
+    if (!collection) {return false;}
 
     const uniqueSpells = new Set([...collection.spellIds, ...spellIds]);
     collection.spellIds = Array.from(uniqueSpells);
@@ -117,7 +117,7 @@ export class SpellCollectionManager {
    */
   removeSpellsFromCollection(collectionId: string, spellIds: string[]): boolean {
     const collection = this.collections.get(collectionId);
-    if (!collection) return false;
+    if (!collection) {return false;}
 
     collection.spellIds = collection.spellIds.filter((id) => !spellIds.includes(id));
     collection.updatedAt = new Date();
@@ -130,7 +130,7 @@ export class SpellCollectionManager {
    */
   exportCollection(collectionId: string, options: ExportOptions): string {
     const collection = this.collections.get(collectionId);
-    if (!collection) throw new Error("Collection not found");
+    if (!collection) {throw new Error("Collection not found");}
 
     const spells = this.getSpellsForCollection(collection);
     const exportData: ExportedSpellCollection = {
@@ -265,7 +265,7 @@ export class SpellCollectionManager {
    */
   duplicateCollection(collectionId: string, newName?: string): SpellCollection | undefined {
     const original = this.collections.get(collectionId);
-    if (!original) return undefined;
+    if (!original) {return undefined;}
 
     const duplicate = this.createCollection({
       ...original,
@@ -289,7 +289,7 @@ export class SpellCollectionManager {
     averageLevel: number;
   } {
     const collection = this.collections.get(collectionId);
-    if (!collection) throw new Error("Collection not found");
+    if (!collection) {throw new Error("Collection not found");}
 
     const spells = this.getSpellsForCollection(collection);
 
@@ -319,11 +319,11 @@ export class SpellCollectionManager {
       });
 
       // Special properties
-      if (spell.concentration) stats.concentrationSpells++;
+      if (spell.concentration) {stats.concentrationSpells++;}
     });
 
     spells.forEach((spell) => {
-      if (spell.ritual) stats.ritualSpells++;
+      if (spell.ritual) {stats.ritualSpells++;}
     });
 
     stats.averageLevel = spells.length > 0 ? totalLevels / spells.length : 0;
@@ -392,7 +392,7 @@ export class SpellCollectionManager {
     const byLevel = spells.reduce(
       (_acc, _spell) => {
         const level = spell.level === 0 ? "Cantrips" : `Level ${spell.level}`;
-        if (!acc[level]) acc[level] = [];
+        if (!acc[level]) {acc[level] = [];}
         acc[level].push(spell);
         return acc;
       },

@@ -117,7 +117,7 @@ export class ThreatProtection extends EventEmitter {
 
     // Run threat detection rules
     for (const rule of this.rules.values()) {
-      if (!rule.enabled) continue;
+      if (!rule.enabled) {continue;}
 
       try {
         const result = rule.detector(context);
@@ -585,9 +585,9 @@ export class ThreatProtection extends EventEmitter {
 
     const score = (baseSeverity[type] || 2) * confidence;
 
-    if (score >= 3.5) return "critical";
-    if (score >= 2.5) return "high";
-    if (score >= 1.5) return "medium";
+    if (score >= 3.5) {return "critical";}
+    if (score >= 2.5) {return "high";}
+    if (score >= 1.5) {return "medium";}
     return "low";
   }
 

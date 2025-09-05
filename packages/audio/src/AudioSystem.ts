@@ -155,7 +155,7 @@ export class AudioSystem {
         data: { sampleRate: this.audioContext.sampleRate },
       });
     } catch (error) {
-      logger.error("Failed to initialize audio context:", error);
+      logger.error("Failed to create audio context:", error as Record<string, any>);
       this.emitEvent({
         type: "audio-error",
         data: { error: "Failed to initialize audio context" },
@@ -164,7 +164,7 @@ export class AudioSystem {
   }
 
   private setupAudioNodes(): void {
-    if (!this.audioContext) return;
+    if (!this.audioContext) {return;}
 
     // Create gain nodes for different audio types
     this.masterGain = this.audioContext.createGain();
@@ -200,7 +200,7 @@ export class AudioSystem {
   }
 
   private setupReverb(): void {
-    if (!this.audioContext) return;
+    if (!this.audioContext) {return;}
 
     this.reverb = this.audioContext.createConvolver();
 
@@ -210,7 +210,7 @@ export class AudioSystem {
   }
 
   private createImpulseResponse(): AudioBuffer {
-    if (!this.audioContext) throw new Error("Audio context not initialized");
+    if (!this.audioContext) {throw new Error("Audio context not initialized");}
 
     const sampleRate = this.audioContext.sampleRate;
     const length = sampleRate * 2; // 2 seconds
@@ -232,7 +232,7 @@ export class AudioSystem {
   }
 
   private connectAudioGraph(): void {
-    if (!this.audioContext || !this.masterGain) return;
+    if (!this.audioContext || !this.masterGain) {return;}
 
     // Connect gain nodes
     this.musicGain?.connect(this.masterGain);
@@ -258,7 +258,7 @@ export class AudioSystem {
   }
 
   private setupSpatialAudio(): void {
-    if (!this.audioContext || !this.settings.spatialAudio.enabled) return;
+    if (!this.audioContext || !this.settings.spatialAudio.enabled) {return;}
 
     this.listener = this.audioContext.listener;
 
@@ -302,7 +302,7 @@ export class AudioSystem {
       await this.audioContext.resume();
       this.emitEvent({
         type: "audio-context-resumed",
-        data: Record<string, any>,
+        data: {} as Record<string, unknown>,
       });
     }
   }
@@ -374,12 +374,12 @@ export class AudioSystem {
   }
 
   private async setupSpatialSource(sourceId: string): Promise<void> {
-    if (!this.audioContext) return;
+    if (!this.audioContext) {return;}
 
     const source = this.audioSources.get(sourceId);
     const audioElement = this.audioElements.get(sourceId);
 
-    if (!source || !audioElement || !source.is3D || !source.position) return;
+    if (!source || !audioElement || !source.is3D || !source.position) {return;}
 
     try {
       // Create MediaElementSourceNode
@@ -410,7 +410,7 @@ export class AudioSystem {
 
       this.pannerNodes.set(sourceId, panner);
     } catch (error) {
-      logger.error(`Failed to setup spatial audio for ${sourceId}:`, error);
+      logger.error(`Failed to setup spatial audio for ${sourceId}:`, error as Record<string, any>);
     }
   }
 
@@ -436,7 +436,7 @@ export class AudioSystem {
     const audio = this.audioElements.get(sourceId);
     const source = this.audioSources.get(sourceId);
 
-    if (!audio || !source) return;
+    if (!audio || !source) {return;}
 
     try {
       await this.resumeAudioContext();
@@ -447,7 +447,7 @@ export class AudioSystem {
         await audio.play();
       }
     } catch (error) {
-      logger.error(`Failed to play audio ${sourceId}:`, error);
+      logger.error("Failed to stop audio source:", error as Record<string, any>);
       this.emitEvent({
         type: "audio-error",
         data: { sourceId, error: "Failed to play audio" },
@@ -472,7 +472,7 @@ export class AudioSystem {
     const audio = this.audioElements.get(sourceId);
     const source = this.audioSources.get(sourceId);
 
-    if (!audio || !source) return;
+    if (!audio || !source) {return;}
 
     if (fadeOut || source.fadeOut) {
       await this.fadeOut(sourceId, fadeOut || source.fadeOut!);
@@ -507,7 +507,7 @@ export class AudioSystem {
     const source = this.audioSources.get(sourceId);
     const panner = this.pannerNodes.get(sourceId);
 
-    if (!source || !panner || !source.is3D) return;
+    if (!source || !panner || !source.is3D) {return;}
 
     source.position = position;
 
@@ -524,7 +524,7 @@ export class AudioSystem {
    * Update listener position for spatial audio
    */
   updateListenerPosition(position: { x: number; y: number; z: number }): void {
-    if (!this.listener) return;
+    if (!this.listener) {return;}
 
     this.settings.spatialAudio.listenerPosition = position;
 
@@ -539,7 +539,7 @@ export class AudioSystem {
 
   private async fadeIn(sourceId: string, duration: number): Promise<void> {
     const audio = this.audioElements.get(sourceId);
-    if (!audio) return;
+    if (!audio) {return;}
 
     const originalVolume = audio.volume;
     audio.volume = 0;
@@ -558,7 +558,7 @@ export class AudioSystem {
 
         if (currentStep >= steps) {
           clearInterval(interval);
-          resolve();
+          _resolve();
         }
       }, stepDuration);
 
@@ -568,7 +568,7 @@ export class AudioSystem {
 
   private async fadeOut(sourceId: string, duration: number): Promise<void> {
     const audio = this.audioElements.get(sourceId);
-    if (!audio) return;
+    if (!audio) {return;}
 
     const originalVolume = audio.volume;
 
@@ -587,7 +587,7 @@ export class AudioSystem {
           audio.pause();
           audio.currentTime = 0;
           audio.volume = originalVolume;
-          resolve();
+          _resolve();
         }
       }, stepDuration);
 
@@ -612,7 +612,7 @@ export class AudioSystem {
    */
   async playPlaylist(playlistId: string): Promise<void> {
     const playlist = this.playlists.get(playlistId);
-    if (!playlist || playlist.tracks.length === 0) return;
+    if (!playlist || playlist.tracks.length === 0) {return;}
 
     playlist.isPlaying = true;
 
@@ -627,10 +627,10 @@ export class AudioSystem {
 
   private async playCurrentTrack(playlistId: string): Promise<void> {
     const playlist = this.playlists.get(playlistId);
-    if (!playlist) return;
+    if (!playlist) {return;}
 
     const currentTrackId = playlist.tracks[playlist.currentTrack];
-    if (!currentTrackId) return;
+    if (!currentTrackId) {return;}
 
     // Set up ended listener for auto-advance
     const audio = this.audioElements.get(currentTrackId);
@@ -647,7 +647,7 @@ export class AudioSystem {
 
   private async advancePlaylist(playlistId: string): Promise<void> {
     const playlist = this.playlists.get(playlistId);
-    if (!playlist) return;
+    if (!playlist) {return;}
 
     if (playlist.shuffle) {
       playlist.currentTrack = Math.floor(Math.random() * playlist.tracks.length);
@@ -698,7 +698,7 @@ export class AudioSystem {
    */
   checkAudioConditions(gameState: any): void {
     for (const source of this.audioSources.values()) {
-      if (!source.conditions) continue;
+      if (!source.conditions) {continue;}
 
       const shouldPlay = this.evaluateConditions(source.conditions, gameState);
 
@@ -815,7 +815,7 @@ export class AudioSystem {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Audio event listener error:", error);
+        logger.error("Audio event listener error:", error as Record<string, any>);
       }
     });
   }

@@ -201,7 +201,7 @@ export class TerrainSystem {
     const vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
     const fragmentShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
 
-    if (!vertexShader || !fragmentShader) return null;
+    if (!vertexShader || !fragmentShader) {return null;}
 
     this.gl.shaderSource(vertexShader, vertexSource);
     this.gl.compileShader(vertexShader);
@@ -210,7 +210,7 @@ export class TerrainSystem {
     this.gl.compileShader(fragmentShader);
 
     const program = this.gl.createProgram();
-    if (!program) return null;
+    if (!program) {return null;}
 
     this.gl.attachShader(program, vertexShader);
     this.gl.attachShader(program, fragmentShader);
@@ -352,7 +352,7 @@ export class TerrainSystem {
     options?: any,
   ): void {
     const brush = this.brushes.get(brushType);
-    if (!brush) return;
+    if (!brush) {return;}
 
     const result = brush.apply(
       this.heightmapData,
@@ -451,7 +451,7 @@ export class TerrainSystem {
   }
 
   public render(viewMatrix: Float32Array, projectionMatrix: Float32Array): void {
-    if (!this.terrainShader || !this.material) return;
+    if (!this.terrainShader || !this.material) {return;}
 
     this.gl.useProgram(this.terrainShader);
 
@@ -488,7 +488,7 @@ export class TerrainSystem {
   }
 
   private renderChunk(chunk: TerrainChunk): void {
-    if (!chunk.vertexBuffer || !chunk.indexBuffer) return;
+    if (!chunk.vertexBuffer || !chunk.indexBuffer) {return;}
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, chunk.vertexBuffer);
     this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, chunk.indexBuffer);
@@ -568,7 +568,7 @@ export abstract class TerrainBrush {
   ): { heightmapModified: boolean; splatmapModified: boolean };
 
   protected calculateInfluence(distance: number, size: number, falloff: number = 0.5): number {
-    if (distance >= size) return 0;
+    if (distance >= size) {return 0;}
 
     const normalizedDistance = distance / size;
     return Math.pow(1 - normalizedDistance, 1 / falloff);

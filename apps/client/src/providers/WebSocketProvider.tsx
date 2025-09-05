@@ -53,36 +53,16 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   const [latency, setLatency] = useState<number>(0);
   const clientRef = useRef<WSClient | null>(null);
   const handlersRef = useRef<MessageHandler[]>([]);
-  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef<number>(0);
-  const lastPingRef = useRef<number>(0);
 
   const isConnected = state === "open";
 
-  const startLatencyTracking = useCallback(() => {
-    if (pingIntervalRef.current) return;
-
-    pingIntervalRef.current = setInterval(() => {
-      if (clientRef.current && isConnected) {
-        lastPingRef.current = Date.now();
-        clientRef.current.send({
-          type: "PING",
-          timestamp: lastPingRef.current,
-        });
-      }
-    }, 30000); // Ping every 30 seconds
-  }, [isConnected]);
-
-  const stopLatencyTracking = useCallback(() => {
-    if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current);
-      pingIntervalRef.current = null;
-    }
-  }, []);
+  // Track latency through WSClient's built-in ping mechanism
+  const latencyRef = useRef<number>(0);
 
   const scheduleReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) return;
+    if (reconnectTimeoutRef.current) {return;}
 
     const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30000);
     reconnectAttemptsRef.current++;
@@ -106,7 +86,12 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
       clientRef.current.close();
     }
 
-    const client = new WSClient(wsUrl);
+    const client = new WSClient(wsUrl, {
+      autoReconnect: true,
+      reconnectBaseMs: 1000,
+      reconnectMaxMs: 30000,
+      pingIntervalMs: 15000
+    });
     clientRef.current = client;
 
     client.onState((newState) => {
@@ -115,10 +100,8 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
       if (newState === "open") {
         logger.info("WebSocket connected");
         cancelReconnect();
-        startLatencyTracking();
       } else if (newState === "disconnected") {
         logger.info("WebSocket disconnected");
-        stopLatencyTracking();
 
         // Auto-reconnect unless explicitly disconnected
         if (reconnectAttemptsRef.current < 10) {
@@ -129,9 +112,10 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
 
     client.onMessage((message: AnyServerMessage) => {
       // Handle system messages
-      if (message.type === "PONG") {
+      if (message.type === "PONG" && typeof message.t === "number") {
         const now = Date.now();
-        const roundTripTime = now - lastPingRef.current;
+        const roundTripTime = now - message.t;
+        latencyRef.current = roundTripTime;
         setLatency(roundTripTime);
         return;
       }
@@ -154,11 +138,10 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
     });
 
     client.connect();
-  }, [wsUrl, cancelReconnect, startLatencyTracking, stopLatencyTracking, scheduleReconnect]);
+  }, [wsUrl, cancelReconnect, scheduleReconnect]);
 
   const disconnect = useCallback(() => {
     cancelReconnect();
-    stopLatencyTracking();
 
     if (clientRef.current) {
       clientRef.current.close();
@@ -166,7 +149,7 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
     }
 
     setState("disconnected");
-  }, [cancelReconnect, stopLatencyTracking]);
+  }, [cancelReconnect]);
 
   const reconnect = useCallback(() => {
     disconnect();
@@ -176,12 +159,28 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   const send = useCallback(
     (message: AnyClientMessage) => {
       if (clientRef.current && isConnected) {
-        clientRef.current.send(message);
+        // WSClient.send() handles validation internally, so we can safely cast
+        const success = clientRef.current.send(message as any);
+        if (!success) {
+          logger.warn("Failed to send message - invalid format or connection issue", message);
+          // Attempt to reconnect if send fails
+          if (reconnectAttemptsRef.current < 5) {
+            logger.info("Attempting to reconnect WebSocket after send failure");
+            reconnect();
+          }
+        }
+        return success;
       } else {
         logger.warn("Cannot send message: WebSocket not connected", message);
+        // Attempt connection if not connected and message is critical
+        if (message.type === "JOIN_GAME" || message.type === "LEAVE_GAME") {
+          logger.info("Attempting to connect WebSocket for critical message");
+          connect();
+        }
+        return false;
       }
     },
-    [isConnected],
+    [isConnected, reconnect, connect],
   );
 
   const subscribe = useCallback((type: string, handler: (message: any) => void) => {
@@ -196,9 +195,18 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
     };
   }, []);
 
-  // Auto-connect on mount
+  // Auto-connect on mount with retry logic
   useEffect(() => {
-    connect();
+    const connectWithRetry = async () => {
+      try {
+        connect();
+      } catch (error) {
+        logger.error("Initial WebSocket connection failed:", error);
+        // Don't prevent app from loading if WebSocket fails
+      }
+    };
+
+    connectWithRetry();
 
     return () => {
       disconnect();
@@ -208,23 +216,15 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   // Handle page visibility changes
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page hidden, reduce activity
-        stopLatencyTracking();
-      } else {
-        // Page visible, resume activity
-        if (isConnected) {
-          startLatencyTracking();
-        } else {
-          // Try to reconnect if disconnected while hidden
-          connect();
-        }
+      if (!document.hidden && !isConnected) {
+        // Page visible and disconnected, try to reconnect
+        connect();
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isConnected, startLatencyTracking, stopLatencyTracking, connect]);
+  }, [isConnected, connect]);
 
   // Handle online/offline events
   useEffect(() => {

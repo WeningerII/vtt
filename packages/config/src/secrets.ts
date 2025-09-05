@@ -4,7 +4,12 @@
  */
 
 import * as dotenv from "dotenv";
-import { logger } from "@vtt/logging";
+// Simple console logger fallback for config package
+const logger = {
+  info: (...args: any[]) => console.log('[INFO]', ...args),
+  error: (...args: any[]) => console.error('[ERROR]', ...args),
+  warn: (...args: any[]) => console.warn('[WARN]', ...args)
+};
 import * as path from "path";
 import * as fs from "fs";
 import * as crypto from "crypto";
@@ -89,11 +94,14 @@ export class SecretManager {
    */
   public encrypt(value: string, key?: string): string {
     const encryptionKey = key || this.getRequired("ENCRYPTION_KEY");
+    if (!encryptionKey) {
+      throw new Error("Encryption key is required");
+    }
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(encryptionKey, "hex"), iv);
     let encrypted = cipher.update(value, "utf8", "hex");
     encrypted += cipher.final("hex");
-    return iv.toString("hex") + ":" + encrypted;
+    return `${iv.toString("hex")  }:${  encrypted}`;
   }
 
   /**
@@ -101,9 +109,21 @@ export class SecretManager {
    */
   public decrypt(encryptedValue: string, key?: string): string {
     const encryptionKey = key || this.getRequired("ENCRYPTION_KEY");
+    if (!encryptionKey) {
+      throw new Error("Encryption key is required");
+    }
     const parts = encryptedValue.split(":");
+    if (parts.length !== 2) {
+      throw new Error("Invalid encrypted value format");
+    }
+    if (!parts[0] || !parts[1]) {
+      throw new Error("Invalid encrypted value: missing IV or encrypted data");
+    }
     const iv = Buffer.from(parts[0], "hex");
     const encrypted = parts[1];
+    if (!encrypted) {
+      throw new Error("Missing encrypted data");
+    }
     const decipher = crypto.createDecipheriv("aes-256-cbc", Buffer.from(encryptionKey, "hex"), iv);
     let decrypted = decipher.update(encrypted, "hex", "utf8");
     decrypted += decipher.final("utf8");
@@ -165,9 +185,9 @@ export class SecretManager {
       };
 
       logger.info("[VAULT] Vault client initialized (stub implementation)");
-      return vaultClient;
+      // Note: This is a stub implementation for vault integration
     } catch (error) {
-      logger.error("[VAULT] Failed to initialize vault integration:", error);
+      logger.error("[VAULT] Failed to initialize vault integration:", String(error));
       throw error;
     }
   }
@@ -183,7 +203,7 @@ export class SecretManager {
     const auditEvent = {
       timestamp: new Date().toISOString(),
       action: "secret_rotation",
-      key: key,
+      key,
       oldValueHash: oldValue ? this.hashValue(oldValue) : null,
       newValueHash: this.hashValue(newValue),
       source: "SecretManager",
@@ -193,7 +213,7 @@ export class SecretManager {
       },
     };
 
-    logger.info("[AUDIT]", JSON.stringify(auditEvent));
+    logger.info("[AUDIT]", auditEvent);
 
     // Notification/webhook for secret rotation
     await this.sendRotationNotification(key, auditEvent);
@@ -222,21 +242,21 @@ export class SecretManager {
     try {
       const payload = {
         event: "secret_rotation",
-        key: key,
+        key,
         timestamp: auditEvent.timestamp,
         environment: auditEvent.metadata.environment,
         rotatedBy: auditEvent.metadata.rotatedBy,
       };
 
       // Send webhook notification
-      logger.info(`[WEBHOOK] Sending to ${webhookUrl}:`, JSON.stringify(payload));
+      logger.info(`[WEBHOOK] Sending to ${webhookUrl}:`, payload);
 
       try {
         const response = await fetch(webhookUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-VTT-Event": event,
+            "X-VTT-Event": "secret_rotation",
             "X-VTT-Timestamp": new Date().toISOString(),
           },
           body: JSON.stringify(payload),
@@ -245,13 +265,13 @@ export class SecretManager {
         if (!response.ok) {
           logger.error(`Webhook failed with status ${response.status}: ${response.statusText}`);
         } else {
-          logger.info(`Webhook sent successfully for event: ${event}`);
+          logger.info(`Webhook sent successfully for event: secret_rotation`);
         }
       } catch (error) {
-        logger.error(`Failed to send webhook: ${error}`);
+        logger.error(`Failed to send webhook: ${String(error)}`);
       }
     } catch (error) {
-      logger.error("Failed to send secret rotation notification:", error);
+      logger.error("Failed to send secret rotation notification:", String(error));
     }
   }
 }
@@ -261,22 +281,22 @@ let instance: SecretManager | null = null;
 
 export function getSecretManager(_config?: SecretConfig): SecretManager {
   if (!instance) {
-    instance = new SecretManager(config);
+    instance = new SecretManager(_config);
   }
   return instance;
 }
 
 // Helper functions
 export function getSecret(_key: string, _defaultValue?: string): string | undefined {
-  return getSecretManager().get(key, defaultValue);
+  return getSecretManager().get(_key, _defaultValue);
 }
 
 export function getRequiredSecret(_key: string): string {
-  return getSecretManager().getRequired(key);
+  return getSecretManager().getRequired(_key);
 }
 
 export function hasSecret(_key: string): boolean {
-  return getSecretManager().has(key);
+  return getSecretManager().has(_key);
 }
 
 // SecretManager is already exported as a class above

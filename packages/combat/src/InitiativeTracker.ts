@@ -3,7 +3,7 @@
  * Visual and functional component for managing combat initiative order
  */
 
-import { _Combatant, CombatState } from "./CombatManager";
+import { Combatant, CombatState } from "./CombatManager";
 import { logger } from "@vtt/logging";
 
 export interface InitiativeEntry {
@@ -63,7 +63,7 @@ export class InitiativeTracker {
    * Update tracker from combat state
    */
   updateFromCombatState(combatState: CombatState): void {
-    this.entries = combatState.combatants.map((_combatant, __index) => ({
+    this.entries = combatState.combatants.map((combatant, _index) => ({
       id: `entry-${combatant.id}`,
       combatantId: combatant.id,
       name: combatant.name,
@@ -106,7 +106,7 @@ export class InitiativeTracker {
    * Reorder initiative entries
    */
   reorderEntry(entryId: string, newPosition: number): boolean {
-    if (!this.settings.allowReordering) return false;
+    if (!this.settings.allowReordering) {return false;}
 
     const entryIndex = this.entries.findIndex((e) => e.id === entryId);
     if (entryIndex === -1 || newPosition < 0 || newPosition >= this.entries.length) {
@@ -131,7 +131,7 @@ export class InitiativeTracker {
    */
   toggleVisibility(entryId: string): boolean {
     const entry = this.entries.find((e) => e.id === entryId);
-    if (!entry) return false;
+    if (!entry) {return false;}
 
     entry.isVisible = !entry.isVisible;
 
@@ -148,7 +148,7 @@ export class InitiativeTracker {
    */
   updateHealth(entryId: string, current: number, max: number, temp: number = 0): void {
     const entry = this.entries.find((e) => e.id === entryId);
-    if (!entry) return;
+    if (!entry) {return;}
 
     entry.hitPoints = { current, max, temp };
 
@@ -163,7 +163,7 @@ export class InitiativeTracker {
    */
   updateConditions(entryId: string, conditions: string[]): void {
     const entry = this.entries.find((e) => e.id === entryId);
-    if (!entry) return;
+    if (!entry) {return;}
 
     entry.conditions = [...conditions];
 
@@ -178,7 +178,7 @@ export class InitiativeTracker {
    */
   updateActions(entryId: string, actions: InitiativeEntry["actions"]): void {
     const entry = this.entries.find((e) => e.id === entryId);
-    if (!entry) return;
+    if (!entry) {return;}
 
     entry.actions = { ...actions };
 
@@ -193,7 +193,7 @@ export class InitiativeTracker {
    */
   getHealthPercentage(entryId: string): number {
     const entry = this.entries.find((e) => e.id === entryId);
-    if (!entry || entry.hitPoints.max === 0) return 0;
+    if (!entry || entry.hitPoints.max === 0) {return 0;}
 
     return Math.max(0, (entry.hitPoints.current / entry.hitPoints.max) * 100);
   }
@@ -207,11 +207,11 @@ export class InitiativeTracker {
     const percentage = this.getHealthPercentage(entryId);
     const entry = this.entries.find((e) => e.id === entryId);
 
-    if (!entry) return "dead";
-    if (entry.hitPoints.current <= 0) return entry.hitPoints.current < 0 ? "dead" : "unconscious";
-    if (percentage <= 10) return "critical";
-    if (percentage <= 50) return "bloodied";
-    if (percentage < 100) return "injured";
+    if (!entry) {return "dead";}
+    if (entry.hitPoints.current <= 0) {return entry.hitPoints.current < 0 ? "dead" : "unconscious";}
+    if (percentage <= 10) {return "critical";}
+    if (percentage <= 50) {return "bloodied";}
+    if (percentage < 100) {return "injured";}
     return "healthy";
   }
 
@@ -220,13 +220,13 @@ export class InitiativeTracker {
    */
   getConditionSeverity(entryId: string): "none" | "minor" | "major" | "severe" {
     const entry = this.entries.find((e) => e.id === entryId);
-    if (!entry || entry.conditions.length === 0) return "none";
+    if (!entry || entry.conditions.length === 0) {return "none";}
 
     const severeConditions = ["unconscious", "paralyzed", "petrified", "stunned"];
     const majorConditions = ["blinded", "charmed", "frightened", "incapacitated", "restrained"];
 
-    if (entry.conditions.some((c) => severeConditions.includes(c.toLowerCase()))) return "severe";
-    if (entry.conditions.some((c) => majorConditions.includes(c.toLowerCase()))) return "major";
+    if (entry.conditions.some((c) => severeConditions.includes(c.toLowerCase()))) {return "severe";}
+    if (entry.conditions.some((c) => majorConditions.includes(c.toLowerCase()))) {return "major";}
     return "minor";
   }
 
@@ -251,14 +251,14 @@ export class InitiativeTracker {
     return {
       highest: Math.max(...initiatives),
       lowest: Math.min(...initiatives),
-      average: initiatives.reduce((_sum, __init) => sum + init, 0) / initiatives.length,
+      average: initiatives.reduce((sum, init) => sum + init, 0) / initiatives.length,
       playerAverage:
         playerInitiatives.length > 0
-          ? playerInitiatives.reduce((_sum, __init) => sum + init, 0) / playerInitiatives.length
+          ? playerInitiatives.reduce((sum, init) => sum + init, 0) / playerInitiatives.length
           : 0,
       npcAverage:
         npcInitiatives.length > 0
-          ? npcInitiatives.reduce((_sum, __init) => sum + init, 0) / npcInitiatives.length
+          ? npcInitiatives.reduce((sum, init) => sum + init, 0) / npcInitiatives.length
           : 0,
     };
   }
@@ -339,7 +339,7 @@ export class InitiativeTracker {
 
     this.emitChange({
       type: "tracker-cleared",
-      data: Record<string, any>,
+      data: {},
     });
   }
 
@@ -363,11 +363,11 @@ export class InitiativeTracker {
   }
 
   // Event system
-  addEventListener(_listener: (event: InitiativeTrackerEvent) => void): void {
+  addEventListener(listener: (event: InitiativeTrackerEvent) => void): void {
     this.changeListeners.push(listener);
   }
 
-  removeEventListener(_listener: (event: InitiativeTrackerEvent) => void): void {
+  removeEventListener(listener: (event: InitiativeTrackerEvent) => void): void {
     const index = this.changeListeners.indexOf(listener);
     if (index > -1) {
       this.changeListeners.splice(index, 1);
@@ -379,7 +379,7 @@ export class InitiativeTracker {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Initiative tracker event listener error:", error);
+        logger.error("Initiative tracker event listener error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       }
     });
   }

@@ -181,10 +181,10 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
       isActive: true,
     };
 
-    if (body.actorId) appliedData.actorId = body.actorId;
-    if (body.tokenId) appliedData.tokenId = body.tokenId;
+    if (body.actorId) {appliedData.actorId = body.actorId;}
+    if (body.tokenId) {appliedData.tokenId = body.tokenId;}
     if (body.encounterParticipantId)
-      appliedData.encounterParticipantId = body.encounterParticipantId;
+      {appliedData.encounterParticipantId = body.encounterParticipantId;}
 
     const applied = await ctx.prisma.appliedCondition.create({
       data: appliedData,
@@ -219,10 +219,10 @@ export const listAppliedConditionsHandler: RouteHandler = async (ctx) => {
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
 
     const where: any = {};
-    if (actorId) where.actorId = actorId;
-    if (tokenId) where.tokenId = tokenId;
-    if (encounterParticipantId) where.encounterParticipantId = encounterParticipantId;
-    if (isActive !== null) where.isActive = isActive === "true";
+    if (actorId) {where.actorId = actorId;}
+    if (tokenId) {where.tokenId = tokenId;}
+    if (encounterParticipantId) {where.encounterParticipantId = encounterParticipantId;}
+    if (isActive !== null) {where.isActive = isActive === "true";}
 
     const [items, total] = await Promise.all([
       ctx.prisma.appliedCondition.findMany({
@@ -266,11 +266,11 @@ export const updateAppliedConditionHandler: RouteHandler = async (ctx) => {
     const data: any = {};
 
     // Only update provided fields
-    if (typeof body.severity === "number") data.severity = body.severity;
-    if (typeof body.duration === "number") data.duration = body.duration;
-    if (typeof body.source === "string") data.source = body.source;
-    if (typeof body.notes === "string") data.notes = body.notes;
-    if (typeof body.isActive === "boolean") data.isActive = body.isActive;
+    if (typeof body.severity === "number") {data.severity = body.severity;}
+    if (typeof body.duration === "number") {data.duration = body.duration;}
+    if (typeof body.source === "string") {data.source = body.source;}
+    if (typeof body.notes === "string") {data.notes = body.notes;}
+    if (typeof body.isActive === "boolean") {data.isActive = body.isActive;}
 
     const updated = await ctx.prisma.appliedCondition.update({
       where: { id },

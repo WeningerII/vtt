@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "types": [
@@ -15,6 +14,11 @@
   },
   "include": [
     "src/**/*"
+  ],
+  "references": [
+    {
+      "path": "../logging"
+    }
   ],
   "exclude": [
     "node_modules",

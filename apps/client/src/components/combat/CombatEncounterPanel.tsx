@@ -147,10 +147,10 @@ export function CombatEncounterPanel({
   };
 
   const endEncounter = async () => {
-    if (!encounter) return;
+    if (!encounter) {return;}
     
     const confirm = window.confirm('Are you sure you want to end this encounter?');
-    if (!confirm) return;
+    if (!confirm) {return;}
 
     try {
       await fetch(`/api/encounters/${encounter.id}/end`, {
@@ -165,7 +165,7 @@ export function CombatEncounterPanel({
   };
 
   const addCombatant = async () => {
-    if (!encounter || !newCombatant.name.trim()) return;
+    if (!encounter || !newCombatant.name.trim()) {return;}
 
     try {
       const response = await fetch(`/api/encounters/${encounter.id}/combatants`, {
@@ -196,7 +196,7 @@ export function CombatEncounterPanel({
   };
 
   const updateCombatant = async (_combatantId: string, _updates: Partial<Combatant>) => {
-    if (!encounter) return;
+    if (!encounter) {return;}
 
     try {
       await fetch(`/api/combatants/${combatantId}`, {
@@ -208,7 +208,7 @@ export function CombatEncounterPanel({
 
       // Update local state
       setEncounter(prev => {
-        if (!prev) return prev;
+        if (!prev) {return prev;}
         return {
           ...prev,
           combatants: prev.combatants.map(c => 
@@ -222,7 +222,7 @@ export function CombatEncounterPanel({
   };
 
   const removeCombatant = async (_combatantId: string) => {
-    if (!encounter) return;
+    if (!encounter) {return;}
 
     try {
       await fetch(`/api/combatants/${combatantId}`, {
@@ -231,7 +231,7 @@ export function CombatEncounterPanel({
       });
 
       setEncounter(prev => {
-        if (!prev) return prev;
+        if (!prev) {return prev;}
         return {
           ...prev,
           combatants: prev.combatants.filter(c => c.id !== combatantId)
@@ -243,7 +243,7 @@ export function CombatEncounterPanel({
   };
 
   const nextTurn = async () => {
-    if (!encounter || encounter.combatants.length === 0) return;
+    if (!encounter || encounter.combatants.length === 0) {return;}
 
     const nextTurnIndex = (encounter.currentTurn + 1) % encounter.combatants.length;
     const nextRound = nextTurnIndex === 0 ? encounter.currentRound + 1 : encounter.currentRound;
@@ -255,7 +255,7 @@ export function CombatEncounterPanel({
       });
 
       setEncounter(prev => {
-        if (!prev) return prev;
+        if (!prev) {return prev;}
         return {
           ...prev,
           currentTurn: nextTurnIndex,
@@ -269,7 +269,7 @@ export function CombatEncounterPanel({
 
   const addCondition = async (_combatantId: string, _conditionName: string) => {
     const condition = COMMON_CONDITIONS.find(c => c.name === conditionName);
-    if (!condition) return;
+    if (!condition) {return;}
 
     const newCondition = {
       id: Date.now().toString(),
@@ -289,7 +289,7 @@ export function CombatEncounterPanel({
 
   const removeCondition = async (_combatantId: string, _conditionId: string) => {
     const combatant = encounter?.combatants.find(c => c.id === combatantId);
-    if (!combatant) return;
+    if (!combatant) {return;}
 
     await updateCombatant(combatantId, {
       conditions: combatant.conditions.filter(c => c.id !== conditionId)

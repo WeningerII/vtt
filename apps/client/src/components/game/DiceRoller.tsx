@@ -65,7 +65,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
     notation: string,
   ): { count: number; sides: number; modifier: number } => {
     const match = notation.match(/^(\d+)?d(\d+)([+-]\d+)?$/i);
-    if (!match) throw new Error("Invalid dice notation");
+    if (!match) {throw new Error("Invalid dice notation");}
 
     const count = parseInt(match[1] || "1", 10);
     const sides = parseInt(match[2]!, 10);
@@ -83,7 +83,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
   };
 
   const executeRoll = (diceNotation?: string, rollModifier?: number, isRollPublic?: boolean) => {
-    if (!session || !user) return;
+    if (!session || !user) {return;}
 
     let rollCount: number;
     let rollSides: number;
@@ -150,7 +150,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
   };
 
   const handleCustomRoll = () => {
-    if (!customDice.trim()) return;
+    if (!customDice.trim()) {return;}
 
     try {
       executeRoll(customDice.trim(), 0, isPublic);
@@ -176,7 +176,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
 
   const getDiceColor = (sidesParam: number) => {
     const dice = COMMON_DICE.find((d) => d.sides === sidesParam);
-    return dice ? dice.color : "text-text-primary";
+    return dice ? dice.color : "text-primary";
   };
 
   if (!session) {
@@ -198,7 +198,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-text-primary flex items-center gap-2">
+        <h3 className="font-semibold text-primary flex items-center gap-2">
           <Dice6 className="h-5 w-5 text-accent-primary" />
           Dice Roller
         </h3>
@@ -361,7 +361,7 @@ export function DiceRoller({ className, onRoll }: DiceRollerProps): JSX.Element 
       {showHistory && (
         <div className="border-t border-border-primary pt-4">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-medium text-text-primary">Roll History</h4>
+            <h4 className="text-sm font-medium text-primary">Roll History</h4>
             {rollHistory.length > 0 && (
               <Button
                 variant="ghost"

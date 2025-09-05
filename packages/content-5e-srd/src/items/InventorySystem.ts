@@ -3,7 +3,7 @@
  * Handles character inventories, encumbrance, containers, and currency
  */
 
-import { _BaseItem, _ItemCost } from "./index.js";
+import { BaseItem, ItemCost } from "./index.js";
 
 export interface InventoryItem {
   itemId: string;
@@ -179,10 +179,10 @@ export class InventorySystem {
     const fromKey = fromContainer ? `${itemId}_${fromContainer}` : itemId;
     const item = this.items.get(fromKey);
 
-    if (!item) return false;
+    if (!item) {return false;}
 
     const moveQuantity = quantity || item.quantity;
-    if (item.quantity < moveQuantity) return false;
+    if (item.quantity < moveQuantity) {return false;}
 
     // Remove from source
     if (!this.removeItem(itemId, moveQuantity, fromContainer)) {
@@ -215,7 +215,7 @@ export class InventorySystem {
     const key = containerId ? `${itemId}_${containerId}` : itemId;
     const item = this.items.get(key);
 
-    if (!item) return false;
+    if (!item) {return false;}
 
     item.equipped = !item.equipped;
 
@@ -243,7 +243,7 @@ export class InventorySystem {
    */
   getItemsInContainer(containerId: string): InventoryItem[] {
     const container = this.containers.get(containerId);
-    if (!container) return [];
+    if (!container) {return [];}
 
     return container.items
       .map((itemKey) => this.items.get(itemKey))
@@ -379,7 +379,7 @@ export class InventorySystem {
         baseItem &&
         (baseItem.name.toLowerCase().includes(lowercaseQuery) ||
           baseItem.description.toLowerCase().includes(lowercaseQuery) ||
-          baseItem.tags.some((_tag: string) => tag.toLowerCase().includes(lowercaseQuery)))
+          baseItem.tags.some((tag: string) => tag.toLowerCase().includes(lowercaseQuery)))
       ) {
         results.push(item);
       }
@@ -393,7 +393,7 @@ export class InventorySystem {
    */
   getTransactionHistory(limit?: number): InventoryTransaction[] {
     const sorted = [...this.transactions].sort(
-      (_a, _b) => b.timestamp.getTime() - a.timestamp.getTime(),
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
     );
     return limit ? sorted.slice(0, limit) : sorted;
   }
@@ -410,7 +410,7 @@ export class InventorySystem {
 
   private updateContainerWeight(containerId: string): void {
     const container = this.containers.get(containerId);
-    if (!container) return;
+    if (!container) {return;}
 
     // This would need item database access to calculate actual weight
     // For now, just mark that it needs updating

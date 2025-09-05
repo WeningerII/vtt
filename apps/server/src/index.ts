@@ -1,7 +1,17 @@
-import "./env";
+// Load environment variables
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
 import { logger } from "@vtt/logging";
 import { createServer } from "http";
 import { WebSocketServer } from "ws";
+import express from "express";
+import cookieParser from "cookie-parser";
+import { authRouter } from "./routes/auth";
+import { sessionsRouter } from "./routes/sessions";
+import { VTTWebSocketServer } from "./websocket/websocket-server";
 import { loggingMiddleware } from "./middleware/logging";
 import { errorMiddleware } from "./middleware/error";
 import { requestIdMiddleware } from "./middleware/requestId";
@@ -76,6 +86,10 @@ import {
   startSessionHandler,
   endSessionHandler,
   getActiveSessionHandler,
+  getCampaignPlayersHandler,
+  updatePlayerHandler,
+  getCampaignSettingsHandler,
+  updateCampaignSettingsHandler,
 } from "./routes/campaigns";
 import {
   uploadAssetHandler,
@@ -153,12 +167,43 @@ import { createUnifiedWebSocketManager } from "./websocket/UnifiedWebSocketManag
 import { DatabaseManager } from "./database/connection";
 import { initializeAuth } from "./auth";
 import { Router } from "./router/router";
+import { AuthManager, AuthConfig } from "./auth/auth-manager";
 
+// Use DatabaseManager singleton for consistent database connection
 const prisma = DatabaseManager.getInstance();
-const PORT = Number(process.env.PORT ?? 8080);
 
 // Initialize authentication
-const { authManager, oauthManager, oauthRoutes } = initializeAuth();
+const authConfig: AuthConfig = {
+  jwtSecret: process.env.JWT_SECRET || "dev-secret-change-in-production",
+  jwtExpiration: "1h",
+  refreshTokenExpiration: "7d",
+  bcryptRounds: 12,
+};
+const authManager = new AuthManager(prisma, authConfig);
+const PORT = Number(process.env.PORT ?? 8080);
+
+// Create Express app for easier middleware handling
+const app = express();
+app.use(express.json());
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: true }));
+
+// Add CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// Add our new auth and session routes
+app.use('/auth', authRouter);
+app.use('/api/sessions', sessionsRouter);
 
 // Session configuration
 const sessionConfig = {
@@ -269,8 +314,12 @@ router.get("/campaigns", getUserCampaignsHandler);
 router.get("/campaigns/*", getCampaignHandler);
 router.put("/campaigns/*", updateCampaignHandler);
 router.delete("/campaigns/*", deleteCampaignHandler);
+router.get("/campaigns/*/players", getCampaignPlayersHandler);
 router.post("/campaigns/*/players", addPlayerHandler);
+router.put("/campaigns/*/players/*", updatePlayerHandler);
 router.delete("/campaigns/*/players/*", removePlayerHandler);
+router.get("/campaigns/*/settings", getCampaignSettingsHandler);
+router.put("/campaigns/*/settings", updateCampaignSettingsHandler);
 router.post("/campaigns/*/characters", addCharacterToCampaignHandler);
 router.delete("/campaigns/*/characters/*", removeCharacterFromCampaignHandler);
 router.post("/campaigns/*/archive", archiveCampaignHandler);
@@ -370,9 +419,17 @@ router.get("/auth/discord/callback", async (ctx) => {
       const user = (ctx.req as any).user;
       const tokens = await authManager.generateOAuthTokens(user as any);
 
-      ctx.res.setHeader("Set-Cookie", [
-        `sessionToken=${tokens.accessToken}; HttpOnly; Secure=${process.env.NODE_ENV === "production"}; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}`,
-      ]);
+      {
+        const attrs = [
+          `sessionToken=${tokens.accessToken}`,
+          "HttpOnly",
+          process.env.NODE_ENV === "production" ? "Secure" : "",
+          "SameSite=Strict",
+          "Path=/",
+          `Max-Age=${7 * 24 * 60 * 60}`,
+        ].filter(Boolean);
+        ctx.res.setHeader("Set-Cookie", [attrs.join("; ")]);
+      }
 
       const redirectUrl = process.env.CLIENT_URL || "http://localhost:3000";
       ctx.res.writeHead(302, { Location: `${redirectUrl}/dashboard` });
@@ -401,9 +458,17 @@ router.get("/auth/google/callback", async (ctx) => {
       const user = (ctx.req as any).user;
       const tokens = await authManager.generateOAuthTokens(user as any);
 
-      ctx.res.setHeader("Set-Cookie", [
-        `sessionToken=${tokens.accessToken}; HttpOnly; Secure=${process.env.NODE_ENV === "production"}; SameSite=Strict; Max-Age=${7 * 24 * 60 * 60}`,
-      ]);
+      {
+        const attrs = [
+          `sessionToken=${tokens.accessToken}`,
+          "HttpOnly",
+          process.env.NODE_ENV === "production" ? "Secure" : "",
+          "SameSite=Strict",
+          "Path=/",
+          `Max-Age=${7 * 24 * 60 * 60}`,
+        ].filter(Boolean);
+        ctx.res.setHeader("Set-Cookie", [attrs.join("; ")]);
+      }
 
       const redirectUrl = process.env.CLIENT_URL || "http://localhost:3000";
       ctx.res.writeHead(302, { Location: `${redirectUrl}/dashboard` });
@@ -481,7 +546,7 @@ router.get("/api/v1/health", (ctx) => {
       memory: process.memoryUsage(),
       services: {
         database: "connected",
-        websocket: wsManager ? "active" : "inactive",
+        websocket: vttWebSocketServer ? "active" : "inactive",
         gameManager: "running",
         mapService: "ready",
         aiContent: "available",
@@ -513,28 +578,17 @@ router.get("/favicon-32x32.png", (ctx) => {
   ctx.res.end();
 });
 
-// HTTP server
-const server = createServer(async (req, res) => {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
-  // requestId will be set by requestIdMiddleware; initialize to empty for type safety
-  const ctx = { req, res, prisma, url, requestId: "" } as any;
-
-  const handled = await router.handle(ctx);
-  if (!handled) {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Not found" }));
-  }
-});
+// HTTP server - use Express app
+const server = createServer(app);
 
 // WebSocket setup
-const wss = new WebSocketServer({ server });
-const wsManager = createUnifiedWebSocketManager(wss);
+const vttWebSocketServer = new VTTWebSocketServer(server, prisma);
 
 // Graceful shutdown
 async function shutdown(signal: string) {
   logger.info(`[server] ${signal} received, shutting down gracefully`);
   try {
-    await Promise.allSettled([DatabaseManager.disconnect(), wsManager.shutdown?.()] as any);
+    await DatabaseManager.disconnect();
   } catch (e) {
     logger.error("[server] Error during shutdown", e as Error);
   }

@@ -252,7 +252,7 @@ export class TokenManager {
 
   getTokenProperty(tokenId: string, propertyPath: string): any {
     const token = this.tokens.get(tokenId);
-    if (!token) return undefined;
+    if (!token) {return undefined;}
 
     const paths = propertyPath.split(".");
     let value: any = token.properties;
@@ -280,7 +280,7 @@ export class TokenManager {
 
     for (let i = 0; i < paths.length - 1; i++) {
       const path = paths[i];
-      if (!path) continue; // Skip undefined paths
+      if (!path) {continue;} // Skip undefined paths
 
       if (!(path in current)) {
         current[path] = {};
@@ -347,7 +347,7 @@ export class TokenManager {
 
   getActiveConditions(tokenId: string): TokenCondition[] {
     const token = this.tokens.get(tokenId);
-    if (!token) return [];
+    if (!token) {return [];}
 
     return token.conditions.filter((condition) => {
       // Check if condition is suppressed
@@ -363,16 +363,16 @@ export class TokenManager {
   // Calculated Properties (with conditions applied)
   getCalculatedProperty(tokenId: string, propertyPath: string): any {
     const token = this.tokens.get(tokenId);
-    if (!token) return undefined;
+    if (!token) {return undefined;}
 
     const baseValue = this.getTokenProperty(tokenId, propertyPath);
-    if (baseValue === undefined) return undefined;
+    if (baseValue === undefined) {return undefined;}
 
     const activeConditions = this.getActiveConditions(tokenId);
     let calculatedValue = baseValue;
 
     for (const condition of activeConditions) {
-      if (!condition.effects) continue;
+      if (!condition.effects) {continue;}
 
       for (const effect of condition.effects) {
         if (effect.target === propertyPath) {
@@ -558,7 +558,12 @@ export class TokenManager {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Token change listener error:", error);
+        logger.error("Token change listener error:", {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          event: event.type,
+          tokenId: 'data' in event && typeof event.data === 'object' && event.data && 'id' in event.data ? event.data.id : undefined
+        });
       }
     });
   }

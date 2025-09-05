@@ -258,7 +258,7 @@ export class NetworkSyncEngine extends EventEmitter {
     timestamp: number,
   ): SyncConflict | null {
     const currentState = this.entityStates.get(entityId);
-    if (!currentState) return null;
+    if (!currentState) {return null;}
 
     // Check if updates conflict with recent changes
     const timeDiff = timestamp - currentState.lastUpdate;

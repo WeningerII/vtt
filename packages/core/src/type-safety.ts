@@ -1,6 +1,7 @@
 /**
- * Type safety utilities
+ * Type safety utilities for the VTT core system
  */
+import { logger } from '@vtt/logging';
 
 // Type guard for checking if value is defined
 export function isDefined<T>(value: T | undefined | null): value is T {

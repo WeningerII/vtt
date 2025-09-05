@@ -8,11 +8,12 @@ import { logger } from "@vtt/logging";
 export interface NPCPersonality {
   id: string;
   name: string;
+  aggression: number; // 0-1, moved from traits for compatibility
+  intelligence: number; // 0-1, direct property for easier access
+  caution: number; // 0-1, risk assessment behavior
   traits: {
-    aggression: number; // 0-1
     curiosity: number;
     loyalty: number;
-    intelligence: number;
     courage: number;
     empathy: number;
   };
@@ -24,7 +25,7 @@ export interface NPCPersonality {
 
 export interface NPCGoal {
   id: string;
-  type: "survival" | "combat" | "social" | "exploration" | "protection" | "acquisition";
+  type: "survival" | "combat" | "social" | "exploration" | "protection" | "acquisition" | "defend" | "support";
   priority: number; // 0-1
   target?: string; // Entity ID
   location?: { x: number; y: number };
@@ -171,7 +172,7 @@ export class NPCBehaviorSystem {
    */
   async updateNPC(npcId: string, context: BehaviorContext): Promise<void> {
     const npc = this.npcs.get(npcId);
-    if (!npc || !npc.isActive) return;
+    if (!npc || !npc.isActive) {return;}
 
     try {
       // Update NPC perception and memory
@@ -187,10 +188,10 @@ export class NPCBehaviorSystem {
         await this.executeAction(npc, action, context);
       }
     } catch (error) {
-      logger.error(`Error updating NPC ${npcId}:`, error);
+      logger.error(`Error updating NPC ${npcId}:`, error as Error);
       this.emitEvent({
         type: "npc-error",
-        data: { npcId, error: error.message },
+        data: { npcId, error: (error as Error).message },
       });
     }
   }
@@ -242,7 +243,7 @@ export class NPCBehaviorSystem {
 
     // Limit memory to prevent overflow
     if (npc.behaviorState.memory.length > 20) {
-      npc.behaviorState.memory.sort((_a, _b) => b.importance - a.importance);
+      npc.behaviorState.memory.sort((a, b) => b.importance - a.importance);
       npc.behaviorState.memory = npc.behaviorState.memory.slice(0, 20);
     }
   }
@@ -297,8 +298,8 @@ export class NPCBehaviorSystem {
     // Select highest priority active goal
     const activeGoals = npc.personality.goals.filter((g) => g.isActive && !g.isComplete);
     if (activeGoals.length > 0) {
-      activeGoals.sort((_a, _b) => b.priority - a.priority);
-      npc.behaviorState.currentGoal = activeGoals[0].id;
+      activeGoals.sort((a, b) => b.priority - a.priority);
+      npc.behaviorState.currentGoal = activeGoals[0]?.id || null;
     }
   }
 
@@ -310,13 +311,13 @@ export class NPCBehaviorSystem {
     const availableActions = npcBehaviors.filter((action) => {
       // Check cooldown
       const cooldown = npc.actionCooldowns.get(action.id) || 0;
-      if (Date.now() < cooldown) return false;
+      if (Date.now() < cooldown) {return false;}
 
       // Check if action can be executed
       return action.canExecute(npc, context);
     });
 
-    if (availableActions.length === 0) return null;
+    if (availableActions.length === 0) {return null;}
 
     // Score actions based on current goals and personality
     const scoredActions = availableActions.map((action) => ({
@@ -325,13 +326,13 @@ export class NPCBehaviorSystem {
     }));
 
     // Sort by score and add some randomness
-    scoredActions.sort((_a, _b) => b.score - a.score);
+    scoredActions.sort((a, b) => b.score - a.score);
 
     // Select from top 3 actions with weighted probability
     const topActions = scoredActions.slice(0, 3);
-    const totalScore = topActions.reduce((_sum, _item) => sum + item.score, 0);
+    const totalScore = topActions.reduce((sum, item) => sum + item.score, 0);
 
-    if (totalScore === 0) return null;
+    if (totalScore === 0) {return null;}
 
     let random = Math.random() * totalScore;
     for (const item of topActions) {
@@ -356,17 +357,17 @@ export class NPCBehaviorSystem {
     if (currentGoal) {
       switch (currentGoal.type) {
         case "survival":
-          if (action.type === "utility" && action.name.includes("heal")) score += 0.5;
-          if (action.type === "movement" && action.name.includes("flee")) score += 0.3;
+          if (action.type === "utility" && action.name.includes("heal")) {score += 0.5;}
+          if (action.type === "movement" && action.name.includes("flee")) {score += 0.3;}
           break;
         case "combat":
-          if (action.type === "combat") score += 0.4;
+          if (action.type === "combat") {score += 0.4;}
           break;
         case "social":
-          if (action.type === "social") score += 0.3;
+          if (action.type === "social") {score += 0.3;}
           break;
         case "exploration":
-          if (action.type === "movement" && action.name.includes("explore")) score += 0.2;
+          if (action.type === "movement" && action.name.includes("explore")) {score += 0.2;}
           break;
       }
     }
@@ -374,20 +375,20 @@ export class NPCBehaviorSystem {
     // Adjust score based on mood
     switch (npc.behaviorState.mood) {
       case "aggressive":
-        if (action.type === "combat") score += 0.3;
+        if (action.type === "combat") {score += 0.3;}
         break;
       case "fearful":
-        if (action.name.includes("flee") || action.name.includes("hide")) score += 0.4;
-        if (action.type === "combat") score -= 0.3;
+        if (action.name.includes("flee") || action.name.includes("hide")) {score += 0.4;}
+        if (action.type === "combat") {score -= 0.3;}
         break;
       case "curious":
-        if (action.name.includes("investigate") || action.name.includes("explore")) score += 0.2;
+        if (action.name.includes("investigate") || action.name.includes("explore")) {score += 0.2;}
         break;
     }
 
     // Adjust score based on personality traits
     if (action.type === "combat") {
-      score *= npc.personality.traits.aggression;
+      score *= npc.personality.aggression;
     }
     if (action.name.includes("help") || action.name.includes("protect")) {
       score *= npc.personality.traits.empathy;
@@ -421,7 +422,7 @@ export class NPCBehaviorSystem {
         },
       });
     } catch (error) {
-      logger.error(`Error executing action ${action.id} for NPC ${npc.id}:`, error);
+      logger.error(`Error executing action ${action.id} for NPC ${npc.id}:`, error as Error);
     }
   }
 
@@ -457,7 +458,7 @@ export class NPCBehaviorSystem {
         description: "Move away from threats",
         execute: async (npc, context) => {
           const threats = context.visibleEntities.filter((e) => e.isHostile);
-          if (threats.length === 0) return { success: false };
+          if (threats.length === 0) {return { success: false };}
 
           // Calculate average threat position
           let avgThreatX = 0,
@@ -508,10 +509,12 @@ export class NPCBehaviorSystem {
             (e) => e.isHostile && e.distance <= npc.stats.attackRange,
           );
 
-          if (threats.length === 0) return { success: false };
+          if (threats.length === 0) {return { success: false };}
 
-          threats.sort((_a, _b) => a.distance - b.distance);
+          threats.sort((a, b) => a.distance - b.distance);
           const target = threats[0];
+
+          if (!target) {return { success: false };}
 
           const hitChance = 0.7;
           const damage = 10 + Math.floor(Math.random() * 10);
@@ -584,11 +587,11 @@ export class NPCBehaviorSystem {
   }
 
   // Event system
-  addEventListener(_listener: (event: BehaviorEvent) => void): void {
+  addEventListener(listener: (event: BehaviorEvent) => void): void {
     this.changeListeners.push(listener);
   }
 
-  removeEventListener(_listener: (event: BehaviorEvent) => void): void {
+  removeEventListener(listener: (event: BehaviorEvent) => void): void {
     const index = this.changeListeners.indexOf(listener);
     if (index > -1) {
       this.changeListeners.splice(index, 1);
@@ -600,7 +603,7 @@ export class NPCBehaviorSystem {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Behavior event listener error:", error);
+        logger.error("Behavior event listener error:", error as Error);
       }
     });
   }

@@ -267,7 +267,7 @@ export class AssetManager {
 
   unloadAsset(id: string): void {
     const asset = this.assets.get(id);
-    if (!asset) return;
+    if (!asset) {return;}
 
     asset.referenceCount--;
 
@@ -279,7 +279,7 @@ export class AssetManager {
 
   private _unloadAsset(id: string): void {
     const asset = this.assets.get(id);
-    if (!asset) return;
+    if (!asset) {return;}
 
     asset.state = AssetState.UNLOADING;
 

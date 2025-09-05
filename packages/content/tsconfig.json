@@ -2,9 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "types": [
-      "vitest/globals",
       "node"
     ],
     "lib": [
@@ -24,5 +22,10 @@
   "exclude": [
     "dist/**/*",
     "node_modules/**/*"
+  ],
+  "references": [
+    {
+      "path": "../logging"
+    }
   ]
 }

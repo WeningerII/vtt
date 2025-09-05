@@ -5,7 +5,10 @@
     "outDir": "dist",
     "incremental": true,
     "tsBuildInfoFile": "./config.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true,
+    "types": [],
+    "moduleResolution": "node"
   },
   "include": [
     "src/**/*"

@@ -18,7 +18,7 @@ async function main() {
   
   try {
     await runAIIntegrationDemo();
-    console.log('\n' + '=' .repeat(60));
+    console.log(`\n${  '=' .repeat(60)}`);
     console.log('✅ All AI integration tests completed successfully!');
     console.log('\nNext steps for production:');
     console.log('1. Configure real AI providers (OpenAI, Anthropic, etc.)');

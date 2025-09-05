@@ -274,7 +274,6 @@ export class SpellManager extends EventEmitter {
     return {
       hit,
       damage: totalDamage,
-      effects: spell ? this.generateSpellEffects(spell, 1) : undefined,
     };
   }
 
@@ -391,14 +390,14 @@ export class SpellManager extends EventEmitter {
   }
 
   private parseDuration(duration: string): number {
-    if (duration === 'Instantaneous') return 0;
-    if (duration === 'Until dispelled' || duration === 'Permanent') return -1;
+    if (duration === 'Instantaneous') {return 0;}
+    if (duration === 'Until dispelled' || duration === 'Permanent') {return -1;}
     
     // Parse duration like "1 minute", "10 minutes", "1 hour", etc.
     const match = duration.match(/(\d+)\s*(round|minute|hour|day)/i);
     if (match) {
-      const value = parseInt(match[1]);
-      const unit = match[2].toLowerCase();
+      const value = parseInt(match[1] || '0');
+      const unit = match[2]?.toLowerCase() || '';
       
       switch (unit) {
         case 'round': return value * 6; // 6 seconds per round

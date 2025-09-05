@@ -54,7 +54,42 @@ module.exports = {
       // Animations and transitions
       transitionDuration: theme.animation.duration,
       transitionTimingFunction: theme.animation.timingFunction,
-      keyframes: theme.animation.keyframes,
+      keyframes: {
+        ...theme.animation.keyframes,
+        // Critical missing keyframes for Button component
+        'shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' }
+        },
+        'ripple': {
+          '0%': { transform: 'scale(0)', opacity: '1' },
+          '100%': { transform: 'scale(4)', opacity: '0' }
+        },
+        'fadeIn': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' }
+        },
+        'fadeOut': {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' }
+        },
+        'slideInUp': {
+          '0%': { transform: 'translateY(20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' }
+        },
+        'slideInDown': {
+          '0%': { transform: 'translateY(-20px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' }
+        },
+        'scaleIn': {
+          '0%': { transform: 'scale(0.95)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' }
+        },
+        'fadeInUp': {
+          '0%': { transform: 'translateY(30px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' }
+        }
+      },
 
       // Breakpoints from design system
       screens: theme.breakpoints,
@@ -81,6 +116,14 @@ module.exports = {
         'spin-fast': 'spin 0.5s linear infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'bounce-subtle': 'bounce 1s ease-in-out 2',
+        'fadeInUp': 'fadeInUp 0.6s ease-out',
+        'fadeInUp-delayed': 'fadeInUp 0.8s ease-out 0.2s both',
+        'fadeInUp-more-delayed': 'fadeInUp 1s ease-out 0.4s both',
+        'fadeInUp-most-delayed': 'fadeInUp 1.2s ease-out 0.6s both',
+        'shimmer': 'shimmer 3s ease-in-out infinite',
+        'ripple': 'ripple 0.6s ease-out',
+        'animate-ripple': 'ripple 0.6s ease-out',
+        'ripple-expand': 'ripple-expand 0.6s ease-out',
       },
 
       // VTT-specific utilities

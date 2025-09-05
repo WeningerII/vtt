@@ -234,7 +234,7 @@ export class LightingSystem {
 
     // Calculate contribution from each light source
     for (const [lightId, light] of this.lightSources.entries()) {
-      if (!light.isEnabled) continue;
+      if (!light.isEnabled) {continue;}
 
       const contribution = this.calculateLightContribution(light);
       lightContributions.set(lightId, contribution);
@@ -285,7 +285,7 @@ export class LightingSystem {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     // Check if point is within light range
-    if (distance > light.range) return 0;
+    if (distance > light.range) {return 0;}
 
     // Calculate base intensity based on falloff
     let intensity = light.intensity;
@@ -348,7 +348,7 @@ export class LightingSystem {
 
         // Check shadows from each light source
         for (const light of this.lightSources.values()) {
-          if (!light.castsShadows || !light.isEnabled) continue;
+          if (!light.castsShadows || !light.isEnabled) {continue;}
 
           const worldX = x * this.gridSize + this.gridSize / 2;
           const worldY = y * this.gridSize + this.gridSize / 2;
@@ -454,7 +454,7 @@ export class LightingSystem {
       y4 = wall.y2;
 
     const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    if (Math.abs(denom) < 1e-10) return false; // Parallel lines
+    if (Math.abs(denom) < 1e-10) {return false;} // Parallel lines
 
     const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
     const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
@@ -481,7 +481,7 @@ export class LightingSystem {
   }
 
   private updateLightAnimation(light: LightSource, _deltaTime: number): void {
-    if (!light.animation) return;
+    if (!light.animation) {return;}
 
     const time = Date.now() / 1000;
 
@@ -596,11 +596,11 @@ export class LightingSystem {
   }
 
   // Event System
-  addEventListener(_listener: (event: LightingEvent) => void): void {
+  addEventListener(listener: (event: LightingEvent) => void): void {
     this.changeListeners.push(listener);
   }
 
-  removeEventListener(_listener: (event: LightingEvent) => void): void {
+  removeEventListener(listener: (event: LightingEvent) => void): void {
     const index = this.changeListeners.indexOf(listener);
     if (index > -1) {
       this.changeListeners.splice(index, 1);
@@ -612,7 +612,7 @@ export class LightingSystem {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Lighting event listener error:", error);
+        logger.error("Lighting event listener error:", error as Record<string, any>);
       }
     });
   }

@@ -9,7 +9,7 @@ export async function callOpenRouter(opts: {
   temperature?: number;
 }): Promise<ProviderResponse> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("Missing OPENROUTER_API_KEY");
+  if (!apiKey) {throw new Error("Missing OPENROUTER_API_KEY");}
 
   const body = {
     model: opts.model ?? "openrouter/auto",

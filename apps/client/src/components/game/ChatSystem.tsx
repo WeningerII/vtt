@@ -36,9 +36,9 @@ interface ChatSystemProps {
   className?: string;
 }
 
-export const ChatSystem = React.memo(function ChatSystem({
+export const ChatSystem = React.memo(({
   className,
-}: ChatSystemProps): JSX.Element {
+}: ChatSystemProps): JSX.Element => {
   const { user } = useAuth();
   const { session, isGM } = useGame();
   const { send, subscribe } = useWebSocket();
@@ -64,10 +64,24 @@ export const ChatSystem = React.memo(function ChatSystem({
     scrollToBottom();
   }, [messages]);
 
-  // Subscribe to chat messages
+  // Subscribe to chat and dice messages
   useEffect(() => {
-    const unsubscribe = subscribe("CHAT_MESSAGE", (message) => {
-      const chatMessage = message as ChatMessage;
+    const unsubscribeChatBroadcast = subscribe("CHAT_BROADCAST", (message: any) => {
+      const isWhisper = message.channel.startsWith("whisper:");
+      const chatMessage: ChatMessage = {
+        id: message.messageId,
+        type: message.channel === "ic" ? "message" : message.channel === "ooc" ? "ooc" : isWhisper ? "whisper" : "message",
+        content: message.message,
+        author: {
+          id: message.userId,
+          username: message.displayName,
+          displayName: message.displayName,
+          role: "player" // Will be determined by actual role system
+        },
+        timestamp: new Date(message.timestamp).toISOString(),
+        ...(isWhisper && { recipients: [message.channel.split(":")[1]!] })
+      };
+      
       setMessages((prev) => [...prev, chatMessage]);
 
       // Play sound notification
@@ -83,7 +97,45 @@ export const ChatSystem = React.memo(function ChatSystem({
       }
     });
 
-    return unsubscribe;
+    const unsubscribeDiceRoll = subscribe("DICE_ROLL_RESULT", (message: any) => {
+      const rollMessage: ChatMessage = {
+        id: message.rollId,
+        type: "roll",
+        content: message.label || `Rolling ${message.dice}`,
+        author: {
+          id: message.userId,
+          username: message.displayName,
+          displayName: message.displayName,
+          role: "player"
+        },
+        timestamp: new Date(message.timestamp).toISOString(),
+        rollResult: {
+          dice: message.dice,
+          total: message.total,
+          individual: message.rolls,
+          modifier: message.modifier
+        }
+      };
+
+      setMessages((prev) => [...prev, rollMessage]);
+
+      // Play sound notification
+      if (isSoundEnabled && rollMessage.author.id !== user?.id) {
+        const audio = new Audio("/sounds/dice.mp3");
+        audio.volume = 0.4;
+        audio.play().catch(() => {}); // Ignore errors
+      }
+
+      // Update unread count if chat is collapsed
+      if (!isExpanded) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    return () => {
+      unsubscribeChatBroadcast();
+      unsubscribeDiceRoll();
+    };
   }, [subscribe, isSoundEnabled, user?.id, isExpanded]);
 
   // Clear unread count when expanding
@@ -94,14 +146,12 @@ export const ChatSystem = React.memo(function ChatSystem({
   }, [isExpanded]);
 
   const sendMessage = () => {
-    if (!newMessage.trim() || !session || !user) return;
+    if (!newMessage.trim() || !session || !user) {return;}
 
     const messageData = {
-      type: "SEND_CHAT_MESSAGE",
-      sessionId: session.id,
-      content: newMessage.trim(),
-      messageType,
-      whisperTarget: messageType === "whisper" ? whisperTarget : undefined,
+      type: "CHAT_MESSAGE",
+      message: newMessage.trim(),
+      channel: messageType === "whisper" ? `whisper:${whisperTarget}` : messageType,
     };
 
     send(messageData);
@@ -117,13 +167,12 @@ export const ChatSystem = React.memo(function ChatSystem({
   };
 
   const handleQuickRoll = (dice: string) => {
-    if (!session || !user) return;
+    if (!session || !user) {return;}
 
     const rollData = {
       type: "ROLL_DICE",
-      sessionId: session.id,
       dice,
-      public: true,
+      private: false,
     };
 
     send(rollData);
@@ -140,7 +189,7 @@ export const ChatSystem = React.memo(function ChatSystem({
       case "ooc":
         return "text-text-tertiary";
       default:
-        return "text-text-primary";
+        return "text-primary";
     }
   };
 
@@ -219,7 +268,7 @@ export const ChatSystem = React.memo(function ChatSystem({
             onClick={() => setIsSoundEnabled(!isSoundEnabled)}
             className={cn(
               "p-1 rounded hover:bg-bg-tertiary transition-colors",
-              isSoundEnabled ? "text-text-primary" : "text-text-tertiary",
+              isSoundEnabled ? "text-primary" : "text-text-tertiary",
             )}
             title={isSoundEnabled ? "Disable sounds" : "Enable sounds"}
           >
@@ -260,7 +309,7 @@ export const ChatSystem = React.memo(function ChatSystem({
                         <span
                           className={cn(
                             "font-medium text-sm",
-                            message.author.role === "gm" ? "text-gm-accent" : "text-text-primary",
+                            message.author.role === "gm" ? "text-gm-accent" : "text-primary",
                           )}
                         >
                           {message.author.displayName}

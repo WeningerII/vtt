@@ -68,7 +68,7 @@ export class RigidBody {
    * Add force to be applied this frame
    */
   addForce(force: Vector2): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
     this.forces.push({ ...force });
   }
 
@@ -76,7 +76,7 @@ export class RigidBody {
    * Add impulse (instantaneous force)
    */
   addImpulse(impulse: Vector2): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
     this.velocity.x += impulse.x / this.config.mass;
     this.velocity.y += impulse.y / this.config.mass;
   }
@@ -85,7 +85,7 @@ export class RigidBody {
    * Add torque for rotation
    */
   addTorque(torque: number): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
     this.torques.push(torque);
   }
 
@@ -119,7 +119,7 @@ export class RigidBody {
    * Integrate physics (called by physics system)
    */
   integrate(deltaTime: number): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
 
     // Apply forces
     this.acceleration.x = 0;
@@ -162,8 +162,8 @@ export class RigidBody {
    * Apply collision response with another body
    */
   resolveCollision(other: RigidBody, normal: Vector2, penetration: number): void {
-    if (this.config.isTrigger || other.config.isTrigger) return;
-    if (this.config.isStatic && other.config.isStatic) return;
+    if (this.config.isTrigger || other.config.isTrigger) {return;}
+    if (this.config.isStatic && other.config.isStatic) {return;}
 
     // Calculate relative velocity
     const relativeVelocity = {
@@ -175,7 +175,7 @@ export class RigidBody {
     const velAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
 
     // Don't resolve if velocities are separating
-    if (velAlongNormal > 0) return;
+    if (velAlongNormal > 0) {return;}
 
     // Calculate restitution
     const restitution = Math.min(this.config.restitution, other.config.restitution);
@@ -233,7 +233,7 @@ export class RigidBody {
    * Set velocity
    */
   setVelocity(x: number, y: number): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
     this.velocity.x = x;
     this.velocity.y = y;
   }
@@ -251,7 +251,7 @@ export class RigidBody {
    * Apply gravity
    */
   applyGravity(gravity: Vector2): void {
-    if (this.config.isStatic) return;
+    if (this.config.isStatic) {return;}
     this.addForce({
       x: gravity.x * this.config.mass,
       y: gravity.y * this.config.mass,

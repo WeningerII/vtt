@@ -83,11 +83,11 @@ class ProductionMockProvider implements CompatibleAIProvider {
   }
 
   private selectBehaviorAction(prompt: string): string {
-    if (prompt.includes('threat') && prompt.includes('high')) return 'combat_ready';
-    if (prompt.includes('threat') && prompt.includes('medium')) return 'alert_patrol';
-    if (prompt.includes('patrol')) return 'patrol_area';
-    if (prompt.includes('tavern')) return 'serve_customers';
-    if (prompt.includes('guard')) return 'watch_entrance';
+    if (prompt.includes('threat') && prompt.includes('high')) {return 'combat_ready';}
+    if (prompt.includes('threat') && prompt.includes('medium')) {return 'alert_patrol';}
+    if (prompt.includes('patrol')) {return 'patrol_area';}
+    if (prompt.includes('tavern')) {return 'serve_customers';}
+    if (prompt.includes('guard')) {return 'watch_entrance';}
     return 'idle_observation';
   }
 
@@ -154,8 +154,8 @@ class ProductionMockProvider implements CompatibleAIProvider {
   }
 
   private extractThreatLevel(prompt: string): string {
-    if (prompt.includes('threat level: high')) return 'high';
-    if (prompt.includes('threat level: medium')) return 'medium';
+    if (prompt.includes('threat level: high')) {return 'high';}
+    if (prompt.includes('threat level: medium')) {return 'medium';}
     return 'low';
   }
 
@@ -342,7 +342,7 @@ async function runProductionDemo(): Promise<void> {
       console.log(`  ${index + 1}. ${entry}`);
     });
 
-    console.log('\n' + '=' .repeat(70));
+    console.log(`\n${  '=' .repeat(70)}`);
     console.log('✅ Production Demo Completed Successfully!');
     console.log('\nKey Features Demonstrated:');
     console.log('• Type-safe AI integration with comprehensive error handling');

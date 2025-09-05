@@ -121,7 +121,7 @@ export class SynchronizationService {
   }
 
   private startSyncLoop(): void {
-    if (this.syncInterval) return;
+    if (this.syncInterval) {return;}
 
     this.syncInterval = setInterval(() => {
       this.processSendQueue();
@@ -136,7 +136,7 @@ export class SynchronizationService {
   }
 
   private startHeartbeat(): void {
-    if (this.heartbeatInterval) return;
+    if (this.heartbeatInterval) {return;}
 
     this.heartbeatInterval = setInterval(() => {
       this.sendHeartbeat();
@@ -167,7 +167,7 @@ export class SynchronizationService {
       // Combine multiple operations into one message
       const operations = batch.flatMap((msg) => msg.data.operations || []);
       const firstMessage = batch[0];
-      if (!firstMessage) return;
+      if (!firstMessage) {return;}
 
       const combinedMessage: SyncMessage = {
         type: "operations",

@@ -27,7 +27,7 @@ async function globalSetup(_config: FullConfig) {
 
   let serverReady = false;
   const skipClient = !!process.env.E2E_SKIP_CLIENT;
-  let clientReady = skipClient; // if skipping client, treat as ready
+  const clientReady = skipClient; // if skipping client, treat as ready
 
   const maxRetries = 10;
   const retryDelay = 1000;

@@ -81,7 +81,7 @@ export class CombatSystem {
   }
 
   endCombat(): void {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     const allCombatants = this.combat.getAllInCombat();
 
@@ -99,7 +99,7 @@ export class CombatSystem {
   }
 
   nextTurn(): void {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     // End current turn
     if (this.turnOrder.length > 0) {
@@ -125,7 +125,7 @@ export class CombatSystem {
   }
 
   private startTurn(): void {
-    if (!this.isActive || this.turnOrder.length === 0) return;
+    if (!this.isActive || this.turnOrder.length === 0) {return;}
 
     const currentEntity = this.turnOrder[this.currentTurn];
     if (currentEntity !== undefined) {
@@ -138,26 +138,26 @@ export class CombatSystem {
   }
 
   getCurrentActor(): EntityId | null {
-    if (!this.isActive || this.turnOrder.length === 0) return null;
+    if (!this.isActive || this.turnOrder.length === 0) {return null;}
     const actor = this.turnOrder[this.currentTurn];
     return actor !== undefined ? actor : null;
   }
 
   canTakeAction(entityId: EntityId, actionCost: number = 1): boolean {
-    if (!this.isActive) return false;
+    if (!this.isActive) {return false;}
 
     const currentActor = this.getCurrentActor();
-    if (currentActor !== entityId) return false;
+    if (currentActor !== entityId) {return false;}
 
     const combatData = this.combat.get(entityId);
     return combatData ? combatData.actionPoints >= actionCost : false;
   }
 
   takeAction(action: CombatAction): boolean {
-    if (!this.canTakeAction(action.actorId)) return false;
+    if (!this.canTakeAction(action.actorId)) {return false;}
 
     const actionCost = this.getActionCost(action.type);
-    if (!this.combat.useAction(action.actorId, actionCost)) return false;
+    if (!this.combat.useAction(action.actorId, actionCost)) {return false;}
 
     // Process the action
     this.processAction(action);
@@ -167,14 +167,14 @@ export class CombatSystem {
   }
 
   canTakeReaction(entityId: EntityId): boolean {
-    if (!this.isActive) return false;
+    if (!this.isActive) {return false;}
 
     const combatData = this.combat.get(entityId);
     return combatData ? !combatData.reactionUsed : false;
   }
 
   takeReaction(entityId: EntityId, reactionData: any): boolean {
-    if (!this.canTakeReaction(entityId)) return false;
+    if (!this.canTakeReaction(entityId)) {return false;}
 
     this.combat.useReaction(entityId);
     this.emitEvent("action_taken", entityId, {
@@ -247,12 +247,12 @@ export class CombatSystem {
   }
 
   private processAttack(action: CombatAction): void {
-    if (!action.targetId) return;
+    if (!action.targetId) {return;}
 
     const attackerStats = this.world.getComponent("stats", action.entityId);
     const targetHealth = this.world.getComponent("health", action.targetId);
 
-    if (!attackerStats || !targetHealth) return;
+    if (!attackerStats || !targetHealth) {return;}
 
     // Simple attack resolution
     const attackRoll = Math.floor(Math.random() * 20) + 1;
@@ -380,7 +380,7 @@ export class CombatSystem {
   }
 
   update(_deltaTime: number): void {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     // Update combat-related logic
     // Handle ongoing effects, concentration checks, etc.

@@ -24,21 +24,19 @@ import { LEVEL_7_SPELLS } from "./spells/level7";
 import { LEVEL_8_SPELLS } from "./spells/level8";
 import { LEVEL_9_SPELLS } from "./spells/level9";
 export const SRD_SPELLS = {
-  ...CANTRIPS,
-  ...LEVEL_1_SPELLS,
-  ...LEVEL_2_SPELLS,
-  ...LEVEL_3_SPELLS,
-  ...LEVEL_4_SPELLS,
-  ...LEVEL_5_SPELLS,
-  ...LEVEL_6_SPELLS,
-  ...LEVEL_7_SPELLS,
-  ...LEVEL_8_SPELLS,
-  ...LEVEL_9_SPELLS,
+    ...CANTRIPS,
+    ...LEVEL_1_SPELLS,
+    ...LEVEL_2_SPELLS,
+    ...LEVEL_3_SPELLS,
+    ...LEVEL_4_SPELLS,
+    ...LEVEL_5_SPELLS,
+    ...LEVEL_6_SPELLS,
+    ...LEVEL_7_SPELLS,
+    ...LEVEL_8_SPELLS,
+    ...LEVEL_9_SPELLS,
 };
 export const getAllSpells = () => Object.values(SRD_SPELLS);
-export const getSpellsByLevel = (level) => getAllSpells().filter((spell) => spell.level === level);
-export const getSpellsByClass = (className) =>
-  getAllSpells().filter((spell) => spell.classes.includes(className));
-export const getSpellsBySchool = (school) =>
-  getAllSpells().filter((spell) => spell.school === school);
+export const _getSpellsByLevel = (level) => getAllSpells().filter((spell) => spell.level === level);
+export const _getSpellsByClass = (className) => getAllSpells().filter((spell) => spell.classes.includes(className));
+export const _getSpellsBySchool = (school) => getAllSpells().filter((spell) => spell.school === school);
 //# sourceMappingURL=spells.js.map

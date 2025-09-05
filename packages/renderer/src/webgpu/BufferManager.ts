@@ -1,4 +1,4 @@
-import { GPUBufferUsage } from "@webgpu/types";
+// GPUBufferUsage is available as browser global
 import { logger } from "@vtt/logging";
 
 export interface BufferInfo {

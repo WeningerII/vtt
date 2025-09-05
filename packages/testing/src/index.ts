@@ -60,7 +60,7 @@ export const TEST_CONFIG: TestConfig = {
  * Create mock WebSocket server for testing
  */
 export function createMockWebSocketServer(port: number = 0): any {
-  const wss = new (require("ws").Server)({ port: port });
+  const wss = new (require("ws").Server)({ port });
   const clients = new Set();
 
   wss.on("connection", (ws: any) => {

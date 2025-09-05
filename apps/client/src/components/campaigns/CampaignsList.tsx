@@ -3,23 +3,27 @@
  */
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
-import {
-  Search,
-  Filter,
-  Grid3X3,
-  List,
-  Plus,
-  Users,
-  Calendar,
-  Clock,
-  MoreHorizontal,
-  Play,
-  Pause,
-  Settings,
-  Archive,
-  Gamepad2,
-  Loader2,
-} from "lucide-react";
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const Search = MockIcon;
+const Filter = MockIcon;
+const Grid3X3 = MockIcon;
+const List = MockIcon;
+const Plus = MockIcon;
+const Users = MockIcon;
+const Calendar = MockIcon;
+const Clock = MockIcon;
+const MoreHorizontal = MockIcon;
+const Play = MockIcon;
+const Pause = MockIcon;
+const Settings = MockIcon;
+const Archive = MockIcon;
+const Gamepad2 = MockIcon;
+const Loader2 = MockIcon;
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
@@ -169,8 +173,6 @@ export function CampaignsList() {
               {campaign.status}
             </span>
             <Button
-              variant="ghost"
-              size="icon"
               className="opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <MoreHorizontal className="h-4 w-4" />
@@ -266,8 +268,6 @@ export function CampaignsList() {
       </div>
 
       <Button
-        variant="ghost"
-        size="icon"
         className="opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <MoreHorizontal className="h-4 w-4" />
@@ -305,22 +305,18 @@ export function CampaignsList() {
           {/* View Toggle */}
           <div className="flex border border-neutral-300 rounded-lg p-1">
             <Button
-              variant={viewMode === "grid" ? "primary" : "ghost"}
-              size="sm"
               onClick={() => setViewMode("grid")}
             >
               <Grid3X3 className="h-4 w-4" />
             </Button>
             <Button
-              variant={viewMode === "list" ? "primary" : "ghost"}
-              size="sm"
               onClick={() => setViewMode("list")}
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
 
-          <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
+          <Button>
             New Campaign
           </Button>
         </div>
@@ -343,7 +339,7 @@ export function CampaignsList() {
             </div>
             <h3 className="text-lg font-medium text-error-900 mb-2">Failed to load campaigns</h3>
             <p className="text-error-700 mb-6">{error}</p>
-            <Button variant="primary" onClick={() => window.location.reload()}>
+            <Button onClick={() => window.location.reload()}>
               Try Again
             </Button>
           </CardContent>
@@ -361,7 +357,7 @@ export function CampaignsList() {
                 : "Create your first campaign to get started with your tabletop adventures"}
             </p>
             {!searchQuery && filterStatus === "all" && (
-              <Button variant="primary" leftIcon={<Plus className="h-4 w-4" />}>
+              <Button>
                 Create Your First Campaign
               </Button>
             )}

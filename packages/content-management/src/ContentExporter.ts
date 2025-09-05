@@ -88,6 +88,8 @@ export class ContentExporter extends EventEmitter {
 
     for (let i = 0; i < assetsToExport.length; i++) {
       const asset = assetsToExport[i];
+      if (!asset) {continue;}
+      
       this.emitProgress("collecting", i + 1, assetsToExport.length, asset.name);
 
       try {
@@ -163,13 +165,22 @@ export class ContentExporter extends EventEmitter {
     },
     options: ExportOptions,
   ): Promise<ExportResult> {
+    const searchFilter: any = {};
+    if (filter.types !== undefined) {
+      searchFilter.type = filter.types;
+    }
+    if (filter.categories !== undefined) {
+      searchFilter.category = filter.categories;
+    }
+    if (filter.tags !== undefined) {
+      searchFilter.tags = filter.tags;
+    }
+    if (filter.uploadedBy !== undefined) {
+      searchFilter.uploadedBy = filter.uploadedBy;
+    }
+    
     const searchResult = this.assetManager.searchAssets(
-      {
-        type: filter.types,
-        category: filter.categories,
-        tags: filter.tags,
-        uploadedBy: filter.uploadedBy,
-      },
+      searchFilter,
       1,
       1000,
     ); // Get first 1000 assets
@@ -194,17 +205,28 @@ export class ContentExporter extends EventEmitter {
       customStructure?: Map<string, string>; // assetId -> custom path
     },
   ): Promise<ExportResult> {
-    const manifest: PackageManifest = {
+    const manifest: any = {
       name,
       version,
-      description: packageOptions.description,
-      author: packageOptions.author,
-      license: packageOptions.license,
       created: new Date().toISOString(),
       assets: [],
-      dependencies: packageOptions.dependencies,
-      tags: packageOptions.tags,
     };
+    
+    if (packageOptions.description !== undefined) {
+      manifest.description = packageOptions.description;
+    }
+    if (packageOptions.author !== undefined) {
+      manifest.author = packageOptions.author;
+    }
+    if (packageOptions.license !== undefined) {
+      manifest.license = packageOptions.license;
+    }
+    if (packageOptions.dependencies !== undefined) {
+      manifest.dependencies = packageOptions.dependencies;
+    }
+    if (packageOptions.tags !== undefined) {
+      manifest.tags = packageOptions.tags;
+    }
 
     const options: ExportOptions = {
       format: "content-package",
@@ -327,17 +349,24 @@ export class ContentExporter extends EventEmitter {
     const zip = new JSZip();
 
     // Create manifest
-    const manifest: PackageManifest = {
+    const manifest: any = {
       name: options.customManifest?.name || "Exported Content",
       version: options.customManifest?.version || "1.0.0",
       description: options.customManifest?.description || "Exported from VTT",
       author: options.customManifest?.author || "VTT Export",
-      license: options.customManifest?.license,
       created: new Date().toISOString(),
       assets: [],
-      dependencies: options.customManifest?.dependencies,
-      tags: options.customManifest?.tags,
     };
+    
+    if (options.customManifest?.license !== undefined) {
+      manifest.license = options.customManifest.license;
+    }
+    if (options.customManifest?.dependencies !== undefined) {
+      manifest.dependencies = options.customManifest.dependencies;
+    }
+    if (options.customManifest?.tags !== undefined) {
+      manifest.tags = options.customManifest.tags;
+    }
 
     // Create assets folder and manifest entries
     this.emitProgress("processing", 0, assetData.size);
@@ -404,7 +433,7 @@ export class ContentExporter extends EventEmitter {
       assets: Record<string, string>; // assetId -> base64 data
     } = {
       metadata: [],
-      assets: Record<string, any>,
+      assets: {},
     };
 
     this.emitProgress("processing", 0, assetData.size);
@@ -422,7 +451,7 @@ export class ContentExporter extends EventEmitter {
     }
 
     const json = JSON.stringify(exportData, null, 2);
-    return new TextEncoder().encode(json);
+    return new TextEncoder().encode(json).buffer;
   }
 
   private async exportAsIndividualFiles(
@@ -443,7 +472,7 @@ export class ContentExporter extends EventEmitter {
 
       if (options.includeMetadata) {
         const metadataJson = JSON.stringify(metadata, null, 2);
-        files.set(`${filename}.meta.json`, new TextEncoder().encode(metadataJson));
+        files.set(`${filename}.meta.json`, new TextEncoder().encode(metadataJson).buffer);
       }
     }
 

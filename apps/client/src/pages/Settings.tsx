@@ -14,11 +14,11 @@ interface SettingsProps {
 
 export function Settings({ router }: SettingsProps) {
   return (
-    <div className="min-h-screen bg-bg-primary">
+    <div className="min-h-screen bg-primary">
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-text-primary mb-4">Settings</h1>
-          <p className="text-text-secondary mb-6">
+          <h1 className="text-2xl font-bold text-primary mb-4">Settings</h1>
+          <p className="text-secondary mb-6">
             User settings and preferences will be implemented in future development phases.
           </p>
           <LoadingSpinner size="lg" showLabel label="Loading settings..." />

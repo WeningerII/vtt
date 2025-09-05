@@ -5,7 +5,8 @@
     "rootDir": "src",
     "incremental": true,
     "tsBuildInfoFile": "./content-creation.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "types": []
   },
   "include": [
     "src/**/*"

@@ -155,17 +155,17 @@ const PRESET_COLORS = [
   "#6366f1",
 ];
 
-export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
+export const TokenPropertiesPanel = memo(({
   token,
   onClose,
   onUpdate,
   onDelete,
   isGM = false,
-}: TokenPropertiesPanelProps) {
+}: TokenPropertiesPanelProps) => {
   const [editedToken, setEditedToken] = useState<Token | null>(token);
   const [showConditions, setShowConditions] = useState(false);
 
-  if (!token || !editedToken) return null;
+  if (!token || !editedToken) {return null;}
 
   const handleSave = () => {
     onUpdate(token.id, editedToken);
@@ -210,7 +210,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
       <div className="bg-bg-secondary rounded-lg border border-border-primary w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border-primary">
-          <h2 className="text-lg font-semibold text-text-primary">Token Properties</h2>
+          <h2 className="text-lg font-semibold text-primary">Token Properties</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="h-4 w-4" />
           </Button>
@@ -221,7 +221,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
           {/* Basic Info */}
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
+              <label className="block text-sm font-medium text-primary mb-1">Name</label>
               <Input
                 value={editedToken.name}
                 onChange={(e) => updateField("name", e.target.value)}
@@ -231,11 +231,11 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Size</label>
+                <label className="block text-sm font-medium text-primary mb-1">Size</label>
                 <select
                   value={editedToken.size}
                   onChange={(e) => updateField("size", parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 bg-bg-primary border border-border-primary rounded-md text-text-primary text-sm"
+                  className="w-full px-3 py-2 bg-primary border border-border-primary rounded-md text-primary text-sm"
                 >
                   {TOKEN_SIZES.map((size) => (
                     <option key={size.value} value={size.value}>
@@ -246,7 +246,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Rotation</label>
+                <label className="block text-sm font-medium text-primary mb-1">Rotation</label>
                 <Input
                   type="number"
                   min="0"
@@ -259,7 +259,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Color</label>
+              <label className="block text-sm font-medium text-primary mb-1">Color</label>
               <div className="flex gap-2 mb-2">
                 {PRESET_COLORS.map((color) => (
                   <button
@@ -294,7 +294,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                 />
                 <label
                   htmlFor="visible"
-                  className="text-sm text-text-primary flex items-center gap-1"
+                  className="text-sm text-primary flex items-center gap-1"
                 >
                   {editedToken.isVisible ? (
                     <Eye className="h-4 w-4" />
@@ -309,10 +309,10 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
 
           {/* Health */}
           <div className="space-y-3">
-            <h3 className="text-md font-semibold text-text-primary">Health</h3>
+            <h3 className="text-md font-semibold text-primary">Health</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">
+                <label className="block text-sm font-medium text-primary mb-1">
                   Current HP
                 </label>
                 <Input
@@ -323,7 +323,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">Max HP</label>
+                <label className="block text-sm font-medium text-primary mb-1">Max HP</label>
                 <Input
                   type="number"
                   min="1"
@@ -341,7 +341,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                     {editedToken.hitPoints.current}/{editedToken.hitPoints.max}
                   </span>
                 </div>
-                <div className="w-full bg-bg-primary rounded-full h-2">
+                <div className="w-full bg-primary rounded-full h-2">
                   <div
                     className={cn(
                       "h-2 rounded-full transition-all",
@@ -363,7 +363,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
           {/* Conditions */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-md font-semibold text-text-primary">Conditions</h3>
+              <h3 className="text-md font-semibold text-primary">Conditions</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowConditions(!showConditions)}>
                 <Plus className="h-4 w-4" />
               </Button>
@@ -373,7 +373,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
             <div className="space-y-2">
               {editedToken.conditions.map((conditionId) => {
                 const condition = getConditionInfo(conditionId);
-                if (!condition) return null;
+                if (!condition) {return null;}
 
                 return (
                   <div
@@ -382,7 +382,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                   >
                     <div className="flex items-center gap-2">
                       <condition.icon className="h-4 w-4" style={{ color: condition.color }} />
-                      <span className="text-sm font-medium text-text-primary">
+                      <span className="text-sm font-medium text-primary">
                         {condition.name}
                       </span>
                     </div>
@@ -416,7 +416,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
                   >
                     <condition.icon className="h-4 w-4" style={{ color: condition.color }} />
                     <div>
-                      <div className="text-sm font-medium text-text-primary">{condition.name}</div>
+                      <div className="text-sm font-medium text-primary">{condition.name}</div>
                       <div className="text-xs text-text-secondary">{condition.description}</div>
                     </div>
                   </button>
@@ -427,9 +427,9 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
 
           {/* Character Info */}
           <div className="space-y-3">
-            <h3 className="text-md font-semibold text-text-primary">Character Info</h3>
+            <h3 className="text-md font-semibold text-primary">Character Info</h3>
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
+              <label className="block text-sm font-medium text-primary mb-1">
                 Character ID
               </label>
               <Input
@@ -439,7 +439,7 @@ export const TokenPropertiesPanel = memo(function TokenPropertiesPanel({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Player ID</label>
+              <label className="block text-sm font-medium text-primary mb-1">Player ID</label>
               <Input
                 value={editedToken.playerId || ""}
                 onChange={(e) => updateField("playerId", e.target.value)}

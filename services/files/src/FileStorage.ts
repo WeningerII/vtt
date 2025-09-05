@@ -3,7 +3,7 @@
  */
 
 import { AssetStorage } from "./AssetManager";
-import type { Buffer } from "node:buffer";
+import { Buffer } from "node:buffer";
 
 import * as fs from "fs/promises";
 import * as path from "path";

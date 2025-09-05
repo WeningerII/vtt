@@ -1,13 +1,5 @@
-import type {
-  GPUDevice,
-  GPURenderPipeline,
-  GPUTexture,
-  GPUComputePipeline,
-  GPUBuffer,
-  GPUTextureUsage,
-  GPUBufferUsage,
-  GPUCommandEncoder,
-} from "@webgpu/types";
+// WebGPU types are available as browser globals
+// GPUDevice, GPUTexture, GPURenderPipeline, GPUComputePipeline, GPUBuffer, GPUCommandEncoder, GPUTextureUsage, GPUBufferUsage
 /**
  * Professional Lighting System - Exceeds VTT Industry Standards
  * Features real-time shadows, volumetric lighting, and dynamic environment lighting
@@ -418,7 +410,7 @@ export class ProfessionalLightingSystem {
     const lightArray = Array.from(this.lights.values());
     const lightData = new Float32Array(lightArray.length * 16); // 16 floats per light
 
-    lightArray.forEach((light, _index) => {
+    lightArray.forEach((light, index) => {
       const offset = index * 16;
       lightData.set(light.position, offset);
       lightData.set(light.direction, offset + 3);
@@ -443,7 +435,7 @@ export class ProfessionalLightingSystem {
   renderShadowMaps(
     encoder: GPUCommandEncoder,
     objects: any[],
-    lightViewMatrices: Float32Array[],
+    lightViewMatrices: Float32Array,
   ): void {
     const startTime = performance.now();
     this.stats.shadowMapUpdates = 0;
@@ -451,8 +443,8 @@ export class ProfessionalLightingSystem {
     // Render shadow maps for each light that casts shadows
     const shadowCasters = Array.from(this.lights.values()).filter((light) => light.castShadows);
 
-    shadowCasters.forEach((light, _lightIndex) => {
-      if (lightIndex >= lightViewMatrices.length / 16) return;
+    shadowCasters.forEach((light, lightIndex) => {
+      if (lightIndex >= lightViewMatrices.length / 16) {return;}
 
       const lightViewMatrix = lightViewMatrices.slice(lightIndex * 16, (lightIndex + 1) * 16);
 
@@ -491,7 +483,7 @@ export class ProfessionalLightingSystem {
   }
 
   renderVolumetricLighting(encoder: GPUCommandEncoder, _camera: any): void {
-    if (!this.volumetricSettings.enabled || !this.volumetricPipeline) return;
+    if (!this.volumetricSettings.enabled || !this.volumetricPipeline) {return;}
 
     const startTime = performance.now();
 

@@ -62,7 +62,7 @@ function PlayerStatus({
   };
 
   const togglePermission = (permission: keyof Player["permissions"]) => {
-    if (!onUpdatePermissions) return;
+    if (!onUpdatePermissions) {return;}
 
     onUpdatePermissions(player.id, {
       [permission]: !player.permissions[permission],
@@ -104,7 +104,7 @@ function PlayerStatus({
         {/* Player Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h4 className="font-medium text-text-primary truncate">{player.displayName}</h4>
+            <h4 className="font-medium text-primary truncate">{player.displayName}</h4>
             {isCurrentUser && (
               <span className="text-xs bg-accent-primary text-white px-1.5 py-0.5 rounded">
                 You
@@ -112,7 +112,7 @@ function PlayerStatus({
             )}
           </div>
 
-          <p className="text-sm text-text-secondary truncate">@{player.username}</p>
+          <p className="text-sm text-secondary truncate">@{player.username}</p>
 
           {/* Character Info */}
           {player.character && (
@@ -140,7 +140,7 @@ function PlayerStatus({
               className="p-1 hover:bg-bg-secondary rounded transition-colors"
               aria-label={showOptions ? "Hide options" : "Show options"}
             >
-              <MoreVertical className="h-4 w-4 text-text-secondary" />
+              <MoreVertical className="h-4 w-4 text-secondary" />
             </button>
           )}
         </div>
@@ -154,7 +154,7 @@ function PlayerStatus({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Heart className="h-3 w-3 text-error" />
-                <span className="text-xs text-text-secondary">
+                <span className="text-xs text-secondary">
                   {player.character.hitPoints}/{player.character.maxHitPoints} HP
                 </span>
               </div>
@@ -211,7 +211,7 @@ function PlayerStatus({
           {/* Permissions Panel */}
           {showPermissions && (
             <div className="border-t border-border-primary p-2">
-              <h5 className="text-xs font-medium text-text-primary mb-2">Player Permissions</h5>
+              <h5 className="text-xs font-medium text-primary mb-2">Player Permissions</h5>
               <div className="space-y-1">
                 {Object.entries(player.permissions).map(([key, value]) => (
                   <label key={key} className="flex items-center gap-2 text-xs">
@@ -235,18 +235,18 @@ function PlayerStatus({
   );
 }
 
-export const PlayerPanel = React.memo(function PlayerPanel({
+export const PlayerPanel = React.memo(({
   className,
-}: PlayerPanelProps): JSX.Element {
+}: PlayerPanelProps): JSX.Element => {
   const { user } = useAuth();
-  const { session, isGM, kickPlayer, updatePlayerPermissions } = useGame();
+  const { session, isGM, kickPlayer, updatePlayerPermissions, pauseSession, resumeSession, endSession } = useGame();
   const { isConnected, latency } = useWebSocket();
   const [showOfflinePlayers, setShowOfflinePlayers] = useState(true);
 
   if (!session) {
     return (
       <div className={cn("bg-bg-secondary rounded-lg border border-border-primary p-4", className)}>
-        <p className="text-text-secondary text-center">Join a game session to see players</p>
+        <p className="text-secondary text-center">Join a game session to see players</p>
       </div>
     );
   }
@@ -261,7 +261,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-accent-primary" />
-            <h3 className="font-semibold text-text-primary">
+            <h3 className="font-semibold text-primary">
               Players ({session.players.length}/{session.settings.maxPlayers})
             </h3>
           </div>
@@ -269,7 +269,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
           {/* Session Status */}
           <div className="flex items-center gap-2">
             <div className={cn("h-2 w-2 rounded-full", isConnected ? "bg-success" : "bg-error")} />
-            <span className="text-xs text-text-secondary">
+            <span className="text-xs text-secondary">
               {isConnected ? `${latency}ms` : "Disconnected"}
             </span>
           </div>
@@ -279,10 +279,10 @@ export const PlayerPanel = React.memo(function PlayerPanel({
         <div className="mt-3 p-2 bg-gm-accent/10 border border-gm-accent/20 rounded-lg">
           <div className="flex items-center gap-2">
             <Crown className="h-4 w-4 text-gm-accent" />
-            <span className="text-sm font-medium text-text-primary">
+            <span className="text-sm font-medium text-primary">
               {session.gamemaster.displayName}
             </span>
-            <span className="text-xs text-text-secondary">Gamemaster</span>
+            <span className="text-xs text-secondary">Gamemaster</span>
           </div>
         </div>
       </div>
@@ -292,7 +292,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
         {/* Connected Players */}
         {connectedPlayers.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-text-primary mb-2 flex items-center gap-2">
+            <h4 className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
               <Wifi className="h-4 w-4 text-success" />
               Connected ({connectedPlayers.length})
             </h4>
@@ -319,7 +319,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
               className="w-full text-left"
               aria-label={showOfflinePlayers ? "Hide offline players" : "Show offline players"}
             >
-              <h4 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-2 hover:text-text-primary transition-colors">
+              <h4 className="text-sm font-medium text-secondary mb-2 flex items-center gap-2 hover:text-primary transition-colors">
                 <WifiOff className="h-4 w-4 text-error" />
                 Offline ({offlinePlayers.length})
                 {showOfflinePlayers ? (
@@ -351,7 +351,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
         {session.players.length === 0 && (
           <div className="text-center py-8">
             <Users className="h-8 w-8 text-text-tertiary mx-auto mb-2" />
-            <p className="text-text-secondary">No players have joined yet</p>
+            <p className="text-secondary">No players have joined yet</p>
             {isGM && (
               <p className="text-text-tertiary text-sm mt-1">
                 Share the session link to invite players
@@ -369,9 +369,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => {
-                  /* pause session */
-                }}
+                onClick={pauseSession}
               >
                 Pause Session
               </Button>
@@ -379,9 +377,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => {
-                  /* resume session */
-                }}
+                onClick={resumeSession}
               >
                 Resume Session
               </Button>
@@ -390,9 +386,7 @@ export const PlayerPanel = React.memo(function PlayerPanel({
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => {
-                /* end session */
-              }}
+              onClick={endSession}
             >
               End Session
             </Button>

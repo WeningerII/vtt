@@ -109,7 +109,7 @@ export class TelemetrySystem {
     errorRate: 0,
     uptime: 0,
     resourceUsage: { cpu: 0, memory: 0, gpu: 0, network: 0 },
-    featureUsage: Record<string, any>
+    featureUsage: {} as Record<string, any>
   };
   
   private sessionStartTime = Date.now();
@@ -300,7 +300,7 @@ export class TelemetrySystem {
       }
       
     } catch (error) {
-      logger.error('Failed to flush telemetry events:', error);
+      logger.error('Failed to flush telemetry events:', error as Record<string, any> | undefined);
       
       // Put events back in queue for retry
       this.eventQueue.unshift(...events);
@@ -386,7 +386,7 @@ export class TelemetrySystem {
   }
   
   private sanitizeConfig(): Partial<TelemetryConfig> {
-    const { _endpoint,  _...safeConfig  } = this.config;
+    const { endpoint, ...safeConfig } = this.config;
     return safeConfig;
   }
   
@@ -495,12 +495,12 @@ export class TelemetrySystem {
     const trackFrame = (_currentTime: number) => {
       frameCount++;
       
-      if (currentTime - lastTime >= 1000) {
+      if (_currentTime - lastTime >= 1000) {
         this.performanceMetrics.fps = frameCount;
         this.performanceMetrics.frameTime = 1000 / frameCount;
         
         frameCount = 0;
-        lastTime = currentTime;
+        lastTime = _currentTime;
         
         // Track performance every 5 seconds
         if (Math.random() < 0.2) {
@@ -576,7 +576,7 @@ export class TelemetrySystem {
         this.eventQueue.push(...events);
       }
     } catch (error) {
-      logger.warn('Failed to load persisted telemetry events:', error);
+      logger.warn('Failed to load persisted telemetry events:', error as Record<string, any> | undefined);
     }
   }
   
@@ -584,7 +584,7 @@ export class TelemetrySystem {
     try {
       localStorage.setItem('telemetry_events', JSON.stringify(this.eventQueue));
     } catch (error) {
-      logger.warn('Failed to persist telemetry events:', error);
+      logger.warn('Failed to persist telemetry events:', error as Record<string, any> | undefined);
     }
   }
 }

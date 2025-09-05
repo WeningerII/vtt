@@ -95,8 +95,8 @@ export class ProductionProviderRegistry {
   async initializeFromConfig(config: ProviderConfig): Promise<void> {
     if (config.anthropic?.apiKey) {
       const options: any = { apiKey: config.anthropic.apiKey };
-      if (config.anthropic.baseURL) options.baseURL = config.anthropic.baseURL;
-      if (config.anthropic.defaultModel) options.defaultModel = config.anthropic.defaultModel;
+      if (config.anthropic.baseURL) {options.baseURL = config.anthropic.baseURL;}
+      if (config.anthropic.defaultModel) {options.defaultModel = config.anthropic.defaultModel;}
       
       const provider = this.factory.createAnthropicProvider(options);
       this.registerProvider('anthropic', provider);
@@ -104,9 +104,9 @@ export class ProductionProviderRegistry {
 
     if (config.google?.apiKey) {
       const options: any = { apiKey: config.google.apiKey };
-      if (config.google.baseURL) options.baseURL = config.google.baseURL;
-      if (config.google.projectId) options.projectId = config.google.projectId;
-      if (config.google.defaultModel) options.defaultModel = config.google.defaultModel;
+      if (config.google.baseURL) {options.baseURL = config.google.baseURL;}
+      if (config.google.projectId) {options.projectId = config.google.projectId;}
+      if (config.google.defaultModel) {options.defaultModel = config.google.defaultModel;}
       
       const provider = this.factory.createGeminiProvider(options);
       this.registerProvider('google', provider);
@@ -118,8 +118,8 @@ export class ProductionProviderRegistry {
         endpoint: config.azure.endpoint,
         deployments: config.azure.deployments || {}
       };
-      if (config.azure.registrationKey) options.registrationKey = config.azure.registrationKey;
-      if (config.azure.apiVersion) options.apiVersion = config.azure.apiVersion;
+      if (config.azure.registrationKey) {options.registrationKey = config.azure.registrationKey;}
+      if (config.azure.apiVersion) {options.apiVersion = config.azure.apiVersion;}
       
       const provider = this.factory.createAzureOpenAIProvider(options);
       this.registerProvider('azure', provider);
@@ -133,7 +133,7 @@ export class ProductionProviderRegistry {
       try {
         const health = await provider.healthCheck();
         const result: any = { status: health.status };
-        if (health.latency !== undefined) result.latency = health.latency;
+        if (health.latency !== undefined) {result.latency = health.latency;}
         results[name] = result;
       } catch (error) {
         results[name] = {
@@ -188,7 +188,7 @@ export class IntelligentProviderRouter {
   ): Promise<{ provider: AIProvider; fallbacks: AIProvider[] }> {
     const fallbackChain = this.modelMapper.getFallbackChain(category);
     const availableProviders = fallbackChain.filter(name => {
-      if (constraints?.excludeProviders?.includes(name)) return false;
+      if (constraints?.excludeProviders?.includes(name)) {return false;}
       const health = this.providerHealthCache.get(name);
       return !health || health.status === 'healthy';
     });
@@ -238,6 +238,16 @@ export {
   AzureOpenAIProvider,
   CircuitBreakerProvider
 };
+
+// Export legacy providers for backward compatibility
+export {
+  OpenAIProvider,
+  AnthropicProvider,
+  StabilityAIProvider,
+  HuggingFaceProvider,
+  ReplicateProvider,
+  createProviders
+} from './legacy-providers';
 
 // Export model mapper
 export { ModelMapper } from '../model-mapper';

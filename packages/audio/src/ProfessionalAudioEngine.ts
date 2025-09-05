@@ -331,7 +331,7 @@ export class ProfessionalAudioEngine {
         id: effect.id,
         type: effect.type,
         enabled: false,
-        parameters: Record<string, any>,
+        parameters: {} as Record<string, any>,
         wetGain: 0.5,
         dryGain: 0.5,
       });
@@ -361,7 +361,7 @@ export class ProfessionalAudioEngine {
   }
 
   private async setupVoiceChat(): Promise<void> {
-    if (!this.voiceChat.enabled) return;
+    if (!this.voiceChat.enabled) {return;}
 
     try {
       this.mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -377,7 +377,7 @@ export class ProfessionalAudioEngine {
       const voiceGain = this.audioGroups.get("voice")!;
       source.connect(voiceGain);
     } catch (error) {
-      logger.error("Failed to setup voice chat:", error);
+      logger.error("Failed to setup voice chat:", error as Record<string, any>);
       this.voiceChat.enabled = false;
     }
   }
@@ -399,7 +399,7 @@ export class ProfessionalAudioEngine {
         const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
         this.audioBuffers.set(`impulse_${preset}`, audioBuffer);
       } catch (error) {
-        logger.warn(`Failed to load impulse response for ${preset}:`, error);
+        logger.warn(`Failed to load impulse response for ${preset}:`, error as Record<string, any>);
       }
     }
   }
@@ -408,27 +408,32 @@ export class ProfessionalAudioEngine {
     this.analyzerNode.fftSize = this.analyzer.fftSize;
 
     const analyze = () => {
-      if (!this.analyzer.enabled) return;
+      if (!this.analyzer.enabled) {return;}
 
-      this.analyzerNode.getFloatFrequencyData(this.analyzer.frequencyData);
-      this.analyzerNode.getFloatTimeDomainData(this.analyzer.waveformData);
+      this.analyzerNode.getFloatFrequencyData(this.analyzer.frequencyData as Float32Array<ArrayBuffer>);
+      this.analyzerNode.getFloatTimeDomainData(this.analyzer.waveformData as Float32Array<ArrayBuffer>);
 
       // Calculate volume (RMS)
       let sum = 0;
-      for (let i = 0; i < this.analyzer.waveformData.length; i++) {
-        sum += this.analyzer.waveformData[i] * this.analyzer.waveformData[i];
+      if (this.analyzer.waveformData) {
+        for (let i = 0; i < (this.analyzer.waveformData?.length || 0); i++) {
+          const value = this.analyzer.waveformData?.[i] || 0;
+          sum += value * value;
+        }
+        this.analyzer.volume = Math.sqrt(sum / this.analyzer.waveformData.length);
       }
-      this.analyzer.volume = Math.sqrt(sum / this.analyzer.waveformData.length);
 
       // Calculate spectral centroid
       let numerator = 0;
       let denominator = 0;
-      for (let i = 0; i < this.analyzer.frequencyData.length; i++) {
-        const magnitude = Math.pow(10, this.analyzer.frequencyData[i] / 20);
-        numerator += i * magnitude;
-        denominator += magnitude;
+      if (this.analyzer.frequencyData) {
+        for (let i = 0; i < (this.analyzer.frequencyData?.length || 0); i++) {
+          const magnitude = Math.pow(10, (this.analyzer.frequencyData?.[i] || 0) / 20);
+          numerator += i * magnitude;
+          denominator += magnitude;
+        }
+        this.analyzer.spectralCentroid = denominator > 0 ? numerator / denominator : 0;
       }
-      this.analyzer.spectralCentroid = denominator > 0 ? numerator / denominator : 0;
 
       requestAnimationFrame(analyze);
     };
@@ -443,7 +448,7 @@ export class ProfessionalAudioEngine {
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
       this.audioBuffers.set(id, audioBuffer);
     } catch (error) {
-      logger.error(`Failed to load audio ${id}:`, error);
+      logger.error(`Failed to load audio ${id}:`, error as Record<string, any>);
       throw error;
     }
   }
@@ -587,7 +592,7 @@ export class ProfessionalAudioEngine {
 
   updateAudioSource(id: string, updates: Partial<AudioSource>): void {
     const sourceNode = this.audioSources.get(id);
-    if (!sourceNode) return;
+    if (!sourceNode) {return;}
 
     Object.assign(sourceNode.config, updates);
 
@@ -697,7 +702,7 @@ export class ProfessionalAudioEngine {
 
   private transitionToMusicTheme(themeId: string): void {
     const theme = this.environmentalAudio.dynamicMusic.themes.find((t) => t.id === themeId);
-    if (!theme) return;
+    if (!theme) {return;}
 
     const _crossfadeDuration = this.environmentalAudio.dynamicMusic.crossfadeDuration;
 
@@ -744,7 +749,7 @@ export class ProfessionalAudioEngine {
 
   stop(sourceId: string, fadeOut?: FadeConfig): void {
     const sourceNode = this.audioSources.get(sourceId);
-    if (!sourceNode) return;
+    if (!sourceNode) {return;}
 
     if (fadeOut) {
       this.applyFade(sourceNode.gainNode.gain, fadeOut, this.audioContext.currentTime);
@@ -777,7 +782,7 @@ export class ProfessionalAudioEngine {
 
   destroy(): void {
     // Stop all sources
-    this.audioSources.forEach((_node, __id) => this.stop(id));
+    this.audioSources.forEach((_node, __id) => this.stop(__id));
 
     // Close audio context
     this.audioContext.close();

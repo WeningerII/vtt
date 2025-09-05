@@ -37,7 +37,7 @@ export class DiceEngine {
   private rng: () => number;
 
   constructor(_rng?: () => number) {
-    this.rng = rng || (() => Math.random());
+    this.rng = _rng || (() => Math.random());
   }
 
   /**
@@ -55,7 +55,7 @@ export class DiceEngine {
     for (const part of parts) {
       if (part.type === "dice") {
         const rolls = this.rollDice(part.count!, part.sides!, advantage, disadvantage);
-        total += rolls.reduce((_sum, _roll) => sum + roll, 0);
+        total += rolls.reduce((_sum, _roll) => _sum + _roll, 0);
         allRolls.push(...rolls);
         breakdown += `${part.count}d${part.sides}[${rolls.join(",")}]`;
       } else if (part.type === "modifier") {
@@ -186,7 +186,12 @@ export class DiceEngine {
     sides?: number;
     value?: number;
   }> {
-    const parts = [];
+    const parts: Array<{
+      type: "dice" | "modifier";
+      count?: number;
+      sides?: number;
+      value?: number;
+    }> = [];
     const regex = /([+-]?\d*d\d+|[+-]?\d+)/g;
     let match;
 
@@ -211,26 +216,29 @@ export class DiceEngine {
   }
 
   private rollDice(
-    count: number,
-    sides: number,
-    advantage = false,
-    disadvantage = false,
+    _count: number,
+    _sides: number,
+    _advantage = false,
+    _disadvantage = false,
   ): number[] {
-    if (sides === 20 && count === 1 && (advantage || disadvantage)) {
-      const roll1 = Math.floor(this.rng() * sides) + 1;
-      const roll2 = Math.floor(this.rng() * sides) + 1;
-
-      if (advantage) {
-        return [Math.max(roll1, roll2)];
-      } else {
-        return [Math.min(roll1, roll2)];
-      }
+    if (_count <= 0 || _sides <= 0) {
+      throw new Error(`Invalid dice: ${_count}d${_sides}`);
     }
 
-    const rolls = [];
-    for (let i = 0; i < count; i++) {
-      rolls.push(Math.floor(this.rng() * sides) + 1);
+    const rolls: number[] = [];
+    const rollCount = _advantage || _disadvantage ? 2 : _count;
+
+    for (let i = 0; i < rollCount; i++) {
+      rolls.push(Math.floor(this.rng() * _sides) + 1);
     }
+
+    // Handle advantage/disadvantage for d20 rolls
+    if (_advantage && rolls.length === 2) {
+      return [Math.max(...rolls)];
+    } else if (_disadvantage && rolls.length === 2) {
+      return [Math.min(...rolls)];
+    }
+
     return rolls;
   }
 
@@ -242,8 +250,8 @@ export class DiceEngine {
 
   private doubleDiceForCritical(expression: string): string {
     return expression.replace(/(\d*)d(\d+)/g, (match, _count, _sides) => {
-      const diceCount = count === "" ? 1 : parseInt(count);
-      return `${diceCount * 2}d${sides}`;
+      const diceCount = _count === "" ? 1 : parseInt(_count);
+      return `${diceCount * 2}d${_sides}`;
     });
   }
 
@@ -288,7 +296,7 @@ export class DiceEngine {
     }
 
     return {
-      average: results.reduce((_sum, __val) => sum + val, 0) / results.length,
+      average: results.reduce((_sum, _val) => _sum + _val, 0) / results.length,
       min: Math.min(...results),
       max: Math.max(...results),
       distribution,
@@ -301,17 +309,17 @@ export const diceEngine = new DiceEngine();
 
 // Utility functions
 export function rollD20(_modifier = 0, _advantage = false, _disadvantage = false): DiceRoll {
-  return diceEngine.roll(`1d20+${modifier}`, advantage, disadvantage);
+  return diceEngine.roll(`1d20+${_modifier}`, _advantage, _disadvantage);
 }
 
 export function rollDamage(
-  expression: string,
+  _expression: string,
   _damageType = "bludgeoning",
   _critical = false,
 ): DamageResult {
-  return diceEngine.rollDamage(expression, damageType, critical);
+  return diceEngine.rollDamage(_expression, _damageType, _critical);
 }
 
-export function rollInitiative(_dexModifier: number, _advantage = false): DiceRoll {
-  return diceEngine.rollInitiative(dexModifier, advantage);
+export function rollInitiative(_dexModifier = 0, _advantage = false): DiceRoll {
+  return diceEngine.rollInitiative(_dexModifier, _advantage);
 }

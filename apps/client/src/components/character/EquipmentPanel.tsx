@@ -47,11 +47,11 @@ const EQUIPMENT_TYPES = [
   { key: "other", label: "Other", icon: Package },
 ] as const;
 
-export const EquipmentPanel = memo(function EquipmentPanel({
+export const EquipmentPanel = memo(({
   character,
   isEditing,
   onUpdate,
-}: EquipmentPanelProps): JSX.Element {
+}: EquipmentPanelProps): JSX.Element => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<Equipment["type"] | "all">("all");
   const [showEquippedOnly, setShowEquippedOnly] = useState(false);
@@ -82,7 +82,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
   };
 
   const addOrUpdateEquipment = () => {
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {return;}
 
     const newItem: Equipment = {
       id: editingItem?.id || `eq_${Date.now()}`,
@@ -184,26 +184,26 @@ export const EquipmentPanel = memo(function EquipmentPanel({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Package className="h-6 w-6 text-accent-primary mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">{character.equipment.length}</div>
-          <div className="text-xs text-text-secondary">Total Items</div>
+          <div className="text-lg font-bold text-primary">{character.equipment.length}</div>
+          <div className="text-xs text-secondary">Total Items</div>
         </div>
 
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Star className="h-6 w-6 text-warning mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">{equippedItems.length}</div>
-          <div className="text-xs text-text-secondary">Equipped</div>
+          <div className="text-lg font-bold text-primary">{equippedItems.length}</div>
+          <div className="text-xs text-secondary">Equipped</div>
         </div>
 
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Weight className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">{totalWeight}</div>
-          <div className="text-xs text-text-secondary">lbs Total</div>
+          <div className="text-lg font-bold text-primary">{totalWeight}</div>
+          <div className="text-xs text-secondary">lbs Total</div>
         </div>
 
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Coins className="h-6 w-6 text-warning mx-auto mb-1" />
-          <div className="text-lg font-bold text-text-primary">{totalValue}</div>
-          <div className="text-xs text-text-secondary">gp Value</div>
+          <div className="text-lg font-bold text-primary">{totalValue}</div>
+          <div className="text-xs text-secondary">gp Value</div>
         </div>
       </div>
 
@@ -223,7 +223,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as Equipment["type"] | "all")}
-            className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary text-sm"
+            className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary text-sm"
           >
             <option value="all">All Types</option>
             {EQUIPMENT_TYPES.map(({ key, label }) => (
@@ -259,7 +259,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
       {showAddForm && isEditing && (
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-text-primary">
+            <h3 className="text-lg font-semibold text-primary">
               {editingItem ? "Edit Equipment" : "Add Equipment"}
             </h3>
             <Button variant="ghost" size="sm" onClick={resetForm}>
@@ -269,7 +269,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
+              <label className="block text-sm font-medium text-primary mb-1">Name</label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -278,13 +278,13 @@ export const EquipmentPanel = memo(function EquipmentPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Type</label>
+              <label className="block text-sm font-medium text-primary mb-1">Type</label>
               <select
                 value={formData.type}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, type: e.target.value as Equipment["type"] }))
                 }
-                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
+                className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary"
               >
                 {EQUIPMENT_TYPES.map(({ key, label }) => (
                   <option key={key} value={key}>
@@ -295,7 +295,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Quantity</label>
+              <label className="block text-sm font-medium text-primary mb-1">Quantity</label>
               <Input
                 type="number"
                 min="1"
@@ -307,7 +307,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">
+              <label className="block text-sm font-medium text-primary mb-1">
                 Weight (lbs)
               </label>
               <Input
@@ -322,7 +322,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-primary mb-1">Value (gp)</label>
+              <label className="block text-sm font-medium text-primary mb-1">Value (gp)</label>
               <Input
                 type="number"
                 min="0"
@@ -336,11 +336,11 @@ export const EquipmentPanel = memo(function EquipmentPanel({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-primary mb-1">Description</label>
+            <label className="block text-sm font-medium text-primary mb-1">Description</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary resize-none"
+              className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary resize-none"
               rows={3}
               placeholder="Equipment description..."
             />
@@ -348,7 +348,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium text-text-primary">Properties</label>
+              <label className="text-sm font-medium text-primary">Properties</label>
               <Button variant="ghost" size="sm" onClick={addProperty}>
                 <Plus className="h-4 w-4" />
               </Button>
@@ -414,7 +414,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-text-primary">{item.name}</h4>
+                      <h4 className="font-medium text-primary">{item.name}</h4>
                       {item.equipped && (
                         <span className="text-xs bg-accent-primary text-white px-2 py-1 rounded">
                           Equipped
@@ -426,7 +426,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
                     </div>
 
                     {item.description && (
-                      <p className="text-sm text-text-secondary mt-1">{item.description}</p>
+                      <p className="text-sm text-secondary mt-1">{item.description}</p>
                     )}
 
                     {item.properties.length > 0 && (
@@ -442,7 +442,7 @@ export const EquipmentPanel = memo(function EquipmentPanel({
                       </div>
                     )}
 
-                    <div className="flex items-center gap-4 mt-2 text-sm text-text-secondary">
+                    <div className="flex items-center gap-4 mt-2 text-sm text-secondary">
                       <span>Qty: {item.quantity}</span>
                       <span>Weight: {item.weight} lbs</span>
                       <span>Value: {item.value} gp</span>
@@ -474,8 +474,8 @@ export const EquipmentPanel = memo(function EquipmentPanel({
       {filteredEquipment.length === 0 && (
         <div className="text-center py-8">
           <Package className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-text-primary mb-2">No Equipment Found</h3>
-          <p className="text-text-secondary">
+          <h3 className="text-lg font-medium text-primary mb-2">No Equipment Found</h3>
+          <p className="text-secondary">
             {searchTerm
               ? `No equipment matches "${searchTerm}"`
               : showEquippedOnly

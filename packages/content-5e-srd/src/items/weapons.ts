@@ -3,7 +3,7 @@
  * Complete collection of all weapons from the System Reference Document
  */
 
-import { Weapon, _DamageType, _WeaponProperty } from "./index.js";
+import { Weapon, DamageType, WeaponProperty } from "./index.js";
 
 export const SRD_WEAPONS: Weapon[] = [
   // Simple Melee Weapons
@@ -164,10 +164,10 @@ export const SRD_WEAPONS: Weapon[] = [
 ];
 
 // Martial weapons and utility functions will be added in next file
-export function getWeapon(_id: string): Weapon | undefined {
+export function getWeaponById(id: string): Weapon | undefined {
   return SRD_WEAPONS.find((weapon) => weapon.id === id);
 }
 
-export function getWeaponsByType(_type: "simple" | "martial"): Weapon[] {
+export function getWeaponsByType(type: "simple" | "martial"): Weapon[] {
   return SRD_WEAPONS.filter((weapon) => weapon.weaponType === type);
 }

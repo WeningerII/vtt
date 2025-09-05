@@ -23,15 +23,6 @@ import {
 } from "lucide-react";
 import type { MapLayer } from "./BattleMap";
 
-interface MapLayer {
-  id: string;
-  name: string;
-  type: "background" | "overlay" | "tokens" | "effects";
-  visible: boolean;
-  locked: boolean;
-  opacity: number;
-}
-
 interface MapLayersPanelProps {
   layers: MapLayer[];
   onLayersUpdate: (layers: MapLayer[]) => void;
@@ -62,13 +53,13 @@ const LAYER_TYPES = [
   },
 ] as const;
 
-export const MapLayersPanel = memo(function MapLayersPanel({
+export const MapLayersPanel = memo(({
   layers,
   onLayersUpdate,
   onBackgroundUpload,
   isGM = false,
   className,
-}: MapLayersPanelProps): JSX.Element {
+}: MapLayersPanelProps): JSX.Element => {
   const [showAddLayer, setShowAddLayer] = useState(false);
   const [newLayerName, setNewLayerName] = useState("");
   const [newLayerType, setNewLayerType] = useState<MapLayer["type"]>("overlay");
@@ -81,14 +72,14 @@ export const MapLayersPanel = memo(function MapLayersPanel({
   };
 
   const deleteLayer = (layerId: string) => {
-    if (layers.length <= 1) return; // Keep at least one layer
+    if (layers.length <= 1) {return;} // Keep at least one layer
     const updatedLayers = layers.filter((layer) => layer.id !== layerId);
     onLayersUpdate(updatedLayers);
   };
 
   const moveLayer = (layerId: string, direction: "up" | "down") => {
     const currentIndex = layers.findIndex((layer) => layer.id === layerId);
-    if (currentIndex === -1) return;
+    if (currentIndex === -1) {return;}
 
     let newIndex;
     if (direction === "up" && currentIndex > 0) {
@@ -100,14 +91,18 @@ export const MapLayersPanel = memo(function MapLayersPanel({
     }
 
     const updatedLayers = [...layers];
-    const temp = updatedLayers[currentIndex];
-    updatedLayers[currentIndex] = updatedLayers[newIndex];
-    updatedLayers[newIndex] = temp;
-    onLayersUpdate(updatedLayers);
+    const currentLayer = updatedLayers[currentIndex];
+    const targetLayer = updatedLayers[newIndex];
+    
+    if (currentLayer && targetLayer) {
+      updatedLayers[currentIndex] = targetLayer;
+      updatedLayers[newIndex] = currentLayer;
+      onLayersUpdate(updatedLayers);
+    }
   };
 
   const addLayer = () => {
-    if (!newLayerName.trim()) return;
+    if (!newLayerName.trim()) {return;}
 
     const newLayer: MapLayer = {
       id: `layer_${Date.now()}`,
@@ -132,7 +127,7 @@ export const MapLayersPanel = memo(function MapLayersPanel({
     <div className={cn("p-4 space-y-4", className)}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
           <Layers className="h-5 w-5" />
           Map Layers
         </h3>
@@ -160,7 +155,7 @@ export const MapLayersPanel = memo(function MapLayersPanel({
           <select
             value={newLayerType}
             onChange={(e) => setNewLayerType(e.target.value as MapLayer["type"])}
-            className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
+            className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary"
           >
             {LAYER_TYPES.map(({ type, label }) => (
               <option key={type} value={type}>
@@ -183,7 +178,7 @@ export const MapLayersPanel = memo(function MapLayersPanel({
       {/* Background Upload */}
       {isGM && (
         <div className="p-3 bg-bg-secondary rounded-md border border-border-primary">
-          <label className="block text-sm font-medium text-text-primary mb-2">
+          <label className="block text-sm font-medium text-primary mb-2">
             Upload Background
           </label>
           <input
@@ -191,7 +186,7 @@ export const MapLayersPanel = memo(function MapLayersPanel({
             accept="image/*"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) onBackgroundUpload(file);
+              if (file) {onBackgroundUpload(file);}
             }}
             className="w-full text-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-accent-primary file:text-white hover:file:bg-accent-secondary"
           />
@@ -213,7 +208,7 @@ export const MapLayersPanel = memo(function MapLayersPanel({
               >
                 <LayerIcon className="h-4 w-4 text-text-secondary" />
 
-                <span className="flex-1 text-sm text-text-primary">{layer.name}</span>
+                <span className="flex-1 text-sm text-primary">{layer.name}</span>
 
                 <div className="flex items-center gap-1">
                   {/* Visibility Toggle */}

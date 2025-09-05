@@ -13,7 +13,7 @@ vi.mock("@vtt/logging", () => ({
   },
 }));
 vi.mock("uuid", () => ({
-  v4: vi.fn(() => "mock-uuid-" + Math.random().toString(36).substr(2, 9)),
+  v4: vi.fn(() => `mock-uuid-${  Math.random().toString(36).substr(2, 9)}`),
 }));
 
 describe("MapService", () => {

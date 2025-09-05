@@ -287,7 +287,7 @@ export const SPELLCASTING_CLASSES: Record<string, ClassSpellcasting> = {
   },
 };
 
-export function getSpellSlotsForClass(_className: string, _level: number): Record<number, number> {
+export function getSpellSlotsForClass(className: string, level: number): Record<number, number> {
   const classData = SPELLCASTING_CLASSES[className];
   if (!classData || level < classData.firstSpellcastingLevel) {
     return {};
@@ -296,29 +296,29 @@ export function getSpellSlotsForClass(_className: string, _level: number): Recor
   return classData.slotProgression[level] || {};
 }
 
-export function getCantripsKnown(_className: string, _level: number): number {
+export function getCantripsKnown(className: string, level: number): number {
   const classData = SPELLCASTING_CLASSES[className];
-  if (!classData || level < 1) return 0;
+  if (!classData || level < 1) {return 0;}
 
   return classData.cantripsKnownProgression[level] || 0;
 }
 
-export function getSpellsKnown(_className: string, _level: number): number {
+export function getSpellsKnown(className: string, level: number): number | null {
   const classData = SPELLCASTING_CLASSES[className];
   if (!classData || !classData.spellsKnownProgression || level < classData.firstSpellcastingLevel) {
-    return 0;
+    return null;
   }
 
-  return classData.spellsKnownProgression[level] || 0;
+  return classData.spellsKnownProgression[level] || null;
 }
 
-export function getMaxSpellLevel(_className: string, _level: number): number {
+export function getMaxSpellLevel(className: string, level: number): number {
   const slots = getSpellSlotsForClass(className, level);
   const levels = Object.keys(slots).map(Number);
   return levels.length > 0 ? Math.max(...levels) : 0;
 }
 
-export function getSpellcastingModifier(_className: string): "INT" | "WIS" | "CHA" | null {
+export function getSpellcastingModifier(className: string): "INT" | "WIS" | "CHA" | null {
   const classData = SPELLCASTING_CLASSES[className];
   return classData?.spellcastingAbility || null;
 }

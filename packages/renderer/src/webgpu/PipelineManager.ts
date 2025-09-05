@@ -1,4 +1,4 @@
-import { GPUBufferUsage, GPUTextureUsage } from "@webgpu/types";
+// GPUBufferUsage and GPUTextureUsage are available as browser globals
 import { ShaderManager, ShaderModule, ShadowShaderModule } from "./ShaderManager";
 import { logger } from "@vtt/logging";
 

@@ -18,6 +18,7 @@ export interface BehaviorTreeConfig {
   logLevel: "none" | "error" | "warn" | "info" | "debug";
 }
 
+
 export abstract class BehaviorNode {
   protected name: string;
   protected parent: BehaviorNode | null = null;
@@ -124,7 +125,7 @@ export class SequenceNode extends BehaviorNode {
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
       const child = this.children[this.currentChildIndex];
-      if (!child) break;
+      if (!child) {break;}
       const status = child.execute();
 
       switch (status) {
@@ -155,7 +156,7 @@ export class SelectorNode extends BehaviorNode {
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
       const child = this.children[this.currentChildIndex];
-      if (!child) break;
+      if (!child) {break;}
       const status = child.execute();
 
       switch (status) {
@@ -549,7 +550,7 @@ export class BehaviorTree {
 
   // Tree traversal and utilities
   findNodeByName(name: string): BehaviorNode | null {
-    if (!this.root) return null;
+    if (!this.root) {return null;}
     return this.findNodeByNameRecursive(this.root, name) ?? null;
   }
 
@@ -569,7 +570,7 @@ export class BehaviorTree {
   }
 
   getAllNodes(): BehaviorNode[] {
-    if (!this.root) return [];
+    if (!this.root) {return [];}
 
     const nodes: BehaviorNode[] = [];
     this.collectNodesRecursive(this.root, nodes);
@@ -624,7 +625,7 @@ export class BehaviorTree {
 
   // Serialization
   serialize(): any {
-    if (!this.root) return null;
+    if (!this.root) {return null;}
     return this.serializeNode(this.root);
   }
 

@@ -29,7 +29,7 @@ export class EncounterService {
     const { campaignId, isActive, limit = 50, offset = 0 } = options;
 
     const where: any = { campaignId };
-    if (isActive !== undefined) where.isActive = isActive;
+    if (isActive !== undefined) {where.isActive = isActive;}
 
     const [items, total] = await Promise.all([
       this.prisma.encounter.findMany({

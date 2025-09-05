@@ -1,14 +1,5 @@
-import type {
-  GPUDevice,
-  GPUCanvasContext,
-  GPUTexture,
-  GPURenderPipeline,
-  GPUBuffer,
-  GPUBindGroup,
-  GPUCommandEncoder,
-  GPURenderPassEncoder,
-} from "@webgpu/types";
-import { GPUBufferUsage, GPUTextureUsage } from "@webgpu/types";
+// WebGPU types are available as browser globals
+// GPUDevice, GPUCanvasContext, GPUTexture, GPURenderPipeline, GPUBuffer, GPUBindGroup, GPUCommandEncoder, GPURenderPassEncoder, GPUBufferUsage, GPUTextureUsage
 import { logger } from "@vtt/logging";
 import { PipelineManager } from "./PipelineManager";
 import { BufferManager } from "./BufferManager";
@@ -155,7 +146,7 @@ export class WebGPUEngine {
       },
     });
 
-    this.context = this.canvas.getContext("webgpu")!;
+    this.context = this.canvas.getContext("webgpu") as unknown as GPUCanvasContext;
     const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 
     this.context.configure({
@@ -172,7 +163,7 @@ export class WebGPUEngine {
   }
 
   private async createRenderTargets(): Promise<void> {
-    if (!this.device) return;
+    if (!this.device) {return;}
 
     const width = this.canvas.width;
     const height = this.canvas.height;
@@ -202,7 +193,7 @@ export class WebGPUEngine {
   }
 
   private async createPipelines(): Promise<void> {
-    if (!this.device) return;
+    if (!this.device) {return;}
 
     // Forward rendering pipeline
     const forwardVertexShader = this.device.createShaderModule({
@@ -426,7 +417,7 @@ export class WebGPUEngine {
   }
 
   private async createBuffers(): Promise<void> {
-    if (!this.device) return;
+    if (!this.device) {return;}
 
     // Uniform buffer for camera and global data
     this.uniformBuffer = this.device.createBuffer({
@@ -448,7 +439,7 @@ export class WebGPUEngine {
   }
 
   render(scene: { objects: RenderObject3D[]; lights: Light[] }, camera: Camera): void {
-    if (!this.device || !this.context) return;
+    if (!this.device || !this.context) {return;}
 
     const startTime = performance.now();
     this.resetStats();
@@ -479,7 +470,7 @@ export class WebGPUEngine {
   }
 
   private updateUniforms(camera: Camera): void {
-    if (!this.device) return;
+    if (!this.device) {return;}
 
     // Create view and projection matrices
     const viewMatrix = this.createViewMatrix(camera);
@@ -508,7 +499,7 @@ export class WebGPUEngine {
     scene: { objects: RenderObject3D[]; lights: Light[] },
     _camera: Camera,
   ): void {
-    if (!this.hdrTarget || !this.depthTarget) return;
+    if (!this.hdrTarget || !this.depthTarget) {return;}
 
     const renderPass = encoder.beginRenderPass({
       colorAttachments: [
@@ -542,7 +533,7 @@ export class WebGPUEngine {
 
   private renderObject(renderPass: GPURenderPassEncoder, obj: RenderObject3D): void {
     const mesh = this.meshes.get(obj.meshId);
-    if (!mesh) return;
+    if (!mesh) {return;}
 
     renderPass.setVertexBuffer(0, mesh.vertices);
     renderPass.setIndexBuffer(mesh.indices, "uint32");
@@ -592,7 +583,7 @@ export class WebGPUEngine {
   }
 
   addMesh(id: string, vertices: Float32Array, indices: Uint32Array): void {
-    if (!this.device) return;
+    if (!this.device) {return;}
 
     const vertexBuffer = this.device.createBuffer({
       size: vertices.byteLength,

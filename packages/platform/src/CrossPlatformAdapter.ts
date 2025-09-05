@@ -265,7 +265,7 @@ export class CrossPlatformAdapter implements PlatformAdapter {
 
     if (this.featureSupport.webgl2) {
       const context = canvas.getContext("webgl2", contextOptions);
-      if (context) return context;
+      if (context) {return context;}
     }
 
     if (this.featureSupport.webgl1) {
@@ -288,7 +288,7 @@ export class CrossPlatformAdapter implements PlatformAdapter {
 
   // Input methods
   public addInputListeners(element: HTMLElement): void {
-    if (this.inputListeners.has(element)) return;
+    if (this.inputListeners.has(element)) {return;}
 
     const listeners = new InputEventListeners(element, this.adaptiveSettings.input);
     this.inputListeners.set(element, listeners);
@@ -303,7 +303,7 @@ export class CrossPlatformAdapter implements PlatformAdapter {
   }
 
   public getGamepads(): Gamepad[] {
-    if (!this.featureSupport.gamepadAPI) return [];
+    if (!this.featureSupport.gamepadAPI) {return [];}
 
     const gamepads = navigator.getGamepads();
     return Array.from(gamepads).filter((gamepad): gamepad is Gamepad => gamepad !== null);
@@ -407,7 +407,7 @@ export class CrossPlatformAdapter implements PlatformAdapter {
   }
 
   public createRTCConnection(config?: RTCConfiguration): RTCPeerConnection | null {
-    if (!this.featureSupport.webRTC) return null;
+    if (!this.featureSupport.webRTC) {return null;}
 
     return new RTCPeerConnection(config);
   }
@@ -421,15 +421,15 @@ export class CrossPlatformAdapter implements PlatformAdapter {
   public async requestDeviceAccess(type: "camera" | "microphone" | "geolocation"): Promise<any> {
     switch (type) {
       case "camera":
-        if (!this.featureSupport.camera) throw new Error("Camera not supported");
+        if (!this.featureSupport.camera) {throw new Error("Camera not supported");}
         return navigator.mediaDevices.getUserMedia({ video: true });
 
       case "microphone":
-        if (!this.featureSupport.microphone) throw new Error("Microphone not supported");
+        if (!this.featureSupport.microphone) {throw new Error("Microphone not supported");}
         return navigator.mediaDevices.getUserMedia({ audio: true });
 
       case "geolocation":
-        if (!this.featureSupport.geolocation) throw new Error("Geolocation not supported");
+        if (!this.featureSupport.geolocation) {throw new Error("Geolocation not supported");}
         return new Promise((_resolve, __reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject);
         });
@@ -475,7 +475,7 @@ export class CrossPlatformAdapter implements PlatformAdapter {
 
   // Vibration methods
   public vibrate(pattern: number | number[]): boolean {
-    if (!this.featureSupport.vibration) return false;
+    if (!this.featureSupport.vibration) {return false;}
 
     return navigator.vibrate(pattern);
   }
@@ -696,7 +696,7 @@ class PerformanceMonitor {
   private intervalId?: number;
 
   public start(): void {
-    if (this.isRunning) return;
+    if (this.isRunning) {return;}
 
     this.isRunning = true;
     this.lastTime = performance.now();
@@ -723,7 +723,7 @@ class PerformanceMonitor {
   }
 
   private requestFrame(): void {
-    if (!this.isRunning) return;
+    if (!this.isRunning) {return;}
 
     requestAnimationFrame((_currentTime) => {
       if (!this.isPaused) {
@@ -737,7 +737,7 @@ class PerformanceMonitor {
   }
 
   private updateMetrics(): void {
-    if (this.isPaused) return;
+    if (this.isPaused) {return;}
 
     this.fps = this.frameCount;
     this.frameCount = 0;
@@ -768,9 +768,9 @@ class PerformanceMonitor {
 
   private getThermalState(): PerformanceMetrics["thermalState"] {
     // Estimate based on performance
-    if (this.frameTime > 50) return "critical";
-    if (this.frameTime > 33) return "serious";
-    if (this.frameTime > 20) return "fair";
+    if (this.frameTime > 50) {return "critical";}
+    if (this.frameTime > 33) {return "serious";}
+    if (this.frameTime > 20) {return "fair";}
     return "nominal";
   }
 }

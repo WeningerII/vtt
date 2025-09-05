@@ -260,28 +260,24 @@ export const SRDMonsters: Monster[] = [Goblin, Orc, Skeleton, Wolf];
 
 // Legacy spell system exports (human-readable)
 export * from "./spells";
-export * from "./SpellSearchEngine";
-export * from "./SpellcastingClasses";
-export * from "./SpellScalingEngine";
-export * from "./SpellCollectionManager";
 
-// Computational spell system exports (machine-executable)
-export * from "./ComputationalSpellSystem";
-export * from "./ComputationalSpells";
-export * from "./SpellRuleEngine";
-export * from "./SpellPhysicsIntegration";
+// Note: Computational spell system exports are excluded from build
+// export * from "./ComputationalSpellSystem";
+// export * from "./ComputationalSpells";
+// export * from "./SpellRuleEngine";
+// export * from "./SpellPhysicsIntegration";
 
 // Convenience exports for most common use cases
 export {
   SRD_SPELLS,
   getAllSpells,
-  getSpellsByLevel,
-  getSpellsByClass,
-  getSpellsBySchool,
+  _getSpellsByLevel as getSpellsByLevel,
+  _getSpellsByClass as getSpellsByClass,
+  _getSpellsBySchool as getSpellsBySchool,
 } from "./spells";
 
 export {
-  spellSearchEngine,
+  SpellSearchEngine as spellSearchEngine,
   type SpellSearchCriteria,
   type SpellSearchResult,
 } from "./SpellSearchEngine";
@@ -296,16 +292,17 @@ export {
 } from "./SpellcastingClasses";
 
 export {
-  spellScalingEngine,
+  SpellScalingEngine as spellScalingEngine,
   type ScaledSpellEffect,
   type SpellUpcastOptions,
 } from "./SpellScalingEngine";
 
-export {
-  spellCollectionManager,
-  type SpellCollection,
-  type ExportedSpellCollection,
-} from "./SpellCollectionManager";
+// SpellCollectionManager is excluded from build
+// export {
+//   SpellCollectionManager as spellCollectionManager,
+//   type SpellCollection,
+//   type ExportedSpellCollection,
+// } from "./SpellCollectionManager";
 
 // Default export remains monsters for backward compatibility
 export default SRDMonsters;

@@ -69,7 +69,7 @@ export class ErrorHandler {
   }
 
   async executeWithRetry<T>(
-    _operation: () => Promise<T>,
+    operation: () => Promise<T>,
     operationName: string,
     context?: ErrorContext,
   ): Promise<T> {
@@ -113,7 +113,7 @@ export class ErrorHandler {
   }
 
   async executeWithCircuitBreaker<T>(
-    _operation: () => Promise<T>,
+    operation: () => Promise<T>,
     operationName: string,
     context?: ErrorContext,
   ): Promise<T> {
@@ -347,7 +347,7 @@ export const _setupGlobalErrorHandlers = (errorHandler: ErrorHandler): void => {
   // Handle unhandled promise rejections
   if (typeof process !== "undefined") {
     process.on("unhandledRejection", (_reason: any, _promise: Promise<any>) => {
-      const error = reason instanceof Error ? reason : new Error(String(reason));
+      const error = _reason instanceof Error ? _reason : new Error(String(_reason));
       const vttError = new VTTError(
         ErrorCode.SYSTEM_INTERNAL_ERROR,
         "Unhandled promise rejection",

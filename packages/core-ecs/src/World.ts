@@ -22,13 +22,13 @@ export class World {
 
   create(): EntityId {
     const id = this.free.length ? (this.free.pop() as number) : this.nextId++;
-    if (id >= this.capacity) throw new Error('World capacity exceeded');
+    if (id >= this.capacity) {throw new Error('World capacity exceeded');}
     this.alive[id] = 1;
     return id;
   }
 
   destroy(id: EntityId) {
-    if (!this.alive[id]) return;
+    if (!this.alive[id]) {return;}
     this.alive[id] = 0;
     this.transforms.remove(id);
     this.movement.remove(id);
@@ -45,7 +45,7 @@ export class World {
   getEntities(): EntityId[] {
     const entities: EntityId[] = [];
     for (let id = 0; id < this.nextId; id++) {
-      if (this.alive[id]) entities.push(id);
+      if (this.alive[id]) {entities.push(id);}
     }
     return entities;
   }
@@ -56,7 +56,7 @@ export class World {
    */
   *iterAllEntities(): Iterable<EntityId> {
     for (let id = 0; id < this.nextId; id++) {
-      if (this.alive[id]) yield id;
+      if (this.alive[id]) {yield id;}
     }
   }
 

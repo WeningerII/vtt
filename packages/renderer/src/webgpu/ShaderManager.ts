@@ -1,4 +1,4 @@
-import type { GPUDevice, GPUShaderModule } from "@webgpu/types";
+// WebGPU types are available as browser globals
 import { logger } from "@vtt/logging";
 
 export interface ShaderModule {
@@ -34,7 +34,7 @@ export class ShaderManager {
       logger.info(`Loaded shader: ${name}`);
       return module;
     } catch (error) {
-      logger.error(`Failed to load shader ${name}:`, error);
+      logger.error(`Failed to load shader ${name}:`, error as Record<string, any>);
       throw error;
     }
   }

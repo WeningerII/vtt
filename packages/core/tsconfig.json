@@ -3,10 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": [
-      "node",
-      "@webgpu/types"
-    ],
+    "types": [],
+    "skipLibCheck": true,
     "incremental": true,
     "tsBuildInfoFile": "./core.tsbuildinfo",
     "composite": true

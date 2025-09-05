@@ -5,7 +5,7 @@
 import { EventEmitter } from "events";
 import { logger } from "@vtt/logging";
 import nodemailer, { Transporter } from "nodemailer";
-import { UserManager, _User } from "./UserManager";
+import { UserManager, User } from "./UserManager";
 
 export interface NotificationTemplate {
   id: string;
@@ -413,12 +413,12 @@ export class NotificationManager extends EventEmitter {
     const now = new Date();
     return Array.from(this.inAppNotifications.values())
       .filter((notification) => {
-        if (notification.userId !== userId) return false;
-        if (!includeRead && notification.read) return false;
-        if (notification.expiresAt && notification.expiresAt < now) return false;
+        if (notification.userId !== userId) {return false;}
+        if (!includeRead && notification.read) {return false;}
+        if (notification.expiresAt && notification.expiresAt < now) {return false;}
         return true;
       })
-      .sort((_a, _b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((_a, _b) => _b.createdAt.getTime() - _a.createdAt.getTime());
   }
 
   markInAppNotificationAsRead(notificationId: string, userId: string): void {
@@ -432,6 +432,57 @@ export class NotificationManager extends EventEmitter {
       notification.readAt = new Date();
       this.emit("inAppNotificationRead", notification);
     }
+  }
+
+  // Get unread notification count for user
+  getUnreadCount(userId: string): number {
+    return Array.from(this.inAppNotifications.values())
+      .filter(notification => notification.userId === userId && !notification.read)
+      .length;
+  }
+
+  // Mark multiple notifications as read
+  async markAsRead(userId: string, notificationId?: string): Promise<void> {
+    if (notificationId) {
+      // Mark specific notification as read
+      this.markInAppNotificationAsRead(notificationId, userId);
+    } else {
+      // Mark all unread notifications as read
+      Array.from(this.inAppNotifications.values())
+        .filter(n => n.userId === userId && !n.read)
+        .forEach(notification => {
+          notification.read = true;
+          notification.readAt = new Date();
+          this.emit("inAppNotificationRead", notification);
+        });
+    }
+  }
+
+  // Delete in-app notification
+  async deleteInAppNotification(userId: string, notificationId: string): Promise<void> {
+    const notification = this.inAppNotifications.get(notificationId);
+    if (!notification || notification.userId !== userId) {
+      throw new Error("Notification not found");
+    }
+
+    this.inAppNotifications.delete(notificationId);
+    this.emit("inAppNotificationDeleted", { notificationId, userId });
+  }
+
+  // Clear in-app notifications
+  async clearInAppNotifications(userId: string, onlyRead: boolean = false): Promise<void> {
+    const toDelete: string[] = [];
+    
+    for (const [id, notification] of this.inAppNotifications.entries()) {
+      if (notification.userId === userId) {
+        if (!onlyRead || notification.read) {
+          toDelete.push(id);
+        }
+      }
+    }
+
+    toDelete.forEach(id => this.inAppNotifications.delete(id));
+    this.emit("inAppNotificationsCleared", { userId, count: toDelete.length, onlyRead });
   }
 
   // Queue processing
@@ -454,7 +505,7 @@ export class NotificationManager extends EventEmitter {
       const batch = this.sendQueue.splice(0, this.config.batchSize);
 
       await Promise.allSettled(
-        _batch.map(async ({ type, _notificationId }) => {
+        batch.map(async ({ type, notificationId }) => {
           try {
             if (type === "email") {
               await this.sendEmailNotification(notificationId);
@@ -462,7 +513,12 @@ export class NotificationManager extends EventEmitter {
               await this.sendPushNotification(notificationId);
             }
           } catch (error) {
-            logger.error(`Failed to send ${type} notification:`, error);
+            logger.error(`Failed to send ${type} notification:`, {
+              error: error instanceof Error ? error.message : String(error),
+              stack: error instanceof Error ? error.stack : undefined,
+              type,
+              notificationId
+            });
           }
         }),
       );
@@ -503,9 +559,9 @@ export class NotificationManager extends EventEmitter {
     // Add click tracking to links
     const trackedContent = htmlContent.replace(
       /<a\s+([^>]*href\s*=\s*["']([^"']+)["'][^>]*)>/gi,
-      (match, _attributes, _url) => {
-        const trackingUrl = `/api/notifications/track/click/${notificationId}?url=${encodeURIComponent(url)}`;
-        return match.replace(url, trackingUrl);
+      (match, _attributes, originalUrl) => {
+        const trackingUrl = `/api/notifications/track/click/${notificationId}?url=${encodeURIComponent(originalUrl)}`;
+        return match.replace(originalUrl, trackingUrl);
       },
     );
 
@@ -535,6 +591,140 @@ export class NotificationManager extends EventEmitter {
   }
 
   // Analytics and reporting
+  // Get notification history with pagination and filtering
+  async getNotificationHistory(userId: string, options: {
+    limit?: number;
+    offset?: number;
+    type?: string;
+  } = {}): Promise<{
+    notifications: Array<EmailNotification | PushNotification | InAppNotification>;
+    total: number;
+  }> {
+    const { limit = 50, offset = 0, type } = options;
+    
+    // Combine all notifications for the user
+    const allNotifications: Array<EmailNotification | PushNotification | InAppNotification> = [
+      ...Array.from(this.emailNotifications.values()).filter(n => n.userId === userId),
+      ...Array.from(this.pushNotifications.values()).filter(n => n.userId === userId),
+      ...Array.from(this.inAppNotifications.values()).filter(n => n.userId === userId)
+    ];
+
+    // Filter by type if specified
+    let filteredNotifications = allNotifications;
+    if (type) {
+      filteredNotifications = allNotifications.filter(n => {
+        if (type === 'email') {return 'htmlContent' in n;}
+        if (type === 'push') {return 'title' in n && 'body' in n;}
+        if (type === 'in_app') {return 'type' in n && 'message' in n;}
+        return false;
+      });
+    }
+
+    // Sort by creation date (newest first)
+    filteredNotifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    // Apply pagination
+    const paginatedNotifications = filteredNotifications.slice(offset, offset + limit);
+
+    return {
+      notifications: paginatedNotifications,
+      total: filteredNotifications.length
+    };
+  }
+
+  // Get detailed notification analytics
+  async getNotificationAnalytics(userId: string, startDate?: Date, endDate?: Date): Promise<{
+    overview: {
+      totalSent: number;
+      totalDelivered: number;
+      totalOpened: number;
+      totalClicked: number;
+      deliveryRate: number;
+      openRate: number;
+      clickRate: number;
+    };
+    byType: {
+      email: { sent: number; opened: number; clicked: number; };
+      push: { sent: number; delivered: number; };
+      inApp: { created: number; read: number; };
+    };
+    byPeriod: Array<{
+      date: string;
+      sent: number;
+      opened: number;
+      clicked: number;
+    }>;
+  }> {
+    // Filter notifications by date range
+    const filterByDate = <T extends { createdAt: Date; userId: string }>(notifications: T[]): T[] => {
+      return notifications.filter(n => {
+        if (startDate && n.createdAt < startDate) {return false;}
+        if (endDate && n.createdAt > endDate) {return false;}
+        return n.userId === userId;
+      });
+    };
+
+    const emails = filterByDate(Array.from(this.emailNotifications.values()));
+    const pushes = filterByDate(Array.from(this.pushNotifications.values()));
+    const inApps = filterByDate(Array.from(this.inAppNotifications.values()));
+
+    // Calculate email metrics
+    const emailsSent = emails.filter(e => e.status === 'sent').length;
+    const emailsOpened = emails.filter(e => e.opens > 0).length;
+    const emailsClicked = emails.filter(e => e.clicks > 0).length;
+
+    // Calculate push metrics
+    const pushSent = pushes.filter(p => p.status === 'sent').length;
+
+    // Calculate in-app metrics
+    const inAppRead = inApps.filter(n => n.read).length;
+
+    // Calculate overall metrics
+    const totalSent = emails.length + pushes.length;
+    const totalDelivered = emailsSent + pushSent;
+    const totalOpened = emailsOpened;
+    const totalClicked = emailsClicked;
+
+    // Generate daily breakdown
+    const dailyStats = new Map<string, { sent: number; opened: number; clicked: number }>();
+    
+    [...emails, ...pushes].forEach(notification => {
+      const dateKey = notification.createdAt.toISOString().split('T')[0];
+      if (dateKey && !dailyStats.has(dateKey)) {
+        dailyStats.set(dateKey, { sent: 0, opened: 0, clicked: 0 });
+      }
+      const stats = dateKey ? dailyStats.get(dateKey) : null;
+      if (stats) {
+        stats.sent++;
+        
+        if ('opens' in notification) {
+          if (notification.opens > 0) {stats.opened++;}
+          if (notification.clicks > 0) {stats.clicked++;}
+        }
+      }
+    });
+
+    return {
+      overview: {
+        totalSent,
+        totalDelivered,
+        totalOpened,
+        totalClicked,
+        deliveryRate: totalSent > 0 ? totalDelivered / totalSent : 0,
+        openRate: totalDelivered > 0 ? totalOpened / totalDelivered : 0,
+        clickRate: totalOpened > 0 ? totalClicked / totalOpened : 0
+      },
+      byType: {
+        email: { sent: emailsSent, opened: emailsOpened, clicked: emailsClicked },
+        push: { sent: pushSent, delivered: pushSent },
+        inApp: { created: inApps.length, read: inAppRead }
+      },
+      byPeriod: Array.from(dailyStats.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, stats]) => ({ date, ...stats }))
+    };
+  }
+
   getNotificationStats(userId?: string): {
     emailsSent: number;
     emailsOpened: number;
@@ -594,6 +784,38 @@ export class NotificationManager extends EventEmitter {
     }
   }
 
+  // Enhanced sendGameInvite method with proper signature
+  async sendGameInvite(
+    userId: string,
+    recipientEmail: string,
+    gameId: string,
+    message: string,
+  ): Promise<void> {
+    const user = this.userManager.getUser(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    await this.sendEmail(userId, "game-invite", {
+      gameTitle: `Game ${gameId}`,
+      inviterName: user.firstName || user.username,
+      gameUrl: `/games/${gameId}`,
+      acceptUrl: `/games/${gameId}?accept=true`,
+      declineUrl: `/games/${gameId}?decline=true`,
+      message,
+      recipientEmail,
+    });
+
+    await this.sendPush(
+      userId,
+      "Game Invitation",
+      `${user.firstName || user.username} invited you to play a game`,
+      {
+        data: { gameId, type: "game_invite" },
+      },
+    );
+  }
+
   // Bulk operations
   async sendWelcomeEmail(userId: string): Promise<void> {
     const user = this.userManager.getUser(userId);
@@ -633,40 +855,6 @@ export class NotificationManager extends EventEmitter {
     });
   }
 
-  async sendGameInvite(
-    userId: string,
-    gameTitle: string,
-    inviterName: string,
-    gameUrl: string,
-  ): Promise<void> {
-    await this.sendEmail(userId, "game-invite", {
-      gameTitle,
-      inviterName,
-      gameUrl,
-      acceptUrl: `${gameUrl}?accept=true`,
-      declineUrl: `${gameUrl}?decline=true`,
-    });
-
-    await this.sendPush(
-      userId,
-      "Game Invitation",
-      `${inviterName} invited you to play ${gameTitle}`,
-      {
-        data: { gameUrl, type: "game_invite" },
-      },
-    );
-
-    await this.sendInApp(
-      userId,
-      "info",
-      "Game Invitation",
-      `${inviterName} invited you to play ${gameTitle}`,
-      {
-        actionUrl: gameUrl,
-        actionText: "Join Game",
-      },
-    );
-  }
 
   // Cleanup
   async cleanupOldNotifications(days: number = 30): Promise<void> {

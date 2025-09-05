@@ -337,9 +337,11 @@ export class PerformanceMonitor {
       const profileNames = ["ultra", "high", "medium", "low"];
       const currentIndex = profileNames.indexOf(this.getCurrentProfileName());
 
-      if (currentIndex < profileNames.length - 1) {
+      if (currentIndex >= 0 && currentIndex < profileNames.length - 1) {
         const newProfile = profileNames[currentIndex + 1];
-        this.setProfile(newProfile);
+        if (newProfile) {
+          this.setProfile(newProfile);
+        }
         logger.info(`Performance: Downgraded to ${newProfile} profile`);
       }
     }
@@ -348,10 +350,12 @@ export class PerformanceMonitor {
       const profileNames = ["low", "medium", "high", "ultra"];
       const currentIndex = profileNames.indexOf(this.getCurrentProfileName());
 
-      if (currentIndex < profileNames.length - 1) {
+      if (currentIndex >= 0 && currentIndex < profileNames.length - 1) {
         const newProfile = profileNames[currentIndex + 1];
-        this.setProfile(newProfile);
-        logger.info(`Performance: Upgraded to ${newProfile} profile`);
+        if (newProfile) {
+          this.setProfile(newProfile);
+          logger.info(`Performance: Upgraded to ${newProfile} profile`);
+        }
       }
     }
   }
@@ -366,26 +370,27 @@ export class PerformanceMonitor {
   }
 
   public getAverageFPS(frames: number = this.frameHistory.length): number {
-    if (this.frameHistory.length === 0) return 0;
+    if (this.frameHistory.length === 0) {return 0;}
 
     const recent = this.frameHistory.slice(-frames);
-    const avgFrameTime = recent.reduce((_a, __b) => a + b, 0) / recent.length;
+    const avgFrameTime = recent.reduce((_a, __b) => _a + __b, 0) / recent.length;
     return 1000 / avgFrameTime;
   }
 
   public getAverageFrameTime(frames: number = this.frameHistory.length): number {
-    if (this.frameHistory.length === 0) return 0;
+    if (this.frameHistory.length === 0) {return 0;}
 
     const recent = this.frameHistory.slice(-frames);
-    return recent.reduce((_a, __b) => a + b, 0) / recent.length;
+    return recent.reduce((_a, __b) => _a + __b, 0) / recent.length;
   }
 
   public getFrameTimePercentile(percentile: number): number {
-    if (this.frameHistory.length === 0) return 0;
+    if (this.frameHistory.length === 0) {return 0;}
 
-    const sorted = [...this.frameHistory].sort((_a, __b) => a - b);
+    const sorted = [...this.frameHistory].sort((_a, __b) => _a - __b);
+    const total = sorted.reduce((_a, __b) => _a + __b, 0);
     const index = Math.floor((percentile / 100) * (sorted.length - 1));
-    return sorted[index];
+    return sorted[index] ?? 0;
   }
 
   public getCapabilities(): GPUCapabilities {

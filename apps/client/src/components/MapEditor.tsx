@@ -83,7 +83,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   // Initialize renderer
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {return;}
 
     try {
       // Mock renderer initialization since @vtt/renderer is not available
@@ -92,12 +92,13 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         render: () => {},
         setLayers: () => {},
         setTokens: () => {},
+        saveMap: () => {},
         destroy: () => {},
       };
       rendererRef.current = mockRenderer;
       logger.info("Map editor renderer initialized");
     } catch (error) {
-      logger.error("Failed to initialize map editor renderer:", error);
+      logger.error("Failed to save map:", error as any);
     }
 
     return () => {
@@ -109,10 +110,8 @@ export const MapEditor: React.FC<MapEditorProps> = ({
 
   // Handle canvas drawing
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (readOnly || activeTool === "select") return;
-
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {return;}
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -129,10 +128,10 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !currentPath) return;
+    if (!isDrawing || !currentPath) {return;}
 
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {return;}
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -149,7 +148,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   };
 
   const handleMouseUp = () => {
-    if (!isDrawing || !currentPath) return;
+    if (!isDrawing || !currentPath) {return;}
 
     setIsDrawing(false);
     setPaths((prev) => [...prev, currentPath]);
@@ -172,7 +171,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   };
 
   const generateMapWithAI = async () => {
-    if (!aiPrompt.trim()) return;
+    if (!aiPrompt.trim()) {return;}
 
     setIsGenerating(true);
     try {
@@ -188,7 +187,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
       setGeneratedImages([mockImage]);
       logger.info("AI map generation completed");
     } catch (error) {
-      logger.error("AI map generation failed:", error);
+      logger.error("AI map generation failed:", error as any);
     } finally {
       setIsGenerating(false);
     }
@@ -199,7 +198,6 @@ export const MapEditor: React.FC<MapEditorProps> = ({
       {/* Toolbar */}
       <div className="map-toolbar" role="toolbar" aria-label="Map editing tools">
         <AccessibleButton
-          variant={activeTool === "select" ? "primary" : "secondary"}
           onClick={() => handleToolChange("select")}
           disabled={readOnly}
           action="select"
@@ -208,7 +206,6 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         </AccessibleButton>
 
         <AccessibleButton
-          variant={activeTool === "brush" ? "primary" : "secondary"}
           onClick={() => handleToolChange("brush")}
           disabled={readOnly}
           action="draw"
@@ -217,7 +214,6 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         </AccessibleButton>
 
         <AccessibleButton
-          variant={activeTool === "eraser" ? "primary" : "secondary"}
           onClick={() => handleToolChange("eraser")}
           disabled={readOnly}
           action="erase"
@@ -226,7 +222,6 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         </AccessibleButton>
 
         <AccessibleButton
-          variant={activeTool === "token" ? "primary" : "secondary"}
           onClick={() => handleToolChange("token")}
           disabled={readOnly}
           action="place"
@@ -250,7 +245,6 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         </div>
 
         <AccessibleButton
-          variant="secondary"
           onClick={() => setShowGrid(!showGrid)}
           aria-label={showGrid ? "Hide grid" : "Show grid"}
           aria-pressed={showGrid}
@@ -274,7 +268,6 @@ export const MapEditor: React.FC<MapEditorProps> = ({
             disabled={readOnly || isGenerating}
           />
           <AccessibleButton
-            variant="primary"
             onClick={generateMapWithAI}
             loading={isGenerating}
             disabled={readOnly || !aiPrompt.trim()}

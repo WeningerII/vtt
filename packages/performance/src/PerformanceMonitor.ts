@@ -87,7 +87,7 @@ export class PerformanceMonitor extends EventEmitter {
    * Start performance monitoring
    */
   start(): void {
-    if (this.isMonitoring) return;
+    if (this.isMonitoring) {return;}
 
     this.isMonitoring = true;
     this.startSystemMetrics();
@@ -100,7 +100,7 @@ export class PerformanceMonitor extends EventEmitter {
    * Stop performance monitoring
    */
   stop(): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {return;}
 
     this.isMonitoring = false;
 
@@ -158,7 +158,7 @@ export class PerformanceMonitor extends EventEmitter {
    */
   endSample(id: string): PerformanceSample | null {
     const sample = this.activeSamples.get(id);
-    if (!sample) return null;
+    if (!sample) {return null;}
 
     sample.endTime = performance.now();
     sample.duration = sample.endTime - sample.startTime;
@@ -360,7 +360,7 @@ export class PerformanceMonitor extends EventEmitter {
     let lastFrameTime = performance.now();
 
     const measureFrame = () => {
-      if (!this.isMonitoring) return;
+      if (!this.isMonitoring) {return;}
 
       const currentTime = performance.now();
       const frameTime = currentTime - lastFrameTime;
@@ -387,7 +387,7 @@ export class PerformanceMonitor extends EventEmitter {
   private estimateCpuUsage(): number {
     // Simple CPU usage estimation based on frame timing consistency
     const recentFrames = this.frameTimings.slice(-10);
-    if (recentFrames.length < 5) return 0;
+    if (recentFrames.length < 5) {return 0;}
 
     const targetFrameTime = 16.67; // 60 FPS
     const averageFrameTime = recentFrames.reduce((a, b) => a + b, 0) / recentFrames.length;
@@ -548,20 +548,20 @@ export class PerformanceMonitor extends EventEmitter {
   }
 
   private calculateTrend(history: number[]): "increasing" | "decreasing" | "stable" {
-    if (history.length < 10) return "stable";
+    if (history.length < 10) {return "stable";}
 
     const recentData = history.slice(-10);
     const olderData = history.slice(-20, -10);
 
-    if (olderData.length === 0) return "stable";
+    if (olderData.length === 0) {return "stable";}
 
     const recentAvg = recentData.reduce((a, b) => a + b, 0) / recentData.length;
     const olderAvg = olderData.reduce((a, b) => a + b, 0) / olderData.length;
 
     const changeRatio = (recentAvg - olderAvg) / olderAvg;
 
-    if (changeRatio > 0.1) return "increasing";
-    if (changeRatio < -0.1) return "decreasing";
+    if (changeRatio > 0.1) {return "increasing";}
+    if (changeRatio < -0.1) {return "decreasing";}
     return "stable";
   }
 

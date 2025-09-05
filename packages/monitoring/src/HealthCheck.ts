@@ -38,7 +38,7 @@ export class HealthCheckManager {
   }
 
   start(): void {
-    if (this.isRunning) return;
+    if (this.isRunning) {return;}
 
     this.isRunning = true;
     this.runChecks(); // Run immediately
@@ -94,7 +94,7 @@ export class HealthCheckManager {
     const startTime = Date.now();
 
     const timeoutPromise = new Promise<never>((__, __reject) => {
-      setTimeout(() => reject(new Error("Health check timeout")), check.timeout);
+      setTimeout(() => __reject(new Error("Health check timeout")), check.timeout);
     });
 
     try {
@@ -119,13 +119,13 @@ export class HealthCheckManager {
   getOverallStatus(): HealthStatus {
     const results = this.getResults();
 
-    if (results.length === 0) return "unhealthy";
+    if (results.length === 0) {return "unhealthy";}
 
     const unhealthyCount = results.filter((r) => r.status === "unhealthy").length;
     const degradedCount = results.filter((r) => r.status === "degraded").length;
 
-    if (unhealthyCount > 0) return "unhealthy";
-    if (degradedCount > 0) return "degraded";
+    if (unhealthyCount > 0) {return "unhealthy";}
+    if (degradedCount > 0) {return "degraded";}
     return "healthy";
   }
 

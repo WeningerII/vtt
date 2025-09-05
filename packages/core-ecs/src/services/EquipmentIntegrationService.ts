@@ -55,7 +55,7 @@ export class EquipmentIntegrationService {
    */
   updateEquipment(characterId: string, equipment: Equipment[]): void {
     const state = this.characterStates.get(characterId);
-    if (!state) return;
+    if (!state) {return;}
 
     state.equipment = equipment;
     state.lastUpdated = Date.now();
@@ -69,10 +69,10 @@ export class EquipmentIntegrationService {
    */
   toggleEquipment(characterId: string, itemId: string, equipped: boolean): boolean {
     const state = this.characterStates.get(characterId);
-    if (!state) return false;
+    if (!state) {return false;}
 
     const item = state.equipment.find((e) => e.id === itemId);
-    if (!item) return false;
+    if (!item) {return false;}
 
     item.equipped = equipped;
     state.lastUpdated = Date.now();
@@ -86,14 +86,14 @@ export class EquipmentIntegrationService {
    */
   attuneToItem(characterId: string, itemId: string): boolean {
     const state = this.characterStates.get(characterId);
-    if (!state) return false;
+    if (!state) {return false;}
 
     const item = state.equipment.find((e) => e.id === itemId);
-    if (!item || !item.requiresAttunement) return false;
+    if (!item || !item.requiresAttunement) {return false;}
 
     // Check attunement limits (typically 3 items)
     const currentlyAttuned = state.equipment.filter((e) => e.attuned).length;
-    if (currentlyAttuned >= 3) return false;
+    if (currentlyAttuned >= 3) {return false;}
 
     item.attuned = true;
     state.lastUpdated = Date.now();
@@ -107,7 +107,7 @@ export class EquipmentIntegrationService {
    */
   processCombatTriggers(characterId: string, event: string, context?: any): any[] {
     const character = this.getCharacterData(characterId);
-    if (!character) return [];
+    if (!character) {return [];}
 
     return equipmentEffectsEngine.processTriggers(characterId, event, character, context);
   }
@@ -144,10 +144,10 @@ export class EquipmentIntegrationService {
    */
   private updateCharacterBonuses(characterId: string): void {
     const state = this.characterStates.get(characterId);
-    if (!state) return;
+    if (!state) {return;}
 
     const character = this.getCharacterData(characterId);
-    if (!character) return;
+    if (!character) {return;}
 
     // Calculate equipment bonuses
     const bonuses = equipmentEffectsEngine.calculateEquipmentBonuses(characterId, character);
@@ -176,13 +176,13 @@ export class EquipmentIntegrationService {
    */
   private getCharacterData(characterId: string): any {
     const state = this.characterStates.get(characterId);
-    if (!state) return null;
+    if (!state) {return null;}
 
     const statsData = this.statsStore.get(state.entityId);
     const healthData = this.healthStore.get(state.entityId);
     const combatData = this.combatStore.get(state.entityId);
 
-    if (!statsData || !healthData) return null;
+    if (!statsData || !healthData) {return null;}
 
     return {
       id: characterId,

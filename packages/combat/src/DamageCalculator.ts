@@ -76,10 +76,10 @@ export class DamageCalculator {
   ): DamageResult {
     const result: DamageResult = {
       totalDamage: 0,
-      damageByType: Record<string, any>,
-      resistanceApplied: Record<string, any>,
-      immunityBlocked: Record<string, any>,
-      vulnerabilityAdded: Record<string, any>,
+      damageByType: {},
+      resistanceApplied: {},
+      immunityBlocked: {},
+      vulnerabilityAdded: {},
       modifications: [],
     };
 
@@ -394,7 +394,7 @@ export class DamageCalculator {
   private static rollDice(diceNotation: string): number {
     // Parse dice notation like "2d6" or "1d8+3"
     const match = diceNotation.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) return 0;
+    if (!match) {return 0;}
 
     const numDice = parseInt(match[1] || "1");
     const diceSides = parseInt(match[2] || "6");

@@ -21,7 +21,7 @@ export interface GameSession {
     id: string;
     name: string;
     mapUrl?: string;
-  };
+  } | undefined;
   status: "waiting" | "active" | "paused" | "ended";
   settings: {
     maxPlayers: number;
@@ -47,7 +47,7 @@ export interface Player {
     race: string;
     hitPoints: number;
     maxHitPoints: number;
-  };
+  } | null;
   isConnected: boolean;
   permissions: {
     canMoveTokens: boolean;
@@ -69,15 +69,15 @@ export interface GameState {
 }
 
 interface GameContextType extends GameState {
-  joinSession: (_sessionId: string) => Promise<void>;
+  joinSession: (sessionId: string) => Promise<void>;
   leaveSession: () => Promise<void>;
-  createSession: (_data: CreateSessionData) => Promise<void>;
+  createSession: (data: CreateSessionData) => Promise<void>;
   sendGameMessage: (message: any) => void;
   updatePlayerPermissions: (
-    _playerId: string,
-    _permissions: Partial<Player["permissions"]>,
+    playerId: string,
+    permissions: Partial<Player["permissions"]>,
   ) => void;
-  kickPlayer: (_playerId: string) => void;
+  kickPlayer: (playerId: string) => void;
   pauseSession: () => void;
   resumeSession: () => void;
   endSession: () => void;
@@ -133,36 +133,115 @@ export function GameProvider({ children }: GameProviderProps) {
 
   // Update connection status based on WebSocket state
   useEffect(() => {
+    if (!isConnected) {
+      // Set connection status when WebSocket is disconnected but don't clear session
+      setState((prev) => ({
+        ...prev,
+        connectionStatus: "disconnected",
+      }));
+      return;
+    }
+
     setState((prev) => ({
       ...prev,
-      connectionStatus: isConnected ? "connected" : "disconnected",
+      connectionStatus: "connected",
     }));
   }, [isConnected]);
 
   // Subscribe to game-related WebSocket messages
   useEffect(() => {
-    if (!isConnected) return;
+    if (!isConnected) {return;}
 
     const unsubscribers = [
-      subscribe("GAME_SESSION_UPDATED", (message) => {
-        setState((prev) => ({
-          ...prev,
-          session: message.session,
-          isGM: message.session.gamemaster.id === user?.id,
-          isPlayer: message.session.players.some((p: Player) => p.userId === user?.id),
-          isSpectator:
-            !message.session.players.some((p: Player) => p.userId === user?.id) &&
-            message.session.gamemaster.id !== user?.id,
-        }));
+      // Handle actual core schema messages
+      subscribe("GAME_STATE", (message) => {
+        logger.info("Received GAME_STATE:", message);
+        // Convert GAME_STATE message to session format
+        if (message.gameId && message.players) {
+          const sessionData: GameSession = {
+            id: message.gameId,
+            name: `Game Session ${message.gameId}`,
+            description: "Active game session",
+            gamemaster: {
+              id: `gm-${  message.gameId}`,
+              username: "gamemaster",
+              displayName: "Game Master",
+            },
+            players: message.players.map((p: any, index: number) => ({
+              id: `player-${index}`,
+              userId: p.userId || `unknown-${index}`,
+              username: (p.displayName || `Player${index}`).toLowerCase().replace(/\s+/g, '_'),
+              displayName: p.displayName || `Player ${index + 1}`,
+              character: p.character || null, // Character data from server or null
+              isConnected: p.connected ?? true,
+              permissions: {
+                canMoveTokens: true,
+                canEditCharacter: true,
+                canRollDice: true,
+                canUseChat: true,
+              },
+              joinedAt: new Date().toISOString(),
+            })),
+            status: message.phase === "combat" ? "active" : "waiting",
+            settings: {
+              maxPlayers: 6,
+              isPrivate: false,
+              allowSpectators: true,
+              voiceChatEnabled: false,
+            },
+            createdAt: new Date().toISOString(),
+            lastActivity: new Date().toISOString(),
+          };
+
+          // Only update state if user is authenticated and has valid ID
+          if (user?.id) {
+            // Determine GM status with consistent logic
+            const isGM = message.gamemaster?.userId === user.id || 
+                        message.isGM === true ||
+                        sessionData.gamemaster.id === user.id;
+            
+            // Check if user is a regular player (not including GM)
+            const isRegularPlayer = message.players.some((p: any) => p.userId === user.id);
+            
+            setState((prev) => ({
+              ...prev,
+              session: sessionData,
+              isGM,
+              isPlayer: isGM || isRegularPlayer, // GM is always considered a player
+              isSpectator: !isGM && !isRegularPlayer, // Not GM and not in players list = spectator
+              connectionStatus: "connected",
+              isLoading: false, // Clear loading state when we get game state
+            }));
+          } else {
+            logger.warn("Received GAME_STATE but user not properly authenticated - ignoring");
+          }
+        }
       }),
 
       subscribe("PLAYER_JOINED", (message) => {
         setState((prev) => {
-          if (!prev.session) return prev;
+          if (!prev.session) {return prev;}
+
+          const newPlayer: Player = {
+            id: `player-${Date.now()}`,
+            userId: message.userId || `unknown-${Date.now()}`,
+            username: (message.displayName || 'Unknown Player').toLowerCase().replace(/\s+/g, '_'),
+            displayName: message.displayName || 'Unknown Player',
+            ...(message.avatar && { avatar: message.avatar }), // Only include avatar if provided
+            character: message.character || null, // Load actual character data from server
+            isConnected: true,
+            permissions: {
+              canMoveTokens: true,
+              canEditCharacter: true,
+              canRollDice: true,
+              canUseChat: true,
+            },
+            joinedAt: new Date().toISOString(),
+          };
 
           const updatedSession = {
             ...prev.session,
-            players: [...prev.session.players, message.player],
+            players: [...prev.session.players, newPlayer],
           };
 
           return { ...prev, session: updatedSession };
@@ -171,64 +250,31 @@ export function GameProvider({ children }: GameProviderProps) {
 
       subscribe("PLAYER_LEFT", (message) => {
         setState((prev) => {
-          if (!prev.session) return prev;
+          if (!prev.session) {return prev;}
 
           const updatedSession = {
             ...prev.session,
-            players: prev.session.players.filter((p) => p.id !== message.playerId),
+            players: prev.session.players.filter((p) => p.userId !== message.userId),
           };
 
-          return { ...prev, session: updatedSession };
-        });
-      }),
-
-      subscribe("PLAYER_UPDATED", (message) => {
-        setState((prev) => {
-          if (!prev.session) return prev;
-
-          const updatedSession = {
-            ...prev.session,
-            players: prev.session.players.map((p) =>
-              p.id === message.player.id ? message.player : p,
-            ),
-          };
-
-          return { ...prev, session: updatedSession };
-        });
-      }),
-
-      subscribe("SESSION_PAUSED", () => {
-        setState((prev) => {
-          if (!prev.session) return prev;
-          return {
-            ...prev,
-            session: { ...prev.session, status: "paused" },
+          // If the leaving player was the current user, update status accordingly
+          const isCurrentUser = user?.id && message.userId === user.id;
+          
+          // If current user left, they become spectator (unless they're still GM)
+          const newIsPlayer = isCurrentUser ? prev.isGM : prev.isPlayer;
+          const newIsSpectator = isCurrentUser ? !prev.isGM : prev.isSpectator;
+          
+          return { 
+            ...prev, 
+            session: updatedSession,
+            isPlayer: newIsPlayer,
+            isSpectator: newIsSpectator,
           };
         });
       }),
 
-      subscribe("SESSION_RESUMED", () => {
-        setState((prev) => {
-          if (!prev.session) return prev;
-          return {
-            ...prev,
-            session: { ...prev.session, status: "active" },
-          };
-        });
-      }),
-
-      subscribe("SESSION_ENDED", () => {
-        setState((prev) => ({
-          ...prev,
-          session: null,
-          isGM: false,
-          isPlayer: false,
-          isSpectator: false,
-        }));
-      }),
-
-      subscribe("GAME_ERROR", (message) => {
-        setError(message.error || "An unknown game error occurred");
+      subscribe("ERROR", (message) => {
+        setError(message.message || "An unknown game error occurred");
       }),
     ];
 
@@ -248,12 +294,21 @@ export function GameProvider({ children }: GameProviderProps) {
       clearError();
 
       try {
+        // Use the actual core schema message format
         send({
-          type: "JOIN_SESSION",
-          sessionId,
+          type: "JOIN_GAME",
+          gameId: sessionId,
           userId: user.id,
+          displayName: user.displayName,
         });
-      } catch (_error) {
+        
+        logger.info("JOIN_GAME message sent via WebSocket");
+        
+        // WebSocket join is supplementary - the main join happens via HTTP API in Dashboard
+        // Set loading to false after a brief delay to allow WebSocket response
+        setTimeout(() => setLoading(false), 2000);
+      } catch (error) {
+        logger.error("Error in joinSession:", error);
         setError("Failed to join session");
         setLoading(false);
       }
@@ -262,13 +317,13 @@ export function GameProvider({ children }: GameProviderProps) {
   );
 
   const leaveSession = useCallback(async () => {
-    if (!state.session || !user) return;
+    if (!state.session || !user) {return;}
 
     try {
+      // Use the actual core schema message format
       send({
-        type: "LEAVE_SESSION",
-        sessionId: state.session.id,
-        userId: user.id,
+        type: "LEAVE_GAME",
+        gameId: state.session.id,
       });
 
       setState((prev) => ({
@@ -294,19 +349,70 @@ export function GameProvider({ children }: GameProviderProps) {
       clearError();
 
       try {
-        send({
-          type: "CREATE_SESSION",
-          sessionData: {
-            ...data,
-            gamemasterId: user.id,
-          },
+        // Import sessionsService dynamically to avoid circular imports
+        const { sessionsService } = await import('../services/sessions');
+        
+        // Create session via HTTP API first
+        const newSession = await sessionsService.createSession({
+          name: data.name,
+          description: data.description,
+          system: 'D&D 5e', // Default system - should be configurable
+          maxPlayers: data.maxPlayers,
+          isPrivate: data.isPrivate,
+          allowSpectators: data.allowSpectators,
         });
-      } catch (_error) {
-        setError("Failed to create session");
+
+        logger.info('Session created successfully:', newSession.id);
+        
+        // Store session data but don't update full state until WebSocket confirms
+        const sessionData = {
+          id: newSession.id,
+          name: newSession.name,
+          description: newSession.description,
+          gamemaster: {
+            id: newSession.gamemaster.id,
+            username: newSession.gamemaster.username,
+            displayName: newSession.gamemaster.displayName,
+          },
+          players: [], // Will be populated when users join via WebSocket
+          currentScene: undefined,
+          status: 'waiting' as const,
+          settings: {
+            ...newSession.settings,
+            voiceChatEnabled: false, // Default voice chat setting
+          },
+          createdAt: newSession.createdAt,
+          lastActivity: newSession.lastActivity,
+        };
+        
+        // Auto-join the created session via WebSocket if connected
+        if (isConnected) {
+          // Send join message - GAME_STATE handler will update state when confirmed
+          send({
+            type: "JOIN_GAME",
+            gameId: newSession.id,
+            userId: user.id,
+            displayName: user.displayName,
+          });
+        } else {
+          // No WebSocket connection, update state immediately
+          setState((prev) => ({
+            ...prev,
+            session: sessionData,
+            isGM: newSession.gamemaster.id === user.id,
+            isPlayer: true,
+            isSpectator: false,
+          }));
+        }
+        
+        setLoading(false);
+      } catch (error: any) {
+        logger.error('Failed to create session:', error);
+        setError(error.message || "Failed to create session");
         setLoading(false);
       }
     },
-    [isAuthenticated, user, setLoading, clearError, setError, send],
+    [isAuthenticated, user, setLoading, clearError, setError, isConnected, send],
   );
 
   const sendGameMessage = useCallback(
@@ -326,7 +432,7 @@ export function GameProvider({ children }: GameProviderProps) {
   );
 
   const updatePlayerPermissions = useCallback(
-    (_playerId: string, _permissions: Partial<Player["permissions"]>) => {
+    (playerId: string, permissions: Partial<Player["permissions"]>) => {
       if (!state.isGM) {
         setError("Only the game master can update player permissions");
         return;
@@ -334,15 +440,15 @@ export function GameProvider({ children }: GameProviderProps) {
 
       sendGameMessage({
         type: "UPDATE_PLAYER_PERMISSIONS",
-        playerId: _playerId,
-        permissions: _permissions,
+        playerId,
+        permissions,
       });
     },
     [state.isGM, sendGameMessage, setError],
   );
 
   const kickPlayer = useCallback(
-    (_playerId: string) => {
+    (playerId: string) => {
       if (!state.isGM) {
         setError("Only the game master can kick players");
         return;
@@ -350,7 +456,7 @@ export function GameProvider({ children }: GameProviderProps) {
 
       sendGameMessage({
         type: "KICK_PLAYER",
-        playerId: _playerId,
+        playerId,
       });
     },
     [state.isGM, sendGameMessage, setError],

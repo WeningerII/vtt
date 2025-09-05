@@ -29,7 +29,7 @@ export class MemoryProfiler {
    * Start memory monitoring
    */
   startMonitoring(intervalMs = 5000): void {
-    if (this.isMonitoring) return;
+    if (this.isMonitoring) {return;}
 
     this.isMonitoring = true;
     this.monitoringInterval = setInterval(() => {
@@ -41,7 +41,7 @@ export class MemoryProfiler {
    * Stop memory monitoring
    */
   stopMonitoring(): void {
-    if (!this.isMonitoring) return;
+    if (!this.isMonitoring) {return;}
 
     this.isMonitoring = false;
     if (this.monitoringInterval) {
@@ -81,7 +81,7 @@ export class MemoryProfiler {
    * Detect potential memory leaks
    */
   private detectLeaks(): void {
-    if (this.snapshots.length < 10) return;
+    if (this.snapshots.length < 10) {return;}
 
     const recentSnapshots = this.snapshots.slice(-10);
     const avgGrowth = this.calculateAverageGrowth(recentSnapshots);
@@ -101,16 +101,16 @@ export class MemoryProfiler {
    * Calculate average memory growth
    */
   private calculateAverageGrowth(snapshots: MemorySnapshot[]): number {
-    if (snapshots.length < 2) return 0;
+    if (snapshots.length < 2) {return 0;}
 
     const first = snapshots[0];
     const last = snapshots[snapshots.length - 1];
 
-    if (!first || !last) return 0;
+    if (!first || !last) {return 0;}
 
     const timeDiff = (last.timestamp - first.timestamp) / 1000; // seconds
 
-    if (timeDiff === 0) return 0;
+    if (timeDiff === 0) {return 0;}
 
     const memoryDiff = last.heapUsed - first.heapUsed;
     return (memoryDiff / timeDiff) * 60; // bytes per minute

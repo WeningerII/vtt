@@ -1,5 +1,5 @@
 import { vec3, mat4 } from "gl-matrix";
-import { Camera } from "./Camera";
+import { Camera, CameraType } from "./Camera";
 
 export enum LightType {
   DIRECTIONAL = 0,
@@ -23,12 +23,18 @@ export interface LightProperties {
 }
 
 export class Light {
+  public id = Math.random().toString(36).substr(2, 9);
   public position = vec3.create();
   public direction = vec3.fromValues(0, -1, 0);
   public color = vec3.fromValues(1, 1, 1);
   public intensity = 1.0;
-  public range = 100.0;
+  public range = 100;
+  public innerConeAngle = 0;
+  public falloffExponent = 1;
+  public width?: number;
+  public height?: number;
   public spotAngle = Math.PI / 4;
+  public outerConeAngle = Math.PI / 3;
   public spotPenumbra = 0.1;
   public type: LightType;
 
@@ -48,28 +54,31 @@ export class Light {
   constructor(type: LightType, properties: Partial<LightProperties> = {}) {
     this.type = type;
 
-    if (properties.color) vec3.copy(this.color, properties.color);
-    if (properties.intensity !== undefined) this.intensity = properties.intensity;
-    if (properties.range !== undefined) this.range = properties.range;
-    if (properties.spotAngle !== undefined) this.spotAngle = properties.spotAngle;
-    if (properties.spotPenumbra !== undefined) this.spotPenumbra = properties.spotPenumbra;
-    if (properties.castShadows !== undefined) this.castShadows = properties.castShadows;
-    if (properties.shadowBias !== undefined) this.shadowBias = properties.shadowBias;
+    if (properties.color) {vec3.copy(this.color, properties.color);}
+    if (properties.intensity !== undefined) {this.intensity = properties.intensity;}
+    if (properties.range !== undefined) {this.range = properties.range;}
+    if (properties.spotAngle !== undefined) {
+      this.spotAngle = properties.spotAngle;
+      this.outerConeAngle = properties.spotAngle * 1.2; // Default outer cone slightly larger
+    }
+    if (properties.spotPenumbra !== undefined) {this.spotPenumbra = properties.spotPenumbra;}
+    if (properties.castShadows !== undefined) {this.castShadows = properties.castShadows;}
+    if (properties.shadowBias !== undefined) {this.shadowBias = properties.shadowBias;}
     if (properties.shadowNormalBias !== undefined)
-      this.shadowNormalBias = properties.shadowNormalBias;
-    if (properties.shadowRadius !== undefined) this.shadowRadius = properties.shadowRadius;
-    if (properties.shadowMapSize !== undefined) this.shadowMapSize = properties.shadowMapSize;
+      {this.shadowNormalBias = properties.shadowNormalBias;}
+    if (properties.shadowRadius !== undefined) {this.shadowRadius = properties.shadowRadius;}
+    if (properties.shadowMapSize !== undefined) {this.shadowMapSize = properties.shadowMapSize;}
 
     this.createShadowCamera();
   }
 
   private createShadowCamera(): void {
-    if (!this.castShadows) return;
+    if (!this.castShadows) {return;}
 
     switch (this.type) {
       case LightType.DIRECTIONAL:
         this.shadowCamera = new Camera({
-          type: "orthographic",
+          type: CameraType.ORTHOGRAPHIC,
           left: -50,
           right: 50,
           top: 50,
@@ -81,7 +90,7 @@ export class Light {
 
       case LightType.SPOT:
         this.shadowCamera = new Camera({
-          type: "perspective",
+          type: CameraType.PERSPECTIVE,
           fov: this.spotAngle * 2,
           aspect: 1,
           near: 0.1,
@@ -93,7 +102,7 @@ export class Light {
         // Point lights use cube shadow maps - create 6 cameras
         // For now, create one camera for the primary direction
         this.shadowCamera = new Camera({
-          type: "perspective",
+          type: CameraType.PERSPECTIVE,
           fov: Math.PI / 2,
           aspect: 1,
           near: 0.1,
@@ -104,7 +113,7 @@ export class Light {
   }
 
   updateShadowCamera(): void {
-    if (!this.shadowCamera) return;
+    if (!this.shadowCamera) {return;}
 
     switch (this.type) {
       case LightType.DIRECTIONAL:
@@ -114,7 +123,7 @@ export class Light {
           vec3.scale(offset, this.direction, -100);
           vec3.add(offset, this.position, offset);
 
-          this.shadowCamera.setPosition(offset[0], offset[1], offset[2]);
+          this.shadowCamera.setPosition(offset[0] ?? 0, offset[1] ?? 0, offset[2] ?? 0);
 
           const target = vec3.create();
           vec3.add(target, offset, this.direction);
@@ -124,7 +133,7 @@ export class Light {
 
       case LightType.SPOT:
         {
-          this.shadowCamera.setPosition(this.position[0], this.position[1], this.position[2]);
+          this.shadowCamera.setPosition(this.position[0] ?? 0, this.position[1] ?? 0, this.position[2] ?? 0);
 
           const spotTarget = vec3.create();
           vec3.add(spotTarget, this.position, this.direction);
@@ -133,7 +142,7 @@ export class Light {
         break;
 
       case LightType.POINT:
-        this.shadowCamera.setPosition(this.position[0], this.position[1], this.position[2]);
+        this.shadowCamera.setPosition(this.position[0] ?? 0, this.position[1] ?? 0, this.position[2] ?? 0);
         // Point lights need special handling for omnidirectional shadows
         break;
     }
@@ -143,7 +152,7 @@ export class Light {
   }
 
   private updateShadowMatrix(): void {
-    if (!this.shadowCamera) return;
+    if (!this.shadowCamera) {return;}
 
     // Create shadow matrix for transforming world coordinates to shadow map coordinates
     const biasMatrix = mat4.fromValues(
@@ -229,14 +238,18 @@ export class Light {
   setRange(range: number): void {
     this.range = Math.max(0.1, range);
     if (this.shadowCamera && this.type !== LightType.DIRECTIONAL) {
-      this.shadowCamera.setNearFar(0.1, this.range);
+      // Update camera far plane
+      this.shadowCamera.settings.far = this.range;
+      this.shadowCamera.updateProjectionMatrix();
     }
   }
 
   setSpotAngle(angle: number): void {
     this.spotAngle = Math.max(0.01, Math.min(Math.PI, angle));
     if (this.shadowCamera && this.type === LightType.SPOT) {
-      this.shadowCamera.setFOV(this.spotAngle * 2);
+      // Update camera FOV
+      this.shadowCamera.settings.fov = this.spotAngle * 2;
+      this.shadowCamera.updateProjectionMatrix();
     }
   }
 

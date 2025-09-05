@@ -62,7 +62,7 @@ What would you like to know?`,
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading) {return;}
 
     const userMessage: AssistantMessage = {
       id: Date.now().toString(),

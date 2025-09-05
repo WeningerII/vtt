@@ -7,7 +7,7 @@ import { logger } from "@vtt/logging";
 import type { Buffer } from "node:buffer";
 
 import { MapService } from "../map/MapService";
-import { _MapScene, GridEffect } from "../map/types";
+import { MapScene, GridEffect } from "../map/types";
 import { PrismaClient } from "@prisma/client";
 import { promises as fs } from "fs";
 import { join } from "path";
@@ -772,7 +772,7 @@ export const uploadMapHandler: RouteHandler = async (ctx) => {
         // Create asset record for the file
         const _asset = await prisma.asset.create({
           data: {
-            mapId: mapId,
+            mapId,
             kind: "ORIGINAL",
             uri: `/uploads/maps/${fileName}`,
             mimeType: "image/png",

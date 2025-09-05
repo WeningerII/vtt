@@ -255,10 +255,10 @@ export class WebSocketManager extends EventEmitter {
     excludeUserId?: string,
   ) {
     const session = this.sessions.get(sessionId);
-    if (!session) return;
+    if (!session) {return;}
 
     for (const user of session) {
-      if (excludeUserId && user.id === excludeUserId) continue;
+      if (excludeUserId && user.id === excludeUserId) {continue;}
       this.sendToUser(user, message);
     }
   }
@@ -277,6 +277,24 @@ export class WebSocketManager extends EventEmitter {
     for (const user of this.userSockets.values()) {
       this.sendToUser(user, message);
     }
+  }
+
+  // Public method to broadcast to a specific session
+  public broadcastToSessionPublic(
+    sessionId: string,
+    type: string,
+    payload: any,
+    excludeUserId?: string
+  ) {
+    const message: VTTWebSocketMessage = {
+      type: type as any,
+      payload,
+      sessionId,
+      userId: "system",
+      timestamp: Date.now(),
+    };
+
+    this.broadcastToSession(sessionId, message, excludeUserId);
   }
 
   private startPingInterval() {

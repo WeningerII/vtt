@@ -1,11 +1,10 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useLocalStorage, useDebounce, useThrottle } from "usehooks-ts";
+import { useLocalStorage, useDebounce } from "usehooks-ts";
 
-// Re-export popular hooks from libraries
+// Re-export available hooks from libraries
 export {
   useLocalStorage,
   useDebounce,
-  useThrottle,
   useMediaQuery,
   useOnClickOutside,
   useInterval,
@@ -13,11 +12,76 @@ export {
   useToggle,
   useCounter,
   useHover,
-  useFetch,
   useScript,
   useWindowSize,
-  useScrollPosition,
 } from "usehooks-ts";
+
+// Implement missing hooks locally
+export const useThrottle = <T>(value: T, delay: number): T => {
+  const [throttledValue, setThrottledValue] = useState(value);
+  const lastExecuted = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (Date.now() >= lastExecuted.current + delay) {
+      lastExecuted.current = Date.now();
+      setThrottledValue(value);
+    } else {
+      const timer = setTimeout(() => {
+        lastExecuted.current = Date.now();
+        setThrottledValue(value);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }
+  }, [value, delay]);
+
+  return throttledValue;
+};
+
+export const useScrollPosition = () => {
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useEffect(() => {
+    const updatePosition = () => {
+      setScrollPosition(window.pageYOffset);
+    };
+
+    window.addEventListener('scroll', updatePosition);
+    updatePosition();
+
+    return () => window.removeEventListener('scroll', updatePosition);
+  }, []);
+
+  return scrollPosition;
+};
+
+export const useFetch = <T>(url: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+  return { data, loading, error };
+};
 
 // Custom auth hook placeholder
 export const useAuth = () => {

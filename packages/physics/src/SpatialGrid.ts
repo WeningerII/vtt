@@ -68,11 +68,17 @@ export class SpatialGrid {
     for (const key of cellKeys) {
       let cell = this.grid.get(key);
       if (!cell) {
-        const [x, y] = key.split(",").map(Number);
-        cell = { x, y, entities: new Set() };
-        this.grid.set(key, cell);
+        const coords = key.split(",").map(Number);
+        const x = coords[0];
+        const y = coords[1];
+        if (coords.length >= 2 && typeof x === 'number' && typeof y === 'number' && !isNaN(x) && !isNaN(y)) {
+          cell = { x, y, entities: new Set() };
+          this.grid.set(key, cell);
+        }
       }
-      cell.entities.add(entityId);
+      if (cell) {
+        cell.entities.add(entityId);
+      }
     }
   }
 
@@ -112,11 +118,13 @@ export class SpatialGrid {
         for (let j = i + 1; j < entities.length; j++) {
           const a = entities[i];
           const b = entities[j];
-          const pairKey = a < b ? `${a},${b}` : `${b},${a}`;
+          if (a !== undefined && b !== undefined) {
+            const pairKey = a < b ? `${a},${b}` : `${b},${a}`;
 
-          if (!processed.has(pairKey)) {
-            pairs.push([a, b]);
-            processed.add(pairKey);
+            if (!processed.has(pairKey)) {
+              pairs.push([a, b]);
+              processed.add(pairKey);
+            }
           }
         }
       }
@@ -154,7 +162,7 @@ export class SpatialGrid {
     const key = this.getCellKey(x, y);
     const cell = this.grid.get(key);
 
-    if (!cell) return [];
+    if (!cell) {return [];}
 
     const entities: number[] = [];
     for (const entityId of cell.entities) {

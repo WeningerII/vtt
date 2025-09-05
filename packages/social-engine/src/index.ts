@@ -187,7 +187,7 @@ export class SocialEngine {
     const opportunityAttacks: Array<{ attacker: string; result: any }> = [];
 
     for (const entity of nearbyEntities) {
-      if (entity.id === movingEntity) continue;
+      if (entity.id === movingEntity) {continue;}
 
       const reactions = this.entityReactions.get(entity.id) || [];
       const opportunityReaction = reactions.find(
@@ -277,10 +277,10 @@ export class SocialEngine {
     value: number;
   } | null {
     const relationships = this.entityRelationships.get(entityA);
-    if (!relationships) return null;
+    if (!relationships) {return null;}
 
     const relationship = relationships.relationships.get(entityB);
-    if (!relationship) return { attitude: "neutral", value: 0 };
+    if (!relationship) {return { attitude: "neutral", value: 0 };}
 
     return {
       attitude: relationship.attitude,
@@ -298,7 +298,7 @@ export class SocialEngine {
     reason?: string,
   ): RelationshipChange | null {
     const relationships = this.entityRelationships.get(entityA);
-    if (!relationships) return null;
+    if (!relationships) {return null;}
 
     const current = relationships.relationships.get(entityB) || {
       attitude: "neutral" as const,
@@ -508,10 +508,10 @@ export class SocialEngine {
   private calculateAttitude(
     value: number,
   ): "hostile" | "unfriendly" | "neutral" | "friendly" | "helpful" {
-    if (value <= -6) return "hostile";
-    if (value <= -3) return "unfriendly";
-    if (value <= 2) return "neutral";
-    if (value <= 6) return "friendly";
+    if (value <= -6) {return "hostile";}
+    if (value <= -3) {return "unfriendly";}
+    if (value <= 2) {return "neutral";}
+    if (value <= 6) {return "friendly";}
     return "helpful";
   }
 

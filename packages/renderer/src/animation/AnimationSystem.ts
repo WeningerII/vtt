@@ -1,11 +1,5 @@
-import type {
-  GPUTexture,
-  GPUDevice,
-  GPUBuffer,
-  GPUComputePipeline,
-  GPUTextureUsage,
-  GPUBufferUsage,
-} from "@webgpu/types";
+/// <reference path="../types/webgpu.d.ts" />
+// WebGPU types and constants are available as browser globals
 /**
  * Professional Animation System - Triple A Quality
  * Advanced skeletal animation, morphing, physics-based animation, and cinematic tools
@@ -125,6 +119,29 @@ export interface RigidBodyAnimation {
   linearDamping: number;
   angularDamping: number;
   kinematic: boolean;
+}
+
+export interface ConstraintAnimation {
+  id: string;
+  type: "distance" | "pin" | "hinge" | "spring";
+  nodeA: string;
+  nodeB?: string;
+  restLength?: number;
+  stiffness?: number;
+  damping?: number;
+}
+
+export interface FluidAnimation {
+  id: string;
+  particleCount: number;
+  viscosity: number;
+  density: number;
+  surfaceTension: number;
+  gravity: [number, number, number];
+  bounds: {
+    min: [number, number, number];
+    max: [number, number, number];
+  };
 }
 
 export interface ClothAnimation {
@@ -297,7 +314,7 @@ export class ProfessionalAnimationSystem {
     },
   ): void {
     const clip = this.animationClips.get(clipId);
-    if (!clip) return;
+    if (!clip) {return;}
 
     const animationState: AnimationState = {
       clip,
@@ -332,7 +349,7 @@ export class ProfessionalAnimationSystem {
     const currentPose = new Float32Array(skeleton.bones.length * 16);
 
     // Initialize with bind pose
-    skeleton.bones.forEach((bone, _index) => {
+    skeleton.bones.forEach((bone, index) => {
       const offset = index * 16;
       bindPose.set(bone.bindMatrix, offset);
       currentPose.set(bone.bindMatrix, offset);
@@ -367,7 +384,7 @@ export class ProfessionalAnimationSystem {
 
   evaluateBlendTree(treeId: string, parameters: Record<string, number>): AnimationClip | null {
     const tree = this.blendTrees.get(treeId);
-    if (!tree) return null;
+    if (!tree) {return null;}
 
     // Update tree parameters
     Object.assign(tree.parameters, parameters);
@@ -397,7 +414,7 @@ export class ProfessionalAnimationSystem {
 
   private updateActiveAnimations(deltaTime: number): void {
     for (const [key, animation] of this.activeAnimations) {
-      if (animation.paused) continue;
+      if (animation.paused) {continue;}
 
       // Update animation time
       animation.time += deltaTime * animation.speed;
@@ -432,7 +449,7 @@ export class ProfessionalAnimationSystem {
   }
 
   private processAnimationEvents(animation: AnimationState, deltaTime: number): void {
-    if (!animation.clip.events) return;
+    if (!animation.clip.events) {return;}
 
     const previousTime = animation.time - deltaTime * animation.speed;
 
@@ -453,15 +470,17 @@ export class ProfessionalAnimationSystem {
   }
 
   private evaluateTrack(track: AnimationTrack, time: number): any {
-    if (track.keyframes.length === 0) return null;
-    if (track.keyframes.length === 1) return track.keyframes[0].value;
+    if (track.keyframes.length === 0) {return null;}
+    if (track.keyframes.length === 1) {return track.keyframes[0]?.value || null;}
 
     // Find surrounding keyframes
     let beforeIndex = 0;
     let afterIndex = track.keyframes.length - 1;
 
     for (let i = 0; i < track.keyframes.length - 1; i++) {
-      if (time >= track.keyframes[i].time && time <= track.keyframes[i + 1].time) {
+      const currentFrame = track.keyframes[i];
+      const nextFrame = track.keyframes[i + 1];
+      if (currentFrame && nextFrame && time >= currentFrame.time && time <= nextFrame.time) {
         beforeIndex = i;
         afterIndex = i + 1;
         break;
@@ -471,7 +490,11 @@ export class ProfessionalAnimationSystem {
     const beforeKey = track.keyframes[beforeIndex];
     const afterKey = track.keyframes[afterIndex];
 
-    if (beforeIndex === afterIndex) return beforeKey.value;
+    if (!beforeKey || !afterKey) {
+      return beforeKey?.value || afterKey?.value || new Float32Array([0, 0, 0, 1]);
+    }
+
+    if (beforeIndex === afterIndex) {return beforeKey.value;}
 
     // Calculate interpolation factor
     const duration = afterKey.time - beforeKey.time;
@@ -509,10 +532,10 @@ export class ProfessionalAnimationSystem {
       case "easeInBounce":
         return 1 - this.applyEasing(1 - t, "easeOutBounce");
       case "easeOutBounce": {
-        if (t < 1 / 2.75) return 7.5625 * t * t;
-        else if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
-        else if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
-        else return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
+        if (t < 1 / 2.75) {return 7.5625 * t * t;}
+        else if (t < 2 / 2.75) {return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;}
+        else if (t < 2.5 / 2.75) {return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;}
+        else {return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;}
       }
       default:
         return t;
@@ -525,7 +548,7 @@ export class ProfessionalAnimationSystem {
     }
 
     if (Array.isArray(from) && Array.isArray(to)) {
-      return from.map((_f, __i) => f + (to[i] - f) * t);
+      return from.map((_f, __i) => _f + (to[__i] - _f) * t);
     }
 
     // Handle quaternion slerp for rotations
@@ -536,21 +559,27 @@ export class ProfessionalAnimationSystem {
     return mode === "step" ? (t < 1 ? from : to) : from;
   }
 
-  private slerpQuaternion(q1: Float32Array, q2: Float32Array, t: number): Float32Array {
+  private slerpQuaternion(q1: Float32Array | undefined, q2: Float32Array | undefined, t: number): Float32Array {
     const result = new Float32Array(4);
-    let dot = q1[0] * q2[0] + q1[1] * q2[1] + q1[2] * q2[2] + q1[3] * q2[3];
+    
+    // Provide defaults if quaternions are undefined
+    const quat1 = q1 || new Float32Array([0, 0, 0, 1]);
+    const quat2 = q2 || new Float32Array([0, 0, 0, 1]);
+    
+    let dot = (quat1[0] ?? 0) * (quat2[0] ?? 0) + (quat1[1] ?? 0) * (quat2[1] ?? 0) + (quat1[2] ?? 0) * (quat2[2] ?? 0) + (quat1[3] ?? 1) * (quat2[3] ?? 1);
+    let q2Copy = quat2;
 
     if (dot < 0) {
       dot = -dot;
-      q2 = new Float32Array([-q2[0], -q2[1], -q2[2], -q2[3]]);
+      q2Copy = new Float32Array([-(quat2[0] ?? 0), -(quat2[1] ?? 0), -(quat2[2] ?? 0), -(quat2[3] ?? 1)]);
     }
 
     if (dot > 0.9995) {
       // Linear interpolation for very close quaternions
-      result[0] = q1[0] + t * (q2[0] - q1[0]);
-      result[1] = q1[1] + t * (q2[1] - q1[1]);
-      result[2] = q1[2] + t * (q2[2] - q1[2]);
-      result[3] = q1[3] + t * (q2[3] - q1[3]);
+      result[0] = (quat1[0] ?? 0) + t * ((q2Copy[0] ?? 0) - (quat1[0] ?? 0));
+      result[1] = (quat1[1] ?? 0) + t * ((q2Copy[1] ?? 0) - (quat1[1] ?? 0));
+      result[2] = (quat1[2] ?? 0) + t * ((q2Copy[2] ?? 0) - (quat1[2] ?? 0));
+      result[3] = (quat1[3] ?? 1) + t * ((q2Copy[3] ?? 1) - (quat1[3] ?? 1));
     } else {
       // Spherical linear interpolation
       const theta = Math.acos(dot);
@@ -558,10 +587,10 @@ export class ProfessionalAnimationSystem {
       const w1 = Math.sin((1 - t) * theta) / sinTheta;
       const w2 = Math.sin(t * theta) / sinTheta;
 
-      result[0] = w1 * q1[0] + w2 * q2[0];
-      result[1] = w1 * q1[1] + w2 * q2[1];
-      result[2] = w1 * q1[2] + w2 * q2[2];
-      result[3] = w1 * q1[3] + w2 * q2[3];
+      result[0] = w1 * (quat1[0] ?? 0) + w2 * (q2Copy[0] ?? 0);
+      result[1] = w1 * (quat1[1] ?? 0) + w2 * (q2Copy[1] ?? 0);
+      result[2] = w1 * (quat1[2] ?? 0) + w2 * (q2Copy[2] ?? 0);
+      result[3] = w1 * (quat1[3] ?? 1) + w2 * (q2Copy[3] ?? 1);
     }
 
     // Normalize
@@ -626,7 +655,7 @@ export class ProfessionalAnimationSystem {
   }
 
   private updateClothSimulation(cloth: ClothAnimation | undefined, _deltaTime: number): void {
-    if (!cloth) return;
+    if (!cloth) {return;}
 
     // Verlet integration for cloth simulation
     // Implementation would update particle positions and constraints
@@ -641,7 +670,7 @@ export class ProfessionalAnimationSystem {
     this.stats.activeAnimations = this.activeAnimations.size;
     this.stats.skeletalAnimations = this.skeletalAnimations.size;
     this.stats.morphTargets = Array.from(this.morphTargets.values()).reduce(
-      (_sum, _targets) => sum + targets.length,
+      (_sum, _targets) => _sum + _targets.length,
       0,
     );
     this.stats.physicsAnimations = this.physicsAnimations.size;
@@ -649,7 +678,7 @@ export class ProfessionalAnimationSystem {
 
   // GPU skinning dispatch
   async performGPUSkinning(vertexCount: number): Promise<void> {
-    if (!this.skinningPipeline) return;
+    if (!this.skinningPipeline) {return;}
 
     const startTime = performance.now();
     const encoder = this.device.createCommandEncoder();

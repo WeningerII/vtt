@@ -10,8 +10,8 @@
  */
 export function computeGridFov(origin: [number, number], _radius: number): Array<[number, number]> {
   const visible: Array<[number, number]> = [];
-  for (let dx = -radius; dx <= radius; dx++) {
-    for (let dy = -radius; dy <= radius; dy++) {
+  for (let dx = -_radius; dx <= _radius; dx++) {
+    for (let dy = -_radius; dy <= _radius; dy++) {
       visible.push([origin[0] + dx, origin[1] + dy]);
     }
   }
@@ -27,6 +27,6 @@ export function computeVisibilityPolygon(
   origin: [number, number],
   _obstacles: number[][],
 ): [number, number][] {
-  void obstacles;
+  void _obstacles;
   return [origin];
 }

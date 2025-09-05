@@ -198,7 +198,7 @@ export class RenderTarget {
           this.width,
           this.height,
           0,
-          gl.STENCIL_INDEX,
+          gl.STENCIL_INDEX8,
           gl.UNSIGNED_BYTE,
           null,
         );
@@ -333,8 +333,8 @@ export class RenderTarget {
   ): void {
     const gl = this.gl;
 
-    if (dstX1 === undefined) dstX1 = target ? target.width : gl.canvas.width;
-    if (dstY1 === undefined) dstY1 = target ? target.height : gl.canvas.height;
+    if (dstX1 === undefined) {dstX1 = target ? target.width : gl.canvas.width;}
+    if (dstY1 === undefined) {dstY1 = target ? target.height : gl.canvas.height;}
 
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.framebuffer);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, target ? target.framebuffer : null);

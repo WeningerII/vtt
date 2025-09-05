@@ -1,4 +1,4 @@
-import { GPUTextureUsage } from "@webgpu/types";
+// GPUTextureUsage is available as browser global
 import { logger } from "@vtt/logging";
 
 export interface TextureInfo {

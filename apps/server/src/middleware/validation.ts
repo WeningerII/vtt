@@ -206,7 +206,7 @@ export const validateRequest = (schemas: {
         (ctx as any).validatedHeaders = schemas.headers.parse(ctx.req.headers);
       }
 
-      if (next) await next();
+      if (next) {await next();}
     } catch (error) {
       if (error instanceof z.ZodError) {
         throw new ValidationError(
@@ -278,13 +278,13 @@ async function parseJsonBody(req: any): Promise<any> {
  * Check for prototype pollution attempts
  */
 function hasProtoProperty(obj: any): boolean {
-  if (typeof obj !== 'object' || obj === null) return false;
+  if (typeof obj !== 'object' || obj === null) {return false;}
   
   const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
   
   for (const key of Object.keys(obj)) {
-    if (dangerousKeys.includes(key)) return true;
-    if (typeof obj[key] === 'object' && hasProtoProperty(obj[key])) return true;
+    if (dangerousKeys.includes(key)) {return true;}
+    if (typeof obj[key] === 'object' && hasProtoProperty(obj[key])) {return true;}
   }
   
   return false;
@@ -303,6 +303,6 @@ export const validateFileUpload = (options: {
   return (ctx: Context, next?: () => Promise<void>) => {
     // File upload validation logic would go here
     // This is a placeholder for file upload security
-    if (next) return next();
+    if (next) {return next();}
   };
 };

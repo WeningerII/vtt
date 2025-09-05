@@ -59,7 +59,7 @@ class PerformanceBenchmark {
   printResults(): void {
     console.log("\n=== Performance Benchmark Results ===");
     console.log(
-      "Name".padEnd(30) + "Ops/sec".padEnd(12) + "Avg Time (ms)".padEnd(15) + "Total Time (ms)",
+      `${"Name".padEnd(30) + "Ops/sec".padEnd(12) + "Avg Time (ms)".padEnd(15)  }Total Time (ms)`,
     );
     console.log("-".repeat(70));
 

@@ -4,7 +4,26 @@
  */
 
 import { EventEmitter, SystemEvents } from "./EventEmitter";
+import { logger } from '@vtt/logging';
 import { Disposable } from "./SharedInterfaces";
+
+// Declare WeakRef and FinalizationRegistry if not available
+interface WeakRef<T extends object> {
+  deref(): T | undefined;
+}
+
+interface FinalizationRegistry<T> {
+  register(target: object, heldValue: T, unregisterToken?: object): void;
+  unregister(unregisterToken: object): boolean;
+}
+
+declare const WeakRef: {
+  new <T extends object>(target: T): WeakRef<T>;
+};
+
+declare const FinalizationRegistry: {
+  new <T>(cleanupCallback: (heldValue: T) => void): FinalizationRegistry<T>;
+};
 
 export interface MemoryConfig {
   enableObjectPooling: boolean;
@@ -40,7 +59,7 @@ export class GenericObjectPool<T> implements ObjectPool<T> {
   private maxSize: number;
 
   constructor(_factory: () => T, maxSize: number = 100, reset?: (_obj: T) => void) {
-    this.factory = factory;
+    this.factory = _factory;
     this.maxSize = maxSize;
     this.reset = reset;
   }
@@ -89,7 +108,7 @@ export class GenericObjectPool<T> implements ObjectPool<T> {
 export class WeakRefCache<K, V extends object> {
   private cache = new Map<K, WeakRef<V>>();
   private registry = new FinalizationRegistry<K>((_key) => {
-    this.cache.delete(key);
+    this.cache.delete(_key);
   });
 
   set(key: K, value: V): void {
@@ -105,7 +124,7 @@ export class WeakRefCache<K, V extends object> {
 
   get(key: K): V | undefined {
     const ref = this.cache.get(key);
-    if (!ref) return undefined;
+    if (!ref) {return undefined;}
 
     const value = ref.deref();
     if (!value) {
@@ -118,7 +137,7 @@ export class WeakRefCache<K, V extends object> {
 
   has(key: K): boolean {
     const ref = this.cache.get(key);
-    if (!ref) return false;
+    if (!ref) {return false;}
 
     const value = ref.deref();
     if (!value) {
@@ -181,15 +200,15 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
     if (!this.config.enableObjectPooling) {
       // Return a no-op pool that just creates new objects
       return {
-        acquire: factory,
+        acquire: _factory,
         release: () => {},
         size: () => 0,
         clear: () => {},
       };
     }
 
-    const pool = new GenericObjectPool(factory, this.config.maxPoolSize, reset);
-    this.objectPools.set(name, pool);
+    const pool = new GenericObjectPool(_factory, this.config.maxPoolSize, reset);
+    this.objectPools.set(_name, pool);
     return pool;
   }
 
@@ -209,11 +228,11 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
       const regularMap = new Map<K, V>();
       return {
         set: (_k, _v) => {
-          regularMap.set(k, v);
+          regularMap.set(_k, _v);
         },
-        get: (_k) => regularMap.get(k),
-        has: (_k) => regularMap.has(k),
-        delete: (_k) => regularMap.delete(k),
+        get: (_k) => regularMap.get(_k),
+        has: (_k) => regularMap.has(_k),
+        delete: (_k) => regularMap.delete(_k),
         size: () => regularMap.size,
         clear: () => regularMap.clear(),
       } as WeakRefCache<K, V>;
@@ -246,7 +265,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
    */
   shouldTriggerGC(): boolean {
     const memInfo = this.getMemoryInfo();
-    if (!memInfo) return false;
+    if (!memInfo) {return false;}
 
     const usageRatio = memInfo.heapUsed / memInfo.heapTotal;
     return usageRatio > this.config.gcThreshold;
@@ -379,7 +398,7 @@ export class MemoryOptimizer extends EventEmitter<SystemEvents> implements Dispo
 
   private createMemoryProfile(): void {
     const memInfo = this.getMemoryInfo();
-    if (!memInfo) return;
+    if (!memInfo) {return;}
 
     const profile: MemoryProfile = {
       timestamp: new Date(),
@@ -434,13 +453,13 @@ export class OptimizedArray<T> {
     _factory?: () => T,
     reset?: (_obj: T) => void,
   ) {
-    this.factory = factory || (() => ({}) as T);
+    this.factory = _factory || (() => ({}) as T);
     this.reset = reset;
 
-    this.pool = optimizer.getPool(poolName) || optimizer.createPool(poolName, this.factory, reset);
+    this.pool = optimizer.getPool(_poolName) || optimizer.createPool(_poolName, this.factory, reset);
 
     // Pre-allocate capacity
-    this.items.length = initialCapacity;
+    this.items.length = _initialCapacity;
   }
 
   push(item?: T): T {
@@ -481,17 +500,17 @@ export class OptimizedArray<T> {
     for (let i = 0; i < this.items.length; i++) {
       const item = this.items[i];
       if (item !== undefined) {
-        callback(item, i);
+        _callback(item, i);
       }
     }
   }
 
   filter(_predicate: (item: T) => boolean): T[] {
-    return this.items.filter(predicate);
+    return this.items.filter(_predicate);
   }
 
   map<U>(_mapper: (item: T) => U): U[] {
-    return this.items.map(mapper);
+    return this.items.map(_mapper);
   }
 }
 

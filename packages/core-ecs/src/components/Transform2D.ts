@@ -32,12 +32,12 @@ export class Transform2DStore {
 
   add(id: EntityId, t?: Partial<{x:number;y:number;rot:number;sx:number;sy:number;zIndex:number}>) {
     this.present[id] = 1;
-    if (t?.x !== undefined) this.x[id] = t.x;
-    if (t?.y !== undefined) this.y[id] = t.y;
-    if (t?.rot !== undefined) this.rot[id] = t.rot;
-    if (t?.sx !== undefined) this.sx[id] = t.sx;
-    if (t?.sy !== undefined) this.sy[id] = t.sy;
-    if (t?.zIndex !== undefined) this.zIndex[id] = t.zIndex | 0;
+    if (t?.x !== undefined) {this.x[id] = t.x;}
+    if (t?.y !== undefined) {this.y[id] = t.y;}
+    if (t?.rot !== undefined) {this.rot[id] = t.rot;}
+    if (t?.sx !== undefined) {this.sx[id] = t.sx;}
+    if (t?.sy !== undefined) {this.sy[id] = t.sy;}
+    if (t?.zIndex !== undefined) {this.zIndex[id] = t.zIndex | 0;}
   }
 
   remove(id: EntityId) { this.present[id] = 0; }
@@ -49,7 +49,7 @@ export class Transform2DStore {
    * @returns Transform data or null if entity doesn't have transform component
    */
   get(id: EntityId): Transform2DData | null {
-    if (!this.has(id)) return null;
+    if (!this.has(id)) {return null;}
     
     return {
       x: this.x[id],
@@ -67,7 +67,7 @@ export class Transform2DStore {
    * @returns Position data or null if entity doesn't have transform component
    */
   getPosition(id: EntityId): { x: number; y: number } | null {
-    if (!this.has(id)) return null;
+    if (!this.has(id)) {return null;}
     return { x: this.x[id], y: this.y[id] };
   }
 
@@ -86,7 +86,7 @@ export class Transform2DStore {
    * @returns Scale data or null if entity doesn't have transform component
    */
   getScale(id: EntityId): { sx: number; sy: number } | null {
-    if (!this.has(id)) return null;
+    if (!this.has(id)) {return null;}
     return { sx: this.sx[id], sy: this.sy[id] };
   }
 }

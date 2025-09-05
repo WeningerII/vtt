@@ -69,7 +69,7 @@ export class ConflictResolver extends EventEmitter {
         // Transform local operation against all previous remote operations
         let transformedOp = op;
         for (let i = 0; i < remoteIndex; i++) {
-          transformedOp = this.transformOperation(transformedOp, remoteOps[i], 'local');
+          transformedOp = this.transformOperation(transformedOp, remoteOps[i]!, 'local');
         }
         localTransformed.push(transformedOp);
         localIndex++;
@@ -77,7 +77,7 @@ export class ConflictResolver extends EventEmitter {
         // Transform remote operation against all previous local operations
         let transformedOp = op;
         for (let i = 0; i < localIndex; i++) {
-          transformedOp = this.transformOperation(transformedOp, localOps[i], 'remote');
+          transformedOp = this.transformOperation(transformedOp, localOps[i]!, 'remote');
         }
         remoteTransformed.push(transformedOp);
         remoteIndex++;
@@ -176,8 +176,8 @@ export class ConflictResolver extends EventEmitter {
     basePosition: { x: number; y: number; z: number },
     priority: 'local' | 'remote' | 'interpolate' = 'interpolate'
   ): { x: number; y: number; z: number } {
-    if (priority === 'local') return localPosition;
-    if (priority === 'remote') return remotePosition;
+    if (priority === 'local') {return localPosition;}
+    if (priority === 'remote') {return remotePosition;}
 
     // Calculate movement vectors
     const localVector = {

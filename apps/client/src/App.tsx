@@ -16,7 +16,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 // Import global styles
 import "./styles/globals.css";
 import "./styles/theme.css";
-import { I18nProvider } from "./providers/I18nProvider";
+import "./styles/utilities.css";
+import { I18nProvider } from "@vtt/i18n";
 
 interface AppConfig {
   serverUrl: string;
@@ -35,40 +36,53 @@ export default function App() {
       try {
         // Load configuration from environment variables
         const appConfig: AppConfig = {
-          serverUrl: import.meta.env?.VITE_SERVER_URL || "http://localhost:8080",
-          wsUrl: import.meta.env?.VITE_WS_URL || "ws://localhost:8080",
-          version: import.meta.env?.VITE_APP_VERSION || "1.0.0",
-          environment: import.meta.env?.MODE === "production" ? "production" : "development",
+          serverUrl: (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:8080",
+          wsUrl: (import.meta as any).env?.VITE_WS_URL || "ws://localhost:8080/ws",
+          version: (import.meta as any).env?.VITE_APP_VERSION || "1.0.0",
+          environment: (import.meta as any).env?.MODE === "production" ? "production" : "development",
         };
-
-        // Global error handlers
-        window.addEventListener("error", (event) => {
-          logger.error("Global error:", event.error);
-        });
-
-        window.addEventListener("unhandledrejection", (event) => {
-          logger.error("Unhandled promise rejection:", event.reason);
-        });
-
-        // Performance monitoring in development
-        if (appConfig.environment === "development") {
-          const observer = new PerformanceObserver((list) => {
-            for (const entry of list.getEntries()) {
-              logger.info("Performance:", entry.name, entry.duration + "ms");
-            }
-          });
-          observer.observe({ entryTypes: ["measure", "navigation"] });
-        }
 
         setConfig(appConfig);
       } catch (error) {
-        logger.error("Failed to initialize application:", error);
+        logger.error("Failed to initialize application:", error as any);
       } finally {
         setIsLoading(false);
       }
     };
 
+    // Global error handlers
+    const handleError = (event: ErrorEvent) => {
+      logger.error("Global error:", event.error);
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      logger.error("Unhandled promise rejection:", event.reason);
+    };
+
+    window.addEventListener("error", handleError);
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+
+    // Performance monitoring in development
+    let observer: PerformanceObserver | null = null;
+    if ((import.meta as any).env?.MODE !== "production") {
+      observer = new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          logger.info(`Performance: ${entry.name} ${entry.duration}ms`);
+        }
+      });
+      observer.observe({ entryTypes: ["measure", "navigation"] });
+    }
+
     initializeApp();
+
+    // Cleanup function to remove event listeners
+    return () => {
+      window.removeEventListener("error", handleError);
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
   }, []);
 
   if (isLoading) {
@@ -88,7 +102,7 @@ export default function App() {
 
   if (!config) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-primary">
+      <div className="min-h-screen flex items-center justify-center bg-primary">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-error mb-4">Configuration Error</h1>
           <p className="text-text-secondary">

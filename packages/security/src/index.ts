@@ -170,10 +170,10 @@ export class SecuritySystem {
 
       // 4. Threat detection
       const securityContext: SecurityContext = {};
-      if (context.request) securityContext.request = context.request;
-      if (context.user) securityContext.user = context.user;
-      if (context.session) securityContext.session = context.session;
-      if (context.metadata) securityContext.metadata = context.metadata;
+      if (context.request) {securityContext.request = context.request;}
+      if (context.user) {securityContext.user = context.user;}
+      if (context.session) {securityContext.session = context.session;}
+      if (context.metadata) {securityContext.metadata = context.metadata;}
 
       const threatAnalysis = this.threatProtection.analyzeRequest(securityContext);
 

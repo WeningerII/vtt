@@ -8,7 +8,15 @@
     "sourceMap": true,
     "composite": true,
     "incremental": true,
-    "tsBuildInfoFile": "./audio.tsbuildinfo"
+    "tsBuildInfoFile": "./audio.tsbuildinfo",
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "baseUrl": "../../",
+    "paths": {
+      "@vtt/logging": ["packages/logging/src/index.ts"]
+    }
   },
   "include": [
     "src/**/*"
@@ -18,5 +26,8 @@
     "node_modules",
     "**/*.test.ts",
     "**/*.spec.ts"
+  ],
+  "references": [
+    { "path": "../logging" }
   ]
 }

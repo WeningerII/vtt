@@ -1,5 +1,5 @@
-import { BehaviorTree, Blackboard, _NodeStatus } from "./BehaviorTree";
-import { StateMachine, _State, _StateContext } from "./StateMachine";
+import { BehaviorTree, BehaviorNode, NodeStatus, Blackboard } from "./BehaviorTree";
+import { StateMachine, State, StateContext } from "./StateMachine";
 import { PathfindingManager, Vector2 } from "./Pathfinding";
 
 export interface AgentConfig {
@@ -118,7 +118,7 @@ export class Agent {
   }
 
   public update(deltaTime: number): void {
-    if (!this.isActive) return;
+    if (!this.isActive) {return;}
 
     const startTime = performance.now();
 
@@ -528,7 +528,7 @@ export class AgentManager {
     const nearby: Agent[] = [];
 
     for (const otherAgent of this.agents.values()) {
-      if (otherAgent === agent) continue;
+      if (otherAgent === agent) {continue;}
 
       const distance = agent.getDistanceTo(otherAgent.position);
       if (distance <= range) {

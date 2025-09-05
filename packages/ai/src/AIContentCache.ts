@@ -255,7 +255,7 @@ export class AIContentCache extends EventEmitter {
     // Analyze new image
     this.analytics.misses++;
     const response = await provider.analyzeImage({
-      image: { uri: typeof request.image === 'string' ? request.image : 'data:image/jpeg;base64,' + request.image.toString() },
+      image: { uri: typeof request.image === 'string' ? request.image : `data:image/jpeg;base64,${  request.image.toString()}` },
       prompt: request.prompt,
       ...(request.model && { model: request.model })
     });
@@ -331,7 +331,7 @@ export class AIContentCache extends EventEmitter {
     const caches = type ? [this.getCacheByType(type)] : [this.textCache, this.imageCache, this.behaviorCache, this.dialogueCache];
     
     for (const cache of caches) {
-      if (!cache) continue;
+      if (!cache) {continue;}
       
       if (query) {
         // Invalidate entries matching query - simplified approach
@@ -356,7 +356,7 @@ export class AIContentCache extends EventEmitter {
    * Warm up cache with common requests
    */
   async warmupCache(provider: AIProvider, warmupData: Array<{ type: string; request: any }>): Promise<void> {
-    if (!warmupData?.length) return;
+    if (!warmupData?.length) {return;}
 
     const promises = warmupData.map(async ({ type, request }) => {
       try {
@@ -408,9 +408,9 @@ export class AIContentCache extends EventEmitter {
 
   private generateTags(type: string, request: any): string[] {
     const tags = [type];
-    if (request.model) tags.push(`model:${request.model}`);
-    if (request.temperature) tags.push(`temp:${request.temperature}`);
-    if (request.maxTokens) tags.push(`tokens:${request.maxTokens}`);
+    if (request.model) {tags.push(`model:${request.model}`);}
+    if (request.temperature) {tags.push(`temp:${request.temperature}`);}
+    if (request.maxTokens) {tags.push(`tokens:${request.maxTokens}`);}
     return tags;
   }
 
@@ -476,8 +476,8 @@ export class AIContentCache extends EventEmitter {
     const variations = [
       originalPrompt.replace(/\b(he|she|it)\b/gi, 'they'),
       originalPrompt.replace(/\b(his|her|its)\b/gi, 'their'),
-      originalPrompt + ' Please be more specific.',
-      originalPrompt + ' What are the implications?'
+      `${originalPrompt  } Please be more specific.`,
+      `${originalPrompt  } What are the implications?`
     ];
     
     return variations.filter(v => v !== originalPrompt);
@@ -497,7 +497,7 @@ export class AIContentCache extends EventEmitter {
     const now = Date.now();
     const readyEntries = this.predictiveQueue.filter(entry => entry.predictedUseTime <= now);
     
-    if (readyEntries.length === 0) return;
+    if (readyEntries.length === 0) {return;}
     
     // Process one entry to avoid overwhelming the system
     const entry = readyEntries[0];
@@ -558,5 +558,18 @@ export class AIContentCache extends EventEmitter {
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
+  }
+
+  /**
+   * Dispose of resources and cleanup
+   */
+  dispose(): void {
+    this.textCache.destroy();
+    this.imageCache.destroy();
+    this.behaviorCache.destroy();
+    this.dialogueCache.destroy();
+    this.predictiveQueue.length = 0;
+    this.contentMetrics.clear();
+    this.removeAllListeners();
   }
 }

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import type { AIProvider, AITextOptions, AITextResponse, AICapability } from '../packages/core/dist/index.js';
+import type { AIProvider, AITextOptions, AITextResponse, AICapability } from '../packages/core/src/index';
 
 /**
  * Integration tests for AI provider failover and multi-provider support
@@ -52,7 +52,7 @@ class MockSlowProvider implements AIProvider {
 let aiProviderRegistry: any;
 
 test.beforeAll(async () => {
-  ({ aiProviderRegistry } = await import('../packages/core/dist/index.js'));
+  ({ aiProviderRegistry } = await import('../packages/core/src/index'));
 });
 
 test.describe('AI Provider Failover System', () => {
@@ -223,7 +223,7 @@ test.describe('AI Provider Failover System', () => {
     expect(providers).toHaveLength(1);
     expect(providers[0].name).toBe('mock-success');
 
-    const providerInfo = providers.find(p => p.name === 'mock-success');
+    const providerInfo = providers.find((p: any) => p.name === 'mock-success');
     expect(providerInfo).toMatchObject({
       name: 'mock-success',
       type: 'chat',

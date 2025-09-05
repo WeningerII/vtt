@@ -119,7 +119,7 @@ export const DiceRoller = memo<DiceRollerProps>(
     );
 
     const handleRoll = useCallback(() => {
-      if (readOnly) return;
+      if (readOnly) {return;}
 
       let finalExpression = expression;
       let rollResult: { result: number; breakdown: string };
@@ -162,7 +162,7 @@ export const DiceRoller = memo<DiceRollerProps>(
 
     const handleQuickRoll = useCallback(
       (quickExpression: string) => {
-        if (readOnly) return;
+        if (readOnly) {return;}
 
         const rollResult = rollDice(quickExpression);
         const roll: DiceRoll = {
@@ -233,7 +233,7 @@ export const DiceRoller = memo<DiceRollerProps>(
                     checked={advantage}
                     onChange={(e) => {
                       setAdvantage(e.target.checked);
-                      if (e.target.checked) setDisadvantage(false);
+                      if (e.target.checked) {setDisadvantage(false);}
                     }}
                   />
                   Advantage
@@ -244,7 +244,7 @@ export const DiceRoller = memo<DiceRollerProps>(
                     checked={disadvantage}
                     onChange={(e) => {
                       setDisadvantage(e.target.checked);
-                      if (e.target.checked) setAdvantage(false);
+                      if (e.target.checked) {setAdvantage(false);}
                     }}
                   />
                   Disadvantage

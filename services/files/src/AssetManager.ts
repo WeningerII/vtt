@@ -1,4 +1,4 @@
-import type { Buffer } from "node:buffer";
+import { Buffer } from "node:buffer";
 import { logger } from "@vtt/logging";
 /**
  * Asset management system for handling file uploads, storage, and organization
@@ -139,7 +139,7 @@ export class AssetManager {
         const thumbnailKey = this.generateStorageKey(assetId, request.name, "thumb");
         thumbnailUrl = await this.storage.upload(thumbnailKey, thumbnailData, "image/jpeg");
       } catch (error) {
-        logger.warn("Failed to generate thumbnail:", error);
+        logger.warn("Failed to generate thumbnail:", error as Record<string, any>);
       }
     }
 
@@ -173,7 +173,7 @@ export class AssetManager {
   async getAsset(id: string, userId: string): Promise<Asset | null> {
     const asset = await this.repository.findById(id);
 
-    if (!asset) return null;
+    if (!asset) {return null;}
 
     // Check permissions
     if (!this.canAccessAsset(asset, userId)) {
@@ -344,7 +344,7 @@ export class AssetManager {
         metadata.height = imageInfo.height;
         metadata.format = imageInfo.format;
       } catch (error) {
-        logger.warn("Failed to extract image metadata:", error);
+        logger.warn("Failed to extract image metadata:", error as Record<string, any>);
       }
     }
 
@@ -353,14 +353,14 @@ export class AssetManager {
 
   private canAccessAsset(asset: Asset, userId: string): boolean {
     // Owner can always access
-    if (asset.ownerId === userId) return true;
+    if (asset.ownerId === userId) {return true;}
 
     // Public assets can be accessed by anyone
-    if (asset.isPublic) return true;
+    if (asset.isPublic) {return true;}
 
     // Game assets can be accessed by game participants (simplified check)
     // In a real implementation, you'd check if user is part of the game
-    if (asset.gameId) return true;
+    if (asset.gameId) {return true;}
 
     return false;
   }

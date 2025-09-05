@@ -57,7 +57,7 @@ describe("SecurityService", () => {
 
     it("should verify passwords with timing-safe comparison", () => {
       const verifyPassword = jest.fn().mockImplementation((provided, stored, salt) => {
-        const hashedProvided = "hashed-" + provided + salt;
+        const hashedProvided = `hashed-${  provided  }${salt}`;
         mockCrypto.timingSafeEqual.mockReturnValue(hashedProvided === stored);
         return mockCrypto.timingSafeEqual(Buffer.from(hashedProvided), Buffer.from(stored));
       });
@@ -388,7 +388,7 @@ describe("SecurityService", () => {
     it("should handle encryption errors", () => {
       const encryptWithErrorHandling = jest.fn().mockImplementation((data, key) => {
         try {
-          if (!key) throw new Error("Encryption key required");
+          if (!key) {throw new Error("Encryption key required");}
           return "encrypted-data";
         } catch (error) {
           return { error: error.message };
@@ -441,7 +441,7 @@ describe("SecurityService", () => {
 
     it("should implement session rotation", () => {
       const rotateSession = jest.fn().mockImplementation((oldSessionId) => {
-        const newSessionId = "new-session-" + Date.now();
+        const newSessionId = `new-session-${  Date.now()}`;
 
         // Mock session store operations
         const sessionStore = {

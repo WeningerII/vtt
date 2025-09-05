@@ -1,14 +1,15 @@
 /**
  * Database adapter interface and PostgreSQL implementation
  */
-import { Pool, PoolClient, _QueryResult } from "pg";
+import { Pool, PoolClient, QueryResult } from "pg";
 import { User, Session, PasswordResetRequest, EmailVerification } from "../UserManager";
-import { Subscription, Invoice, PaymentMethod, UsageRecord } from "../BillingManager";
+// Stripe types are now used directly from the Stripe SDK
+import Stripe from 'stripe';
 import {
   EmailNotification,
   PushNotification,
   InAppNotification,
-  _NotificationTemplate,
+  NotificationTemplate,
   NotificationPreferences,
 } from "../NotificationManager";
 
@@ -66,29 +67,13 @@ export interface DatabaseAdapter {
     updates: Partial<EmailVerification>,
   ): Promise<EmailVerification | null>;
 
-  // Subscription operations
-  createSubscription(
-    subscription: Omit<Subscription, "id" | "createdAt" | "updatedAt">,
-  ): Promise<Subscription>;
-  getSubscriptionByUserId(userId: string): Promise<Subscription | null>;
-  updateSubscription(id: string, updates: Partial<Subscription>): Promise<Subscription | null>;
 
-  // Payment method operations
-  createPaymentMethod(
-    paymentMethod: Omit<PaymentMethod, "id" | "createdAt">,
-  ): Promise<PaymentMethod>;
-  getPaymentMethodsByUserId(userId: string): Promise<PaymentMethod[]>;
-  updatePaymentMethod(id: string, updates: Partial<PaymentMethod>): Promise<PaymentMethod | null>;
-  deletePaymentMethod(id: string): Promise<boolean>;
-
-  // Invoice operations
-  createInvoice(invoice: Omit<Invoice, "id" | "createdAt">): Promise<Invoice>;
-  getInvoicesByUserId(userId: string, limit?: number, offset?: number): Promise<Invoice[]>;
-  updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice | null>;
-
-  // Usage operations
-  recordUsage(usage: Omit<UsageRecord, "id" | "timestamp">): Promise<UsageRecord>;
-  getUsageRecords(userId: string, startDate?: Date, endDate?: Date): Promise<UsageRecord[]>;
+  // Simplified billing references - Stripe objects are managed via StripeService
+  // We only store essential IDs and references in the database
+  getStripeCustomerByUserId(userId: string): Promise<string | null>;
+  setStripeCustomerForUser(userId: string, stripeCustomerId: string): Promise<void>;
+  getUserSubscriptionInfo(userId: string): Promise<{subscriptionId?: string, customerId?: string, status?: string} | null>;
+  updateUserSubscriptionInfo(userId: string, info: {subscriptionId?: string, status?: string}): Promise<void>;
 
   // Notification operations
   createEmailNotification(
@@ -178,7 +163,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       await client.query("BEGIN");
-      const result = await operation(client);
+      const result = await _operation(client);
       await client.query("COMMIT");
       return result;
     } catch (error) {
@@ -250,7 +235,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const setClause = Object.keys(updates)
-        .map((_key, __index) => `${this.camelToSnake(key)} = $${index + 2}`)
+        .map((key, index) => `${this.camelToSnake(key)} = $${index + 2}`)
         .join(", ");
 
       const values = Object.values(updates);
@@ -268,7 +253,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const result = await client.query("DELETE FROM users WHERE id = $1", [id]);
-      return result.rowCount > 0;
+      return (result.rowCount || 0) > 0;
     } finally {
       this.releaseClient(client);
     }
@@ -312,7 +297,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const setClause = Object.keys(updates)
-        .map((_key, __index) => `${this.camelToSnake(key)} = $${index + 2}`)
+        .map((key, index) => `${this.camelToSnake(key)} = $${index + 2}`)
         .join(", ");
 
       const values = Object.values(updates);
@@ -330,7 +315,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const result = await client.query("DELETE FROM user_sessions WHERE id = $1", [id]);
-      return result.rowCount > 0;
+      return (result.rowCount || 0) > 0;
     } finally {
       this.releaseClient(client);
     }
@@ -340,7 +325,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const result = await client.query("DELETE FROM user_sessions WHERE expires_at < NOW()");
-      return result.rowCount;
+      return result.rowCount || 0;
     } finally {
       this.releaseClient(client);
     }
@@ -403,7 +388,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const setClause = Object.keys(updates)
-        .map((_key, __index) => `${this.camelToSnake(key)} = $${index + 2}`)
+        .map((key, index) => `${this.camelToSnake(key)} = $${index + 2}`)
         .join(", ");
 
       const values = Object.values(updates);
@@ -421,7 +406,7 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     const client = await this.getClient();
     try {
       const result = await client.query("DELETE FROM in_app_notifications WHERE id = $1", [id]);
-      return result.rowCount > 0;
+      return (result.rowCount || 0) > 0;
     } finally {
       this.releaseClient(client);
     }
@@ -436,17 +421,52 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
       passwordHash: row.password_hash,
       firstName: row.first_name,
       lastName: row.last_name,
-      emailVerified: row.email_verified,
-      // role: row.role,
-      // status: row.status,
-      timezone: row.timezone,
-      // avatarUrl: row.avatar_url,
+      avatarUrl: row.avatar_url,
+      timezone: row.timezone || "UTC",
+      locale: row.locale || "en-US",
+      status: row.status || "active",
+      emailVerified: row.email_verified || false,
+      phoneVerified: row.phone_verified || false,
+      twoFactorEnabled: row.two_factor_enabled || false,
+      subscriptionId: row.subscription_id,
+      subscriptionStatus: row.subscription_status,
+      subscriptionTier: row.subscription_tier || "free",
+      subscriptionExpiresAt: row.subscription_expires_at,
+      preferences: {
+        theme: row.theme || "auto",
+        notifications: {
+          email: row.notifications_email !== false,
+          push: row.notifications_push !== false,
+          gameInvites: row.notifications_game_invites !== false,
+          updates: row.notifications_updates !== false,
+        },
+        privacy: {
+          profileVisible: row.privacy_profile_visible !== false,
+          showOnlineStatus: row.privacy_show_online_status !== false,
+          allowFriendRequests: row.privacy_allow_friend_requests !== false,
+        },
+      },
+      role: row.role || "user",
       lastLoginAt: row.last_login_at,
       lastActiveAt: row.last_activity_at,
+      loginCount: row.login_count || 0,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      subscriptionId: row.subscription_id || "",
-    };
+      gamesPlayed: row.games_played || 0,
+      gamesHosted: row.games_hosted || 0,
+      hoursPlayed: row.hours_played || 0,
+      achievements: row.achievements ? JSON.parse(row.achievements) : [],
+      friends: row.friends ? JSON.parse(row.friends) : [],
+      blockedUsers: row.blocked_users ? JSON.parse(row.blocked_users) : [],
+      limits: {
+        maxCampaigns: row.max_campaigns || 3,
+        maxPlayersPerGame: row.max_players_per_game || 6,
+        maxStorageGB: row.max_storage_gb || 1,
+        maxAssets: row.max_assets || 100,
+        canUseCustomAssets: row.can_use_custom_assets || false,
+        canUseAdvancedFeatures: row.can_use_advanced_features || false,
+      },
+    } as User;
   }
 
   private mapSessionRow(row: any): Session {
@@ -485,97 +505,186 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
   }
 
-  // Placeholder implementations for other required methods
-  async createPasswordResetRequest(
-    _request: Omit<PasswordResetRequest, "id" | "createdAt">,
-  ): Promise<PasswordResetRequest> {
-    throw new Error("Method not implemented");
+  private mapPasswordResetRequest(row: any): PasswordResetRequest {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      token: row.token,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+      used: row.used_at !== null,
+    };
   }
 
-  async getPasswordResetRequest(_token: string): Promise<PasswordResetRequest | null> {
-    throw new Error("Method not implemented");
+  private mapEmailVerification(row: any): EmailVerification {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      token: row.token,
+      expiresAt: row.expires_at,
+      createdAt: row.created_at,
+      verified: row.verified_at !== null,
+    };
+  }
+
+  // Password reset implementations
+  async createPasswordResetRequest(
+    request: Omit<PasswordResetRequest, "id" | "createdAt">,
+  ): Promise<PasswordResetRequest> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        INSERT INTO password_reset_requests (user_id, token, expires_at)
+        VALUES ($1, $2, $3)
+        RETURNING id, user_id, token, expires_at, created_at, used_at
+      `;
+      const result = await client.query(query, [
+        request.userId,
+        request.token,
+        request.expiresAt,
+      ]);
+      return this.mapPasswordResetRequest(result.rows[0]);
+    } finally {
+      this.releaseClient(client);
+    }
+  }
+
+  async getPasswordResetRequest(token: string): Promise<PasswordResetRequest | null> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        SELECT id, user_id, token, expires_at, created_at, used_at
+        FROM password_reset_requests
+        WHERE token = $1 AND used_at IS NULL AND expires_at > NOW()
+      `;
+      const result = await client.query(query, [token]);
+      return result.rows[0] ? this.mapPasswordResetRequest(result.rows[0]) : null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async updatePasswordResetRequest(
-    _id: string,
-    _updates: Partial<PasswordResetRequest>,
+    id: string,
+    updates: Partial<PasswordResetRequest>,
   ): Promise<PasswordResetRequest | null> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const updateFields: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      if (updates.used !== undefined) {
+        updateFields.push(`used_at = $${paramIndex++}`);
+        values.push(updates.used ? new Date() : null);
+      }
+
+      if (updateFields.length === 0) {
+        return null;
+      }
+
+      values.push(id);
+      const query = `
+        UPDATE password_reset_requests
+        SET ${updateFields.join(", ")}
+        WHERE id = $${paramIndex}
+        RETURNING id, user_id, token, expires_at, created_at, used_at
+      `;
+      const result = await client.query(query, values);
+      return result.rows[0] ? this.mapPasswordResetRequest(result.rows[0]) : null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async createEmailVerification(
-    _verification: Omit<EmailVerification, "id" | "createdAt">,
+    verification: Omit<EmailVerification, "id" | "createdAt">,
   ): Promise<EmailVerification> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const query = `
+        INSERT INTO email_verifications (user_id, token, expires_at)
+        VALUES ($1, $2, $3)
+        RETURNING id, user_id, token, expires_at, created_at, verified_at
+      `;
+      const result = await client.query(query, [
+        verification.userId,
+        verification.token,
+        verification.expiresAt,
+      ]);
+      return this.mapEmailVerification(result.rows[0]);
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
-  async getEmailVerification(_token: string): Promise<EmailVerification | null> {
-    throw new Error("Method not implemented");
+  async getEmailVerification(token: string): Promise<EmailVerification | null> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        SELECT id, user_id, token, expires_at, created_at, verified_at
+        FROM email_verifications
+        WHERE token = $1 AND verified_at IS NULL AND expires_at > NOW()
+      `;
+      const result = await client.query(query, [token]);
+      return result.rows[0] ? this.mapEmailVerification(result.rows[0]) : null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async updateEmailVerification(
-    _id: string,
-    _updates: Partial<EmailVerification>,
+    id: string,
+    updates: Partial<EmailVerification>,
   ): Promise<EmailVerification | null> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const updateFields: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      if (updates.verified !== undefined) {
+        updateFields.push(`verified_at = $${paramIndex++}`);
+        values.push(updates.verified ? new Date() : null);
+      }
+
+      if (updateFields.length === 0) {
+        return null;
+      }
+
+      values.push(id);
+      const query = `
+        UPDATE email_verifications
+        SET ${updateFields.join(", ")}
+        WHERE id = $${paramIndex}
+        RETURNING id, user_id, token, expires_at, created_at, verified_at
+      `;
+      const result = await client.query(query, values);
+      return result.rows[0] ? this.mapEmailVerification(result.rows[0]) : null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
-  async createSubscription(
-    _subscription: Omit<Subscription, "id" | "createdAt" | "updatedAt">,
-  ): Promise<Subscription> {
-    throw new Error("Method not implemented");
+  // Simplified billing reference methods
+  async getStripeCustomerByUserId(_userId: string): Promise<string | null> {
+    // Implementation to get Stripe customer ID from user record
+    throw new Error("Not implemented");
   }
 
-  async getSubscriptionByUserId(_userId: string): Promise<Subscription | null> {
-    throw new Error("Method not implemented");
+  async setStripeCustomerForUser(_userId: string, _stripeCustomerId: string): Promise<void> {
+    // Implementation to store Stripe customer ID for user
+    throw new Error("Not implemented");
   }
 
-  async updateSubscription(
-    _id: string,
-    _updates: Partial<Subscription>,
-  ): Promise<Subscription | null> {
-    throw new Error("Method not implemented");
+  async getUserSubscriptionInfo(_userId: string): Promise<{subscriptionId?: string, customerId?: string, status?: string} | null> {
+    // Implementation to get user subscription info
+    throw new Error("Not implemented");
   }
 
-  async createPaymentMethod(
-    _paymentMethod: Omit<PaymentMethod, "id" | "createdAt">,
-  ): Promise<PaymentMethod> {
-    throw new Error("Method not implemented");
-  }
-
-  async getPaymentMethodsByUserId(_userId: string): Promise<PaymentMethod[]> {
-    throw new Error("Method not implemented");
-  }
-
-  async updatePaymentMethod(
-    _id: string,
-    _updates: Partial<PaymentMethod>,
-  ): Promise<PaymentMethod | null> {
-    throw new Error("Method not implemented");
-  }
-
-  async deletePaymentMethod(_id: string): Promise<boolean> {
-    throw new Error("Method not implemented");
-  }
-
-  async createInvoice(_invoice: Omit<Invoice, "id" | "createdAt">): Promise<Invoice> {
-    throw new Error("Method not implemented");
-  }
-
-  async getInvoicesByUserId(_userId: string, limit?: number, offset?: number): Promise<Invoice[]> {
-    throw new Error("Method not implemented");
-  }
-
-  async updateInvoice(_id: string, _updates: Partial<Invoice>): Promise<Invoice | null> {
-    throw new Error("Method not implemented");
-  }
-
-  async recordUsage(_usage: Omit<UsageRecord, "id" | "timestamp">): Promise<UsageRecord> {
-    throw new Error("Method not implemented");
-  }
-
-  async getUsageRecords(_userId: string, startDate?: Date, endDate?: Date): Promise<UsageRecord[]> {
-    throw new Error("Method not implemented");
+  async updateUserSubscriptionInfo(_userId: string, _info: {subscriptionId?: string, status?: string}): Promise<void> {
+    // Implementation to update user subscription info
+    throw new Error("Not implemented");
   }
 
   async createEmailNotification(

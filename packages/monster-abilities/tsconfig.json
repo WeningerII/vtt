@@ -22,5 +22,16 @@
     "dist",
     "src/**/*.test.ts",
     "src/__tests__/**/*"
+  ],
+  "references": [
+    {
+      "path": "../dice-engine"
+    },
+    {
+      "path": "../conditions-engine"
+    },
+    {
+      "path": "../spell-engine"
+    }
   ]
 }

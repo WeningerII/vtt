@@ -92,7 +92,7 @@ export const errorMiddleware: Middleware = async (ctx, _next) => {
     if (!ctx.res.headersSent) {
       // Set security headers and request ID
       const headers = { ...SECURITY_HEADERS };
-      if (rid) headers["X-Request-ID"] = rid;
+      if (rid) {headers["X-Request-ID"] = rid;}
 
       if (error instanceof HttpError) {
         // Validate status code to prevent header injection

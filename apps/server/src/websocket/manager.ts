@@ -184,7 +184,7 @@ export class WebSocketManager {
     msg: { gameId: string; userId: string; displayName: string },
   ): void {
     const client = this.clients.get(clientId);
-    if (!client) return;
+    if (!client) {return;}
 
     // Update client info
     client.userId = msg.userId;
@@ -237,7 +237,7 @@ export class WebSocketManager {
 
   private handleLeaveGame(clientId: string, msg: { gameId: string }): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.userId) return;
+    if (!client || !client.userId) {return;}
 
     const game = this.gameManager.getGame(msg.gameId);
     if (game) {
@@ -261,10 +261,10 @@ export class WebSocketManager {
     msg: { entityId: number; x: number; y: number; animate: boolean },
   ): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId) return;
+    if (!client || !client.gameId) {return;}
 
     const game = this.gameManager.getGame(client.gameId);
-    if (!game) return;
+    if (!game) {return;}
 
     // Add authorization check - only allow moving own tokens or if GM
     // const token = game.getToken(msg.entityId);
@@ -296,10 +296,10 @@ export class WebSocketManager {
     msg: { dice: string; label?: string; private: boolean },
   ): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId || !client.userId || !client.displayName) return;
+    if (!client || !client.gameId || !client.userId || !client.displayName) {return;}
 
     const game = this.gameManager.getGame(client.gameId);
-    if (!game) return;
+    if (!game) {return;}
 
     const result = game.rollDice(msg.dice, msg.label, msg.private);
     if (!result) {
@@ -336,7 +336,7 @@ export class WebSocketManager {
 
   private handleChatMessage(clientId: string, msg: { message: string; channel: string }): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId || !client.userId || !client.displayName) return;
+    if (!client || !client.gameId || !client.userId || !client.displayName) {return;}
 
     const messageId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -353,7 +353,7 @@ export class WebSocketManager {
 
   private async handleCombatMessage(clientId: string, msg: any): Promise<void> {
     const client = this.clients.get(clientId);
-    if (!client || !client.userId) return;
+    if (!client || !client.userId) {return;}
 
     try {
       // Import combat WebSocket handler
@@ -386,7 +386,7 @@ export class WebSocketManager {
   // Map synchronization handlers
   private async handleSetActiveScene(clientId: string, msg: any): Promise<void> {
     const client = this.clients.get(clientId);
-    if (!client || !client.userId || !client.gameId) return;
+    if (!client || !client.userId || !client.gameId) {return;}
 
     try {
       const { CampaignService } = await import("../campaign/CampaignService");
@@ -426,7 +426,7 @@ export class WebSocketManager {
 
   private async handleUpdateSceneSettings(clientId: string, msg: any): Promise<void> {
     const client = this.clients.get(clientId);
-    if (!client || !client.userId || !client.gameId) return;
+    if (!client || !client.userId || !client.gameId) {return;}
 
     try {
       // Broadcast scene settings update to all clients in the campaign
@@ -454,7 +454,7 @@ export class WebSocketManager {
 
   private handleSyncMapView(clientId: string, msg: any): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.userId || !client.gameId) return;
+    if (!client || !client.userId || !client.gameId) {return;}
 
     try {
       // Broadcast map view synchronization to other clients in the campaign

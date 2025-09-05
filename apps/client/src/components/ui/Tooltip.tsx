@@ -134,7 +134,7 @@ const Tooltip = memo<TooltipProps>(({
   }, [placement]);
 
   const showTooltip = useCallback(() => {
-    if (disabled || !content) return;
+    if (disabled || !content) {return;}
 
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);

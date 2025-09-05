@@ -114,7 +114,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = memo((props) => {
 
   const updateField = useCallback(
     (field: string, value: any) => {
-      if (readOnly) return;
+      if (readOnly) {return;}
 
       const updates = { ...character };
       const fieldParts = field.split(".");
@@ -165,7 +165,7 @@ export const CharacterSheet: React.FC<CharacterSheetProps> = memo((props) => {
           }}
           onBlur={() => setEditingField(null)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") setEditingField(null);
+            if (e.key === "Enter") {setEditingField(null);}
           }}
           autoFocus
           className={className}

@@ -177,7 +177,7 @@ export class EmailService extends EventEmitter {
    * Process email queue with retry logic
    */
   private async processQueue(): Promise<void> {
-    if (this.isProcessing || this.emailQueue.length === 0) return;
+    if (this.isProcessing || this.emailQueue.length === 0) {return;}
 
     this.isProcessing = true;
 
@@ -316,7 +316,7 @@ export class EmailService extends EventEmitter {
       templateVariables: {
         recipientName: to.name || to.email,
         verificationUrl,
-        baseUrl: baseUrl
+        baseUrl
       }
     });
   }

@@ -196,7 +196,7 @@ export class AssetRegistry {
 
   getAssetsByType(type: AssetType): AssetMetadata[] {
     const ids = this.typeIndex.get(type);
-    if (!ids) return [];
+    if (!ids) {return [];}
 
     return Array.from(ids)
       .map((id) => this.assets.get(id)!)
@@ -205,7 +205,7 @@ export class AssetRegistry {
 
   getAssetsByTag(tag: string): AssetMetadata[] {
     const ids = this.tagIndex.get(tag);
-    if (!ids) return [];
+    if (!ids) {return [];}
 
     return Array.from(ids)
       .map((id) => this.assets.get(id)!)
@@ -214,7 +214,7 @@ export class AssetRegistry {
 
   getAssetDependencies(id: string, recursive = false): string[] {
     const dependencies = this.dependencyGraph.get(id);
-    if (!dependencies) return [];
+    if (!dependencies) {return [];}
 
     if (!recursive) {
       return Array.from(dependencies);
@@ -225,7 +225,7 @@ export class AssetRegistry {
     const visited = new Set<string>();
 
     const collectDeps = (_assetId: string) => {
-      if (visited.has(_assetId)) return;
+      if (visited.has(_assetId)) {return;}
       visited.add(_assetId);
 
       const deps = this.dependencyGraph.get(_assetId);
@@ -243,7 +243,7 @@ export class AssetRegistry {
 
   getBundleAssets(bundleId: string): AssetMetadata[] {
     const bundle = this.bundles.get(bundleId);
-    if (!bundle) return [];
+    if (!bundle) {return [];}
 
     return bundle.assets.map((id) => this.assets.get(id)).filter(Boolean) as AssetMetadata[];
   }

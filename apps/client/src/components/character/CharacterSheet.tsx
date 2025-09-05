@@ -112,11 +112,11 @@ interface CharacterSheetProps {
 
 type TabType = "stats" | "skills" | "equipment" | "spells" | "notes";
 
-export const CharacterSheet = memo(function CharacterSheet({
+export const CharacterSheet = memo(({
   characterId,
   className,
   onCharacterUpdate,
-}: CharacterSheetProps) {
+}: CharacterSheetProps) => {
   const { user } = useAuth();
   const { send } = useWebSocket();
   const [character, setCharacter] = useState<Character | null>(null);
@@ -262,7 +262,7 @@ export const CharacterSheet = memo(function CharacterSheet({
 
   const updateCharacter = useCallback(
     (updates: Partial<Character>) => {
-      if (!character) return;
+      if (!character) {return;}
 
       const updatedCharacter = {
         ...character,
@@ -278,7 +278,7 @@ export const CharacterSheet = memo(function CharacterSheet({
   );
 
   const saveCharacter = useCallback(async () => {
-    if (!character) return;
+    if (!character) {return;}
 
     try {
       // Send character data to server
@@ -296,7 +296,7 @@ export const CharacterSheet = memo(function CharacterSheet({
   }, [character, send]);
 
   const exportCharacter = useCallback(() => {
-    if (!character) return;
+    if (!character) {return;}
 
     const dataStr = JSON.stringify(character, null, 2);
     const dataBlob = new Blob([dataStr], { type: "application/json" });
@@ -311,7 +311,7 @@ export const CharacterSheet = memo(function CharacterSheet({
   }, [character]);
 
   const renderTabContent = () => {
-    if (!character) return null;
+    if (!character) {return null;}
 
     switch (activeTab) {
       case "stats":
@@ -354,7 +354,7 @@ export const CharacterSheet = memo(function CharacterSheet({
           <span className="h-12 w-12 text-text-tertiary mx-auto mb-4 block">
             <User />
           </span>
-          <h3 className="text-lg font-medium text-text-primary mb-2">Character Not Found</h3>
+          <h3 className="text-lg font-medium text-primary mb-2">Character Not Found</h3>
           <p className="text-text-secondary">The requested character could not be loaded.</p>
         </div>
       </div>
@@ -385,7 +385,7 @@ export const CharacterSheet = memo(function CharacterSheet({
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-text-primary">{character.name}</h2>
+              <h2 className="text-xl font-bold text-primary">{character.name}</h2>
               <p className="text-text-secondary">
                 Level {character.level} {character.race} {character.class}
               </p>
@@ -447,7 +447,7 @@ export const CharacterSheet = memo(function CharacterSheet({
                 "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors border-b-2",
                 activeTab === key
                   ? "text-accent-primary border-accent-primary bg-accent-light"
-                  : "text-text-secondary border-transparent hover:text-text-primary hover:bg-bg-tertiary",
+                  : "text-text-secondary border-transparent hover:text-primary hover:bg-bg-tertiary",
               )}
             >
               <span className="h-4 w-4">

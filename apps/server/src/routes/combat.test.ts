@@ -99,8 +99,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -137,8 +137,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -212,8 +212,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -256,8 +256,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -314,8 +314,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -356,8 +356,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -388,8 +388,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 
@@ -448,8 +448,8 @@ describe("Combat Routes", () => {
       let dataHandler: any;
       let endHandler: any;
       mockReq.on = jest.fn((event, handler) => {
-        if (event === "data") dataHandler = handler;
-        if (event === "end") endHandler = handler;
+        if (event === "data") {dataHandler = handler;}
+        if (event === "end") {endHandler = handler;}
         return mockReq;
       });
 

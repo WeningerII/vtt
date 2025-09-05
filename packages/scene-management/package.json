@@ -10,7 +10,9 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@vtt/logging": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "^5.0.0"
   },

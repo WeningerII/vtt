@@ -88,7 +88,7 @@ export class AIEntity {
    * Execute behavior tree and take actions
    */
   private think(gameState: GameStateSnapshot): void {
-    if (!this.state.behaviorTree) return;
+    if (!this.state.behaviorTree) {return;}
 
     // Evaluate current situation and update goals
     this.evaluateGoals(gameState);
@@ -120,7 +120,7 @@ export class AIEntity {
         return {
           type: "defend",
           priority: 8,
-          data: Record<string, any>,
+          data: {} as Record<string, any>,
         };
       }
     }
@@ -130,7 +130,7 @@ export class AIEntity {
       type: "move",
       target: { x: Math.random() * 100, y: Math.random() * 100 },
       priority: 1,
-      data: Record<string, any>,
+      data: {} as Record<string, any>,
     };
   }
 
@@ -140,9 +140,23 @@ export class AIEntity {
   private evaluateGoals(gameState: GameStateSnapshot): void {
     // Update goals based on game state
     if (gameState.isUnderThreat) {
-      this.setGoal({ type: "defend", priority: 10, target: "self" });
+      this.setGoal({ 
+        id: `defend-${Date.now()}`,
+        type: "defend", 
+        priority: 10, 
+        target: "self",
+        isComplete: false,
+        isActive: true
+      });
     } else if (gameState.healthPercentage < 0.3) {
-      this.setGoal({ type: "support", priority: 8, target: "self" });
+      this.setGoal({ 
+        id: `support-${Date.now()}`,
+        type: "support", 
+        priority: 8, 
+        target: "self",
+        isComplete: false,
+        isActive: true
+      });
     }
   }
 
@@ -180,7 +194,7 @@ export class AIEntity {
   }
 
   private executeMovement(action: AIAction, gameSession: any): void {
-    if (!action.target) return;
+    if (!action.target) {return;}
 
     // Calculate path to target position
     const targetPos = action.target;
@@ -205,7 +219,7 @@ export class AIEntity {
   }
 
   private executeAttack(action: AIAction, gameSession: any): void {
-    if (!action.targetId) return;
+    if (!action.targetId) {return;}
 
     // Queue combat action
     gameSession.queueCombatAction({
@@ -230,7 +244,7 @@ export class AIEntity {
   }
 
   private executeSupport(action: AIAction, gameSession: any): void {
-    if (!action.targetId) return;
+    if (!action.targetId) {return;}
 
     // Cast support spell or ability
     gameSession.queueCombatAction({
@@ -243,7 +257,7 @@ export class AIEntity {
   }
 
   private executeInteraction(action: AIAction, gameSession: any): void {
-    if (!action.targetId) return;
+    if (!action.targetId) {return;}
 
     // Interact with object or character
     gameSession.queueInteraction({
@@ -338,46 +352,101 @@ export class AIEntity {
 export class NPCArchetypes {
   static createGuard(): NPCPersonality {
     return {
+      id: 'guard-archetype',
+      name: 'Guard',
       aggression: 0.6,
       intelligence: 0.5,
       caution: 0.8,
-      loyalty: 0.9,
+      traits: {
+        curiosity: 0.3,
+        loyalty: 0.9,
+        courage: 0.7,
+        empathy: 0.4
+      },
+      motivations: ['protect', 'duty'],
+      fears: ['failure', 'betrayal'],
+      goals: [],
+      relationships: new Map()
     };
   }
 
   static createBerserker(): NPCPersonality {
     return {
+      id: 'berserker-archetype',
+      name: 'Berserker',
       aggression: 0.9,
       intelligence: 0.3,
       caution: 0.2,
-      loyalty: 0.6,
+      traits: {
+        curiosity: 0.2,
+        loyalty: 0.6,
+        courage: 0.9,
+        empathy: 0.1
+      },
+      motivations: ['battle', 'glory'],
+      fears: ['cowardice', 'weakness'],
+      goals: [],
+      relationships: new Map()
     };
   }
 
   static createScout(): NPCPersonality {
     return {
+      id: 'scout-archetype',
+      name: 'Scout',
       aggression: 0.3,
       intelligence: 0.8,
       caution: 0.9,
-      loyalty: 0.7,
+      traits: {
+        curiosity: 0.9,
+        loyalty: 0.7,
+        courage: 0.6,
+        empathy: 0.5
+      },
+      motivations: ['exploration', 'knowledge'],
+      fears: ['discovery', 'capture'],
+      goals: [],
+      relationships: new Map()
     };
   }
 
   static createHealer(): NPCPersonality {
     return {
+      id: 'healer-archetype',
+      name: 'Healer',
       aggression: 0.2,
       intelligence: 0.7,
       caution: 0.7,
-      loyalty: 0.9,
+      traits: {
+        curiosity: 0.6,
+        loyalty: 0.9,
+        courage: 0.5,
+        empathy: 0.9
+      },
+      motivations: ['healing', 'helping'],
+      fears: ['suffering', 'loss'],
+      goals: [],
+      relationships: new Map()
     };
   }
 
   static createWildcard(): NPCPersonality {
     return {
+      id: 'wildcard-archetype',
+      name: 'Wildcard',
       aggression: Math.random(),
       intelligence: Math.random(),
       caution: Math.random(),
-      loyalty: Math.random(),
+      traits: {
+        curiosity: Math.random(),
+        loyalty: Math.random(),
+        courage: Math.random(),
+        empathy: Math.random()
+      },
+      motivations: ['unpredictable'],
+      fears: ['boredom'],
+      goals: [],
+      relationships: new Map()
     };
   }
 }

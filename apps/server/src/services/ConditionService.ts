@@ -40,7 +40,7 @@ export class ConditionService {
     const { type, limit = 50, offset = 0 } = options;
 
     const where: any = {};
-    if (type) where.type = type;
+    if (type) {where.type = type;}
 
     const [items, total] = await Promise.all([
       this.prisma.condition.findMany({
@@ -88,11 +88,11 @@ export class ConditionService {
 
   async updateCondition(id: string, request: UpdateConditionRequest) {
     const data: any = {};
-    if (request.name !== undefined) data.name = request.name;
-    if (request.type !== undefined) data.type = request.type;
-    if (request.description !== undefined) data.description = request.description;
-    if (request.duration !== undefined) data.duration = request.duration;
-    if (request.metadata !== undefined) data.metadata = request.metadata;
+    if (request.name !== undefined) {data.name = request.name;}
+    if (request.type !== undefined) {data.type = request.type;}
+    if (request.description !== undefined) {data.description = request.description;}
+    if (request.duration !== undefined) {data.duration = request.duration;}
+    if (request.metadata !== undefined) {data.metadata = request.metadata;}
 
     return this.prisma.condition.update({
       where: { id },
@@ -126,7 +126,7 @@ export class ConditionService {
     return this.prisma.appliedCondition.create({
       data: {
         conditionId: request.conditionId,
-        actorId: actorId,
+        actorId,
         duration: request.duration || condition.duration,
         metadata: request.metadata || {},
         appliedBy: request.appliedBy,
@@ -159,7 +159,7 @@ export class ConditionService {
     return this.prisma.appliedCondition.create({
       data: {
         conditionId: request.conditionId,
-        tokenId: tokenId,
+        tokenId,
         duration: request.duration || condition.duration,
         metadata: request.metadata || {},
         appliedBy: request.appliedBy,
@@ -266,8 +266,8 @@ export class ConditionService {
 
   async updateAppliedCondition(id: string, updates: { duration?: number; metadata?: any }) {
     const data: any = {};
-    if (updates.duration !== undefined) data.duration = updates.duration;
-    if (updates.metadata !== undefined) data.metadata = updates.metadata;
+    if (updates.duration !== undefined) {data.duration = updates.duration;}
+    if (updates.metadata !== undefined) {data.metadata = updates.metadata;}
 
     return this.prisma.appliedCondition.update({
       where: { id },

@@ -20,32 +20,32 @@ export class UnifiedEventBus {
     on(_eventType, _handler, options = {}) {
         const subscription = {
             id: this.generateId(),
-            eventType,
+            eventType: _eventType,
             handler: options.filter
                 ? (event) => {
                     if (options.filter(event)) {
-                        return handler(event);
+                        return _handler(event);
                     }
                 }
-                : handler,
+                : _handler,
             once: options.once || false,
             priority: options.priority || 0,
             active: true,
         };
-        if (!this.subscriptions.has(eventType)) {
-            this.subscriptions.set(eventType, []);
+        if (!this.subscriptions.has(_eventType)) {
+            this.subscriptions.set(_eventType, []);
         }
-        const handlers = this.subscriptions.get(eventType);
+        const handlers = this.subscriptions.get(_eventType);
         handlers.push(subscription);
         // Sort by priority (higher priority first)
-        handlers.sort((_a, _b) => b.priority - a.priority);
+        handlers.sort((_a, _b) => _b.priority - _a.priority);
         return subscription.id;
     }
     /**
      * Subscribe to event once
      */
     once(_eventType, _handler, options = {}) {
-        return this.on(eventType, handler, { ...options, once: true });
+        return this.on(_eventType, _handler, { ...options, once: true });
     }
     /**
      * Unsubscribe from events
@@ -200,8 +200,8 @@ export class UnifiedEventBus {
             ...this.stats,
             queueSize: this.eventQueue.length,
             historySize: this.eventHistory.length,
-            subscriptionCount: Array.from(this.subscriptions.values()).reduce((_sum, _handlers) => sum + handlers.length, 0),
-            activeSubscriptions: Array.from(this.subscriptions.values()).reduce((_sum, _handlers) => sum + handlers.filter((h) => h.active).length, 0),
+            subscriptionCount: Array.from(this.subscriptions.values()).reduce((_sum, _handlers) => _sum + _handlers.length, 0),
+            activeSubscriptions: Array.from(this.subscriptions.values()).reduce((_sum, _handlers) => _sum + _handlers.filter((h) => h.active).length, 0),
         };
     }
     /**
@@ -252,13 +252,13 @@ export class EventCorrelation {
         return new Promise((_resolve, __reject) => {
             const timeoutId = setTimeout(() => {
                 this.eventBus.off(subscriptionId);
-                reject(new Error(`Timeout waiting for ${eventType} in correlation ${this.id}`));
+                __reject(new Error(`Timeout waiting for ${eventType} in correlation ${this.id}`));
             }, timeout);
-            const subscriptionId = this.eventBus.on(_eventType, (event) => {
+            const subscriptionId = this.eventBus.on(eventType, (event) => {
                 if (event.metadata?.correlationId === this.id) {
                     clearTimeout(timeoutId);
                     this.eventBus.off(subscriptionId);
-                    resolve(event);
+                    _resolve(event);
                 }
             });
         });
@@ -309,7 +309,7 @@ export const _GameEvents = {
         source: "game",
         timestamp: Date.now(),
         sessionId,
-        data: (Record),
+        data: {},
     }),
 };
 export const _AIEvents = {

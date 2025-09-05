@@ -10,6 +10,7 @@ export type WSState = "disconnected" | "connecting" | "open";
 
 export type WSClientOptions = {
   pingIntervalMs?: number;
+  autoReconnect?: boolean;
   reconnectBaseMs?: number;
   reconnectMaxMs?: number;
   flushChunk?: number;
@@ -31,6 +32,7 @@ export class WSClient {
     this.url = url;
     this.opts = {
       pingIntervalMs: opts.pingIntervalMs ?? 15000,
+      autoReconnect: opts.autoReconnect ?? false,
       reconnectBaseMs: opts.reconnectBaseMs ?? 500,
       reconnectMaxMs: opts.reconnectMaxMs ?? 10000,
       flushChunk: opts.flushChunk ?? 32,
@@ -55,7 +57,7 @@ export class WSClient {
       this.ws &&
       (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
     )
-      return;
+      {return;}
     this.setState("connecting");
     const ws = new WebSocket(this.url);
     this.ws = ws;
@@ -75,18 +77,28 @@ export class WSClient {
         return; // ignore non-JSON
       }
       const parsed = AnyServerMessageSchema.safeParse(msg);
-      if (!parsed.success) return;
-      for (const cb of this.listeners) cb(parsed.data);
+      if (!parsed.success) {return;}
+      for (const cb of this.listeners) {cb(parsed.data);}
     });
 
-    const onCloseOrError = () => {
+    const onCloseOrError = (event?: CloseEvent | Event) => {
       this.stopPing();
-      if (this.ws === ws) this.ws = null;
+      if (this.ws === ws) {this.ws = null;}
       this.setState("disconnected");
-      this.scheduleReconnect();
+      
+      // Only auto-reconnect if enabled and not a policy violation
+      if (this.opts.autoReconnect && 
+          (!event || !(event as CloseEvent).code || (event as CloseEvent).code !== 1008)) {
+        this.scheduleReconnect();
+      } else if ((event as CloseEvent)?.code === 1008) {
+        console.warn("WebSocket connection closed by server policy - not attempting reconnect");
+      }
     };
     ws.addEventListener("close", onCloseOrError);
-    ws.addEventListener("error", onCloseOrError);
+    ws.addEventListener("error", (event) => {
+      console.error("WebSocket connection to", this.url, "failed:", event);
+      onCloseOrError(event);
+    });
   }
 
   close() {
@@ -104,7 +116,7 @@ export class WSClient {
 
   send(msg: AnyClientMessage) {
     const parsed = AnyClientMessageSchema.safeParse(msg);
-    if (!parsed.success) return false;
+    if (!parsed.success) {return false;}
     if (this.ws && this.ws.readyState === WebSocket.OPEN && this.ws.bufferedAmount < 1_000_000) {
       this.ws.send(JSON.stringify(parsed.data));
       return true;
@@ -114,13 +126,13 @@ export class WSClient {
   }
 
   private flush() {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {return;}
     for (let i = 0; i < this.opts.flushChunk && this.queue.length > 0; i++) {
       const m = this.queue.shift()!;
-      if (!AnyClientMessageSchema.safeParse(m).success) continue;
+      if (!AnyClientMessageSchema.safeParse(m).success) {continue;}
       this.ws.send(JSON.stringify(m));
     }
-    if (this.queue.length > 0) setTimeout(() => this.flush(), 0);
+    if (this.queue.length > 0) {setTimeout(() => this.flush(), 0);}
   }
 
   private startPing() {
@@ -138,7 +150,7 @@ export class WSClient {
   }
 
   private scheduleReconnect() {
-    if (this.reconnectTimer) return;
+    if (this.reconnectTimer) {return;}
     const delay = this.nextBackoff();
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -154,8 +166,8 @@ export class WSClient {
   }
 
   private setState(s: WSState) {
-    if (this.state === s) return;
+    if (this.state === s) {return;}
     this.state = s;
-    for (const cb of this.stateListeners) cb(s);
+    for (const cb of this.stateListeners) {cb(s);}
   }
 }

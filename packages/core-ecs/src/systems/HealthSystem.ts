@@ -39,10 +39,10 @@ export class HealthSystem {
   applyDamage(event: DamageEvent): void {
     const { entity, damage, damageType, source } = event;
 
-    if (!this.healthStore.has(entity)) return;
+    if (!this.healthStore.has(entity)) {return;}
 
     const health = this.healthStore.get(entity);
-    if (!health) return;
+    if (!health) {return;}
 
     const originalHP = health.current;
     const success = this.healthStore.takeDamage(entity, damage);
@@ -69,10 +69,10 @@ export class HealthSystem {
   applyHealing(event: HealingEvent): void {
     const { entity, healing, source } = event;
 
-    if (!this.healthStore.has(entity)) return;
+    if (!this.healthStore.has(entity)) {return;}
 
     const health = this.healthStore.get(entity);
-    if (!health) return;
+    if (!health) {return;}
 
     const originalHP = health.current;
     const success = this.healthStore.heal(entity, healing);
@@ -97,10 +97,10 @@ export class HealthSystem {
   }
 
   setTemporaryHitPoints(entity: number, tempHP: number): void {
-    if (!this.healthStore.has(entity)) return;
+    if (!this.healthStore.has(entity)) {return;}
 
     const health = this.healthStore.get(entity);
-    if (!health) return;
+    if (!health) {return;}
 
     // Temporary hit points don't stack, take the higher value
     const newTempHP = Math.max(health.temporary, tempHP);
@@ -171,15 +171,15 @@ export class HealthSystem {
   getHealthStatus(
     entity: number,
   ): "healthy" | "injured" | "bloodied" | "critical" | "unconscious" | "dead" {
-    if (!this.healthStore.has(entity)) return "dead";
+    if (!this.healthStore.has(entity)) {return "dead";}
 
-    if (this.isUnconscious(entity)) return "unconscious";
-    if (this.healthStore.isDead(entity)) return "dead";
+    if (this.isUnconscious(entity)) {return "unconscious";}
+    if (this.healthStore.isDead(entity)) {return "dead";}
 
     const percentage = this.getHealthPercentage(entity);
-    if (percentage >= 0.75) return "healthy";
-    if (percentage >= 0.5) return "injured";
-    if (percentage >= 0.25) return "bloodied";
+    if (percentage >= 0.75) {return "healthy";}
+    if (percentage >= 0.5) {return "injured";}
+    if (percentage >= 0.25) {return "bloodied";}
     return "critical";
   }
 

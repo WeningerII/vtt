@@ -93,14 +93,14 @@ export class FogOfWarSystem extends EventEmitter {
     }
   ): string {
     const revealArea: RevealArea = {
-      id: this.generateRevealId(),
+      id: `reveal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       center,
       radius,
       shape: options?.shape || 'circle',
-      direction: options?.direction,
-      angle: options?.angle,
+      direction: options?.direction ?? 0,
+      angle: options?.angle ?? 0,
       revealerId,
-      permanent: options?.permanent || false,
+      permanent: false,
       createdAt: new Date(),
     };
 
@@ -182,7 +182,7 @@ export class FogOfWarSystem extends EventEmitter {
     const line = this.getLinePoints(from, to);
     
     for (const blocker of this.visionBlockers.values()) {
-      if (!blocker.blocksVision) continue;
+      if (!blocker.blocksVision) {continue;}
       
       if (this.lineIntersectsPolygon(line, blocker.points)) {
         return false;
@@ -473,7 +473,7 @@ export class FogOfWarSystem extends EventEmitter {
     for (let x = center.x - radius; x <= center.x + radius; x += this.gridSize) {
       for (let y = center.y - radius; y <= center.y + radius; y += this.gridSize) {
         const distance = Math.sqrt(Math.pow(x - center.x, 2) + Math.pow(y - center.y, 2));
-        if (distance > radius) continue;
+        if (distance > radius) {continue;}
 
         const cellAngle = Math.atan2(y - center.y, x - center.x);
         const angleDiff = Math.abs(this.normalizeAngle(cellAngle - direction));
@@ -519,7 +519,7 @@ export class FogOfWarSystem extends EventEmitter {
     while (true) {
       points.push({ x, y });
 
-      if (x === to.x && y === to.y) break;
+      if (x === to.x && y === to.y) {break;}
 
       const e2 = 2 * err;
       if (e2 > -dy) {
@@ -541,7 +541,8 @@ export class FogOfWarSystem extends EventEmitter {
       const p1 = polygon[i];
       const p2 = polygon[(i + 1) % polygon.length];
       
-      if (this.lineSegmentsIntersect(line[0], line[line.length - 1], p1, p2)) {
+      const lastPoint = line[line.length - 1];
+      if (line[0] && lastPoint && p1 && p2 && this.lineSegmentsIntersect(line[0], lastPoint, p1, p2)) {
         return true;
       }
     }
@@ -555,7 +556,7 @@ export class FogOfWarSystem extends EventEmitter {
     p4: { x: number; y: number }
   ): boolean {
     const denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-    if (denom === 0) return false;
+    if (denom === 0) {return false;}
 
     const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom;
     const ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom;
@@ -564,8 +565,8 @@ export class FogOfWarSystem extends EventEmitter {
   }
 
   private normalizeAngle(angle: number): number {
-    while (angle > Math.PI) angle -= 2 * Math.PI;
-    while (angle < -Math.PI) angle += 2 * Math.PI;
+    while (angle > Math.PI) {angle -= 2 * Math.PI;}
+    while (angle < -Math.PI) {angle += 2 * Math.PI;}
     return angle;
   }
 

@@ -32,7 +32,7 @@ export interface ImportResult {
 export interface ImportFailure {
   filename: string;
   reason: string;
-  error?: Error;
+  error?: Error | undefined;
 }
 
 export interface ContentPackage {
@@ -100,6 +100,13 @@ export class ContentImporter extends EventEmitter {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (!file) {
+        result.failed.push({
+          filename: `Unknown file ${i}`,
+          reason: "File is undefined",
+        });
+        continue;
+      }
       this.emitProgress("reading", i + 1, files.length, file.name);
 
       try {
@@ -107,7 +114,7 @@ export class ContentImporter extends EventEmitter {
         const validation = this.validateFile(file, options);
         if (!validation.valid) {
           result.failed.push({
-            filename: file.name,
+            filename: file?.name || 'Unknown file',
             reason: validation.reason!,
           });
           continue;
@@ -143,7 +150,7 @@ export class ContentImporter extends EventEmitter {
         result.imported.push(asset);
       } catch (error) {
         result.failed.push({
-          filename: file.name,
+          filename: file?.name || 'Unknown file',
           reason: error instanceof Error ? error.message : "Unknown error",
           error: error instanceof Error ? error : undefined,
         });
@@ -184,6 +191,8 @@ export class ContentImporter extends EventEmitter {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (!file) {continue;}
+      
       this.emitProgress("processing", i + 1, files.length, file.name);
 
       try {
@@ -198,7 +207,7 @@ export class ContentImporter extends EventEmitter {
         const validation = this.validateFile(fileObj, options);
         if (!validation.valid) {
           result.failed.push({
-            filename: file.name,
+            filename: file?.name || 'Unknown file',
             reason: validation.reason!,
           });
           continue;
@@ -231,7 +240,7 @@ export class ContentImporter extends EventEmitter {
         result.imported.push(asset);
       } catch (error) {
         result.failed.push({
-          filename: file.name,
+          filename: file?.name || 'Unknown file',
           reason: error instanceof Error ? error.message : "Unknown error",
           error: error instanceof Error ? error : undefined,
         });
@@ -352,8 +361,8 @@ export class ContentImporter extends EventEmitter {
   private async readFile(file: File): Promise<ArrayBuffer> {
     return new Promise((_resolve, __reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = () => reject(reader.error);
+      reader.onload = () => _resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => __reject(reader.error);
       reader.readAsArrayBuffer(file);
     });
   }

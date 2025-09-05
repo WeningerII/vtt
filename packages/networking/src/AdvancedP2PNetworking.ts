@@ -425,7 +425,7 @@ export class AdvancedP2PNetworking {
 
   private sendToSpecificPeer(message: NetworkMessage): void {
     const peer = this.state.peers.get(message.recipient!);
-    if (!peer || peer.status !== "connected") return;
+    if (!peer || peer.status !== "connected") {return;}
 
     this.transmitMessage(peer, message);
   }
@@ -625,7 +625,7 @@ type MessageHandler = (message: NetworkMessage) => void;
 class EventEmitter {
   private listeners = new Map<string, Function[]>();
   on(event: string, _callback: (...args: any[]) => any): void {
-    if (!this.listeners.has(event)) this.listeners.set(event, []);
+    if (!this.listeners.has(event)) {this.listeners.set(event, []);}
     this.listeners.get(event)!.push(callback);
   }
   emit(event: string, data: any): void {

@@ -1,6 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '../i18n/i18n';
+import React, { createContext, useContext, useState } from 'react';
 
 interface I18nContextType {
   currentLanguage: string;
@@ -16,7 +14,7 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [currentLanguage, setCurrentLanguage] = useState(i18n.language);
+  const [currentLanguage, setCurrentLanguage] = useState('en');
   const [isLanguageLoading, setIsLanguageLoading] = useState(false);
 
   const supportedLanguages = ['en', 'es', 'fr', 'de'];
@@ -29,9 +27,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
     setIsLanguageLoading(true);
     try {
-      await i18n.changeLanguage(language);
       setCurrentLanguage(language);
-      // Persist language preference
       localStorage.setItem('vtt-language', language);
     } catch (error) {
       console.error('Failed to change language:', error);
@@ -39,26 +35,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
       setIsLanguageLoading(false);
     }
   };
-
-  // Load saved language preference on mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('vtt-language');
-    if (savedLanguage && supportedLanguages.includes(savedLanguage)) {
-      changeLanguage(savedLanguage);
-    }
-  }, []);
-
-  // Listen to i18n language changes
-  useEffect(() => {
-    const handleLanguageChange = (lng: string) => {
-      setCurrentLanguage(lng);
-    };
-
-    i18n.on('languageChanged', handleLanguageChange);
-    return () => {
-      i18n.off('languageChanged', handleLanguageChange);
-    };
-  }, []);
 
   const contextValue: I18nContextType = {
     currentLanguage,
@@ -68,11 +44,9 @@ export function I18nProvider({ children }: I18nProviderProps) {
   };
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <I18nContext.Provider value={contextValue}>
-        {children}
-      </I18nContext.Provider>
-    </I18nextProvider>
+    <I18nContext.Provider value={contextValue}>
+      {children}
+    </I18nContext.Provider>
   );
 }
 

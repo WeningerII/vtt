@@ -434,7 +434,7 @@ export class AdvancedAssetPipeline {
 
     // Load from storage or CDN
     const asset = this.assets.get(assetId);
-    if (!asset) return null;
+    if (!asset) {return null;}
 
     try {
       const loadedAsset = await this.loader.load(asset);
@@ -448,7 +448,7 @@ export class AdvancedAssetPipeline {
 
   async streamAsset(assetId: string): Promise<ReadableStream<Uint8Array> | null> {
     const asset = this.assets.get(assetId);
-    if (!asset) return null;
+    if (!asset) {return null;}
 
     return this.streamer.createStream(asset);
   }
@@ -516,7 +516,7 @@ export class AdvancedAssetPipeline {
 
   async loadBundle(bundleId: string): Promise<Asset[]> {
     const bundle = this.bundles.get(bundleId);
-    if (!bundle) return [];
+    if (!bundle) {return [];}
 
     const assets: Asset[] = [];
 
@@ -559,15 +559,15 @@ export class AdvancedAssetPipeline {
   }
 
   private matchesQuery(asset: Asset, query: AssetSearchQuery): boolean {
-    if (query.type && asset.type !== query.type) return false;
-    if (query.format && asset.format !== query.format) return false;
-    if (query.tags && !query.tags.every((tag) => asset.metadata.tags.includes(tag))) return false;
-    if (query.text && !asset.name.toLowerCase().includes(query.text.toLowerCase())) return false;
+    if (query.type && asset.type !== query.type) {return false;}
+    if (query.format && asset.format !== query.format) {return false;}
+    if (query.tags && !query.tags.every((tag) => asset.metadata.tags.includes(tag))) {return false;}
+    if (query.text && !asset.name.toLowerCase().includes(query.text.toLowerCase())) {return false;}
     return true;
   }
 
   private sortAssets(assets: Asset[], sort?: AssetSort): Asset[] {
-    if (!sort) return assets;
+    if (!sort) {return assets;}
 
     return assets.sort((_a, _b) => {
       let comparison = 0;
@@ -598,10 +598,10 @@ export class AdvancedAssetPipeline {
     const videoFormats = ["mp4", "webm", "avi", "mov", "mkv"];
     const modelFormats = ["gltf", "glb", "obj", "fbx", "dae"];
 
-    if (imageFormats.includes(format.toLowerCase())) return "texture";
-    if (audioFormats.includes(format.toLowerCase())) return "audio";
-    if (videoFormats.includes(format.toLowerCase())) return "video";
-    if (modelFormats.includes(format.toLowerCase())) return "model";
+    if (imageFormats.includes(format.toLowerCase())) {return "texture";}
+    if (audioFormats.includes(format.toLowerCase())) {return "audio";}
+    if (videoFormats.includes(format.toLowerCase())) {return "video";}
+    if (modelFormats.includes(format.toLowerCase())) {return "model";}
 
     return "data";
   }

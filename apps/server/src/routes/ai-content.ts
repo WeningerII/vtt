@@ -269,7 +269,7 @@ export const enhanceTextHandler: RouteHandler = async (ctx) => {
         success: true,
         original: body.text,
         enhanced: enhanced.text,
-        enhancement: enhancement,
+        enhancement,
         usage: { tokens: enhanced.tokens },
       }),
     );
@@ -324,7 +324,7 @@ async function generateQuestContent(
     id: `quest_${Date.now()}`,
     title: "The Lost Song of Valdris",
     summary: "Ancient melodies hold the key to preventing a calamity",
-    level: level,
+    level,
     duration: _duration,
     objectives: [
       "Investigate strange magical resonances in the Whispering Woods",
@@ -366,8 +366,8 @@ async function generateLocationContent(_prompt: string, size: string, theme: str
     id: `location_${Date.now()}`,
     name: "The Sunken Archive",
     type: "dungeon",
-    size: size,
-    theme: theme,
+    size,
+    theme,
     description:
       "A flooded library beneath an ancient tower, filled with waterlogged tomes and aquatic guardians.",
     damage: `${size}d6`,

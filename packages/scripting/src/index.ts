@@ -33,10 +33,10 @@ export type {
 
 // Utility functions for creating common script and mod configurations
 export function createBasicScriptManifest(
-  _id: string,
-  _name: string,
-  _version: string = "1.0.0",
-): Partial<ScriptManifest> {
+  id: string,
+  name: string,
+  version: string = "1.0.0",
+): Partial<import("./ScriptingEngine").ScriptManifest> {
   return {
     id,
     name,
@@ -53,11 +53,11 @@ export function createBasicScriptManifest(
 }
 
 export function createBasicModManifest(
-  _id: string,
-  _name: string,
-  _version: string = "1.0.0",
-  _gameVersion: string = "1.0.0",
-): Partial<ModManifest> {
+  id: string,
+  name: string,
+  version: string = "1.0.0",
+  gameVersion: string = "1.0.0",
+): Partial<import("./ModdingFramework").ModManifest> {
   return {
     id,
     name,

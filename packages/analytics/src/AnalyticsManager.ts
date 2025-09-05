@@ -191,7 +191,7 @@ export class AnalyticsManager {
   }
 
   public async initialize(userId?: string): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {return;}
 
     await this.telemetry.initialize(userId);
 
@@ -369,7 +369,7 @@ export class AnalyticsManager {
     const currentTime = Date.now();
 
     for (const rule of this.config.alerts.rules) {
-      if (!rule.enabled) continue;
+      if (!rule.enabled) {continue;}
 
       const state = this.alertState.get(rule.id)!;
       const metricValue = this.extractMetricValue(currentMetrics, rule.metric);

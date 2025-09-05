@@ -432,7 +432,7 @@ export class AssetManager extends EventEmitter {
         results.push(result);
       } catch (error) {
         // Continue with other assets even if one fails
-        logger.error("Failed to add asset in bulk operation:", error);
+        logger.error("Failed to add asset in bulk operation:", error as Record<string, any>);
       }
     }
     return results;
@@ -451,7 +451,7 @@ export class AssetManager extends EventEmitter {
         success.push(id);
       } catch (error) {
         failed.push(id);
-        logger.error(`Failed to delete asset ${id}:`, error);
+        logger.error(`Failed to delete asset ${id}:`, error as Record<string, any>);
       }
     }
 

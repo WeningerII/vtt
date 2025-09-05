@@ -261,10 +261,10 @@ export const createConditionSpell = (config: {
  * Helper functions
  */
 function parseDuration(duration: string): number {
-  if (duration.includes("1 minute")) return 60000;
-  if (duration.includes("10 minutes")) return 600000;
-  if (duration.includes("1 hour")) return 3600000;
-  if (duration.includes("1 round")) return 6000;
+  if (duration.includes("1 minute")) {return 60000;}
+  if (duration.includes("10 minutes")) {return 600000;}
+  if (duration.includes("1 hour")) {return 3600000;}
+  if (duration.includes("1 round")) {return 6000;}
   return 0;
 }
 

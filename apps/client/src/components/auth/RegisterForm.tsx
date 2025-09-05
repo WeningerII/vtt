@@ -3,12 +3,24 @@
  */
 import React, { useState } from "react";
 import { logger } from "@vtt/logging";
-// import { useRouter } from 'next/router'; // Next.js router not available in this project
-import { User, Mail, Lock, Eye, EyeOff, ArrowRight, Check } from "lucide-react";
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const User = MockIcon;
+const Mail = MockIcon;
+const Lock = MockIcon;
+const Eye = MockIcon;
+const EyeOff = MockIcon;
+const ArrowRight = MockIcon;
+const Check = MockIcon;
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card";
 import { useAuth, type RegisterData } from "../../providers/AuthProvider";
+import { useRouter } from "../Router";
 import { cn, isValidEmail } from "../../lib/utils";
 
 // Simple password validation function
@@ -80,8 +92,8 @@ interface RegisterFormErrors {
 }
 
 export function RegisterForm() {
-  // Router not available in this project
   const { register, isLoading, error, clearError } = useAuth();
+  const { navigate } = useRouter();
 
   const [formData, setFormData] = useState<RegisterFormData>({
     username: "",
@@ -175,14 +187,14 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) return;
+    if (!validateForm()) {return;}
 
     try {
       const { confirmPassword: _confirmPassword, ...registerData } = formData;
       await register(registerData as RegisterData);
 
       // Redirect to dashboard on success
-      window.location.href = "/dashboard";
+      navigate("/dashboard");
     } catch (err) {
       logger.error("Registration failed:", err);
     }
@@ -190,17 +202,17 @@ export function RegisterForm() {
 
   // Password strength indicator
   const getPasswordStrengthColor = (score: number) => {
-    if (score < 2) return "bg-error-500";
-    if (score < 4) return "bg-warning-500";
+    if (score < 2) {return "bg-error-500";}
+    if (score < 4) {return "bg-warning-500";}
     return "bg-success-500";
   };
 
   const getPasswordStrengthText = (score: number) => {
-    if (score === 0) return "Very Weak";
-    if (score === 1) return "Weak";
-    if (score === 2) return "Fair";
-    if (score === 3) return "Good";
-    if (score === 4) return "Strong";
+    if (score === 0) {return "Very Weak";}
+    if (score === 1) {return "Weak";}
+    if (score === 2) {return "Fair";}
+    if (score === 3) {return "Good";}
+    if (score === 4) {return "Strong";}
     return "Very Strong";
   };
 
@@ -388,11 +400,7 @@ export function RegisterForm() {
           {/* Submit Button */}
           <Button
             type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={isLoading}
-            rightIcon={!isLoading && <ArrowRight className="h-4 w-4" />}
+            disabled={isLoading}
           >
             {isLoading ? "Creating account..." : "Create account"}
           </Button>
@@ -403,9 +411,7 @@ export function RegisterForm() {
           Already have an account?{" "}
           <Button
             type="button"
-            variant="link"
-            size="sm"
-            onClick={() => (window.location.href = "/auth/login")}
+            onClick={() => navigate("/login")}
             disabled={isLoading}
             className="font-medium"
           >

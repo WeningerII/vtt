@@ -95,38 +95,38 @@ export class PlatformDetection {
   }
 
   private detectOS(userAgent: string, platform: string): PlatformInfo["os"] {
-    if (userAgent.includes("windows") || platform.includes("win")) return "windows";
+    if (userAgent.includes("windows") || platform.includes("win")) {return "windows";}
     if (userAgent.includes("macintosh") || userAgent.includes("mac os") || platform.includes("mac"))
-      return "macos";
-    if (userAgent.includes("linux") || platform.includes("linux")) return "linux";
+      {return "macos";}
+    if (userAgent.includes("linux") || platform.includes("linux")) {return "linux";}
     if (userAgent.includes("iphone") || userAgent.includes("ipad") || userAgent.includes("ipod"))
-      return "ios";
-    if (userAgent.includes("android")) return "android";
+      {return "ios";}
+    if (userAgent.includes("android")) {return "android";}
     return "unknown";
   }
 
   private detectBrowser(userAgent: string): PlatformInfo["browser"] {
-    if (userAgent.includes("edg/")) return "edge";
-    if (userAgent.includes("chrome") && !userAgent.includes("chromium")) return "chrome";
-    if (userAgent.includes("firefox")) return "firefox";
-    if (userAgent.includes("safari") && !userAgent.includes("chrome")) return "safari";
-    if (userAgent.includes("opera") || userAgent.includes("opr/")) return "opera";
+    if (userAgent.includes("edg/")) {return "edge";}
+    if (userAgent.includes("chrome") && !userAgent.includes("chromium")) {return "chrome";}
+    if (userAgent.includes("firefox")) {return "firefox";}
+    if (userAgent.includes("safari") && !userAgent.includes("chrome")) {return "safari";}
+    if (userAgent.includes("opera") || userAgent.includes("opr/")) {return "opera";}
     return "unknown";
   }
 
   private detectDevice(userAgent: string): PlatformInfo["device"] {
-    if (userAgent.includes("mobile") || userAgent.includes("phone")) return "mobile";
-    if (userAgent.includes("tablet") || userAgent.includes("ipad")) return "tablet";
+    if (userAgent.includes("mobile") || userAgent.includes("phone")) {return "mobile";}
+    if (userAgent.includes("tablet") || userAgent.includes("ipad")) {return "tablet";}
     return "desktop";
   }
 
   private detectArchitecture(userAgent: string, platform: string): PlatformInfo["architecture"] {
-    if (userAgent.includes("arm64") || userAgent.includes("aarch64")) return "arm64";
-    if (userAgent.includes("arm")) return "arm";
+    if (userAgent.includes("arm64") || userAgent.includes("aarch64")) {return "arm64";}
+    if (userAgent.includes("arm")) {return "arm";}
     if (userAgent.includes("x86_64") || userAgent.includes("x64") || platform.includes("64"))
-      return "x64";
+      {return "x64";}
     if (userAgent.includes("x86") || userAgent.includes("i386") || userAgent.includes("i686"))
-      return "x86";
+      {return "x86";}
     return "unknown";
   }
 
@@ -134,10 +134,10 @@ export class PlatformDetection {
     try {
       const canvas = document.createElement("canvas");
       const gl2 = canvas.getContext("webgl2");
-      if (gl2) return "webgl2";
+      if (gl2) {return "webgl2";}
 
       const gl1 = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-      if (gl1) return "webgl1";
+      if (gl1) {return "webgl1";}
 
       return "none";
     } catch {
@@ -220,8 +220,8 @@ export class PlatformDetection {
     const memory = this.detectMemory();
     const cores = this.detectCores();
 
-    if (memory >= 8192 && cores >= 8) return "high";
-    if (memory >= 4096 && cores >= 4) return "medium";
+    if (memory >= 8192 && cores >= 8) {return "high";}
+    if (memory >= 4096 && cores >= 4) {return "medium";}
     return "low";
   }
 
@@ -240,9 +240,9 @@ export class PlatformDetection {
     const webgl = this.detectWebGL();
     const performance = this.detectPerformanceLevel();
 
-    if (webgl === "webgl2" && performance === "high") return "high";
-    if (webgl === "webgl2" && performance === "medium") return "medium";
-    if (webgl === "webgl1") return "low";
+    if (webgl === "webgl2" && performance === "high") {return "high";}
+    if (webgl === "webgl2" && performance === "medium") {return "medium";}
+    if (webgl === "webgl1") {return "low";}
     return "unknown";
   }
 
@@ -305,7 +305,7 @@ export class PlatformDetection {
       canvas.height = 256;
 
       const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-      if (!gl) return 0;
+      if (!gl) {return 0;}
 
       const start = performance.now();
 
@@ -454,10 +454,10 @@ export class PlatformDetection {
 
     if (!canRun) {
       report += `\nLimitations:\n`;
-      if (!features.webgl2) report += `- Limited graphics capabilities (WebGL 1.0 only)\n`;
-      if (!features.webAssembly) report += `- No WebAssembly support\n`;
-      if (!features.webWorkers) report += `- No background processing support\n`;
-      if (info.performance === "low") report += `- Low performance device\n`;
+      if (!features.webgl2) {report += `- Limited graphics capabilities (WebGL 1.0 only)\n`;}
+      if (!features.webAssembly) {report += `- No WebAssembly support\n`;}
+      if (!features.webWorkers) {report += `- No background processing support\n`;}
+      if (info.performance === "low") {report += `- Low performance device\n`;}
     }
 
     return report;

@@ -86,7 +86,7 @@ export class UnifiedGPUResourceManager
 
       this.emit("ready", undefined);
     } catch (error) {
-      logger.error("Failed to initialize GPU resource manager:", error);
+      logger.error("Failed to initialize GPU resource manager:", error as Record<string, any>);
       throw error;
     }
   }
@@ -194,7 +194,7 @@ export class UnifiedGPUResourceManager
    */
   destroyResource(id: string): void {
     const resource = this.resources.get(id);
-    if (!resource) return;
+    if (!resource) {return;}
 
     switch (resource.type) {
       case "buffer":
@@ -230,7 +230,7 @@ export class UnifiedGPUResourceManager
    * Schedule cleanup of unused resources
    */
   scheduleCleanup(): void {
-    if (this.cleanupScheduled) return;
+    if (this.cleanupScheduled) {return;}
 
     this.cleanupScheduled = true;
     setTimeout(() => {

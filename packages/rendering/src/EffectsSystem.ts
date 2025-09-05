@@ -232,7 +232,7 @@ export class EffectsSystem {
     const effectsToRemove: string[] = [];
 
     for (const [effectId, effect] of this.effects.entries()) {
-      if (!effect.isActive) continue;
+      if (!effect.isActive) {continue;}
 
       const elapsed = currentTime - effect.startTime;
       const progress = effect.duration > 0 ? Math.min(1, elapsed / effect.duration) : 0;
@@ -266,12 +266,12 @@ export class EffectsSystem {
 
   private updateEffectAnimations(effect: Effect, elapsed: number): void {
     for (const animation of effect.animations) {
-      if (elapsed < animation.delay) continue;
+      if (elapsed < animation.delay) {continue;}
 
       const animationElapsed = elapsed - animation.delay;
       const animationDuration = animation.duration;
 
-      if (animationElapsed >= animationDuration && animation.repeat !== -1) continue;
+      if (animationElapsed >= animationDuration && animation.repeat !== -1) {continue;}
 
       let progress = Math.min(1, animationElapsed / animationDuration);
 
@@ -302,9 +302,9 @@ export class EffectsSystem {
       case "ease-in-out":
         return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
       case "bounce":
-        if (t < 1 / 2.75) return 7.5625 * t * t;
-        if (t < 2 / 2.75) return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;
-        if (t < 2.5 / 2.75) return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;
+        if (t < 1 / 2.75) {return 7.5625 * t * t;}
+        if (t < 2 / 2.75) {return 7.5625 * (t -= 1.5 / 2.75) * t + 0.75;}
+        if (t < 2.5 / 2.75) {return 7.5625 * (t -= 2.25 / 2.75) * t + 0.9375;}
         return 7.5625 * (t -= 2.625 / 2.75) * t + 0.984375;
       case "elastic": {
         const c4 = (2 * Math.PI) / 3;

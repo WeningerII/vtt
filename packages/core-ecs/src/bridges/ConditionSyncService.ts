@@ -70,10 +70,10 @@ export class ConditionSyncService {
    * Sync conditions from database to ECS for a specific entity
    */
   async syncFromDatabase(entityId: EntityId): Promise<void> {
-    if (!this.database) return;
+    if (!this.database) {return;}
 
     const actorId = this.entityToActorMap.get(entityId);
-    if (!actorId) return;
+    if (!actorId) {return;}
 
     try {
       const dbConditions = await this.database.getAppliedConditions(actorId);
@@ -108,10 +108,10 @@ export class ConditionSyncService {
    * Sync conditions from ECS to database for a specific entity
    */
   async syncToDatabase(entityId: EntityId): Promise<void> {
-    if (!this.database) return;
+    if (!this.database) {return;}
 
     const actorId = this.entityToActorMap.get(entityId);
-    if (!actorId) return;
+    if (!actorId) {return;}
 
     try {
       const ecsConditions = this.conditionsStore.getAll(entityId) || [];

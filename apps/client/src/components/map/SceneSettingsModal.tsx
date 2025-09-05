@@ -119,7 +119,7 @@ export function SceneSettingsModal({
     }
   }, [initialSettings]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const updateGridSettings = (_updates: Partial<GridSettings>) => {
     setSettings((prev) => ({
@@ -179,7 +179,7 @@ export function SceneSettingsModal({
   const handleClose = () => {
     if (hasChanges) {
       const confirm = window.confirm("You have unsaved changes. Are you sure you want to close?");
-      if (!confirm) return;
+      if (!confirm) {return;}
     }
     onClose();
   };

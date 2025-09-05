@@ -63,7 +63,7 @@ export interface ViewportState {
 }
 
 export class MapManager extends EventEmitter {
-  private maps: Map<string, Map> = new Map();
+  private maps = new Map<string, Map>();
   private activeMapId: string | null = null;
   private viewport: ViewportState = { x: 0, y: 0, zoom: 1, rotation: 0 };
   private panState: {
@@ -159,7 +159,7 @@ export class MapManager extends EventEmitter {
    * Get all maps for a campaign
    */
   getCampaignMaps(campaignId: string): Map[] {
-    return Array.from(this.maps.values()).filter(map => map.campaignId === campaignId);
+    return (Array.from(this.maps.values()) as Map[]).filter(map => map.campaignId === campaignId);
   }
 
   /**
@@ -251,7 +251,7 @@ export class MapManager extends EventEmitter {
    */
   zoomToFit(containerWidth: number, containerHeight: number, userId: string): void {
     const activeMap = this.getActiveMap();
-    if (!activeMap) return;
+    if (!activeMap) {return;}
 
     const scaleX = containerWidth / activeMap.settings.width;
     const scaleY = containerHeight / activeMap.settings.height;
@@ -339,7 +339,7 @@ export class MapManager extends EventEmitter {
       return false;
     }
 
-    activeMap.layers[layerIndex] = { ...activeMap.layers[layerIndex], ...changes };
+    activeMap.layers[layerIndex] = { ...activeMap.layers[layerIndex]!, ...changes } as MapLayer;
     
     if (changes.zIndex !== undefined) {
       activeMap.layers.sort((a, b) => a.zIndex - b.zIndex);

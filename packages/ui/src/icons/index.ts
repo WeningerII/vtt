@@ -43,7 +43,7 @@ export {
   // Media
   Play,
   Pause,
-  Stop,
+  StopCircle as Stop,
   SkipForward,
   SkipBack,
   Volume,

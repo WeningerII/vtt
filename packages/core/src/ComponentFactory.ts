@@ -52,7 +52,7 @@ export class BaseComponent implements Component {
   }
 
   async initialize(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {return;}
 
     // Initialize children
     for (const child of this.children) {
@@ -63,7 +63,7 @@ export class BaseComponent implements Component {
   }
 
   update(deltaTime: number): void {
-    if (!this.initialized || this.destroyed) return;
+    if (!this.initialized || this.destroyed) {return;}
 
     // Update children
     for (const child of this.children) {
@@ -72,7 +72,7 @@ export class BaseComponent implements Component {
   }
 
   render(): void {
-    if (!this.initialized || this.destroyed) return;
+    if (!this.initialized || this.destroyed) {return;}
 
     // Render children
     for (const child of this.children) {
@@ -81,7 +81,7 @@ export class BaseComponent implements Component {
   }
 
   destroy(): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {return;}
 
     // Destroy children
     for (const child of this.children) {
@@ -127,7 +127,7 @@ export class BaseComponent implements Component {
         try {
           handler(data);
         } catch (error) {
-          logger.error(`Error in event handler for ${event}:`, error);
+          logger.error(`Error in event handler for ${event}:`, error as Record<string, any>);
         }
       }
     }
@@ -155,20 +155,20 @@ export class BaseComponent implements Component {
 
   findChild(id: string): Component | null {
     for (const child of this.children) {
-      if (child.id === id) return child;
+      if (child.id === id) {return child;}
 
       const found = child.findChild(id);
-      if (found) return found;
+      if (found) {return found;}
     }
     return null;
   }
 
   findChildByType(type: ComponentType): Component | null {
     for (const child of this.children) {
-      if (child.type === type) return child;
+      if (child.type === type) {return child;}
 
       const found = child.findChildByType(type);
-      if (found) return found;
+      if (found) {return found;}
     }
     return null;
   }
@@ -226,7 +226,7 @@ export class UnifiedComponentFactory
       name: type,
       description: `Component of type ${type}`,
       category: "custom",
-      defaultProperties: Record<string, any>,
+      defaultProperties: {} as Record<string, any>,
       requiredProperties: [],
       constructor,
       dependencies: [],
@@ -362,7 +362,7 @@ export class UnifiedComponentFactory
       defaultProperties: {
         visible: true,
         enabled: true,
-        style: Record<string, any>,
+        style: {} as Record<string, any>,
       },
       requiredProperties: [],
       constructor: BaseComponent,

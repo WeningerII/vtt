@@ -270,7 +270,7 @@ export class LayerManager {
 
     for (const layerId of this.layerOrder) {
       const layer = this.layers.get(layerId);
-      if (!layer || !layer.visible) continue;
+      if (!layer || !layer.visible) {continue;}
 
       const layerObjects = this.getObjectsInLayer(layerId).filter((obj) => obj.visible);
 

@@ -171,7 +171,7 @@ export class InteractionSystem extends EventEmitter {
     // Update hovered token
     const hoveredToken = this.findTokenAtPosition(worldPos);
     if (hoveredToken?.id !== this.state.hoveredTokenId) {
-      this.state.hoveredTokenId = hoveredToken?.id;
+      this.state.hoveredTokenId = hoveredToken?.id || '';
       this.emit('tokenHover', hoveredToken?.id);
     }
 
@@ -218,7 +218,7 @@ export class InteractionSystem extends EventEmitter {
   }
 
   private handleWheel(event: MouseEvent): void {
-    if (!event.deltaY) return;
+    if (!event.deltaY) {return;}
 
     const zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
     const currentViewport = this.mapManager.getViewport();
@@ -299,7 +299,7 @@ export class InteractionSystem extends EventEmitter {
     // Check tokens in reverse order (top to bottom)
     for (let i = tokens.length - 1; i >= 0; i--) {
       const token = tokens[i];
-      if (this.isPositionInToken(position, token)) {
+      if (token && this.isPositionInToken(position, token)) {
         return token;
       }
     }
@@ -366,7 +366,7 @@ export class InteractionSystem extends EventEmitter {
   }
 
   private updateSelectionBox(position: { x: number; y: number }): void {
-    if (!this.state.selectionBox) return;
+    if (!this.state.selectionBox) {return;}
 
     this.state.selectionBox.endX = position.x;
     this.state.selectionBox.endY = position.y;
@@ -374,7 +374,7 @@ export class InteractionSystem extends EventEmitter {
   }
 
   private finishSelection(): void {
-    if (!this.state.selectionBox) return;
+    if (!this.state.selectionBox) {return;}
 
     const box = this.state.selectionBox;
     const area = {
@@ -396,7 +396,7 @@ export class InteractionSystem extends EventEmitter {
     }
 
     this.state.isSelecting = false;
-    this.state.selectionBox = undefined;
+    delete this.state.selectionBox;
     this.emit('selectionBoxEnd');
   }
 
@@ -428,7 +428,7 @@ export class InteractionSystem extends EventEmitter {
       this.state.isDragging = false;
     } else if (this.state.isSelecting) {
       this.state.isSelecting = false;
-      this.state.selectionBox = undefined;
+      delete this.state.selectionBox;
       this.emit('selectionBoxCancel');
     } else {
       // Clear selection

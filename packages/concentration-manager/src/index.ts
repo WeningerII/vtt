@@ -77,7 +77,7 @@ export class ConcentrationManager extends EventEmitter {
    */
   endConcentration(casterId: string): boolean {
     const concentration = this.activeConcentration.get(casterId);
-    if (!concentration) return false;
+    if (!concentration) {return false;}
 
     this.activeConcentration.delete(casterId);
     this.emit("concentrationEnded", concentration);
@@ -89,10 +89,10 @@ export class ConcentrationManager extends EventEmitter {
    */
   handlePhysicsEvent(event: PhysicsEvent): ConcentrationCheck | null {
     const concentration = this.activeConcentration.get(event.entityId);
-    if (!concentration) return null;
+    if (!concentration) {return null;}
 
     // Only damage events trigger concentration checks
-    if (event.type !== "damage" || !event.damage) return null;
+    if (event.type !== "damage" || !event.damage) {return null;}
 
     return this.makeConcentrationCheck(concentration, event.damage);
   }
@@ -148,7 +148,7 @@ export class ConcentrationManager extends EventEmitter {
    */
   forceConcentrationCheck(casterId: string, dc: number): ConcentrationCheck | null {
     const concentration = this.activeConcentration.get(casterId);
-    if (!concentration) return null;
+    if (!concentration) {return null;}
 
     // Roll d20
     const rollResult = this.rollD20();
@@ -235,7 +235,7 @@ export class ConcentrationManager extends EventEmitter {
    */
   checkAutoFailConditions(casterId: string): boolean {
     const concentration = this.activeConcentration.get(casterId);
-    if (!concentration) return false;
+    if (!concentration) {return false;}
 
     // Auto-fail if incapacitated, stunned, etc.
     // This would typically integrate with the conditions system
@@ -364,7 +364,7 @@ export class PhysicsConcentrationIntegration extends EventEmitter {
    * Process queued physics events
    */
   private processPhysicsEventQueue(): void {
-    if (this.physicsEventQueue.length === 0) return;
+    if (this.physicsEventQueue.length === 0) {return;}
 
     const events = [...this.physicsEventQueue];
     this.physicsEventQueue = [];

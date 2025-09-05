@@ -533,7 +533,7 @@ export class MarketplaceModSystem {
     updates: Partial<MarketplaceItem>,
   ): Promise<MarketplaceItem | null> {
     const item = this.items.get(itemId);
-    if (!item) return null;
+    if (!item) {return null;}
 
     Object.assign(item, updates, { updated: new Date() });
     await this.distributionNetwork.update(item);
@@ -542,7 +542,7 @@ export class MarketplaceModSystem {
 
   async deleteItem(itemId: string): Promise<boolean> {
     const item = this.items.get(itemId);
-    if (!item) return false;
+    if (!item) {return false;}
 
     item.status = "removed";
     await this.distributionNetwork.remove(itemId);
@@ -679,7 +679,7 @@ export class MarketplaceModSystem {
     const item = this.items.get(itemId);
     const reviews = this.reviews.get(itemId);
 
-    if (!item || !reviews) return;
+    if (!item || !reviews) {return;}
 
     const totalRatings = reviews.length;
     const averageRating = reviews.reduce((_sum, _r) => sum + r.rating, 0) / totalRatings;
@@ -704,7 +704,7 @@ export class MarketplaceModSystem {
   // Mod management
   async installMod(modId: string, userId: string): Promise<boolean> {
     const item = this.items.get(modId);
-    if (!item || item.type !== "extension") return false;
+    if (!item || item.type !== "extension") {return false;}
 
     try {
       const modPackage = await this.downloadMod(modId);
@@ -735,7 +735,7 @@ export class MarketplaceModSystem {
 
   private async downloadMod(modId: string): Promise<ModPackage> {
     const item = this.items.get(modId);
-    if (!item) throw new Error("Mod not found");
+    if (!item) {throw new Error("Mod not found");}
 
     // Download mod files from CDN
     const files = await this.distributionNetwork.download(modId);
@@ -746,7 +746,7 @@ export class MarketplaceModSystem {
       name: item.name,
       version: item.version,
       manifest: {} as ModManifest, // Would be extracted from files
-      files: files,
+      files,
       dependencies: [],
       permissions: {} as ModPermissions,
       sandbox: {

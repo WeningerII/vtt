@@ -3,8 +3,9 @@
  */
 
 import { EventEmitter } from "events";
-import { Logger, LoggerConfig } from "./Logger";
-import { MetricsRegistry, SystemMetricsCollector, GameMetricsCollector } from "./Metrics";
+import { Logger, LoggerConfig } from './logger';
+import { MetricsRegistry, SystemMetricsCollector } from './metrics';
+import type { MetricsCollector } from './metrics';
 import { HealthCheckManager, HealthCheckConfig } from "./HealthCheck";
 import { AlertManager, AlertManagerConfig } from "./AlertManager";
 
@@ -21,7 +22,7 @@ export interface TracingSpan {
   traceId: string;
   spanId: string;
   parentSpanId?: string | undefined;
-  operationName: string;
+  _operationName: string;
   startTime: Date;
   endTime?: Date;
   duration?: number;
@@ -68,7 +69,7 @@ export class ObservabilityManager extends EventEmitter {
 
   private setupMetricsCollectors(): void {
     const systemCollector = new SystemMetricsCollector();
-    const gameCollector = new GameMetricsCollector();
+    const gameCollector = new SystemMetricsCollector();
 
     this.metrics.registerCollector(systemCollector);
     this.metrics.registerCollector(gameCollector);
@@ -194,15 +195,15 @@ export class ObservabilityManager extends EventEmitter {
   }
 
   // Distributed tracing interface
-  startSpan(operationName: string, parentSpan?: TracingSpan): TracingSpan {
+  startSpan(_operationName: string, parentSpan?: TracingSpan): TracingSpan {
     if (!this.config.enableTracing) {
       // Return a no-op span
       return {
         traceId: "disabled",
         spanId: "disabled",
-        operationName,
+        _operationName,
         startTime: new Date(),
-        tags: Record<string, any>,
+        tags: {},
         logs: [],
       };
     }
@@ -211,9 +212,9 @@ export class ObservabilityManager extends EventEmitter {
       traceId: parentSpan?.traceId || this.generateTraceId(),
       spanId: this.generateSpanId(),
       parentSpanId: parentSpan?.spanId || undefined,
-      operationName,
+      _operationName,
       startTime: new Date(),
-      tags: Record<string, any>,
+      tags: {},
       logs: [],
     };
 
@@ -234,7 +235,7 @@ export class ObservabilityManager extends EventEmitter {
     }
 
     // Log span completion
-    this.logger.info(`Span completed: ${span.operationName}`, {
+    this.logger.info(`Span completed: ${span._operationName}`, {
       traceId: span.traceId,
       spanId: span.spanId,
       duration: span.duration,
@@ -243,7 +244,7 @@ export class ObservabilityManager extends EventEmitter {
 
     // Record span metrics
     this.metrics.recordHistogram("vtt_span_duration_ms", span.duration, {
-      operation: span.operationName,
+      operation: span._operationName,
     });
 
     this.activeSpans.delete(span.spanId);
@@ -267,15 +268,15 @@ export class ObservabilityManager extends EventEmitter {
     _operation: () => Promise<T>,
     context?: Record<string, any>,
   ): Promise<T> {
-    const span = this.startSpan(operationName);
+    const span = this.startSpan(_operationName);
     const startTime = Date.now();
 
     try {
-      const result = await operation();
+      const result = await _operation();
       const duration = Date.now() - startTime;
 
       this.finishSpan(span, { success: true, ...context });
-      this.recordPerformance(operationName, duration, { success: true, ...context });
+      this.recordPerformance(_operationName, duration, { success: true, ...context });
 
       return result;
     } catch (error) {
@@ -283,23 +284,23 @@ export class ObservabilityManager extends EventEmitter {
 
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.finishSpan(span, { success: false, error: errorMsg, ...context });
-      this.recordPerformance(operationName, duration, { success: false, ...context });
-      this.logger.error(`Operation failed: ${operationName}`, error as Error, context);
+      this.recordPerformance(_operationName, duration, { success: false, ...context });
+      this.logger.error(`Operation failed: ${_operationName}`, error as Error, context);
 
       throw error;
     }
   }
 
   measure<T>(_operationName: string, _operation: () => T, context?: Record<string, any>): T {
-    const span = this.startSpan(operationName);
+    const span = this.startSpan(_operationName);
     const startTime = Date.now();
 
     try {
-      const result = operation();
+      const result = _operation();
       const duration = Date.now() - startTime;
 
       this.finishSpan(span, { success: true, ...context });
-      this.recordPerformance(operationName, duration, { success: true, ...context });
+      this.recordPerformance(_operationName, duration, { success: true, ...context });
 
       return result;
     } catch (error) {
@@ -307,8 +308,8 @@ export class ObservabilityManager extends EventEmitter {
 
       const errorMsg = error instanceof Error ? error.message : String(error);
       this.finishSpan(span, { success: false, error: errorMsg, ...context });
-      this.recordPerformance(operationName, duration, { success: false, ...context });
-      this.logger.error(`Operation failed: ${operationName}`, error as Error, context);
+      this.recordPerformance(_operationName, duration, { success: false, ...context });
+      this.logger.error(`Operation failed: ${_operationName}`, error as Error, context);
 
       throw error;
     }
@@ -341,7 +342,7 @@ export class ObservabilityManager extends EventEmitter {
 
   // Dashboard management
   private async startDashboard(): Promise<void> {
-    if (!this.config.dashboardPort) return;
+    if (!this.config.dashboardPort) {return;}
 
     // In a real implementation, this would start an HTTP server
     // serving a monitoring dashboard with metrics, logs, and alerts
@@ -448,7 +449,7 @@ export class ObservabilityManager extends EventEmitter {
         nodeVersion: process.version || "unknown",
         platform: process.platform || "unknown",
         uptime: process.uptime ? process.uptime() : 0,
-        memory: process.memoryUsage ? process.memoryUsage() : Record<string, any>,
+        memory: process.memoryUsage ? process.memoryUsage() : {},
       },
     };
   }

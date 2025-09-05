@@ -401,3 +401,4 @@ export type Monster = z.infer<typeof MonsterSchema>;
 // Re-exports for shared protocol schemas
 export * from "./messages";
 export * from "./http";
+export * from "./character";

@@ -305,36 +305,36 @@ export class AIRouter {
     const candidates = this.registry
       .byCapability(cap)
       .filter((p) => !(this.policy.forbid ?? []).includes(p.name));
-    if (candidates.length === 0) throw new Error(`No providers registered with capability ${cap}`);
+    if (candidates.length === 0) {throw new Error(`No providers registered with capability ${cap}`);}
 
     const preferred = (this.policy.preferred ?? []).find((_n) =>
       candidates.some((_c) => c.name === n),
     );
-    if (preferred) return candidates.find((_c) => c.name === preferred)!;
+    if (preferred) {return candidates.find((_c) => c.name === preferred)!;}
 
     const weights = candidates.map((_c) => ({ p: c, w: this.policy.weights?.[c.name] ?? 1 }));
     const total = weights.reduce((_s, _x) => s + x.w, 0);
     let r = Math.random() * total;
     for (const { p, w } of weights) {
       r -= w;
-      if (r <= 0) return p;
+      if (r <= 0) {return p;}
     }
     return candidates[0]!;
   }
 
   async textToImage(req: TextToImageRequest, ctx?: AIContext) {
     const p = this.pick("textToImage");
-    if (!p.textToImage) throw new Error(`Provider ${p.name} lacks textToImage`);
+    if (!p.textToImage) {throw new Error(`Provider ${p.name} lacks textToImage`);}
     return p.textToImage(req, ctx);
   }
   async depth(req: DepthRequest, ctx?: AIContext) {
     const p = this.pick("depth");
-    if (!p.depth) throw new Error(`Provider ${p.name} lacks depth`);
+    if (!p.depth) {throw new Error(`Provider ${p.name} lacks depth`);}
     return p.depth(req, ctx);
   }
   async segmentation(req: SegmentationRequest, ctx?: AIContext) {
     const p = this.pick("segmentation");
-    if (!p.segmentation) throw new Error(`Provider ${p.name} lacks segmentation`);
+    if (!p.segmentation) {throw new Error(`Provider ${p.name} lacks segmentation`);}
     return p.segmentation(req, ctx);
   }
 }

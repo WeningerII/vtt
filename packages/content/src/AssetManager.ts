@@ -7,7 +7,7 @@ import { logger } from '@vtt/logging';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { createReadStream, _createWriteStream} from 'fs';
+import { createReadStream, createWriteStream} from 'fs';
 import * as semver from 'semver';
 
 export type AssetType = 'image' | 'audio' | 'video' | 'model' | 'texture' | 'map' | 'token' | 'character' | 'campaign' | 'ruleset' | 'script' | 'shader' | 'font' | 'data';
@@ -157,7 +157,7 @@ export class AssetManager extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {return;}
 
     await this.ensureDirectories();
     await this.loadAssets();
@@ -205,12 +205,12 @@ export class AssetManager extends EventEmitter {
               this.categories.add(metadata.subcategory);
             }
           } catch (error) {
-            logger.warn(`Failed to load asset metadata: ${file}`, error);
+            logger.warn(`Failed to load asset metadata: ${file}`, error as Record<string, any>);
           }
         }
       }
     } catch (error) {
-      logger.warn('Failed to load assets directory', error);
+      logger.warn('Failed to load assets directory', error as Record<string, any>);
     }
   }
 
@@ -229,12 +229,12 @@ export class AssetManager extends EventEmitter {
             
             this.collections.set(collection.id, collection);
           } catch (error) {
-            logger.warn(`Failed to load collection: ${file}`, error);
+            logger.warn(`Failed to load collection: ${file}`, error as Record<string, any>);
           }
         }
       }
     } catch (error) {
-      logger.warn('Failed to load collections directory', error);
+      logger.warn('Failed to load collections directory', error as Record<string, any>);
     }
   }
 
@@ -408,7 +408,7 @@ export class AssetManager extends EventEmitter {
       try {
         await fs.unlink(path.join(this.basePath, asset.path));
       } catch (error) {
-        logger.warn(`Failed to delete asset file: ${asset.path}`, error);
+        logger.warn(`Failed to delete asset file: ${asset.path}`, error as Record<string, any>);
       }
 
       // Delete thumbnail
@@ -416,7 +416,7 @@ export class AssetManager extends EventEmitter {
         try {
           await fs.unlink(path.join(this.basePath, asset.thumbnailPath));
         } catch (error) {
-          logger.warn(`Failed to delete thumbnail: ${asset.thumbnailPath}`, error);
+          logger.warn(`Failed to delete thumbnail: ${asset.thumbnailPath}`, error as Record<string, any>);
         }
       }
 
@@ -426,7 +426,7 @@ export class AssetManager extends EventEmitter {
           try {
             await fs.unlink(path.join(this.basePath, previewUrl));
           } catch (error) {
-            logger.warn(`Failed to delete preview: ${previewUrl}`, error);
+            logger.warn(`Failed to delete preview: ${previewUrl}`, error as Record<string, any>);
           }
         }
       }
@@ -437,7 +437,7 @@ export class AssetManager extends EventEmitter {
           try {
             await fs.unlink(path.join(this.basePath, variant.path));
           } catch (error) {
-            logger.warn(`Failed to delete variant: ${variant.path}`, error);
+            logger.warn(`Failed to delete variant: ${variant.path}`, error as Record<string, any>);
           }
         }
       }
@@ -447,7 +447,7 @@ export class AssetManager extends EventEmitter {
         const metadataPath = path.join(this.basePath, 'assets', `${assetId}.metadata.json`);
         await fs.unlink(metadataPath);
       } catch (error) {
-        logger.warn(`Failed to delete metadata file for asset: ${assetId}`, error);
+        logger.warn(`Failed to delete metadata file for asset: ${assetId}`, error as Record<string, any>);
       }
     }
 
@@ -517,32 +517,32 @@ export class AssetManager extends EventEmitter {
         
         switch (options.sortBy) {
           case 'name':
-            aVal = a.name.toLowerCase();
-            bVal = b.name.toLowerCase();
+            aVal = _a.name.toLowerCase();
+            bVal = _b.name.toLowerCase();
             break;
           case 'created':
-            aVal = a.created.getTime();
-            bVal = b.created.getTime();
+            aVal = _a.created.getTime();
+            bVal = _b.created.getTime();
             break;
           case 'modified':
-            aVal = a.modified.getTime();
-            bVal = b.modified.getTime();
+            aVal = _a.modified.getTime();
+            bVal = _b.modified.getTime();
             break;
           case 'rating':
-            aVal = a.rating;
-            bVal = b.rating;
+            aVal = _a.rating;
+            bVal = _b.rating;
             break;
           case 'downloads':
-            aVal = a.downloadCount;
-            bVal = b.downloadCount;
+            aVal = _a.downloadCount;
+            bVal = _b.downloadCount;
             break;
           case 'size':
-            aVal = a.size;
-            bVal = b.size;
+            aVal = _a.size;
+            bVal = _b.size;
             break;
           default:
-            aVal = a.name.toLowerCase();
-            bVal = b.name.toLowerCase();
+            aVal = _a.name.toLowerCase();
+            bVal = _b.name.toLowerCase();
         }
 
         if (options.sortOrder === 'desc') {
@@ -812,8 +812,8 @@ export class AssetManager extends EventEmitter {
     }
     
     const mostPopularTags = Array.from(tagCounts.entries())
-      .map([tag, _count] => ({ tag, count }))
-      .sort((_a, _b) => b.count - a.count)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count)
       .slice(0, 20);
 
     return {

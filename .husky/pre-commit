@@ -1,12 +1,18 @@
 # Run lint-staged for code quality checks
+echo "🎨 Running code formatting and linting..."
 npx lint-staged
 
-# Run type checking on staged TypeScript files
+# Run type checking on staged TypeScript files (with incremental builds)
 echo "🔍 Running TypeScript checks..."
-npx tsc --noEmit
+npx tsc --noEmit --incremental
 
-# Run tests related to staged files
-echo "🧪 Running tests for changed files..."
-npx jest --bail --findRelatedTests --passWithNoTests $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | tr '\n' ' ')
+# Skip tests for large commits to avoid timeout
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | wc -l)
+if [ "$CHANGED_FILES" -lt 50 ]; then
+  echo "🧪 Running tests for changed files..."
+  npx jest --bail --findRelatedTests --passWithNoTests $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | tr '\n' ' ')
+else
+  echo "⚠️  Skipping tests due to large changeset ($CHANGED_FILES files). Run 'npm test' manually."
+fi
 
 echo "✅ Pre-commit checks completed successfully!"

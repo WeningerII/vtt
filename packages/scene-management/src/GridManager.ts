@@ -493,7 +493,7 @@ export class GridManager {
    * Calculate area of a polygon in grid units
    */
   calculateGridArea(polygon: Array<{ x: number; y: number }>): number {
-    if (polygon.length < 3) return 0;
+    if (polygon.length < 3) {return 0;}
 
     let area = 0;
     for (let i = 0; i < polygon.length; i++) {
@@ -513,7 +513,7 @@ export class GridManager {
    * Measure path length in grid units
    */
   measurePath(path: Array<{ x: number; y: number }>): number {
-    if (path.length < 2) return 0;
+    if (path.length < 2) {return 0;}
 
     let totalDistance = 0;
     for (let i = 1; i < path.length; i++) {

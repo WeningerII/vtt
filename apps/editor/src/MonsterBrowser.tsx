@@ -6,13 +6,13 @@ export function MonsterBrowser() {
   const monsters = React.useMemo(() => compileMonsters(SRDMonsters), []);
 
   return (
-    <div style={{ padding: 16, _fontFamily: "system-ui, _sans-serif" }}>
+    <div style={{ padding: 16, fontFamily: "system-ui, sans-serif" }}>
       <h2 style={{ margin: "8px 0" }}>SRD Monsters</h2>
-      <div style={{ fontSize: 12, _color: "#555", _marginBottom: 12 }}>{monsters.length} entries</div>
-      <div style={{ overflowX: "auto", _border: "1px solid #eee", _borderRadius: 8 }}>
-        <table style={{ width: "100%", _borderCollapse: "collapse" }}>
+      <div style={{ fontSize: 12, color: "#555", marginBottom: 12 }}>{monsters.length} entries</div>
+      <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#fafafa", _textAlign: "left" }}>
+            <tr style={{ background: "#fafafa", textAlign: "left" }}>
               <th style={th}>Name</th>
               <th style={th}>CR</th>
               <th style={th}>XP</th>
@@ -52,14 +52,14 @@ export function MonsterBrowser() {
 const th: React.CSSProperties = { padding: "8px 10px", borderBottom: "1px solid #eee" };
 const td: React.CSSProperties = { padding: "8px 10px", verticalAlign: "top" };
 
-function formatSpeed(_speed: Record<string, _unknown> | undefined) {
-  const entries = Object.entries(speed || {}).filter(_([, _v]) => typeof v === "number") as [
+function formatSpeed(_speed: Record<string, unknown> | undefined) {
+  const entries = Object.entries(_speed || {}).filter(([, v]) => typeof v === "number") as [
     string,
     number,
   ][];
-  if (!entries.length) return "-";
+  if (!entries.length) {return "-";}
   return entries
-    .map([k, _v] => `${k.replace(_/^[a-z]/, (c) => c.toUpperCase())} ${v} ft.`)
+    .map(([k, v]) => `${k.replace(/^[a-z]/, (c) => c.toUpperCase())} ${v} ft.`)
     .join(", ");
 }
 

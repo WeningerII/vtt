@@ -249,7 +249,7 @@ describe("Canvas2DRenderer", () => {
 
       // Simulate successful load
       setTimeout(() => {
-        if (mockImage.onload) mockImage.onload();
+        if (mockImage.onload) {mockImage.onload();}
       }, 0);
 
       await expect(loadPromise).resolves.toBeUndefined();
@@ -268,7 +268,7 @@ describe("Canvas2DRenderer", () => {
 
       // Simulate error
       setTimeout(() => {
-        if (mockImage.onerror) mockImage.onerror(new Error("Load failed"));
+        if (mockImage.onerror) {mockImage.onerror(new Error("Load failed"));}
       }, 0);
 
       await expect(loadPromise).rejects.toThrow();
@@ -384,9 +384,9 @@ describe("Canvas2DRenderer", () => {
         (_call: any[]) => call[0] === "mouseup",
       )?.[1];
 
-      if (mouseDownHandler) mouseDownHandler(mouseDownEvent);
-      if (mouseMoveHandler) mouseMoveHandler(mouseMoveEvent);
-      if (mouseUpHandler) mouseUpHandler(mouseUpEvent);
+      if (mouseDownHandler) {mouseDownHandler(mouseDownEvent);}
+      if (mouseMoveHandler) {mouseMoveHandler(mouseMoveEvent);}
+      if (mouseUpHandler) {mouseUpHandler(mouseUpEvent);}
 
       expect(true).toBe(true); // Placeholder - would check viewport position
     });

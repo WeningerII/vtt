@@ -302,7 +302,7 @@ async function runPerformanceTest() {
   console.log('='.repeat(80));
 
   for (const config of configs) {
-    console.log('\n' + '-'.repeat(80));
+    console.log(`\n${  '-'.repeat(80)}`);
     console.log(`Test Configuration:`);
     console.log(`  Clients: ${config.numClients}`);
     console.log(`  Duration: ${config.testDuration}s`);
@@ -355,7 +355,7 @@ async function runPerformanceTest() {
     await new Promise(resolve => setTimeout(resolve, 2000));
   }
   
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${  '='.repeat(80)}`);
   console.log('Performance Test Suite Complete');
   console.log('='.repeat(80));
 }

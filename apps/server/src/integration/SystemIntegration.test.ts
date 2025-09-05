@@ -271,7 +271,7 @@ describe("System Integration Tests", () => {
       const processCombatTurn = jest.fn().mockImplementation(async (gameId, action) => {
         // Validate action
         const isValid = await mockServices.combat.validateAction(action);
-        if (!isValid) throw new Error("Invalid action");
+        if (!isValid) {throw new Error("Invalid action");}
 
         // Apply action effects
         const result = await mockServices.combat.applyAction(action);
@@ -422,7 +422,7 @@ describe("System Integration Tests", () => {
         attempts: new Map(),
         isAllowed: jest.fn().mockImplementation((userId) => {
           const count = rateLimiter.attempts.get(userId) || 0;
-          if (count >= 100) return false;
+          if (count >= 100) {return false;}
           rateLimiter.attempts.set(userId, count + 1);
           return true;
         }),

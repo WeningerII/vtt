@@ -33,10 +33,10 @@ export class YjsDocument implements SharedDocument {
     const meta = {
       version: this.version,
       ts: Date.now(),
-      ...(actor ? { actor } : Record<string, any>),
+      ...(actor ? { actor } : {})
     };
     const snapshot = this.text.toString();
-    for (const l of this.listeners) l(snapshot, meta);
+    for (const l of this.listeners) {l(snapshot, meta);}
   }
 
   get content(): string {
@@ -51,7 +51,7 @@ export class YjsDocument implements SharedDocument {
     // Replace entire text content transactionally
     this.doc.transact(() => {
       this.text.delete(0, this.text.length);
-      if (content && content.length) this.text.insert(0, content);
+      if (content && content.length) {this.text.insert(0, content);}
     });
     // version increment handled by update observer
   }
@@ -59,9 +59,9 @@ export class YjsDocument implements SharedDocument {
   subscribe(
     _listener: (content: string, _meta: { version: number; actor?: string; ts: number }) => void,
   ): () => void {
-    this.listeners.add(listener);
-    listener(this.text.toString(), { version: this.version, ts: Date.now() });
-    return () => this.listeners.delete(listener);
+    this.listeners.add(_listener);
+    _listener(this.text.toString(), { version: this.version, ts: Date.now() });
+    return () => this.listeners.delete(_listener);
   }
 
   applyPatch(patch: { pos: number; del: number; ins: string }, actor?: string): void {
@@ -69,8 +69,8 @@ export class YjsDocument implements SharedDocument {
     const del = Math.max(0, Math.min(this.text.length - pos, Math.floor(patch.del)));
     const ins = String(patch.ins ?? "");
     this.doc.transact(() => {
-      if (del > 0) this.text.delete(pos, del);
-      if (ins.length) this.text.insert(pos, ins);
+      if (del > 0) {this.text.delete(pos, del);}
+      if (ins.length) {this.text.insert(pos, ins);}
     });
     this.emit(actor);
   }

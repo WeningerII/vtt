@@ -2,13 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
     "incremental": true,
-    "tsBuildInfoFile": "./combat.tsbuildinfo"
+    "tsBuildInfoFile": "./combat.tsbuildinfo",
+    "types": []
   },
   "include": [
     "src/**/*"
@@ -18,5 +18,8 @@
     "node_modules",
     "**/*.test.ts",
     "**/*.spec.ts"
+  ],
+  "references": [
+    { "path": "../logging" }
   ]
 }

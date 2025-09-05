@@ -43,7 +43,7 @@ export class FrustumCuller {
 
   public updateFrustum(camera: Camera): void {
     const viewProjectionMatrix = mat4.create();
-    mat4.multiply(viewProjectionMatrix, camera.getProjectionMatrix(), camera.getViewMatrix());
+    mat4.multiply(viewProjectionMatrix, camera.projectionMatrix, camera.viewMatrix);
 
     this.extractFrustumPlanes(viewProjectionMatrix);
   }
@@ -53,33 +53,33 @@ export class FrustumCuller {
     this.frustum.planes = [
       // Left plane
       this.normalizePlane({
-        normal: vec3.fromValues(m[3] + m[0], m[7] + m[4], m[11] + m[8]),
-        distance: m[15] + m[12],
+        normal: vec3.fromValues((m[3] ?? 0) + (m[0] ?? 0), (m[7] ?? 0) + (m[4] ?? 0), (m[11] ?? 0) + (m[8] ?? 0)),
+        distance: (m[15] ?? 0) + (m[12] ?? 0),
       }),
       // Right plane
       this.normalizePlane({
-        normal: vec3.fromValues(m[3] - m[0], m[7] - m[4], m[11] - m[8]),
-        distance: m[15] - m[12],
+        normal: vec3.fromValues((m[3] ?? 0) - (m[0] ?? 0), (m[7] ?? 0) - (m[4] ?? 0), (m[11] ?? 0) - (m[8] ?? 0)),
+        distance: (m[15] ?? 0) - (m[12] ?? 0),
       }),
       // Top plane
       this.normalizePlane({
-        normal: vec3.fromValues(m[3] - m[1], m[7] - m[5], m[11] - m[9]),
-        distance: m[15] - m[13],
+        normal: vec3.fromValues((m[3] ?? 0) - (m[1] ?? 0), (m[7] ?? 0) - (m[5] ?? 0), (m[11] ?? 0) - (m[9] ?? 0)),
+        distance: (m[15] ?? 0) - (m[13] ?? 0),
       }),
       // Bottom plane
       this.normalizePlane({
-        normal: vec3.fromValues(m[3] + m[1], m[7] + m[5], m[11] + m[9]),
-        distance: m[15] + m[13],
+        normal: vec3.fromValues((m[3] ?? 0) + (m[1] ?? 0), (m[7] ?? 0) + (m[5] ?? 0), (m[11] ?? 0) + (m[9] ?? 0)),
+        distance: (m[15] ?? 0) + (m[13] ?? 0),
       }),
       // Near plane
       this.normalizePlane({
-        normal: vec3.fromValues(m[3] + m[2], m[7] + m[6], m[11] + m[10]),
-        distance: m[15] + m[14],
+        normal: vec3.fromValues((m[3] ?? 0) + (m[2] ?? 0), (m[7] ?? 0) + (m[6] ?? 0), (m[11] ?? 0) + (m[10] ?? 0)),
+        distance: (m[15] ?? 0) + (m[14] ?? 0),
       }),
       // Far plane
       this.normalizePlane({
-        normal: vec3.fromValues(m[3] - m[2], m[7] - m[6], m[11] - m[10]),
-        distance: m[15] - m[14],
+        normal: vec3.fromValues((m[3] ?? 0) - (m[2] ?? 0), (m[7] ?? 0) - (m[6] ?? 0), (m[11] ?? 0) - (m[10] ?? 0)),
+        distance: (m[15] ?? 0) - (m[14] ?? 0),
       }),
     ];
   }
@@ -117,12 +117,12 @@ export class FrustumCuller {
 
       // Find the positive and negative vertices relative to the plane normal
       for (let i = 0; i < 3; i++) {
-        if (plane.normal[i] >= 0) {
-          positiveVertex[i] = box.max[i];
-          negativeVertex[i] = box.min[i];
+        if ((plane.normal?.[i] ?? 0) >= 0) {
+          positiveVertex[i] = box.max?.[i] ?? 0;
+          negativeVertex[i] = box.min?.[i] ?? 0;
         } else {
-          positiveVertex[i] = box.min[i];
-          negativeVertex[i] = box.max[i];
+          positiveVertex[i] = box.min?.[i] ?? 0;
+          negativeVertex[i] = box.max?.[i] ?? 0;
         }
       }
 
@@ -159,7 +159,7 @@ export class OcclusionCuller {
     let query = this.occlusionQueries.get(objectId);
     if (!query) {
       query = this.gl.createQuery();
-      if (!query) return true;
+      if (!query) {return true;}
       this.occlusionQueries.set(objectId, query);
     }
 
@@ -225,7 +225,7 @@ export class SpatialHashGrid {
   }
 
   public insert(object: CullableObject): void {
-    const key = this.getGridKey(object.position[0], object.position[1], object.position[2]);
+    const key = this.getGridKey(object.position[0] ?? 0, object.position[1] ?? 0, object.position[2] ?? 0);
 
     if (!this.grid.has(key)) {
       this.grid.set(key, []);
@@ -238,7 +238,7 @@ export class SpatialHashGrid {
   }
 
   public remove(object: CullableObject): void {
-    const key = this.getGridKey(object.position[0], object.position[1], object.position[2]);
+    const key = this.getGridKey(object.position[0] ?? 0, object.position[1] ?? 0, object.position[2] ?? 0);
     const cell = this.grid.get(key);
 
     if (cell) {
@@ -261,9 +261,9 @@ export class SpatialHashGrid {
     const results: CullableObject[] = [];
     const cellRadius = Math.ceil(radius / this.cellSize);
 
-    const centerX = Math.floor(center[0] / this.cellSize);
-    const centerY = Math.floor(center[1] / this.cellSize);
-    const centerZ = Math.floor(center[2] / this.cellSize);
+    const centerX = Math.floor((center[0] ?? 0) / this.cellSize);
+    const centerY = Math.floor((center[1] ?? 0) / this.cellSize);
+    const centerZ = Math.floor((center[2] ?? 0) / this.cellSize);
 
     for (let x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
       for (let y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
@@ -293,7 +293,7 @@ export class SpatialHashGrid {
   public getStats() {
     return {
       cellCount: this.grid.size,
-      objectCount: Array.from(this.grid.values()).reduce((_sum, _cell) => sum + cell.length, 0),
+      objectCount: Array.from(this.grid.values()).reduce((sum, cell) => sum + cell.length, 0),
       cellSize: this.cellSize,
     };
   }
@@ -439,7 +439,7 @@ export class CullingSystem {
     }
 
     // Sort by distance for rendering order
-    visibleObjects.sort((_a, _b) => a.distanceFromCamera - b.distanceFromCamera);
+    visibleObjects.sort((a, b) => a.distanceFromCamera - b.distanceFromCamera);
 
     // Update timing stats
     this.stats.cullTime = performance.now() - startTime;
@@ -449,12 +449,12 @@ export class CullingSystem {
   }
 
   public beginOcclusionQuery(objectId: string): boolean {
-    if (!this.enableOcclusionCulling) return true;
+    if (!this.enableOcclusionCulling) {return true;}
     return this.occlusionCuller.beginQuery(objectId);
   }
 
   public endOcclusionQuery(): void {
-    if (!this.enableOcclusionCulling) return;
+    if (!this.enableOcclusionCulling) {return;}
     this.occlusionCuller.endQuery();
   }
 

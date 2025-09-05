@@ -63,7 +63,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const leaveGame = async () => {
-    if (!currentGame) return;
+    if (!currentGame) {return;}
 
     setIsLoading(true);
 

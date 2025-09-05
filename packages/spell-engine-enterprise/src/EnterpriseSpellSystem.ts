@@ -53,7 +53,7 @@ export class EnterpriseSpellSystem extends EventEmitter {
   }
 
   async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {return;}
 
     const startTime = performance.now();
     this.emit("initialization_started");
@@ -425,7 +425,7 @@ export class EnterpriseSpellSystem extends EventEmitter {
       },
     });
 
-    if (metrics.series.length === 0) return 0;
+    if (metrics.series.length === 0) {return 0;}
 
     const totalTime = metrics.series.reduce((_sum, _series) => {
       return sum + series.dataPoints.reduce((_seriesSum, _point) => seriesSum + point.value, 0);

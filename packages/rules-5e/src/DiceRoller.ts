@@ -23,7 +23,7 @@ export class DiceRoller {
   private rng: () => number;
 
   constructor(_rng: () => number = Math.random) {
-    this.rng = rng;
+    this.rng = _rng;
   }
 
   /**
@@ -103,7 +103,7 @@ export class DiceRoller {
         const advantageRoll = this.rollWithAdvantage(diceRoll.sides);
         const otherRolls = this.rollDice(diceRoll.count - 1, diceRoll.sides);
         const allRolls = [Math.max(...advantageRoll.rolls), ...otherRolls];
-        const total = allRolls.reduce((_sum, __roll) => sum + roll, diceRoll.modifier);
+        const total = allRolls.reduce((_sum, _roll) => _sum + _roll, diceRoll.modifier);
 
         return {
           total,
@@ -122,7 +122,7 @@ export class DiceRoller {
         const disadvantageRoll = this.rollWithDisadvantage(diceRoll.sides);
         const otherRolls = this.rollDice(diceRoll.count - 1, diceRoll.sides);
         const allRolls = [Math.min(...disadvantageRoll.rolls), ...otherRolls];
-        const total = allRolls.reduce((_sum, __roll) => sum + roll, diceRoll.modifier);
+        const total = allRolls.reduce((_sum, _roll) => _sum + _roll, diceRoll.modifier);
 
         return {
           total,
@@ -143,7 +143,7 @@ export class DiceRoller {
    */
   private rollStandard(count: number, sides: number, modifier: number): RollResult {
     const rolls = this.rollDice(count, sides);
-    const total = rolls.reduce((_sum, __roll) => sum + roll, modifier);
+    const total = rolls.reduce((_sum, _roll) => _sum + _roll, modifier);
 
     return {
       total,
@@ -223,7 +223,7 @@ export class DiceRoller {
       result = {
         ...result,
         rolls: [...result.rolls, ...criticalRolls],
-        total: result.total + criticalRolls.reduce((_sum, __roll) => sum + roll, 0),
+        total: result.total + criticalRolls.reduce((_sum, _roll) => _sum + _roll, 0),
         expression: `${expression} (critical hit)`,
       };
     }

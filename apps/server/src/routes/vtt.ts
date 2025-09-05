@@ -107,12 +107,12 @@ export async function updateSceneHandler(ctx: Context) {
       const data = JSON.parse(body);
       const updateData: any = { updatedAt: new Date() };
 
-      if (data.name !== undefined) updateData.name = data.name;
+      if (data.name !== undefined) {updateData.name = data.name;}
       if (data.gridSettings !== undefined)
-        updateData.gridSettings = JSON.stringify(data.gridSettings);
+        {updateData.gridSettings = JSON.stringify(data.gridSettings);}
       if (data.lightingSettings !== undefined)
-        updateData.lightingSettings = JSON.stringify(data.lightingSettings);
-      if (data.fogSettings !== undefined) updateData.fogSettings = JSON.stringify(data.fogSettings);
+        {updateData.lightingSettings = JSON.stringify(data.lightingSettings);}
+      if (data.fogSettings !== undefined) {updateData.fogSettings = JSON.stringify(data.fogSettings);}
 
       const scene = await ctx.prisma.scene.update({
         where: { id: sceneId },
@@ -225,17 +225,17 @@ export async function updateTokenHandler(ctx: Context) {
       const updateData: any = { updatedAt: new Date() };
 
       // Only update fields that are provided
-      if (data.name !== undefined) updateData.name = data.name;
-      if (data.x !== undefined) updateData.x = data.x;
-      if (data.y !== undefined) updateData.y = data.y;
-      if (data.width !== undefined) updateData.width = data.width;
-      if (data.height !== undefined) updateData.height = data.height;
-      if (data.rotation !== undefined) updateData.rotation = data.rotation;
-      if (data.scale !== undefined) updateData.scale = data.scale;
-      if (data.disposition !== undefined) updateData.disposition = data.disposition;
-      if (data.isVisible !== undefined) updateData.isVisible = data.isVisible;
-      if (data.isLocked !== undefined) updateData.isLocked = data.isLocked;
-      if (data.layer !== undefined) updateData.layer = data.layer;
+      if (data.name !== undefined) {updateData.name = data.name;}
+      if (data.x !== undefined) {updateData.x = data.x;}
+      if (data.y !== undefined) {updateData.y = data.y;}
+      if (data.width !== undefined) {updateData.width = data.width;}
+      if (data.height !== undefined) {updateData.height = data.height;}
+      if (data.rotation !== undefined) {updateData.rotation = data.rotation;}
+      if (data.scale !== undefined) {updateData.scale = data.scale;}
+      if (data.disposition !== undefined) {updateData.disposition = data.disposition;}
+      if (data.isVisible !== undefined) {updateData.isVisible = data.isVisible;}
+      if (data.isLocked !== undefined) {updateData.isLocked = data.isLocked;}
+      if (data.layer !== undefined) {updateData.layer = data.layer;}
 
       const token = await ctx.prisma.token.update({
         where: { id: tokenId },

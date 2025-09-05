@@ -143,12 +143,12 @@ export class BiomeGenerator {
     if (temp < 0.3) {
       return humid > 0.5 ? "tundra" : "arctic";
     } else if (temp < 0.6) {
-      if (humid < 0.3) return "desert";
-      if (humid < 0.6) return "grassland";
+      if (humid < 0.3) {return "desert";}
+      if (humid < 0.6) {return "grassland";}
       return "temperate_forest";
     } else {
-      if (humid < 0.4) return "desert";
-      if (humid < 0.7) return "savanna";
+      if (humid < 0.4) {return "desert";}
+      if (humid < 0.7) {return "savanna";}
       return "tropical_forest";
     }
   }

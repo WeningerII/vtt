@@ -389,7 +389,7 @@ class ProductionMonitor {
   }
 
   private async sendDiscordAlert(rule: AlertRule, message: string): Promise<void> {
-    if (!this.discordClient) return;
+    if (!this.discordClient) {return;}
     
     const mentions = this.alertingConfig.discord?.mentionRoles?.map(role => `<@&${role}>`).join(' ') || '';
     
@@ -408,7 +408,7 @@ class ProductionMonitor {
   }
 
   private async sendSlackAlert(rule: AlertRule, message: string): Promise<void> {
-    if (!this.alertingConfig.slack?.webhookUrl) return;
+    if (!this.alertingConfig.slack?.webhookUrl) {return;}
     
     const response = await fetch(this.alertingConfig.slack.webhookUrl, {
       method: 'POST',
@@ -430,7 +430,7 @@ class ProductionMonitor {
   }
 
   private async sendEmailAlert(rule: AlertRule, message: string): Promise<void> {
-    if (!this.emailTransporter || !this.alertingConfig.email) return;
+    if (!this.emailTransporter || !this.alertingConfig.email) {return;}
     
     await this.emailTransporter.sendMail({
       from: this.alertingConfig.email.from,
@@ -442,7 +442,7 @@ class ProductionMonitor {
   }
 
   private async sendPagerDutyAlert(rule: AlertRule, message: string): Promise<void> {
-    if (!this.alertingConfig.pagerduty?.integrationKey) return;
+    if (!this.alertingConfig.pagerduty?.integrationKey) {return;}
     
     const response = await fetch('https://events.pagerduty.com/v2/enqueue', {
       method: 'POST',

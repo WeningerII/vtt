@@ -211,7 +211,29 @@ export class PhysicsSpellBridge extends EventEmitter {
   ): Promise<CastingResult & { physicsEffects: any[] }> {
     // Cast spell normally first
     const spellId = spell.id || "unknown_spell";
-    const spellForEngine = { ...spell, id: spellId, ritual: spell.ritual || false };
+    const spellForEngine = { 
+      ...spell, 
+      id: spellId, 
+      name: spell.name || "Unknown Spell",
+      level: spell.level || 1,
+      school: (spell.school as any) || "evocation",
+      castingTime: spell.castingTime || "1 action",
+      range: spell.range || "30 feet",
+      components: {
+        verbal: true,
+        somatic: true,
+        ...(Array.isArray(spell.components) && spell.components.length > 0 ? {
+          material: spell.components.join(", ")
+        } : {}),
+        consumed: false,
+        cost: 0
+      },
+      duration: spell.duration || "Instantaneous",
+      concentration: spell.concentration || false,
+      description: spell.description || "Physics-enhanced spell",
+      effects: spell.effects || [],
+      ritual: spell.ritual || false 
+    };
     const result = this.spellEngine.castSpell(
       spellForEngine,
       caster,
@@ -265,10 +287,10 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     for (const targetId of targets) {
       const token = this.tokens.get(targetId);
-      if (!token) continue;
+      if (!token) {continue;}
 
       const body = this.physicsWorld.getBody(token.physicsBodyId);
-      if (!body) continue;
+      if (!body) {continue;}
 
       // Calculate force direction and magnitude
       const forceVector = force.direction || { x: 0, y: -1 }; // Default up
@@ -298,10 +320,10 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     for (const targetId of targets) {
       const token = this.tokens.get(targetId);
-      if (!token) continue;
+      if (!token) {continue;}
 
       const body = this.physicsWorld.getBody(token.physicsBodyId);
-      if (!body) continue;
+      if (!body) {continue;}
 
       // Check line of sight if required
       if (teleport.requiresLineOfSight) {
@@ -342,7 +364,7 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     for (const targetId of targets) {
       const token = this.tokens.get(targetId);
-      if (!token) continue;
+      if (!token) {continue;}
 
       const physicsConstraint: PhysicsConstraint = {
         id: `${Date.now()}_${Math.random()}`,
@@ -406,9 +428,8 @@ export class PhysicsSpellBridge extends EventEmitter {
     // Create physics body for projectile
     const projectileBody = this.physicsWorld.createBody({
       position,
-      width: 0.5,
-      height: 0.5,
-      isStatic: false,
+      type: "dynamic",
+      size: { x: 0.5, y: 0.5 },
       mass: 0.1,
       restitution: physics.maxBounces ? 0.8 : 0.0,
       friction: 0.1,
@@ -417,7 +438,7 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     // Calculate initial velocity towards first target
     const firstTarget = targets[0];
-    const targetToken = this.tokens.get(firstTarget);
+    const targetToken = this.tokens.get(firstTarget || "");
 
     if (targetToken) {
       const direction = {
@@ -439,7 +460,7 @@ export class PhysicsSpellBridge extends EventEmitter {
       physicsBodyId: projectileBody.id,
       targetIds: targets,
       onHit: (_targetId: string) => {
-        this.handleProjectileHit(projectileId, targetId, spell);
+        this.handleProjectileHit(projectileId, _targetId, spell);
       },
       onExpire: () => {
         this.cleanupProjectile(projectileId);
@@ -489,9 +510,8 @@ export class PhysicsSpellBridge extends EventEmitter {
           x: position.x + i * 2,
           y: position.y,
         },
-        width: 2,
-        height: barrier.height,
-        isStatic: true,
+        type: "static",
+        size: { x: 2, y: barrier.height },
         mass: Infinity,
         isTrigger: !barrier.passable,
       });
@@ -521,7 +541,7 @@ export class PhysicsSpellBridge extends EventEmitter {
 
     for (const targetId of targets) {
       const token = this.tokens.get(targetId);
-      if (!token) continue;
+      if (!token) {continue;}
 
       const originalSpeed = token.movementSpeed;
       token.movementSpeed *= modifier.speedMultiplier;
@@ -557,10 +577,33 @@ export class PhysicsSpellBridge extends EventEmitter {
     spell: PhysicsSpellEffect,
   ): void {
     const projectile = this.projectiles.get(projectileId);
-    if (!projectile) return;
+    if (!projectile) {return;}
 
     // Apply spell effects to target
-    this.spellEngine.castSpell(spell, { id: projectile.casterId }, [targetId]);
+    const spellWithId = { 
+      ...spell, 
+      id: spell.id || "projectile_spell",
+      name: spell.name || "Projectile Spell",
+      level: spell.level || 1,
+      school: "evocation" as const,
+      castingTime: spell.castingTime || "1 action",
+      range: spell.range || "120 feet",
+      components: {
+        verbal: true,
+        somatic: true,
+        ...(Array.isArray(spell.components) && spell.components.length > 0 ? {
+          material: spell.components.join(", ")
+        } : {}),
+        consumed: false,
+        cost: 0
+      },
+      duration: spell.duration || "Instantaneous",
+      concentration: spell.concentration || false,
+      description: spell.description || "Physics-enhanced spell effect",
+      effects: spell.effects || [],
+      ritual: spell.ritual || false
+    };
+    this.spellEngine.castSpell(spellWithId, { id: projectile.casterId }, [targetId]);
 
     this.emit("projectileHit", projectileId, targetId);
     this.cleanupProjectile(projectileId);
@@ -619,10 +662,10 @@ export class PhysicsSpellBridge extends EventEmitter {
    */
   private removeConstraint(tokenId: string, constraint: PhysicsConstraint): void {
     const token = this.tokens.get(tokenId);
-    if (!token) return;
+    if (!token) {return;}
 
     const body = this.physicsWorld.getBody(token.physicsBodyId);
-    if (!body) return;
+    if (!body) {return;}
 
     // Restore original properties based on constraint type
     switch (constraint.type) {

@@ -33,7 +33,7 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
   const descriptionId = `modal-description-${Math.random().toString(36).substr(2, 9)}`;
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {return;}
 
     // Save current focus and set up focus trap
     const restoreFocus = FocusManager.saveFocus();
@@ -68,7 +68,7 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
     };
   }, [isOpen, onClose, title, closeOnEscape]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const handleOverlayClick = (event: React.MouseEvent) => {
     if (closeOnOverlayClick && event.target === event.currentTarget) {
@@ -98,18 +98,13 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
             {title}
           </h2>
           <AccessibleButton
-            variant="ghost"
-            size="sm"
             action="Close"
             target="modal"
             onClick={onClose}
             className="modal-close"
-            aria-label={`Close ${title} dialog`}
+            aria-label="Close modal"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+            ✕
           </AccessibleButton>
         </div>
 

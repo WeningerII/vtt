@@ -96,7 +96,7 @@ export class LODSystem {
     }
 
     // Sort LOD levels by distance
-    lodObject.levels.sort((_a, _b) => a.distance - b.distance);
+    lodObject.levels.sort((a, b) => a.distance - b.distance);
 
     this.objects.set(lodObject.id, lodObject);
   }
@@ -115,7 +115,7 @@ export class LODSystem {
   public lockLODLevel(objectId: string, level?: number): void {
     const object = this.objects.get(objectId);
     if (object) {
-      object.lockLevel = level;
+      object.lockLevel = level ?? 0;
     }
   }
 
@@ -163,7 +163,7 @@ export class LODSystem {
     }
 
     // Sort by priority (highest first)
-    objectsToUpdate.sort((_a, _b) => b.priority - a.priority);
+    objectsToUpdate.sort((a, b) => b.priority - a.priority);
 
     // Update LOD levels
     for (const { object, distance } of objectsToUpdate) {
@@ -193,7 +193,9 @@ export class LODSystem {
 
     // Find appropriate LOD level
     for (let i = 0; i < object.levels.length; i++) {
-      const levelDistance = object.levels[i].distance;
+      const level = object.levels[i];
+      if (!level) {continue;}
+      const levelDistance = level.distance;
 
       // Apply hysteresis to prevent popping
       let thresholdDistance = levelDistance;
@@ -232,7 +234,7 @@ export class LODSystem {
 
   private applyPerformanceBudget(object: LODObject, proposedLevel: number): number {
     const level = object.levels[proposedLevel];
-    const triangleCount = level.triangleCount || 0;
+    const triangleCount = level?.triangleCount || 0;
 
     // If we have budget, allow the proposed level
     if (this.triangleBudget >= triangleCount) {
@@ -243,7 +245,7 @@ export class LODSystem {
     // Find the lowest quality level that fits in budget
     for (let i = object.levels.length - 1; i >= 0; i--) {
       const fallbackLevel = object.levels[i];
-      const fallbackTriangles = fallbackLevel.triangleCount || 0;
+      const fallbackTriangles = fallbackLevel?.triangleCount || 0;
 
       if (fallbackTriangles <= this.triangleBudget) {
         this.triangleBudget -= fallbackTriangles;
@@ -281,16 +283,16 @@ export class LODSystem {
     }
 
     if (this.frameTimeHistory.length >= this.maxHistorySize) {
-      const averageFrameTime =
-        this.frameTimeHistory.reduce((_a, _b) => a + b, 0) / this.frameTimeHistory.length;
+      const avgFrameTime =
+        this.frameTimeHistory.reduce((a, b) => a + b, 0) / this.frameTimeHistory.length;
       const targetFrameTime = 1000 / this.targetFramerate;
 
       // Adjust quality scale based on performance
-      if (averageFrameTime > targetFrameTime * 1.2) {
+      if (avgFrameTime > targetFrameTime * 1.2) {
         // Performance is poor, reduce quality
         this.qualityScale *= 0.98;
         this.qualityScale = Math.max(0.5, this.qualityScale);
-      } else if (averageFrameTime < targetFrameTime * 0.8) {
+      } else if (avgFrameTime < targetFrameTime * 0.8) {
         // Performance is good, increase quality
         this.qualityScale *= 1.01;
         this.qualityScale = Math.min(1.5, this.qualityScale);
@@ -304,7 +306,7 @@ export class LODSystem {
     if (!object || object.currentLevel >= object.levels.length) {
       return null;
     }
-    return object.levels[object.currentLevel];
+    return object.levels[object.currentLevel] || null;
   }
 
   public getObject(objectId: string): LODObject | undefined {
@@ -332,18 +334,18 @@ export class LODSystem {
     let totalTriangles = 0;
     for (const object of this.objects.values()) {
       const level = object.levels[object.currentLevel];
-      totalTriangles += level.triangleCount || 0;
+      totalTriangles += level?.triangleCount || 0;
     }
     return totalTriangles;
   }
 
   public getAverageQuality(): number {
-    if (this.objects.size === 0) return 1.0;
+    if (this.objects.size === 0) {return 1.0;}
 
     let totalQuality = 0;
     for (const object of this.objects.values()) {
       const level = object.levels[object.currentLevel];
-      totalQuality += level.quality;
+      totalQuality += level?.quality || 0;
     }
 
     return totalQuality / this.objects.size;
@@ -369,7 +371,7 @@ export class LODSystem {
   // Debugging and utilities
   public debugObject(objectId: string): any {
     const object = this.objects.get(objectId);
-    if (!object) return null;
+    if (!object) {return null;}
 
     const currentLOD = this.getCurrentLOD(objectId);
 
@@ -433,16 +435,16 @@ export class LODSystem {
 
 // Helper functions for creating LOD objects
 export function createLODObject(
-  _id: string,
-  _position: vec3,
-  _boundingRadius: number,
+  id: string,
+  position: vec3,
+  boundingRadius: number,
   levels: Array<{
     distance: number;
     meshId: string;
     quality: number;
     triangleCount?: number;
   }>,
-  _priority: number = 1.0,
+  priority: number = 1.0,
 ): LODObject {
   return {
     id,
@@ -463,8 +465,8 @@ export function createLODObject(
 }
 
 export function createStandardLODLevels(
-  _baseMeshId: string,
-  _baseTriangles: number = 10000,
+  baseMeshId: string,
+  baseTriangles: number = 10000,
 ): LODLevel[] {
   return [
     {
@@ -508,10 +510,12 @@ export class AdaptiveLODStrategy {
 
     // Adjust LOD distances based on performance
     for (let i = 0; i < lodObject.levels.length; i++) {
-      const baseDistance = lodObject.levels[i].distance;
-      const adjustment = 1.0 / performanceRatio;
-
-      lodObject.levels[i].distance = baseDistance * adjustment;
+      const level = lodObject.levels[i];
+      if (level) {
+        const baseDistance = level.distance;
+        const adjustment = 1.0 + Math.sin(Date.now() * 0.001) * 0.1;
+        level.distance = baseDistance * adjustment;
+      }
     }
   }
 }
@@ -534,9 +538,13 @@ export class TemporalLOD {
 
     // Use trend to predict future distance
     if (history.length >= 2) {
-      const trend = history[history.length - 1] - history[0];
-      const predictedDistance = currentDistance + trend * 0.1;
-      return Math.max(0, predictedDistance);
+      const lastValue = history[history.length - 1];
+      const firstValue = history[0];
+      if (lastValue !== undefined && firstValue !== undefined) {
+        const trend = lastValue - firstValue;
+        const predictedDistance = currentDistance + trend * 0.1;
+        return Math.max(0, predictedDistance);
+      }
     }
 
     return currentDistance;

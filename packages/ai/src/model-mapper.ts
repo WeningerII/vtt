@@ -179,7 +179,7 @@ export class ModelMapper {
         mapping.capabilities.includes(cap)
       );
       
-      if (!hasAllCapabilities) return false;
+      if (!hasAllCapabilities) {return false;}
       
       // Apply constraints
       if (constraints?.minContextWindow && mapping.contextWindow < constraints.minContextWindow) {
@@ -197,7 +197,7 @@ export class ModelMapper {
       return true;
     });
     
-    if (candidateCategories.length === 0) return null;
+    if (candidateCategories.length === 0) {return null;}
     
     // Score categories based on cost efficiency and capability match
     const scored = candidateCategories.map(category => {
@@ -250,7 +250,7 @@ export class ModelMapper {
     constraints?: TaskConstraints
   ): { provider: string; model: string; fallbacks: string[] } | null {
     const mapping = this.modelMappings.get(category);
-    if (!mapping) return null;
+    if (!mapping) {return null;}
     
     const provider = this.selectProvider(category, constraints);
     const model = this.getModelForCategory(category, provider);
@@ -287,17 +287,17 @@ export class ModelMapper {
     }
     
     // Default category selection based on request type
-    if (request?.type === 'text') return 'balanced-performance';
-    if (request?.type === 'image') return 'vision-multimodal';
-    if (request?.type === 'audio') return 'audio-processing';
-    if (request?.type === 'video') return 'video-generation';
+    if (request?.type === 'text') {return 'balanced-performance';}
+    if (request?.type === 'image') {return 'vision-multimodal';}
+    if (request?.type === 'audio') {return 'audio-processing';}
+    if (request?.type === 'video') {return 'video-generation';}
     
     return 'general';
   }
   
   private getProvidersForCategory(category: string): string[] {
     const mapping = this.modelMappings.get(category);
-    if (!mapping) return ['openai'];
+    if (!mapping) {return ['openai'];}
     return Object.keys(mapping.providers);
   }
   
@@ -316,13 +316,13 @@ export class ModelMapper {
   selectProvider(category: string, constraints?: TaskConstraints): string {
     // Provider selection logic based on category and constraints
     const mapping = this.modelMappings.get(category);
-    if (!mapping) return 'openai';
+    if (!mapping) {return 'openai';}
     
     const providers = Object.keys(mapping.providers);
     
     if (constraints?.excludeProviders) {
       const filtered = providers.filter(p => !constraints.excludeProviders?.includes(p));
-      if (filtered.length > 0) return filtered[0]!;
+      if (filtered.length > 0) {return filtered[0]!;}
     }
     
     return providers[0] || 'openai';

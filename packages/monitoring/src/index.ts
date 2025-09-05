@@ -41,5 +41,5 @@ export async function createProductionObservability(_config?: Partial<any>): Pro
   //   ...defaultConfig,
   //   ...config
   // });
-  return { ...defaultConfig, ...config }; // Placeholder until ObservabilityManager exists
+  return { ...defaultConfig, ..._config }; // Placeholder until ObservabilityManager exists
 }

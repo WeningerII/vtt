@@ -12,11 +12,12 @@ export interface SecurityConfig {
   rateLimiting: {
     windowMs: number;
     maxRequests: number;
-    enableDistributed: boolean;
+    store: "redis" | "memory";
     redisConfig?: {
       host: string;
       port: number;
       password?: string;
+      db?: number;
     };
   };
   cors: {
@@ -47,8 +48,8 @@ export class SecurityMiddleware {
     this.rateLimiter = new AdvancedRateLimiter({
       windowMs: config.rateLimiting.windowMs,
       maxRequests: config.rateLimiting.maxRequests,
-      store: config.rateLimiting.enableDistributed ? 'redis' : 'memory',
-      redisConfig: config.rateLimiting.redisConfig,
+      store: config.rateLimiting.store,
+      ...(config.rateLimiting.redisConfig && { redisConfig: config.rateLimiting.redisConfig }),
       keyGenerator: (req: Request) => this.generateRateLimitKey(req),
       onLimitReached: (req: Request, info) => this.handleRateLimitExceeded(req, info)
     });
@@ -136,7 +137,7 @@ export class SecurityMiddleware {
 
         next();
       } catch (error) {
-        logger.error('Rate limiting error:', error);
+        logger.error('Rate limiting error:', error as Record<string, any>);
         next(); // Continue on error to avoid breaking the app
       }
     };
@@ -216,7 +217,7 @@ export class SecurityMiddleware {
 
         next();
       } catch (error) {
-        logger.error('Input validation error:', error);
+        logger.error('Input validation error:', error as Record<string, any>);
         next(); // Continue on error
       }
     };
@@ -248,7 +249,7 @@ export class SecurityMiddleware {
 
         next();
       } catch (error) {
-        logger.error('IP blocking check error:', error);
+        logger.error('IP blocking check error:', error as Record<string, any>);
         next(); // Continue on error
       }
     };
@@ -293,8 +294,8 @@ export class SecurityMiddleware {
       // This would typically be used with multer or similar
       // Implementation depends on the file upload library being used
       
-      if (req.files) {
-        const files = Array.isArray(req.files) ? req.files : Object.values(req.files).flat();
+      if ((req as any).files) {
+        const files = Array.isArray((req as any).files) ? (req as any).files : Object.values((req as any).files).flat();
         
         for (const file of files as any[]) {
           // Validate file type

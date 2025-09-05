@@ -44,8 +44,8 @@ export class ActorService {
     const { campaignId, kind, isActive, limit = 50, offset = 0 } = options;
 
     const where: any = { campaignId };
-    if (kind) where.kind = kind;
-    if (isActive !== undefined) where.isActive = isActive;
+    if (kind) {where.kind = kind;}
+    if (isActive !== undefined) {where.isActive = isActive;}
 
     const [items, total] = await Promise.all([
       this.prisma.actor.findMany({
@@ -162,7 +162,7 @@ export class ActorService {
         currentHp: hp,
         maxHp: hp,
         tempHp: 0,
-        ac: ac,
+        ac,
         initiative: 0,
         isActive: true,
       },
@@ -174,13 +174,13 @@ export class ActorService {
 
   async updateActor(id: string, request: UpdateActorRequest) {
     const data: any = {};
-    if (request.name !== undefined) data.name = request.name;
-    if (request.currentHp !== undefined) data.currentHp = request.currentHp;
-    if (request.maxHp !== undefined) data.maxHp = request.maxHp;
-    if (request.tempHp !== undefined) data.tempHp = request.tempHp;
-    if (request.ac !== undefined) data.ac = request.ac;
-    if (request.initiative !== undefined) data.initiative = request.initiative;
-    if (request.isActive !== undefined) data.isActive = request.isActive;
+    if (request.name !== undefined) {data.name = request.name;}
+    if (request.currentHp !== undefined) {data.currentHp = request.currentHp;}
+    if (request.maxHp !== undefined) {data.maxHp = request.maxHp;}
+    if (request.tempHp !== undefined) {data.tempHp = request.tempHp;}
+    if (request.ac !== undefined) {data.ac = request.ac;}
+    if (request.initiative !== undefined) {data.initiative = request.initiative;}
+    if (request.isActive !== undefined) {data.isActive = request.isActive;}
 
     return this.prisma.actor.update({
       where: { id },

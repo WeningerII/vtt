@@ -151,7 +151,7 @@ export class CharacterService {
     }
 
     // Apply updates
-    if (update.name) character.name = update.name;
+    if (update.name) {character.name = update.name;}
     if (update.level) {
       const oldLevel = character.level;
       character.level = update.level;
@@ -166,7 +166,7 @@ export class CharacterService {
         );
       }
     }
-    if (update.experience !== undefined) character.experience = update.experience;
+    if (update.experience !== undefined) {character.experience = update.experience;}
     if (update.hitPoints) {
       Object.assign(character.hitPoints, update.hitPoints);
     }
@@ -181,8 +181,8 @@ export class CharacterService {
         }
       }
     }
-    if (update.equipment) character.equipment = update.equipment;
-    if (update.notes !== undefined) character.notes = update.notes;
+    if (update.equipment) {character.equipment = update.equipment;}
+    if (update.notes !== undefined) {character.notes = update.notes;}
     if (update.personality) {
       Object.assign(character.personality, update.personality);
     }
@@ -655,9 +655,9 @@ export class CharacterService {
   ): Record<string, { max: number; current: number }> {
     const slots: Record<string, { max: number; current: number }> = {};
 
-    if (level >= 1) slots["1"] = { max: 2, current: 2 };
-    if (level >= 3) slots["2"] = { max: 1, current: 1 };
-    if (level >= 5) slots["3"] = { max: 1, current: 1 };
+    if (level >= 1) {slots["1"] = { max: 2, current: 2 };}
+    if (level >= 3) {slots["2"] = { max: 1, current: 1 };}
+    if (level >= 5) {slots["3"] = { max: 1, current: 1 };}
 
     return slots;
   }

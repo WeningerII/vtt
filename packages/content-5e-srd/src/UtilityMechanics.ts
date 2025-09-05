@@ -340,7 +340,7 @@ export class UtilityMechanics extends EventEmitter {
    */
   removeEntity(entityId: string): boolean {
     const entity = this.activeEntities.get(entityId);
-    if (!entity) return false;
+    if (!entity) {return false;}
 
     // Remove from indexes
     this.entitysByType.get(entity.type)?.delete(entityId);
@@ -383,7 +383,7 @@ export class UtilityMechanics extends EventEmitter {
    */
   extendDuration(entityId: string, additionalTime: number): boolean {
     const entity = this.activeEntities.get(entityId);
-    if (!entity) return false;
+    if (!entity) {return false;}
 
     entity.expiresAt += additionalTime;
     this.emit("durationExtended", entity, additionalTime);
@@ -397,7 +397,7 @@ export class UtilityMechanics extends EventEmitter {
     // This would integrate with the actual game map to get caster position
     // For now, assume we can get caster position somehow
     const casterPosition = this.getCasterPosition(casterId);
-    if (!casterPosition) return false;
+    if (!casterPosition) {return false;}
 
     const distance = Math.sqrt(
       Math.pow(position.x - casterPosition.x, 2) + Math.pow(position.y - casterPosition.y, 2),

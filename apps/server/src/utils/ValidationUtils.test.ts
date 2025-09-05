@@ -149,7 +149,7 @@ describe("ValidationUtils", () => {
           "charisma",
         ];
 
-        if (!isValidObject(stats, requiredStats)) return false;
+        if (!isValidObject(stats, requiredStats)) {return false;}
 
         return requiredStats.every((stat) => {
           const value = stats[stat];
@@ -182,7 +182,7 @@ describe("ValidationUtils", () => {
     it("should validate campaign settings", () => {
       const validateCampaignSettings = (settings: any) => {
         const required = ["name", "system", "maxPlayers"];
-        if (!isValidObject(settings, required)) return false;
+        if (!isValidObject(settings, required)) {return false;}
 
         return (
           typeof settings.name === "string" &&
@@ -224,7 +224,7 @@ describe("ValidationUtils", () => {
         const regex = /^(\d+)?d(\d+)([+-]\d+)?$/i;
         const match = notation.match(regex);
 
-        if (!match) return false;
+        if (!match) {return false;}
 
         const count = parseInt(match[1] || "1");
         const sides = parseInt(match[2]);

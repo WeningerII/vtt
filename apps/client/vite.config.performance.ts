@@ -9,8 +9,6 @@ import { resolve } from 'path';
 export default defineConfig({
   plugins: [
     react({
-      // Enable React Fast Refresh with better error boundaries
-      fastRefresh: true,
       // Optimize JSX transform
       jsxRuntime: 'automatic'
     })
@@ -40,10 +38,10 @@ export default defineConfig({
         
         // Optimize chunk names for better caching
         chunkFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'vendor-react') return 'assets/vendor-react-[hash].js';
-          if (chunkInfo.name === 'vendor-ui') return 'assets/vendor-ui-[hash].js'; 
-          if (chunkInfo.name === 'vtt-core') return 'assets/vtt-core-[hash].js';
-          if (chunkInfo.name === 'vendor-utils') return 'assets/vendor-utils-[hash].js';
+          if (chunkInfo.name === 'vendor-react') {return 'assets/vendor-react-[hash].js';}
+          if (chunkInfo.name === 'vendor-ui') {return 'assets/vendor-ui-[hash].js';} 
+          if (chunkInfo.name === 'vtt-core') {return 'assets/vtt-core-[hash].js';}
+          if (chunkInfo.name === 'vendor-utils') {return 'assets/vendor-utils-[hash].js';}
           return 'assets/[name]-[hash].js';
         },
         
@@ -86,22 +84,22 @@ export default defineConfig({
   // Development optimizations
   server: {
     // Enable HMR for faster development
-    hmr: true,
-    
-    // Optimize deps prebundling
-    optimizeDeps: {
-      include: [
-        'react',
-        'react-dom',
-        'react-router-dom',
-        'lucide-react',
-        'framer-motion',
-        'pixi.js',
-        'pixi-viewport'
-      ],
-      // Exclude dependencies that don't need prebundling
-      exclude: ['@vtt/core-schemas']
-    }
+    hmr: true
+  },
+  
+  // Optimize deps prebundling
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      'lucide-react',
+      'framer-motion',
+      'pixi.js',
+      'pixi-viewport'
+    ],
+    // Exclude dependencies that don't need prebundling
+    exclude: ['@vtt/core-schemas']
   },
   
   // Path resolution
@@ -123,7 +121,6 @@ export default defineConfig({
   
   // CSS optimization
   css: {
-    devSourcemap: false,
-    // PostCSS configuration would go here if needed
+    devSourcemap: false
   }
 });

@@ -45,7 +45,7 @@ export class GameManager {
    */
   removeGame(gameId: string): boolean {
     const game = this.games.get(gameId);
-    if (!game) return false;
+    if (!game) {return false;}
 
     game.destroy();
     const removed = this.games.delete(gameId);

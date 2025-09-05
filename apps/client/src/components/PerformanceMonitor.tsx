@@ -32,7 +32,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ isVisibl
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const fpsHistoryRef = useRef<number[]>([]);
-  const animationFrameRef = useRef<number>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Performance monitoring loop
   useEffect(() => {
@@ -116,18 +116,18 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ isVisibl
   }, []);
 
   const getPerformanceColor = (value: number, thresholds: { good: number; warning: number }) => {
-    if (value >= thresholds.good) return 'text-green-400';
-    if (value >= thresholds.warning) return 'text-yellow-400';
+    if (value >= thresholds.good) {return 'text-green-400';}
+    if (value >= thresholds.warning) {return 'text-yellow-400';}
     return 'text-red-400';
   };
 
   const getMemoryColor = (mb: number) => {
-    if (mb < 100) return 'text-green-400';
-    if (mb < 200) return 'text-yellow-400';
+    if (mb < 100) {return 'text-green-400';}
+    if (mb < 200) {return 'text-yellow-400';}
     return 'text-red-400';
   };
 
-  if (!isVisible) return null;
+  if (!isVisible) {return null;}
 
   return (
     <div className="fixed top-4 right-4 bg-gray-900 text-white p-4 rounded-lg shadow-lg z-50 min-w-64">

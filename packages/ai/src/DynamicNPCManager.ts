@@ -122,6 +122,65 @@ export class DynamicNPCManager extends EventEmitter {
   }
 
   /**
+   * Process player interaction with an NPC
+   */
+  async processPlayerInteraction(npcId: string, playerId: string, playerAction: string, gameState: any, campaignContext: any): Promise<NPCResponse> {
+    try {
+      const npc = this.config.behaviorSystem.getNPC(npcId);
+      if (!npc) {
+        logger.warn(`NPC ${npcId} not found for player interaction`);
+        return {
+          response: "The character doesn't respond.",
+          actions: []
+        };
+      }
+
+      const prompt = this.buildContextualResponsePrompt(npc, playerAction, gameState, campaignContext);
+      
+      if (!this.config.aiProvider.generateText) {
+        logger.warn(`AI provider ${this.config.aiProvider.name} does not support text generation`);
+        return {
+          response: `${npc.name} nods silently.`,
+          actions: []
+        };
+      }
+      
+      const response = await this.config.aiProvider.generateText({
+        prompt,
+        maxTokens: 300,
+        temperature: Math.min(1.0, this.config.creativityLevel + 0.1),
+        model: 'claude-3-sonnet'
+      });
+
+      if (response && response.text) {
+        const npcResponse = this.parseInteractionResponse(response.text);
+        
+        // Update NPC context history
+        this.addToNPCHistory(npcId, `Player (${playerId}): ${playerAction} -> ${npcResponse.response}`);
+        
+        // Adjust relationship based on interaction
+        const sentimentAdjustment = this.calculateSentimentAdjustment(npcResponse.response);
+        const currentRelationship = npc.personality.relationships.get(playerId) || 0;
+        npc.personality.relationships.set(playerId, Math.max(-1, Math.min(1, currentRelationship + sentimentAdjustment)));
+        
+        this.emit('playerInteractionProcessed', { npcId, playerId, playerAction, npcResponse });
+        return npcResponse;
+      }
+
+      return {
+        response: `${npc.name} looks confused.`,
+        actions: []
+      };
+    } catch (error) {
+      logger.error(`Error processing player interaction with NPC ${npcId}:`, error as any);
+      return {
+        response: "The character seems distracted.",
+        actions: []
+      };
+    }
+  }
+
+  /**
    * Generate dynamic dialogue for an NPC
    */
   async generateNPCDialogue(npcId: string, context: NPCBehaviorContext, topic?: string): Promise<string[]> {
@@ -202,7 +261,7 @@ export class DynamicNPCManager extends EventEmitter {
   async createDynamicBehaviorTree(npcId: string, context: NPCBehaviorContext): Promise<BehaviorTree | null> {
     try {
       const behaviors = await this.generateComplexBehaviors(npcId, context);
-      if (!behaviors || behaviors.length === 0) return null;
+      if (!behaviors || behaviors.length === 0) {return null;}
 
       const blackboard = new Blackboard();
       blackboard.set('npcId', npcId);
@@ -302,7 +361,7 @@ export class DynamicNPCManager extends EventEmitter {
 Character Profile:
 - Name: ${npc.name}
 - Role: ${npc.personality.name}
-- Traits: Aggression ${npc.personality.traits.aggression}, Courage ${npc.personality.traits.courage}, Intelligence ${npc.personality.traits.intelligence}
+- Traits: Aggression ${npc.personality.aggression}, Courage ${npc.personality.traits.courage}, Intelligence ${npc.personality.intelligence}
 - Motivations: ${npc.personality.motivations.join(', ')}
 - Current Mood: ${npc.behaviorState.mood}
 - Health: ${npc.stats.health}/${npc.stats.maxHealth}
@@ -397,7 +456,7 @@ Generate a response and any actions. Return JSON:
 
   private async generateComplexBehaviors(npcId: string, context: NPCBehaviorContext): Promise<GeneratedBehavior[]> {
     const mainBehavior = await this.generateNPCBehavior(npcId, context);
-    if (!mainBehavior) return [];
+    if (!mainBehavior) {return [];}
     
     return [mainBehavior];
   }
@@ -495,14 +554,14 @@ Generate a response and any actions. Return JSON:
   private cacheBehavior(contextKey: string, behavior: GeneratedBehavior): void {
     const cached = this.behaviorCache.get(contextKey) || [];
     cached.push(behavior);
-    if (cached.length > 5) cached.shift(); // Keep only last 5
+    if (cached.length > 5) {cached.shift();} // Keep only last 5
     this.behaviorCache.set(contextKey, cached);
   }
 
   private addToNPCHistory(npcId: string, event: string): void {
     const history = this.npcContextHistory.get(npcId) || [];
     history.push(event);
-    if (history.length > 20) history.shift(); // Keep only last 20 events
+    if (history.length > 20) {history.shift();} // Keep only last 20 events
     this.npcContextHistory.set(npcId, history);
   }
 
@@ -511,8 +570,8 @@ Generate a response and any actions. Return JSON:
     const positive = /\b(good|great|excellent|wonderful|pleased|happy|thank|appreciate)\b/i;
     const negative = /\b(bad|terrible|awful|angry|hate|disappointed|refuse|no)\b/i;
     
-    if (positive.test(response)) return 0.1;
-    if (negative.test(response)) return -0.1;
+    if (positive.test(response)) {return 0.1;}
+    if (negative.test(response)) {return -0.1;}
     return 0;
   }
 

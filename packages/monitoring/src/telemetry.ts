@@ -76,19 +76,25 @@ export class TelemetryService {
     // Initialize SDK
     this.sdk = new NodeSDK({
       resource,
-      traceExporter,
-      metricReader,
+      ...(traceExporter && { traceExporter }),
+      metricReader: metricReader as any,
       instrumentations: [
         getNodeAutoInstrumentations({
-          "@opentelemetry/instrumentation-fs": {
-            enabled: false, // Reduce noise
+          '@opentelemetry/instrumentation-dns': {
+            enabled: false,
           },
-          "@opentelemetry/instrumentation-http": {
+          '@opentelemetry/instrumentation-fs': {
+            enabled: false,
+          },
+          '@opentelemetry/instrumentation-generic-pool': {
+            enabled: false,
+          },
+          '@opentelemetry/instrumentation-http': {
             requestHook: (span, request) => {
-              span.setAttribute("http.request.body.size", request.headers["content-length"] || 0);
+              span.setAttribute("http.request.body.size", (request as any).headers?.["content-length"] || 0);
             },
             responseHook: (span, response) => {
-              span.setAttribute("http.response.body.size", response.headers["content-length"] || 0);
+              span.setAttribute("http.response.body.size", (response as any).headers?.["content-length"] || 0);
             },
           },
         }),

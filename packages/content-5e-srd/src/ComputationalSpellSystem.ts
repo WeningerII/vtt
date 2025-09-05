@@ -230,7 +230,7 @@ export class SpellExecutionEngine {
     // Validation
     const validation = spell.canCast(ctx);
     if (!validation.valid) {
-      return { success: false, results: [], error: validation.reason };
+      return { success: false, results: [], error: validation.reason || "Validation failed" };
     }
 
     // Apply scaling
@@ -244,6 +244,7 @@ export class SpellExecutionEngine {
 
     for (let i = 0; i < scaledSpell.effects.length; i++) {
       const effect = scaledSpell.effects[i];
+      if (!effect) {continue;}
       const result = this.executeEffect(effect, executionCtx, i);
       results.push(result);
 
@@ -310,8 +311,9 @@ export class SpellExecutionEngine {
       // Apply saving throw
       if (effect.savingThrow) {
         const dc = effect.savingThrow.dc(ctx);
-        const saveBonus = target.savingThrows[effect.savingThrow.ability] || 0;
-        const roll = ctx.dice(20)[0] + saveBonus;
+        const saveBonus = (target.savingThrows && effect.savingThrow.ability) ? 
+          target.savingThrows[effect.savingThrow.ability] || 0 : 0;
+        const roll = (ctx.dice(20)[0] || 0) + saveBonus;
 
         if (roll >= dc) {
           switch (effect.savingThrow.onSave) {
@@ -372,7 +374,7 @@ export class SpellExecutionEngine {
         target.hitPoints.current + healing,
       );
 
-      if (target.hitPoints.current > oldHp) {
+      if (ctx.targets && ctx.targets[0] && ctx.targets[0].hitPoints && target.hitPoints.current > oldHp) {
         results.targets.push(target.id);
         results.modifications!.push({
           entityId: target.id,
@@ -451,9 +453,9 @@ export class SpellExecutionEngine {
   }
 
   private applyDamageResistance(damage: number, damageType: string, target: GameEntity): number {
-    if (target.immunities.has(damageType)) return 0;
-    if (target.resistances.has(damageType)) return Math.floor(damage / 2);
-    if (target.vulnerabilities.has(damageType)) return damage * 2;
+    if (target.immunities.has(damageType)) {return 0;}
+    if (target.resistances.has(damageType)) {return Math.floor(damage / 2);}
+    if (target.vulnerabilities.has(damageType)) {return damage * 2;}
     return damage;
   }
 
@@ -462,7 +464,7 @@ export class SpellExecutionEngine {
     level: number,
     ctx: ExecutionContext,
   ): ComputationalSpell {
-    if (!spell.scaling) return spell;
+    if (!spell.scaling) {return spell;}
 
     const scaledSpell = JSON.parse(JSON.stringify(spell)); // Deep clone
 
@@ -496,10 +498,13 @@ export class SpellExecutionEngine {
     let current = obj;
 
     for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i]];
+      const key = keys[i];
+      if (!key || !current || typeof current !== 'object') {return;}
+      current = current[key];
     }
 
     const finalKey = keys[keys.length - 1];
+    if (!finalKey) {return;}
 
     switch (operation) {
       case "add":
@@ -543,10 +548,14 @@ export class SpellExecutionEngine {
     let current = obj;
 
     for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i]];
+      const key = keys[i];
+      if (!key || !current || typeof current !== 'object') {return;}
+      current = current[key];
     }
 
-    current[keys[keys.length - 1]] = value;
+    const finalKey = keys[keys.length - 1];
+    if (!finalKey || !current) {return;}
+    current[finalKey] = value;
   }
 }
 

@@ -1,0 +1,604 @@
+/**
+ * VTT Responsive Design System
+ * Mobile-first responsive layouts with container queries and touch optimization
+ */
+
+@import './design-system.css';
+
+/* =============================================================================
+   CONTAINER QUERIES FOR VTT PANELS
+   ============================================================================= */
+
+.vtt-panel {
+  container-type: inline-size;
+  container-name: vtt-panel;
+}
+
+.vtt-app {
+  container-type: inline-size;
+  container-name: vtt-app;
+}
+
+/* Panel Responsive Behavior */
+@container vtt-panel (max-width: 320px) {
+  .character-sheet {
+    --font-scale: 0.85;
+    --space-scale: 0.8;
+    padding: var(--space-3);
+  }
+  
+  .abilities-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2);
+  }
+  
+  .dice-buttons {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  .combat-tracker .initiative-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+}
+
+@container vtt-panel (min-width: 321px) and (max-width: 768px) {
+  .character-sheet {
+    --font-scale: 0.9;
+    --space-scale: 0.9;
+  }
+  
+  .abilities-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .character-header {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+}
+
+@container vtt-panel (min-width: 769px) and (max-width: 1200px) {
+  .character-sheet {
+    --font-scale: 1.0;
+    --space-scale: 1.0;
+  }
+  
+  .abilities-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@container vtt-panel (min-width: 1201px) {
+  .character-sheet {
+    --font-scale: 1.1;
+    --space-scale: 1.2;
+  }
+  
+  .abilities-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  .character-header {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* =============================================================================
+   VTT LAYOUT MODES
+   ============================================================================= */
+
+/* Mobile Layout (< 768px) */
+.vtt-layout-mobile {
+  --panel-transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.vtt-layout-mobile .vtt-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.vtt-layout-mobile .vtt-header {
+  flex-shrink: 0;
+  z-index: var(--z-sticky);
+}
+
+.vtt-layout-mobile .vtt-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.vtt-layout-mobile .vtt-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: var(--panel-transition);
+  background: var(--surface-base);
+}
+
+.vtt-layout-mobile .vtt-panel-hidden {
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+.vtt-layout-mobile .vtt-panel-expanded {
+  transform: translateY(0);
+  z-index: var(--z-modal);
+}
+
+.vtt-layout-mobile .vtt-panel-map {
+  z-index: 1;
+}
+
+.vtt-layout-mobile .vtt-panel-map.vtt-panel-expanded {
+  transform: translateY(0);
+}
+
+/* Mobile Panel Navigation */
+.vtt-layout-mobile .panel-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--surface-elevated);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: var(--z-fixed);
+  padding: var(--space-2);
+}
+
+.vtt-layout-mobile .panel-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  transition: all var(--duration-normal) var(--ease-out);
+  min-height: 44px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+.vtt-layout-mobile .panel-nav-item.active {
+  background: var(--surface-accent);
+  color: var(--color-accent-primary);
+  transform: translateY(-2px);
+}
+
+.vtt-layout-mobile .panel-nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.vtt-layout-mobile .panel-nav-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Tablet Layout (768px - 1200px) */
+.vtt-layout-tablet {
+  --sidebar-width: 320px;
+}
+
+.vtt-layout-tablet .vtt-app {
+  display: grid;
+  grid-template-areas: 
+    "header header"
+    "main sidebar";
+  grid-template-columns: 1fr var(--sidebar-width);
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+}
+
+.vtt-layout-tablet .vtt-header {
+  grid-area: header;
+}
+
+.vtt-layout-tablet .vtt-main {
+  grid-area: main;
+  overflow: hidden;
+}
+
+.vtt-layout-tablet .vtt-sidebar {
+  grid-area: sidebar;
+  background: var(--surface-elevated);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vtt-layout-tablet .vtt-panel-collapsed {
+  height: 48px;
+  overflow: hidden;
+}
+
+.vtt-layout-tablet .vtt-panel-expanded {
+  flex: 1;
+}
+
+.vtt-layout-tablet .vtt-panel-hidden {
+  display: none;
+}
+
+/* Desktop Layout (> 1200px) */
+.vtt-layout-desktop {
+  --sidebar-width: 380px;
+  --left-panel-width: 280px;
+}
+
+.vtt-layout-desktop .vtt-app {
+  display: grid;
+  grid-template-areas: 
+    "header header header"
+    "left-panel main sidebar";
+  grid-template-columns: var(--left-panel-width) 1fr var(--sidebar-width);
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+}
+
+.vtt-layout-desktop .vtt-header {
+  grid-area: header;
+}
+
+.vtt-layout-desktop .vtt-left-panel {
+  grid-area: left-panel;
+  background: var(--surface-elevated);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vtt-layout-desktop .vtt-main {
+  grid-area: main;
+  overflow: hidden;
+}
+
+.vtt-layout-desktop .vtt-sidebar {
+  grid-area: sidebar;
+  background: var(--surface-elevated);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* =============================================================================
+   TOUCH OPTIMIZATIONS
+   ============================================================================= */
+
+/* Touch-friendly targets */
+@media (pointer: coarse) {
+  .vtt-panel .tab,
+  .dice-button,
+  .action-button,
+  .panel-nav-item {
+    min-height: 44px;
+    min-width: 44px;
+    padding: var(--space-3) var(--space-4);
+  }
+  
+  .editable-field {
+    min-height: 36px;
+    padding: var(--space-2);
+  }
+  
+  .initiative-item {
+    padding: var(--space-4);
+  }
+  
+  /* Larger touch targets for small elements */
+  .spell-slot,
+  .ability-modifier {
+    min-height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Touch gesture feedback */
+.touch-feedback {
+  position: relative;
+  overflow: hidden;
+}
+
+.touch-feedback::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all var(--duration-fast) var(--ease-out);
+  pointer-events: none;
+}
+
+.touch-feedback:active::after {
+  width: 100px;
+  height: 100px;
+}
+
+/* Swipe indicators */
+.swipe-indicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 40px;
+  background: var(--color-accent-primary);
+  border-radius: var(--radius-full);
+  opacity: 0;
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.swipe-indicator.left {
+  left: var(--space-2);
+}
+
+.swipe-indicator.right {
+  right: var(--space-2);
+}
+
+.swipe-indicator.active {
+  opacity: 0.6;
+  animation: swipe-pulse 1s ease-in-out infinite;
+}
+
+@keyframes swipe-pulse {
+  0%, 100% { opacity: 0.6; transform: translateY(-50%) scale(1); }
+  50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+}
+
+/* =============================================================================
+   RESPONSIVE MAP INTERFACE
+   ============================================================================= */
+
+.map-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-subtle);
+}
+
+/* Mobile map controls */
+@media (max-width: 768px) {
+  .map-controls {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    z-index: var(--z-dropdown);
+  }
+  
+  .map-control-button {
+    width: 48px;
+    height: 48px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--duration-normal) var(--ease-out);
+  }
+  
+  .map-control-button:active {
+    transform: scale(0.95);
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Zoom controls */
+  .zoom-controls {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .zoom-button {
+    width: 48px;
+    height: 48px;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--duration-normal) var(--ease-out);
+  }
+  
+  .zoom-button:active {
+    background: var(--surface-hover);
+  }
+  
+  .zoom-button + .zoom-button {
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE DICE INTERFACE
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .dice-roller {
+    position: fixed;
+    bottom: 80px; /* Above panel nav */
+    left: var(--space-4);
+    right: var(--space-4);
+    z-index: var(--z-modal);
+    border-radius: var(--radius-xl);
+    transform: translateY(100%);
+    transition: transform var(--duration-normal) var(--ease-out);
+  }
+  
+  .dice-roller.active {
+    transform: translateY(0);
+  }
+  
+  .dice-input {
+    font-size: var(--font-size-xl);
+    padding: var(--space-4);
+  }
+  
+  .dice-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+  }
+  
+  .dice-button {
+    aspect-ratio: 1;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+  }
+  
+  .dice-result {
+    text-align: center;
+    padding: var(--space-6);
+  }
+  
+  .dice-result-value {
+    font-size: var(--font-size-6xl);
+    margin-bottom: var(--space-4);
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE CHARACTER SHEET
+   ============================================================================= */
+
+@media (max-width: 768px) {
+  .character-sheet {
+    padding: var(--space-4);
+    margin: 0;
+    border-radius: 0;
+    height: 100%;
+    overflow-y: auto;
+  }
+  
+  .sheet-tabs {
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    background: var(--surface-base);
+    border-radius: 0;
+    margin: 0 calc(-1 * var(--space-4));
+    padding: 0 var(--space-4);
+  }
+  
+  .tab {
+    font-size: var(--font-size-sm);
+    padding: var(--space-3) var(--space-2);
+  }
+  
+  .character-header {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+  
+  .abilities-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+    margin: var(--space-6) 0;
+  }
+  
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .equipment-grid {
+    gap: var(--space-2);
+  }
+  
+  .spell-list {
+    gap: var(--space-2);
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE ANIMATIONS
+   ============================================================================= */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .vtt-panel,
+  .dice-roller,
+  .map-control-button,
+  .panel-nav-item {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  
+  .swipe-indicator {
+    animation: none !important;
+  }
+}
+
+/* High refresh rate optimization */
+@media (min-resolution: 120dpi) {
+  .vtt-panel,
+  .dice-roller,
+  .touch-feedback {
+    transition-timing-function: linear;
+  }
+}
+
+/* =============================================================================
+   RESPONSIVE UTILITIES
+   ============================================================================= */
+
+/* Show/hide based on layout mode */
+.mobile-only { display: none; }
+.tablet-only { display: none; }
+.desktop-only { display: none; }
+
+.vtt-layout-mobile .mobile-only { display: block; }
+.vtt-layout-tablet .tablet-only { display: block; }
+.vtt-layout-desktop .desktop-only { display: block; }
+
+.vtt-layout-mobile .tablet-up { display: none; }
+.vtt-layout-mobile .desktop-up { display: none; }
+.vtt-layout-tablet .desktop-up { display: none; }
+
+/* Responsive text sizes */
+.text-responsive {
+  font-size: clamp(var(--font-size-sm), 2.5vw, var(--font-size-lg));
+}
+
+.heading-responsive {
+  font-size: clamp(var(--font-size-xl), 4vw, var(--font-size-3xl));
+}
+
+/* Responsive spacing */
+.spacing-responsive {
+  padding: clamp(var(--space-2), 3vw, var(--space-6));
+}
+
+.gap-responsive {
+  gap: clamp(var(--space-2), 2vw, var(--space-4));
+}

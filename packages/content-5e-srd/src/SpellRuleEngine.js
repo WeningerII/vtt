@@ -6,36 +6,35 @@
 const SPELL_RULES = [
     // Antimagic Field Rule
     {
-        id: 'antimagic_field_prevention',
+        id: "antimagic_field_prevention",
         condition: (ctx) => {
-            return ctx.gameState.antimagicFields.some(field => {
+            return ctx.gameState.antimagicFields.some((field) => {
                 const distance = Math.sqrt(Math.pow(ctx.caster.position.x - field.center.x, 2) +
                     Math.pow(ctx.caster.position.y - field.center.y, 2) +
                     Math.pow(ctx.caster.position.z - field.center.z, 2));
                 return distance <= field.radius;
             });
         },
-        action: (ctx) => ({
-            type: 'prevent',
-            data: { reason: 'Caster is within an antimagic field' },
-            continue: false
+        action: (_ctx) => ({
+            type: "prevent",
+            data: { reason: "Caster is within an antimagic field" },
+            continue: false,
         }),
-        priority: 1000
+        priority: 1000,
     },
     // Counterspell Interruption Rule
     {
-        id: 'counterspell_interrupt',
+        id: "counterspell_interrupt",
         condition: (ctx) => {
-            return ctx.eventType === 'pre_cast' &&
+            return (ctx.eventType === "pre_cast" &&
                 ctx.environment.entities &&
-                Array.from(ctx.environment.entities.values()).some((entity) => entity.conditions.has('ready_counterspell') &&
-                    isWithinRange(entity, ctx.caster, 60 * 5));
+                Array.from(ctx.environment.entities.values()).some((_entity) => entity.conditions.has("ready_counterspell") &&
+                    isWithinRange(entity, ctx.caster, 60 * 5)));
         },
         action: (ctx) => {
-            const counterspeller = Array.from(ctx.environment.entities.values())
-                .find((e) => e.conditions.has('ready_counterspell'));
+            const counterspeller = Array.from(ctx.environment.entities.values()).find((e) => e.conditions.has("ready_counterspell"));
             if (!counterspeller)
-                return { type: 'log', data: Record<string, unknown>, continue: true };
+                return { type: "log", data: (Record), continue: true };
             // Execute counterspell logic
             const spellLevel = ctx.spell.metadata.level;
             const counterspellLevel = 3; // Would get from actual readied spell
@@ -46,76 +45,75 @@ const SPELL_RULES = [
                 success = roll >= dc;
             }
             return {
-                type: success ? 'prevent' : 'log',
+                type: success ? "prevent" : "log",
                 data: {
                     counterspeller: counterspeller?.id,
                     success,
-                    reason: success ? 'Spell was countered' : 'Counterspell failed'
+                    reason: success ? "Spell was countered" : "Counterspell failed",
                 },
-                continue: !success
+                continue: !success,
             };
         },
-        priority: 900
+        priority: 900,
     },
     // Concentration Check Rule
     {
-        id: 'concentration_damage_check',
+        id: "concentration_damage_check",
         condition: (ctx) => {
-            return ctx.eventType === 'damage' &&
-                ctx.caster.conditions.has('concentrating');
+            return ctx.eventType === "damage" && ctx.caster.conditions.has("concentrating");
         },
         action: (ctx) => {
             const damage = ctx.metadata.damage || 0;
             const dc = Math.max(10, Math.floor(damage / 2));
             const roll = Math.floor(Math.random() * 20) + 1;
-            const conSave = ctx.caster.savingThrows['CON'] || 0;
+            const conSave = ctx.caster.savingThrows["CON"] || 0;
             const success = roll + conSave >= dc;
             if (!success) {
-                ctx.caster.conditions.delete('concentrating');
+                ctx.caster.conditions.delete("concentrating");
                 // End concentration spell effects
             }
             return {
-                type: 'modify',
+                type: "modify",
                 data: {
                     concentrationMaintained: success,
                     roll: roll + conSave,
-                    dc
+                    dc,
                 },
-                continue: true
+                continue: true,
             };
         },
-        priority: 800
+        priority: 800,
     },
     // Spell Slot Consumption Rule
     {
-        id: 'spell_slot_consumption',
+        id: "spell_slot_consumption",
         condition: (ctx) => {
-            return ctx.eventType === 'post_cast' && ctx.spell.metadata.level > 0;
+            return ctx.eventType === "post_cast" && ctx.spell.metadata.level > 0;
         },
         action: (ctx) => {
             const slotLevel = ctx.metadata.slotLevel || ctx.spell.metadata.level;
             // Would actually consume spell slot from caster's resources
             return {
-                type: 'modify',
+                type: "modify",
                 data: { slotConsumed: slotLevel },
-                continue: true
+                continue: true,
             };
         },
-        priority: 100
+        priority: 100,
     },
     // Legendary Resistance Rule
     {
-        id: 'legendary_resistance',
+        id: "legendary_resistance",
         condition: (ctx) => {
-            return ctx.eventType === 'damage' &&
-                ctx.targets.some(t => t.conditions.has('legendary_resistance') &&
+            return (ctx.eventType === "damage" &&
+                ctx.targets.some((t) => t.conditions.has("legendary_resistance") &&
                     ctx.metadata.savingThrow &&
-                    ctx.metadata.saveResult === false);
+                    ctx.metadata.saveResult === false));
         },
         action: (ctx) => {
-            const legendaryCreature = ctx.targets.find(t => t.conditions.has('legendary_resistance'));
+            const legendaryCreature = ctx.targets.find((t) => t.conditions.has("legendary_resistance"));
             if (!legendaryCreature)
-                return { type: 'log', data: Record<string, unknown>, continue: true };
+                return { type: "log", data: (Record), continue: true };
             // Check if creature has legendary resistance uses left
             const usesLeft = 3; // Would get from actual creature data
             if (usesLeft > 0) {
@@ -123,87 +121,85 @@ const SPELL_RULES = [
                 const shouldUse = ctx.metadata.damage > legendaryCreature.hitPoints.current * 0.25;
                 if (shouldUse) {
                     return {
-                        type: 'modify',
+                        type: "modify",
                         data: {
                             legendaryResistanceUsed: true,
-                            saveResult: true // Override failed save
+                            saveResult: true, // Override failed save
                         },
-                        continue: true
+                        continue: true,
                     };
                 }
             }
-            return { type: 'log', data: Record<string, unknown>, continue: true };
+            return { type: "log", data: (Record), continue: true };
         },
-        priority: 750
+        priority: 750,
     },
     // Magic Resistance Rule
     {
-        id: 'magic_resistance',
+        id: "magic_resistance",
         condition: (ctx) => {
-            return ctx.targets.some(t => t.conditions.has('magic_resistance')) &&
-                ctx.metadata.savingThrow !== undefined;
+            return (ctx.targets.some((t) => t.conditions.has("magic_resistance")) &&
+                ctx.metadata.savingThrow !== undefined);
         },
-        action: (ctx) => {
+        action: (_ctx) => {
             return {
-                type: 'modify',
+                type: "modify",
                 data: {
                     savingThrowAdvantage: true,
-                    source: 'magic_resistance'
+                    source: "magic_resistance",
                 },
-                continue: true
+                continue: true,
             };
         },
-        priority: 600
+        priority: 600,
     },
     // Cover Calculation Rule
     {
-        id: 'cover_calculation',
+        id: "cover_calculation",
         condition: (ctx) => {
-            return ctx.eventType === 'pre_cast' &&
-                ctx.spell.targetSelection.mode !== 'self';
+            return ctx.eventType === "pre_cast" && ctx.spell.targetSelection.mode !== "self";
         },
         action: (ctx) => {
-            const coverBonuses = ctx.targets.map(target => {
+            const coverBonuses = ctx.targets.map((target) => {
                 const cover = calculateCover(ctx.caster, target, ctx.environment);
                 return {
                     targetId: target.id,
                     coverType: cover.type,
                     acBonus: cover.acBonus,
-                    saveBonus: cover.saveBonus
+                    saveBonus: cover.saveBonus,
                 };
             });
             return {
-                type: 'modify',
+                type: "modify",
                 data: { coverBonuses },
-                continue: true
+                continue: true,
             };
         },
-        priority: 500
+        priority: 500,
     },
     // Wild Magic Surge Rule
     {
-        id: 'wild_magic_surge',
+        id: "wild_magic_surge",
         condition: (ctx) => {
-            return ctx.caster.conditions.has('wild_magic_sorcerer') &&
-                ctx.spell.metadata.level > 0;
+            return ctx.caster.conditions.has("wild_magic_sorcerer") && ctx.spell.metadata.level > 0;
         },
-        action: (ctx) => {
+        action: (_ctx) => {
             const roll = Math.floor(Math.random() * 20) + 1;
             if (roll === 1) {
                 const surgeEffect = getWildMagicSurgeEffect();
                 return {
-                    type: 'trigger',
+                    type: "trigger",
                     data: { wildMagicSurge: surgeEffect },
-                    continue: true
+                    continue: true,
                 };
             }
-            return { type: 'log', data: Record<string, unknown>, continue: true };
+            return { type: "log", data: (Record), continue: true };
         },
-        priority: 200
-    }
+        priority: 200,
+    },
 ];
 // Utility functions for rule calculations
-function isWithinRange(entity1, entity2, range) {
+function isWithinRange(entity1, entity2, _range) {
     const dx = entity2.position.x - entity1.position.x;
     const dy = entity2.position.y - entity1.position.y;
     const dz = entity2.position.z - entity1.position.z;
@@ -212,27 +208,27 @@ function isWithinRange(entity1, entity2, range) {
 function calculateCover(caster, target, environment) {
     // Simplified cover calculation
     // In a real implementation, this would do 3D line-of-sight calculation
-    const distance = Math.sqrt(Math.pow(target.position.x - caster.position.x, 2) +
+    const _distance = Math.sqrt(Math.pow(target.position.x - caster.position.x, 2) +
         Math.pow(target.position.y - caster.position.y, 2));
     // Mock cover calculation based on environment obstacles
-    const obstaclesBetween = environment.obstacles?.filter((obs) => {
+    const obstaclesBetween = environment.obstacles?.filter((__obs) => {
         // Check if obstacle is between caster and target
         return true; // Simplified
     }).length || 0;
     if (obstaclesBetween === 0)
-        return { type: 'none', acBonus: 0, saveBonus: 0 };
+        return { type: "none", acBonus: 0, saveBonus: 0 };
     if (obstaclesBetween === 1)
-        return { type: 'half', acBonus: 2, saveBonus: 2 };
+        return { type: "half", acBonus: 2, saveBonus: 2 };
     if (obstaclesBetween === 2)
-        return { type: 'three_quarters', acBonus: 5, saveBonus: 5 };
-    return { type: 'full', acBonus: Infinity, saveBonus: Infinity };
+        return { type: "three_quarters", acBonus: 5, saveBonus: 5 };
+    return { type: "full", acBonus: Infinity, saveBonus: Infinity };
 }
 function getWildMagicSurgeEffect() {
     // Simplified wild magic table
     const effects = [
-        { id: 1, effect: 'summon_unicorn', description: 'A unicorn appears within 5 feet' },
-        { id: 2, effect: 'fireball_self', description: 'You cast fireball centered on yourself' },
-        { id: 3, effect: 'color_change', description: 'Your skin turns bright blue for 24 hours' },
+        { id: 1, effect: "summon_unicorn", description: "A unicorn appears within 5 feet" },
+        { id: 2, effect: "fireball_self", description: "You cast fireball centered on yourself" },
+        { id: 3, effect: "color_change", description: "Your skin turns bright blue for 24 hours" },
         // ... would include all 100 effects
     ];
     const roll = Math.floor(Math.random() * effects.length);
@@ -245,10 +241,10 @@ export class SpellRuleEngine {
     }
     addRule(rule) {
         this.rules.push(rule);
-        this.rules.sort((a, b) => b.priority - a.priority);
+        this.rules.sort((_a, _b) => b.priority - a.priority);
     }
     removeRule(ruleId) {
-        this.rules = this.rules.filter(r => r.id !== ruleId);
+        this.rules = this.rules.filter((r) => r.id !== ruleId);
     }
     executeRules(ruleContext) {
         const results = [];
@@ -267,15 +263,15 @@ export class SpellRuleEngine {
     }
     applyRuleResult(ctx, result) {
         switch (result.type) {
-            case 'modify':
+            case "modify":
                 // Apply modifications to the context
                 Object.assign(ctx.metadata, result.data);
                 break;
-            case 'prevent':
+            case "prevent":
                 ctx.metadata.prevented = true;
                 ctx.metadata.preventionReason = result.data.reason;
                 break;
-            case 'trigger':
+            case "trigger":
                 // Queue additional effects to be processed
                 ctx.metadata.additionalEffects = ctx.metadata.additionalEffects || [];
                 ctx.metadata.additionalEffects.push(result.data);
@@ -293,26 +289,24 @@ export class SpellRuleEngine {
                 obstacles: [],
                 lighting: 1.0,
                 temperature: 20,
-                gravity: { x: 0, y: -9.8, z: 0 }
+                gravity: { x: 0, y: -9.8, z: 0 },
             },
             gameState,
-            eventType: 'pre_cast',
-            metadata: Record<string, unknown>,
-            dice: (sides, count = 1) => Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1),
-            time: Date.now()
+            eventType: "pre_cast",
+            metadata: (Record),
+            dice: (_sides, _count = 1) => Array.from({ _length: count }, () => Math.floor(Math.random() * sides) + 1),
+            time: Date.now(),
         };
         const results = this.executeRules(ruleContext);
-        const prevented = results.some(r => r.type === 'prevent');
-        const reasons = results
-            .filter(r => r.type === 'prevent')
-            .map(r => r.data.reason);
+        const prevented = results.some((r) => r.type === "prevent");
+        const reasons = results.filter((r) => r.type === "prevent").map((r) => r.data.reason);
         const modifications = results
-            .filter(r => r.type === 'modify')
-            .reduce((acc, r) => ({ ...acc, ...r.data }), {});
+            .filter((r) => r.type === "modify")
+            .reduce((_acc, _r) => ({ ...acc, ...r.data }), {});
         return {
             valid: !prevented,
             reasons,
-            modifications
+            modifications,
         };
     }
 }
@@ -328,8 +322,8 @@ export class SpellInteractionCalculator {
             if (this.spellsConflict(activeSpell, newSpell)) {
                 conflicts.push({
                     spellId: activeSpell.id,
-                    reason: 'Same effect type, non-stacking',
-                    resolution: 'Replace existing effect'
+                    reason: "Same effect type, non-stacking",
+                    resolution: "Replace existing effect",
                 });
             }
             // Check for synergies
@@ -338,7 +332,7 @@ export class SpellInteractionCalculator {
                 synergies.push({
                     spellId: activeSpell.id,
                     effect: synergy.type,
-                    modifier: synergy.value
+                    modifier: synergy.value,
                 });
             }
             // Check if new spell dispels active spell
@@ -350,15 +344,11 @@ export class SpellInteractionCalculator {
     }
     spellsConflict(spell1, spell2) {
         // Check if spells provide the same type of bonus that doesn't stack
-        const nonStackingCategories = [
-            'armor_class_bonus',
-            'attribute_enhancement',
-            'movement_speed'
-        ];
+        const _nonStackingCategories = ["armor_class_bonus", "attribute_enhancement", "movement_speed"];
         // This would check actual spell effects for conflicts
         // Simplified implementation
-        return spell1.metadata.school === spell2.metadata.school &&
-            spell1.metadata.level === spell2.metadata.level;
+        return (spell1.metadata.school === spell2.metadata.school &&
+            spell1.metadata.level === spell2.metadata.level);
     }
     calculateSynergy(spell1, spell2) {
         // Examples of spell synergies:
@@ -366,16 +356,16 @@ export class SpellInteractionCalculator {
         // - Web + fire spells = extra damage
         // - Darkness + Devil's Sight = advantage on attacks
         const synergies = {
-            'faerie_fire': {
-                '*_attack': { type: 'advantage', value: 1 }
+            faerie_fire: {
+                "*_attack": { type: "advantage", value: 1 },
             },
-            'web': {
-                '*_fire_damage': { type: 'damage_bonus', value: 2 }
+            web: {
+                "*_fire_damage": { type: "damage_bonus", value: 2 },
             },
-            'bless': {
-                '*_attack': { type: 'attack_bonus', value: 4 },
-                '*_save': { type: 'save_bonus', value: 4 }
-            }
+            bless: {
+                "*_attack": { type: "attack_bonus", value: 4 },
+                "*_save": { type: "save_bonus", value: 4 },
+            },
         };
         const spell1Synergies = synergies[spell1.id];
         if (spell1Synergies) {
@@ -389,34 +379,33 @@ export class SpellInteractionCalculator {
     }
     spellDispelsAnother(dispelSpell, targetSpell) {
         // Dispel Magic, Counterspell, Remove Curse, etc.
-        const dispelSpells = ['dispel_magic', 'counterspell', 'remove_curse', 'greater_restoration'];
+        const dispelSpells = ["dispel_magic", "counterspell", "remove_curse", "greater_restoration"];
         if (!dispelSpells.includes(dispelSpell.id))
             return false;
-        if (dispelSpell.id === 'dispel_magic') {
+        if (dispelSpell.id === "dispel_magic") {
             // Dispel magic affects spells of 3rd level or lower automatically
             // Higher level spells require a check
             return targetSpell.metadata.level <= 3;
         }
-        if (dispelSpell.id === 'remove_curse') {
-            return targetSpell.metadata.school === 'necromancy' ||
-                targetSpell.effects.some(e => e.type === 'condition' &&
-                    ['cursed', 'charmed', 'frightened'].includes(e.condition));
+        if (dispelSpell.id === "remove_curse") {
+            return (targetSpell.metadata.school === "necromancy" ||
+                targetSpell.effects.some((e) => e.type === "condition" && ["cursed", "charmed", "frightened"].includes(e.condition)));
         }
         return false;
     }
     matchesSpellPattern(spell, pattern) {
-        if (pattern === '*_attack') {
-            return spell.effects.some(e => e.type === 'damage' && !e.savingThrow);
+        if (pattern === "*_attack") {
+            return spell.effects.some((e) => e.type === "damage" && !e.savingThrow);
         }
-        if (pattern === '*_fire_damage') {
-            return spell.effects.some(e => e.type === 'damage' && e.damageType === 'fire');
+        if (pattern === "*_fire_damage") {
+            return spell.effects.some((e) => e.type === "damage" && e.damageType === "fire");
         }
-        if (pattern === '*_save') {
-            return spell.effects.some(e => e.savingThrow);
+        if (pattern === "*_save") {
+            return spell.effects.some((e) => e.savingThrow);
         }
         return false;
     }
 }
-export const spellRuleEngine = new SpellRuleEngine();
-export const spellInteractionCalculator = new SpellInteractionCalculator();
+export const _spellRuleEngine = new SpellRuleEngine();
+export const _spellInteractionCalculator = new SpellInteractionCalculator();
 //# sourceMappingURL=SpellRuleEngine.js.map

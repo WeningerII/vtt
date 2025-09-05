@@ -129,28 +129,28 @@ export class UnifiedEventBus {
   ): string {
     const subscription: EventSubscription = {
       id: this.generateId(),
-      eventType,
+      eventType: _eventType,
       handler: options.filter
         ? (event: SystemEvent) => {
             if (options.filter!(event as T)) {
-              return handler(event as T);
+              return _handler(event as T);
             }
           }
-        : (handler as EventHandler),
+        : (_handler as EventHandler),
       once: options.once || false,
       priority: options.priority || 0,
       active: true,
     };
 
-    if (!this.subscriptions.has(eventType)) {
-      this.subscriptions.set(eventType, []);
+    if (!this.subscriptions.has(_eventType)) {
+      this.subscriptions.set(_eventType, []);
     }
 
-    const handlers = this.subscriptions.get(eventType)!;
+    const handlers = this.subscriptions.get(_eventType)!;
     handlers.push(subscription);
 
     // Sort by priority (higher priority first)
-    handlers.sort((_a, _b) => b.priority - a.priority);
+    handlers.sort((_a, _b) => _b.priority - _a.priority);
 
     return subscription.id;
   }
@@ -163,7 +163,7 @@ export class UnifiedEventBus {
     _handler: EventHandler<T>,
     options: { priority?: number; filter?: (event: T) => boolean } = {},
   ): string {
-    return this.on(eventType, handler, { ...options, once: true });
+    return this.on(_eventType, _handler, { ...options, once: true });
   }
 
   /**
@@ -246,7 +246,7 @@ export class UnifiedEventBus {
         }
       } catch (error) {
         this.stats.errorCount++;
-        logger.error(`Event handler error for ${event.type}:`, error);
+        logger.error(`Event handler error for ${event.type}:`, error as Record<string, any>);
 
         // Emit error event
         this.emitSync({
@@ -356,11 +356,11 @@ export class UnifiedEventBus {
       queueSize: this.eventQueue.length,
       historySize: this.eventHistory.length,
       subscriptionCount: Array.from(this.subscriptions.values()).reduce(
-        (_sum, _handlers) => sum + handlers.length,
+        (_sum, _handlers) => _sum + _handlers.length,
         0,
       ),
       activeSubscriptions: Array.from(this.subscriptions.values()).reduce(
-        (_sum, _handlers) => sum + handlers.filter((h) => h.active).length,
+        (_sum, _handlers) => _sum + _handlers.filter((h) => h.active).length,
         0,
       ),
     };
@@ -421,14 +421,14 @@ export class EventCorrelation {
     return new Promise((_resolve, __reject) => {
       const timeoutId = setTimeout(() => {
         this.eventBus.off(subscriptionId);
-        reject(new Error(`Timeout waiting for ${eventType} in correlation ${this.id}`));
+        __reject(new Error(`Timeout waiting for ${eventType} in correlation ${this.id}`));
       }, timeout);
 
-      const subscriptionId = this.eventBus.on(_eventType, (event) => {
+      const subscriptionId = this.eventBus.on(eventType, (event) => {
         if (event.metadata?.correlationId === this.id) {
           clearTimeout(timeoutId);
           this.eventBus.off(subscriptionId);
-          resolve(event);
+          _resolve(event);
         }
       });
     });
@@ -486,7 +486,7 @@ export const _GameEvents = {
     source: "game",
     timestamp: Date.now(),
     sessionId,
-    data: Record<string, any>,
+    data: {},
   }),
 };
 

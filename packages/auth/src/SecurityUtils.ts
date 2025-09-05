@@ -135,10 +135,10 @@ export class SecurityUtils {
     const score = Object.values(checks).filter(Boolean).length;
     let strength: "weak" | "fair" | "good" | "strong";
 
-    if (score < 4) strength = "weak";
-    else if (score < 6) strength = "fair";
-    else if (score < 7) strength = "good";
-    else strength = "strong";
+    if (score < 4) {strength = "weak";}
+    else if (score < 6) {strength = "fair";}
+    else if (score < 7) {strength = "good";}
+    else {strength = "strong";}
 
     return {
       score,
@@ -366,12 +366,12 @@ export class SecurityUtils {
   private static getPasswordSuggestions(checks: Record<string, boolean>): string[] {
     const suggestions: string[] = [];
 
-    if (!checks.length) suggestions.push("Use at least 12 characters");
-    if (!checks.uppercase) suggestions.push("Include uppercase letters");
-    if (!checks.lowercase) suggestions.push("Include lowercase letters");
-    if (!checks.numbers) suggestions.push("Include numbers");
-    if (!checks.symbols) suggestions.push("Include special characters");
-    if (!checks.noCommonWords) suggestions.push("Avoid common words");
+    if (!checks.length) {suggestions.push("Use at least 12 characters");}
+    if (!checks.uppercase) {suggestions.push("Include uppercase letters");}
+    if (!checks.lowercase) {suggestions.push("Include lowercase letters");}
+    if (!checks.numbers) {suggestions.push("Include numbers");}
+    if (!checks.symbols) {suggestions.push("Include special characters");}
+    if (!checks.noCommonWords) {suggestions.push("Avoid common words");}
 
     return suggestions;
   }

@@ -227,7 +227,7 @@ export class AuthenticationManager extends EventEmitter {
 
       this.emit("loginSuccess", {
         user: this.sanitizeUser(user),
-        session: session,
+        session,
         ipAddress: credentials.ipAddress,
       });
 
@@ -359,10 +359,10 @@ export class AuthenticationManager extends EventEmitter {
    */
   hasPermission(userId: string, permission: string): boolean {
     const user = this.users.get(userId);
-    if (!user || !user.isActive) return false;
+    if (!user || !user.isActive) {return false;}
 
     // Check direct permissions
-    if (user.permissions.includes(permission)) return true;
+    if (user.permissions.includes(permission)) {return true;}
 
     // Check role-based permissions
     return this.checkRolePermissions(user.roles, permission);
@@ -381,7 +381,7 @@ export class AuthenticationManager extends EventEmitter {
    */
   addRole(userId: string, role: string): boolean {
     const user = this.users.get(userId);
-    if (!user) return false;
+    if (!user) {return false;}
 
     if (!user.roles.includes(role)) {
       user.roles.push(role);
@@ -397,7 +397,7 @@ export class AuthenticationManager extends EventEmitter {
    */
   removeRole(userId: string, role: string): boolean {
     const user = this.users.get(userId);
-    if (!user) return false;
+    if (!user) {return false;}
 
     const index = user.roles.indexOf(role);
     if (index > -1) {
@@ -486,8 +486,8 @@ export class AuthenticationManager extends EventEmitter {
       createdAt: new Date(),
       isActive: true,
     };
-    if (credentials.ipAddress) session.ipAddress = credentials.ipAddress;
-    if (credentials.userAgent) session.userAgent = credentials.userAgent;
+    if (credentials.ipAddress) {session.ipAddress = credentials.ipAddress;}
+    if (credentials.userAgent) {session.userAgent = credentials.userAgent;}
 
     // Store session
     this.sessions.set(sessionId, session);
@@ -532,7 +532,7 @@ export class AuthenticationManager extends EventEmitter {
 
   private invalidateSession(sessionId: string): void {
     const session = this.sessions.get(sessionId);
-    if (!session) return;
+    if (!session) {return;}
 
     session.isActive = false;
     this.sessions.delete(sessionId);
@@ -558,7 +558,7 @@ export class AuthenticationManager extends EventEmitter {
 
   private enforceMaxSessions(userId: string): void {
     const sessionIds = this.userSessions.get(userId);
-    if (!sessionIds || sessionIds.size <= this.config.maxSessions) return;
+    if (!sessionIds || sessionIds.size <= this.config.maxSessions) {return;}
 
     // Get sessions sorted by creation time (oldest first)
     const sessions = Array.from(sessionIds)
@@ -611,7 +611,7 @@ export class AuthenticationManager extends EventEmitter {
     };
 
     const match = timeString.match(/^(\d+)([smhd])$/);
-    if (!match) throw new Error(`Invalid time format: ${timeString}`);
+    if (!match) {throw new Error(`Invalid time format: ${timeString}`);}
 
     const amount = match[1]!;
     const unit = match[2]! as keyof typeof units;

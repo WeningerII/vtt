@@ -60,7 +60,7 @@ export class Grid {
       return null;
     }
     const row = this.nodes[x];
-    if (!row) return null;
+    if (!row) {return null;}
     return row[y] || null;
   }
 
@@ -123,10 +123,10 @@ export class Grid {
   public reset(): void {
     for (let x = 0; x < this.width; x++) {
       const row = this.nodes[x];
-      if (!row) continue;
+      if (!row) {continue;}
       for (let y = 0; y < this.height; y++) {
         const node = row[y];
-        if (!node) continue;
+        if (!node) {continue;}
         node.gCost = 0;
         node.hCost = 0;
         node.fCost = 0;
@@ -139,7 +139,7 @@ export class Grid {
     // Reset all to walkable first
     for (let x = 0; x < this.width; x++) {
       const row = this.nodes[x];
-      if (!row) continue;
+      if (!row) {continue;}
       for (let y = 0; y < this.height; y++) {
         const node = row[y];
         if (node) {
@@ -160,7 +160,7 @@ export class Grid {
     for (let x = 0; x < this.width; x++) {
       const sourceRow = this.nodes[x];
       const targetRow = newGrid.nodes[x];
-      if (!sourceRow || !targetRow) continue;
+      if (!sourceRow || !targetRow) {continue;}
       for (let y = 0; y < this.height; y++) {
         const sourceNode = sourceRow[y];
         const targetNode = targetRow[y];
@@ -262,12 +262,12 @@ export class AStar {
 
       // Find node with lowest fCost
       let currentNode = openSet[0];
-      if (!currentNode) break; // Safety check
+      if (!currentNode) {break;} // Safety check
       let currentIndex = 0;
 
       for (let i = 1; i < openSet.length; i++) {
         const node = openSet[i];
-        if (!node) continue;
+        if (!node) {continue;}
         if (
           node.fCost < currentNode.fCost ||
           (node.fCost === currentNode.fCost && node.hCost < currentNode.hCost)
@@ -335,7 +335,7 @@ export class AStar {
     }
 
     const firstPoint = path[0];
-    if (!firstPoint) return path;
+    if (!firstPoint) {return path;}
     const smoothed: Vector2[] = [firstPoint];
 
     for (let i = 2; i < path.length; i++) {
@@ -343,7 +343,7 @@ export class AStar {
       const previous = smoothed[smoothed.length - 1];
       const intermediate = path[i - 1];
 
-      if (!current || !previous || !intermediate) continue;
+      if (!current || !previous || !intermediate) {continue;}
 
       // Check if we can skip the intermediate point
       const dx = current.x - previous.x;
@@ -395,7 +395,7 @@ export class FlowField {
     // Reset cost field
     for (let x = 0; x < this.grid.width; x++) {
       const costRow = this.costField[x];
-      if (!costRow) continue;
+      if (!costRow) {continue;}
       for (let y = 0; y < this.grid.height; y++) {
         costRow[y] = this.grid.isWalkable(x, y) ? Infinity : -1;
       }
@@ -415,16 +415,16 @@ export class FlowField {
     while (queue.length > 0) {
       const current = queue.shift()!;
       const currentRow = this.costField[current.x];
-      if (!currentRow) continue;
+      if (!currentRow) {continue;}
       const currentCost = currentRow[current.y];
-      if (currentCost === undefined) continue;
+      if (currentCost === undefined) {continue;}
 
       const neighbors = this.getNeighbors(current);
 
       for (const neighbor of neighbors) {
         const neighborRow = this.costField[neighbor.x];
-        if (!neighborRow) continue;
-        if (neighborRow[neighbor.y] === -1) continue; // Unwalkable
+        if (!neighborRow) {continue;}
+        if (neighborRow[neighbor.y] === -1) {continue;} // Unwalkable
 
         const newCost = currentCost + 1;
 
@@ -440,7 +440,7 @@ export class FlowField {
     for (let x = 0; x < this.grid.width; x++) {
       const costRow = this.costField[x];
       const flowRow = this.flowField[x];
-      if (!costRow || !flowRow) continue;
+      if (!costRow || !flowRow) {continue;}
       for (let y = 0; y < this.grid.height; y++) {
         if (costRow[y] === -1 || costRow[y] === Infinity) {
           flowRow[y] = { x: 0, y: 0 };
@@ -449,15 +449,15 @@ export class FlowField {
 
         let bestDirection = { x: 0, y: 0 };
         let bestCost = costRow[y];
-        if (bestCost === undefined) continue;
+        if (bestCost === undefined) {continue;}
 
         const neighbors = this.getNeighbors({ x, y });
 
         for (const neighbor of neighbors) {
           const neighborRow = this.costField[neighbor.x];
-          if (!neighborRow) continue;
+          if (!neighborRow) {continue;}
           const neighborCost = neighborRow[neighbor.y];
-          if (neighborCost === undefined) continue;
+          if (neighborCost === undefined) {continue;}
           if (neighborCost < bestCost) {
             bestCost = neighborCost;
             bestDirection = {
@@ -487,7 +487,7 @@ export class FlowField {
     }
 
     const row = this.flowField[x];
-    if (!row) return { x: 0, y: 0 };
+    if (!row) {return { x: 0, y: 0 };}
     return row[y] || { x: 0, y: 0 };
   }
 
@@ -497,7 +497,7 @@ export class FlowField {
     }
 
     const row = this.costField[x];
-    if (!row) return Infinity;
+    if (!row) {return Infinity;}
     return row[y] ?? Infinity;
   }
 
@@ -592,7 +592,7 @@ export class PathfindingManager {
 
   public createFlowField(gridId: string, target: Vector2): FlowField | null {
     const grid = this.grids.get(gridId);
-    if (!grid) return null;
+    if (!grid) {return null;}
 
     const flowField = new FlowField(grid);
     flowField.generateFlowField(target);
@@ -659,8 +659,8 @@ export function gridToWorld(
 }
 
 export function simplifyPath(path: Vector2[], tolerance: number = 1): Vector2[] {
-  if (path.length <= 2) return path;
-  if (!path[0] || !path[path.length - 1]) return path;
+  if (path.length <= 2) {return path;}
+  if (!path[0] || !path[path.length - 1]) {return path;}
 
   const simplified: Vector2[] = [path[0]];
 
@@ -669,7 +669,7 @@ export function simplifyPath(path: Vector2[], tolerance: number = 1): Vector2[] 
     const current = path[i];
     const next = path[i + 1];
 
-    if (!prev || !current || !next) continue;
+    if (!prev || !current || !next) {continue;}
 
     // Calculate cross product to determine if points are collinear
     const crossProduct =

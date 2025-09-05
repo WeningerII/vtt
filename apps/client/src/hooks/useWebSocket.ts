@@ -35,9 +35,9 @@ interface UseWebSocketOptions {
 
 interface UseWebSocketReturn {
   socket: {
-    emit: (event: string, _data: any) => void;
-    on: (event: string, _callback: (data: any) => void) => void;
-    off: (event: string, _callback?: (data: any) => void) => void;
+    emit: (event: string, data: any) => void;
+    on: (event: string, callback: (data: any) => void) => void;
+    off: (event: string, callback?: (data: any) => void) => void;
   } | null;
   isConnected: boolean;
   isConnecting: boolean;
@@ -84,7 +84,10 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     setError(null);
 
     try {
-      const wsUrl = `ws://localhost:8080?sessionId=${sessionId}&userId=${userId}&campaignId=${campaignId}&isGM=${isGM}`;
+      // Determine WebSocket URL based on environment
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = process.env.REACT_APP_WS_URL || window.location.host;
+      const wsUrl = `${protocol}//${host}/ws?sessionId=${sessionId}&userId=${userId}&campaignId=${campaignId}&isGM=${isGM}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -104,6 +107,18 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
           // Update connected users count
           if (message.type === "user_join" || message.type === "user_leave") {
             setConnectedUsers(message.payload.userCount || 0);
+          }
+
+          // Trigger event listeners
+          const listeners = eventListenersRef.current.get(message.type);
+          if (listeners) {
+            listeners.forEach(callback => {
+              try {
+                callback(message.payload);
+              } catch (err) {
+                logger.error(`Error in event listener for ${message.type}:`, err);
+              }
+            });
           }
         } catch (err) {
           logger.error("Failed to parse WebSocket message:", err);
@@ -170,41 +185,39 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     };
   }, [autoConnect, connect, disconnect]);
 
+  // Event listeners management
+  const eventListenersRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
+
   // Create socket-like interface for compatibility
-  const socketInterface = wsRef.current
-    ? {
-        emit: (event: string, data: any) => {
-          const message: VTTWebSocketMessage = {
-            type: event as any,
-            payload: data,
-            sessionId: sessionId || "",
-            userId: userId || "",
-            timestamp: Date.now(),
-          };
-          send(message);
-        },
-        on: (event: string, callback: (data: any) => void) => {
-          // Simple event handling - in a real implementation this would be more sophisticated
-          if (wsRef.current) {
-            const handler = (e: MessageEvent) => {
-              try {
-                const message = JSON.parse(e.data);
-                if (message.type === event) {
-                  callback(message.payload);
-                }
-              } catch (err) {
-                logger.error("Failed to parse WebSocket message:", err);
-              }
-            };
-            wsRef.current.addEventListener("message", handler);
-          }
-        },
-        off: (_event: string, _callback?: (data: any) => void) => {
-          // Remove event listener - simplified implementation
-          // In a real implementation, we'd track listeners properly
-        },
+  const socketInterface = {
+    emit: (event: string, data: any) => {
+      const message: VTTWebSocketMessage = {
+        type: event as any,
+        payload: data,
+        sessionId: sessionId || "",
+        userId: userId || "",
+        timestamp: Date.now(),
+      };
+      send(message);
+    },
+    on: (event: string, callback: (data: any) => void) => {
+      const listeners = eventListenersRef.current;
+      if (!listeners.has(event)) {
+        listeners.set(event, new Set());
       }
-    : null;
+      listeners.get(event)!.add(callback);
+    },
+    off: (event: string, callback?: (data: any) => void) => {
+      const listeners = eventListenersRef.current;
+      if (listeners.has(event)) {
+        if (callback) {
+          listeners.get(event)!.delete(callback);
+        } else {
+          listeners.delete(event);
+        }
+      }
+    },
+  };
 
   return {
     socket: socketInterface,

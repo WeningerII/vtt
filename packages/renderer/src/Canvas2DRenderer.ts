@@ -56,7 +56,7 @@ export class Canvas2DRenderer {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Could not get 2D context");
+    if (!ctx) {throw new Error("Could not get 2D context");}
     this.ctx = ctx;
 
     this.viewport = {
@@ -129,21 +129,23 @@ export class Canvas2DRenderer {
     this.markDirty();
   }
 
-  private handleMouseDown(e: MouseEvent): void {
+  private handleMouseDown(e: Event): void {
+    const mouseEvent = e as globalThis.MouseEvent;
     this.isDragging = true;
-    this.lastMousePos = { x: e.clientX, y: e.clientY };
+    this.lastMousePos = { x: mouseEvent.clientX, y: mouseEvent.clientY };
     this.canvas.style.cursor = "grabbing";
   }
 
-  private handleMouseMove(e: MouseEvent): void {
+  private handleMouseMove(e: Event): void {
+    const mouseEvent = e as globalThis.MouseEvent;
     if (this.isDragging) {
-      const deltaX = e.clientX - this.lastMousePos.x;
-      const deltaY = e.clientY - this.lastMousePos.y;
+      const deltaX = mouseEvent.clientX - this.lastMousePos.x;
+      const deltaY = mouseEvent.clientY - this.lastMousePos.y;
 
       this.viewport.x -= deltaX / this.viewport.zoom;
       this.viewport.y -= deltaY / this.viewport.zoom;
 
-      this.lastMousePos = { x: e.clientX, y: e.clientY };
+      this.lastMousePos = { x: mouseEvent.clientX, y: mouseEvent.clientY };
       this.markDirty();
     }
   }
@@ -193,7 +195,7 @@ export class Canvas2DRenderer {
 
   private renderLayers(): void {
     for (const layer of this.layers) {
-      if (!layer.visible) continue;
+      if (!layer.visible) {continue;}
 
       this.ctx.save();
       this.ctx.globalAlpha = layer.opacity;
@@ -296,8 +298,8 @@ export class Canvas2DRenderer {
   private renderTokens(): void {
     // Sort tokens by z-index (selected tokens on top)
     const sortedTokens = Array.from(this.tokens.values()).sort((a, b) => {
-      if (a.selected && !b.selected) return 1;
-      if (!a.selected && b.selected) return -1;
+      if (a.selected && !b.selected) {return 1;}
+      if (!a.selected && b.selected) {return -1;}
       return 0;
     });
 
@@ -360,7 +362,7 @@ export class Canvas2DRenderer {
   }
 
   private renderHealthBar(token: Token, x: number, y: number, size: number): void {
-    if (!token.health) return;
+    if (!token.health) {return;}
 
     const barWidth = size;
     const barHeight = 6;
@@ -545,7 +547,7 @@ export class Canvas2DRenderer {
   }
 
   public async loadSprite(id: string, url: string): Promise<void> {
-    return new Promise((_resolve, __reject) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
         this.spriteCache.set(id, img);

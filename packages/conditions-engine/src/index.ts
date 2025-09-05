@@ -279,10 +279,10 @@ export class ConditionsEngine {
    */
   removeCondition(entityId: string, conditionId: string): boolean {
     const conditions = this.activeConditions.get(entityId);
-    if (!conditions) return false;
+    if (!conditions) {return false;}
 
     const index = conditions.findIndex((c) => c.id === conditionId);
-    if (index === -1) return false;
+    if (index === -1) {return false;}
 
     conditions.splice(index, 1);
     return true;
@@ -488,13 +488,13 @@ export function applyCondition(
   _conditionId: string,
   _duration?: number,
 ): ActiveCondition {
-  return conditionsEngine.applyCondition(entityId, conditionId, duration);
+  return conditionsEngine.applyCondition(_entityId, _conditionId, _duration);
 }
 
 export function removeCondition(_entityId: string, _conditionId: string): boolean {
-  return conditionsEngine.removeCondition(entityId, conditionId);
+  return conditionsEngine.removeCondition(_entityId, _conditionId);
 }
 
 export function hasCondition(_entityId: string, _conditionId: string): boolean {
-  return conditionsEngine.hasCondition(entityId, conditionId);
+  return conditionsEngine.hasCondition(_entityId, _conditionId);
 }

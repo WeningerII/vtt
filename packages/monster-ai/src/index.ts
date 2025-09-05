@@ -147,7 +147,7 @@ export class MonsterAI extends AIEntity {
 
     // Check for special behavior triggers
     const specialAction = this.checkSpecialBehaviors(gameState);
-    if (specialAction) return specialAction;
+    if (specialAction) {return specialAction;}
 
     // Use monster-specific tactical AI
     return this.selectTacticalAction(gameState);
@@ -179,7 +179,7 @@ export class MonsterAI extends AIEntity {
 
     // Select target based on priorities
     const target = this.selectTarget(gameState);
-    if (!target) return this.createPatrolAction();
+    if (!target) {return this.createPatrolAction();}
 
     // Choose action based on fighting style and available abilities
     return this.selectCombatAction(target, gameState);
@@ -205,13 +205,13 @@ export class MonsterAI extends AIEntity {
 
   private selectTarget(gameState: GameStateSnapshot): any {
     const enemies = gameState.nearbyEnemies;
-    if (enemies.length === 0) return null;
+    if (enemies.length === 0) {return null;}
 
     const priorities = this.monsterProfile.tacticalPreferences.targetPriority;
 
     for (const priority of priorities) {
       const target = this.findTargetByPriority(enemies, priority);
-      if (target) return target;
+      if (target) {return target;}
     }
 
     return enemies[0]; // Fallback to first enemy
@@ -244,7 +244,7 @@ export class MonsterAI extends AIEntity {
 
     // Check for special ability usage
     const specialAbility = this.selectSpecialAbility(target, gameState);
-    if (specialAbility) return specialAbility;
+    if (specialAbility) {return specialAbility;}
 
     // Select action based on fighting style
     switch (fightingStyle) {
@@ -289,7 +289,7 @@ export class MonsterAI extends AIEntity {
     // Check legendary actions if available
     if (availableAbilities.legendaryActionsRemaining > 0) {
       const legendaryAction = this.selectLegendaryAction(availableAbilities.legendary, target);
-      if (legendaryAction) return legendaryAction;
+      if (legendaryAction) {return legendaryAction;}
     }
 
     return null;
@@ -548,7 +548,7 @@ export class MonsterAI extends AIEntity {
   }
 
   private selectLegendaryAction(legendaryActions: MonsterTrait[], target: any): AIAction | null {
-    if (legendaryActions.length === 0) return null;
+    if (legendaryActions.length === 0) {return null;}
 
     // Simple selection - prefer attack actions
     const attackAction = legendaryActions.find(

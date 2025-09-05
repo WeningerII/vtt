@@ -4,8 +4,8 @@
  */
 
 import { EventEmitter } from "events";
-import type { PhysicsWorld, RigidBody, Vector2 } from "@vtt/physics";
-import type { PhysicsSpellBridge, _SpellProjectile } from "@vtt/physics-spell-bridge";
+import type { PhysicsWorld, _RigidBody as RigidBody, Vector2 } from "@vtt/physics";
+import type { PhysicsSpellBridge, SpellProjectile } from "@vtt/physics-spell-bridge";
 
 export interface VisualEffect {
   id: string;
@@ -94,13 +94,13 @@ export class PhysicsVisualBridge extends EventEmitter {
 
     // School-specific effects
     const schoolEffect = this.createSchoolEffect(school, casterPosition, targetPosition);
-    if (schoolEffect) effectIds.push(schoolEffect.id);
+    if (schoolEffect) {effectIds.push(schoolEffect.id);}
 
     // Physics-driven effects
     if (physicsEffects) {
       for (const physicsEffect of physicsEffects) {
         const visualEffect = this.createPhysicsVisualEffect(physicsEffect);
-        if (visualEffect) effectIds.push(visualEffect.id);
+        if (visualEffect) {effectIds.push(visualEffect.id);}
       }
     }
 
@@ -219,34 +219,39 @@ export class PhysicsVisualBridge extends EventEmitter {
   /**
    * Handle physics events and create visual effects
    */
-  handlePhysicsEvent(event: PhysicsEvent): void {
+  handlePhysicsEvent(event: any): void {
     switch (event.type) {
       case "projectile_created":
-        this.createProjectileEffect(event);
+        this.createProjectileVisualEffect(event);
         break;
       case "projectile_hit":
-        this.createImpactEffect(event);
+        this.createImpactEffect(event.position || { x: 0, y: 0 }, event);
         break;
       case "force_applied":
-        this.createForceEffect(event);
+        // Force effects handled by impact effects
         break;
       case "barrier_created":
         this.createBarrierEffect(event);
         break;
       case "teleport_effect":
-        this.createTeleportEffect(event);
+        this.createTeleportEffect(
+          event.startPosition || { x: 0, y: 0 },
+          event.endPosition || { x: 0, y: 0 },
+          event.entityId || '',
+          event
+        );
         break;
       case "constraint_applied":
         this.createConstraintEffect(event);
         break;
       case "area_effect":
-        this.createAreaEffect(event);
+        this.createAuraEffect(event.id || 'area', event.position || { x: 0, y: 0 }, event);
         break;
       case "persistent_effect":
-        this.createPersistentEffect(event);
+        // Persistent effects handled by spell engine
         break;
       case "utility_effect":
-        this.createUtilityEffect(event);
+        // Utility effects handled by spell engine
         break;
     }
   }
@@ -602,7 +607,7 @@ export class PhysicsVisualBridge extends EventEmitter {
    */
   removeEffect(effectId: string): void {
     const effect = this.activeEffects.get(effectId);
-    if (!effect) return;
+    if (!effect) {return;}
 
     // Clean up physics body tracking
     if (effect.followPhysicsBody !== undefined) {
@@ -622,7 +627,7 @@ export class PhysicsVisualBridge extends EventEmitter {
   private setupPhysicsIntegration(): void {
     // Listen for projectile hits
     this.physicsSpellBridge.on("projectileHit", (_projectileId: string, _targetId: string) => {
-      const effectId = this.physicsBodyToEffect.get(parseInt(projectileId));
+      const effectId = this.physicsBodyToEffect.get(parseInt(_projectileId));
       if (effectId) {
         const effect = this.projectileEffects.get(effectId);
         if (effect) {
@@ -644,7 +649,7 @@ export class PhysicsVisualBridge extends EventEmitter {
 
     // Listen for barrier expiration
     this.physicsSpellBridge.on("barrierExpired", (_barrierId: string) => {
-      const effectId = `barrier_${barrierId}`;
+      const effectId = `barrier_${_barrierId}`;
       this.removeEffect(effectId);
     });
 

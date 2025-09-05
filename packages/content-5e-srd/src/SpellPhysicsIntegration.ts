@@ -113,7 +113,7 @@ export class GeometryCalculator {
       const toEntity = this.subtract(entity.position, apex);
       const distance = this.magnitude(toEntity);
 
-      if (distance > length) return false;
+      if (distance > length) {return false;}
 
       const normalizedToEntity = this.normalize(toEntity);
       const dot = this.dot(normalizedDirection, normalizedToEntity);
@@ -140,7 +140,7 @@ export class GeometryCalculator {
     const pointVec = this.subtract(point, lineStart);
 
     const lineLength = this.magnitude(lineVec);
-    if (lineLength === 0) return this.distance(point, lineStart);
+    if (lineLength === 0) {return this.distance(point, lineStart);}
 
     const t = Math.max(0, Math.min(1, this.dot(pointVec, lineVec) / (lineLength * lineLength)));
     const projection = this.add(lineStart, this.multiply(lineVec, t));
@@ -253,7 +253,7 @@ export class PhysicsSpellExecutor {
         velocity: (ctx) => {
           // Calculate initial velocity toward target
           const target = ctx.targets[0];
-          if (!target) return { x: 0, y: 0, z: 0 };
+          if (!target) {return { x: 0, y: 0, z: 0 };}
 
           const direction = GeometryCalculator.subtract(target.position, ctx.caster.position);
           const distance = GeometryCalculator.magnitude(direction);
@@ -293,7 +293,7 @@ export class PhysicsSpellExecutor {
           const distance = GeometryCalculator.distance(position, center);
           const radius = effect.areaOfEffect.size(ctx);
 
-          if (distance > radius) return 0;
+          if (distance > radius) {return 0;}
 
           const timeDecay = Math.max(0, 1 - time / 100);
           const distanceDecay = Math.max(0, 1 - distance / radius);
@@ -395,7 +395,7 @@ export class PhysicsSpellExecutor {
     const physics = effect.physicsEffect.physics;
     const entity = effect.entity;
 
-    if (!entity) return;
+    if (!entity) {return;}
 
     // Apply acceleration
     if (physics.acceleration) {
@@ -427,7 +427,7 @@ export class PhysicsSpellExecutor {
   private updateAreaField(effect: ActivePhysicsEffect, elapsed: number): void {
     const physics = effect.physicsEffect.physics;
 
-    if (!physics.fieldStrength || !physics.fieldGradient) return;
+    if (!physics.fieldStrength || !physics.fieldGradient) {return;}
 
     // Apply field forces to all entities in range
     for (const entity of this.physicsWorld.entities.values()) {
@@ -458,7 +458,7 @@ export class PhysicsSpellExecutor {
   private updatePhysicsWorld(deltaTime: number): void {
     // Update all entities in the physics world
     for (const entity of this.physicsWorld.entities.values()) {
-      if (entity.isStatic) continue;
+      if (entity.isStatic) {continue;}
 
       // Apply forces
       let totalForce = { x: 0, y: 0, z: 0 };
@@ -505,7 +505,7 @@ export class PhysicsSpellExecutor {
 
   private checkCollisions(entity: PhysicsEntity): CollisionResult | null {
     for (const other of this.physicsWorld.entities.values()) {
-      if (other.id === entity.id) continue;
+      if (other.id === entity.id) {continue;}
 
       const collision = this.physicsWorld.collisionDetection.checkCollision(entity, other);
       if (collision) {
@@ -517,7 +517,7 @@ export class PhysicsSpellExecutor {
 
   private resolveCollisions(entity: PhysicsEntity): void {
     for (const other of this.physicsWorld.entities.values()) {
-      if (other.id === entity.id) continue;
+      if (other.id === entity.id) {continue;}
 
       const collision = this.physicsWorld.collisionDetection.checkCollision(entity, other);
       if (collision) {
@@ -535,7 +535,7 @@ export class PhysicsSpellExecutor {
           const relativeVelocity = GeometryCalculator.subtract(entity.velocity, other.velocity);
           const velocityAlongNormal = GeometryCalculator.dot(relativeVelocity, collision.normal);
 
-          if (velocityAlongNormal > 0) continue; // Objects separating
+          if (velocityAlongNormal > 0) {continue;} // Objects separating
 
           const restitution = 0.8; // Bounciness
           const impulse =

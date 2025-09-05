@@ -322,7 +322,7 @@ export class VTTIntegrationMaster extends EventEmitter {
     position: { x: number; y: number; z?: number },
   ): Promise<void> {
     const entity = this.entities.get(entityId);
-    if (!entity) return;
+    if (!entity) {return;}
 
     entity.position = position;
 
@@ -482,7 +482,7 @@ export class VTTIntegrationMaster extends EventEmitter {
   }
 
   private async persistSpellEffect(context: SpellCastingContext, result: any): Promise<void> {
-    if (!this.config.persistence.saveSpellEffects) return;
+    if (!this.config.persistence.saveSpellEffects) {return;}
 
     const expiresAt =
       context.spell.duration > 0 ? new Date(Date.now() + context.spell.duration * 1000) : null;
@@ -509,7 +509,7 @@ export class VTTIntegrationMaster extends EventEmitter {
   }
 
   private async persistPhysicsBody(entity: GameEntity): Promise<void> {
-    if (!this.config.persistence.savePhysicsState) return;
+    if (!this.config.persistence.savePhysicsState) {return;}
 
     await this.prisma.physicsBody.upsert({
       where: { entityId: entity.id },
@@ -622,8 +622,8 @@ export class VTTIntegrationMaster extends EventEmitter {
    * Cleanup resources
    */
   destroy(): void {
-    if (this.updateInterval) clearInterval(this.updateInterval);
-    if (this.cleanupInterval) clearInterval(this.cleanupInterval);
+    if (this.updateInterval) {clearInterval(this.updateInterval);}
+    if (this.cleanupInterval) {clearInterval(this.cleanupInterval);}
     this.physicsConcentrationIntegration.destroy();
   }
 }

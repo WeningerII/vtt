@@ -48,7 +48,7 @@ export const KeyboardNavigable: React.FC<KeyboardNavigableProps> = ({
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      if (items.length === 0) return;
+      if (items.length === 0) {return;}
 
       const newIndex = KeyboardNavigation.handleArrowKeys(event, items, currentIndex, {
         orientation,
@@ -134,7 +134,7 @@ export const KeyboardNavigableItem: React.FC<KeyboardNavigableItemProps> = ({
 
   useEffect(() => {
     const item = itemRef.current;
-    if (!item) return;
+    if (!item) {return;}
 
     const keyboardOptions: {
       onEnter?: () => void;
@@ -144,8 +144,8 @@ export const KeyboardNavigableItem: React.FC<KeyboardNavigableItemProps> = ({
     } = {};
     const enterHandler = onEnter || onClick;
     const spaceHandler = onSpace || onClick;
-    if (enterHandler) keyboardOptions.onEnter = enterHandler;
-    if (spaceHandler) keyboardOptions.onSpace = spaceHandler;
+    if (enterHandler) {keyboardOptions.onEnter = enterHandler;}
+    if (spaceHandler) {keyboardOptions.onSpace = spaceHandler;}
 
     const cleanup = KeyboardNavigation.addKeyboardSupport(item, keyboardOptions);
 

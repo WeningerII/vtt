@@ -7,12 +7,13 @@ import { IncomingMessage } from "http";
 import { EventEmitter } from "events";
 import { GameManager } from "../game/GameManager";
 import { v4 as uuidv4 } from "uuid";
+import { AuthManager } from "@vtt/auth";
 
 export interface VTTWebSocketMessage {
   type: string;
-  payload?: any;
+  payload?: Record<string, any>;
   sessionId?: string;
-  userId?: string;
+  userId?: string | undefined;
   timestamp?: number;
   requestId?: string;
 }
@@ -20,14 +21,15 @@ export interface VTTWebSocketMessage {
 export interface ConnectedClient {
   id: string;
   ws: WebSocket;
-  userId?: string | null;
-  sessionId?: string;
-  campaignId?: string | null;
-  gameId?: string;
-  displayName?: string;
+  userId?: string | null | undefined;
+  sessionId?: string | undefined;
+  campaignId?: string | null | undefined;
+  gameId?: string | undefined;
+  displayName?: string | undefined;
   isGM?: boolean;
   lastActivity: number;
   lastPing?: number;
+  authSessionId?: string | undefined;
 }
 
 export class UnifiedWebSocketManager extends EventEmitter {
@@ -37,10 +39,12 @@ export class UnifiedWebSocketManager extends EventEmitter {
   private userSockets = new Map<string, Set<string>>(); // userId -> clientIds
   private gameManager: GameManager;
   private pingInterval?: NodeJS.Timeout;
+  private authManager?: AuthManager | undefined;
 
-  constructor(wss: WebSocketServer) {
+  constructor(wss: WebSocketServer, opts?: { authManager?: AuthManager }) {
     super();
     this.wss = wss;
+    this.authManager = opts?.authManager || undefined;
     this.gameManager = new GameManager();
     this.setupConnectionHandler();
     this.startGameStateSyncing();
@@ -48,45 +52,122 @@ export class UnifiedWebSocketManager extends EventEmitter {
   }
 
   private setupConnectionHandler(): void {
-    this.wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+    this.wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
       const clientId = uuidv4();
       const url = new URL(req.url || "", `http://${req.headers.host}`);
 
-      // Extract connection parameters
-      const sessionId = url.searchParams.get("sessionId");
-      const userId = url.searchParams.get("userId");
-      const campaignId = url.searchParams.get("campaignId");
-      const gameId = url.searchParams.get("gameId");
+      // Extract connection parameters (game/session context)
+      const wsSessionId = url.searchParams.get("sessionId") || undefined; // game/session id
+      const campaignId = url.searchParams.get("campaignId") || undefined;
+      const gameId = url.searchParams.get("gameId") || undefined;
       const isGM = url.searchParams.get("isGM") === "true";
+
+      // Instrumentation for tracing auth issues
+      const cookieHeader = req.headers["cookie"] as string | undefined;
+      const authHeader = req.headers["authorization"] as string | undefined;
+      const tokenFromQuery = url.searchParams.get("token") || url.searchParams.get("accessToken");
+
+      let userId: string | undefined;
+      let authSessionId: string | undefined;
+
+      if (this.authManager) {
+        const cookies = this.parseCookies(cookieHeader);
+        const token =
+          cookies["sessionToken"] ||
+          (authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined) ||
+          tokenFromQuery ||
+          undefined;
+
+        const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "";
+        const userAgent = (req.headers["user-agent"] as string) || "";
+
+        // In development mode, allow connections without auth for better UX
+        const isDevelopment = process.env.NODE_ENV === "development";
+        
+        if (!token && !isDevelopment) {
+          logger.warn("[ws-auth] Missing token on connection", {
+            url: req.url,
+            hasCookie: Boolean(cookies["sessionToken"]),
+            hasAuthHeader: Boolean(authHeader),
+            hasTokenQuery: Boolean(tokenFromQuery),
+            ip,
+          });
+          ws.send(
+            JSON.stringify({
+              type: "ERROR",
+              payload: { code: "UNAUTHORIZED", message: "Missing authentication token" },
+            }),
+          );
+          ws.close(1008, "Unauthorized"); // Policy violation
+          return;
+        }
+
+        if (!token && isDevelopment) {
+          logger.info("[ws-auth] Development mode: allowing unauthenticated connection", {
+            url: req.url,
+            ip,
+          });
+          // Continue without authentication in development
+        }
+
+        if (token) {
+          try {
+            const ctx = await this.authManager.validateToken(token, ip, userAgent);
+            userId = ctx.user.id;
+            authSessionId = ctx.session.id;
+            logger.info("[ws-auth] Authenticated WebSocket connection", {
+              userId,
+              authSessionId,
+              gameId,
+              campaignId,
+            });
+          } catch (error) {
+            logger.warn("[ws-auth] Token validation failed", {
+              error: (error as Error).message,
+              url: req.url,
+            });
+            ws.send(
+              JSON.stringify({
+                type: "ERROR",
+                payload: { code: "UNAUTHORIZED", message: "Invalid or expired token" },
+              }),
+            );
+            ws.close(1008, "Unauthorized");
+            return;
+          }
+        }
+      }
 
       const client: ConnectedClient = {
         id: clientId,
         ws,
-        userId,
-        sessionId,
-        campaignId,
-        gameId,
+        userId: userId || null,
+        sessionId: wsSessionId || undefined,
+        campaignId: campaignId || null,
+        gameId: gameId || undefined,
         isGM,
         lastActivity: Date.now(),
         lastPing: Date.now(),
+        authSessionId: authSessionId || undefined,
       };
 
+      // Track client after successful (or optional) auth
       this.clients.set(clientId, client);
 
-      // Add to session tracking
-      if (sessionId) {
-        if (!this.sessions.has(sessionId)) {
-          this.sessions.set(sessionId, new Set());
+      // Add to session tracking (game/session)
+      if (client.sessionId) {
+        if (!this.sessions.has(client.sessionId)) {
+          this.sessions.set(client.sessionId, new Set());
         }
-        this.sessions.get(sessionId)!.add(clientId);
+        this.sessions.get(client.sessionId)!.add(clientId);
       }
 
-      // Add to user tracking
-      if (userId) {
-        if (!this.userSockets.has(userId)) {
-          this.userSockets.set(userId, new Set());
+      // Add to user tracking (authenticated user)
+      if (client.userId) {
+        if (!this.userSockets.has(client.userId)) {
+          this.userSockets.set(client.userId, new Set());
         }
-        this.userSockets.get(userId)!.add(clientId);
+        this.userSockets.get(client.userId)!.add(clientId);
       }
 
       // Setup event handlers
@@ -98,7 +179,13 @@ export class UnifiedWebSocketManager extends EventEmitter {
       // Send welcome message
       this.sendToClient(clientId, {
         type: "CONNECTION_ESTABLISHED",
-        payload: { clientId, sessionId, userId, campaignId, gameId },
+        payload: {
+          clientId,
+          sessionId: client.sessionId,
+          userId: client.userId || undefined,
+          campaignId: client.campaignId,
+          gameId: client.gameId,
+        },
       });
 
       // Emit connection event
@@ -108,7 +195,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
   private handleMessage(clientId: string, data: RawData): void {
     const client = this.clients.get(clientId);
-    if (!client) return;
+    if (!client) {return;}
 
     client.lastActivity = Date.now();
 
@@ -117,7 +204,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
       const raw = typeof data === "string" ? data : data.toString("utf-8");
       message = JSON.parse(raw);
     } catch (error) {
-      logger.error(`Invalid WebSocket message from ${clientId}:`, error);
+      logger.error(`Invalid WebSocket message from ${clientId}:`, { error: (error as Error).message });
       this.sendError(clientId, "INVALID_JSON", "Message must be valid JSON");
       return;
     }
@@ -175,32 +262,38 @@ export class UnifiedWebSocketManager extends EventEmitter {
           break;
       }
     } catch (error) {
-      logger.error(`Error handling message ${message.type} from ${clientId}:`, error);
+      logger.error(`Error handling message ${message.type} from ${clientId}:`, { error: (error as Error).message });
       this.sendError(clientId, "INTERNAL_ERROR", "Failed to process message");
     }
   }
 
   private handleJoinGame(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client) return;
+    if (!client) {return;}
 
-    const { gameId, userId, displayName } = message.payload || {};
+    const { gameId, displayName } = message.payload || {};
     if (!gameId) {
       this.sendError(clientId, "MISSING_GAME_ID", "Game ID is required");
       return;
     }
 
+    // Enforce authenticated identity when auth is configured
+    if (this.authManager && !client.userId) {
+      this.sendError(clientId, "UNAUTHORIZED", "Authentication required");
+      return;
+    }
+
     // Update client info
-    client.gameId = gameId;
-    if (userId) client.userId = userId;
-    if (displayName) client.displayName = displayName;
+    client.gameId = gameId || undefined;
+    if (displayName) {client.displayName = displayName;}
 
     // Get or create game
     const game = this.gameManager.findOrCreateGame(gameId);
 
     // Add player to game
-    if (userId && displayName) {
-      const success = game.addPlayer(userId, displayName);
+    const effectiveUserId = client.userId || "anonymous";
+    if (client.userId && displayName) {
+      const success = game.addPlayer(effectiveUserId, displayName);
       if (success) {
         logger.info(`Player ${displayName} joined game ${gameId}`);
 
@@ -215,19 +308,19 @@ export class UnifiedWebSocketManager extends EventEmitter {
           gameId,
           {
             type: "PLAYER_JOINED",
-            payload: { userId, displayName },
+            payload: { userId: effectiveUserId, displayName },
           },
           clientId,
         );
       }
     }
 
-    this.emit("game:joined", client, gameId);
+    this.emit("game:joined", client, gameId as Record<string, any>);
   }
 
   private handleLeaveGame(clientId: string): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId || !client.userId) return;
+    if (!client || !client.gameId || !client.userId) {return;}
 
     const game = this.gameManager.getGame(client.gameId);
     if (game) {
@@ -244,82 +337,82 @@ export class UnifiedWebSocketManager extends EventEmitter {
       );
     }
 
-    client.gameId = undefined;
-    this.emit("game:left", client);
+    client.gameId = undefined as string | undefined;
+    this.emit("game:left", client as Record<string, any>);
   }
 
   private handleTokenMove(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId) return;
+    if (!client || !client.gameId) {return;}
 
     // Broadcast to all clients in the same game
     this.broadcastToGame(
       client.gameId,
       {
         type: "TOKEN_MOVED",
-        payload: message.payload,
-        userId: client.userId,
+        payload: message.payload || {},
+        userId: client.userId || undefined,
       },
       clientId,
     );
 
-    this.emit("token:moved", client, message.payload);
+    this.emit("token:moved", client, message.payload as Record<string, any>);
   }
 
   private handleTokenAdd(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId) return;
+    if (!client || !client.gameId) {return;}
 
     this.broadcastToGame(
       client.gameId,
       {
         type: "TOKEN_ADDED",
-        payload: message.payload,
-        userId: client.userId,
+        payload: message.payload || {},
+        userId: client.userId || undefined,
       },
       clientId,
     );
 
-    this.emit("token:added", client, message.payload);
+    this.emit("token:added", client, message.payload as Record<string, any>);
   }
 
   private handleTokenRemove(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId) return;
+    if (!client || !client.gameId) {return;}
 
     this.broadcastToGame(
       client.gameId,
       {
         type: "TOKEN_REMOVED",
-        payload: message.payload,
-        userId: client.userId,
+        payload: message.payload || {},
+        userId: client.userId || undefined,
       },
       clientId,
     );
 
-    this.emit("token:removed", client, message.payload);
+    this.emit("token:removed", client, message.payload as Record<string, any>);
   }
 
   private handleSceneUpdate(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.sessionId) return;
+    if (!client || !client.sessionId) {return;}
 
     this.broadcastToSession(
       client.sessionId,
       {
         type: "SCENE_UPDATED",
-        payload: message.payload,
-        userId: client.userId,
+        payload: message.payload || {},
+        userId: client.userId || undefined,
       },
       clientId,
     );
 
-    this.emit("scene:updated", client, message.payload);
+    this.emit("scene:updated", client, message.payload as Record<string, any>);
   }
 
   private handleCombatMessage(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client) return;
+    if (!client) {return;}
 
     // Emit combat event for specialized handling
     this.emit("combat:message", client, message);
@@ -332,7 +425,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
   private handleDiceRoll(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId) return;
+    if (!client || !client.gameId) {return;}
 
     const rollResult = {
       type: "DICE_ROLLED",
@@ -350,12 +443,12 @@ export class UnifiedWebSocketManager extends EventEmitter {
       this.sendToClient(clientId, rollResult);
     }
 
-    this.emit("dice:rolled", client, message.payload);
+    this.emit("dice:rolled", client, message.payload as Record<string, any>);
   }
 
   private handleChatMessage(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || !client.gameId) return;
+    if (!client || !client.gameId) {return;}
 
     const chatMessage = {
       type: "CHAT_MESSAGE",
@@ -367,12 +460,12 @@ export class UnifiedWebSocketManager extends EventEmitter {
     };
 
     this.broadcastToGame(client.gameId, chatMessage);
-    this.emit("chat:message", client, message.payload);
+    this.emit("chat:message", client, (message.payload || {}) as Record<string, any>);
   }
 
   private handleDisconnection(clientId: string): void {
     const client = this.clients.get(clientId);
-    if (!client) return;
+    if (!client) {return;}
 
     logger.info(`Client ${clientId} disconnected`);
 
@@ -472,18 +565,18 @@ export class UnifiedWebSocketManager extends EventEmitter {
   // Utility methods for sending messages
   public sendToClient(clientId: string, message: VTTWebSocketMessage): void {
     const client = this.clients.get(clientId);
-    if (!client || client.ws.readyState !== WebSocket.OPEN) return;
+    if (!client || client.ws.readyState !== WebSocket.OPEN) {return;}
 
     try {
       client.ws.send(JSON.stringify(message));
     } catch (error) {
-      logger.error(`Failed to send message to client ${clientId}:`, error);
+      logger.error(`Failed to send message to client ${clientId}:`, { error: (error as Error).message });
     }
   }
 
   public sendToUser(userId: string, message: VTTWebSocketMessage): void {
     const clientIds = this.userSockets.get(userId);
-    if (!clientIds) return;
+    if (!clientIds) {return;}
 
     for (const clientId of clientIds) {
       this.sendToClient(clientId, message);
@@ -496,7 +589,7 @@ export class UnifiedWebSocketManager extends EventEmitter {
     excludeClientId?: string,
   ): void {
     const clientIds = this.sessions.get(sessionId);
-    if (!clientIds) return;
+    if (!clientIds) {return;}
 
     for (const clientId of clientIds) {
       if (clientId !== excludeClientId) {
@@ -539,24 +632,24 @@ export class UnifiedWebSocketManager extends EventEmitter {
 
   public getClientsInSession(sessionId: string): ConnectedClient[] {
     const clientIds = this.sessions.get(sessionId);
-    if (!clientIds) return [];
+    if (!clientIds) {return [];}
 
     const clients: ConnectedClient[] = [];
     for (const clientId of clientIds) {
       const client = this.clients.get(clientId);
-      if (client) clients.push(client);
+      if (client) {clients.push(client);}
     }
     return clients;
   }
 
   public getClientsForUser(userId: string): ConnectedClient[] {
     const clientIds = this.userSockets.get(userId);
-    if (!clientIds) return [];
+    if (!clientIds) {return [];}
 
     const clients: ConnectedClient[] = [];
     for (const clientId of clientIds) {
       const client = this.clients.get(clientId);
-      if (client) clients.push(client);
+      if (client) {clients.push(client);}
     }
     return clients;
   }
@@ -575,9 +668,31 @@ export class UnifiedWebSocketManager extends EventEmitter {
     this.sessions.clear();
     this.userSockets.clear();
   }
+
+  // Minimal cookie parser to avoid extra deps
+  private parseCookies(header?: string): Record<string, string> {
+    const result: Record<string, string> = {};
+    if (!header) {return result;}
+    const pairs = header.split(";");
+    for (const part of pairs) {
+      const idx = part.indexOf("=");
+      if (idx === -1) {
+        const key = part.trim();
+        if (key) {result[key] = "";}
+        continue;
+      }
+      const key = part.slice(0, idx).trim();
+      const val = part.slice(idx + 1).trim();
+      if (key) {result[key] = decodeURIComponent(val);}
+    }
+    return result;
+  }
 }
 
 // Export a singleton instance factory
-export function createUnifiedWebSocketManager(wss: WebSocketServer): UnifiedWebSocketManager {
-  return new UnifiedWebSocketManager(wss);
+export function createUnifiedWebSocketManager(
+  wss: WebSocketServer,
+  opts?: { authManager?: AuthManager },
+): UnifiedWebSocketManager {
+  return new UnifiedWebSocketManager(wss, opts);
 }

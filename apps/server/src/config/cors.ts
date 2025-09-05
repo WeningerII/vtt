@@ -75,10 +75,10 @@ export function getCorsConfig(): CorsConfig {
  * Check if origin is allowed
  */
 export function isOriginAllowed(origin: string | undefined, config: CorsConfig): boolean {
-  if (!origin) return false;
+  if (!origin) {return false;}
 
-  if (config.origin === true) return true;
-  if (config.origin === false) return false;
+  if (config.origin === true) {return true;}
+  if (config.origin === false) {return false;}
 
   if (typeof config.origin === "string") {
     return origin === config.origin;

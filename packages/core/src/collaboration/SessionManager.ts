@@ -165,7 +165,7 @@ export class SessionManager extends EventEmitter {
     if (session.gamemaster === userId) {
       if (session.players.length > 0) {
         // Transfer GM to first player
-        session.gamemaster = session.players[0];
+        session.gamemaster = session.players[0] || '';
         this.emit('gamemasterChanged', sessionId, session.gamemaster);
       } else {
         // End session if no players left
@@ -207,9 +207,9 @@ export class SessionManager extends EventEmitter {
     if (!permissionCheck.allowed) {
       return {
         actionId: fullAction.id,
-        conflictType: 'permission_denied',
-        resolution: 'reject',
-        reason: permissionCheck.reason,
+        conflictType: 'permission_denied' as const,
+        resolution: 'reject' as const,
+        reason: permissionCheck.reason || 'Permission denied',
       };
     }
 
@@ -278,7 +278,7 @@ export class SessionManager extends EventEmitter {
     session.state.combatState = 'active';
     session.state.initiative = initiative.sort((a, b) => b.value - a.value);
     session.state.turnOrder = session.state.initiative.map(init => init.userId);
-    session.state.currentTurn = session.state.turnOrder[0];
+    session.state.currentTurn = session.state.turnOrder[0] || '';
     session.state.round = 1;
 
     this.emit('combatStarted', sessionId, session.state);
@@ -303,7 +303,7 @@ export class SessionManager extends EventEmitter {
       session.state.round++;
     }
     
-    session.state.currentTurn = session.state.turnOrder[nextIndex];
+    session.state.currentTurn = session.state.turnOrder[nextIndex] || '';
     
     this.emit('turnAdvanced', sessionId, session.state.currentTurn, session.state.round);
     logger.debug(`Turn advanced in session ${sessionId} to ${session.state.currentTurn}`);
@@ -321,7 +321,7 @@ export class SessionManager extends EventEmitter {
     }
 
     session.state.combatState = 'inactive';
-    session.state.currentTurn = undefined;
+    session.state.currentTurn = '';
     session.state.turnOrder = [];
     session.state.initiative = [];
     session.state.round = 0;

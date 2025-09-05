@@ -364,8 +364,8 @@ export class Profiler {
     const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length || 0;
 
     let memoryTrend: "increasing" | "stable" | "decreasing" = "stable";
-    if (secondAvg > firstAvg * 1.1) memoryTrend = "increasing";
-    else if (secondAvg < firstAvg * 0.9) memoryTrend = "decreasing";
+    if (secondAvg > firstAvg * 1.1) {memoryTrend = "increasing";}
+    else if (secondAvg < firstAvg * 0.9) {memoryTrend = "decreasing";}
 
     const recommendations = this.generateRecommendations(bottlenecks, memoryTrend);
 
@@ -394,7 +394,7 @@ export class Profiler {
     const bottlenecks: Array<{ name: string; impact: string; avgTime: number; count: number }> = [];
 
     for (const [name, times] of this.performanceData.entries()) {
-      if (times.length === 0) continue;
+      if (times.length === 0) {continue;}
 
       const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
       const count = times.length;

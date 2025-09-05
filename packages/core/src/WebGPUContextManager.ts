@@ -5,16 +5,25 @@
 
 import { EventEmitter } from "./EventEmitter";
 import { logger } from "@vtt/logging";
-import type {
-  GPUDevice,
-  GPUCanvasContext,
-  GPUTexture,
-  GPUBuffer,
-  GPUComputePipeline,
-  GPUBindGroup,
-  GPUTextureUsage,
-  GPUCommandEncoder,
-} from "@webgpu/types";
+// Use global WebGPU types
+// import {
+//   GPUDevice,
+//   GPUAdapter,
+//   GPUBuffer,
+//   GPUTexture,
+//   GPURenderPipeline,
+//   GPUComputePipeline,
+//   GPUBindGroup,
+//   GPUCommandEncoder,
+// } from "@webgpu/types";
+
+// Import GPUTextureUsage as value, not type
+declare const GPUTextureUsage: {
+  readonly RENDER_ATTACHMENT: number;
+  readonly TEXTURE_BINDING: number;
+  readonly COPY_SRC: number;
+  readonly COPY_DST: number;
+};
 
 import { GPUResourceManager, SystemEvent, Disposable } from "./SharedInterfaces";
 
@@ -90,7 +99,7 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
       powerPreference: "high-performance",
       forceFallbackAdapter: false,
       requiredFeatures: [],
-      requiredLimits: Record<string, any>,
+      requiredLimits: {},
       enableDebug: false,
       ...config,
     };
@@ -158,7 +167,7 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
 
       this.emit("ready", undefined);
     } catch (error) {
-      logger.error("Failed to initialize WebGPU context:", error);
+      logger.error("Failed to initialize WebGPU context:", error as Record<string, any>);
       throw error;
     }
   }
@@ -360,7 +369,7 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
   /**
    * Add frame callback for systems that need per-frame updates
    */
-  addFrameCallback(_callback: (deltaTime: number) => void): () => void {
+  addFrameCallback(callback: (deltaTime: number) => void): () => void {
     this.frameCallbacks.add(callback);
 
     return () => {
@@ -373,7 +382,7 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
    */
   createCommandEncoder(label?: string): GPUCommandEncoder {
     const device = this.getDevice();
-    return device.createCommandEncoder(label ? { label } : Record<string, any>);
+    return device.createCommandEncoder(label ? { label } : {});
   }
 
   /**
@@ -473,7 +482,7 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
   // Private helper methods
 
   private startRenderLoop(): void {
-    const renderFrame = (_currentTime: number) => {
+    const renderFrame = (currentTime: number) => {
       const deltaTime = currentTime - this.lastFrameTime;
       this.lastFrameTime = currentTime;
 
@@ -482,7 +491,7 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
         try {
           callback(deltaTime);
         } catch (error) {
-          logger.error("Error in frame callback:", error);
+          logger.error("Error in frame callback:", error as Record<string, any>);
         }
       }
 

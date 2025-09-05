@@ -145,13 +145,13 @@ export class UnifiedSpellSystem extends EventEmitter {
     hasComputational?: boolean;
   }): UnifiedSpell[] {
     return Array.from(this.spellRegistry.values()).filter((spell) => {
-      if (criteria.level !== undefined && spell.level !== criteria.level) return false;
-      if (criteria.school && spell.school !== criteria.school) return false;
+      if (criteria.level !== undefined && spell.level !== criteria.level) {return false;}
+      if (criteria.school && spell.school !== criteria.school) {return false;}
       if (criteria.classes && !criteria.classes.some((c) => spell.classes.includes(c)))
-        return false;
-      if (criteria.tags && !criteria.tags.some((t) => spell.tags.includes(t))) return false;
-      if (criteria.hasPhysics && !spell.physicsSpell) return false;
-      if (criteria.hasComputational && !spell.computationalSpell) return false;
+        {return false;}
+      if (criteria.tags && !criteria.tags.some((t) => spell.tags.includes(t))) {return false;}
+      if (criteria.hasPhysics && !spell.physicsSpell) {return false;}
+      if (criteria.hasComputational && !spell.computationalSpell) {return false;}
       return true;
     });
   }
@@ -551,31 +551,31 @@ export class UnifiedSpellSystem extends EventEmitter {
   // Helper methods for format conversions
   private formatComponents(components: any): string[] {
     const result = [];
-    if (components.verbal) result.push("V");
-    if (components.somatic) result.push("S");
-    if (components.material) result.push("M");
+    if (components.verbal) {result.push("V");}
+    if (components.somatic) {result.push("S");}
+    if (components.material) {result.push("M");}
     return result;
   }
 
   private formatComputationalComponents(components: any): string[] {
     const result = [];
-    if (components.verbal) result.push("V");
-    if (components.somatic) result.push("S");
-    if (components.material?.required) result.push("M");
+    if (components.verbal) {result.push("V");}
+    if (components.somatic) {result.push("S");}
+    if (components.material?.required) {result.push("M");}
     return result;
   }
 
   private formatCastingTime(ms: number): string {
-    if (ms === 0) return "1 reaction";
-    if (ms === 1000) return "1 action";
-    if (ms === 6000) return "1 bonus action";
+    if (ms === 0) {return "1 reaction";}
+    if (ms === 1000) {return "1 action";}
+    if (ms === 6000) {return "1 bonus action";}
     return `${ms / 1000} seconds`;
   }
 
   private formatRange(gameUnits: number): string {
     const feet = gameUnits / 5;
-    if (feet === 0) return "Self";
-    if (feet === 1) return "Touch";
+    if (feet === 0) {return "Self";}
+    if (feet === 1) {return "Touch";}
     return `${feet} feet`;
   }
 
@@ -583,8 +583,8 @@ export class UnifiedSpellSystem extends EventEmitter {
     const tags = new Set<string>();
     for (const effect of effects) {
       tags.add(effect.type);
-      if (effect.damage?.type) tags.add(effect.damage.type);
-      if (effect.area?.type) tags.add(effect.area.type);
+      if (effect.damage?.type) {tags.add(effect.damage.type);}
+      if (effect.area?.type) {tags.add(effect.area.type);}
     }
     return Array.from(tags);
   }
@@ -599,10 +599,10 @@ export class UnifiedSpellSystem extends EventEmitter {
 
   private extractPhysicsTags(physics: PhysicsSpellEffect): string[] {
     const tags = new Set<string>();
-    if (physics.physics?.type) tags.add(physics.physics.type);
+    if (physics.physics?.type) {tags.add(physics.physics.type);}
     if (physics.effects) {
       for (const effect of physics.effects) {
-        if (effect.damage?.type) tags.add(effect.damage.type);
+        if (effect.damage?.type) {tags.add(effect.damage.type);}
       }
     }
     return Array.from(tags);

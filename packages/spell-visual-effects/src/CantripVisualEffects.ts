@@ -9,6 +9,7 @@ export interface CantripVisualEffect extends VisualEffect {
   spellId: string;
   spellName: string;
   canScaleWithLevel?: boolean;
+  properties?: Record<string, any>;
 }
 
 export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
@@ -17,7 +18,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "acid_splash_effect",
     spellId: "acid_splash",
     spellName: "Acid Splash",
-    type: "projectile",
+    type: "beam",
     position: { x: 0, y: 0 },
     duration: 2000,
     properties: {
@@ -44,7 +45,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "chill_touch_effect",
     spellId: "chill_touch",
     spellName: "Chill Touch",
-    type: "projectile",
+    type: "beam",
     position: { x: 0, y: 0 },
     duration: 1500,
     properties: {
@@ -68,7 +69,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "firebolt_effect",
     spellId: "firebolt",
     spellName: "Fire Bolt",
-    type: "projectile",
+    type: "beam",
     position: { x: 0, y: 0 },
     duration: 1000,
     properties: {
@@ -95,7 +96,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "eldritch_blast_effect",
     spellId: "eldritch_blast",
     spellName: "Eldritch Blast",
-    type: "projectile",
+    type: "beam",
     position: { x: 0, y: 0 },
     duration: 1200,
     properties: {
@@ -122,7 +123,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "poison_spray_effect",
     spellId: "poison_spray",
     spellName: "Poison Spray",
-    type: "area",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 2000,
     properties: {
@@ -148,7 +149,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "produce_flame_effect",
     spellId: "produce_flame",
     spellName: "Produce Flame",
-    type: "persistent",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 600000, // 10 minutes
     properties: {
@@ -169,7 +170,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "ray_of_frost_effect",
     spellId: "ray_of_frost",
     spellName: "Ray of Frost",
-    type: "projectile",
+    type: "beam",
     position: { x: 0, y: 0 },
     duration: 800,
     properties: {
@@ -198,7 +199,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "sacred_flame_effect",
     spellId: "sacred_flame",
     spellName: "Sacred Flame",
-    type: "area",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 1500,
     properties: {
@@ -220,7 +221,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "shocking_grasp_effect",
     spellId: "shocking_grasp",
     spellName: "Shocking Grasp",
-    type: "melee",
+    type: "animation",
     position: { x: 0, y: 0 },
     duration: 500,
     properties: {
@@ -245,7 +246,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "vicious_mockery_effect",
     spellId: "vicious_mockery",
     spellName: "Vicious Mockery",
-    type: "mental",
+    type: "particle",
     position: { x: 0, y: 0 },
     duration: 1000,
     properties: {
@@ -268,7 +269,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "dancing_lights_effect",
     spellId: "dancing_lights",
     spellName: "Dancing Lights",
-    type: "persistent",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute
     properties: {
@@ -289,7 +290,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "light_effect",
     spellId: "light",
     spellName: "Light",
-    type: "persistent",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 3600000, // 1 hour
     properties: {
@@ -306,7 +307,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "mage_hand_effect",
     spellId: "mage_hand",
     spellName: "Mage Hand",
-    type: "persistent",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute
     properties: {
@@ -324,7 +325,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "mending_effect",
     spellId: "mending",
     spellName: "Mending",
-    type: "channeled",
+    type: "beam",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute casting
     properties: {
@@ -340,7 +341,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "message_effect",
     spellId: "message",
     spellName: "Message",
-    type: "instant",
+    type: "particle",
     position: { x: 0, y: 0 },
     duration: 1000,
     properties: {
@@ -357,7 +358,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "minor_illusion_effect",
     spellId: "minor_illusion",
     spellName: "Minor Illusion",
-    type: "persistent",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute
     properties: {
@@ -383,7 +384,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "prestidigitation_effect",
     spellId: "prestidigitation",
     spellName: "Prestidigitation",
-    type: "varied",
+    type: "animation",
     position: { x: 0, y: 0 },
     duration: 3600000, // 1 hour for most effects
     properties: {
@@ -419,7 +420,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "guidance_effect",
     spellId: "guidance",
     spellName: "Guidance",
-    type: "buff",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute
     properties: {
@@ -438,7 +439,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "resistance_effect",
     spellId: "resistance",
     spellName: "Resistance",
-    type: "buff",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute
     properties: {
@@ -457,7 +458,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "true_strike_effect",
     spellId: "true_strike",
     spellName: "True Strike",
-    type: "buff",
+    type: "aura",
     position: { x: 0, y: 0 },
     duration: 6000, // Until end of next turn
     properties: {
@@ -477,7 +478,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "druidcraft_effect",
     spellId: "druidcraft",
     spellName: "Druidcraft",
-    type: "varied",
+    type: "animation",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute for most effects
     properties: {
@@ -509,7 +510,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "shillelagh_effect",
     spellId: "shillelagh",
     spellName: "Shillelagh",
-    type: "enchantment",
+    type: "animation",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute
     properties: {
@@ -529,7 +530,7 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
     id: "thaumaturgy_effect",
     spellId: "thaumaturgy",
     spellName: "Thaumaturgy",
-    type: "varied",
+    type: "animation",
     position: { x: 0, y: 0 },
     duration: 60000, // 1 minute for most effects
     properties: {
@@ -570,8 +571,8 @@ export const cantripVisualEffects: Record<string, CantripVisualEffect> = {
 /**
  * Get visual effect for a cantrip
  */
-export function getCantripVisualEffect(_spellId: string): CantripVisualEffect | undefined {
-  return cantripVisualEffects[spellId];
+export function getCantripVisualEffect(_spellId: string): CantripVisualEffect | null {
+  return cantripVisualEffects[_spellId] || null;
 }
 
 /**
@@ -581,23 +582,25 @@ export function scaleVisualEffect(
   effect: CantripVisualEffect,
   _characterLevel: number,
 ): CantripVisualEffect {
-  if (!effect.canScaleWithLevel) return effect;
+  if (!effect.canScaleWithLevel) {return effect;}
 
   const scaledEffect = { ...effect };
 
   // Scale certain properties based on level for damage cantrips
-  if (characterLevel >= 5) {
-    if (effect.spellId === "eldritch_blast" && effect.properties.multipleBeams) {
+  if (_characterLevel >= 5) {
+    if (effect.spellId === "eldritch_blast" && effect.properties?.multipleBeams) {
       scaledEffect.properties = {
         ...effect.properties,
-        beamCount: characterLevel >= 17 ? 4 : characterLevel >= 11 ? 3 : 2,
+        beamCount: _characterLevel >= 17 ? 4 : _characterLevel >= 11 ? 3 : 2,
       };
     }
 
     // Increase visual intensity for higher levels
-    if (effect.properties.size && typeof effect.properties.size === "number") {
-      scaledEffect.properties.size =
-        effect.properties.size * (1 + Math.floor(characterLevel / 5) * 0.1);
+    if (effect.properties?.size && typeof effect.properties.size === "number") {
+      if (scaledEffect.properties && effect.properties?.size) {
+        scaledEffect.properties.size =
+          effect.properties.size * (1 + Math.floor(_characterLevel / 5) * 0.1);
+      }
     }
   }
 
@@ -611,20 +614,20 @@ export function createCantripVisualInstance(
   _spellId: string,
   _position: { x: number; y: number },
   _characterLevel: number = 1,
-  _customProperties?: Record<string, _any>,
+  _customProperties?: Record<string, any>,
 ): CantripVisualEffect | null {
-  const template = getCantripVisualEffect(spellId);
-  if (!template) return null;
+  const template = getCantripVisualEffect(_spellId);
+  if (!template) {return null;}
 
-  const scaledTemplate = scaleVisualEffect(template, characterLevel);
+  const scaledTemplate = scaleVisualEffect(template, _characterLevel);
 
   return {
     ...scaledTemplate,
     id: `${template.id}_${Date.now()}_${Math.random()}`,
-    position,
+    position: _position,
     properties: {
       ...scaledTemplate.properties,
-      ...customProperties,
+      ..._customProperties,
     },
   };
 }

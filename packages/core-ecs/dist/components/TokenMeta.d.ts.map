@@ -1,1 +1,0 @@
-{"version":3,"file":"TokenMeta.d.ts","sourceRoot":"","sources":["../../src/components/TokenMeta.ts"],"names":[],"mappings":"AAAA;;;;GAIG;AACH,MAAM,WAAW,SAAS;IACxB,OAAO,EAAE,MAAM,CAAC;IAChB,cAAc,CAAC,EAAE,MAAM,EAAE,CAAC;IAC1B,YAAY,CAAC,EAAE,OAAO,CAAC;IACvB,UAAU,CAAC,EAAE,OAAO,CAAC;CACtB"}

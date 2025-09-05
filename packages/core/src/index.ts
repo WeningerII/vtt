@@ -21,22 +21,22 @@ import { logger } from "@vtt/logging";
 import { UnifiedAssetManager } from "./UnifiedAssetManager";
 import { PerformanceMonitorImpl } from "./PerformanceMonitor";
 import { createStateManager } from "./StateManager";
-import { componentFactory } from "./ComponentFactory";
-import { webgpuContextManager } from "./WebGPUContextManager";
-import { aiProviderRegistry } from "./AIProviderRegistry";
-import { networkManager } from "./NetworkManager";
-import { memoryOptimizer } from "./MemoryOptimizer";
+import { _componentFactory } from "./ComponentFactory";
+import { WebGPUContextManager } from "./WebGPUContextManager";
+import { AIProviderRegistry } from "./AIProviderRegistry";
+import { _networkManager } from "./NetworkManager";
+import { MemoryOptimizer } from "./MemoryOptimizer";
 
 export const gpuResourceManager = new UnifiedGPUResourceManager();
 export const assetManager = new UnifiedAssetManager();
 export const performanceMonitor = new PerformanceMonitorImpl();
 export const _stateManager = createStateManager({});
+export const webgpuContextManager = new WebGPUContextManager();
+export const aiProviderRegistry = new AIProviderRegistry();
+export const networkManager = _networkManager;
+export const memoryOptimizer = new MemoryOptimizer();
 export {
-  componentFactory,
-  webgpuContextManager,
-  aiProviderRegistry,
-  networkManager,
-  memoryOptimizer,
+  _componentFactory as componentFactory,
 };
 
 // Initialize core systems
@@ -48,7 +48,7 @@ async function initializeCore() {
 
     logger.info("Core systems initialized successfully");
   } catch (error) {
-    logger.error("Failed to initialize core systems:", error);
+    logger.error("Failed to initialize core systems:", error as Record<string, any>);
     throw error;
   }
 }
@@ -56,7 +56,7 @@ async function initializeCore() {
 // Auto-initialize when imported (can be disabled if needed)
 let autoInit = true;
 export const _setAutoInit = (_enabled: boolean) => {
-  autoInit = enabled;
+  autoInit = _enabled;
 };
 
 if (autoInit && typeof window !== "undefined") {

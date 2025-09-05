@@ -92,7 +92,7 @@ describe("API Route Handlers", () => {
   describe("Request Validation", () => {
     it("should validate required fields", async () => {
       const validator = jest.fn().mockImplementation((data) => {
-        if (!data.name) throw new Error("Name is required");
+        if (!data.name) {throw new Error("Name is required");}
         return true;
       });
 
@@ -102,7 +102,7 @@ describe("API Route Handlers", () => {
 
     it("should validate data types", async () => {
       const validator = jest.fn().mockImplementation((data) => {
-        if (typeof data.age !== "number") throw new Error("Age must be a number");
+        if (typeof data.age !== "number") {throw new Error("Age must be a number");}
         return true;
       });
 
@@ -127,7 +127,7 @@ describe("API Route Handlers", () => {
         requests: new Map(),
         isAllowed: jest.fn().mockImplementation((ip) => {
           const count = rateLimiter.requests.get(ip) || 0;
-          if (count >= 100) return false;
+          if (count >= 100) {return false;}
           rateLimiter.requests.set(ip, count + 1);
           return true;
         }),
@@ -155,7 +155,7 @@ describe("API Route Handlers", () => {
             return true;
           }
 
-          if (window.count >= 100) return false;
+          if (window.count >= 100) {return false;}
           window.count++;
           return true;
         }),

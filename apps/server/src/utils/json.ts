@@ -39,7 +39,7 @@ export function parseJsonBody<T = any>(
     });
 
     req.on("end", () => {
-      if (!body) return resolve({} as T);
+      if (!body) {return resolve({} as T);}
       try {
         const data = JSON.parse(body);
         resolve(data);

@@ -76,14 +76,14 @@ export class AdvancedRateLimiter extends EventEmitter {
       });
 
       this.redisClient.on('error', (err: Error) => {
-        logger.error('Redis rate limiter error:', err);
+        logger.error('Rate limiter initialization error:', err as Record<string, any>);
         // Fallback to memory store
         this.redisClient = null;
       });
 
       logger.info('Redis rate limiter initialized');
     } catch (error) {
-      logger.error('Failed to initialize Redis rate limiter:', error);
+      logger.error('Failed to initialize Redis rate limiter:', error as Record<string, any>);
       // Use memory store as fallback
     }
   }
@@ -132,7 +132,8 @@ export class AdvancedRateLimiter extends EventEmitter {
     // Check rate limit
     if (windowRequests.length >= this.config.maxRequests) {
       const oldestRequest = windowRequests[0];
-      const retryAfter = Math.ceil((oldestRequest.timestamp + this.config.windowMs - now) / 1000);
+      const resetTime = oldestRequest?.timestamp ? oldestRequest.timestamp + this.config.windowMs : Date.now() + this.config.windowMs;
+      const retryAfter = Math.ceil((resetTime - now) / 1000);
 
       // Track suspicious activity
       this.trackSuspiciousActivity(requestInfo);
@@ -169,10 +170,10 @@ export class AdvancedRateLimiter extends EventEmitter {
 
     // Allow request and store it
     await this.storeRequest(key, {
-      timestamp: now,
+      timestamp: Date.now(),
       success: true,
-      endpoint: requestInfo.endpoint,
-      userId: requestInfo.userId
+      endpoint: req.url || '',
+      userId: req.user?.id || undefined
     });
 
     return {
@@ -195,7 +196,9 @@ export class AdvancedRateLimiter extends EventEmitter {
     
     if (requests.length > 0) {
       const latest = requests[requests.length - 1];
-      latest.success = success;
+      if (latest) {
+        latest.success = success;
+      }
       await this.storeRequests(key, requests);
     }
 
@@ -238,7 +241,7 @@ export class AdvancedRateLimiter extends EventEmitter {
    */
   isSuspiciousIP(ip: string): boolean {
     const suspiciousInfo = this.suspiciousIPs.get(ip);
-    if (!suspiciousInfo) return false;
+    if (!suspiciousInfo) {return false;}
 
     // Consider IP suspicious if it has many failed attempts in the last hour
     const oneHourAgo = Date.now() - (60 * 60 * 1000);
@@ -266,8 +269,8 @@ export class AdvancedRateLimiter extends EventEmitter {
     for (const [ip, info] of this.suspiciousIPs.entries()) {
       if (info.firstSeen > oneHourAgo) {
         let riskLevel: 'low' | 'medium' | 'high' = 'low';
-        if (info.count >= 20) riskLevel = 'high';
-        else if (info.count >= 10) riskLevel = 'medium';
+        if (info.count >= 20) {riskLevel = 'high';}
+        else if (info.count >= 10) {riskLevel = 'medium';}
 
         report.push({
           ip,
@@ -310,7 +313,7 @@ export class AdvancedRateLimiter extends EventEmitter {
       return blockUntil && parseInt(blockUntil) > Date.now();
     } else {
       const blockInfo = this.store.get(blockKey);
-      return blockInfo && blockInfo[0] && blockInfo[0].timestamp > Date.now();
+      return !!(blockInfo && blockInfo[0] && blockInfo[0].timestamp > Date.now());
     }
   }
 
@@ -354,7 +357,7 @@ export class AdvancedRateLimiter extends EventEmitter {
         const data = await this.redisClient.get(key);
         return data ? JSON.parse(data) : [];
       } catch (error) {
-        logger.error('Redis get error:', error);
+        logger.error('Redis get error:', error as Record<string, any>);
         return [];
       }
     } else {
@@ -373,7 +376,7 @@ export class AdvancedRateLimiter extends EventEmitter {
       try {
         await this.redisClient.set(key, JSON.stringify(requests), 'PX', this.config.windowMs * 2);
       } catch (error) {
-        logger.error('Redis set error:', error);
+        logger.error('Redis set error:', error as Record<string, any>);
       }
     } else {
       this.store.set(key, requests);
@@ -381,7 +384,7 @@ export class AdvancedRateLimiter extends EventEmitter {
   }
 
   private trackSuspiciousActivity(requestInfo: RequestInfo): void {
-    if (requestInfo.success) return;
+    if (requestInfo.success) {return;}
 
     const existing = this.suspiciousIPs.get(requestInfo.ip);
     if (existing) {
@@ -406,7 +409,7 @@ export class AdvancedRateLimiter extends EventEmitter {
 
     // Clean up memory store
     for (const [key, requests] of this.store.entries()) {
-      if (key.startsWith('blocked:')) continue;
+      if (key.startsWith('blocked:')) {continue;}
       
       const filtered = requests.filter(r => r.timestamp > cutoff);
       if (filtered.length === 0) {

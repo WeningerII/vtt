@@ -95,22 +95,22 @@ export class InMemoryUserRepository implements UserRepository {
     this.users.set(id, user);
 
     // Return user without sensitive data
-    const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
+    const { passwordHash, passwordResetTokens, ...publicUser } = user;
     return publicUser;
   }
 
   async findById(id: string): Promise<User | null> {
     const user = this.users.get(id);
-    if (!user) return null;
+    if (!user) {return null;}
 
-    const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
+    const { passwordHash, passwordResetTokens, ...publicUser } = user;
     return publicUser;
   }
 
   async findByEmail(email: string): Promise<User | null> {
     for (const user of this.users.values()) {
       if (user.email === email) {
-        const { passwordHash, _passwordResetTokens, ...publicUser } = user;
+        const { passwordHash, passwordResetTokens, ...publicUser } = user;
         return { ...publicUser, passwordHash }; // Include passwordHash for auth
       }
     }
@@ -120,7 +120,7 @@ export class InMemoryUserRepository implements UserRepository {
   async findByUsername(username: string): Promise<User | null> {
     for (const user of this.users.values()) {
       if (user.username === username) {
-        const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
+        const { passwordHash, passwordResetTokens, ...publicUser } = user;
         return publicUser;
       }
     }
@@ -179,11 +179,11 @@ export class InMemoryUserRepository implements UserRepository {
       throw new Error("User not found");
     }
 
-    if (data.displayName !== undefined) user.displayName = data.displayName;
-    if (data.avatar !== undefined) user.avatar = data.avatar;
+    if (data.displayName !== undefined) {user.displayName = data.displayName;}
+    if (data.avatar !== undefined) {user.avatar = data.avatar;}
     user.updatedAt = new Date();
 
-    const { _passwordHash, _passwordResetTokens, ...publicUser } = user;
+    const { passwordHash, passwordResetTokens, ...publicUser } = user;
     return publicUser;
   }
 

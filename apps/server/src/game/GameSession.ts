@@ -66,7 +66,7 @@ export class GameSession {
 
   setPlayerConnected(userId: string, connected: boolean): boolean {
     const player = this.players.get(userId);
-    if (!player) return false;
+    if (!player) {return false;}
 
     player.connected = connected;
     return true;
@@ -181,7 +181,7 @@ export class GameSession {
   }
 
   nextTurn(): EntityId | undefined {
-    if (this.turnOrder.length === 0) return undefined;
+    if (this.turnOrder.length === 0) {return undefined;}
 
     const currentIndex = this.currentTurn ? this.turnOrder.indexOf(this.currentTurn) : -1;
     const nextIndex = (currentIndex + 1) % this.turnOrder.length;

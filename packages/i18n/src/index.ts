@@ -176,7 +176,7 @@ export class I18nManager {
    * Initialize from browser settings
    */
   initializeFromBrowser(): void {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {return;}
 
     // Check localStorage first
     const savedLang = localStorage.getItem("vtt-language") as Language;

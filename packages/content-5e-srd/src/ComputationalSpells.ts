@@ -197,7 +197,7 @@ export const _Level1ComputationalSpells = {
     id: "guiding_bolt",
     validationRules: {
       target: (target: any) => target.type === "creature",
-      range: (_distance: number) => distance <= 120,
+      range: (distance: number) => distance <= 120,
       lineOfSight: true,
     },
     effectPrimitives: [
@@ -237,7 +237,7 @@ export const _Level1ComputationalSpells = {
     id: "magic_missile",
     validationRules: {
       target: (target: any) => target.type === "creature",
-      range: (_distance: number) => distance <= 120,
+      range: (distance: number) => distance <= 120,
       lineOfSight: true,
       autoHit: true,
     },
@@ -255,7 +255,7 @@ export const _Level1ComputationalSpells = {
     id: "cure_wounds",
     validationRules: {
       target: (target: any) => target.type === "creature" && !target.undead && !target.construct,
-      range: (_distance: number) => distance <= 5,
+      range: (distance: number) => distance <= 5,
       touch: true,
     },
     effectPrimitives: [
@@ -272,7 +272,7 @@ export const _Level1ComputationalSpells = {
     id: "command",
     validationRules: {
       target: (target: any) => target.type === "humanoid",
-      range: (_distance: number) => distance <= 60,
+      range: (distance: number) => distance <= 60,
       language: true,
     },
     effectPrimitives: [

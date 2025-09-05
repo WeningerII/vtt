@@ -28,10 +28,10 @@ interface UseCharacterReturn {
   characters: Character[];
   loading: boolean;
   error: string | null;
-  createCharacter: (_characterData: Partial<Character>) => Promise<Character>;
-  getCharacter: (_id: string) => Promise<Character>;
-  updateCharacter: (_id: string, _updates: Partial<Character>) => Promise<Character>;
-  deleteCharacter: (_id: string) => Promise<void>;
+  createCharacter: (characterData: Partial<Character>) => Promise<Character>;
+  getCharacter: (id: string) => Promise<Character>;
+  updateCharacter: (id: string, updates: Partial<Character>) => Promise<Character>;
+  deleteCharacter: (id: string) => Promise<void>;
   getUserCharacters: () => Promise<Character[]>;
 }
 

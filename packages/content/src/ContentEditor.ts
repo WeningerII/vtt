@@ -3,7 +3,7 @@
  */
 
 import { EventEmitter } from "events";
-import { AssetManager, _AssetMetadata } from "./AssetManager";
+import { AssetManager, AssetMetadata } from "./AssetManager";
 
 export interface EditorTool {
   id: string;
@@ -17,12 +17,14 @@ export interface EditorTool {
 export interface Layer {
   id: string;
   name: string;
-  type: "background" | "terrain" | "objects" | "tokens" | "effects" | "ui" | "fog";
+  type: "background" | "terrain" | "map" | "objects" | "tokens" | "effects" | "ui" | "fog";
   visible: boolean;
   locked: boolean;
   opacity: number;
   blendMode: string;
   order: number;
+  zIndex: number;
+  elements?: any[];
 }
 
 export interface DrawingElement {
@@ -53,6 +55,8 @@ export interface Scene {
   name: string;
   description: string;
   dimensions: { width: number; height: number };
+  width: number; // Convenience property for export functionality
+  height: number; // Convenience property for export functionality
   gridSize: number;
   gridType: "square" | "hex" | "none";
   gridColor: string;
@@ -128,6 +132,8 @@ export class ContentEditor extends EventEmitter {
       name,
       description: "",
       dimensions: { width, height },
+      width,
+      height,
       gridSize: 50,
       gridType: "square",
       gridColor: "#cccccc",
@@ -160,18 +166,21 @@ export class ContentEditor extends EventEmitter {
   }
 
   // Layer management
-  addLayer(name: string, type: Layer["type"], order?: number): Layer {
-    const layer: Layer = {
+  createLayer(name: string, type: Layer["type"] = "objects"): Layer {
+    return {
       id: this.generateId(),
       name,
       type,
       visible: true,
       locked: false,
-      opacity: 1,
+      opacity: 1.0,
       blendMode: "normal",
-      order: order ?? this.scene.layers.length,
+      order: this.scene.layers.length,
+      zIndex: this.scene.layers.length,
     };
+  }
 
+  addLayer(layer: Layer, order?: number): Layer {
     if (order !== undefined) {
       this.scene.layers.splice(order, 0, layer);
       this.reorderLayers();
@@ -186,7 +195,7 @@ export class ContentEditor extends EventEmitter {
 
   removeLayer(layerId: string): void {
     const layerIndex = this.scene.layers.findIndex((l) => l.id === layerId);
-    if (layerIndex === -1) return;
+    if (layerIndex === -1) {return;}
 
     const layer = this.scene.layers[layerIndex];
     this.scene.layers.splice(layerIndex, 1);
@@ -200,7 +209,7 @@ export class ContentEditor extends EventEmitter {
 
   // Drawing tools
   setActiveTool(toolId: string): void {
-    if (!this.tools.has(toolId)) return;
+    if (!this.tools.has(toolId)) {return;}
 
     this.state.activeTool = toolId;
     this.emit("toolChanged", toolId);
@@ -223,7 +232,7 @@ export class ContentEditor extends EventEmitter {
 
   updateElement(elementId: string, updates: Partial<DrawingElement>): void {
     const element = this.scene.elements.find((e) => e.id === elementId);
-    if (!element) return;
+    if (!element) {return;}
 
     const oldElement = { ...element };
     Object.assign(element, updates, { modified: new Date() });
@@ -234,7 +243,7 @@ export class ContentEditor extends EventEmitter {
 
   removeElement(elementId: string): void {
     const elementIndex = this.scene.elements.findIndex((e) => e.id === elementId);
-    if (elementIndex === -1) return;
+    if (elementIndex === -1) {return;}
 
     const element = this.scene.elements[elementIndex];
     this.scene.elements.splice(elementIndex, 1);
@@ -324,7 +333,7 @@ export class ContentEditor extends EventEmitter {
 
   // Grid and snapping
   snapToGrid(point: { x: number; y: number }): { x: number; y: number } {
-    if (!this.state.grid.snap) return point;
+    if (!this.state.grid.snap) {return point;}
 
     const gridSize = this.state.grid.size;
     return {
@@ -363,9 +372,228 @@ export class ContentEditor extends EventEmitter {
     };
   }
 
-  exportAsImage(_format: "png" | "jpg" | "webp" = "png"): Promise<Buffer> {
-    // Would render scene to image format
-    throw new Error("Not implemented");
+  async exportAsImage(format: "png" | "jpg" | "webp" = "png"): Promise<Buffer> {
+    // Create a canvas to render the scene
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      throw new Error('Failed to create canvas context for image export');
+    }
+
+    // Set canvas size based on scene dimensions
+    canvas.width = this.scene.width || 1920;
+    canvas.height = this.scene.height || 1080;
+
+    // Fill background
+    if (this.scene.backgroundColor) {
+      ctx.fillStyle = this.scene.backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Render all scene elements
+    await this.renderSceneElements(ctx);
+
+    // Convert canvas to buffer with specified format
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error('Failed to create image blob'));
+          return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = () => {
+          const arrayBuffer = reader.result as ArrayBuffer;
+          resolve(Buffer.from(arrayBuffer));
+        };
+        reader.onerror = () => reject(new Error('Failed to read image data'));
+        reader.readAsArrayBuffer(blob);
+      }, `image/${format}`, format === 'jpg' ? 0.9 : undefined);
+    });
+  }
+
+  private async renderSceneElements(ctx: CanvasRenderingContext2D): Promise<void> {
+    // Render background layers first
+    const backgroundLayers = this.scene.layers.filter(layer => 
+      layer.type === 'background' && layer.visible
+    ).sort((a, b) => a.zIndex - b.zIndex);
+
+    for (const layer of backgroundLayers) {
+      await this.renderLayer(ctx, layer);
+    }
+
+    // Render map/terrain layers
+    const mapLayers = this.scene.layers.filter(layer => 
+      (layer.type === 'map' || layer.type === 'terrain') && layer.visible
+    ).sort((a, b) => a.zIndex - b.zIndex);
+
+    for (const layer of mapLayers) {
+      await this.renderLayer(ctx, layer);
+    }
+
+    // Render object layers (tokens, props, etc.)
+    const objectLayers = this.scene.layers.filter(layer => 
+      ['objects', 'tokens', 'effects'].includes(layer.type) && layer.visible
+    ).sort((a, b) => a.zIndex - b.zIndex);
+
+    for (const layer of objectLayers) {
+      await this.renderLayer(ctx, layer);
+    }
+
+    // Render annotation layers last
+    const annotationLayers = this.scene.layers.filter(layer => 
+      ['ui', 'fog'].includes(layer.type) && layer.visible
+    ).sort((a, b) => a.zIndex - b.zIndex);
+
+    for (const layer of annotationLayers) {
+      await this.renderLayer(ctx, layer);
+    }
+  }
+
+  private async renderLayer(ctx: CanvasRenderingContext2D, layer: any): Promise<void> {
+    ctx.save();
+    
+    // Apply layer opacity
+    if (layer.opacity !== undefined) {
+      ctx.globalAlpha = layer.opacity;
+    }
+
+    // Render elements in the layer
+    for (const element of layer.elements || []) {
+      await this.renderElement(ctx, element);
+    }
+
+    ctx.restore();
+  }
+
+  private async renderElement(ctx: CanvasRenderingContext2D, element: any): Promise<void> {
+    ctx.save();
+
+    // Apply transform
+    if (element.transform) {
+      const { x = 0, y = 0, rotation = 0, scaleX = 1, scaleY = 1 } = element.transform;
+      ctx.translate(x, y);
+      ctx.rotate(rotation * Math.PI / 180);
+      ctx.scale(scaleX, scaleY);
+    }
+
+    switch (element.type) {
+      case 'image':
+        await this.renderImageElement(ctx, element);
+        break;
+      case 'shape':
+        this.renderShapeElement(ctx, element);
+        break;
+      case 'text':
+        this.renderTextElement(ctx, element);
+        break;
+      case 'token':
+        await this.renderTokenElement(ctx, element);
+        break;
+      default:
+        // Render as basic shape if unknown type
+        this.renderBasicElement(ctx, element);
+    }
+
+    ctx.restore();
+  }
+
+  private async renderImageElement(ctx: CanvasRenderingContext2D, element: any): Promise<void> {
+    if (!element.src) {return;}
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const { width = img.width, height = img.height } = element;
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve();
+      };
+      img.onerror = () => resolve(); // Continue even if image fails to load
+      img.src = element.src;
+    });
+  }
+
+  private renderShapeElement(ctx: CanvasRenderingContext2D, element: any): void {
+    const { shape = 'rectangle', width = 100, height = 100, fill, stroke, strokeWidth = 1 } = element;
+
+    ctx.beginPath();
+    
+    switch (shape) {
+      case 'rectangle':
+        ctx.rect(0, 0, width, height);
+        break;
+      case 'circle':
+        ctx.arc(width / 2, height / 2, Math.min(width, height) / 2, 0, 2 * Math.PI);
+        break;
+      case 'line':
+        ctx.moveTo(0, 0);
+        ctx.lineTo(width, height);
+        break;
+    }
+
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = strokeWidth;
+      ctx.stroke();
+    }
+  }
+
+  private renderTextElement(ctx: CanvasRenderingContext2D, element: any): void {
+    const { 
+      text = '', 
+      fontSize = 16, 
+      fontFamily = 'Arial', 
+      color = '#000000',
+      textAlign = 'left',
+      textBaseline = 'top'
+    } = element;
+
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    ctx.fillStyle = color;
+    ctx.textAlign = textAlign as CanvasTextAlign;
+    ctx.textBaseline = textBaseline as CanvasTextBaseline;
+    
+    ctx.fillText(text, 0, 0);
+  }
+
+  private async renderTokenElement(ctx: CanvasRenderingContext2D, element: any): Promise<void> {
+    // Render token as a circle with optional image
+    const { radius = 25, color = '#007bff', image } = element;
+
+    // Draw token background
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw token image if available
+    if (image) {
+      await this.renderImageElement(ctx, {
+        src: image,
+        width: radius * 2,
+        height: radius * 2,
+        transform: { x: -radius, y: -radius }
+      });
+    }
+  }
+
+  private renderBasicElement(ctx: CanvasRenderingContext2D, element: any): void {
+    // Fallback rendering for unknown element types
+    const { width = 50, height = 50 } = element;
+    ctx.fillStyle = '#cccccc';
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = '#999999';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, 0, width, height);
   }
 
   // Private methods
@@ -420,54 +648,59 @@ export class ContentEditor extends EventEmitter {
   private createDefaultLayers(): Layer[] {
     return [
       {
-        id: this.generateId(),
+        id: "background",
         name: "Background",
-        type: "background",
+        type: "background" as const,
         visible: true,
         locked: false,
-        opacity: 1,
+        opacity: 1.0,
         blendMode: "normal",
         order: 0,
+        zIndex: 0,
       },
       {
-        id: this.generateId(),
+        id: "terrain",
         name: "Terrain",
-        type: "terrain",
+        type: "terrain" as const,
         visible: true,
         locked: false,
-        opacity: 1,
+        opacity: 1.0,
         blendMode: "normal",
         order: 1,
+        zIndex: 1,
       },
       {
-        id: this.generateId(),
+        id: "objects",
         name: "Objects",
-        type: "objects",
+        type: "objects" as const,
         visible: true,
         locked: false,
-        opacity: 1,
+        opacity: 1.0,
         blendMode: "normal",
         order: 2,
+        zIndex: 2,
       },
       {
-        id: this.generateId(),
+        id: "tokens",
         name: "Tokens",
-        type: "tokens",
+        type: "tokens" as const,
         visible: true,
         locked: false,
-        opacity: 1,
+        opacity: 1.0,
         blendMode: "normal",
         order: 3,
+        zIndex: 3,
       },
       {
-        id: this.generateId(),
+        id: "effects",
         name: "Effects",
-        type: "effects",
+        type: "effects" as const,
         visible: true,
         locked: false,
-        opacity: 1,
+        opacity: 1.0,
         blendMode: "normal",
         order: 4,
+        zIndex: 4,
       },
     ];
   }
@@ -524,7 +757,7 @@ export class ContentEditor extends EventEmitter {
 
   private reorderLayers(): void {
     this.scene.layers.forEach((_layer, __index) => {
-      layer.order = index;
+      _layer.order = __index;
     });
   }
 

@@ -18,12 +18,12 @@ export var MessageType;
  * implementations should use binary varints and domain specific
  * encodings.
  */
-export const Protocol = {
+export const _Protocol = {
     encode(type, payload) {
         return JSON.stringify({ type, payload });
     },
     decode(data) {
         return JSON.parse(data);
-    }
+    },
 };
 //# sourceMappingURL=Protocol.js.map

@@ -1,7 +1,6 @@
 {
   "name": "@vtt/auth",
   "version": "1.0.0",
-  "type": "module",
   "description": "Authentication and authorization system for VTT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

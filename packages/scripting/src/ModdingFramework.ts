@@ -163,7 +163,7 @@ export class ModdingFramework {
 
   public unloadMod(modId: string): boolean {
     const mod = this.mods.get(modId);
-    if (!mod) return false;
+    if (!mod) {return false;}
 
     try {
       // Disable if enabled
@@ -195,14 +195,14 @@ export class ModdingFramework {
       this.stats.totalMods--;
       return true;
     } catch (error) {
-      logger.error(`Failed to unload mod ${modId}:`, error);
+      logger.error(`Failed to unload mod ${modId}:`, error as Record<string, any>);
       return false;
     }
   }
 
   public enableMod(modId: string): boolean {
     const mod = this.mods.get(modId);
-    if (!mod || !mod.isLoaded || mod.isEnabled) return false;
+    if (!mod || !mod.isLoaded || mod.isEnabled) {return false;}
 
     try {
       // Check dependencies are enabled
@@ -233,7 +233,7 @@ export class ModdingFramework {
 
       return true;
     } catch (error) {
-      logger.error(`Failed to enable mod ${modId}:`, error);
+      logger.error(`Failed to enable mod ${modId}:`, error as Record<string, any>);
       mod.lastError = error instanceof Error ? error : new Error(String(error));
       return false;
     }
@@ -241,7 +241,7 @@ export class ModdingFramework {
 
   public disableMod(modId: string): boolean {
     const mod = this.mods.get(modId);
-    if (!mod || !mod.isEnabled) return false;
+    if (!mod || !mod.isEnabled) {return false;}
 
     try {
       // Check if other mods depend on this one
@@ -269,7 +269,7 @@ export class ModdingFramework {
 
       return true;
     } catch (error) {
-      logger.error(`Failed to disable mod ${modId}:`, error);
+      logger.error(`Failed to disable mod ${modId}:`, error as Record<string, any>);
       mod.lastError = error instanceof Error ? error : new Error(String(error));
       return false;
     }
@@ -368,7 +368,7 @@ export class ModdingFramework {
   }
 
   private isVersionCompatible(required: string, actual?: string): boolean {
-    if (!actual) return false;
+    if (!actual) {return false;}
 
     // Simple semver compatibility check
     const parseVersion = (v: string) => v.split(".").map((n) => parseInt(n) || 0);
@@ -376,8 +376,12 @@ export class ModdingFramework {
     const req = parseVersion(required);
     const act = parseVersion(actual);
 
+    // Ensure we have valid version parts
+    if (req.length < 3) {req.push(...Array(3 - req.length).fill(0));}
+    if (act.length < 3) {act.push(...Array(3 - act.length).fill(0));}
+
     // Major version must match, minor and patch can be higher
-    return req[0] === act[0] && (act[1] > req[1] || (act[1] === req[1] && act[2] >= req[2]));
+    return req[0] === act[0] && (act[1]! > req[1]! || (act[1] === req[1] && act[2]! >= req[2]!));
   }
 
   private generateLoadOrder(manifest: ModManifest): number {
@@ -401,7 +405,9 @@ export class ModdingFramework {
     let insertIndex = 0;
 
     for (let i = 0; i < this.loadOrder.length; i++) {
-      const existingMod = this.mods.get(this.loadOrder[i]);
+      const existingModId = this.loadOrder[i];
+      if (!existingModId) {continue;}
+      const existingMod = this.mods.get(existingModId);
       if (existingMod && existingMod.loadOrder <= order) {
         insertIndex = i + 1;
       } else {
@@ -458,7 +464,7 @@ export class ModdingFramework {
       case "boolean":
         return typeof value === "boolean";
       case "select":
-        return config.options && config.options.includes(value);
+        return config.options ? config.options.includes(value) : false;
       case "range":
         return (
           typeof value === "number" &&
@@ -486,7 +492,7 @@ export class ModdingFramework {
           this.stats.totalOverrides++;
         }
       } catch (error) {
-        logger.warn(`Failed to load asset ${asset.id}:`, error);
+        logger.warn(`Failed to load asset ${asset.id}:`, error as Record<string, any>);
       }
     }
   }
@@ -519,7 +525,7 @@ export class ModdingFramework {
           mod.scriptInstances.set(scriptManifest.id, true);
         }
       } catch (error) {
-        logger.warn(`Failed to load script ${scriptPath}:`, error);
+        logger.warn(`Failed to load script ${scriptPath}:`, error as Record<string, any>);
       }
     }
   }
@@ -549,12 +555,12 @@ export class ModdingFramework {
 
   public setModConfig(modId: string, key: string, value: any): boolean {
     const mod = this.mods.get(modId);
-    if (!mod) return false;
+    if (!mod) {return false;}
 
     const config = mod.manifest.config.find((c) => c.key === key);
-    if (!config) return false;
+    if (!config) {return false;}
 
-    if (!this.validateConfigValue(config, value)) return false;
+    if (!this.validateConfigValue(config, value)) {return false;}
 
     mod.configValues.set(key, value);
 
@@ -571,7 +577,7 @@ export class ModdingFramework {
 
   public getModConfig(modId: string, key: string): any {
     const mod = this.mods.get(modId);
-    if (!mod) return undefined;
+    if (!mod) {return undefined;}
 
     return mod.configValues.get(key);
   }

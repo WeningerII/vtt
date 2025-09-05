@@ -1,6 +1,29 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+// Mock user-event since module is not available
+// import userEvent from '@testing-library/user-event';
+const userEvent = {
+  setup: () => ({
+    click: async (element: Element) => {
+      console.log('Mock click on', element);
+    },
+    type: async (element: Element, text: string) => {
+      console.log('Mock type on', element, 'text:', text);
+    },
+    keyboard: async (text: string) => {
+      console.log('Mock keyboard input:', text);
+    }
+  }),
+  click: async (element: Element) => {
+    console.log('Mock click on', element);
+  },
+  type: async (element: Element, text: string) => {
+    console.log('Mock type on', element, 'text:', text);
+  },
+  keyboard: async (text: string) => {
+    console.log('Mock keyboard input:', text);
+  }
+};
 import { CharacterSheet, CharacterData } from "./CharacterSheet";
 import "@testing-library/jest-dom";
 

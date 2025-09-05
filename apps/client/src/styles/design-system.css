@@ -1,0 +1,704 @@
+/**
+ * VTT Design System - Next-generation UI foundation
+ */
+
+@layer base, components, utilities;
+
+@layer base {
+  :root {
+    /* Core Color System */
+    --color-void: 0 0 0;
+    --color-obsidian: 220 26% 5%;
+    --color-midnight: 220 26% 8%;
+    --color-shadow: 220 20% 11%;
+    --color-charcoal: 220 15% 15%;
+    --color-steel: 220 12% 20%;
+    --color-slate: 220 10% 28%;
+    --color-ash: 220 8% 40%;
+    --color-smoke: 220 6% 60%;
+    --color-pearl: 220 15% 92%;
+    --color-snow: 220 20% 98%;
+    --color-pure: 0 0% 100%;
+    
+    /* Plasma Gradient System */
+    --plasma-violet: 262 83% 58%;
+    --plasma-purple: 271 81% 56%;
+    --plasma-indigo: 239 84% 67%;
+    --plasma-blue: 217 91% 60%;
+    --plasma-cyan: 188 91% 48%;
+    
+    /* Neon Accent System */
+    --neon-red: 0 91% 63%;
+    --neon-orange: 24 95% 53%;
+    --neon-green: 141 84% 48%;
+    --neon-cyan: 188 91% 48%;
+    --neon-purple: 271 91% 65%;
+    
+    /* Semantic Color System */
+    --color-success: 142 76% 36%;
+    --color-success-light: 142 69% 58%;
+    --color-warning: 38 92% 50%;
+    --color-warning-light: 45 93% 66%;
+    --color-error: 0 84% 60%;
+    --color-error-light: 0 93% 71%;
+    --color-info: 217 91% 60%;
+    --color-info-light: 213 93% 68%;
+    
+    /* VTT Gaming Colors */
+    --color-health: 0 84% 60%;
+    --color-mana: 217 91% 60%;
+    --color-energy: 45 93% 58%;
+    --color-stamina: 141 84% 48%;
+    --color-experience: 271 91% 65%;
+    --color-critical: 24 95% 53%;
+    
+    /* Status Effect Colors */
+    --status-poison: 120 100% 25%;
+    --status-fire: 14 100% 57%;
+    --status-ice: 200 100% 70%;
+    --status-lightning: 60 100% 50%;
+    --status-necrotic: 270 100% 25%;
+    --status-radiant: 45 100% 70%;
+    
+    /* Semantic Surfaces */
+    --surface-void: hsl(var(--color-void));
+    --surface-base: hsl(var(--color-obsidian));
+    --surface-elevated: hsl(var(--color-midnight));
+    --surface-overlay: hsl(var(--color-shadow));
+    --surface-subtle: hsl(var(--color-charcoal));
+    
+    /* Text System */
+    --text-primary: hsl(var(--color-snow));
+    --text-secondary: hsl(var(--color-smoke));
+    --text-tertiary: hsl(var(--color-ash));
+    --text-muted: hsl(var(--color-slate));
+    
+    /* Borders */
+    --border-subtle: hsl(var(--color-charcoal) / 0.5);
+    --border-default: hsl(var(--color-steel) / 0.8);
+    --border-strong: hsl(var(--color-slate));
+    --border-focus: hsl(var(--plasma-blue));
+    
+    /* Fluid Typography Scale */
+    --font-size-xs: clamp(0.75rem, 0.68rem + 0.38vw, 0.875rem);
+    --font-size-sm: clamp(0.875rem, 0.8rem + 0.38vw, 1rem);
+    --font-size-base: clamp(1rem, 0.925rem + 0.38vw, 1.125rem);
+    --font-size-lg: clamp(1.125rem, 1.05rem + 0.38vw, 1.25rem);
+    --font-size-xl: clamp(1.25rem, 1.125rem + 0.63vw, 1.5rem);
+    --font-size-2xl: clamp(1.5rem, 1.325rem + 0.88vw, 1.875rem);
+    --font-size-3xl: clamp(1.875rem, 1.625rem + 1.25vw, 2.5rem);
+    --font-size-4xl: clamp(2.5rem, 2.125rem + 1.88vw, 3.5rem);
+    
+    /* Font Weight Scale */
+    --font-thin: 100;
+    --font-extralight: 200;
+    --font-light: 300;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+    --font-black: 900;
+    
+    /* Line Heights */
+    --leading-none: 1;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+    
+    /* Font Families */
+    --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-serif: 'Merriweather', Georgia, serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-display: 'Cinzel', 'Playfair Display', serif;
+    --font-fantasy: 'MedievalSharp', 'Uncial Antiqua', fantasy;
+    
+    /* Spacing System */
+    --space-px: 1px;
+    --space-0: 0;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-7: 1.75rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-14: 3.5rem;
+    --space-16: 4rem;
+    --space-20: 5rem;
+    --space-24: 6rem;
+    --space-28: 7rem;
+    --space-32: 8rem;
+    
+    /* Layout System */
+    --max-width-xs: 20rem;
+    --max-width-sm: 24rem;
+    --max-width-md: 28rem;
+    --max-width-lg: 32rem;
+    --max-width-xl: 36rem;
+    --max-width-2xl: 42rem;
+    --max-width-3xl: 48rem;
+    --max-width-4xl: 56rem;
+    --max-width-5xl: 64rem;
+    --max-width-6xl: 72rem;
+    --max-width-7xl: 80rem;
+    --max-width-full: 100%;
+    
+    /* Grid System */
+    --grid-cols-1: repeat(1, minmax(0, 1fr));
+    --grid-cols-2: repeat(2, minmax(0, 1fr));
+    --grid-cols-3: repeat(3, minmax(0, 1fr));
+    --grid-cols-4: repeat(4, minmax(0, 1fr));
+    --grid-cols-5: repeat(5, minmax(0, 1fr));
+    --grid-cols-6: repeat(6, minmax(0, 1fr));
+    --grid-cols-12: repeat(12, minmax(0, 1fr));
+    
+    /* Breakpoints */
+    --breakpoint-sm: 640px;
+    --breakpoint-md: 768px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-xl: 1280px;
+    --breakpoint-2xl: 1536px;
+    
+    /* Radius System */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+    --radius-full: 9999px;
+    
+    /* Shadow System */
+    --shadow-sm: 0 2px 4px rgb(0 0 0 / 0.08);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.12);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.15);
+    --shadow-glow: 0 0 20px hsl(var(--plasma-blue) / 0.4);
+    
+    /* Animation */
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --duration-instant: 50ms;
+    --duration-fast: 100ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --duration-slower: 500ms;
+    
+    /* VTT Game Elements */
+    --dice-glow: 0 0 20px hsl(var(--neon-cyan) / 0.6);
+    --dice-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --token-border: 3px solid hsl(var(--plasma-blue));
+    --token-glow: 0 0 15px hsl(var(--plasma-blue) / 0.5);
+    --map-overlay: hsl(var(--color-void) / 0.7);
+    --initiative-highlight: linear-gradient(135deg, hsl(var(--neon-green)), hsl(var(--plasma-cyan)));
+    --health-bar: linear-gradient(90deg, hsl(var(--color-health)), hsl(var(--neon-red)));
+    --mana-bar: linear-gradient(90deg, hsl(var(--color-mana)), hsl(var(--plasma-indigo)));
+    --energy-bar: linear-gradient(90deg, hsl(var(--color-energy)), hsl(var(--neon-orange)));
+    
+    /* Blur Effects */
+    --blur-sm: 4px;
+    --blur-md: 8px;
+    --blur-lg: 12px;
+    --blur-xl: 16px;
+    --blur-2xl: 24px;
+    
+    /* Z-Index */
+    --z-dropdown: 100;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-tooltip: 700;
+    --z-toast: 800;
+  }
+  
+  /* Responsive Breakpoints */
+  @media (min-width: 640px) {
+    :root {
+      --container-padding: var(--space-6);
+    }
+  }
+  
+  @media (min-width: 768px) {
+    :root {
+      --container-padding: var(--space-8);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    :root {
+      --container-padding: var(--space-12);
+    }
+  }
+  
+  /* Container Queries */
+  @container (min-width: 320px) {
+    .responsive-sm {
+      padding: var(--space-4);
+    }
+  }
+  
+  @container (min-width: 640px) {
+    .responsive-md {
+      padding: var(--space-6);
+    }
+  }
+}
+
+@layer components {
+  /* Glass Morphism */
+  .glass {
+    backdrop-filter: blur(10px);
+    background: hsl(var(--color-shadow) / 0.5);
+    border: 1px solid hsl(var(--color-steel) / 0.3);
+  }
+  
+  /* Gradient Surfaces */
+  .gradient-plasma {
+    background: linear-gradient(135deg, 
+      hsl(var(--plasma-violet)), 
+      hsl(var(--plasma-purple)), 
+      hsl(var(--plasma-indigo)));
+  }
+  
+  .gradient-neon {
+    background: linear-gradient(135deg,
+      hsl(var(--neon-cyan)),
+      hsl(var(--plasma-blue)),
+      hsl(var(--neon-purple)));
+  }
+  
+  /* Mesh Gradient */
+  .gradient-mesh {
+    background: 
+      radial-gradient(at 40% 20%, hsl(var(--plasma-violet) / 0.3) 0px, transparent 50%),
+      radial-gradient(at 80% 0%, hsl(var(--plasma-indigo) / 0.2) 0px, transparent 50%),
+      radial-gradient(at 10% 50%, hsl(var(--plasma-purple) / 0.2) 0px, transparent 50%);
+    background-color: var(--surface-base);
+  }
+  
+  /* Cards */
+  .card-elevated {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-xl);
+  }
+  
+  .card-glass {
+    backdrop-filter: blur(10px);
+    background: hsl(var(--color-shadow) / 0.5);
+    border: 1px solid hsl(var(--color-steel) / 0.3);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Interactive */
+  .interactive {
+    transition: all var(--duration-normal) var(--ease-out);
+    cursor: pointer;
+  }
+  
+  .interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+  }
+  
+  .interactive:active {
+    transform: translateY(0);
+  }
+  
+  /* Animations */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  @keyframes glow {
+    from { box-shadow: 0 0 10px hsl(var(--plasma-blue) / 0.5); }
+    to { box-shadow: 0 0 20px hsl(var(--plasma-blue) / 0.8); }
+  }
+  
+  @keyframes ripple {
+    to {
+      transform: translate(-50%, -50%) scale(40);
+      opacity: 0;
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+  
+  .animate-pulse {
+    animation: pulse 2s infinite;
+  }
+  
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  .animate-ripple {
+    animation: ripple 600ms ease-out;
+  }
+  
+  /* Enhanced Utility Classes */
+  
+  /* State utilities */
+  .state-loading {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: progress;
+  }
+
+  .state-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+  }
+
+  .state-error {
+    border-color: hsl(var(--color-error));
+    box-shadow: 0 0 0 1px hsl(var(--color-error) / 0.5);
+  }
+
+  .state-success {
+    border-color: hsl(var(--color-success));
+    box-shadow: 0 0 0 1px hsl(var(--color-success) / 0.5);
+  }
+
+  .state-warning {
+    border-color: hsl(var(--color-warning));
+    box-shadow: 0 0 0 1px hsl(var(--color-warning) / 0.5);
+  }
+  
+  /* Loading states */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--color-charcoal)) 25%,
+      hsl(var(--color-steel)) 50%,
+      hsl(var(--color-charcoal)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-md);
+    color: transparent;
+  }
+  
+  /* VTT Game Components */
+  .dice-container {
+    position: relative;
+    display: inline-block;
+    background: var(--gradient-neon);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--dice-shadow), var(--dice-glow);
+    padding: var(--space-4);
+    transition: all var(--duration-normal) var(--ease-bounce);
+  }
+  
+  .dice-container:hover {
+    transform: scale(1.05) rotate(5deg);
+    box-shadow: var(--shadow-xl), var(--dice-glow);
+  }
+  
+  .token {
+    border: var(--token-border);
+    border-radius: var(--radius-full);
+    box-shadow: var(--token-glow);
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  
+  .token:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg), var(--token-glow);
+  }
+  
+  .health-bar {
+    background: var(--health-bar);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .mana-bar {
+    background: var(--mana-bar);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .energy-bar {
+    background: var(--energy-bar);
+    height: var(--space-2);
+    border-radius: var(--radius-full);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .status-effect {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-medium);
+    backdrop-filter: blur(var(--blur-sm));
+  }
+  
+  .status-poison {
+    background: hsl(var(--status-poison) / 0.2);
+    color: hsl(var(--status-poison));
+    border: 1px solid hsl(var(--status-poison) / 0.3);
+  }
+  
+  .status-fire {
+    background: hsl(var(--status-fire) / 0.2);
+    color: hsl(var(--status-fire));
+    border: 1px solid hsl(var(--status-fire) / 0.3);
+  }
+  
+  .status-ice {
+    background: hsl(var(--status-ice) / 0.2);
+    color: hsl(var(--status-ice));
+    border: 1px solid hsl(var(--status-ice) / 0.3);
+  }
+}
+
+@layer utilities {
+  /* Focus States */
+  .focus-ring:focus-visible {
+    outline: 2px solid hsl(var(--plasma-blue));
+    outline-offset: 2px;
+  }
+  
+  /* Selection */
+  ::selection {
+    background: hsl(var(--plasma-purple) / 0.3);
+    color: var(--text-primary);
+  }
+  
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: var(--surface-base);
+    border-radius: var(--radius-full);
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--color-steel) / 0.5);
+    border-radius: var(--radius-full);
+    border: 2px solid var(--surface-base);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--color-slate) / 0.7);
+  }
+  
+  /* Performance Optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+  }
+  
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  .will-change-auto {
+    will-change: auto;
+  }
+  
+  /* Accessibility Improvements */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    
+    .animate-shimmer,
+    .animate-pulse,
+    .animate-glow,
+    .animate-ripple {
+      animation: none;
+    }
+    
+    .interactive:hover {
+      transform: none;
+    }
+    
+    .dice-container:hover {
+      transform: none;
+    }
+    
+    .token:hover {
+      transform: none;
+    }
+  }
+  
+  /* High Contrast Mode Support */
+  @media (prefers-contrast: high) {
+    :root {
+      --border-primary: hsl(var(--color-snow));
+      --border-secondary: hsl(var(--color-pearl));
+      --text-secondary: hsl(var(--color-pearl));
+      --text-tertiary: hsl(var(--color-snow));
+    }
+  }
+  
+  /* Component Integration Helpers */
+  .btn-primary {
+    background: var(--gradient-plasma);
+    color: var(--text-primary);
+    border: none;
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-semibold);
+    transition: all var(--duration-normal) var(--ease-out);
+  }
+  
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .btn-secondary {
+    background: var(--glass-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(var(--blur-md));
+  }
+  
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+  }
+  
+  .btn-danger {
+    background: linear-gradient(135deg, hsl(var(--color-error)), hsl(var(--neon-red)));
+    color: var(--text-primary);
+    border: none;
+  }
+  
+  .input-base {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-base);
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  
+  .input-base:focus {
+    border-color: hsl(var(--plasma-blue));
+    box-shadow: 0 0 0 3px hsl(var(--plasma-blue) / 0.2);
+    outline: none;
+  }
+  
+  .input-base::placeholder {
+    color: var(--text-tertiary);
+  }
+  
+  .card-base {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .modal-backdrop {
+    background: var(--map-overlay);
+    backdrop-filter: blur(var(--blur-lg));
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+  }
+  
+  .dropdown-menu {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    backdrop-filter: blur(var(--blur-md));
+    z-index: var(--z-dropdown);
+  }
+}
+
+/*
+=== USAGE DOCUMENTATION ===
+
+## Color System Examples:
+- Primary actions: hsl(var(--plasma-blue))
+- Success states: hsl(var(--color-success))
+- Error states: hsl(var(--color-error))
+- VTT health bars: var(--health-bar)
+
+## Typography Examples:
+- Headings: font-family: var(--font-display); font-weight: var(--font-bold);
+- Body text: font-family: var(--font-sans); font-size: var(--font-size-base);
+- Code: font-family: var(--font-mono);
+
+## Spacing Examples:
+- Small gaps: var(--space-2)
+- Medium gaps: var(--space-4)
+- Large gaps: var(--space-8)
+- Container padding: var(--space-6)
+
+## Component Classes:
+- .btn-primary - Main action buttons
+- .btn-secondary - Secondary actions with glass effect
+- .input-base - Standard form inputs
+- .card-base - Content containers
+- .skeleton - Loading placeholders
+
+## VTT Game Elements:
+- .dice-container - Animated dice with glow effects
+- .token - Character/monster tokens with hover effects
+- .health-bar - HP progress bars with gradients
+- .status-poison, .status-fire, .status-ice - Status effect badges
+
+## Animation Classes:
+- .animate-pulse - Subtle pulsing effect
+- .animate-glow - Glowing border animation
+- .animate-shimmer - Loading shimmer effect
+- .gpu-accelerated - For smooth animations
+
+## Responsive Usage:
+- Use fluid typography (--font-size-*) for automatic scaling
+- Apply .responsive-sm, .responsive-md for container queries
+- Leverage CSS Grid with --grid-cols-* variables
+
+## Accessibility Features:
+- Automatic motion reduction support
+- High contrast mode compatibility
+- Focus ring styling with .focus-ring
+- Semantic color variables for screen readers
+*/

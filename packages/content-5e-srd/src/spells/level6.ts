@@ -377,29 +377,6 @@ export const LEVEL_6_SPELLS: Record<string, SRDSpell> = {
     tags: ["necromancy", "curse", "wisdom_save", "touch", "concentration"],
   },
 
-  circleOfDeath: {
-    id: "circle_of_death",
-    name: "Circle of Death",
-    level: 6,
-    school: "necromancy",
-    castingTime: "1 action",
-    range: "150 feet",
-    components: ["V", "S", "M"],
-    materialComponent: "the powder of a crushed black pearl worth at least 500 gp",
-    duration: "Instantaneous",
-    description:
-      "A sphere of negative energy ripples out in a 60-foot-radius sphere from a point within range.",
-    damage: { diceExpression: "8d6", damageType: "necrotic", scalingDice: "2d6" },
-    savingThrow: { ability: "CON", dc: 0 },
-    concentration: false,
-    ritual: false,
-    classes: ["Sorcerer", "Warlock", "Wizard"],
-    source: "SRD 5.1",
-    tags: ["necromancy", "necrotic", "constitution_save", "sphere", "costly_components"],
-    upcastDescription:
-      "When you cast this spell using a spell slot of 7th level or higher, the damage increases by 2d6 for each slot level above 6th.",
-  },
-
   conjureFey: {
     id: "conjure_fey",
     name: "Conjure Fey",
@@ -420,25 +397,6 @@ export const LEVEL_6_SPELLS: Record<string, SRDSpell> = {
       "When you cast this spell using a spell slot of 7th level or higher, the challenge rating increases by 1 for each slot level above 6th.",
   },
 
-  contingency: {
-    id: "contingency",
-    name: "Contingency",
-    level: 6,
-    school: "evocation",
-    castingTime: "10 minutes",
-    range: "Self",
-    components: ["V", "S", "M"],
-    materialComponent:
-      "a statuette of yourself carved from ivory and decorated with gems worth at least 1,500 gp",
-    duration: "10 days",
-    description:
-      "Choose a spell of 5th level or lower that you can cast, that has a casting time of 1 action, and that can target you.",
-    concentration: false,
-    ritual: false,
-    classes: ["Wizard"],
-    source: "SRD 5.1",
-    tags: ["evocation", "contingent", "trigger", "costly_components", "long_duration"],
-  },
 
   createUndead: {
     id: "create_undead",
@@ -462,86 +420,7 @@ export const LEVEL_6_SPELLS: Record<string, SRDSpell> = {
       "When you cast this spell using a 7th-level spell slot, you can animate or reassert control over four ghouls. When you cast this spell using an 8th-level spell slot, you can animate or reassert control over five ghouls or two ghasts or wights. When you cast this spell using a 9th-level spell slot, you can animate or reassert control over six ghouls, three ghasts or wights, or two mummies.",
   },
 
-  disintegrate: {
-    id: "disintegrate",
-    name: "Disintegrate",
-    level: 6,
-    school: "transmutation",
-    castingTime: "1 action",
-    range: "60 feet",
-    components: ["V", "S", "M"],
-    materialComponent: "a lodestone and a pinch of dust",
-    duration: "Instantaneous",
-    description:
-      "A thin green ray springs from your pointing finger to a target that you can see within range.",
-    damage: { diceExpression: "10d6+40", damageType: "force", scalingDice: "3d6" },
-    savingThrow: { ability: "DEX", dc: 0 },
-    concentration: false,
-    ritual: false,
-    classes: ["Sorcerer", "Wizard"],
-    source: "SRD 5.1",
-    tags: ["transmutation", "force", "dexterity_save", "object_destruction"],
-    upcastDescription:
-      "When you cast this spell using a spell slot of 7th level or higher, the damage increases by 3d6 for each slot level above 6th.",
-  },
 
-  eyebite: {
-    id: "eyebite",
-    name: "Eyebite",
-    level: 6,
-    school: "necromancy",
-    castingTime: "1 action",
-    range: "60 feet",
-    components: ["V", "S"],
-    duration: "Concentration, up to 1 minute",
-    description:
-      "For the spell's duration, your eyes become an inky void imbued with dreadful power.",
-    savingThrow: { ability: "WIS", dc: 0 },
-    concentration: true,
-    ritual: false,
-    classes: ["Bard", "Sorcerer", "Warlock", "Wizard"],
-    source: "SRD 5.1",
-    tags: ["necromancy", "fear", "charm", "wisdom_save", "concentration"],
-  },
-
-  findThePath: {
-    id: "find_the_path",
-    name: "Find the Path",
-    level: 6,
-    school: "divination",
-    castingTime: "1 minute",
-    range: "Self",
-    components: ["V", "S", "M"],
-    materialComponent:
-      "a set of divinatory tools—such as bones, ivory sticks, cards, teeth, or carved runes—worth 100 gp and an object from the location you wish to find",
-    duration: "Concentration, up to 1 day",
-    description:
-      "This spell allows you to find the shortest, most direct physical route to a specific fixed location that you are familiar with on the same plane of existence.",
-    concentration: true,
-    ritual: false,
-    classes: ["Bard", "Cleric", "Druid"],
-    source: "SRD 5.1",
-    tags: ["divination", "navigation", "path_finding", "concentration", "costly_components"],
-  },
-
-  fleshToStone: {
-    id: "flesh_to_stone",
-    name: "Flesh to Stone",
-    level: 6,
-    school: "transmutation",
-    castingTime: "1 action",
-    range: "60 feet",
-    components: ["V", "S", "M"],
-    materialComponent: "a pinch of lime, water, and earth",
-    duration: "Concentration, up to 1 minute",
-    description: "You attempt to turn one creature that you can see within range into stone.",
-    savingThrow: { ability: "CON", dc: 0 },
-    concentration: true,
-    ritual: false,
-    classes: ["Warlock", "Wizard"],
-    source: "SRD 5.1",
-    tags: ["transmutation", "petrification", "constitution_save", "concentration"],
-  },
 
   forbiddance: {
     id: "forbiddance",
@@ -564,24 +443,6 @@ export const LEVEL_6_SPELLS: Record<string, SRDSpell> = {
     tags: ["abjuration", "warding", "planar_travel", "ritual", "costly_components"],
   },
 
-  globeOfInvulnerability: {
-    id: "globe_of_invulnerability",
-    name: "Globe of Invulnerability",
-    level: 6,
-    school: "abjuration",
-    castingTime: "1 action",
-    range: "Self (10-foot radius)",
-    components: ["V", "S", "M"],
-    materialComponent: "a glass or crystal bead that shatters when the spell ends",
-    duration: "Concentration, up to 1 minute",
-    description:
-      "An immobile, faintly shimmering barrier springs into existence in a 10-foot radius around you and remains for the duration.",
-    concentration: true,
-    ritual: false,
-    classes: ["Sorcerer", "Wizard"],
-    source: "SRD 5.1",
-    tags: ["abjuration", "barrier", "spell_immunity", "concentration"],
-  },
 
   guardAndWards: {
     id: "guards_and_wards",

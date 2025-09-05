@@ -434,8 +434,8 @@ export class LagCompensation {
 
   private lerpAngle(a: number, b: number, t: number): number {
     let delta = b - a;
-    if (delta > Math.PI) delta -= 2 * Math.PI;
-    if (delta < -Math.PI) delta += 2 * Math.PI;
+    if (delta > Math.PI) {delta -= 2 * Math.PI;}
+    if (delta < -Math.PI) {delta += 2 * Math.PI;}
     return a + delta * t;
   }
 
@@ -455,14 +455,14 @@ export class LagCompensation {
   }
 
   private calculateAverageLatency(): number {
-    if (this.playerLatencies.size === 0) return 0;
+    if (this.playerLatencies.size === 0) {return 0;}
 
     const sum = Array.from(this.playerLatencies.values()).reduce((a, b) => a + b, 0);
     return sum / this.playerLatencies.size;
   }
 
   private calculateAverageJitter(): number {
-    if (this.playerJitter.size === 0) return 0;
+    if (this.playerJitter.size === 0) {return 0;}
 
     const sum = Array.from(this.playerJitter.values()).reduce((a, b) => a + b, 0);
     return sum / this.playerJitter.size;

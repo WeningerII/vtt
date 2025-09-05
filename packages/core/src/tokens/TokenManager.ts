@@ -148,8 +148,8 @@ export class TokenManager extends EventEmitter {
    */
   getVisibleTokens(userId: string): Token[] {
     return this.getAllTokens().filter(token => {
-      if (token.visibility === 'visible') return true;
-      if (token.visibility === 'hidden' && token.ownerId === userId) return true;
+      if (token.visibility === 'visible') {return true;}
+      if (token.visibility === 'hidden' && token.ownerId === userId) {return true;}
       return false;
     });
   }

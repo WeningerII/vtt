@@ -97,7 +97,7 @@ export class StateManager {
   }
 
   private async processQueue(): Promise<void> {
-    if (this.isProcessingQueue) return;
+    if (this.isProcessingQueue) {return;}
     this.isProcessingQueue = true;
 
     while (this.operationQueue.length > 0) {
@@ -408,7 +408,7 @@ export class StateManager {
   undoLastOperation(): Operation | null {
     const lastUserOp = this.operations.filter((op) => op.userId === this.userId).pop();
 
-    if (!lastUserOp) return null;
+    if (!lastUserOp) {return null;}
 
     // Create inverse operation
     const undoOp = this.createInverseOperation(lastUserOp);

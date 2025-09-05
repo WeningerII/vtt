@@ -63,7 +63,7 @@ export function MapUploadModal({ isOpen, onClose, onUploadComplete, campaignId }
 
   const [dragOver, setDragOver] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const handleFileSelect = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -115,7 +115,7 @@ export function MapUploadModal({ isOpen, onClose, onUploadComplete, campaignId }
   };
 
   const handleUpload = async () => {
-    if (!uploadState.file) return;
+    if (!uploadState.file) {return;}
 
     setUploadState(prev => ({ ...prev, uploading: true, error: null, progress: 0 }));
 
@@ -261,7 +261,7 @@ export function MapUploadModal({ isOpen, onClose, onUploadComplete, campaignId }
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) handleFileSelect(file);
+              if (file) {handleFileSelect(file);}
             }}
           />
 

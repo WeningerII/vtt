@@ -2,12 +2,13 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "incremental": true,
     "tsBuildInfoFile": "./token-management.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true,
+    "types": []
   },
   "include": [
     "src/**/*"
@@ -15,5 +16,8 @@
   "exclude": [
     "node_modules",
     "dist"
+  ],
+  "references": [
+    { "path": "../logging" }
   ]
 }

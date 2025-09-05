@@ -16,7 +16,7 @@ const server = http.createServer((req, res) => {
   try {
     const parsed = url.parse(req.url || "/");
     let p = decodeURIComponent(parsed.pathname || "/");
-    if (p === "/") p = "/index.html";
+    if (p === "/") {p = "/index.html";}
     const file = path.join(base, p);
     if (!file.startsWith(base)) {
       res.writeHead(403);

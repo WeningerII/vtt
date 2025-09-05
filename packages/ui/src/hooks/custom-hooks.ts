@@ -1,11 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useLocalStorage, useDebounce, useThrottle } from "usehooks-ts";
+import { useLocalStorage } from "usehooks-ts";
 
 // Re-export popular hooks from libraries
 export {
   useLocalStorage,
-  useDebounce,
-  useThrottle,
   useMediaQuery,
   useOnClickOutside,
   useInterval,
@@ -13,10 +11,8 @@ export {
   useToggle,
   useCounter,
   useHover,
-  useFetch,
   useScript,
   useWindowSize,
-  useScrollPosition,
 } from "usehooks-ts";
 
 // Custom auth hook placeholder

@@ -110,7 +110,7 @@ export const useSocket = (): UseSocketReturn => {
   }, []);
 
   const authenticate = (userId: string, campaignId?: string) => {
-    if (!socket) return;
+    if (!socket) {return;}
 
     socket.emit("authenticate", { userId, campaignId });
 
@@ -122,12 +122,12 @@ export const useSocket = (): UseSocketReturn => {
   };
 
   const joinScene = (sceneId: string) => {
-    if (!socket) return;
+    if (!socket) {return;}
     socket.emit("join_scene", { sceneId });
   };
 
   const sendMessage = (text: string, channel?: string) => {
-    if (!socket) return;
+    if (!socket) {return;}
     socket.emit("send_message", { text, channel });
   };
 

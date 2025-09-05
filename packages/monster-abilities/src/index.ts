@@ -379,7 +379,7 @@ export class MonsterAbilitiesEngine {
     const rechargeMap = this.rechargeableAbilities.get(monsterId);
     const results: Array<{ ability: string; recharged: boolean }> = [];
 
-    if (!rechargeMap) return results;
+    if (!rechargeMap) {return results;}
 
     for (const trait of traits) {
       if (trait.cost?.recharge && !rechargeMap.get(trait.id)) {
@@ -533,7 +533,7 @@ export class MonsterAbilitiesEngine {
         // Cast a spell using the spell engine
         results.push({
           type: "spell_cast",
-          targets: targets,
+          targets,
           result: { spellId: context?.spellId || "unknown" },
         });
         break;

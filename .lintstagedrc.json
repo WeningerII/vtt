@@ -1,18 +1,18 @@
 {
   "**/*.{js,jsx,ts,tsx}": [
-    "prettier --write",
-    "eslint --fix --max-warnings=0"
+    "prettier --write --cache",
+    "eslint --fix --max-warnings=0 --cache"
   ],
   "**/*.{css,scss,less}": [
-    "prettier --write"
+    "prettier --write --cache"
   ],
   "**/*.{md,mdx}": [
-    "prettier --write"
+    "prettier --write --cache"
   ],
   "**/*.{json,yml,yaml}": [
-    "prettier --write"
+    "prettier --write --cache"
   ],
-  "**/*.prisma": [
-    "prisma format"
+  "apps/server/prisma/*.prisma": [
+    "prisma format --schema apps/server/prisma/schema.prisma"
   ]
 }

@@ -497,7 +497,7 @@ export class DeepRuleEngine {
 
     for (const [systemId, _systemRules] of this.activeRules) {
       const indexes = this.ruleCache.get(`indexes_${systemId}`);
-      if (!indexes) continue;
+      if (!indexes) {continue;}
 
       // Find rules by trigger
       const triggerKey = `${eventType}:${eventData.type || "*"}`;
@@ -552,7 +552,7 @@ export class DeepRuleEngine {
 
     for (const key of path) {
       value = value?.[key];
-      if (value === undefined) break;
+      if (value === undefined) {break;}
     }
 
     return value;
@@ -628,7 +628,7 @@ export class DeepRuleEngine {
       target: effect.target,
       property: effect.property,
       oldValue: currentValue,
-      newValue: newValue,
+      newValue,
       notification: this.createEffectNotification(effect, currentValue, newValue),
     };
   }

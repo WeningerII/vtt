@@ -219,14 +219,14 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Handle WebSocket messages for real-time collaboration
   useEffect(() => {
-    if (!lastMessage) return;
+    if (!lastMessage) {return;}
 
     switch (lastMessage.type) {
       case "token_move":
         {
           const { tokenId, x, y } = lastMessage.payload;
           setScene((prevScene) => {
-            if (!prevScene || !prevScene.tokens) return prevScene;
+            if (!prevScene || !prevScene.tokens) {return prevScene;}
             const updatedTokens = prevScene.tokens.map((token) =>
               token.id === tokenId ? { ...token, x, y } : token,
             );
@@ -239,7 +239,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         {
           const { token } = lastMessage.payload;
           setScene((prevScene) => {
-            if (!prevScene) return prevScene;
+            if (!prevScene) {return prevScene;}
             const currentTokens = prevScene.tokens || [];
             return { ...prevScene, tokens: [...currentTokens, token] };
           });
@@ -250,7 +250,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         {
           const { _tokenId: removeId } = lastMessage.payload;
           setScene((prevScene) => {
-            if (!prevScene || !prevScene.tokens) return prevScene;
+            if (!prevScene || !prevScene.tokens) {return prevScene;}
             return {
               ...prevScene,
               tokens: prevScene.tokens.filter((t) => t.id !== removeId),
@@ -306,7 +306,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Convert screen coordinates to world coordinates
   const screenToWorld = useCallback(
     (_screenX: number, _screenY: number) => {
-      if (!containerRef.current) return { x: 0, y: 0 };
+      if (!containerRef.current) {return { x: 0, y: 0 };}
 
       const rect = containerRef.current.getBoundingClientRect();
       const x = (screenX - rect.left - pan.x) / zoom;
@@ -320,7 +320,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Convert world coordinates to grid coordinates
   const worldToGrid = useCallback(
     (_worldX: number, _worldY: number) => {
-      if (!scene) return { gridX: 0, gridY: 0 };
+      if (!scene) {return { gridX: 0, gridY: 0 };}
 
       const { grid } = scene;
       const adjustedX = worldX - grid.offsetX;
@@ -337,7 +337,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Snap coordinates to grid
   const snapToGrid = useCallback(
     (_worldX: number, _worldY: number) => {
-      if (!scene || scene.grid.type === "none") return { x: worldX, y: worldY };
+      if (!scene || scene.grid.type === "none") {return { x: worldX, y: worldY };}
 
       const { gridX, gridY } = worldToGrid(worldX, worldY);
       const { grid } = scene;
@@ -353,7 +353,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Render grid
   const renderGrid = useCallback(
     (_ctx: CanvasRenderingContext2D) => {
-      if (!scene || !isGridVisible || scene.grid.type === "none") return;
+      if (!scene || !isGridVisible || scene.grid.type === "none") {return;}
 
       const { grid, width, height } = scene;
 
@@ -386,10 +386,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Render tokens
   const renderTokens = useCallback(
     (_ctx: CanvasRenderingContext2D) => {
-      if (!scene?.tokens) return;
+      if (!scene?.tokens) {return;}
 
       scene.tokens.forEach((token) => {
-        if (!token.isVisible && !isGM) return;
+        if (!token.isVisible && !isGM) {return;}
 
         ctx.save();
 
@@ -416,8 +416,8 @@ export const MapViewer: React.FC<MapViewerProps> = ({
             const angle = (i * Math.PI) / 3;
             const px = token.x + (size / 2) * Math.cos(angle);
             const py = token.y + (size / 2) * Math.sin(angle);
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
+            if (i === 0) {ctx.moveTo(px, py);}
+            else {ctx.lineTo(px, py);}
           }
           ctx.closePath();
           ctx.fill();
@@ -456,7 +456,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
       spellEffects.forEach((effect) => {
         const elapsed = now - effect.startTime;
-        if (elapsed > effect.duration) return; // Effect expired
+        if (elapsed > effect.duration) {return;} // Effect expired
 
         const progress = elapsed / effect.duration;
         const alpha = effect.opacity || 1 - progress; // Fade out over time
@@ -601,10 +601,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       const now = Date.now();
 
       spellProjectiles.forEach((projectile) => {
-        if (!projectile.active) return;
+        if (!projectile.active) {return;}
 
         const elapsed = now - projectile.startTime;
-        if (elapsed > projectile.duration) return;
+        if (elapsed > projectile.duration) {return;}
 
         // Calculate current position
         const progress = Math.min(elapsed / projectile.duration, 1);
@@ -686,7 +686,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Render spell template preview
   const renderSpellTemplate = useCallback(
     (_ctx: CanvasRenderingContext2D) => {
-      if (!spellTemplate) return;
+      if (!spellTemplate) {return;}
 
       ctx.save();
       ctx.globalAlpha = spellTemplate.opacity;
@@ -748,10 +748,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Main render function
   const render = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !scene) return;
+    if (!canvas || !scene) {return;}
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {return;}
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -803,7 +803,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas || !container) {return;}
 
     const resizeCanvas = () => {
       const rect = container.getBoundingClientRect();
@@ -825,7 +825,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Handle spell casting
   const handleCastSpell = useCallback(
     async (spell: any, _targets?: string[], _position?: { x: number; y: number }) => {
-      if (!scene || !selectedToken) return;
+      if (!scene || !selectedToken) {return;}
 
       try {
         const response = await fetch(`/api/maps/scenes/${scene.id}/cast-spell`, {
@@ -911,7 +911,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       handleSpellPreview(castingMode.spell, { x, y });
     }
 
-    if (!isDragging) return;
+    if (!isDragging) {return;}
 
     if (selectedTool === "move" || (selectedTool === "select" && !selectedToken)) {
       // Pan the map
@@ -925,7 +925,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
       if (scene?.tokens) {
         setScene((prev) => {
-          if (!prev) return prev;
+          if (!prev) {return prev;}
           return {
             ...prev,
             tokens:

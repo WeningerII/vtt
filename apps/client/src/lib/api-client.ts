@@ -15,8 +15,11 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
+    const serverUrl = import.meta.env?.VITE_SERVER_URL || "http://localhost:8080";
+    const baseURL = serverUrl.endsWith('/api/v1') ? serverUrl : `${serverUrl}/api/v1`;
+    
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1",
+      baseURL,
       timeout: 10000,
       withCredentials: true, // Include cookies for session management
       headers: {
@@ -36,6 +39,12 @@ class ApiClient {
           ...(config.headers || {}),
           "X-Request-Time": new Date().toISOString(),
         } as any;
+
+        // Add auth token from localStorage if available
+        const accessToken = localStorage.getItem("accessToken");
+        if (accessToken) {
+          (config.headers as any)["Authorization"] = `Bearer ${accessToken}`;
+        }
 
         // Add CSRF token if available
         if (typeof document !== "undefined") {
@@ -67,9 +76,20 @@ class ApiClient {
 
         switch (status) {
           case 401:
-            // Unauthorized - redirect to login or refresh token
+            // Unauthorized - try to refresh token first, then redirect
             if (typeof window !== "undefined" && !window.location.pathname.includes("/auth")) {
-              window.location.href = "/auth/login";
+              const refreshToken = localStorage.getItem("refreshToken");
+              if (refreshToken) {
+                // Attempt token refresh - this will be handled by AuthProvider
+                logger.info("API received 401, refresh token available - triggering auth refresh");
+                window.dispatchEvent(new CustomEvent("auth:refresh-needed"));
+              } else {
+                // No refresh token, redirect to login
+                logger.info("API received 401, no refresh token - redirecting to login");
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+                window.location.href = "/auth/login";
+              }
             }
             break;
           case 403:
@@ -177,14 +197,30 @@ class ApiClient {
     window.URL.revokeObjectURL(downloadUrl);
   }
 
-  // Set authorization header
+  // Set authorization header (deprecated - tokens now read from localStorage)
   setAuthToken(token: string) {
-    this.client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    // For backward compatibility, but tokens are now automatically read from localStorage
+    localStorage.setItem("accessToken", token);
+    logger.info("Auth token updated in localStorage");
   }
 
-  // Remove authorization header
+  // Remove authorization header (deprecated - tokens now read from localStorage)
   clearAuthToken() {
-    delete this.client.defaults.headers.common["Authorization"];
+    // For backward compatibility, but tokens are now automatically cleared from localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    logger.info("Auth tokens cleared from localStorage");
+  }
+
+  // Check if user is authenticated
+  isAuthenticated(): boolean {
+    const token = localStorage.getItem("accessToken");
+    return !!token;
+  }
+
+  // Get current access token
+  getAccessToken(): string | null {
+    return localStorage.getItem("accessToken");
   }
 
   // Get base URL

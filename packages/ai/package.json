@@ -29,6 +29,11 @@
       "require": "./src/providers/CircuitBreakerProvider.ts"
     }
   },
+  "dependencies": {
+    "@vtt/logging": "workspace:*",
+    "@vtt/core-ecs": "workspace:*",
+    "@vtt/performance": "workspace:*"
+  },
   "scripts": {
     "build": "tsc -b",
     "lint": "eslint src --ext .ts"

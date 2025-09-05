@@ -121,7 +121,7 @@ export class DiscordOAuthProvider {
           client_id: this.config.clientId,
           client_secret: this.config.clientSecret,
           grant_type: 'authorization_code',
-          code: code,
+          code,
           redirect_uri: this.config.redirectUri,
         }),
       });
@@ -218,7 +218,7 @@ export class DiscordOAuthProvider {
         const result = await this.userManager.createUser({
           locale: 'en',
           email: profile.email,
-          username: username,
+          username,
           password: this.generateSecurePassword(), // Generate random password
           firstName: profile.username
         });

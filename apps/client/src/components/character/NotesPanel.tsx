@@ -50,11 +50,11 @@ const FEATURE_TYPES = [
   { key: "other", label: "Other", icon: Zap },
 ] as const;
 
-export const NotesPanel = memo(function NotesPanel({
+export const NotesPanel = memo(({
   character,
   isEditing,
   onUpdate,
-}: NotesPanelProps): JSX.Element {
+}: NotesPanelProps): JSX.Element => {
   const [activeTab, setActiveTab] = useState<"notes" | "features">("notes");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<Feature["type"] | "all">("all");
@@ -83,7 +83,7 @@ export const NotesPanel = memo(function NotesPanel({
   };
 
   const addOrUpdateFeature = () => {
-    if (!featureForm.name.trim()) return;
+    if (!featureForm.name.trim()) {return;}
 
     const newFeature: Feature = {
       id: editingFeature?.id || `feature_${Date.now()}`,
@@ -163,7 +163,7 @@ export const NotesPanel = memo(function NotesPanel({
 
   const featuresByType = filteredFeatures.reduce(
     (acc, feature) => {
-      if (!acc[feature.type]) acc[feature.type] = [];
+      if (!acc[feature.type]) {acc[feature.type] = [];}
       acc[feature.type].push(feature);
       return acc;
     },
@@ -201,7 +201,7 @@ export const NotesPanel = memo(function NotesPanel({
             "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2",
             activeTab === "notes"
               ? "text-accent-primary border-accent-primary"
-              : "text-text-secondary border-transparent hover:text-text-primary",
+              : "text-secondary border-transparent hover:text-primary",
           )}
         >
           <FileText className="h-4 w-4" />
@@ -213,7 +213,7 @@ export const NotesPanel = memo(function NotesPanel({
             "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-b-2",
             activeTab === "features"
               ? "text-accent-primary border-accent-primary"
-              : "text-text-secondary border-transparent hover:text-text-primary",
+              : "text-secondary border-transparent hover:text-primary",
           )}
         >
           <Star className="h-4 w-4" />
@@ -225,9 +225,9 @@ export const NotesPanel = memo(function NotesPanel({
       {activeTab === "notes" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-text-primary">Character Notes</h3>
+            <h3 className="text-lg font-semibold text-primary">Character Notes</h3>
             {!isEditing && character.notes && (
-              <span className="text-sm text-text-secondary">
+              <span className="text-sm text-secondary">
                 {character.notes.length} characters
               </span>
             )}
@@ -238,7 +238,7 @@ export const NotesPanel = memo(function NotesPanel({
               <textarea
                 value={character.notes}
                 onChange={(e) => updateNotes(e.target.value)}
-                className="w-full h-96 px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary resize-none focus:ring-2 focus:ring-accent-primary focus:border-transparent"
+                className="w-full h-96 px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary resize-none focus:ring-2 focus:ring-accent-primary focus:border-transparent"
                 placeholder="Write your character notes here... Include backstory, personality traits, goals, secrets, or anything else important about your character."
               />
               <div className="text-xs text-text-tertiary">
@@ -249,14 +249,14 @@ export const NotesPanel = memo(function NotesPanel({
           ) : (
             <div className="bg-bg-tertiary rounded-lg border border-border-primary p-4">
               {character.notes ? (
-                <div className="whitespace-pre-wrap text-text-primary leading-relaxed">
+                <div className="whitespace-pre-wrap text-primary leading-relaxed">
                   {character.notes}
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-                  <h4 className="text-lg font-medium text-text-primary mb-2">No Notes Yet</h4>
-                  <p className="text-text-secondary">
+                  <h4 className="text-lg font-medium text-primary mb-2">No Notes Yet</h4>
+                  <p className="text-secondary">
                     Character notes will appear here when added.
                   </p>
                 </div>
@@ -285,7 +285,7 @@ export const NotesPanel = memo(function NotesPanel({
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as Feature["type"] | "all")}
-                className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary text-sm"
+                className="px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary text-sm"
               >
                 <option value="all">All Types</option>
                 {FEATURE_TYPES.map(({ key, label }) => (
@@ -312,7 +312,7 @@ export const NotesPanel = memo(function NotesPanel({
           {showAddFeature && isEditing && (
             <div className="bg-bg-tertiary rounded-lg border border-border-primary p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-text-primary">
+                <h3 className="text-lg font-semibold text-primary">
                   {editingFeature ? "Edit Feature" : "Add Feature"}
                 </h3>
                 <Button variant="ghost" size="sm" onClick={resetFeatureForm}>
@@ -322,7 +322,7 @@ export const NotesPanel = memo(function NotesPanel({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Name</label>
+                  <label className="block text-sm font-medium text-primary mb-1">Name</label>
                   <Input
                     value={featureForm.name}
                     onChange={(e) => setFeatureForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -331,7 +331,7 @@ export const NotesPanel = memo(function NotesPanel({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-primary mb-1">Source</label>
+                  <label className="block text-sm font-medium text-primary mb-1">Source</label>
                   <Input
                     value={featureForm.source}
                     onChange={(e) =>
@@ -342,7 +342,7 @@ export const NotesPanel = memo(function NotesPanel({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-primary mb-1">Type</label>
+                  <label className="block text-sm font-medium text-primary mb-1">Type</label>
                   <select
                     value={featureForm.type}
                     onChange={(e) =>
@@ -351,7 +351,7 @@ export const NotesPanel = memo(function NotesPanel({
                         type: e.target.value as Feature["type"],
                       }))
                     }
-                    className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary"
+                    className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary"
                   >
                     {FEATURE_TYPES.map(({ key, label }) => (
                       <option key={key} value={key}>
@@ -363,7 +363,7 @@ export const NotesPanel = memo(function NotesPanel({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-text-primary mb-1">
+                <label className="block text-sm font-medium text-primary mb-1">
                   Description
                 </label>
                 <textarea
@@ -371,7 +371,7 @@ export const NotesPanel = memo(function NotesPanel({
                   onChange={(e) =>
                     setFeatureForm((prev) => ({ ...prev, description: e.target.value }))
                   }
-                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-text-primary resize-none"
+                  className="w-full px-3 py-2 bg-bg-secondary border border-border-primary rounded-md text-primary resize-none"
                   rows={4}
                   placeholder="Feature description..."
                 />
@@ -387,7 +387,7 @@ export const NotesPanel = memo(function NotesPanel({
                     onChange={toggleUsesTracking}
                     className="rounded border-border-primary"
                   />
-                  <label htmlFor="hasUses" className="text-sm font-medium text-text-primary">
+                  <label htmlFor="hasUses" className="text-sm font-medium text-primary">
                     Track uses per rest
                   </label>
                 </div>
@@ -395,7 +395,7 @@ export const NotesPanel = memo(function NotesPanel({
                 {featureForm.uses && (
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-xs text-text-secondary mb-1">Current</label>
+                      <label className="block text-xs text-secondary mb-1">Current</label>
                       <Input
                         type="number"
                         min="0"
@@ -414,7 +414,7 @@ export const NotesPanel = memo(function NotesPanel({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-text-secondary mb-1">Max</label>
+                      <label className="block text-xs text-secondary mb-1">Max</label>
                       <Input
                         type="number"
                         min="1"
@@ -433,7 +433,7 @@ export const NotesPanel = memo(function NotesPanel({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-text-secondary mb-1">Reset On</label>
+                      <label className="block text-xs text-secondary mb-1">Reset On</label>
                       <select
                         value={featureForm.uses.resetOn}
                         onChange={(e) =>
@@ -485,17 +485,17 @@ export const NotesPanel = memo(function NotesPanel({
 
                       <div className="flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-medium text-text-primary">{feature.name}</h4>
-                          <span className="text-xs bg-bg-primary text-text-tertiary px-2 py-1 rounded">
+                          <h4 className="font-medium text-primary">{feature.name}</h4>
+                          <span className="text-xs bg-primary text-text-tertiary px-2 py-1 rounded">
                             {getTypeLabel(feature.type)}
                           </span>
                           {feature.source && (
-                            <span className="text-xs text-text-secondary">• {feature.source}</span>
+                            <span className="text-xs text-secondary">• {feature.source}</span>
                           )}
                         </div>
 
                         {feature.description && (
-                          <p className="text-sm text-text-secondary mt-1 whitespace-pre-wrap">
+                          <p className="text-sm text-secondary mt-1 whitespace-pre-wrap">
                             {feature.description}
                           </p>
                         )}
@@ -567,8 +567,8 @@ export const NotesPanel = memo(function NotesPanel({
           {filteredFeatures.length === 0 && (
             <div className="text-center py-8">
               <Star className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-text-primary mb-2">No Features Found</h3>
-              <p className="text-text-secondary">
+              <h3 className="text-lg font-medium text-primary mb-2">No Features Found</h3>
+              <p className="text-secondary">
                 {searchTerm
                   ? `No features match "${searchTerm}"`
                   : isEditing

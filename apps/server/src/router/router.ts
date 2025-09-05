@@ -30,7 +30,7 @@ export class Router {
 
   async handle(ctx: Context): Promise<boolean> {
     for (const r of this.routes) {
-      if (r.method !== ctx.req.method) continue;
+      if (r.method !== ctx.req.method) {continue;}
       const params = this.matchPath(r.path, ctx.url.pathname);
       if (params) {
         // attach params for handlers/middleware
@@ -49,7 +49,7 @@ export class Router {
     const rp = this.normalizePath(routePath);
     const qp = this.normalizePath(requestPath);
     // Quick exact match
-    if (rp === qp) return {};
+    if (rp === qp) {return {};}
 
     const routeSegs = rp.split("/").filter(Boolean);
     const reqSegs = qp.split("/").filter(Boolean);
@@ -58,7 +58,7 @@ export class Router {
 
     // Support multi-segment wildcard only at the end using '**'
     const hasMultiWildcardAtEnd = routeSegs[routeSegs.length - 1] === "**";
-    if (!hasMultiWildcardAtEnd && routeSegs.length !== reqSegs.length) return null;
+    if (!hasMultiWildcardAtEnd && routeSegs.length !== reqSegs.length) {return null;}
 
     let i = 0; // route index
     let j = 0; // req index
@@ -100,16 +100,16 @@ export class Router {
     }
 
     // If route ends with '**', it's okay for req to have extra segments (already consumed)
-    if (i === routeSegs.length && j === reqSegs.length) return params;
+    if (i === routeSegs.length && j === reqSegs.length) {return params;}
     return null;
   }
 
   private normalizePath(p: string): string {
-    if (!p) return "/";
+    if (!p) {return "/";}
     try {
       // Remove query/hash if present (defensive) and trailing slash except root
       const [pathOnly] = p.split(/[?#]/, 1);
-      if (pathOnly.length > 1 && pathOnly.endsWith("/")) return pathOnly.slice(0, -1);
+      if (pathOnly.length > 1 && pathOnly.endsWith("/")) {return pathOnly.slice(0, -1);}
       return pathOnly || "/";
     } catch {
       return p;

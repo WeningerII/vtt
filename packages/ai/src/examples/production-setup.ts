@@ -78,7 +78,7 @@ export class ProductionAIManager {
   }
 
   async initialize(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {return;}
 
     // Initialize the complete AI system
     const system = await createProductionAISystem(productionConfig);
@@ -122,7 +122,7 @@ export class ProductionAIManager {
         theme: context.theme || 'High Fantasy',
         playerLevel: context.playerLevel || 5
       }, {
-        role: role,
+        role,
         detailLevel: 'detailed'
       });
     }
@@ -150,7 +150,7 @@ export class ProductionAIManager {
         setting: context.setting || 'Forgotten Realms',
         theme: context.theme || 'High Fantasy'
       }, {
-        locationType: locationType,
+        locationType,
         scale: 'building',
         inhabitants: true
       });

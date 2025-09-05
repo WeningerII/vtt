@@ -74,6 +74,7 @@ export class AssetPipeline extends EventEmitter {
 
     for (let i = 0; i < applicableStages.length; i++) {
       const stage = applicableStages[i];
+      if (!stage) {continue;}
 
       this.emitProgress(
         stage.name,
@@ -133,6 +134,7 @@ export class AssetPipeline extends EventEmitter {
 
     for (let i = 0; i < assets.length; i++) {
       const asset = assets[i];
+      if (!asset) {continue;}
 
       try {
         const result = await this.processAsset(asset.data, asset.metadata);
@@ -534,13 +536,14 @@ export const _DEFAULT_PIPELINE_CONFIGS = {
     generatePreviews: true,
     optimizeForWeb: true,
     quality: {
-      image: 0.8,
-      audio: 0.9,
-      model: 0.8,
+      image: 0.85,
+      audio: 0.8,
+      model: 0.7,
       map: 0.85,
       token: 0.9,
       scene: 1.0,
       campaign: 1.0,
+      ruleset: 1.0,
       data: 1.0,
       template: 1.0,
       shader: 1.0,
@@ -583,6 +586,7 @@ export const _DEFAULT_PIPELINE_CONFIGS = {
       token: 0.8,
       scene: 1.0,
       campaign: 1.0,
+      ruleset: 1.0,
       data: 1.0,
       template: 1.0,
       shader: 1.0,

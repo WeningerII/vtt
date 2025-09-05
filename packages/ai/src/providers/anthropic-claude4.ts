@@ -366,7 +366,7 @@ export class AnthropicClaude4Provider implements AIProvider {
 // ...
 
   private extractToolCalls(data: any): ToolCall[] | undefined {
-    if (!data.content) return undefined;
+    if (!data.content) {return undefined;}
     
     const toolCalls = data.content
       .filter((item: any) => item.type === 'tool_use')

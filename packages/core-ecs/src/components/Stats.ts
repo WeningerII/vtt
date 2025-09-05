@@ -75,7 +75,7 @@ export class StatsStore {
 
   remove(entity: number): void {
     const index = this.findIndex(entity);
-    if (index === -1) return;
+    if (index === -1) {return;}
 
     const lastIndex = this.count - 1;
     if (index !== lastIndex) {
@@ -101,7 +101,7 @@ export class StatsStore {
 
   get(entity: number): StatsData | null {
     const index = this.findIndex(entity);
-    if (index === -1) return null;
+    if (index === -1) {return null;}
 
     const abilities = {
       strength: this.strength[index] || 10,
@@ -132,7 +132,7 @@ export class StatsStore {
 
   getAbilityModifier(entity: number, ability: keyof AbilityScores): number {
     const index = this.findIndex(entity);
-    if (index === -1) return 0;
+    if (index === -1) {return 0;}
 
     const score = this[ability][index] || 10;
     return Math.floor((score - 10) / 2);
@@ -166,7 +166,7 @@ export class StatsStore {
 
   getProficiencyBonus(entity: number): number {
     const index = this.findIndex(entity);
-    if (index === -1) return 0;
+    if (index === -1) {return 0;}
     return this.proficiencyBonus[index] || 2;
   }
 
@@ -188,7 +188,7 @@ export class StatsStore {
 
   private findIndex(entity: number): number {
     for (let i = 0; i < this.count; i++) {
-      if (this.entities[i] === entity) return i;
+      if (this.entities[i] === entity) {return i;}
     }
     return -1;
   }

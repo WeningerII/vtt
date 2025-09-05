@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useRef, useState, useEffect } from 'react';
+import type { TouchEvent as ReactTouchEvent } from 'react';
 
 export interface TouchPoint {
   x: number;
@@ -29,7 +30,7 @@ export interface GestureState {
   
   // Long press
   isLongPress: boolean;
-  longPressTimer: number | null;
+  longPressTimer: ReturnType<typeof setTimeout> | null;
 }
 
 export interface TouchGestureCallbacks {
@@ -74,7 +75,7 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
   const momentumAnimationRef = useRef<number | null>(null);
 
   // Helper functions
-  const getTouchPoint = useCallback((touch: Touch): TouchPoint => ({
+  const getTouchPoint = useCallback((touch: React.Touch): TouchPoint => ({
     x: touch.clientX,
     y: touch.clientY,
     id: touch.identifier,
@@ -87,7 +88,7 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
   }, []);
 
   const getTouchCenter = useCallback((points: TouchPoint[]): { x: number; y: number } => {
-    if (points.length === 0) return { x: 0, y: 0 };
+    if (points.length === 0) {return { x: 0, y: 0 };}
     
     const sum = points.reduce(
       (acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }),
@@ -130,7 +131,7 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
       cancelAnimationFrame(momentumAnimationRef.current);
     }
 
-    let currentVelocity = { ...velocity };
+    const currentVelocity = { ...velocity };
 
     const animate = () => {
       if (Math.abs(currentVelocity.x) < VELOCITY_THRESHOLD && 
@@ -150,10 +151,10 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
     momentumAnimationRef.current = requestAnimationFrame(animate);
   }, [callbacks]);
 
-  const handleTouchStart = useCallback((e: TouchEvent) => {
+  const handleTouchStart = useCallback((e: ReactTouchEvent) => {
     e.preventDefault();
     
-    const touches = Array.from(e.touches).map(getTouchPoint);
+    const touches = Array.from(e.touches).map((touch) => getTouchPoint(touch));
     const now = Date.now();
     
     touchStartRef.current = touches;
@@ -194,7 +195,7 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
           callbacks.onLongPress?.(touch);
         }, LONG_PRESS_DELAY);
         
-        setGestureState(prev => ({ ...prev, longPressTimer: timer }));
+        setGestureState(prev => ({ ...prev, longPressTimer: timer as ReturnType<typeof setTimeout> }));
       }
       
       callbacks.onPanStart?.(touch);
@@ -221,10 +222,10 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
     }
   }, [callbacks, gestureState.lastTapTime, gestureState.tapCount, getTouchPoint, getTouchDistance, getTouchCenter, clearLongPressTimer]);
 
-  const handleTouchMove = useCallback((e: TouchEvent) => {
+  const handleTouchMove = useCallback((e: ReactTouchEvent) => {
     e.preventDefault();
     
-    const touches = Array.from(e.touches).map(getTouchPoint);
+    const touches = Array.from(e.touches).map((touch) => getTouchPoint(touch));
     const now = Date.now();
     const deltaTime = now - lastTimestampRef.current;
     
@@ -280,10 +281,10 @@ export const useTouchGestures = (callbacks: TouchGestureCallbacks = {}) => {
     lastTimestampRef.current = now;
   }, [callbacks, gestureState.isPinching, gestureState.isPanning, getTouchPoint, getTouchDistance, getTouchCenter, calculateVelocity, clearLongPressTimer]);
 
-  const handleTouchEnd = useCallback((e: TouchEvent) => {
+  const handleTouchEnd = useCallback((e: ReactTouchEvent) => {
     e.preventDefault();
     
-    const touches = Array.from(e.touches).map(getTouchPoint);
+    const touches = Array.from(e.touches).map((touch) => getTouchPoint(touch));
     const now = Date.now();
     
     // Handle tap if no movement and not long press

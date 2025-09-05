@@ -34,7 +34,7 @@ export const listActorsHandler: RouteHandler = async (ctx) => {
     }
 
     validateUUID(campaignId, "campaignId");
-    if (kind) validateEnum(kind, ["PC", "NPC", "MONSTER"], "kind");
+    if (kind) {validateEnum(kind, ["PC", "NPC", "MONSTER"], "kind");}
 
     const actorService = new ActorService(ctx.prisma);
     const result = await actorService.searchActors({ campaignId, kind, isActive, limit, offset });
@@ -84,13 +84,13 @@ export const createActorHandler: RouteHandler = async (ctx) => {
         validateUUID(data.campaignId, "campaignId");
         validateEnum(data.kind, ["PC", "NPC", "MONSTER"], "kind");
 
-        if (data.monsterId) validateUUID(data.monsterId, "monsterId");
-        if (data.characterId) validateUUID(data.characterId, "characterId");
-        if (data.currentHp !== undefined) validateNumber(data.currentHp, "currentHp", { min: 0 });
-        if (data.maxHp !== undefined) validateNumber(data.maxHp, "maxHp", { min: 0 });
-        if (data.tempHp !== undefined) validateNumber(data.tempHp, "tempHp", { min: 0 });
-        if (data.ac !== undefined) validateNumber(data.ac, "ac", { min: 0, max: 50 });
-        if (data.initiative !== undefined) validateNumber(data.initiative, "initiative");
+        if (data.monsterId) {validateUUID(data.monsterId, "monsterId");}
+        if (data.characterId) {validateUUID(data.characterId, "characterId");}
+        if (data.currentHp !== undefined) {validateNumber(data.currentHp, "currentHp", { min: 0 });}
+        if (data.maxHp !== undefined) {validateNumber(data.maxHp, "maxHp", { min: 0 });}
+        if (data.tempHp !== undefined) {validateNumber(data.tempHp, "tempHp", { min: 0 });}
+        if (data.ac !== undefined) {validateNumber(data.ac, "ac", { min: 0, max: 50 });}
+        if (data.initiative !== undefined) {validateNumber(data.initiative, "initiative");}
 
         const actorService = new ActorService(ctx.prisma);
         const actor = await actorService.createActor({
@@ -131,7 +131,7 @@ export const createActorFromMonsterHandler: RouteHandler = async (ctx) => {
         validateRequired(data, ["monsterId", "campaignId"]);
         validateUUID(data.monsterId, "monsterId");
         validateUUID(data.campaignId, "campaignId");
-        if (data.name) validateString(data.name, "name", { minLength: 1, maxLength: 200 });
+        if (data.name) {validateString(data.name, "name", { minLength: 1, maxLength: 200 });}
 
         const actorService = new ActorService(ctx.prisma);
         const actor = await actorService.createActorFromMonster(
@@ -169,12 +169,12 @@ export const updateActorHandler: RouteHandler = async (ctx) => {
         const data = JSON.parse(body);
 
         if (data.name !== undefined)
-          validateString(data.name, "name", { minLength: 1, maxLength: 200 });
-        if (data.currentHp !== undefined) validateNumber(data.currentHp, "currentHp", { min: 0 });
-        if (data.maxHp !== undefined) validateNumber(data.maxHp, "maxHp", { min: 0 });
-        if (data.tempHp !== undefined) validateNumber(data.tempHp, "tempHp", { min: 0 });
-        if (data.ac !== undefined) validateNumber(data.ac, "ac", { min: 0, max: 50 });
-        if (data.initiative !== undefined) validateNumber(data.initiative, "initiative");
+          {validateString(data.name, "name", { minLength: 1, maxLength: 200 });}
+        if (data.currentHp !== undefined) {validateNumber(data.currentHp, "currentHp", { min: 0 });}
+        if (data.maxHp !== undefined) {validateNumber(data.maxHp, "maxHp", { min: 0 });}
+        if (data.tempHp !== undefined) {validateNumber(data.tempHp, "tempHp", { min: 0 });}
+        if (data.ac !== undefined) {validateNumber(data.ac, "ac", { min: 0, max: 50 });}
+        if (data.initiative !== undefined) {validateNumber(data.initiative, "initiative");}
 
         const actorService = new ActorService(ctx.prisma);
         const actor = await actorService.updateActor(id, {

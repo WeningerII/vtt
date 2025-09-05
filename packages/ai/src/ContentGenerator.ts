@@ -875,7 +875,7 @@ class MarkovChain {
 
   generate(startKey?: string, maxLength: number = 50): string {
     const keys = Array.from(this.chains.keys());
-    if (keys.length === 0) return "";
+    if (keys.length === 0) {return "";}
 
     let currentKey =
       startKey && this.chains.has(startKey)
@@ -885,7 +885,7 @@ class MarkovChain {
 
     for (let i = 0; i < maxLength - this.order; i++) {
       const possibleNext = this.chains.get(currentKey);
-      if (!possibleNext || possibleNext.length === 0) break;
+      if (!possibleNext || possibleNext.length === 0) {break;}
 
       const next = possibleNext[Math.floor(Math.random() * possibleNext.length)];
       result.push(next);
@@ -896,7 +896,7 @@ class MarkovChain {
       keyWords.push(next);
       currentKey = keyWords.join(" ");
 
-      if (!this.chains.has(currentKey)) break;
+      if (!this.chains.has(currentKey)) {break;}
     }
 
     return result.join(" ");

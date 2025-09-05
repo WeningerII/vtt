@@ -85,10 +85,10 @@ export class SpatialAudioEngine {
   private zones = new Map<string, AudioZone>();
 
   // Web Audio nodes
-  private masterGainNode: GainNode;
-  private compressorNode: DynamicsCompressorNode;
-  private convolverNode: ConvolverNode;
-  private analyserNode: AnalyserNode;
+  private masterGainNode!: GainNode;
+  private compressorNode!: DynamicsCompressorNode;
+  private convolverNode!: ConvolverNode;
+  private analyserNode!: AnalyserNode;
 
   // HRTF and spatial processing
   private pannerNodes = new Map<string, PannerNode>();
@@ -100,7 +100,7 @@ export class SpatialAudioEngine {
   private loadingPromises = new Map<string, Promise<AudioBuffer>>();
 
   // Performance and analysis
-  private analyserData: {
+  private analyserData!: {
     frequencyData: Float32Array;
     timeData: Float32Array;
     volume: number;
@@ -163,17 +163,17 @@ export class SpatialAudioEngine {
     // Set up listener
     if (ctx.listener.positionX) {
       // Modern Web Audio API
-      ctx.listener.positionX.value = this.listener.position[0];
-      ctx.listener.positionY.value = this.listener.position[1];
-      ctx.listener.positionZ.value = this.listener.position[2];
+      ctx.listener.positionX.value = this.listener.position[0] ?? 0;
+      ctx.listener.positionY.value = this.listener.position[1] ?? 0;
+      ctx.listener.positionZ.value = this.listener.position[2] ?? 0;
 
-      ctx.listener.forwardX.value = this.listener.orientation.forward[0];
-      ctx.listener.forwardY.value = this.listener.orientation.forward[1];
-      ctx.listener.forwardZ.value = this.listener.orientation.forward[2];
+      ctx.listener.forwardX.value = this.listener.orientation.forward[0] ?? 0;
+      ctx.listener.forwardY.value = this.listener.orientation.forward[1] ?? 0;
+      ctx.listener.forwardZ.value = this.listener.orientation.forward[2] ?? 1;
 
-      ctx.listener.upX.value = this.listener.orientation.up[0];
-      ctx.listener.upY.value = this.listener.orientation.up[1];
-      ctx.listener.upZ.value = this.listener.orientation.up[2];
+      ctx.listener.upX.value = this.listener.orientation.up[0] ?? 0;
+      ctx.listener.upY.value = this.listener.orientation.up[1] ?? 1;
+      ctx.listener.upZ.value = this.listener.orientation.up[2] ?? 0;
     } else {
       // Legacy Web Audio API
       (ctx.listener as any).setPosition(
@@ -228,12 +228,12 @@ export class SpatialAudioEngine {
   }
 
   private updateSource(source: AudioSource, deltaTime: number): void {
-    if (!source.isPlaying) return;
+    if (!source.isPlaying) {return;}
 
     const pannerNode = this.pannerNodes.get(source.id);
     const gainNode = this.gainNodes.get(source.id);
 
-    if (!pannerNode || !gainNode) return;
+    if (!pannerNode || !gainNode) {return;}
 
     // Update 3D position
     this.updateSourcePosition(source, pannerNode);
@@ -259,14 +259,14 @@ export class SpatialAudioEngine {
 
     if (pannerNode.positionX) {
       // Modern API
-      pannerNode.positionX.value = source.position[0];
-      pannerNode.positionY.value = source.position[1];
-      pannerNode.positionZ.value = source.position[2];
+      pannerNode.positionX.value = source.position[0] ?? 0;
+      pannerNode.positionY.value = source.position[1] ?? 0;
+      pannerNode.positionZ.value = source.position[2] ?? 0;
 
       if (source.orientation) {
-        pannerNode.orientationX.value = source.orientation[0];
-        pannerNode.orientationY.value = source.orientation[1];
-        pannerNode.orientationZ.value = source.orientation[2];
+        pannerNode.orientationX.value = source.orientation[0] ?? 0;
+        pannerNode.orientationY.value = source.orientation[1] ?? 0;
+        pannerNode.orientationZ.value = source.orientation[2] ?? 0;
       }
     } else {
       // Legacy API
@@ -344,7 +344,7 @@ export class SpatialAudioEngine {
   }
 
   private calculateConeAngle(source: AudioSource): number {
-    if (!source.orientation) return 0;
+    if (!source.orientation) {return 0;}
 
     const toListener = vec3.subtract(vec3.create(), this.listener.position, source.position);
     vec3.normalize(toListener, toListener);
@@ -361,7 +361,7 @@ export class SpatialAudioEngine {
 
   private applyZoneEffects(source: AudioSource): void {
     const zone = this.getCurrentZone(source.position);
-    if (!zone) return;
+    if (!zone) {return;}
 
     // Apply reverb based on zone settings
     if (this.config.enableReverb) {
@@ -386,9 +386,9 @@ export class SpatialAudioEngine {
     const localPos = vec3.subtract(vec3.create(), position, bounds.center);
 
     return (
-      Math.abs(localPos[0]) <= halfSize[0] &&
-      Math.abs(localPos[1]) <= halfSize[1] &&
-      Math.abs(localPos[2]) <= halfSize[2]
+      Math.abs(localPos[0] ?? 0) <= (halfSize[0] ?? 0) &&
+      Math.abs(localPos[1] ?? 0) <= (halfSize[1] ?? 0) &&
+      Math.abs(localPos[2] ?? 0) <= (halfSize[2] ?? 0)
     );
   }
 
@@ -399,13 +399,21 @@ export class SpatialAudioEngine {
   }
 
   private updateAnalyser(): void {
-    this.analyserNode.getFloatFrequencyData(this.analyserData.frequencyData);
-    this.analyserNode.getFloatTimeDomainData(this.analyserData.timeData);
+    // Create new Float32Array instances with correct buffer type
+    const frequencyData = new Float32Array(this.analyserNode.frequencyBinCount);
+    const timeData = new Float32Array(this.analyserNode.frequencyBinCount);
+    
+    this.analyserNode.getFloatFrequencyData(frequencyData);
+    this.analyserNode.getFloatTimeDomainData(timeData);
+    
+    // Copy data to our internal arrays
+    this.analyserData.frequencyData.set(frequencyData);
+    this.analyserData.timeData.set(timeData);
 
     // Calculate RMS volume
     let rms = 0;
     for (let i = 0; i < this.analyserData.timeData.length; i++) {
-      rms += this.analyserData.timeData[i] * this.analyserData.timeData[i];
+      rms += (this.analyserData.timeData[i] ?? 0) * (this.analyserData.timeData[i] ?? 0);
     }
     this.analyserData.volume = Math.sqrt(rms / this.analyserData.timeData.length);
   }
@@ -507,7 +515,7 @@ export class SpatialAudioEngine {
 
   playSource(sourceId: string): void {
     const source = this.sources.get(sourceId);
-    if (!source || !source.buffer) return;
+    if (!source || !source.buffer) {return;}
 
     // Stop existing source node if playing
     this.stopSource(sourceId);
@@ -515,7 +523,7 @@ export class SpatialAudioEngine {
     const ctx = this.audioContext;
     const gainNode = this.gainNodes.get(sourceId);
 
-    if (!gainNode) return;
+    if (!gainNode) {return;}
 
     // Create new source node
     const sourceNode = ctx.createBufferSource();
@@ -545,7 +553,7 @@ export class SpatialAudioEngine {
 
   pauseSource(sourceId: string): void {
     const source = this.sources.get(sourceId);
-    if (!source || !source.isPlaying) return;
+    if (!source || !source.isPlaying) {return;}
 
     this.stopSource(sourceId);
     source.isPaused = true;
@@ -574,17 +582,17 @@ export class SpatialAudioEngine {
     const ctx = this.audioContext;
 
     if (ctx.listener.positionX) {
-      ctx.listener.positionX.value = this.listener.position[0];
-      ctx.listener.positionY.value = this.listener.position[1];
-      ctx.listener.positionZ.value = this.listener.position[2];
+      ctx.listener.positionX.value = this.listener.position[0] ?? 0;
+      ctx.listener.positionY.value = this.listener.position[1] ?? 0;
+      ctx.listener.positionZ.value = this.listener.position[2] ?? 0;
 
-      ctx.listener.forwardX.value = this.listener.orientation.forward[0];
-      ctx.listener.forwardY.value = this.listener.orientation.forward[1];
-      ctx.listener.forwardZ.value = this.listener.orientation.forward[2];
+      ctx.listener.forwardX.value = this.listener.orientation.forward[0] ?? 0;
+      ctx.listener.forwardY.value = this.listener.orientation.forward[1] ?? 0;
+      ctx.listener.forwardZ.value = this.listener.orientation.forward[2] ?? 1;
 
-      ctx.listener.upX.value = this.listener.orientation.up[0];
-      ctx.listener.upY.value = this.listener.orientation.up[1];
-      ctx.listener.upZ.value = this.listener.orientation.up[2];
+      ctx.listener.upX.value = this.listener.orientation.up[0] ?? 0;
+      ctx.listener.upY.value = this.listener.orientation.up[1] ?? 1;
+      ctx.listener.upZ.value = this.listener.orientation.up[2] ?? 0;
     } else {
       (ctx.listener as any).setPosition(
         this.listener.position[0],
@@ -603,7 +611,7 @@ export class SpatialAudioEngine {
     }
   }
 
-  updateSourcePosition(sourceId: string, position: vec3): void {
+  setSourcePosition(sourceId: string, position: vec3): void {
     const source = this.sources.get(sourceId);
     if (source) {
       vec3.copy(source.position, position);
@@ -613,7 +621,7 @@ export class SpatialAudioEngine {
   updateSourceVelocity(sourceId: string, velocity: vec3): void {
     const source = this.sources.get(sourceId);
     if (source) {
-      if (!source.velocity) source.velocity = vec3.create();
+      if (!source.velocity) {source.velocity = vec3.create();}
       vec3.copy(source.velocity, velocity);
     }
   }

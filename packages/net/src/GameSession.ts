@@ -477,10 +477,10 @@ export class GameSession extends EventEmitter {
 
   private isUpdateRelevantToPlayer(update: StateUpdate, playerId: string): boolean {
     const player = this.state.players.get(playerId);
-    if (!player) return false;
+    if (!player) {return false;}
 
     // GM sees all updates
-    if (player.role === "gm") return true;
+    if (player.role === "gm") {return true;}
 
     // Players see updates relevant to their characters or public updates
     switch (update.type) {
@@ -544,7 +544,7 @@ export class GameSession extends EventEmitter {
 
   private handleStateUpdate(playerId: string, data: any): void {
     const player = this.state.players.get(playerId);
-    if (!player) return;
+    if (!player) {return;}
 
     // Validate that player has permission to make this update
     if (!this.validatePlayerPermission(player, data)) {
@@ -558,7 +558,7 @@ export class GameSession extends EventEmitter {
 
   private handlePlayerAction(playerId: string, action: any): void {
     const player = this.state.players.get(playerId);
-    if (!player) return;
+    if (!player) {return;}
 
     switch (action.type) {
       case "move_token":
@@ -577,7 +577,7 @@ export class GameSession extends EventEmitter {
 
   private handleMoveToken(playerId: string, data: any): void {
     const player = this.state.players.get(playerId);
-    if (!player) return;
+    if (!player) {return;}
 
     // Validate token ownership or GM permissions
     if (player.role !== "gm" && !this.playerOwnsToken(player, data.tokenId)) {
@@ -594,7 +594,7 @@ export class GameSession extends EventEmitter {
 
   private handleCombatAction(playerId: string, data: any): void {
     const player = this.state.players.get(playerId);
-    if (!player) return;
+    if (!player) {return;}
 
     // Validate that it's the player's turn or they're the GM
     const currentCombatant = this.state.combat.getCurrentCombatant();
@@ -622,7 +622,7 @@ export class GameSession extends EventEmitter {
 
   private validatePlayerPermission(player: Player, update: any): boolean {
     // GM can do anything
-    if (player.role === "gm") return true;
+    if (player.role === "gm") {return true;}
 
     // Players can only update their own characters and make certain actions
     switch (update.type) {

@@ -464,14 +464,14 @@ export class UserManager extends EventEmitter {
     }
 
     // Apply updates
-    if (validated.firstName !== undefined) user.firstName = validated.firstName;
-    if (validated.lastName !== undefined) user.lastName = validated.lastName;
-    if (validated.avatarUrl !== undefined) user.avatarUrl = validated.avatarUrl;
-    if (validated.timezone !== undefined) user.timezone = validated.timezone;
-    if (validated.locale !== undefined) user.locale = validated.locale;
+    if (validated.firstName !== undefined) {user.firstName = validated.firstName;}
+    if (validated.lastName !== undefined) {user.lastName = validated.lastName;}
+    if (validated.avatarUrl !== undefined) {user.avatarUrl = validated.avatarUrl;}
+    if (validated.timezone !== undefined) {user.timezone = validated.timezone;}
+    if (validated.locale !== undefined) {user.locale = validated.locale;}
 
     if (validated.preferences) {
-      if (validated.preferences.theme) user.preferences.theme = validated.preferences.theme;
+      if (validated.preferences.theme) {user.preferences.theme = validated.preferences.theme;}
       if (validated.preferences.notifications) {
         Object.assign(user.preferences.notifications, validated.preferences.notifications);
       }

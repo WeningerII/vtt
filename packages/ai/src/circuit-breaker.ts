@@ -162,7 +162,7 @@ export class CircuitBreaker extends EventEmitter {
 
   private getRecentFailureRate(): number {
     this.cleanMonitoringWindow();
-    if (this.monitoringWindow.length === 0) return 0;
+    if (this.monitoringWindow.length === 0) {return 0;}
     
     const failures = this.monitoringWindow.filter(e => !e.success).length;
     return failures / this.monitoringWindow.length;

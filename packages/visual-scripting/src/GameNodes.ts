@@ -630,8 +630,8 @@ export const characterNodes: NodeDefinition[] = [
 
       const newCondition = {
         name: condition,
-        duration: duration,
-        source: source,
+        duration,
+        source,
         effects: [], // Would be populated based on condition type
         savingThrow: undefined,
       };

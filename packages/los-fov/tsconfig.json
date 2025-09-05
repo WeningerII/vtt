@@ -5,7 +5,9 @@
     "rootDir": "src",
     "incremental": true,
     "tsBuildInfoFile": "./los-fov.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "skipLibCheck": true,
+    "types": []
   },
   "include": [
     "src"

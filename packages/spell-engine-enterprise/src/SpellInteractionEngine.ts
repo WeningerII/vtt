@@ -158,10 +158,10 @@ export class SpellInteractionEngine extends EventEmitter {
       const nearbySpells = this.spatialIndex.query(spell1.spatialBounds);
 
       for (const spell2 of nearbySpells) {
-        if (spell1.id === spell2.id) continue;
+        if (spell1.id === spell2.id) {continue;}
 
         const pairKey = [spell1.id, spell2.id].sort().join(":");
-        if (processedPairs.has(pairKey)) continue;
+        if (processedPairs.has(pairKey)) {continue;}
         processedPairs.add(pairKey);
 
         const interaction = await this.evaluateInteraction(spell1, spell2);
@@ -184,14 +184,14 @@ export class SpellInteractionEngine extends EventEmitter {
     const maxInteractionRange =
       Math.max(this.getSpellRadius(spell1.spell), this.getSpellRadius(spell2.spell)) + 5.0; // 5-foot interaction buffer
 
-    if (distance > maxInteractionRange) return null;
+    if (distance > maxInteractionRange) {return null;}
 
     // Check temporal compatibility
-    if (!this.temporalTracker.areTemporallyCompatible(spell1, spell2)) return null;
+    if (!this.temporalTracker.areTemporallyCompatible(spell1, spell2)) {return null;}
 
     // Find applicable interaction rules
     const rules = this.findInteractionRules(spell1.spell, spell2.spell);
-    if (rules.length === 0) return null;
+    if (rules.length === 0) {return null;}
 
     // Select highest priority rule
     const rule = rules.sort((_a, _b) => b.priority - a.priority)[0];
@@ -306,9 +306,9 @@ export class SpellInteractionEngine extends EventEmitter {
     const enhancement = {
       duration: spell1.spell.duration * interaction.rule.magnitude,
       potency:
-        (spell1.spell.damage?.diceExpression || "1d4") +
-        "+" +
-        Math.floor(interaction.strength * 10),
+        `${spell1.spell.damage?.diceExpression || "1d4" 
+        }+${ 
+        Math.floor(interaction.strength * 10)}`,
       radius: this.getSpellRadius(spell1.spell) * 1.2,
     };
 
@@ -371,7 +371,7 @@ export class SpellInteractionEngine extends EventEmitter {
     const spellGroups = this.groupSpellsByProximity();
 
     for (const group of spellGroups) {
-      if (group.length < 2) continue;
+      if (group.length < 2) {continue;}
 
       const elementTypes = group.map((s) => this.getSpellElement(s.spell));
       const combinationKey = elementTypes.sort().join(",");
@@ -446,8 +446,8 @@ export class SpellInteractionEngine extends EventEmitter {
     const key1 = `${element1}:${element2}`;
     const key2 = `${element2}:${element1}`;
 
-    if (!this.interactionRules.has(key1)) this.interactionRules.set(key1, []);
-    if (!this.interactionRules.has(key2)) this.interactionRules.set(key2, []);
+    if (!this.interactionRules.has(key1)) {this.interactionRules.set(key1, []);}
+    if (!this.interactionRules.has(key2)) {this.interactionRules.set(key2, []);}
 
     this.interactionRules.get(key1)!.push(rule);
     this.interactionRules.get(key2)!.push(rule);
@@ -467,9 +467,9 @@ export class SpellInteractionEngine extends EventEmitter {
   }
 
   private getSpellElement(spell: SpellEffect): string {
-    if (spell.damage?.damageType) return spell.damage.damageType;
-    if (spell.school) return spell.school;
-    if (spell.concentration) return "concentration";
+    if (spell.damage?.damageType) {return spell.damage.damageType;}
+    if (spell.school) {return spell.school;}
+    if (spell.concentration) {return "concentration";}
     return "neutral";
   }
 
@@ -481,16 +481,16 @@ export class SpellInteractionEngine extends EventEmitter {
   }
 
   private getSpellRadius(spell: SpellEffect): number {
-    if (spell.areaOfEffect?.radius) return spell.areaOfEffect.radius;
-    if (spell.range === "Touch") return 1.5;
-    if (spell.range === "Self") return 0;
+    if (spell.areaOfEffect?.radius) {return spell.areaOfEffect.radius;}
+    if (spell.range === "Touch") {return 1.5;}
+    if (spell.range === "Self") {return 0;}
 
     const rangeMatch = spell.range.match(/(\d+) feet/);
     return rangeMatch ? parseInt(rangeMatch[1]) : 5;
   }
 
   private getSpellDamage(spell: SpellEffect): number {
-    if (!spell.damage?.diceExpression) return 0;
+    if (!spell.damage?.diceExpression) {return 0;}
 
     const match = spell.damage.diceExpression.match(/(\d+)d(\d+)(?:\+(\d+))?/);
     if (match) {
@@ -517,8 +517,8 @@ export class SpellInteractionEngine extends EventEmitter {
     const radius1 = this.getSpellRadius(spell1.spell);
     const radius2 = this.getSpellRadius(spell2.spell);
 
-    if (distance >= radius1 + radius2) return 0;
-    if (distance <= Math.abs(radius1 - radius2)) return Math.PI * Math.min(radius1, radius2) ** 2;
+    if (distance >= radius1 + radius2) {return 0;}
+    if (distance <= Math.abs(radius1 - radius2)) {return Math.PI * Math.min(radius1, radius2) ** 2;}
 
     // Approximate overlap for intersecting circles
     const overlap = (radius1 + radius2 - distance) / (radius1 + radius2);
@@ -538,7 +538,7 @@ export class SpellInteractionEngine extends EventEmitter {
     const processed = new Set<string>();
 
     for (const [id, spell] of this.activeSpells) {
-      if (processed.has(id)) continue;
+      if (processed.has(id)) {continue;}
 
       const group = [spell];
       processed.add(id);
@@ -668,7 +668,7 @@ class SpatialIndex {
   insert(spell: ActiveSpell): void {
     const cells = this.getCells(spell.spatialBounds);
     for (const cell of cells) {
-      if (!this.grid.has(cell)) this.grid.set(cell, []);
+      if (!this.grid.has(cell)) {this.grid.set(cell, []);}
       this.grid.get(cell)!.push(spell);
     }
   }
@@ -679,7 +679,7 @@ class SpatialIndex {
       const spells = this.grid.get(cell);
       if (spells) {
         const index = spells.findIndex((s) => s.id === spell.id);
-        if (index >= 0) spells.splice(index, 1);
+        if (index >= 0) {spells.splice(index, 1);}
       }
     }
   }
@@ -737,7 +737,7 @@ class TemporalTracker {
     const timeline1 = this.spellTimelines.get(spell1.id);
     const timeline2 = this.spellTimelines.get(spell2.id);
 
-    if (!timeline1 || !timeline2) return false;
+    if (!timeline1 || !timeline2) {return false;}
 
     const now = Date.now();
     const spell1Active = now < timeline1.startTime + timeline1.duration;
@@ -747,7 +747,7 @@ class TemporalTracker {
   }
 
   private getSpellDuration(spell: SpellEffect): number {
-    if (spell.duration === "Instantaneous") return 100; // 100ms for instantaneous
+    if (spell.duration === "Instantaneous") {return 100;} // 100ms for instantaneous
     if (spell.duration.includes("Concentration")) {
       const match = spell.duration.match(/(\d+) (minute|hour)/);
       if (match) {

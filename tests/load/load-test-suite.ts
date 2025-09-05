@@ -151,7 +151,7 @@ class LoadTestRunner {
 
   recordMetric(scenario: string, responseTime: number, success: boolean, error?: string): void {
     const metrics = this.metrics.get(scenario);
-    if (!metrics) return;
+    if (!metrics) {return;}
 
     metrics.totalRequests++;
     
@@ -291,7 +291,7 @@ class VirtualUser {
 
   private async executeActions(): Promise<void> {
     for (const action of this.scenario.actions) {
-      if (!this.isActive || !this.runner.isTestRunning()) break;
+      if (!this.isActive || !this.runner.isTestRunning()) {break;}
       
       // Skip action based on probability
       if (action.probability && Math.random() > action.probability) {

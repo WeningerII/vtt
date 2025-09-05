@@ -1,3 +1,8 @@
+/**
+ * Core error types and utilities for the VTT system
+ */
+import { logger } from '@vtt/logging';
+
 // Enhanced error handling
 export class ApplicationError extends Error {
   public readonly code: string;

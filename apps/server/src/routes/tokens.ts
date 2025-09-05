@@ -43,10 +43,10 @@ export const listTokensHandler: RouteHandler = async (ctx) => {
     }
 
     validateUUID(sceneId, "sceneId");
-    if (actorId) validateUUID(actorId, "actorId");
+    if (actorId) {validateUUID(actorId, "actorId");}
     if (disposition)
-      validateEnum(disposition, ["FRIENDLY", "NEUTRAL", "HOSTILE", "UNKNOWN"], "disposition");
-    if (layer !== undefined) validateNumber(layer, "layer", { integer: true });
+      {validateEnum(disposition, ["FRIENDLY", "NEUTRAL", "HOSTILE", "UNKNOWN"], "disposition");}
+    if (layer !== undefined) {validateNumber(layer, "layer", { integer: true });}
 
     const tokenService = new TokenService(ctx.prisma);
     const result = await tokenService.searchTokens({
@@ -175,8 +175,8 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
       layer: body.layer || 0,
     };
 
-    if (body.actorId) tokenData.actorId = body.actorId;
-    if (body.assetId) tokenData.assetId = body.assetId;
+    if (body.actorId) {tokenData.actorId = body.actorId;}
+    if (body.assetId) {tokenData.assetId = body.assetId;}
 
     const created = await ctx.prisma.token.create({
       data: tokenData,
@@ -260,8 +260,8 @@ export const createTokenFromActorHandler: RouteHandler = async (ctx) => {
 
     // Determine disposition based on actor kind
     let disposition = "NEUTRAL";
-    if (actor.kind === "PC") disposition = "FRIENDLY";
-    else if (actor.kind === "MONSTER") disposition = "HOSTILE";
+    if (actor.kind === "PC") {disposition = "FRIENDLY";}
+    else if (actor.kind === "MONSTER") {disposition = "HOSTILE";}
 
     const tokenData = {
       name: body.name || actor.name,
@@ -279,7 +279,7 @@ export const createTokenFromActorHandler: RouteHandler = async (ctx) => {
       layer: body.layer || 0,
     };
 
-    if (body.assetId) tokenData.assetId = body.assetId;
+    if (body.assetId) {tokenData.assetId = body.assetId;}
 
     const created = await ctx.prisma.token.create({
       data: tokenData,
@@ -366,17 +366,17 @@ export const updateTokenHandler: RouteHandler = async (ctx) => {
     const data: any = {};
 
     // Only update provided fields
-    if (typeof body.name === "string") data.name = body.name;
-    if (typeof body.x === "number") data.x = body.x;
-    if (typeof body.y === "number") data.y = body.y;
-    if (typeof body.width === "number") data.width = body.width;
-    if (typeof body.height === "number") data.height = body.height;
-    if (typeof body.rotation === "number") data.rotation = body.rotation;
-    if (typeof body.scale === "number") data.scale = body.scale;
-    if (typeof body.disposition === "string") data.disposition = body.disposition;
-    if (typeof body.isVisible === "boolean") data.isVisible = body.isVisible;
-    if (typeof body.isLocked === "boolean") data.isLocked = body.isLocked;
-    if (typeof body.layer === "number") data.layer = body.layer;
+    if (typeof body.name === "string") {data.name = body.name;}
+    if (typeof body.x === "number") {data.x = body.x;}
+    if (typeof body.y === "number") {data.y = body.y;}
+    if (typeof body.width === "number") {data.width = body.width;}
+    if (typeof body.height === "number") {data.height = body.height;}
+    if (typeof body.rotation === "number") {data.rotation = body.rotation;}
+    if (typeof body.scale === "number") {data.scale = body.scale;}
+    if (typeof body.disposition === "string") {data.disposition = body.disposition;}
+    if (typeof body.isVisible === "boolean") {data.isVisible = body.isVisible;}
+    if (typeof body.isLocked === "boolean") {data.isLocked = body.isLocked;}
+    if (typeof body.layer === "number") {data.layer = body.layer;}
 
     const updated = await ctx.prisma.token.update({
       where: { id },

@@ -154,8 +154,8 @@ export class ConditionSystem {
         case "exhaustion":
           {
             const exhaustionLevel = this.conditionsStore.getExhaustionLevel(entity);
-            if (exhaustionLevel >= 2) speedMultiplier *= 0.5;
-            if (exhaustionLevel >= 5) speedMultiplier = 0;
+            if (exhaustionLevel >= 2) {speedMultiplier *= 0.5;}
+            if (exhaustionLevel >= 5) {speedMultiplier = 0;}
           }
           break;
       }

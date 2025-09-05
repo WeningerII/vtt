@@ -1,10 +1,9 @@
-import { mat4, vec3, _vec4, quat } from "gl-matrix";
+import { mat4, vec3, vec4, quat } from 'gl-matrix';
 import { logger } from "@vtt/logging";
-import { _Shader, ShaderProgram } from "./Shader";
+import { Shader, ShaderProgram } from "./Shader";
 import { Material } from "./Material";
-import { _Mesh } from "./Mesh";
-import { Camera } from "./Camera";
 import { Light } from "./Light";
+import { Camera } from "./Camera";
 import { RenderTarget } from "./RenderTarget";
 import { TextureManager } from "./TextureManager";
 import { GeometryManager } from "./GeometryManager";
@@ -162,11 +161,14 @@ export class WebGLEngine {
 
     // Enable seamless cubemap filtering
     if (this.extensions["EXT_texture_filter_anisotropic"]) {
-      gl.texParameterf(
-        gl.TEXTURE_2D,
-        gl.TEXTURE_MAX_ANISOTROPY_EXT,
-        this.settings.anisotropicFiltering,
-      );
+      const ext = gl.getExtension('EXT_texture_filter_anisotropic');
+      if (ext) {
+        gl.texParameterf(
+          gl.TEXTURE_2D,
+          ext.TEXTURE_MAX_ANISOTROPY_EXT,
+          this.settings.anisotropicFiltering,
+        );
+      }
     }
   }
 
@@ -252,31 +254,33 @@ export class WebGLEngine {
       const offset3 = i * 3;
       const offset4 = i * 4;
 
+      if (!light) {continue;}
+
       // Position
-      this.lightUniforms.positions[offset3] = light.position[0];
-      this.lightUniforms.positions[offset3 + 1] = light.position[1];
-      this.lightUniforms.positions[offset3 + 2] = light.position[2];
+      this.lightUniforms.positions[offset3] = light.position?.[0] ?? 0;
+      this.lightUniforms.positions[offset3 + 1] = light.position?.[1] ?? 0;
+      this.lightUniforms.positions[offset3 + 2] = light.position?.[2] ?? 0;
 
       // Color
-      this.lightUniforms.colors[offset3] = light.color[0];
-      this.lightUniforms.colors[offset3 + 1] = light.color[1];
-      this.lightUniforms.colors[offset3 + 2] = light.color[2];
+      this.lightUniforms.colors[offset3] = light.color?.[0] ?? 1;
+      this.lightUniforms.colors[offset3 + 1] = light.color?.[1] ?? 1;
+      this.lightUniforms.colors[offset3 + 2] = light.color?.[2] ?? 1;
 
       // Direction (for directional/spot lights)
-      this.lightUniforms.directions[offset3] = light.direction[0];
-      this.lightUniforms.directions[offset3 + 1] = light.direction[1];
-      this.lightUniforms.directions[offset3 + 2] = light.direction[2];
+      this.lightUniforms.directions[offset3] = light.direction?.[0] ?? 0;
+      this.lightUniforms.directions[offset3 + 1] = light.direction?.[1] ?? -1;
+      this.lightUniforms.directions[offset3 + 2] = light.direction?.[2] ?? 0;
 
       // Properties: intensity, range, spotAngle, type
-      this.lightUniforms.properties[offset4] = light.intensity;
-      this.lightUniforms.properties[offset4 + 1] = light.range;
-      this.lightUniforms.properties[offset4 + 2] = light.spotAngle || 0;
-      this.lightUniforms.properties[offset4 + 3] = light.type; // 0=directional, 1=point, 2=spot
+      this.lightUniforms.properties[offset4] = light.intensity ?? 1;
+      this.lightUniforms.properties[offset4 + 1] = light.range ?? 100;
+      this.lightUniforms.properties[offset4 + 2] = light.spotAngle ?? 0;
+      this.lightUniforms.properties[offset4 + 3] = light.type ?? 0; // 0=directional, 1=point, 2=spot
     }
   }
 
   private renderShadowMap(scene: any, camera: Camera): void {
-    if (!this.shadowMapTarget) return;
+    if (!this.shadowMapTarget) {return;}
 
     const gl = this.gl;
     this.shadowMapTarget.bind();
@@ -289,10 +293,12 @@ export class WebGLEngine {
     this.bindShader(shadowShader);
 
     // Render scene from light's perspective
-    const directionalLights = this.lights.filter((light) => light.type === 0);
+    const directionalLights = this.lights.filter((light) => light?.type === 0);
     if (directionalLights.length > 0) {
       const light = directionalLights[0];
-      this.renderSceneWithShader(scene, light.shadowCamera || camera, shadowShader);
+      if (light) {
+        this.renderSceneWithShader(scene, light.shadowCamera || camera, shadowShader);
+      }
     }
 
     this.shadowMapTarget.unbind();
@@ -324,7 +330,7 @@ export class WebGLEngine {
 
     // Sort objects if transparent
     if (transparent) {
-      objects.sort((_a, _b) => {
+      objects.sort((a, b) => {
         const distA = vec3.squaredDistance(camera.position, a.position);
         const distB = vec3.squaredDistance(camera.position, b.position);
         return distB - distA; // Back to front
@@ -352,7 +358,7 @@ export class WebGLEngine {
 
     // LOD selection
     const mesh = this.settings.lodEnabled ? this.selectLOD(object, camera) : object.mesh;
-    if (!mesh) return;
+    if (!mesh) {return;}
 
     // Update model matrix
     this.updateModelMatrix(object);
@@ -372,7 +378,7 @@ export class WebGLEngine {
   }
 
   private renderPostProcess(): void {
-    if (!this.hdrTarget) return;
+    if (!this.hdrTarget) {return;}
 
     const _gl = this.gl;
     let currentSource = this.hdrTarget;
@@ -381,15 +387,21 @@ export class WebGLEngine {
     // Bloom pass
     if (this.settings.bloom) {
       // Extract bright pixels
-      this.renderFullscreenQuad(currentSource, currentTarget, "bloom_extract");
-      [currentSource, currentTarget] = [currentTarget, currentSource];
+      if (currentTarget) {
+        this.renderFullscreenQuad(currentSource, currentTarget, "bloom_extract");
+        [currentSource, currentTarget] = [currentTarget, currentSource];
+      }
 
       // Blur passes
       for (let i = 0; i < 4; i++) {
-        this.renderFullscreenQuad(currentSource, currentTarget, "blur_horizontal");
-        [currentSource, currentTarget] = [currentTarget, currentSource];
-        this.renderFullscreenQuad(currentSource, currentTarget, "blur_vertical");
-        [currentSource, currentTarget] = [currentTarget, currentSource];
+        if (currentTarget) {
+          this.renderFullscreenQuad(currentSource, currentTarget, "blur_horizontal");
+          [currentSource, currentTarget] = [currentTarget, currentSource];
+        }
+        if (currentTarget) {
+          this.renderFullscreenQuad(currentSource, currentTarget, "blur_vertical");
+          [currentSource, currentTarget] = [currentTarget, currentSource];
+        }
       }
 
       // Combine with original
@@ -450,7 +462,7 @@ export class WebGLEngine {
   }
 
   private bindMaterial(material: Material): void {
-    if (this.currentMaterial === material) return;
+    if (this.currentMaterial === material) {return;}
 
     this.currentMaterial = material;
     const shader = this.getShader(material.shaderName);
@@ -466,7 +478,7 @@ export class WebGLEngine {
   }
 
   private bindShader(shader: ShaderProgram): void {
-    if (this.currentShader === shader) return;
+    if (this.currentShader === shader) {return;}
 
     this.currentShader = shader;
     shader.use();
@@ -514,9 +526,9 @@ export class WebGLEngine {
     // LOD selection based on distance
     const distance = vec3.distance(camera.position, object.position);
 
-    if (distance < 50) return object.meshLOD0;
-    if (distance < 100) return object.meshLOD1;
-    if (distance < 200) return object.meshLOD2;
+    if (distance < 50) {return object.meshLOD0;}
+    if (distance < 100) {return object.meshLOD1;}
+    if (distance < 200) {return object.meshLOD2;}
     return object.meshLOD3;
   }
 

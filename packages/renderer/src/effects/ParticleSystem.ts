@@ -61,13 +61,13 @@ export class ParticleSystem {
 
   // GPU buffers for instanced rendering
   private instanceVBO: WebGLBuffer | null = null;
-  private instanceData: Float32Array;
+  private instanceData: Float32Array = new Float32Array(0);
   private instanceStride = 12; // position(3) + color(4) + size(1) + rotation(1) + life(1) + reserved(2)
 
   // Emitter properties
   private position = vec3.create();
   private rotation = mat4.create();
-  private emitterShape: EmitterShape = { type: "point", parameters: Record<string, unknown> };
+  private emitterShape: EmitterShape = { type: "point", parameters: {} };
   private forces: ParticleForce[] = [];
 
   // Animation properties
@@ -201,7 +201,9 @@ export class ParticleSystem {
     this.setParticlePosition(particle);
 
     // Set initial velocity with variation
-    vec3.copy(particle.velocity, this.config.startVelocity);
+    particle.velocity[0] = this.config.startVelocity[0];
+    particle.velocity[1] = this.config.startVelocity[1];
+    particle.velocity[2] = this.config.startVelocity[2];
     this.addVariation(particle.velocity, this.config.velocityVariation);
 
     // Transform velocity by emitter rotation if in local space
@@ -210,7 +212,10 @@ export class ParticleSystem {
     }
 
     // Set initial color
-    vec4.copy(particle.color, this.config.startColor);
+    particle.color[0] = this.config.startColor[0];
+    particle.color[1] = this.config.startColor[1];
+    particle.color[2] = this.config.startColor[2];
+    particle.color[3] = this.config.startColor[3];
 
     // Set size
     particle.size = this.config.startSize;
@@ -234,72 +239,74 @@ export class ParticleSystem {
 
       case "sphere":
         {
-          const radius = shape.parameters.radius || 1;
+          const radius = shape.parameters?.radius || 1;
           const phi = Math.random() * Math.PI * 2;
           const cosTheta = Math.random() * 2 - 1;
           const sinTheta = Math.sqrt(1 - cosTheta * cosTheta);
           const r = Math.pow(Math.random(), 1 / 3) * radius;
 
-          particle.position[0] = this.position[0] + r * sinTheta * Math.cos(phi);
-          particle.position[1] = this.position[1] + r * cosTheta;
-          particle.position[2] = this.position[2] + r * sinTheta * Math.sin(phi);
+          particle.position[0] = (this.position[0] ?? 0) + r * sinTheta * Math.cos(phi);
+          particle.position[1] = (this.position[1] ?? 0) + r * cosTheta;
+          particle.position[2] = (this.position[2] ?? 0) + r * sinTheta * Math.sin(phi);
         }
         break;
 
       case "box":
         {
-          const width = shape.parameters.width || 1;
-          const height = shape.parameters.height || 1;
-          const depth = shape.parameters.depth || 1;
+          const width = shape.parameters?.width || 1;
+          const height = shape.parameters?.height || 1;
+          const depth = shape.parameters?.depth || 1;
 
-          particle.position[0] = this.position[0] + (Math.random() - 0.5) * width;
-          particle.position[1] = this.position[1] + (Math.random() - 0.5) * height;
-          particle.position[2] = this.position[2] + (Math.random() - 0.5) * depth;
+          particle.position[0] = (this.position[0] ?? 0) + (Math.random() - 0.5) * width;
+          particle.position[1] = (this.position[1] ?? 0) + (Math.random() - 0.5) * height;
+          particle.position[2] = (this.position[2] ?? 0) + (Math.random() - 0.5) * depth;
         }
         break;
 
       case "circle":
         {
-          const circleRadius = shape.parameters.radius || 1;
+          const circleRadius = shape.parameters?.radius || 1;
           const angle = Math.random() * Math.PI * 2;
           const distance = Math.sqrt(Math.random()) * circleRadius;
 
-          particle.position[0] = this.position[0] + Math.cos(angle) * distance;
-          particle.position[1] = this.position[1];
-          particle.position[2] = this.position[2] + Math.sin(angle) * distance;
+          particle.position[0] = (this.position[0] ?? 0) + Math.cos(angle) * distance;
+          particle.position[1] = this.position[1] ?? 0;
+          particle.position[2] = (this.position[2] ?? 0) + Math.sin(angle) * distance;
         }
         break;
 
       case "cone":
         {
-          const coneRadius = shape.parameters.radius || 1;
-          const coneHeight = shape.parameters.height || 1;
+          const coneRadius = shape.parameters?.radius || 1;
+          const coneHeight = shape.parameters?.height || 1;
           const coneAngle = Math.random() * Math.PI * 2;
           const coneDistance = Math.sqrt(Math.random()) * coneRadius;
           const heightOffset = Math.random() * coneHeight;
 
           particle.position[0] =
-            this.position[0] + Math.cos(coneAngle) * coneDistance * (1 - heightOffset / coneHeight);
-          particle.position[1] = this.position[1] + heightOffset;
+            (this.position[0] ?? 0) + Math.cos(coneAngle) * coneDistance * (1 - heightOffset / coneHeight);
+          particle.position[1] = (this.position[1] ?? 0) + heightOffset;
           particle.position[2] =
-            this.position[2] + Math.sin(coneAngle) * coneDistance * (1 - heightOffset / coneHeight);
+            (this.position[2] ?? 0) + Math.sin(coneAngle) * coneDistance * (1 - heightOffset / coneHeight);
         }
         break;
 
       default:
-        vec3.copy(particle.position, this.position);
+        particle.position[0] = this.position[0] ?? 0;
+        particle.position[1] = this.position[1] ?? 0;
+        particle.position[2] = this.position[2] ?? 0;
     }
   }
 
   private addVariation(value: vec3, variation: [number, number, number]): void {
-    value[0] += (Math.random() - 0.5) * 2 * variation[0];
-    value[1] += (Math.random() - 0.5) * 2 * variation[1];
-    value[2] += (Math.random() - 0.5) * 2 * variation[2];
+    if (value[0] !== undefined) {value[0] += (Math.random() - 0.5) * 2 * variation[0];}
+    if (value[1] !== undefined) {value[1] += (Math.random() - 0.5) * 2 * variation[1];}
+    if (value[2] !== undefined) {value[2] += (Math.random() - 0.5) * 2 * variation[2];}
   }
 
   private updateParticles(deltaTime: number): void {
     for (const particle of this.particles) {
-      if (!particle.active) continue;
+      if (!particle.active) {continue;}
 
       // Update lifetime
       particle.life -= deltaTime;
@@ -338,7 +345,7 @@ export class ParticleSystem {
 
   private applyForce(force: ParticleForce, deltaTime: number): void {
     for (const particle of this.particles) {
-      if (!particle.active) continue;
+      if (!particle.active) {continue;}
 
       const forceVector = vec3.create();
 
@@ -383,7 +390,7 @@ export class ParticleSystem {
 
             if (distance > 0) {
               // Create tangential force for vortex
-              const tangent = vec3.fromValues(-toCenter[2], 0, toCenter[0]);
+              const tangent = vec3.fromValues(-(toCenter[2] ?? 0), 0, toCenter[0] ?? 0);
               vec3.normalize(tangent, tangent);
               vec3.scale(forceVector, tangent, force.strength / distance);
             }
@@ -405,20 +412,20 @@ export class ParticleSystem {
     let index = 0;
 
     for (const particle of this.particles) {
-      if (!particle.active) continue;
+      if (!particle.active) {continue;}
 
       const offset = index * this.instanceStride;
 
       // Position
-      this.instanceData[offset] = particle.position[0];
-      this.instanceData[offset + 1] = particle.position[1];
-      this.instanceData[offset + 2] = particle.position[2];
+      this.instanceData[offset] = particle.position[0] ?? 0;
+      this.instanceData[offset + 1] = particle.position[1] ?? 0;
+      this.instanceData[offset + 2] = particle.position[2] ?? 0;
 
       // Color
-      this.instanceData[offset + 3] = particle.color[0];
-      this.instanceData[offset + 4] = particle.color[1];
-      this.instanceData[offset + 5] = particle.color[2];
-      this.instanceData[offset + 6] = particle.color[3];
+      this.instanceData[offset + 3] = particle.color[0] ?? 1;
+      this.instanceData[offset + 4] = particle.color[1] ?? 1;
+      this.instanceData[offset + 5] = particle.color[2] ?? 1;
+      this.instanceData[offset + 6] = particle.color[3] ?? 1;
 
       // Size
       this.instanceData[offset + 7] = particle.size;
@@ -449,7 +456,7 @@ export class ParticleSystem {
   }
 
   render(camera: Camera, shader: ShaderProgram): void {
-    if (this.activeParticles === 0) return;
+    if (this.activeParticles === 0) {return;}
 
     const startTime = performance.now();
     const gl = this.gl;
@@ -477,13 +484,13 @@ export class ParticleSystem {
       if (texture) {
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        shader.setUniform("u_texture", 0);
-        shader.setUniform("u_hasTexture", true);
+        shader.setUniform1i("u_texture", 0);
+        shader.setUniform1i("u_hasTexture", 1);
       } else {
-        shader.setUniform("u_hasTexture", false);
+        shader.setUniform1i("u_hasTexture", 0);
       }
     } else {
-      shader.setUniform("u_hasTexture", false);
+      shader.setUniform1i("u_hasTexture", 0);
     }
 
     // Set up instanced rendering

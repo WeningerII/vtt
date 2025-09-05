@@ -273,7 +273,7 @@ export class FileTransport implements LogTransport {
 
   async log(entry: LogEntry): Promise<void> {
     const logLine =
-      JSON.stringify({
+      `${JSON.stringify({
         timestamp: entry.timestamp.toISOString(),
         level: entry.level,
         message: entry.message,
@@ -284,7 +284,7 @@ export class FileTransport implements LogTransport {
             stack: entry.error.stack,
           },
         }),
-      }) + "\n";
+      })  }\n`;
 
     // In a real implementation, you would write to file system
     // For now, we'll just simulate the interface
@@ -328,7 +328,7 @@ export class HTTPTransport implements LogTransport {
   }
 
   private async flush(): Promise<void> {
-    if (this.batch.length === 0) return;
+    if (this.batch.length === 0) {return;}
 
     const logsToSend = [...this.batch];
     this.batch = [];
@@ -347,7 +347,7 @@ export class HTTPTransport implements LogTransport {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
-      logger.error("Failed to send logs to HTTP endpoint:", error);
+      logger.error("Failed to send logs to HTTP endpoint:", error as Record<string, any>);
       // Re-add logs to batch for retry (in a real implementation)
     }
   }

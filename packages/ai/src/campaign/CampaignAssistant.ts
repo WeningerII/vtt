@@ -320,7 +320,7 @@ export class CampaignAssistant extends EventEmitter {
     const usedTypes = new Set<string>();
 
     for (const hook of availableHooks) {
-      if (selectedHooks.length >= count) break;
+      if (selectedHooks.length >= count) {break;}
       
       if (!usedTypes.has(hook.type)) {
         selectedHooks.push(hook);
@@ -353,6 +353,13 @@ export class CampaignAssistant extends EventEmitter {
       Object.assign(context, updates);
       this.emit('campaignContextUpdated', campaignId, context);
     }
+  }
+
+  /**
+   * Get campaign context
+   */
+  getCampaignContext(campaignId: string): CampaignContext | undefined {
+    return this.campaignContexts.get(campaignId);
   }
 
   /**
@@ -577,9 +584,9 @@ export class CampaignAssistant extends EventEmitter {
 
   private getContextualEnvironment(context: CampaignContext): 'dungeon' | 'wilderness' | 'urban' | 'aquatic' | 'aerial' | 'planar' {
     // Determine environment based on current location
-    if (context.currentLocation.toLowerCase().includes('city')) return 'urban';
-    if (context.currentLocation.toLowerCase().includes('dungeon')) return 'dungeon';
-    if (context.currentLocation.toLowerCase().includes('forest')) return 'wilderness';
+    if (context.currentLocation.toLowerCase().includes('city')) {return 'urban';}
+    if (context.currentLocation.toLowerCase().includes('dungeon')) {return 'dungeon';}
+    if (context.currentLocation.toLowerCase().includes('forest')) {return 'wilderness';}
     return 'wilderness';
   }
 

@@ -15,7 +15,7 @@ export function buildSystemPrompt() {
 
 export function buildUserPrompt(_concept: string, _name?: string) {
   let base = `Create a character matching this concept: ${concept}.`;
-  if (name) base += ` The character's name should be: ${name}.`;
+  if (name) {base += ` The character's name should be: ${name}.`;}
   base += " Ensure the JSON is complete and consistent.";
   return base;
 }
@@ -42,6 +42,6 @@ export function safeJsonExtract<T = any>(raw: string): T {
 }
 
 export function applyNameFallback(sheet: CharacterSheet, _name?: string): CharacterSheet {
-  if (!sheet.name && name) return { ...sheet, name };
+  if (!sheet.name && name) {return { ...sheet, name };}
   return sheet;
 }

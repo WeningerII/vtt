@@ -78,7 +78,7 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
       
       this.emit('ready', undefined);
     } catch (error) {
-      logger.error('Failed to initialize asset manager:', error);
+      logger.error('Failed to initialize asset manager:', error as Record<string, any>);
       throw error;
     }
   }
@@ -254,7 +254,7 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
     
     const pipelines = this.processingPipelines.get(assetType)!;
     pipelines.push(pipeline);
-    pipelines.sort((_a, _b) => b.priority - a.priority);
+    // Processing pipelines don't need sorting by lastAccessed
   }
 
   /**
@@ -343,7 +343,7 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
       
       return data;
     } catch (error) {
-      logger.error(`Failed to load asset ${asset.id}:`, error);
+      logger.error(`Failed to load asset ${asset.id}:`, error as Record<string, any>);
       throw error;
     }
   }
@@ -400,8 +400,8 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
   private evictCacheItems(requiredSpace: number): void {
     // Simple LRU-style eviction based on loadedAt timestamp
     const sortedAssets = Array.from(this.assets.entries())
-      .filter(_([id]) => this.cache.has(id))
-      .sort(_([, _a], _[, _b]) => {
+      .filter(([id]) => this.cache.has(id))
+      .sort(([, a], [, b]) => {
         const aTime = a.loadedAt?.getTime() || 0;
         const bTime = b.loadedAt?.getTime() || 0;
         return aTime - bTime;
@@ -409,7 +409,7 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
 
     let freedSpace = 0;
     for (const [id, asset] of sortedAssets) {
-      if (freedSpace >= requiredSpace) break;
+      if (freedSpace >= requiredSpace) {break;}
       
       this.cache.delete(id);
       freedSpace += asset.size;
@@ -418,7 +418,7 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
   }
 
   private async waitForLoadSlot(): Promise<void> {
-    return new Promise(_resolve => {
+    return new Promise(resolve => {
       const checkSlot = () => {
         if (this.currentLoads < this.config.maxConcurrentLoads) {
           resolve();
@@ -489,15 +489,15 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
         // Would restore cache data here
       }
     } catch (error) {
-      logger.warn('Failed to load asset cache from storage:', error);
+      logger.warn('Failed to load asset cache from storage:', error as Record<string, any>);
     }
   }
 
   private initializeProcessingPipelines(): void {
     // Texture processing pipeline
-    this.addProcessingPipeline('texture', _{
+    this.addProcessingPipeline('texture', {
       name: 'texture_optimizer',
-      _process: async (data: ImageBitmap) => {
+      process: async (data: ImageBitmap) => {
         // Placeholder for texture optimization
         return data;
       },
@@ -506,9 +506,9 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
     });
 
     // Audio processing pipeline
-    this.addProcessingPipeline('audio', _{
+    this.addProcessingPipeline('audio', {
       name: 'audio_decoder',
-      _process: async (data: ArrayBuffer) => {
+      process: async (data: ArrayBuffer) => {
         // Placeholder for audio decoding
         return data;
       },
@@ -517,9 +517,9 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
     });
 
     // Model processing pipeline
-    this.addProcessingPipeline('model', _{
+    this.addProcessingPipeline('model', {
       name: 'model_parser',
-      _process: async (data: ArrayBuffer) => {
+      process: async (data: ArrayBuffer) => {
         // Placeholder for model parsing
         return data;
       },
@@ -528,9 +528,9 @@ export class UnifiedAssetManager extends EventEmitter<SystemEvents> implements I
     });
 
     // Data processing pipeline
-    this.addProcessingPipeline('data', _{
+    this.addProcessingPipeline('data', {
       name: 'data_validator',
-      _process: async (data: any) => {
+      process: async (data: any) => {
         // Placeholder for data validation
         return data;
       },

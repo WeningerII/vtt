@@ -111,7 +111,7 @@ export class BenchmarkRunner {
         "ECS: Component Lookup",
         () => {
           const randomId = existingIds[Math.floor(Math.random() * existingIds.length)];
-          if (randomId === undefined) return;
+          if (randomId === undefined) {return;}
           const component = componentStore.get(randomId);
           if (component) {
             component.position.x += 1;
@@ -216,7 +216,7 @@ export class BenchmarkRunner {
         "Renderer: Batch Sorting (1000 objects)",
         () => {
           renderObjects.sort((a, b) => {
-            if (a.layer !== b.layer) return a.layer - b.layer;
+            if (a.layer !== b.layer) {return a.layer - b.layer;}
             return a.textureId - b.textureId;
           });
         },
@@ -272,7 +272,7 @@ export class BenchmarkRunner {
             for (let j = i + 1; j < bodies.length; j++) {
               const bodyA = bodies[i];
               const bodyB = bodies[j];
-              if (!bodyA || !bodyB) continue;
+              if (!bodyA || !bodyB) {continue;}
 
               const dx = bodyA.x - bodyB.x;
               const dy = bodyA.y - bodyB.y;
@@ -360,7 +360,7 @@ export class BenchmarkRunner {
         () => {
           const batch = {
             timestamp: Date.now(),
-            messages: messages,
+            messages,
           };
           const _serialized = JSON.stringify(batch);
         },

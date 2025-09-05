@@ -364,7 +364,7 @@ export class ConditionRegistry {
     overrides: Partial<TokenCondition> = {},
   ): TokenCondition | null {
     const template = this.getCondition(templateName);
-    if (!template) return null;
+    if (!template) {return null;}
 
     const condition: TokenCondition = {
       id: `${templateName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -409,7 +409,7 @@ export class ConditionRegistry {
    */
   getSuppressingConditions(conditionName: string): ConditionTemplate[] {
     const condition = this.getCondition(conditionName);
-    if (!condition || !condition.suppressedBy) return [];
+    if (!condition || !condition.suppressedBy) {return [];}
 
     return condition.suppressedBy
       .map((name) => this.getCondition(name))

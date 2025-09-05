@@ -104,15 +104,7 @@ export class VTTSocketManager {
 
         try {
           const scene = await this.prisma.scene.findUnique({
-            where: { id: data.sceneId },
-            include: {
-              tokens: {
-                include: {
-                  actor: true,
-                  asset: true,
-                },
-              },
-            },
+            where: { id: data.sceneId }
           });
 
           if (!scene || scene.campaignId !== user.campaignId) {
@@ -165,7 +157,6 @@ export class VTTSocketManager {
         try {
           const token = await this.prisma.token.findUnique({
             where: { id: data.id },
-            include: { actor: true },
           });
 
           if (!token || token.sceneId !== user.sceneId) {
@@ -219,10 +210,10 @@ export class VTTSocketManager {
           }
 
           const updateData: any = { updatedAt: new Date() };
-          if (data.name) updateData.name = data.name;
-          if (data.gridSettings) updateData.gridSettings = data.gridSettings;
-          if (data.lightingSettings) updateData.lightingSettings = data.lightingSettings;
-          if (data.fogSettings) updateData.fogSettings = data.fogSettings;
+          if (data.name) {updateData.name = data.name;}
+          if (data.gridSettings) {updateData.gridSettings = data.gridSettings;}
+          if (data.lightingSettings) {updateData.lightingSettings = data.lightingSettings;}
+          if (data.fogSettings) {updateData.fogSettings = data.fogSettings;}
 
           const updatedScene = await this.prisma.scene.update({
             where: { id: data.id },
@@ -280,15 +271,13 @@ export class VTTSocketManager {
           const encounter = await this.prisma.encounter.update({
             where: { id: data.encounterId },
             data: {
-              isActive: true,
-              currentRound: 1,
+              status: 'ACTIVE',
+              roundNumber: 1,
               currentTurn: 0,
+              startedAt: new Date(),
             },
             include: {
-              participants: {
-                include: { actor: true },
-                orderBy: { initiative: "desc" },
-              },
+              encounterTokens: true,
             },
           });
 

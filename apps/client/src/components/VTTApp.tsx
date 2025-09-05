@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import { logger } from "@vtt/logging";
-import { SceneCanvas, Scene } from "./SceneCanvas";
-import { useSocket } from "../providers/SocketProvider";
+import { io, Socket } from 'socket.io-client';
+import SceneCanvas from './SceneCanvas';
+import TokensPanel from './TokensPanel';
+import ChatPanel from './ChatPanel';
+import { useVTTLayout, useTouchGestures } from '../hooks/useVTTLayout';
+import './VTTApp.css';
 import { VTTHeader } from "./vtt/VTTHeader";
-import { TokensPanel } from "./vtt/TokensPanel";
-import { ChatPanel } from "./vtt/ChatPanel";
 import { LoadingScreen } from "./vtt/LoadingScreen";
 import { useVTTTranslation } from "../hooks/useTranslation";
-
-interface Campaign {
-  id: string;
-  name: string;
-  activeSceneId?: string;
-}
+import { useSocket } from '../providers/SocketProvider';
+import { Scene, Campaign, ChatMessage, User } from '../types/vtt';
 
 interface VTTAppProps {
   userId: string;
@@ -25,7 +23,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
   const [currentScene, setCurrentScene] = useState<Scene | null>(null);
   const [_campaign, _setCampaign] = useState<Campaign | null>(null);
   const [isGM, setIsGM] = useState(false);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   // Initialize authentication
   useEffect(() => {
@@ -36,7 +34,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
 
   // Socket event handlers
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {return;}
 
     socket.on("scene_joined", (data: { scene: Scene }) => {
       logger.info("Joined scene:", data.scene);
@@ -51,15 +49,9 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
       logger.info("User left scene:", data.userId);
     });
 
-    socket.on("new_message", (message: any) => {
+    socket.on("new_message", (message: ChatMessage) => {
       logger.info("New chat message:", message);
-      setChatMessages(prev => [...prev, {
-        id: Date.now().toString(),
-        text: message.text,
-        author: message.author || 'Unknown',
-        timestamp: new Date(),
-        type: message.type || 'message'
-      }]);
+      setChatMessages(prev => [...prev, message]);
     });
 
     return () => {
@@ -115,7 +107,12 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
 
   const handleSendMessage = (message: string) => {
     if (socket) {
-      socket.emit("send_message", { text: message });
+      socket.emit("send_message", { 
+        text: message,
+        type: 'message',
+        author: user?.displayName || 'Unknown',
+        timestamp: new Date()
+      });
     }
   };
 
@@ -132,7 +129,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
       <LoadingScreen message={t("loadingScene")} showSpinner={false}>
         <button
           onClick={() => joinScene("mock-scene-1")}
-          className="mt-4 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+          className="mt-4 px-4 py-2 bg-accent rounded transition-colors hover:scale-105"
           tabIndex={0}
         >
           {t("joinTestScene")}
@@ -142,7 +139,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
   }
 
   return (
-    <div className="h-screen bg-gray-900 text-white flex flex-col">
+    <div className="h-screen surface-base text-white flex flex-col">
       <VTTHeader
         sceneName={currentScene.name}
         userDisplayName={user.displayName}
@@ -159,12 +156,13 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
             socket={socket}
             canvasWidth={800}
             canvasHeight={600}
-            isGM={isGM}
+            onTokenMove={() => {}}
+            onTokenSelect={() => {}}
           />
         </div>
 
         {/* Right Panel */}
-        <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
+        <div className="w-80 surface-elevated border-l border-subtle flex flex-col">
           <TokensPanel tokens={currentScene.tokens} />
           <ChatPanel messages={chatMessages} onSendMessage={handleSendMessage} />
         </div>

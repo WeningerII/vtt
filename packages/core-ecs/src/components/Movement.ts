@@ -17,9 +17,9 @@ export class MovementStore {
 
   add(id: EntityId, m?: Partial<{ vx: number; vy: number; maxSpeed: number }>) {
     this.present[id] = 1;
-    if (m?.vx !== undefined) this.vx[id] = m.vx;
-    if (m?.vy !== undefined) this.vy[id] = m.vy;
-    if (m?.maxSpeed !== undefined) this.maxSpeed[id] = m.maxSpeed;
+    if (m?.vx !== undefined) {this.vx[id] = m.vx;}
+    if (m?.vy !== undefined) {this.vy[id] = m.vy;}
+    if (m?.maxSpeed !== undefined) {this.maxSpeed[id] = m.maxSpeed;}
   }
 
   remove(id: EntityId) { this.present[id] = 0; }

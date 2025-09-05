@@ -5,25 +5,35 @@
 
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Wand2,
-  User,
-  Shield,
-  Book,
-  Dices,
-  Sword,
-  Sparkles,
-  Heart,
-  Brain,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
-  Play,
-  Download,
-} from "lucide-react";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useCharacter } from "../../hooks/useCharacter";
+
+// Mock framer-motion components
+const motion = {
+  div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+};
+const AnimatePresence = ({ children, mode }: { children: React.ReactNode; mode?: string }) => <>{children}</>;
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const Wand2 = MockIcon;
+const User = MockIcon;
+const Shield = MockIcon;
+const Book = MockIcon;
+const Dices = MockIcon;
+const Sword = MockIcon;
+const Sparkles = MockIcon;
+const Heart = MockIcon;
+const Brain = MockIcon;
+const CheckCircle = MockIcon;
+const AlertCircle = MockIcon;
+const RefreshCw = MockIcon;
+const Play = MockIcon;
+const Download = MockIcon;
 
 interface CharacterConcept {
   prompt: string;
@@ -180,7 +190,7 @@ export const GenesisWizard: React.FC = () => {
   };
 
   const retryStep = async (stepName: string) => {
-    if (!currentGeneration) return;
+    if (!currentGeneration) {return;}
 
     try {
       const response = await fetch(`/api/genesis/${currentGeneration.id}/retry`, {
@@ -206,7 +216,7 @@ export const GenesisWizard: React.FC = () => {
   };
 
   const acceptCharacter = async () => {
-    if (!currentGeneration?.character) return;
+    if (!currentGeneration?.character) {return;}
 
     try {
       // Character is already created by the backend

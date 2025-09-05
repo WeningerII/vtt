@@ -38,15 +38,15 @@ export function parseDiceNotation(
 
   const [, countStr, sidesStr, modifierStr] = match;
 
-  if (!sidesStr) return null;
+  if (!sidesStr) {return null;}
 
   const count = countStr ? parseInt(countStr, 10) : 1;
   const sides = parseInt(sidesStr, 10);
   const modifier = modifierStr ? parseInt(modifierStr, 10) : 0;
 
   // Validation
-  if (count <= 0 || count > 100) return null; // Reasonable limits
-  if (sides <= 0 || sides > 1000) return null;
+  if (count <= 0 || count > 100) {return null;} // Reasonable limits
+  if (sides <= 0 || sides > 1000) {return null;}
 
   return { count, sides, modifier };
 }

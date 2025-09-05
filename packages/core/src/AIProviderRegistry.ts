@@ -574,7 +574,7 @@ export class ReplicateProvider implements AIProvider {
         completionTokens: this.estimateTokens(text),
         totalTokens: this.estimateTokens(prompt) + this.estimateTokens(text)
       },
-      model: model,
+      model,
       finishReason: response.status === 'succeeded' ? 'stop' : 'length'
     };
   }
@@ -727,7 +727,7 @@ export class HuggingFaceProvider implements AIProvider {
         completionTokens: this.estimateTokens(text),
         totalTokens: this.estimateTokens(prompt) + this.estimateTokens(text)
       },
-      model: model,
+      model,
       finishReason: 'stop'
     };
   }
@@ -887,14 +887,14 @@ export class AIProviderRegistry extends EventEmitter<SystemEvents> implements Di
    */
   getBestProvider(capability: AICapability): AIProvider | null {
     const availableProviders = Array.from(this.providers.entries())
-      .filter(_([name, _provider]) => {
+      .filter(([name, provider]) => {
         const config = this.configs.get(name);
         return config?.enabled && provider.capabilities.includes(capability);
       })
-      .sort(_([nameA], _[nameB]) => {
+      .sort(([nameA], [nameB]) => {
         const configA = this.configs.get(nameA);
         const configB = this.configs.get(nameB);
-        if (!configA || !configB) return 0;
+        if (!configA || !configB) {return 0;}
         return configB.priority - configA.priority;
       });
 
@@ -906,9 +906,9 @@ export class AIProviderRegistry extends EventEmitter<SystemEvents> implements Di
    */
   getProvidersForCapability(capability: AICapability): Array<{ name: string; provider: AIProvider; config: AIProviderConfig }> {
     const candidates = Array.from(this.providers.entries())
-      .map([name, _provider] => ({ name, provider, config: this.configs.get(name) }))
+      .map(([name, provider]) => ({ name, provider, config: this.configs.get(name) }))
       .filter((p): p is { name: string; provider: AIProvider; config: AIProviderConfig } => !!p.config && p.config.enabled && p.provider.capabilities.includes(capability))
-      .sort((_a, _b) => b.config.priority - a.config.priority);
+      .sort((a, b) => b.config.priority - a.config.priority);
 
     return candidates;
   }
@@ -1011,7 +1011,7 @@ Please provide detailed, mechanically accurate content that follows the rules an
    * Get available providers
    */
   getAvailableProviders(): Array<{ name: string; type: AIProvider['type']; capabilities: AICapability[]; enabled: boolean; priority: number }> {
-    return Array.from(this.providers.entries()).map([name, _provider] => ({
+    return Array.from(this.providers.entries()).map(([name, provider]) => ({
       name,
       type: provider.type,
       capabilities: provider.capabilities,
@@ -1120,7 +1120,7 @@ Please provide detailed, mechanically accurate content that follows the rules an
   ): Promise<any> {
     let lastError: unknown = null;
 
-    for (const { _name,  provider,  config  } of candidates) {
+    for (const { name, provider, config } of candidates) {
       const attempts = Math.max(1, config.maxRetries || 1);
 
       for (let attempt = 1; attempt <= attempts; attempt++) {
@@ -1150,14 +1150,14 @@ Please provide detailed, mechanically accurate content that follows the rules an
   }
 
   private withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-    return new Promise<T>((_resolve, __reject) => {
+    return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('Request timed out')), ms);
       promise
-        .then((_val) => {
+        .then((val) => {
           clearTimeout(timer);
           resolve(val);
         })
-        .catch((_err) => {
+        .catch((err) => {
           clearTimeout(timer);
           reject(err);
         });
@@ -1166,7 +1166,7 @@ Please provide detailed, mechanically accurate content that follows the rules an
 
   private updateUsageStats(providerId: string, success: boolean, processingTime: number, tokensUsed: number): void {
     const stats = this.usageStats.get(providerId);
-    if (!stats) return;
+    if (!stats) {return;}
 
     stats.totalRequests++;
     if (success) {

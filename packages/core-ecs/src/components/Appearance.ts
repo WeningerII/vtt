@@ -23,12 +23,12 @@ export class AppearanceStore {
 
   add(id: EntityId, a?: Partial<{ sprite: number; tintR: number; tintG: number; tintB: number; alpha: number; frame: number }>) {
     this.present[id] = 1;
-    if (a?.sprite !== undefined) this.sprite[id] = a.sprite;
-    if (a?.tintR !== undefined) this.tintR[id] = a.tintR;
-    if (a?.tintG !== undefined) this.tintG[id] = a.tintG;
-    if (a?.tintB !== undefined) this.tintB[id] = a.tintB;
-    if (a?.alpha !== undefined) this.alpha[id] = a.alpha;
-    if (a?.frame !== undefined) this.frame[id] = a.frame;
+    if (a?.sprite !== undefined) {this.sprite[id] = a.sprite;}
+    if (a?.tintR !== undefined) {this.tintR[id] = a.tintR;}
+    if (a?.tintG !== undefined) {this.tintG[id] = a.tintG;}
+    if (a?.tintB !== undefined) {this.tintB[id] = a.tintB;}
+    if (a?.alpha !== undefined) {this.alpha[id] = a.alpha;}
+    if (a?.frame !== undefined) {this.frame[id] = a.frame;}
   }
 
   remove(id: EntityId) { this.present[id] = 0; }

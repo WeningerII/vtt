@@ -76,7 +76,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   private getErrorType = (): ErrorType => {
     const error = this.state.error;
-    if (!error) return this.getDefaultErrorType();
+    if (!error) {return this.getDefaultErrorType();}
 
     const errorMessage = error.message.toLowerCase();
 

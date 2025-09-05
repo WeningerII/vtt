@@ -222,7 +222,7 @@ export class MapService {
   async getScene(sceneId: string): Promise<MapScene | null> {
     // Check cache first
     const cached = this.scenes.get(sceneId);
-    if (cached) return cached;
+    if (cached) {return cached;}
 
     // Load from database
     const dbScene = await this.prisma.scene.findUnique({
@@ -239,7 +239,7 @@ export class MapService {
       },
     });
 
-    if (!dbScene) return null;
+    if (!dbScene) {return null;}
 
     // Get dimensions from map or use defaults
     let sceneWidth = 1920;
@@ -364,14 +364,14 @@ export class MapService {
   ): number {
     const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 
-    if (unit === "pixels") return pixelDistance;
+    if (unit === "pixels") {return pixelDistance;}
 
     const gridSize = gridSettings?.size || 50;
     const gridDistance = pixelDistance / gridSize;
 
     // Convert to feet (assuming 5 feet per grid square in D&D)
-    if (unit === "feet") return gridDistance * 5;
-    if (unit === "meters") return gridDistance * 1.5;
+    if (unit === "feet") {return gridDistance * 5;}
+    if (unit === "meters") {return gridDistance * 1.5;}
 
     return pixelDistance;
   }
@@ -480,7 +480,7 @@ export class MapService {
   ): Promise<string | null> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return null;
+      if (!scene) {return null;}
 
       // Snap token position to grid
       const alignedPosition = this.snapToGrid(tokenData.x, tokenData.y, scene.grid);
@@ -556,7 +556,7 @@ export class MapService {
    */
   async updateGridSettings(sceneId: string, settings: Partial<GridSettings>): Promise<boolean> {
     const scene = this.scenes.get(sceneId);
-    if (!scene) return false;
+    if (!scene) {return false;}
 
     Object.assign(scene.grid, settings);
 
@@ -625,10 +625,10 @@ export class MapService {
   async moveToken(sceneId: string, tokenId: string, x: number, y: number): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return false;
+      if (!scene) {return false;}
 
       const token = scene.tokens?.find((t) => t.id === tokenId);
-      if (!token) return false;
+      if (!token) {return false;}
 
       // Snap to grid for consistent positioning
       const alignedPosition = this.snapToGrid(x, y, scene.grid);
@@ -698,7 +698,7 @@ export class MapService {
     updates: Partial<Omit<TokenPosition, "id">>,
   ): Promise<boolean> {
     const scene = await this.getScene(sceneId);
-    if (!scene) return false;
+    if (!scene) {return false;}
 
     // Update database
     await this.prisma.token.update({
@@ -816,7 +816,7 @@ export class MapService {
   // Synchronize physics bodies with grid-aligned token positions
   private async synchronizePhysicsWithGrid(sceneId: string): Promise<void> {
     const scene = await this.getScene(sceneId);
-    if (!scene || !scene.tokens) return;
+    if (!scene || !scene.tokens) {return;}
 
     const _gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
@@ -845,7 +845,7 @@ export class MapService {
    */
   private async initializePhysicsForScene(sceneId: string): Promise<void> {
     const scene = await this.getScene(sceneId);
-    if (!scene || !scene.tokens) return;
+    if (!scene || !scene.tokens) {return;}
 
     const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
@@ -891,7 +891,7 @@ export class MapService {
    */
   private async updatePhysicsWorld(sceneId: string): Promise<void> {
     const scene = await this.getScene(sceneId);
-    if (!scene || !scene.tokens) return;
+    if (!scene || !scene.tokens) {return;}
 
     // Sync physics bodies with token positions
     for (const token of scene.tokens) {
@@ -1079,7 +1079,7 @@ export class MapService {
   ): Set<string> {
     const nearbyTokens = new Set<string>();
     const sceneIndex = this.spatialIndex.get(sceneId);
-    if (!sceneIndex) return nearbyTokens;
+    if (!sceneIndex) {return nearbyTokens;}
 
     const gridSize = 100;
     const cellRadius = Math.ceil(radius / gridSize);
@@ -1111,10 +1111,10 @@ export class MapService {
   ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return false;
+      if (!scene) {return false;}
 
       const token = scene.tokens?.find((t) => t.id === targetId);
-      if (!token) return false;
+      if (!token) {return false;}
 
       // Update token health in database
       await this.prisma.token.update({
@@ -1158,10 +1158,10 @@ export class MapService {
   async applyHealing(sceneId: string, targetId: string, healing: number): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return false;
+      if (!scene) {return false;}
 
       const token = scene.tokens?.find((t) => t.id === targetId);
-      if (!token) return false;
+      if (!token) {return false;}
 
       const currentHP = (token as any).hitPoints || 100;
       const maxHP = (token as any).maxHitPoints || 100;
@@ -1214,10 +1214,10 @@ export class MapService {
   ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return false;
+      if (!scene) {return false;}
 
       const token = scene.tokens?.find((t) => t.id === targetId);
-      if (!token) return false;
+      if (!token) {return false;}
 
       // Add condition to token (assuming conditions field exists or will be added)
       const conditions = (token as any).conditions || [];
@@ -1251,7 +1251,7 @@ export class MapService {
       this.emitMapUpdate(sceneId, {
         type: "condition_applied",
         targetId,
-        metadata: { ...((token as any).metadata || {}), conditions: conditions },
+        metadata: { ...((token as any).metadata || {}), conditions },
         timestamp: Date.now(),
       });
 
@@ -1279,7 +1279,7 @@ export class MapService {
   }> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return { success: false, hit: false, details: { error: "Scene not found" } };
+      if (!scene) {return { success: false, hit: false, details: { error: "Scene not found" } };}
 
       const attacker = scene.tokens?.find((t) => t.id === attackerId);
       const target = scene.tokens?.find((t) => t.id === targetId);
@@ -1364,7 +1364,7 @@ export class MapService {
   }> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return { success: false, effects: [], details: { error: "Scene not found" } };
+      if (!scene) {return { success: false, effects: [], details: { error: "Scene not found" } };}
 
       const caster = scene.tokens?.find((t) => t.id === casterId);
       if (!caster) {
@@ -1707,7 +1707,7 @@ export class MapService {
     try {
       // Basic combat status - would integrate with combat engine
       const scene = await this.getScene(sceneId);
-      if (!scene || !scene.tokens) return null;
+      if (!scene || !scene.tokens) {return null;}
 
       return {
         inCombat: false,
@@ -1850,10 +1850,10 @@ export class MapService {
   ): Promise<boolean> {
     try {
       const physicsBodyId = this.spellEffectPhysicsBodies.get(spellEffectId);
-      if (!physicsBodyId) return false;
+      if (!physicsBodyId) {return false;}
 
       const physicsBody = this.physicsWorld.getBody(physicsBodyId);
-      if (!physicsBody) return false;
+      if (!physicsBody) {return false;}
 
       if (position) {
         physicsBody.setPosition(position.x, position.y);
@@ -1887,7 +1887,7 @@ export class MapService {
   async removeSpellEffectPhysicsBody(spellEffectId: string): Promise<boolean> {
     try {
       const physicsBodyId = this.spellEffectPhysicsBodies.get(spellEffectId);
-      if (!physicsBodyId) return false;
+      if (!physicsBodyId) {return false;}
 
       const removed = this.physicsWorld.removeBody(physicsBodyId);
       if (removed) {
@@ -1919,19 +1919,19 @@ export class MapService {
       }> = [];
 
       const scene = await this.getScene(sceneId);
-      if (!scene?.tokens) return collisions;
+      if (!scene?.tokens) {return collisions;}
 
       // Check each token's physics body against spell effect bodies
       for (const token of scene.tokens) {
         const tokenPhysicsId = this.generateNumericId(token.id);
         const tokenPhysicsBody = this.physicsWorld.getBody(tokenPhysicsId);
 
-        if (!tokenPhysicsBody) continue;
+        if (!tokenPhysicsBody) {continue;}
 
         // Check collisions with all spell effect bodies
         for (const [spellEffectId, spellBodyId] of this.spellEffectPhysicsBodies) {
           const spellBody = this.physicsWorld.getBody(spellBodyId);
-          if (!spellBody) continue;
+          if (!spellBody) {continue;}
 
           // Check if bodies are overlapping (sensor collision)
           const collision = this.physicsWorld.checkCollision(tokenPhysicsBody, spellBody);
@@ -1970,7 +1970,7 @@ export class MapService {
   ): Promise<string[]> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene?.tokens) return [];
+      if (!scene?.tokens) {return [];}
 
       const affectedTokens: string[] = [];
 
@@ -2019,7 +2019,7 @@ export class MapService {
                 );
 
                 let angleDiff = Math.abs(casterToToken - casterToSpell);
-                if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+                if (angleDiff > Math.PI) {angleDiff = 2 * Math.PI - angleDiff;}
 
                 isAffected = angleDiff <= (spellArea.angle * Math.PI) / 180 / 2;
               }
@@ -2192,7 +2192,7 @@ export class MapService {
     try {
       // Create spell effect (stubbed for build compatibility)
       const spellEffect = { id: uuidv4(), ...spellData };
-      if (!spellEffect) throw new Error("Failed to create spell effect");
+      if (!spellEffect) {throw new Error("Failed to create spell effect");}
 
       // Create physics body
       const physicsBodyId = await this.createSpellEffectPhysicsBody(
@@ -2305,7 +2305,7 @@ export class MapService {
   async updateScene(sceneId: string, updates: Record<string, any>): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) return false;
+      if (!scene) {return false;}
 
       // Update scene in database
       await this.prisma.scene.update({
@@ -2335,10 +2335,10 @@ export class MapService {
       });
 
       // Update cached scene
-      if (updates.name) scene.name = updates.name;
-      if (updates.grid) Object.assign(scene.grid, updates.grid);
-      if (updates.lighting) Object.assign(scene.lighting, updates.lighting);
-      if (updates.fog) Object.assign(scene.fog, updates.fog);
+      if (updates.name) {scene.name = updates.name;}
+      if (updates.grid) {Object.assign(scene.grid, updates.grid);}
+      if (updates.lighting) {Object.assign(scene.lighting, updates.lighting);}
+      if (updates.fog) {Object.assign(scene.fog, updates.fog);}
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {

@@ -9,7 +9,9 @@
     "incremental": true,
     "tsBuildInfoFile": "./auth.tsbuildinfo",
     "composite": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "module": "CommonJS",
+    "target": "ES2020"
   },
   "include": [
     "src/**/*"

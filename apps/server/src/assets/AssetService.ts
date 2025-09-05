@@ -110,7 +110,7 @@ export class AssetService {
    */
   async getAssetFile(assetId: string): Promise<Buffer | null> {
     const asset = this.assets.get(assetId);
-    if (!asset) return null;
+    if (!asset) {return null;}
 
     try {
       const filePath = path.join(this.uploadPath, asset.filename);
@@ -181,11 +181,11 @@ export class AssetService {
     }
 
     // Apply updates
-    if (update.name) asset.name = update.name;
-    if (update.description !== undefined) asset.description = update.description;
-    if (update.isPublic !== undefined) asset.isPublic = update.isPublic;
-    if (update.tags) asset.tags = update.tags;
-    if (update.metadata) Object.assign(asset.metadata, update.metadata);
+    if (update.name) {asset.name = update.name;}
+    if (update.description !== undefined) {asset.description = update.description;}
+    if (update.isPublic !== undefined) {asset.isPublic = update.isPublic;}
+    if (update.tags) {asset.tags = update.tags;}
+    if (update.metadata) {Object.assign(asset.metadata, update.metadata);}
 
     asset.updatedAt = new Date();
     return asset;
@@ -371,14 +371,14 @@ export class AssetService {
 
   // Helper methods
   private detectAssetType(mimeType: string, filename: string): AssetType {
-    if (mimeType.startsWith("image/")) return "image";
-    if (mimeType.startsWith("audio/")) return "audio";
-    if (mimeType === "application/pdf") return "document";
+    if (mimeType.startsWith("image/")) {return "image";}
+    if (mimeType.startsWith("audio/")) {return "audio";}
+    if (mimeType === "application/pdf") {return "document";}
 
     const ext = path.extname(filename).toLowerCase();
-    if ([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"].includes(ext)) return "image";
-    if ([".mp3", ".wav", ".ogg", ".m4a"].includes(ext)) return "audio";
-    if ([".pdf", ".txt", ".md"].includes(ext)) return "document";
+    if ([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"].includes(ext)) {return "image";}
+    if ([".mp3", ".wav", ".ogg", ".m4a"].includes(ext)) {return "audio";}
+    if ([".pdf", ".txt", ".md"].includes(ext)) {return "document";}
 
     return "document"; // Default fallback
   }

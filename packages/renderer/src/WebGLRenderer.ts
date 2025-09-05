@@ -208,7 +208,7 @@ export class WebGLRenderer {
 
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       const info = gl.getProgramInfoLog(program);
-      throw new Error("Could not compile WebGL program: " + info);
+      throw new Error(`Could not compile WebGL program: ${  info}`);
     }
 
     return program;
@@ -223,7 +223,7 @@ export class WebGLRenderer {
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
       const info = gl.getShaderInfoLog(shader);
-      throw new Error("Could not compile shader: " + info);
+      throw new Error(`Could not compile shader: ${  info}`);
     }
 
     return shader;
@@ -337,11 +337,11 @@ export class WebGLRenderer {
     gl.clearColor(0.1, 0.1, 0.1, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    if (this.renderQueue.length === 0) return;
+    if (this.renderQueue.length === 0) {return;}
 
     // Sort render queue by layer then by texture
     this.renderQueue.sort((a, b) => {
-      if (a.layer !== b.layer) return a.layer - b.layer;
+      if (a.layer !== b.layer) {return a.layer - b.layer;}
       return a.textureId.localeCompare(b.textureId);
     });
 
@@ -397,7 +397,7 @@ export class WebGLRenderer {
 
     for (let i = start; i < end; i++) {
       const obj = this.renderQueue[i];
-      if (!obj) continue;
+      if (!obj) {continue;}
 
       const offset = (i - start) * 12;
 

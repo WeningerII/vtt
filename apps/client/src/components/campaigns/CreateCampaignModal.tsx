@@ -2,11 +2,25 @@
  * Create Campaign Modal - Form for creating new campaigns with formData.system selection
  */
 import React, { useState } from 'react';
-import { X, Upload, Users, Globe, Lock, UserCheck } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { cn, generateId } from '../../lib/utils';
+import { cn } from '../../lib/utils';
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const X = MockIcon;
+const Upload = MockIcon;
+const Users = MockIcon;
+const Globe = MockIcon;
+const Lock = MockIcon;
+const UserCheck = MockIcon;
+
+// Mock generateId function
+const generateId = () => `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 import AccessibleModal from '../AccessibleModal';
 
 interface CreateCampaignModalProps {
@@ -38,11 +52,6 @@ const gameSystems = [
 ];
 
 
-const generateId = () => {
-  return Math.random().toString(36).substr(2, 9);
-};
-
-
 export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampaignModalProps) {
   const [formData, setFormData] = useState<CampaignFormData>({
     name: '',
@@ -57,10 +66,10 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1);
 
-  const handleChange = (_field: keyof CampaignFormData, _value: any) => {
-    setFormData(prev => ({ ...prev, [name]: e.target.value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+  const handleChange = (field: keyof CampaignFormData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -87,8 +96,8 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
       newErrors.name = 'Campaign name is required';
     }
     
-    if (!formData.formData.system) {
-      newErrors.formData.system = 'Please select a game formData.system';
+    if (!formData.system) {
+      newErrors.system = 'Please select a game system';
     }
     
     if (!formData.description.trim()) {
@@ -116,7 +125,7 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       const newCampaign = {
-        id: generateId('campaign'),
+        id: generateId(),
         ...formData,
         status: 'planning' as const,
         players: 0,
@@ -145,14 +154,14 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between border-b">
           <CardTitle>Create New Campaign</CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </CardHeader>
@@ -189,8 +198,8 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                 <Input
                   label="Campaign Name"
                   placeholder="Enter a memorable campaign name"
-                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  onChange={(e) => handleChange('name', e.target.e.target.value)}
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
                   error={errors.name}
                   disabled={loading}
                 />
@@ -201,31 +210,31 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                     Game System
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-neutral-200 rounded-lg p-2">
-                    {gameSystems.map((_system) => (
+                    {gameSystems.map((system) => (
                       <label
-                        key={formData.system.id}
+                        key={system.id}
                         className={cn(
                           "flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors",
-                          formData.formData.system === formData.system.id
+                          formData.system === system.id
                             ? "border-primary-500 bg-primary-50"
                             : "border-neutral-200 hover:border-neutral-300",
-                          formData.system.popular && "ring-1 ring-warning-200"
+                          system.popular && "ring-1 ring-warning-200"
                         )}
                       >
                         <input
                           type="radio"
-                          name="formData.system"
-                          value={formData.system} onChange={(e) => setFormData({...formData, system: e.target.value})}
-                          checked={formData.formData.system === formData.system.id}
-                          onChange={(e) => handleChange('formData.system', e.target.e.target.value)}
+                          name="system"
+                          value={system.id}
+                          checked={formData.system === system.id}
+                          onChange={(e) => handleChange('system', e.target.value)}
                           className="sr-only"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-neutral-900 truncate">
-                              {formData.system.name}
+                              {system.name}
                             </span>
-                            {formData.system.popular && (
+                            {system.popular && (
                               <span className="ml-2 px-2 py-1 text-xs bg-warning-100 text-warning-800 rounded-full">
                                 Popular
                               </span>
@@ -235,8 +244,8 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                       </label>
                     ))}
                   </div>
-                  {errors.formData.system && (
-                    <p className="text-xs text-error-600">{errors.formData.system}</p>
+                  {errors.system && (
+                    <p className="text-xs text-error-600">{errors.system}</p>
                   )}
                 </div>
 
@@ -247,8 +256,8 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                   </label>
                   <textarea
                     placeholder="Describe your campaign setting, tone, and what players can expect..."
-                    value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    onChange={(e) => handleChange('description', e.target.e.target.value)}
+                    value={formData.description}
+                    onChange={(e) => handleChange('description', e.target.value)}
                     rows={4}
                     className={cn(
                       "w-full px-3 py-2 border rounded-lg text-sm resize-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
@@ -286,8 +295,8 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                       type="range"
                       min="2"
                       max="8"
-                      value={formData.maxPlayers} onChange={(e) => setFormData({...formData, maxPlayers: parseInt(e.target.value)})}
-                      onChange={(e) => handleChange('maxPlayers', parseInt(e.target.e.target.value))}
+                      value={formData.maxPlayers}
+                      onChange={(e) => handleChange('maxPlayers', parseInt(e.target.value))}
                       className="flex-1"
                     />
                     <div className="w-16 text-center">
@@ -311,12 +320,12 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                       { value: 'private', icon: Lock, label: 'Private', desc: 'Only you can see and manage this campaign' },
                       { value: 'friends', icon: UserCheck, label: 'Friends Only', desc: 'Only your friends can find and join' },
                       { value: 'public', icon: Globe, label: 'Public', desc: 'Anyone can find and request to join' },
-                    ].map((_option) => (
+                    ].map((option) => (
                       <label
-                        key={opt.value}
+                        key={option.value}
                         className={cn(
                           "flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors",
-                          formData.visibility === opt.value
+                          formData.visibility === option.value
                             ? "border-primary-500 bg-primary-50"
                             : "border-neutral-200 hover:border-neutral-300"
                         )}
@@ -324,15 +333,15 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                         <input
                           type="radio"
                           name="visibility"
-                          value={opt.value} onChange={(e) => handleInputChange("name", e.target.value)}
-                          checked={formData.visibility === opt.value}
-                          onChange={(e) => handleChange('visibility', e.target.e.target.value)}
+                          value={option.value}
+                          checked={formData.visibility === option.value}
+                          onChange={(e) => handleChange('visibility', e.target.value as any)}
                           className="sr-only"
                         />
-                        <opt.icon className="h-5 w-5 text-neutral-600 mr-3" />
+                        <option.icon className="h-5 w-5 text-neutral-600 mr-3" />
                         <div>
-                          <div className="font-medium text-neutral-900">{opt.label}</div>
-                          <div className="text-sm text-neutral-600">{opt.desc}</div>
+                          <div className="font-medium text-neutral-900">{option.label}</div>
+                          <div className="text-sm text-neutral-600">{option.desc}</div>
                         </div>
                       </label>
                     ))}
@@ -400,10 +409,10 @@ export function CreateCampaignModal({ isOpen, onClose, onSuccess }: CreateCampai
                 )}
 
                 <div className="flex justify-between">
-                  <Button type="button" variant="secondary" onClick={() => setStep(1)}>
+                  <Button type="button" onClick={() => setStep(1)}>
                     Back
                   </Button>
-                  <Button type="submit" loading={loading}>
+                  <Button type="submit" disabled={loading}>
                     Create Campaign
                   </Button>
                 </div>

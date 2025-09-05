@@ -83,7 +83,7 @@ export class E2ETestReporter implements Reporter {
       : /^Internal error: step id not found: fixture@/;
     if (pattern.test(line)) {
       this.suppressedStepIdWarnings++;
-      if (this.suppressedStepIdSamples.length < 5) this.suppressedStepIdSamples.push(line);
+      if (this.suppressedStepIdSamples.length < 5) {this.suppressedStepIdSamples.push(line);}
       return; // swallow only the targeted noise
     }
     // Pass through any other stderr
@@ -166,7 +166,7 @@ export class E2ETestReporter implements Reporter {
   }
 
   private calculatePerformanceAverages() {
-    if (this.performanceMetrics.length === 0) return {};
+    if (this.performanceMetrics.length === 0) {return {};}
 
     const metrics = this.performanceMetrics;
     return {
@@ -197,7 +197,7 @@ export class E2ETestReporter implements Reporter {
           metric,
           value,
           threshold,
-          exceeded: (((value - threshold) / threshold) * 100).toFixed(2) + "%",
+          exceeded: `${(((value - threshold) / threshold) * 100).toFixed(2)  }%`,
         });
       }
     });
@@ -233,15 +233,15 @@ export class E2ETestReporter implements Reporter {
   }
 
   private categorizeError(error?: string): string {
-    if (!error) return "Unknown";
+    if (!error) {return "Unknown";}
 
-    if (error.includes("timeout")) return "Timeout";
-    if (error.includes("network") || error.includes("fetch")) return "Network";
-    if (error.includes("element") || error.includes("selector")) return "Element Not Found";
-    if (error.includes("assertion") || error.includes("expect")) return "Assertion";
-    if (error.includes("websocket") || error.includes("ws")) return "WebSocket";
-    if (error.includes("database") || error.includes("prisma")) return "Database";
-    if (error.includes("auth")) return "Authentication";
+    if (error.includes("timeout")) {return "Timeout";}
+    if (error.includes("network") || error.includes("fetch")) {return "Network";}
+    if (error.includes("element") || error.includes("selector")) {return "Element Not Found";}
+    if (error.includes("assertion") || error.includes("expect")) {return "Assertion";}
+    if (error.includes("websocket") || error.includes("ws")) {return "WebSocket";}
+    if (error.includes("database") || error.includes("prisma")) {return "Database";}
+    if (error.includes("auth")) {return "Authentication";}
 
     return "Other";
   }
@@ -431,7 +431,7 @@ ${report.failures.patterns.map((p: any) => `- **${p.type}:** ${p.count} failures
   }
 
   private average(numbers: number[]): number {
-    if (numbers.length === 0) return 0;
+    if (numbers.length === 0) {return 0;}
     return numbers.reduce((a, b) => a + b, 0) / numbers.length;
   }
 

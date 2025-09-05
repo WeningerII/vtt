@@ -1,4 +1,4 @@
-import { describe, it, expect, _beforeEach, _afterEach } from "@jest/globals";
+import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
 
 describe("Core Module", () => {
   describe("Basic Functionality", () => {
@@ -15,8 +15,8 @@ describe("Core Module", () => {
   describe("Error Handling", () => {
     it("should handle invalid input gracefully", () => {
       const handleError = (_input: any) => {
-        if (!input) throw new Error("Invalid input");
-        return input;
+        if (!_input) {throw new Error("Invalid input");}
+        return _input;
       };
 
       expect(() => handleError(null)).toThrow("Invalid input");

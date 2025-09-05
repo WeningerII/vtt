@@ -156,7 +156,7 @@ function handleRateLimit(bucket: Bucket, config: RateLimitConfig, identifier: st
  * - Comprehensive rate limit headers
  */
 export const rateLimitMiddleware: Middleware = async (ctx, _next) => {
-  if (ctx.req.method === "OPTIONS") return _next();
+  if (ctx.req.method === "OPTIONS") {return _next();}
 
   const { ip, userId } = getClientIdentifier(ctx);
   const endpoint = getEndpointPattern(ctx.req.url || '');

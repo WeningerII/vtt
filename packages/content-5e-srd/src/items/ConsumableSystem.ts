@@ -3,7 +3,7 @@
  * Handles potions, scrolls, ammunition, and other consumable items
  */
 
-import { Consumable, _ConsumableEffect } from "./index.js";
+import { Consumable, ConsumableEffect } from "./index.js";
 
 export interface PotionEffect {
   type: "healing" | "buff" | "utility";
@@ -245,7 +245,7 @@ export class ConsumableSystem {
       ? this.usageHistory.filter((usage) => usage.userId === userId)
       : this.usageHistory;
 
-    history = history.sort((_a, _b) => b.timestamp.getTime() - a.timestamp.getTime());
+    history = history.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     return limit ? history.slice(0, limit) : history;
   }
@@ -268,7 +268,7 @@ export class ConsumableSystem {
   private rollDice(diceString: string): number {
     // Simple dice roller - supports formats like "2d4+2", "1d8", etc.
     const match = diceString.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) return 0;
+    if (!match) {return 0;}
 
     const numDice = parseInt(match[1]!, 10);
     const dieSize = parseInt(match[2]!, 10);

@@ -83,7 +83,7 @@ export interface CombatSettings {
 export class CombatManager {
   private combatState: CombatState | null = null;
   private turnTimer: any | null = null;
-  private eventListeners: Array<(_event: CombatManagerEvent) => void> = [];
+  private eventListeners: Array<(event: CombatManagerEvent) => void> = [];
 
   constructor() {
     // Initialize with default state
@@ -171,7 +171,7 @@ export class CombatManager {
    * End combat encounter
    */
   endCombat(): void {
-    if (!this.combatState) return;
+    if (!this.combatState) {return;}
 
     this.combatState.status = "ended";
     this.stopTurnTimer();
@@ -194,7 +194,7 @@ export class CombatManager {
    * Advance to next turn
    */
   nextTurn(): void {
-    if (!this.combatState || this.combatState.status !== "active") return;
+    if (!this.combatState || this.combatState.status !== "active") {return;}
 
     // Deactivate current combatant
     const currentCombatant = this.getCurrentCombatant();
@@ -235,7 +235,7 @@ export class CombatManager {
    * Start new combat round
    */
   private startNewRound(): void {
-    if (!this.combatState) return;
+    if (!this.combatState) {return;}
 
     // End current round
     const currentRound = this.getCurrentRound();
@@ -289,7 +289,7 @@ export class CombatManager {
     source?: string,
   ): void {
     const combatant = this.getCombatant(combatantId);
-    if (!combatant) return;
+    if (!combatant) {return;}
 
     // Calculate actual damage (resistances, immunities, etc.)
     const actualDamage = this.calculateActualDamage(combatant, damage, damageType);
@@ -334,7 +334,7 @@ export class CombatManager {
    */
   applyHealing(combatantId: string, healing: number, source?: string): void {
     const combatant = this.getCombatant(combatantId);
-    if (!combatant) return;
+    if (!combatant) {return;}
 
     const actualHealing = Math.min(healing, combatant.maxHitPoints - combatant.currentHitPoints);
     combatant.currentHitPoints += actualHealing;
@@ -362,7 +362,7 @@ export class CombatManager {
    */
   addCondition(combatantId: string, condition: string, duration?: number, source?: string): void {
     const combatant = this.getCombatant(combatantId);
-    if (!combatant || combatant.conditions.includes(condition)) return;
+    if (!combatant || combatant.conditions.includes(condition)) {return;}
 
     combatant.conditions.push(condition);
 
@@ -389,7 +389,7 @@ export class CombatManager {
    */
   removeCondition(combatantId: string, condition: string): void {
     const combatant = this.getCombatant(combatantId);
-    if (!combatant) return;
+    if (!combatant) {return;}
 
     const index = combatant.conditions.indexOf(condition);
     if (index > -1) {
@@ -478,7 +478,7 @@ export class CombatManager {
       hit: hits,
       critical: isCritical,
       attackRoll,
-      ...(damageRoll !== undefined ? { damageRoll } : Record<string, any>),
+      ...(damageRoll !== undefined ? { damageRoll } : {}),
     };
   }
 
@@ -587,7 +587,7 @@ export class CombatManager {
   private rollDamage(dice: string, bonus: number, critical = false): number {
     // Simple dice rolling - parse dice notation like "2d6", "1d8+3"
     const match = dice.match(/(\d+)d(\d+)/);
-    if (!match) return bonus;
+    if (!match) {return bonus;}
 
     const numDice = parseInt(match[1] || "1");
     const diceSides = parseInt(match[2] || "6");
@@ -640,7 +640,7 @@ export class CombatManager {
       type: "death",
       combatantId: combatant.id,
       description: `${combatant.name} is defeated`,
-      data: Record<string, any>,
+      data: {},
     });
 
     this.emitEvent({
@@ -650,7 +650,7 @@ export class CombatManager {
   }
 
   private startTurnTimer(): void {
-    if (!this.combatState || this.combatState.settings.turnTimer <= 0) return;
+    if (!this.combatState || this.combatState.settings.turnTimer <= 0) {return;}
 
     this.stopTurnTimer();
     this.turnTimer = setTimeout(() => {
@@ -673,7 +673,7 @@ export class CombatManager {
   }
 
   private logCombatEvent(event: Omit<CombatEvent, "id" | "timestamp">): void {
-    if (!this.combatState) return;
+    if (!this.combatState) {return;}
 
     const combatEvent: CombatEvent = {
       ...event,
@@ -693,17 +693,17 @@ export class CombatManager {
   }
 
   getCurrentCombatant(): Combatant | null {
-    if (!this.combatState) return null;
+    if (!this.combatState) {return null;}
     return this.combatState.combatants[this.combatState.currentTurn] || null;
   }
 
   getCombatant(id: string): Combatant | null {
-    if (!this.combatState) return null;
+    if (!this.combatState) {return null;}
     return this.combatState.combatants.find((c) => c.id === id) || null;
   }
 
   getCurrentRound(): CombatRound | null {
-    if (!this.combatState) return null;
+    if (!this.combatState) {return null;}
     return this.combatState.rounds[this.combatState.rounds.length - 1] || null;
   }
 
@@ -720,11 +720,11 @@ export class CombatManager {
   }
 
   // Event system
-  addEventListener(_listener: (event: CombatManagerEvent) => void): void {
+  addEventListener(listener: (event: CombatManagerEvent) => void): void {
     this.eventListeners.push(listener);
   }
 
-  removeEventListener(_listener: (event: CombatManagerEvent) => void): void {
+  removeEventListener(listener: (event: CombatManagerEvent) => void): void {
     const index = this.eventListeners.indexOf(listener);
     if (index > -1) {
       this.eventListeners.splice(index, 1);
@@ -736,7 +736,7 @@ export class CombatManager {
       try {
         listener(event);
       } catch (error) {
-        logger.error("Combat manager event listener error:", error);
+        logger.error("Combat manager event listener error:", { error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined });
       }
     });
   }

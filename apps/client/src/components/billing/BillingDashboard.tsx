@@ -3,20 +3,24 @@
  */
 import React, { useState } from "react";
 import { logger } from "@vtt/logging";
-import {
-  CreditCard,
-  Download,
-  Calendar,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  Users,
-  HardDrive,
-  Clock,
-  Zap,
-  ArrowUpRight,
-  Settings,
-} from "lucide-react";
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const CreditCard = MockIcon;
+const Download = MockIcon;
+const Calendar = MockIcon;
+const TrendingUp = MockIcon;
+const AlertCircle = MockIcon;
+const CheckCircle = MockIcon;
+const Users = MockIcon;
+const HardDrive = MockIcon;
+const Clock = MockIcon;
+const Zap = MockIcon;
+const ArrowUpRight = MockIcon;
+const Settings = MockIcon;
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { formatCurrency, formatDate, formatFileSize } from "../../lib/format";
@@ -78,7 +82,7 @@ export function BillingDashboard() {
   const { subscription, usage, paymentMethod, recentInvoices } = mockBillingData;
 
   const getUsagePercentage = (current: number, limit: number) => {
-    if (!limit) return 0;
+    if (!limit) {return 0;}
     return Math.min((current / limit) * 100, 100);
   };
 
@@ -134,7 +138,7 @@ export function BillingDashboard() {
                   </p>
                   <p className="text-sm text-neutral-600">per month</p>
                 </div>
-                <Button variant="secondary" rightIcon={<Settings className="h-4 w-4" />}>
+                <Button>
                   Manage Plan
                 </Button>
               </div>
@@ -170,7 +174,7 @@ export function BillingDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Payment Method</CardTitle>
-            <Button variant="ghost" size="sm">
+            <Button>
               <Settings className="h-4 w-4" />
             </Button>
           </CardHeader>
@@ -187,7 +191,7 @@ export function BillingDashboard() {
                 </p>
               </div>
             </div>
-            <Button variant="secondary" fullWidth>
+            <Button>
               Update Payment Method
             </Button>
           </CardContent>
@@ -316,7 +320,7 @@ export function BillingDashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Invoices</CardTitle>
-          <Button variant="ghost" size="sm" rightIcon={<ArrowUpRight className="h-4 w-4" />}>
+          <Button>
             View all
           </Button>
         </CardHeader>
@@ -350,10 +354,8 @@ export function BillingDashboard() {
                     {invoice.status}
                   </span>
                   <Button
-                    variant="ghost"
-                    size="sm"
                     onClick={() => handleDownloadInvoice(invoice.id)}
-                    loading={loading}
+                    disabled={loading}
                   >
                     <Download className="h-4 w-4" />
                   </Button>
@@ -371,7 +373,7 @@ export function BillingDashboard() {
             <TrendingUp className="h-8 w-8 text-primary-600 mx-auto mb-3" />
             <h3 className="font-medium text-neutral-900 mb-2">Upgrade Plan</h3>
             <p className="text-sm text-neutral-600 mb-4">Get more features and higher limits</p>
-            <Button variant="primary" fullWidth>
+            <Button>
               View Plans
             </Button>
           </CardContent>
@@ -382,7 +384,7 @@ export function BillingDashboard() {
             <Calendar className="h-8 w-8 text-success-600 mx-auto mb-3" />
             <h3 className="font-medium text-neutral-900 mb-2">Billing History</h3>
             <p className="text-sm text-neutral-600 mb-4">View all invoices and payments</p>
-            <Button variant="secondary" fullWidth>
+            <Button>
               View History
             </Button>
           </CardContent>
@@ -393,7 +395,7 @@ export function BillingDashboard() {
             <Settings className="h-8 w-8 text-neutral-600 mx-auto mb-3" />
             <h3 className="font-medium text-neutral-900 mb-2">Billing Settings</h3>
             <p className="text-sm text-neutral-600 mb-4">Manage payment methods and preferences</p>
-            <Button variant="secondary" fullWidth>
+            <Button>
               Open Settings
             </Button>
           </CardContent>

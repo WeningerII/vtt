@@ -26,6 +26,12 @@ function getServices() {
   return { prisma, mapService: mapService!, campaignService: campaignService! };
 }
 
+// Initialize services on first use
+function getCampaignService() {
+  const { campaignService } = getServices();
+  return campaignService;
+}
+
 /**
  * Helper to get authenticated user ID from request
  */
@@ -229,7 +235,34 @@ export const deleteCampaignHandler: RouteHandler = async (ctx) => {
 };
 
 /**
- * POST /campaigns/:campaignId/players - Add player to campaign
+ * GET /campaigns/:campaignId/players - Get players for campaign
+ */
+export const getCampaignPlayersHandler: RouteHandler = async (ctx) => {
+  const campaignId = ctx.url.pathname.split("/")[2];
+
+  if (!campaignId) {
+    ctx.res.writeHead(400, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "Missing campaignId" }));
+    return;
+  }
+
+  try {
+    const players = await campaignService.getCampaignPlayers(campaignId);
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ players }));
+  } catch (error: any) {
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        error: error.message || "Failed to get campaign players",
+      }),
+    );
+  }
+};
+
+/**
+ * POST /campaigns/:campaignId/players - Add/Invite player to campaign
  */
 export const addPlayerHandler: RouteHandler = async (ctx) => {
   await requireAuth(ctx);
@@ -245,19 +278,74 @@ export const addPlayerHandler: RouteHandler = async (ctx) => {
     const body = await parseJsonBody(ctx.req);
     const userId = getAuthenticatedUserId(ctx);
 
-    if (!body.playerId) {
+    // Support both email-based invites and direct player ID addition
+    if (body.email) {
+      // Email-based invite
+      const player = await campaignService.invitePlayerByEmail(
+        campaignId, 
+        userId, 
+        body.email, 
+        body.role || 'player'
+      );
+
+      ctx.res.writeHead(201, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ player }));
+    } else if (body.playerId) {
+      // Direct player addition
+      const success = await campaignService.addPlayer(campaignId, userId, body.playerId);
+
+      if (!success) {
+        ctx.res.writeHead(409, { "Content-Type": "application/json" });
+        ctx.res.end(
+          JSON.stringify({ error: "Failed to add player - already exists or not authorized" }),
+        );
+        return;
+      }
+
+      ctx.res.writeHead(200, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ success: true }));
+    } else {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing playerId" }));
+      ctx.res.end(JSON.stringify({ error: "Missing email or playerId" }));
       return;
     }
+  } catch (error: any) {
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        error: error.message || "Failed to add player",
+      }),
+    );
+  }
+};
 
-    const success = await campaignService.addPlayer(campaignId, userId, body.playerId);
+/**
+ * PUT /campaigns/:campaignId/players/:playerId - Update player role/status
+ */
+export const updatePlayerHandler: RouteHandler = async (ctx) => {
+  await requireAuth(ctx);
+  const pathParts = ctx.url.pathname.split("/");
+  const campaignId = pathParts[2];
+  const playerId = pathParts[4];
+
+  if (!campaignId || !playerId) {
+    ctx.res.writeHead(400, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "Missing campaignId or playerId" }));
+    return;
+  }
+
+  try {
+    const body = await parseJsonBody(ctx.req);
+    const userId = getAuthenticatedUserId(ctx);
+
+    const success = await campaignService.updatePlayer(campaignId, userId, playerId, {
+      role: body.role,
+      status: body.status
+    });
 
     if (!success) {
-      ctx.res.writeHead(409, { "Content-Type": "application/json" });
-      ctx.res.end(
-        JSON.stringify({ error: "Failed to add player - already exists or not authorized" }),
-      );
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Player not found or not authorized" }));
       return;
     }
 
@@ -267,7 +355,7 @@ export const addPlayerHandler: RouteHandler = async (ctx) => {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to add player",
+        error: error.message || "Failed to update player",
       }),
     );
   }
@@ -466,17 +554,17 @@ export const getCampaignStatsHandler: RouteHandler = async (ctx) => {
 
 // Helper function to parse JSON from request body
 async function parseJsonBody(req: any): Promise<any> {
-  return new Promise((_resolve, __reject) => {
+  return new Promise((resolve, reject) => {
     let body = "";
 
-    req.on("data", (_chunk: any) => {
+    req.on("data", (chunk: any) => {
       body += chunk.toString();
     });
 
     req.on("end", () => {
       try {
         resolve(JSON.parse(body));
-      } catch (_error) {
+      } catch (error) {
         reject(new Error("Invalid JSON"));
       }
     });
@@ -706,6 +794,77 @@ export const getActiveSessionHandler: RouteHandler = async (ctx) => {
     ctx.res.end(
       JSON.stringify({
         error: error.message || "Failed to get active session",
+      }),
+    );
+  }
+};
+
+/**
+ * GET /campaigns/:campaignId/settings - Get campaign settings
+ */
+export const getCampaignSettingsHandler: RouteHandler = async (ctx) => {
+  const campaignId = ctx.url.pathname.split("/")[2];
+
+  if (!campaignId) {
+    ctx.res.writeHead(400, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "Missing campaignId" }));
+    return;
+  }
+
+  try {
+    const settings = await campaignService.getCampaignSettings(campaignId);
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ settings }));
+  } catch (error: any) {
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        error: error.message || "Failed to get campaign settings",
+      }),
+    );
+  }
+};
+
+/**
+ * PUT /campaigns/:campaignId/settings - Update campaign settings
+ */
+export const updateCampaignSettingsHandler: RouteHandler = async (ctx) => {
+  await requireAuth(ctx);
+  const campaignId = ctx.url.pathname.split("/")[2];
+
+  if (!campaignId) {
+    ctx.res.writeHead(400, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "Missing campaignId" }));
+    return;
+  }
+
+  try {
+    const body = await parseJsonBody(ctx.req);
+    const userId = getAuthenticatedUserId(ctx);
+
+    const success = await campaignService.updateCampaignSettings(campaignId, userId, {
+      isPublic: body.isPublic,
+      allowSpectators: body.allowSpectators,
+      maxPlayers: body.maxPlayers,
+      autoAcceptInvites: body.autoAcceptInvites,
+      requireApproval: body.requireApproval,
+      sessionTimeout: body.sessionTimeout
+    });
+
+    if (!success) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Campaign not found or not authorized" }));
+      return;
+    }
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ success: true }));
+  } catch (error: any) {
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        error: error.message || "Failed to update campaign settings",
       }),
     );
   }

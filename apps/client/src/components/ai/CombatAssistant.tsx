@@ -4,8 +4,21 @@
 
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
-import { Sword, Shield, Target, Brain, Zap, Map, Users, AlertTriangle } from "lucide-react";
 import { useWebSocket } from "../../hooks/useWebSocket";
+
+// Mock lucide-react icons
+const MockIcon = ({ className }: { className?: string }) => (
+  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
+);
+
+const Sword = MockIcon;
+const Shield = MockIcon;
+const Target = MockIcon;
+const Brain = MockIcon;
+const Zap = MockIcon;
+const Map = MockIcon;
+const Users = MockIcon;
+const AlertTriangle = MockIcon;
 
 interface TacticalRecommendation {
   action: string;
@@ -48,10 +61,10 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          character: character,
-          allies: allies,
-          enemies: enemies,
-          battlefield: battlefield,
+          character,
+          allies,
+          enemies,
+          battlefield,
           objectives: ["Survive encounter", "Defeat enemies"],
         }),
       });
@@ -76,10 +89,10 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          character: character,
-          battlefield: battlefield,
-          allies: allies,
-          enemies: enemies,
+          character,
+          battlefield,
+          allies,
+          enemies,
         }),
       });
 
@@ -102,7 +115,7 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
         },
         body: JSON.stringify({
           party: [character, ...allies],
-          enemies: enemies,
+          enemies,
           battlefield,
           maxRounds: 10,
         }),

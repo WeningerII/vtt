@@ -20,38 +20,8 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Vendor chunks for better caching
+          // Conservative vendor chunking to avoid resolution errors
           "react-vendor": ["react", "react-dom"],
-          "ui-vendor": ["@headlessui/react", "@heroicons/react"],
-          "game-vendor": ["three", "cannon-es"],
-          "utils-vendor": ["lodash", "date-fns", "uuid"],
-
-          // Feature-based chunks
-          auth: [
-            "./src/components/auth/LoginForm",
-            "./src/components/auth/RegisterForm",
-            "./src/providers/AuthProvider",
-          ],
-          "game-canvas": ["./src/components/GameCanvas", "./src/components/MapEditor"],
-          "character-management": [
-            "./src/components/CharacterSheet",
-            "./src/components/character/AbilityScores",
-            "./src/components/character/EquipmentPanel",
-            "./src/components/character/SpellsPanel",
-          ],
-          "monster-browser": [
-            "./src/components/MonsterBrowser",
-            "./src/components/EncounterGenerator",
-          ],
-          combat: [
-            "./src/components/CombatTracker",
-            "./src/components/combat/CombatEncounterPanel",
-          ],
-          "ai-features": [
-            "./src/components/AIAssistant",
-            "./src/components/ai/CombatAssistant",
-            "./src/components/ai/GenesisWizard",
-          ],
         },
       },
     },

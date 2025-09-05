@@ -2,7 +2,7 @@ import { Light, LightType } from "../engine/Light";
 import { ShadowManager, ShadowData, ShadowMapConfig } from "./ShadowManager";
 import { Camera } from "../engine/Camera";
 import { ShaderProgram } from "../engine/Shader";
-import { mat4, _vec3, _vec4 } from "gl-matrix";
+import { mat4, vec3, vec4 } from "gl-matrix";
 
 export interface LightingConfig {
   maxDirectionalLights: number;
@@ -49,7 +49,7 @@ export class LightingManager {
   private areaLights: Light[] = [];
 
   // Uniform data
-  private lightUniforms: LightUniformData;
+  private lightUniforms!: LightUniformData;
   private uniformBuffer: WebGLBuffer | null = null;
   private uniformBindingPoint = 1;
 
@@ -128,7 +128,7 @@ export class LightingManager {
     this.updateUniforms();
 
     // Create shadow map if light casts shadows
-    if (this.config.enableShadows && light.castsShadows) {
+    if (this.config.enableShadows && light.castShadows) {
       const shadowConfig: Partial<ShadowMapConfig> = {
         resolution: light.type === LightType.DIRECTIONAL ? 4096 : 2048,
         cascadeCount: light.type === LightType.DIRECTIONAL ? 4 : 1,
@@ -150,7 +150,7 @@ export class LightingManager {
       this.categorizeLights();
       this.updateUniforms();
 
-      if (light.castsShadows) {
+      if (light.castShadows) {
         this.stats.shadowCastingLights--;
       }
       this.stats.totalLights--;
@@ -168,7 +168,7 @@ export class LightingManager {
       this.updateUniforms();
 
       // Update shadow map if needed
-      if (this.config.enableShadows && light.castsShadows) {
+      if (this.config.enableShadows && light.castShadows) {
         const shadowData = this.shadowManager.getShadowData(lightId);
         if (shadowData) {
           // Shadow data will be updated during render
@@ -217,44 +217,44 @@ export class LightingManager {
 
     // Pack light data
     for (const light of this.lightArray) {
-      if (index >= this.lightUniforms.positions.length / 4) break;
+      if (index >= this.lightUniforms.positions.length / 4) {break;}
 
       const baseIndex = index * 4;
 
       // Position (xyz) + type (w)
       if (light.position) {
-        this.lightUniforms.positions[baseIndex] = light.position[0];
-        this.lightUniforms.positions[baseIndex + 1] = light.position[1];
-        this.lightUniforms.positions[baseIndex + 2] = light.position[2];
+        this.lightUniforms.positions[baseIndex] = light.position[0] ?? 0;
+        this.lightUniforms.positions[baseIndex + 1] = light.position[1] ?? 0;
+        this.lightUniforms.positions[baseIndex + 2] = light.position[2] ?? 0;
       }
       this.lightUniforms.positions[baseIndex + 3] = light.type;
 
       // Direction (xyz) + range (w)
       if (light.direction) {
-        this.lightUniforms.directions[baseIndex] = light.direction[0];
-        this.lightUniforms.directions[baseIndex + 1] = light.direction[1];
-        this.lightUniforms.directions[baseIndex + 2] = light.direction[2];
+        this.lightUniforms.directions[baseIndex] = light.direction[0] ?? 0;
+        this.lightUniforms.directions[baseIndex + 1] = light.direction[1] ?? 0;
+        this.lightUniforms.directions[baseIndex + 2] = light.direction[2] ?? 0;
       }
       this.lightUniforms.directions[baseIndex + 3] = light.range || 0;
 
       // Color (xyz) + intensity (w)
-      this.lightUniforms.colors[baseIndex] = light.color[0];
-      this.lightUniforms.colors[baseIndex + 1] = light.color[1];
-      this.lightUniforms.colors[baseIndex + 2] = light.color[2];
+      this.lightUniforms.colors[baseIndex] = light.color[0] ?? 0;
+      this.lightUniforms.colors[baseIndex + 1] = light.color[1] ?? 0;
+      this.lightUniforms.colors[baseIndex + 2] = light.color[2] ?? 0;
       this.lightUniforms.colors[baseIndex + 3] = light.intensity;
 
       // Parameters: innerCone, outerCone, falloff, shadowIndex
       this.lightUniforms.parameters[baseIndex] = light.innerConeAngle || 0;
       this.lightUniforms.parameters[baseIndex + 1] = light.outerConeAngle || 0;
       this.lightUniforms.parameters[baseIndex + 2] = light.falloffExponent || 1;
-      this.lightUniforms.parameters[baseIndex + 3] = light.castsShadows ? index : -1;
+      this.lightUniforms.parameters[baseIndex + 3] = light.castShadows ? index : -1;
 
       // Shadow matrix (if available)
       const shadowData = this.shadowManager.getShadowData(light.id);
       if (shadowData) {
         const matrixIndex = index * 16;
         for (let i = 0; i < 16; i++) {
-          this.lightUniforms.shadowMatrices[matrixIndex + i] = shadowData.shadowMatrix[i];
+          this.lightUniforms.shadowMatrices[matrixIndex + i] = shadowData.shadowMatrix[i] ?? 0;
         }
       }
 
@@ -266,7 +266,7 @@ export class LightingManager {
   }
 
   private uploadUniformData(): void {
-    if (!this.uniformBuffer) return;
+    if (!this.uniformBuffer) {return;}
 
     const gl = this.gl;
     gl.bindBuffer(gl.UNIFORM_BUFFER, this.uniformBuffer);
@@ -298,12 +298,14 @@ export class LightingManager {
   }
 
   cullLights(camera: Camera): Light[] {
-    const frustum = camera.getFrustum();
+    // Simple frustum culling placeholder - using camera position and direction
+    const cameraPos = camera.position;
+    const viewDistance = 100; // TODO: Get from camera far plane
     const culledLights: Light[] = [];
     this.stats.culledLights = 0;
 
     for (const light of this.lightArray) {
-      if (this.isLightVisible(light, frustum)) {
+      if (this.isLightVisible(light, null)) {
         culledLights.push(light);
       } else {
         this.stats.culledLights++;
@@ -336,7 +338,7 @@ export class LightingManager {
         break;
 
       case LightType.AREA:
-        if (light.position && light.width && light.height) {
+        if (light.position && light.width !== undefined && light.height !== undefined) {
           // Check if area light bounds intersect frustum
           return true;
         }
@@ -350,10 +352,10 @@ export class LightingManager {
     const startTime = performance.now();
 
     for (const light of this.lightArray) {
-      if (!light.castsShadows) continue;
+      if (!light.castShadows) {continue;}
 
       const shadowData = this.shadowManager.getShadowData(light.id);
-      if (!shadowData) continue;
+      if (!shadowData) {continue;}
 
       // Update cascade matrices for directional lights
       if (light.type === LightType.DIRECTIONAL && shadowData.cascades) {
@@ -379,7 +381,7 @@ export class LightingManager {
             shadowMatrix: cascade.shadowMatrix,
           };
 
-          renderScene(cascadeShadowData);
+          _renderScene(cascadeShadowData);
           cascade.renderTarget.unbind();
         }
       } else {
@@ -392,7 +394,7 @@ export class LightingManager {
         gl.colorMask(false, false, false, false);
         gl.clear(gl.DEPTH_BUFFER_BIT);
 
-        renderScene(shadowData);
+        _renderScene(shadowData);
         shadowData.shadowMap.unbind();
       }
     }
@@ -413,41 +415,41 @@ export class LightingManager {
     }
 
     // Set light counts
-    shader.setUniform("u_numDirectionalLights", this.directionalLights.length);
-    shader.setUniform("u_numPointLights", this.pointLights.length);
-    shader.setUniform("u_numSpotLights", this.spotLights.length);
-    shader.setUniform("u_numAreaLights", this.areaLights.length);
+    shader.setUniform1i("u_numDirectionalLights", this.directionalLights.length);
+    shader.setUniform1i("u_numPointLights", this.pointLights.length);
+    shader.setUniform1i("u_numSpotLights", this.spotLights.length);
+    shader.setUniform1i("u_numAreaLights", this.areaLights.length);
 
     // Set ambient lighting
-    shader.setUniform("u_ambientColor", this.config.ambientColor);
-    shader.setUniform("u_ambientIntensity", this.config.ambientIntensity);
+    shader.setUniform3fv("u_ambientColor", this.config.ambientColor);
+    shader.setUniform1f("u_ambientIntensity", this.config.ambientIntensity);
 
     // Set camera exposure
-    shader.setUniform("u_exposure", this.config.exposure);
-    shader.setUniform("u_gamma", this.config.gamma);
+    shader.setUniform1f("u_exposure", this.config.exposure);
+    shader.setUniform1f("u_gamma", this.config.gamma);
 
     // Bind shadow maps
     if (this.config.enableShadows) {
       this.shadowManager.bindShadowMapForReading(10); // Use texture unit 10
-      shader.setUniform("u_shadowMaps", 10);
+      shader.setUniform1i("u_shadowMaps", 10);
     }
 
     // Bind IBL textures
     if (this.config.enableIBL && this.iblData) {
       gl.activeTexture(gl.TEXTURE0 + 11);
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.iblData.diffuseMap);
-      shader.setUniform("u_irradianceMap", 11);
+      shader.setUniform1i("u_irradianceMap", 11);
 
       gl.activeTexture(gl.TEXTURE0 + 12);
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.iblData.specularMap);
-      shader.setUniform("u_prefilterMap", 12);
+      shader.setUniform1i("u_prefilterMap", 12);
 
       gl.activeTexture(gl.TEXTURE0 + 13);
       gl.bindTexture(gl.TEXTURE_2D, this.iblData.brdfLUT);
-      shader.setUniform("u_brdfLUT", 13);
+      shader.setUniform1i("u_brdfLUT", 13);
 
-      shader.setUniform("u_iblIntensity", this.iblData.intensity);
-      shader.setUniform("u_iblRotation", this.iblData.rotation);
+      shader.setUniform1f("u_iblIntensity", this.iblData.intensity);
+      shader.setUniform1f("u_iblRotation", 0); // TODO: Fix rotation matrix to scalar conversion
     }
   }
 

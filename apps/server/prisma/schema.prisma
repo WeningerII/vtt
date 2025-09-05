@@ -79,14 +79,42 @@ model Map {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  displayName String
-  createdAt   DateTime @default(now())
-  memberships CampaignMember[]
-  messages    ChatMessage[]
+  id              String   @id @default(uuid())
+  email           String   @unique
+  username        String   @unique
+  displayName     String
+  passwordHash    String
+  avatar          String?
+  role            String   @default("player") // admin, moderator, gamemaster, player, guest
+  permissions     Json     @default("[]") // Array of permission strings
+  subscription    String   @default("free") // free, basic, premium, enterprise
+  isEmailVerified Boolean  @default(false)
+  lastLogin       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  memberships     CampaignMember[]
+  messages        ChatMessage[]
+  refreshTokens   RefreshToken[]
 
+  @@index([email]) // For login
+  @@index([username]) // For username lookup
   @@index([displayName]) // For user search
   @@index([createdAt]) // For pagination and sorting
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
 }
 
 model Campaign {
@@ -95,6 +123,7 @@ model Campaign {
   createdAt DateTime @default(now())
   members   CampaignMember[]
   scenes    Scene[]
+  settings  CampaignSettings?
 
   @@index([name]) // For campaign search
   @@index([createdAt]) // For pagination and sorting
@@ -103,8 +132,12 @@ model Campaign {
 model CampaignMember {
   id         String   @id @default(uuid())
   role       String
+  status     String   @default("active") // active, invited, kicked, banned
   userId     String
   campaignId String
+  joinedAt   DateTime @default(now())
+  invitedAt  DateTime?
+  invitedBy  String?
   user       User     @relation(fields: [userId], references: [id])
   campaign   Campaign @relation(fields: [campaignId], references: [id])
 
@@ -112,6 +145,7 @@ model CampaignMember {
   @@index([userId]) // Foreign key index
   @@index([campaignId]) // Foreign key index
   @@index([role, campaignId]) // For role-based queries
+  @@index([status, campaignId]) // For status-based queries
 }
 
 model Scene {
@@ -159,6 +193,21 @@ model Character {
   @@index([provider, model]) // For provider analytics
   @@index([createdAt]) // For pagination and sorting
   @@index([cost]) // For cost analytics
+}
+
+/// Monster statblocks and data for encounters
+model Monster {
+  id         String   @id @default(uuid())
+  stableId   String   @unique // Stable identifier for SRD monsters
+  name       String
+  statblock  Json     // Full monster statblock data
+  tags       Json     @default("[]") // Tags for categorization and search (JSON array)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([name]) // For monster search
+  @@index([stableId]) // For SRD monster lookup
+  @@index([createdAt]) // For pagination and sorting
 }
 
 model Asset {
@@ -316,4 +365,21 @@ model EncounterToken {
   @@index([tokenId]) // For token queries
   @@index([initiative]) // For initiative sorting
   @@index([isActive]) // For active token filtering
+}
+
+model CampaignSettings {
+  id                String   @id @default(uuid())
+  campaignId        String   @unique
+  isPublic          Boolean  @default(false)
+  allowSpectators   Boolean  @default(true)
+  maxPlayers        Int      @default(6)
+  autoAcceptInvites Boolean  @default(false)
+  requireApproval   Boolean  @default(true)
+  sessionTimeout    Int      @default(240) // minutes
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@index([campaignId]) // For campaign settings lookup
 }

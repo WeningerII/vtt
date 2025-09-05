@@ -116,13 +116,14 @@ export class ShadowManager {
       return this.createCascadedShadowMap(light, config);
     }
 
-    const shadowMap = new RenderTarget(this.gl, {
-      width: config.resolution,
-      height: config.resolution,
-      hasDepthBuffer: true,
-      depthFormat: this.gl.DEPTH_COMPONENT24,
-      colorBuffers: [], // Depth-only rendering
-    });
+    const shadowMap = new RenderTarget(
+      this.gl,
+      config.resolution,
+      config.resolution,
+      {
+        depthFormat: this.gl.DEPTH_COMPONENT24,
+      }
+    );
 
     // Calculate light view and projection matrices
     const lightViewMatrix = mat4.create();
@@ -152,13 +153,14 @@ export class ShadowManager {
 
     // Create render targets for each cascade
     for (let i = 0; i < cascadeCount; i++) {
-      const renderTarget = new RenderTarget(this.gl, {
-        width: config.resolution,
-        height: config.resolution,
-        hasDepthBuffer: true,
-        depthFormat: this.gl.DEPTH_COMPONENT24,
-        colorBuffers: [],
-      });
+      const renderTarget = new RenderTarget(
+        this.gl,
+        config.resolution,
+        config.resolution,
+        {
+          depthFormat: this.gl.DEPTH_COMPONENT24,
+        }
+      );
 
       cascades.push({
         viewMatrix: mat4.create(),
@@ -170,13 +172,14 @@ export class ShadowManager {
     }
 
     // Main shadow map (combined)
-    const shadowMap = new RenderTarget(this.gl, {
-      width: config.resolution * 2, // 2x2 grid for 4 cascades
-      height: config.resolution * 2,
-      hasDepthBuffer: true,
-      depthFormat: this.gl.DEPTH_COMPONENT24,
-      colorBuffers: [],
-    });
+    const shadowMap = new RenderTarget(
+      this.gl,
+      config.resolution * 2, // 2x2 grid for 4 cascades
+      config.resolution * 2,
+      {
+        depthFormat: this.gl.DEPTH_COMPONENT24,
+      }
+    );
 
     return {
       light,
@@ -190,13 +193,14 @@ export class ShadowManager {
   }
 
   private createSpotShadowMap(light: Light, config: ShadowMapConfig): ShadowData {
-    const shadowMap = new RenderTarget(this.gl, {
-      width: config.resolution,
-      height: config.resolution,
-      hasDepthBuffer: true,
-      depthFormat: this.gl.DEPTH_COMPONENT24,
-      colorBuffers: [],
-    });
+    const shadowMap = new RenderTarget(
+      this.gl,
+      config.resolution,
+      config.resolution,
+      {
+        depthFormat: this.gl.DEPTH_COMPONENT24,
+      }
+    );
 
     const lightViewMatrix = mat4.create();
     const lightProjectionMatrix = mat4.create();
@@ -247,25 +251,16 @@ export class ShadowManager {
     // Create framebuffer for cube map rendering
     const framebuffer = gl.createFramebuffer();
 
-    const shadowMap = {
-      framebuffer,
-      colorTexture: null,
-      depthTexture: cubeMapTexture,
-      width: config.resolution,
-      height: config.resolution,
-      bind: () => {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-        gl.viewport(0, 0, config.resolution, config.resolution);
-      },
-      unbind: () => {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      },
-      resize: () => {}, // Cube maps don't resize
-      dispose: () => {
-        gl.deleteFramebuffer(framebuffer);
-        gl.deleteTexture(cubeMapTexture);
-      },
-    } as RenderTarget;
+    // Create a proper RenderTarget for cube map
+    const shadowMap = new RenderTarget(
+      gl,
+      config.resolution,
+      config.resolution,
+      {
+        depthFormat: gl.DEPTH_COMPONENT24,
+        samples: 1
+      }
+    );
 
     return {
       light,
@@ -278,7 +273,7 @@ export class ShadowManager {
   }
 
   updateCascadedShadowMap(shadowData: ShadowData, camera: Camera): void {
-    if (!shadowData.cascades) return;
+    if (!shadowData.cascades) {return;}
 
     const { cascades, config } = shadowData;
     const cascadeCount = cascades.length;
@@ -296,7 +291,8 @@ export class ShadowManager {
     // Update each cascade
     for (let i = 0; i < cascadeCount; i++) {
       const cascade = cascades[i];
-      cascade.splitDistance = splitDistances[i + 1];
+      if (!cascade) {continue;}
+      cascade.splitDistance = splitDistances[i + 1] ?? 0;
 
       // Calculate frustum for this cascade
       const frustumNear = i === 0 ? nearPlane : splitDistances[i];
@@ -305,11 +301,11 @@ export class ShadowManager {
       this.calculateCascadeMatrices(
         shadowData.light,
         camera,
-        frustumNear,
-        frustumFar,
-        cascade.viewMatrix,
-        cascade.projectionMatrix,
-        cascade.shadowMatrix,
+        frustumNear ?? 0,
+        frustumFar ?? 0,
+        cascade?.viewMatrix,
+        cascade?.projectionMatrix,
+        cascade?.shadowMatrix,
       );
     }
   }
@@ -344,7 +340,7 @@ export class ShadowManager {
     const lightDirection = vec3.normalize(vec3.create(), light.direction!);
     const lightPosition = vec3.scale(vec3.create(), lightDirection, -100); // Far away position
     const up =
-      Math.abs(lightDirection[1]) > 0.99 ? vec3.fromValues(1, 0, 0) : vec3.fromValues(0, 1, 0);
+      Math.abs(lightDirection[1] ?? 0) > 0.99 ? vec3.fromValues(1, 0, 0) : vec3.fromValues(0, 1, 0);
     const target = vec3.add(vec3.create(), lightPosition, lightDirection);
 
     mat4.lookAt(viewMatrix, lightPosition, target, up);
@@ -386,7 +382,7 @@ export class ShadowManager {
     const lightPosition = light.position!;
     const lightDirection = vec3.normalize(vec3.create(), light.direction!);
     const up =
-      Math.abs(lightDirection[1]) > 0.99 ? vec3.fromValues(1, 0, 0) : vec3.fromValues(0, 1, 0);
+      Math.abs(lightDirection[1] ?? 0) > 0.99 ? vec3.fromValues(1, 0, 0) : vec3.fromValues(0, 1, 0);
     const target = vec3.add(vec3.create(), lightPosition, lightDirection);
 
     mat4.lookAt(viewMatrix, lightPosition, target, up);
@@ -439,7 +435,7 @@ export class ShadowManager {
     const lightDirection = vec3.normalize(vec3.create(), light.direction!);
     const lightPosition = vec3.scaleAndAdd(vec3.create(), center, lightDirection, -radius * 2);
     const up =
-      Math.abs(lightDirection[1]) > 0.99 ? vec3.fromValues(1, 0, 0) : vec3.fromValues(0, 1, 0);
+      Math.abs(lightDirection[1] ?? 0) > 0.99 ? vec3.fromValues(1, 0, 0) : vec3.fromValues(0, 1, 0);
 
     mat4.lookAt(viewMatrix, lightPosition, center, up);
 
@@ -641,7 +637,7 @@ export class ShadowManager {
       averageResolution:
         this.shadowMaps.size > 0
           ? Array.from(this.shadowMaps.values()).reduce(
-              (_sum, _data) => sum + data.config.resolution,
+              (sum, data) => sum + data.config.resolution,
               0,
             ) / this.shadowMaps.size
           : 0,

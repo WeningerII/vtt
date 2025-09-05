@@ -3,15 +3,15 @@
  */
 import { Router } from "express";
 import { UserManager } from "../UserManager";
-import { BillingManager } from "../BillingManager";
+import { StripeService } from "../services/StripeService";
 import { NotificationManager } from "../NotificationManager";
 import { AuthRoutes } from "./AuthRoutes";
-import { BillingRoutes } from "./BillingRoutes";
+import { BillingRoutesStripe } from "./BillingRoutesStripe";
 import { NotificationRoutes } from "./NotificationRoutes";
 
 export interface UserManagementApiConfig {
   userManager: UserManager;
-  billingManager: BillingManager;
+  stripeService: StripeService;
   notificationManager: NotificationManager;
 }
 
@@ -23,7 +23,7 @@ export function createUserManagementApi(config: UserManagementApiConfig): Router
 
   // Create route handlers
   const authRoutes = new AuthRoutes(config.userManager, config.notificationManager);
-  const billingRoutes = new BillingRoutes(config.billingManager, config.userManager);
+  const billingRoutes = new BillingRoutesStripe(config.stripeService, config.userManager);
   const notificationRoutes = new NotificationRoutes(config.notificationManager, config.userManager);
 
   // Mount routes
@@ -38,7 +38,7 @@ export function createUserManagementApi(config: UserManagementApiConfig): Router
       timestamp: new Date().toISOString(),
       services: {
         userManager: "active",
-        billingManager: "active",
+        stripeService: "active",
         notificationManager: "active",
       },
     });
@@ -100,7 +100,7 @@ export function createUserManagementApi(config: UserManagementApiConfig): Router
 
 // Export route classes for individual use
 export { AuthRoutes } from "./AuthRoutes";
-export { BillingRoutes } from "./BillingRoutes";
+export { BillingRoutesStripe } from "./BillingRoutesStripe";
 export { NotificationRoutes } from "./NotificationRoutes";
 export {
   authenticateUser,

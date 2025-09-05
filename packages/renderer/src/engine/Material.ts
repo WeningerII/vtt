@@ -1,4 +1,4 @@
-import { vec3, _vec4 } from "gl-matrix";
+import { vec3, vec4 } from "gl-matrix";
 import { TextureManager } from "./TextureManager";
 import { ShaderProgram } from "./Shader";
 
@@ -105,10 +105,10 @@ export class Material {
 
   bindTextures(gl: WebGL2RenderingContext, textureManager: TextureManager): void {
     for (const [textureName, texturePath] of Object.entries(this.textures)) {
-      if (!texturePath) continue;
+      if (!texturePath) {continue;}
 
       const slot = this.textureSlots.get(textureName);
-      if (slot === undefined) continue;
+      if (slot === undefined) {continue;}
 
       gl.activeTexture(gl.TEXTURE0 + slot);
 
@@ -126,22 +126,22 @@ export class Material {
     // Material properties
     shader.setUniform3f(
       "u_albedo",
-      this.properties.albedo![0],
-      this.properties.albedo![1],
-      this.properties.albedo![2],
+      this.properties.albedo?.[0] ?? 1,
+      this.properties.albedo?.[1] ?? 1,
+      this.properties.albedo?.[2] ?? 1,
     );
-    shader.setUniform1f("u_metallic", this.properties.metallic!);
-    shader.setUniform1f("u_roughness", this.properties.roughness!);
-    shader.setUniform1f("u_normalScale", this.properties.normalScale!);
+    shader.setUniform1f("u_metallic", this.properties.metallic ?? 0);
+    shader.setUniform1f("u_roughness", this.properties.roughness ?? 1);
+    shader.setUniform1f("u_normalScale", this.properties.normalScale ?? 1);
     shader.setUniform3f(
       "u_emissive",
-      this.properties.emissive![0],
-      this.properties.emissive![1],
-      this.properties.emissive![2],
+      this.properties.emissive?.[0] ?? 0,
+      this.properties.emissive?.[1] ?? 0,
+      this.properties.emissive?.[2] ?? 0,
     );
-    shader.setUniform1f("u_emissiveIntensity", this.properties.emissiveIntensity!);
-    shader.setUniform1f("u_opacity", this.properties.opacity!);
-    shader.setUniform1f("u_alphaTest", this.properties.alphaTest!);
+    shader.setUniform1f("u_emissiveIntensity", this.properties.emissiveIntensity ?? 1);
+    shader.setUniform1f("u_opacity", this.properties.opacity ?? 1);
+    shader.setUniform1f("u_alphaTest", this.properties.alphaTest ?? 0);
 
     // Texture samplers
     for (const [textureName, slot] of this.textureSlots) {
@@ -331,7 +331,7 @@ export class Material {
       {
         albedo: color,
       },
-      texture ? { albedoMap: texture } : Record<string, any>,
+      texture ? { albedoMap: texture } : {} as Record<string, any>,
     );
   }
 

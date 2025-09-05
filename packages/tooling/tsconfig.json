@@ -5,9 +5,17 @@
     "rootDir": "src",
     "incremental": true,
     "tsBuildInfoFile": "./tooling.tsbuildinfo",
-    "composite": true
+    "composite": true,
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "@vtt/*": ["../../packages/*/src"]
+    }
   },
   "include": [
     "src"
+  ],
+  "references": [
+    { "path": "../logging" }
   ]
 }
