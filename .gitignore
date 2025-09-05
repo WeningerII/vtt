@@ -19,6 +19,17 @@ node_modules
 # Build outputs
 **/dist/
 **/*.tsbuildinfo
+**/*.d.ts
+**/*.js
+**/*.js.map
+**/*.d.ts.map
+.turbo/
+**/.turbo/
+
+# Analysis and scan files
+exhaustive-scan-*.csv
+exhaustive-scan-*.json
+fix-*.js
 
 # Test outputs
 test-results/

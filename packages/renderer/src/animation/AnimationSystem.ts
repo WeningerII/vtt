@@ -1,4 +1,4 @@
-/// <reference path="../types/webgpu.d.ts" />
+/// <reference path="../webgpu-types.d.ts" />
 // WebGPU types and constants are available as browser globals
 /**
  * Professional Animation System - Triple A Quality

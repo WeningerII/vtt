@@ -484,10 +484,10 @@ export class WebGLEngine {
     shader.use();
 
     // Set common uniforms
-    shader.setUniformMatrix4fv("u_mvpMatrix", this.mvpMatrix);
-    shader.setUniformMatrix4fv("u_modelMatrix", this.modelMatrix);
-    shader.setUniformMatrix4fv("u_viewMatrix", this.viewMatrix);
-    shader.setUniformMatrix4fv("u_projectionMatrix", this.projectionMatrix);
+    shader.setUniformMatrix4fv("u_mvpMatrix", new Float32Array(this.mvpMatrix));
+    shader.setUniformMatrix4fv("u_modelMatrix", new Float32Array(this.modelMatrix));
+    shader.setUniformMatrix4fv("u_viewMatrix", new Float32Array(this.viewMatrix));
+    shader.setUniformMatrix4fv("u_projectionMatrix", new Float32Array(this.projectionMatrix));
 
     // Set lighting uniforms
     shader.setUniform3fv("u_lightPositions", this.lightUniforms.positions);

@@ -457,13 +457,17 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
 
     // Destroy shared buffers
     for (const buffer of this.sharedBuffers.values()) {
-      buffer.buffer.destroy();
+      if (buffer.buffer && 'destroy' in buffer.buffer) {
+        (buffer.buffer as any).destroy();
+      }
     }
     this.sharedBuffers.clear();
 
     // Destroy shared textures
     for (const texture of this.sharedTextures.values()) {
-      texture.texture.destroy();
+      if (texture.texture && 'destroy' in texture.texture) {
+        (texture.texture as any).destroy();
+      }
     }
     this.sharedTextures.clear();
 
