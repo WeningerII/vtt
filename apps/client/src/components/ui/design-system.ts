@@ -346,19 +346,19 @@ export const components = {
 // Utility functions for design system
 export const utils = {
   // Create consistent focus styles
-  focusRing: (_color = colors.primary[500]) => ({
+  focusRing: (color = colors.primary[500]) => ({
     outline: "2px solid transparent",
     outlineOffset: "2px",
     boxShadow: `0 0 0 2px ${color}`,
   }),
 
   // Create gradient backgrounds
-  gradient: (_from: string, _to: string, _direction = "to right") => ({
+  gradient: (from: string, to: string, direction = "to right") => ({
     background: `linear-gradient(${direction}, ${from}, ${to})`,
   }),
 
   // Create glass morphism effect
-  glassMorphism: (_opacity = 0.1) => ({
+  glassMorphism: (opacity = 0.1) => ({
     background: `rgba(255, 255, 255, ${opacity})`,
     backdropFilter: "blur(10px)",
     border: "1px solid rgba(255, 255, 255, 0.2)",

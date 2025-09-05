@@ -19,10 +19,9 @@ import {
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/Tabs";
 import { Switch } from "../ui/Switch";
 import { Slider } from "../ui/Slider";
-import { _cn } from "../../lib/utils";
+import { cn } from "../../lib/utils";
 
 interface SceneSettingsModalProps {
   isOpen: boolean;
@@ -100,129 +99,169 @@ const DEFAULT_SETTINGS: SceneSettings = {
   },
 };
 
-export function SceneSettingsModal({
+export const SceneSettingsModal: React.FC<SceneSettingsModalProps> = ({
   isOpen,
-  _onClose,
-  _sceneId,
-  _initialSettings,
-  _onSettingsUpdate,
-}: SceneSettingsModalProps) {
-  const [settings, setSettings] = useState<SceneSettings>(initialSettings || DEFAULT_SETTINGS);
-  const [activeTab, setActiveTab] = useState("grid");
+  onClose,
+  sceneId,
+  initialSettings,
+  onSettingsUpdate,
+}) => {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  const [settings, setSettings] = useState<SceneSettings>(initialSettings || {
+    grid: {
+      enabled: false,
+      size: 25,
+      opacity: 0.5,
+      color: "#ffffff",
+      type: "square",
+      snapToGrid: true,
+      showLabels: false,
+      offsetX: 0,
+      offsetY: 0,
+    },
+    lighting: initialSettings?.lighting || {
+      enabled: false,
+      ambientLight: 0.2,
+      shadowQuality: "medium",
+      globalIllumination: false,
+      colorTemperature: 5500,
+      contrast: 1.0,
+    },
+    fog: initialSettings?.fog || {
+      enabled: false,
+      type: "static",
+      color: "#000000",
+      opacity: 0.8,
+      blurRadius: 2,
+      revealOnMove: true,
+      persistReveal: false,
+    },
+  });
 
-  useEffect(() => {
-    if (initialSettings) {
-      setSettings(initialSettings);
-      setHasChanges(false);
-    }
-  }, [initialSettings]);
-
-  if (!isOpen) {return null;}
-
-  const updateGridSettings = (_updates: Partial<GridSettings>) => {
+  const updateGridSettings = (updates: Partial<GridSettings>) => {
+    setHasChanges(true);
     setSettings((prev) => ({
       ...prev,
       grid: { ...prev.grid, ...updates },
     }));
-    setHasChanges(true);
   };
 
-  const updateLightingSettings = (_updates: Partial<LightingSettings>) => {
+  const updateLightingSettings = (updates: Partial<LightingSettings>) => {
+    setHasChanges(true);
     setSettings((prev) => ({
       ...prev,
       lighting: { ...prev.lighting, ...updates },
     }));
-    setHasChanges(true);
   };
 
-  const updateFogSettings = (_updates: Partial<FogSettings>) => {
+  const updateFogSettings = (updates: Partial<FogSettings>) => {
+    setHasChanges(true);
     setSettings((prev) => ({
       ...prev,
       fog: { ...prev.fog, ...updates },
     }));
-    setHasChanges(true);
   };
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      // Call API to update scene settings
-      const response = await fetch(`/api/scenes/${sceneId}/settings`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(settings),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save settings");
-      }
-
-      onSettingsUpdate(settings);
+      setSaving(true);
+      logger.info(`Saving scene settings for scene ${sceneId}`);
+      await onSettingsUpdate(settings);
       setHasChanges(false);
+      onClose();
     } catch (error) {
-      logger.error("Error saving settings:", error);
+      logger.error("Failed to save scene settings:", error);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleReset = () => {
-    setSettings(initialSettings || DEFAULT_SETTINGS);
-    setHasChanges(false);
-  };
-
   const handleClose = () => {
-    if (hasChanges) {
-      const confirm = window.confirm("You have unsaved changes. Are you sure you want to close?");
-      if (!confirm) {return;}
-    }
     onClose();
   };
 
+  const handleReset = () => {
+    setHasChanges(false);
+    setSettings(initialSettings || {
+      grid: {
+        enabled: false,
+        size: 25,
+        opacity: 0.5,
+        color: "#ffffff",
+        type: "square",
+        snapToGrid: true,
+        showLabels: false,
+        offsetX: 0,
+        offsetY: 0,
+      },
+      lighting: {
+        enabled: false,
+        ambientLight: 0.2,
+        shadowQuality: "medium",
+        globalIllumination: false,
+        colorTemperature: 5500,
+        contrast: 1.0,
+      },
+      fog: {
+        enabled: false,
+        type: "static",
+        color: "#000000",
+        opacity: 0.8,
+        blurRadius: 2,
+        revealOnMove: true,
+        persistReveal: false,
+      },
+    });
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <CardHeader className="flex flex-row items-center justify-between pb-4">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="text-xl font-semibold flex items-center gap-2">
             <Settings className="h-5 w-5" />
             Scene Settings
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+          >
             <X className="h-4 w-4" />
           </Button>
         </CardHeader>
 
-        <CardContent className="p-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="grid w-full grid-cols-3 mx-6 mb-4">
-              <TabsTrigger value="grid" className="flex items-center gap-2">
-                <Grid3X3 className="h-4 w-4" />
-                Grid
-              </TabsTrigger>
-              <TabsTrigger value="lighting" className="flex items-center gap-2">
-                <Sun className="h-4 w-4" />
-                Lighting
-              </TabsTrigger>
-              <TabsTrigger value="fog" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Fog of War
-              </TabsTrigger>
-            </TabsList>
+        <CardContent>
+            <div className="w-full">
+              <div className="grid w-full grid-cols-3 mb-6">
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Grid3X3 className="h-4 w-4" />
+                  Grid
+                </Button>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Sun className="h-4 w-4" />
+                  Lighting
+                </Button>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Fog of War
+                </Button>
+              </div>
 
-            <div className="px-6 pb-6 max-h-[60vh] overflow-y-auto">
-              {/* Grid Settings */}
-              <TabsContent value="grid" className="space-y-6 mt-0">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Grid Configuration</h3>
-                  <Switch
-                    checked={settings.grid.enabled}
-                    onCheckedChange={(enabled) => updateGridSettings({ enabled })}
-                  />
+              <div className="mt-6">
+                {/* Grid Settings */}
+                <div className="space-y-6 mt-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">Grid Configuration</h3>
+                    <Switch
+                      checked={settings.grid.enabled}
+                      onCheckedChange={(enabled) => updateGridSettings({ enabled })}
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -289,7 +328,7 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.grid.opacity]}
-                        onValueChange={([_opacity]) => updateGridSettings({ opacity })}
+                        onValueChange={([opacity]) => opacity !== undefined && updateGridSettings({ opacity })}
                         min={0}
                         max={1}
                         step={0.1}
@@ -302,7 +341,7 @@ export function SceneSettingsModal({
                         <span className="text-sm font-medium text-neutral-700">Snap to Grid</span>
                         <Switch
                           checked={settings.grid.snapToGrid}
-                          onCheckedChange={(_snapToGrid) => updateGridSettings({ snapToGrid })}
+                          onCheckedChange={(snapToGrid) => updateGridSettings({ snapToGrid })}
                           disabled={!settings.grid.enabled}
                         />
                       </div>
@@ -311,7 +350,7 @@ export function SceneSettingsModal({
                         <span className="text-sm font-medium text-neutral-700">Show Labels</span>
                         <Switch
                           checked={settings.grid.showLabels}
-                          onCheckedChange={(_showLabels) => updateGridSettings({ showLabels })}
+                          onCheckedChange={(showLabels) => updateGridSettings({ showLabels })}
                           disabled={!settings.grid.enabled}
                         />
                       </div>
@@ -347,15 +386,15 @@ export function SceneSettingsModal({
                     </div>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* Lighting Settings */}
-              <TabsContent value="lighting" className="space-y-6 mt-0">
+              <div className="space-y-6 mt-0">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium">Lighting System</h3>
                   <Switch
                     checked={settings.lighting.enabled}
-                    onCheckedChange={(_enabled) => updateLightingSettings({ enabled })}
+                    onCheckedChange={(enabled) => updateLightingSettings({ enabled })}
                   />
                 </div>
 
@@ -367,8 +406,8 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.lighting.ambientLight]}
-                        onValueChange={([_ambientLight]) =>
-                          updateLightingSettings({ ambientLight })
+                        onValueChange={([ambientLight]) =>
+                          ambientLight !== undefined && updateLightingSettings({ ambientLight })
                         }
                         min={0}
                         max={1}
@@ -403,7 +442,7 @@ export function SceneSettingsModal({
                       </span>
                       <Switch
                         checked={settings.lighting.globalIllumination}
-                        onCheckedChange={(_globalIllumination) =>
+                        onCheckedChange={(globalIllumination) =>
                           updateLightingSettings({ globalIllumination })
                         }
                         disabled={!settings.lighting.enabled}
@@ -418,8 +457,8 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.lighting.colorTemperature]}
-                        onValueChange={([_colorTemperature]) =>
-                          updateLightingSettings({ colorTemperature })
+                        onValueChange={([colorTemperature]) =>
+                          colorTemperature !== undefined && updateLightingSettings({ colorTemperature })
                         }
                         min={2000}
                         max={8000}
@@ -434,7 +473,7 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.lighting.contrast]}
-                        onValueChange={([_contrast]) => updateLightingSettings({ contrast })}
+                        onValueChange={([contrast]) => contrast !== undefined && updateLightingSettings({ contrast })}
                         min={0.5}
                         max={2.0}
                         step={0.1}
@@ -443,15 +482,15 @@ export function SceneSettingsModal({
                     </div>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
 
               {/* Fog of War Settings */}
-              <TabsContent value="fog" className="space-y-6 mt-0">
+              <div className="space-y-6 mt-0">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-medium">Fog of War</h3>
                   <Switch
                     checked={settings.fog.enabled}
-                    onCheckedChange={(_enabled) => updateFogSettings({ enabled })}
+                    onCheckedChange={(enabled) => updateFogSettings({ enabled })}
                   />
                 </div>
 
@@ -501,7 +540,7 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.fog.opacity]}
-                        onValueChange={([_opacity]) => updateFogSettings({ opacity })}
+                        onValueChange={([opacity]) => opacity !== undefined && updateFogSettings({ opacity })}
                         min={0}
                         max={1}
                         step={0.1}
@@ -517,7 +556,7 @@ export function SceneSettingsModal({
                       </label>
                       <Slider
                         value={[settings.fog.blurRadius]}
-                        onValueChange={([_blurRadius]) => updateFogSettings({ blurRadius })}
+                        onValueChange={([blurRadius]) => blurRadius !== undefined && updateFogSettings({ blurRadius })}
                         min={0}
                         max={10}
                         step={1}
@@ -530,7 +569,7 @@ export function SceneSettingsModal({
                         <span className="text-sm font-medium text-neutral-700">Reveal on Move</span>
                         <Switch
                           checked={settings.fog.revealOnMove}
-                          onCheckedChange={(_revealOnMove) => updateFogSettings({ revealOnMove })}
+                          onCheckedChange={(revealOnMove) => updateFogSettings({ revealOnMove })}
                           disabled={!settings.fog.enabled}
                         />
                       </div>
@@ -539,14 +578,14 @@ export function SceneSettingsModal({
                         <span className="text-sm font-medium text-neutral-700">Persist Reveal</span>
                         <Switch
                           checked={settings.fog.persistReveal}
-                          onCheckedChange={(_persistReveal) => updateFogSettings({ persistReveal })}
+                          onCheckedChange={(persistReveal) => updateFogSettings({ persistReveal })}
                           disabled={!settings.fog.enabled}
                         />
                       </div>
                     </div>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -575,7 +614,7 @@ export function SceneSettingsModal({
                 </Button>
               </div>
             </div>
-          </Tabs>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,18 +1,13 @@
 import {
   useCallback,
+  useContext,
+  useDebugValue,
   useEffect,
   useLayoutEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
-  useContext,
-  useReducer,
-  useImperativeHandle,
-  useDebugValue,
-  useId,
-  useTransition,
-  useDeferredValue,
-  useSyncExternalStore,
 } from "react";
 
 // Re-export all React hooks for easier imports
@@ -25,12 +20,7 @@ export {
   useState,
   useContext,
   useReducer,
-  useImperativeHandle,
   useDebugValue,
-  useId,
-  useTransition,
-  useDeferredValue,
-  useSyncExternalStore,
 };
 
 // Export type definitions
@@ -43,5 +33,4 @@ export type {
   DependencyList,
   Reducer,
   ReducerState,
-  ReducerAction,
 } from "react";

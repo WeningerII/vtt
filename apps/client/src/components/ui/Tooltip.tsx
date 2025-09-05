@@ -73,6 +73,7 @@ export interface TooltipProps extends VariantProps<typeof tooltipVariants> {
   placement?: Placement;
   showArrow?: boolean;
   delay?: number;
+  hideDelay?: number;
   className?: string;
   disabled?: boolean;
 }
@@ -83,6 +84,7 @@ const Tooltip = memo<TooltipProps>(({
   placement = "top",
   showArrow = true,
   delay = 200,
+  hideDelay = 100,
   variant = "default",
   size = "md",
   className,
@@ -92,7 +94,7 @@ const Tooltip = memo<TooltipProps>(({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const triggerRef = useRef<HTMLElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<number | undefined>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const calculatePosition = useCallback((triggerElement: HTMLElement, tooltipElement: HTMLElement) => {
     const triggerRect = triggerElement.getBoundingClientRect();
@@ -153,27 +155,47 @@ const Tooltip = memo<TooltipProps>(({
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    setIsVisible(false);
-  }, []);
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(false);
+    }, hideDelay);
+  }, [hideDelay]);
+
+  const handleMouseEnter = useCallback(() => {
+    showTooltip();
+  }, [showTooltip]);
+
+  const handleMouseLeave = useCallback(() => {
+    hideTooltip();
+  }, [hideTooltip]);
+
+  const handleFocus = useCallback(() => {
+    showTooltip();
+  }, [showTooltip]);
+
+  const handleBlur = useCallback(() => {
+    hideTooltip();
+  }, [hideTooltip]);
 
   // Clone children to add event handlers
-  const trigger = React.cloneElement(children, {
+  const childElement = React.Children.only(children) as React.ReactElement<any>;
+  
+  return React.cloneElement(childElement, {
     ref: triggerRef,
     onMouseEnter: (e: React.MouseEvent) => {
-      showTooltip();
-      children.props.onMouseEnter?.(e);
+      childElement.props.onMouseEnter?.(e);
+      handleMouseEnter();
     },
     onMouseLeave: (e: React.MouseEvent) => {
-      hideTooltip();
-      children.props.onMouseLeave?.(e);
+      childElement.props.onMouseLeave?.(e);
+      handleMouseLeave();
     },
     onFocus: (e: React.FocusEvent) => {
-      showTooltip();
-      children.props.onFocus?.(e);
+      childElement.props.onFocus?.(e);
+      handleFocus();
     },
     onBlur: (e: React.FocusEvent) => {
-      hideTooltip();
-      children.props.onBlur?.(e);
+      childElement.props.onBlur?.(e);
+      handleBlur();
     },
     "aria-describedby": isVisible ? `tooltip-${Math.random().toString(36).slice(2, 9)}` : undefined
   });
@@ -213,7 +235,7 @@ const Tooltip = memo<TooltipProps>(({
 
   return (
     <>
-      {trigger}
+      {childElement}
       {tooltip && createPortal(tooltip, document.body)}
     </>
   );

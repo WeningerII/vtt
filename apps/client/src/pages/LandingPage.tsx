@@ -4,22 +4,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "../components/ui/Button";
 
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const ArrowRight = MockIcon;
-const LogIn = MockIcon;
-const Play = MockIcon;
-const Users = MockIcon;
-const Zap = MockIcon;
-const Shield = MockIcon;
-const Globe = MockIcon;
-const Gamepad2 = MockIcon;
-const Dice6 = MockIcon;
-const Map = MockIcon;
-const MessageSquare = MockIcon;
 
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { useAuth } from "../providers/AuthProvider";
@@ -39,7 +23,9 @@ import {
   ArrowRight,
   CheckCircle,
   Timer,
-  Wifi
+  Wifi,
+  LogIn,
+  Dice6
 } from "lucide-react";
 
 interface LandingPageProps {

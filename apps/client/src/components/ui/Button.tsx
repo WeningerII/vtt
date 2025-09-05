@@ -169,6 +169,15 @@ const buttonVariants = cva(
           "active:scale-[0.98]",
           "focus-visible:ring-red-500",
         ],
+
+        // Outline - Border-only variant
+        outline: [
+          "bg-transparent border-2 border-white/20",
+          "text-white/90 shadow-sm",
+          "hover:bg-white/5 hover:border-white/30 hover:text-white",
+          "active:bg-white/10",
+          "focus-visible:ring-white/50",
+        ],
       },
       size: {
         xs: 'text-xs px-2.5 py-1 rounded-md',

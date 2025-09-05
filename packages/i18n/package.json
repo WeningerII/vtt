@@ -1,0 +1,20 @@
+{
+  "name": "@vtt/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Internationalization package for VTT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.12",
+    "typescript": "^5.9.2"
+  }
+}

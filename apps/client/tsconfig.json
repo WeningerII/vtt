@@ -87,7 +87,6 @@
   },
   "include": [
     "src/**/*", 
-    "../../packages/i18n/src/**/*",
     "src/i18n/locales/en.json",
     "src/i18n/locales/es.json", 
     "src/i18n/locales/fr.json",

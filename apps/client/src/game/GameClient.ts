@@ -79,7 +79,7 @@ export class GameClient {
   }
 
   private setupWebSocketHandlers(): void {
-    this.wsClient.onState((_state) => {
+    this.wsClient.onState((state) => {
       const isConnected = state === "open";
       if (this.connected !== isConnected) {
         this.connected = isConnected;

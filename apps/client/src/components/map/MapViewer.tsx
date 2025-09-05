@@ -20,10 +20,10 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "../ui/Button";
-import { _cn } from "../../lib/utils";
+import { cn } from "../../lib/utils";
 import { useAuth } from "../../providers/AuthProvider";
-import { useWebSocket, _VTTWebSocketMessage } from "../../hooks/useWebSocket";
-import { Card, CardContent, _CardHeader, _CardTitle } from "../ui/Card";
+import { useWebSocket, VTTWebSocketMessage } from "../../hooks/useWebSocket";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 
 interface MapViewerProps {
   sceneId: string;
@@ -141,19 +141,19 @@ interface MapScene {
 type Tool = "select" | "move" | "measure" | "draw" | "fog";
 
 export const MapViewer: React.FC<MapViewerProps> = ({
-  _sceneId,
-  _campaignId,
-  _isGM,
-  _onTokenSelect,
-  _onTokenMove,
+  sceneId,
+  campaignId,
+  isGM,
+  onTokenSelect,
+  onTokenMove,
 }) => {
   const { user } = useAuth();
-  const sessionId = `session_${campaignId}_${sceneId}`;
+  const wsUrl = `ws://localhost:3001/campaigns/${campaignId}/scenes/${sceneId}`;
 
   // WebSocket integration for real-time collaboration
-  const { _isConnected, _send, lastMessage, _connectedUsers } = useWebSocket({
-    sessionId,
-    userId: user?.id || "anonymous",
+  const { isConnected, send, connectedUsers, lastMessage } = useWebSocket({
+    sessionId: sceneId,
+    userId: user?.id || '',
     campaignId,
     isGM,
     autoConnect: !!user,
@@ -218,8 +218,66 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   }, [scene?.map]);
 
   // Handle WebSocket messages for real-time collaboration
+  const handleWebSocketMessage = useCallback((message: VTTWebSocketMessage) => {
+    switch (message.type) {
+      case "token_move":
+        {
+          const { tokenId, x, y } = message.payload;
+          setScene((prevScene) => {
+            if (!prevScene || !prevScene.tokens) {return prevScene;}
+            const updatedTokens = prevScene.tokens.map((token) =>
+              token.id === tokenId ? { ...token, x, y } : token,
+            );
+            return { ...prevScene, tokens: updatedTokens };
+          });
+        }
+        break;
+
+      case "token_add":
+        {
+          const { token } = message.payload;
+          setScene((prevScene) => {
+            if (!prevScene) {return prevScene;}
+            const currentTokens = prevScene.tokens || [];
+            return { ...prevScene, tokens: [...currentTokens, token] };
+          });
+        }
+        break;
+
+      case "token_remove":
+        {
+          const { tokenId } = message.payload;
+          setScene((prevScene) => {
+            if (!prevScene || !prevScene.tokens) {return prevScene;}
+            const updatedTokens = prevScene.tokens.filter((token) => token.id !== tokenId);
+            return { ...prevScene, tokens: updatedTokens };
+          });
+        }
+        break;
+
+      case "scene_update":
+        {
+          const { updates } = message.payload;
+          setScene((prevScene) => {
+            if (!prevScene) {return prevScene;}
+            return { ...prevScene, ...updates };
+          });
+        }
+        break;
+
+      case "user_join":
+      case "user_leave":
+        // Connected users count is handled in useWebSocket hook
+        break;
+
+      default:
+        logger.warn("Unhandled WebSocket message type:", message.type);
+    }
+  }, []);
+
   useEffect(() => {
     if (!lastMessage) {return;}
+    handleWebSocketMessage(lastMessage);
 
     switch (lastMessage.type) {
       case "token_move":
@@ -301,11 +359,11 @@ export const MapViewer: React.FC<MapViewerProps> = ({
         }
         break;
     }
-  }, [lastMessage]);
+  }, [lastMessage, handleWebSocketMessage]);
 
   // Convert screen coordinates to world coordinates
   const screenToWorld = useCallback(
-    (_screenX: number, _screenY: number) => {
+    (screenX: number, screenY: number) => {
       if (!containerRef.current) {return { x: 0, y: 0 };}
 
       const rect = containerRef.current.getBoundingClientRect();
@@ -319,7 +377,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Convert world coordinates to grid coordinates
   const worldToGrid = useCallback(
-    (_worldX: number, _worldY: number) => {
+    (worldX: number, worldY: number) => {
       if (!scene) {return { gridX: 0, gridY: 0 };}
 
       const { grid } = scene;
@@ -336,7 +394,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Snap coordinates to grid
   const snapToGrid = useCallback(
-    (_worldX: number, _worldY: number) => {
+    (worldX: number, worldY: number) => {
       if (!scene || scene.grid.type === "none") {return { x: worldX, y: worldY };}
 
       const { gridX, gridY } = worldToGrid(worldX, worldY);
@@ -352,7 +410,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Render grid
   const renderGrid = useCallback(
-    (_ctx: CanvasRenderingContext2D) => {
+    (ctx: CanvasRenderingContext2D) => {
       if (!scene || !isGridVisible || scene.grid.type === "none") {return;}
 
       const { grid, width, height } = scene;
@@ -385,7 +443,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Render tokens
   const renderTokens = useCallback(
-    (_ctx: CanvasRenderingContext2D) => {
+    (ctx: CanvasRenderingContext2D) => {
       if (!scene?.tokens) {return;}
 
       scene.tokens.forEach((token) => {
@@ -451,7 +509,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Render spell effects
   const renderSpellEffects = useCallback(
-    (_ctx: CanvasRenderingContext2D) => {
+    (ctx: CanvasRenderingContext2D) => {
       const now = Date.now();
 
       spellEffects.forEach((effect) => {
@@ -597,7 +655,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Render spell projectiles
   const renderSpellProjectiles = useCallback(
-    (_ctx: CanvasRenderingContext2D) => {
+    (ctx: CanvasRenderingContext2D) => {
       const now = Date.now();
 
       spellProjectiles.forEach((projectile) => {
@@ -685,7 +743,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Render spell template preview
   const renderSpellTemplate = useCallback(
-    (_ctx: CanvasRenderingContext2D) => {
+    (ctx: CanvasRenderingContext2D) => {
       if (!spellTemplate) {return;}
 
       ctx.save();
@@ -824,7 +882,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
   // Handle spell casting
   const handleCastSpell = useCallback(
-    async (spell: any, _targets?: string[], _position?: { x: number; y: number }) => {
+    async (spell: any, targets?: string[], position?: { x: number; y: number }) => {
       if (!scene || !selectedToken) {return;}
 
       try {
@@ -854,7 +912,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   );
 
   // Handle spell template preview
-  const handleSpellPreview = useCallback((_spell: any, position: { x: number; y: number }) => {
+  const handleSpellPreview = useCallback((spell: any, position: { x: number; y: number }) => {
     if (!spell.area) {
       setSpellTemplate(null);
       return;
@@ -1002,7 +1060,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
               size="sm"
               onClick={() => setSelectedTool("select")}
             >
-              <MousePointer2 className="h-4 w-4" />
+              <MousePointer className="h-4 w-4" />
             </Button>
             <Button
               variant={selectedTool === "move" ? "primary" : "ghost"}

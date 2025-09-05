@@ -10,34 +10,34 @@ import { AlertTriangle, RotateCcw } from './Icons';
 interface Props {
   fallback?: ReactNode;
   onError?: (error: Error) => void;
-  name?: string;
+  name: string;
 }
 
 interface State {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
 }
 
 export class SimpleErrorBoundary extends Component<PropsWithChildren<Props>, State> {
   constructor(props: PropsWithChildren<Props>) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error) {
-    console.error(`ErrorBoundary [${this.props.name || 'Unknown'}]:`, error);
+  override componentDidCatch(error: Error) {
+    console.error(`ErrorBoundary [${this.props.name}]:`, error);
     this.props.onError?.(error);
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: undefined });
+    this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;
@@ -48,8 +48,7 @@ export class SimpleErrorBoundary extends Component<PropsWithChildren<Props>, Sta
           <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
           <h3 className="font-medium text-gray-900 mb-2">Something went wrong</h3>
           <p className="text-gray-600 mb-4">
-            {this.props.name ? `The ${this.props.name} component ` : 'A component '}
-            encountered an error.
+            The {this.props.name} component encountered an error.
           </p>
           <Button onClick={this.handleRetry} variant="primary" className="flex items-center gap-2 mx-auto">
             <RotateCcw className="h-4 w-4" />
@@ -68,7 +67,7 @@ export const withErrorBoundary = <P extends object>(
   name?: string
 ) => {
   const WithErrorBoundaryComponent = (props: P) => (
-    <SimpleErrorBoundary name={name}>
+    <SimpleErrorBoundary name={name || WrappedComponent.displayName || WrappedComponent.name || 'Unknown'}>
       <WrappedComponent {...props} />
     </SimpleErrorBoundary>
   );
