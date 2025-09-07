@@ -3,11 +3,22 @@
  * Connects equipment effects to ECS components and combat systems
  */
 
-import { EntityId } from "../components/Combat";
+import { EntityId, CombatStore } from "../components/Combat";
 import { StatsStore } from "../components/Stats";
 import { HealthStore } from "../components/Health";
-import { CombatStore } from "../components/Combat";
-import { equipmentEffectsEngine, type Equipment } from "@vtt/equipment-effects";
+// TODO: Implement equipment effects system
+// import { equipmentEffectsEngine, type Equipment } from "@vtt/equipment-effects";
+type Equipment = any;
+const equipmentEffectsEngine = {
+  processEquipmentEffects: () => ({ stats: {}, effects: [] }),
+  initializeCharacterEquipment: (_characterId: string, _equipment: any[]) => {},
+  processTriggers: (_characterId: string, _event: string, _character: any, _context: any) => [],
+  processWeaponAttack: (_characterId: string, _weaponId: string, _attackType: string, _targetId: string, _context: any) => ({ attackBonus: 0, damageBonus: '0', effects: [] }),
+  calculateEquipmentBonuses: (_characterId: string, _character: any) => ({ abilityScores: {}, ac: 0, attackBonus: 0 }),
+  applyPassiveEffects: (_characterId: string, _character: any) => {},
+  rechargeItems: (_characterId: string, _timeOfDay: string) => {},
+  getEquippedItems: (_characterId: string) => []
+};
 
 export interface CharacterEquipmentState {
   characterId: string;
@@ -158,7 +169,10 @@ export class EquipmentIntegrationService {
       // Update ability scores with equipment bonuses
       Object.entries(bonuses.abilityScores).forEach(([ability, bonus]) => {
         if (bonus !== 0) {
-          statsData.abilities[ability as keyof typeof statsData.abilities] += bonus;
+          const abilityValue = statsData.abilities[ability as keyof typeof statsData.abilities];
+          if (typeof abilityValue === 'number' && typeof bonus === 'number') {
+            (statsData.abilities as any)[ability] = abilityValue + bonus;
+          }
         }
       });
 
@@ -188,16 +202,16 @@ export class EquipmentIntegrationService {
       id: characterId,
       entityId: state.entityId,
       hitPoints: {
-        current: healthData.currentHitPoints,
-        max: healthData.maxHitPoints,
-        temporary: healthData.temporaryHitPoints,
+        current: (healthData as any).currentHitPoints || healthData.current || 0,
+        max: (healthData as any).maxHitPoints || healthData.max || 0,
+        temporary: (healthData as any).temporaryHitPoints || healthData.temporary || 0,
       },
       abilities: statsData.abilities,
       armorClass: statsData.armorClass,
       proficiencyBonus: statsData.proficiencyBonus,
       level: statsData.level || 1,
-      class: statsData.characterClass,
-      alignment: statsData.alignment,
+      class: (statsData as any).characterClass || 'Unknown',
+      alignment: (statsData as any).alignment || 'Neutral',
       initiative: combatData?.initiative || 0,
       isInCombat: combatData?.isActive || false,
     };

@@ -1,12 +1,14 @@
 import { RouteHandler } from "../router/types";
 import { parseJsonBody, sendJson } from "../utils/json";
 // import { createAIServices } from "../ai/service";
-import {
-  ListProvidersResponseSchema,
-  TextToImageRequestSchema,
-  DepthRequestSchema,
-  SegmentationRequestSchema,
-} from "@vtt/core-schemas";
+// These schemas are exported from @vtt/core-schemas via http.ts re-export
+// Temporarily comment out until schemas are properly exported
+// import {
+//   ListProvidersResponseSchema,
+//   TextToImageRequestSchema,
+//   DepthRequestSchema,
+//   SegmentationRequestSchema,
+// } from "@vtt/core-schemas";
 
 export const listProvidersHandler: RouteHandler = async (ctx) => {
   // Temporarily disabled AI services

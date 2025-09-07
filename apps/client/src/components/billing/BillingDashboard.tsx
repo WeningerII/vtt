@@ -1,8 +1,9 @@
 /**
  * Billing Dashboard - Overview of subscription, usage, and billing information
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
+import { toErrorObject } from "../../utils/error-utils";
 
 // Mock lucide-react icons
 const MockIcon = ({ className }: { className?: string }) => (
@@ -107,7 +108,7 @@ export function BillingDashboard() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       // In real app: if (invoice?.pdfUrl) window.open(invoice.pdfUrl, '_blank');
     } catch (error) {
-      logger.error("Failed to download invoice:", error);
+      logger.error("Failed to fetch billing info:", toErrorObject(error));
     } finally {
       setLoading(false);
     }

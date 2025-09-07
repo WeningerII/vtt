@@ -114,7 +114,7 @@ export class MonsterService {
     return result;
   }
 
-  async getMonster(idOrStableId: string) {
+  async getMonster(idOrStableId: string): Promise<any | null> {
     // Check cache first
     const cached = cacheManager.getMonster(idOrStableId);
     if (cached) {
@@ -124,13 +124,6 @@ export class MonsterService {
     const monster = await this.prisma.monster.findFirst({
       where: {
         OR: [{ id: idOrStableId }, { stableId: idOrStableId }],
-      },
-      include: {
-        actors: {
-          include: {
-            tokens: true,
-          },
-        },
       },
     });
 
@@ -234,9 +227,11 @@ export class MonsterService {
     // Flatten tags for statistics
     const tagCounts: Record<string, number> = {};
     byType.forEach((group) => {
-      group.tags.forEach((tag) => {
-        tagCounts[tag] = (tagCounts[tag] || 0) + group._count;
-      });
+      if (group.tags && Array.isArray(group.tags)) {
+        (group.tags as string[]).forEach((tag: string) => {
+          tagCounts[tag] = (tagCounts[tag] || 0) + group._count;
+        });
+      }
     });
 
     return {

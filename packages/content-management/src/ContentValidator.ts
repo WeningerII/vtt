@@ -176,8 +176,8 @@ export class ContentValidator {
           return result;
         }
 
-        // Check for dangerous characters
-        if (/[<>:"/\\|?*\x00-\x1f]/.test(filename)) {
+        // Check for dangerous characters (excluding control characters)
+        if (/[<>:"/\\|?*]/.test(filename)) {
           result.issues.push({
             type: "error",
             code: "INVALID_FILENAME",
@@ -360,7 +360,7 @@ export const DEFAULT_VTT_POLICY: ContentPolicy = {
     "application/javascript",
   ],
   requireMetadata: ["name", "description"],
-  namePattern: /^[a-zA-Z0-9_\-\s\.]+$/,
+  namePattern: /^[a-zA-Z0-9_\-\s.]+$/,
   tagRestrictions: {
     required: [],
     forbidden: ["nsfw", "adult", "explicit"],

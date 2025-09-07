@@ -18,14 +18,18 @@ export class PerlinNoise {
   }
 
   private generatePermutation(seed: number): number[] {
-    const p = Array.from({ length: 256 }, (_, _i) => i);
+    const p = Array.from({ length: 256 }, (_, i) => i);
 
     // Shuffle using seed
     let random = seed;
     for (let i = p.length - 1; i > 0; i--) {
       random = (random * 9301 + 49297) % 233280;
       const j = Math.floor((random / 233280) * (i + 1));
-      [p[i], p[j]] = [p[j], p[i]];
+      const temp = p[i];
+      if (temp !== undefined && p[j] !== undefined) {
+        p[i] = p[j];
+        p[j] = temp;
+      }
     }
 
     return [...p, ...p]; // Duplicate for wraparound
@@ -41,24 +45,24 @@ export class PerlinNoise {
     const u = this.fade(x);
     const v = this.fade(y);
 
-    const A = this.permutation[X] + Y;
-    const AA = this.permutation[A];
-    const AB = this.permutation[A + 1];
-    const B = this.permutation[X + 1] + Y;
-    const BA = this.permutation[B];
-    const BB = this.permutation[B + 1];
+    const A = (this.permutation[X] ?? 0) + Y;
+    const AA = this.permutation[A] ?? 0;
+    const AB = this.permutation[A + 1] ?? 0;
+    const B = (this.permutation[X + 1] ?? 0) + Y;
+    const BA = this.permutation[B] ?? 0;
+    const BB = this.permutation[B + 1] ?? 0;
 
     return this.lerp(
       v,
       this.lerp(
         u,
-        this.grad2D(this.permutation[AA], x, y),
-        this.grad2D(this.permutation[BA], x - 1, y),
+        this.grad2D(this.permutation[AA] ?? 0, x, y),
+        this.grad2D(this.permutation[BA] ?? 0, x - 1, y),
       ),
       this.lerp(
         u,
-        this.grad2D(this.permutation[AB], x, y - 1),
-        this.grad2D(this.permutation[BB], x - 1, y - 1),
+        this.grad2D(this.permutation[AB] ?? 0, x, y - 1),
+        this.grad2D(this.permutation[BB] ?? 0, x - 1, y - 1),
       ),
     );
   }
@@ -276,13 +280,13 @@ export class NameGenerator {
     const { prefixes, suffixes } = this.nameComponents.fantasy;
     const prefix = prefixes[Math.floor(this.nextRandom() * prefixes.length)];
     const suffix = suffixes[Math.floor(this.nextRandom() * suffixes.length)];
-    return prefix + suffix;
+    return (prefix ?? '') + (suffix ?? '');
   }
 
   generatePlaceName(): string {
     const { descriptors, features } = this.nameComponents.places;
-    const descriptor = descriptors[Math.floor(this.nextRandom() * descriptors.length)];
-    const feature = features[Math.floor(this.nextRandom() * features.length)];
+    const descriptor = descriptors[Math.floor(this.nextRandom() * descriptors.length)] ?? '';
+    const feature = features[Math.floor(this.nextRandom() * features.length)] ?? '';
     return `${descriptor} ${feature}`;
   }
 
@@ -358,9 +362,11 @@ export class TreasureGenerator {
     // Generate coins
     for (const [coinType, range] of Object.entries(table.coins)) {
       const [min, max] = range;
-      const amount = Math.floor(this.nextRandom() * (max - min + 1)) + min;
-      if (amount > 0) {
-        treasure.coins[coinType] = amount * quantity;
+      if (min !== undefined && max !== undefined) {
+        const amount = Math.floor(this.nextRandom() * (max - min + 1)) + min;
+        if (amount > 0) {
+          treasure.coins[coinType] = amount * quantity;
+        }
       }
     }
 
@@ -369,7 +375,9 @@ export class TreasureGenerator {
       if (this.nextRandom() < 0.7) {
         // 70% chance of item
         const item = table.items[Math.floor(this.nextRandom() * table.items.length)];
-        treasure.items.push(item);
+        if (item !== undefined) {
+          treasure.items.push(item);
+        }
       }
     }
 
@@ -460,7 +468,12 @@ export class QuestGenerator {
   }
 
   private randomChoice<T>(array: T[]): T {
-    return array[Math.floor(this.nextRandom() * array.length)];
+    const index = Math.floor(this.nextRandom() * array.length);
+    const item = array[index];
+    if (item === undefined) {
+      throw new Error('Array is empty or index out of bounds');
+    }
+    return item;
   }
 
   private fillPlaceholders(quest: any): any {

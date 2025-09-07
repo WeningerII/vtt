@@ -33,8 +33,9 @@ const SPELL_RULES = [
         },
         action: (ctx) => {
             const counterspeller = Array.from(ctx.environment.entities.values()).find((e) => e.conditions.has("ready_counterspell"));
-            if (!counterspeller)
+            if (!counterspeller) {
                 return { type: "log", data: (Record), continue: true };
+            }
             // Execute counterspell logic
             const spellLevel = ctx.spell.metadata.level;
             const counterspellLevel = 3; // Would get from actual readied spell
@@ -112,8 +113,9 @@ const SPELL_RULES = [
         },
         action: (ctx) => {
             const legendaryCreature = ctx.targets.find((t) => t.conditions.has("legendary_resistance"));
-            if (!legendaryCreature)
+            if (!legendaryCreature) {
                 return { type: "log", data: (Record), continue: true };
+            }
             // Check if creature has legendary resistance uses left
             const usesLeft = 3; // Would get from actual creature data
             if (usesLeft > 0) {
@@ -215,12 +217,15 @@ function calculateCover(caster, target, environment) {
         // Check if obstacle is between caster and target
         return true; // Simplified
     }).length || 0;
-    if (obstaclesBetween === 0)
+    if (obstaclesBetween === 0) {
         return { type: "none", acBonus: 0, saveBonus: 0 };
-    if (obstaclesBetween === 1)
+    }
+    if (obstaclesBetween === 1) {
         return { type: "half", acBonus: 2, saveBonus: 2 };
-    if (obstaclesBetween === 2)
+    }
+    if (obstaclesBetween === 2) {
         return { type: "three_quarters", acBonus: 5, saveBonus: 5 };
+    }
     return { type: "full", acBonus: Infinity, saveBonus: Infinity };
 }
 function getWildMagicSurgeEffect() {
@@ -380,8 +385,9 @@ export class SpellInteractionCalculator {
     spellDispelsAnother(dispelSpell, targetSpell) {
         // Dispel Magic, Counterspell, Remove Curse, etc.
         const dispelSpells = ["dispel_magic", "counterspell", "remove_curse", "greater_restoration"];
-        if (!dispelSpells.includes(dispelSpell.id))
+        if (!dispelSpells.includes(dispelSpell.id)) {
             return false;
+        }
         if (dispelSpell.id === "dispel_magic") {
             // Dispel magic affects spells of 3rd level or lower automatically
             // Higher level spells require a check

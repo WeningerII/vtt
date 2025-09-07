@@ -1,10 +1,8 @@
-export var NodeStatus;
-(function (NodeStatus) {
-  NodeStatus["SUCCESS"] = "SUCCESS";
-  NodeStatus["FAILURE"] = "FAILURE";
-  NodeStatus["RUNNING"] = "RUNNING";
-  NodeStatus["INVALID"] = "INVALID";
-})(NodeStatus || (NodeStatus = {}));
+export const NodeStatus = {};
+NodeStatus.SUCCESS = "SUCCESS";
+NodeStatus.FAILURE = "FAILURE";
+NodeStatus.RUNNING = "RUNNING";
+NodeStatus.INVALID = "INVALID";
 export class BehaviorNode {
   constructor(name, blackboard) {
     this.parent = null;
@@ -42,6 +40,20 @@ export class BehaviorNode {
   addChild(child) {
     child.parent = this;
     this.children.push(child);
+  }
+  getNodeStats(nodeName) {
+    const node = this.findNodeByName(nodeName);
+    if (!node) {
+      return null;
+    }
+    return {
+      name: node.getName(),
+      status: node.getStatus(),
+      executionCount: node.getExecutionCount(),
+      lastExecutionTime: node.getLastExecutionTime(),
+      totalExecutionTime: node.getTotalExecutionTime(),
+      averageExecutionTime: node.getAverageExecutionTime(),
+    };
   }
   removeChild(child) {
     const index = this.children.indexOf(child);
@@ -307,7 +319,7 @@ export class Blackboard {
     return this.data[key] !== undefined ? this.data[key] : defaultValue;
   }
   has(key) {
-    return this.data.hasOwnProperty(key);
+    return Object.prototype.hasOwnProperty.call(this.data, key);
   }
   delete(key) {
     delete this.data[key];
@@ -424,7 +436,9 @@ export class BehaviorTree {
   }
   // Tree traversal and utilities
   findNodeByName(name) {
-    if (!this.root) return null;
+    if (!this.root) {
+      return null;
+    }
     return this.findNodeByNameRecursive(this.root, name) ?? null;
   }
   findNodeByNameRecursive(node, name) {
@@ -440,7 +454,9 @@ export class BehaviorTree {
     return null;
   }
   getAllNodes() {
-    if (!this.root) return [];
+    if (!this.root) {
+      return [];
+    }
     const nodes = [];
     this.collectNodesRecursive(this.root, nodes);
     return nodes;
@@ -482,7 +498,9 @@ export class BehaviorTree {
   }
   // Serialization
   serialize() {
-    if (!this.root) return null;
+    if (!this.root) {
+      return null;
+    }
     return this.serializeNode(this.root);
   }
   serializeNode(node) {

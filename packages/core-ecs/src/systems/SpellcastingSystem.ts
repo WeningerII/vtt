@@ -1,8 +1,7 @@
-import { EntityId } from "../components/Combat";
+import { EntityId, CombatStore } from "../components/Combat";
 import { logger } from "@vtt/logging";
 import { HealthStore } from "../components/Health";
 import { StatsStore } from "../components/Stats";
-import { CombatStore } from "../components/Combat";
 
 export interface SpellEffect {
   type: "damage" | "healing" | "condition" | "buff" | "debuff";

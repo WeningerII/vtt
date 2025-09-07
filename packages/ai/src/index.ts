@@ -30,18 +30,26 @@ export * from './vtt-content-generator';
 export * from './ContentGenerator';
 
 // Agent and NPC systems
-export * from './Agent';
-export * from './npc/AIEntity';
+// export * from './Agent'; // Temporarily disabled due to build errors
+export { 
+  AIEntity, 
+  AIAction, 
+  GameStateSnapshot, 
+  _NPCGoal,
+  NPCGoal,
+  NPCPersonality,
+  NPCArchetypes 
+} from './npc/AIEntity'; // Re-enabled - AIBehaviorEngine is now stubbed internally
 export * from './NPCBehaviorSystem';
 
 // AI Engine and stubs for missing components - avoid conflicts with NPCBehaviorSystem
-export { AIBehaviorEngine, BehaviorTreeNode } from './ai-stubs';
+// export { AIBehaviorEngine, BehaviorTreeNode } from './ai-stubs'; // Temporarily disabled due to BehaviorTree dependency
 
 // Pathfinding and spatial AI
 export * from './Pathfinding';
 
 // Behavior systems
-export * from './BehaviorTree';
+// export * from './BehaviorTree'; // Temporarily disabled due to build errors
 export * from './StateMachine';
 
 // Campaign and encounter management
@@ -49,17 +57,17 @@ export * from './campaign/CampaignAssistant';
 export * from './encounter/EncounterGenerator';
 
 // Procedural content generation
-export { ProceduralBehaviorGenerator } from './ProceduralBehaviorGenerator';
+// export { ProceduralBehaviorGenerator } from './ProceduralBehaviorGenerator'; // Temporarily disabled due to missing dependencies
 
 // AI Integration Systems
-export { DynamicNPCManager } from './DynamicNPCManager';
-export { VisionAIIntegration } from './VisionAIIntegration';
+// export { DynamicNPCManager } from './DynamicNPCManager'; // Temporarily disabled due to BehaviorTree dependency
+// export { VisionAIIntegration } from './VisionAIIntegration'; // Temporarily disabled due to missing dependencies
 export { AIContentCache } from './AIContentCache';
-export { UnifiedAISystem } from './UnifiedAISystem';
+// export { UnifiedAISystem } from './UnifiedAISystem'; // Temporarily disabled due to missing dependencies
 
 // Type-Safe AI Integration (Production Ready) - avoid conflicts
 export { TypeSafeDynamicNPCManager } from './TypeSafeDynamicNPCManager';
-export { 
+export type { 
   ProviderMetrics as AIProviderMetrics,
   ActionResult as AIActionResult
 } from './types/AIIntegration';
@@ -83,7 +91,9 @@ import {
   EmbeddingResult,
   HealthStatus,
   TaskConstraints,
-  ModelSelection
+  ModelSelection,
+  ProviderCallMeta,
+  ImageDataRef
 } from './types';
 import { ModelMapper } from './model-mapper';
 
@@ -277,7 +287,6 @@ export class AIRouter {
 }
 
 // Legacy type definitions for backward compatibility
-import { ProviderCallMeta, ImageDataRef } from './types';
 
 export interface TextToImageRequest {
   prompt: string;

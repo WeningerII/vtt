@@ -9,6 +9,7 @@ export interface CombatData {
   actionPoints: number;
   maxActionPoints: number;
   reactionUsed: boolean;
+  bonusActionUsed?: boolean;
   concentrating: boolean;
   concentrationTarget?: EntityId | undefined;
   legendaryActions?: number | undefined;

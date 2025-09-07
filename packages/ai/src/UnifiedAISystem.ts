@@ -5,10 +5,39 @@ import { AIContentCache, AIContentCacheConfig } from './AIContentCache';
 import { ProductionProviderRegistry, IntelligentProviderRouter } from './providers/RealProviders';
 import { CampaignAssistant } from './campaign/CampaignAssistant';
 import { NPCBehaviorSystem, NPCActor, BehaviorContext } from './NPCBehaviorSystem';
-import { VisionStore, EntityId } from '@vtt/core-ecs/components/Vision';
-import { CacheManager, _DEFAULT_CACHE_CONFIGS } from '@vtt/performance/CacheManager';
+import { VisionStore, VisionData, EntityId } from '@vtt/core-ecs';
+import { CacheManager, CacheConfig } from '@vtt/performance';
 import { AIProvider } from './types';
 import { logger } from '@vtt/logging';
+
+// Default cache configurations
+const _DEFAULT_CACHE_CONFIGS = {
+  memory: { 
+    maxMemorySize: 50 * 1024 * 1024, // 50MB
+    maxEntries: 100,
+    defaultTtl: 300000, // 5 minutes
+    evictionPolicy: "lru" as const,
+    compressionEnabled: false,
+    cleanupInterval: 60000 // 1 minute
+  },
+  persistent: { 
+    maxMemorySize: 200 * 1024 * 1024, // 200MB
+    maxEntries: 1000,
+    defaultTtl: 3600000, // 1 hour
+    evictionPolicy: "lfu" as const,
+    compressionEnabled: true,
+    persistentStorage: true,
+    cleanupInterval: 300000 // 5 minutes
+  },
+  realtime: { 
+    maxMemorySize: 10 * 1024 * 1024, // 10MB
+    maxEntries: 50,
+    defaultTtl: 60000, // 1 minute
+    evictionPolicy: "fifo" as const,
+    compressionEnabled: false,
+    cleanupInterval: 30000 // 30 seconds
+  }
+};
 
 export interface UnifiedAIConfig {
   providers: {
@@ -148,7 +177,7 @@ export class UnifiedAISystem extends EventEmitter {
 
       logger.info('Unified AI System initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize Unified AI System:', error);
+      logger.error('Error initializing AI system:', error as Record<string, any>);
       throw error;
     }
   }
@@ -193,7 +222,7 @@ export class UnifiedAISystem extends EventEmitter {
 
       return behavior;
     } catch (error) {
-      logger.error(`Error generating NPC behavior for ${npcId}:`, error);
+      logger.error(`Error generating NPC behavior for ${npcId}:`, error as Record<string, any>);
       throw error;
     }
   }
@@ -235,7 +264,7 @@ export class UnifiedAISystem extends EventEmitter {
 
       return null;
     } catch (error) {
-      logger.error(`Error analyzing token ${entityId}:`, error);
+      logger.error(`Error analyzing tokens:`, error as Record<string, any>);
       throw error;
     }
   }
@@ -273,7 +302,8 @@ export class UnifiedAISystem extends EventEmitter {
         npcId,
         playerId,
         interaction,
-        npcBehaviorContext
+        gameContext,
+        {} // campaignContext
       );
 
       // Optionally analyze player token for NPC awareness
@@ -288,11 +318,13 @@ export class UnifiedAISystem extends EventEmitter {
       this.metrics.npc.dialogueGenerated++;
 
       return {
-        ...result,
-        analysis: playerAnalysis
+        response: result.response,
+        actions: result.actions || [],
+        ...(playerAnalysis && { analysis: playerAnalysis }),
+        ...(result.sentiment && { sentiment: result.sentiment })
       };
     } catch (error) {
-      logger.error(`Error processing player interaction for NPC ${npcId}:`, error);
+      logger.error('Error processing NPC dialogue:', error as Record<string, any>);
       throw error;
     }
   }
@@ -344,7 +376,7 @@ export class UnifiedAISystem extends EventEmitter {
 
       return description.success ? description.text : 'The area is shrouded in mystery.';
     } catch (error) {
-      logger.error(`Error generating scene description for ${sceneId}:`, error);
+      logger.error(`Error generating scene description for ${sceneId}:`, error as Record<string, any>);
       return 'The area is difficult to make out.';
     }
   }
@@ -395,7 +427,7 @@ export class UnifiedAISystem extends EventEmitter {
 
       logger.info('Performance optimization completed');
     } catch (error) {
-      logger.error('Error during performance optimization:', error);
+      logger.error('Error during performance optimization:', error as Record<string, any>);
     }
   }
 

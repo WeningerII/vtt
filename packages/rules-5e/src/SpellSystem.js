@@ -187,11 +187,13 @@ export class SpellSystem {
      */
     useSpellSlot(entityId, level) {
         const slots = this.spellSlots.get(entityId);
-        if (!slots)
+        if (!slots) {
             return false;
+        }
         const slot = slots.find((s) => s.level === level);
-        if (!slot || slot.used >= slot.total)
+        if (!slot || slot.used >= slot.total) {
             return false;
+        }
         slot.used++;
         return true;
     }
@@ -200,8 +202,9 @@ export class SpellSystem {
      */
     restoreSpellSlots(entityId, levels) {
         const slots = this.spellSlots.get(entityId);
-        if (!slots)
+        if (!slots) {
             return;
+        }
         for (const slot of slots) {
             if (!levels || levels.includes(slot.level)) {
                 slot.used = 0;
@@ -213,8 +216,9 @@ export class SpellSystem {
      */
     learnSpell(entityId, spellId) {
         const spell = this.spells.get(spellId);
-        if (!spell)
+        if (!spell) {
             return false;
+        }
         let knownSpells = this.knownSpells.get(entityId);
         if (!knownSpells) {
             knownSpells = new Set();
@@ -228,8 +232,9 @@ export class SpellSystem {
      */
     forgetSpell(entityId, spellId) {
         const knownSpells = this.knownSpells.get(entityId);
-        if (!knownSpells)
+        if (!knownSpells) {
             return false;
+        }
         return knownSpells.delete(spellId);
     }
     /**
@@ -237,8 +242,9 @@ export class SpellSystem {
      */
     getKnownSpells(entityId) {
         const knownSpellIds = this.knownSpells.get(entityId);
-        if (!knownSpellIds)
+        if (!knownSpellIds) {
             return [];
+        }
         return Array.from(knownSpellIds)
             .map((id) => this.spells.get(id))
             .filter((spell) => spell !== undefined);
@@ -248,8 +254,9 @@ export class SpellSystem {
      */
     prepareSpell(entityId, spellId) {
         const knownSpells = this.knownSpells.get(entityId);
-        if (!knownSpells || !knownSpells.has(spellId))
+        if (!knownSpells || !knownSpells.has(spellId)) {
             return false;
+        }
         let preparedSpells = this.preparedSpells.get(entityId);
         if (!preparedSpells) {
             preparedSpells = new Set();
@@ -263,8 +270,9 @@ export class SpellSystem {
      */
     unprepareSpell(entityId, spellId) {
         const preparedSpells = this.preparedSpells.get(entityId);
-        if (!preparedSpells)
+        if (!preparedSpells) {
             return false;
+        }
         return preparedSpells.delete(spellId);
     }
     /**
@@ -272,8 +280,9 @@ export class SpellSystem {
      */
     getPreparedSpells(entityId) {
         const preparedSpellIds = this.preparedSpells.get(entityId);
-        if (!preparedSpellIds)
+        if (!preparedSpellIds) {
             return [];
+        }
         return Array.from(preparedSpellIds)
             .map((id) => this.spells.get(id))
             .filter((spell) => spell !== undefined);
@@ -349,8 +358,9 @@ export class SpellSystem {
      */
     getAvailableSpellLevels(entityId) {
         const slots = this.spellSlots.get(entityId);
-        if (!slots)
+        if (!slots) {
             return [];
+        }
         return slots.filter((slot) => slot.used < slot.total).map((slot) => slot.level);
     }
     /**
@@ -358,20 +368,24 @@ export class SpellSystem {
      */
     canCastSpell(entityId, spellId, slotLevel) {
         const spell = this.spells.get(spellId);
-        if (!spell)
+        if (!spell) {
             return false;
+        }
         // Cantrips can always be cast
-        if (spell.level === 0)
+        if (spell.level === 0) {
             return true;
+        }
         // Check if spell is prepared
         const preparedSpells = this.preparedSpells.get(entityId);
-        if (!preparedSpells || !preparedSpells.has(spellId))
+        if (!preparedSpells || !preparedSpells.has(spellId)) {
             return false;
+        }
         // Check spell slot availability
         const useLevel = slotLevel || spell.level;
         const slots = this.spellSlots.get(entityId);
-        if (!slots)
+        if (!slots) {
             return false;
+        }
         const slot = slots.find((s) => s.level === useLevel);
         return slot ? slot.used < slot.total : false;
     }

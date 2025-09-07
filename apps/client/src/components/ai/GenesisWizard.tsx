@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
+import { toErrorObject } from "../../utils/error-utils";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useCharacter } from "../../hooks/useCharacter";
 
@@ -180,8 +181,8 @@ export const GenesisWizard: React.FC = () => {
             setIsGenerating(false);
           }
         }
-      } catch (err) {
-        logger.error("Failed to poll generation status:", err);
+      } catch (error) {
+        logger.error("Genesis creation failed:", toErrorObject(error));
       }
     }, 2000);
 

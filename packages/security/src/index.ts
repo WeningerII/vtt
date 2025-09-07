@@ -45,8 +45,7 @@ export type {
 } from "./AuthenticationManager";
 
 // Threat Protection
-import { ThreatProtection } from "./ThreatProtection";
-import type { SecurityContext } from "./ThreatProtection";
+import { ThreatProtection, type SecurityContext } from "./ThreatProtection";
 export { ThreatProtection };
 export type {
   SecurityEvent,

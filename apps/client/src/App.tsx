@@ -17,7 +17,9 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./styles/globals.css";
 import "./styles/theme.css";
 import "./styles/utilities.css";
-import { I18nProvider } from "@vtt/i18n";
+// import { I18nProvider } from "@vtt/i18n";
+// TODO: Implement i18n integration - using fallback provider for now
+const I18nProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
 interface AppConfig {
   serverUrl: string;

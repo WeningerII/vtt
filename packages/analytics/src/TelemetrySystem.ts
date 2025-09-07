@@ -139,7 +139,7 @@ export class TelemetrySystem {
   }
   
   public async initialize(userId?: string): Promise<void> {
-    if (this.isInitialized) return;
+    if (this.isInitialized) {return;}
     
     this.userId = userId;
     this.isInitialized = true;
@@ -175,9 +175,9 @@ export class TelemetrySystem {
   }
   
   public track(type: string, data: Record<string, any> = {}, category: TelemetryEvent['category'] = 'user'): void {
-    if (!this.isInitialized || !this.shouldSample()) return;
+    if (!this.isInitialized || !this.shouldSample()) {return;}
     
-    if (!this.config.enabledCategories.includes(category)) return;
+    if (!this.config.enabledCategories.includes(category)) {return;}
     
     const event: TelemetryEvent = {
       id: this.generateEventId(),
@@ -285,7 +285,7 @@ export class TelemetrySystem {
   }
   
   public async flush(): Promise<void> {
-    if (this.eventQueue.length === 0) return;
+    if (this.eventQueue.length === 0) {return;}
     
     const events = [...this.eventQueue];
     this.eventQueue = [];

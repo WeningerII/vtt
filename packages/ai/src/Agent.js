@@ -52,7 +52,9 @@ export class Agent {
     this.stateMachine = stateMachine;
   }
   update(deltaTime) {
-    if (!this.isActive) return;
+    if (!this.isActive) {
+      return;
+    }
     const startTime = performance.now();
     // Check if we need to update based on interval
     const now = Date.now();
@@ -389,7 +391,9 @@ export class AgentManager {
   getNearbyAgents(agent, range) {
     const nearby = [];
     for (const otherAgent of this.agents.values()) {
-      if (otherAgent === agent) continue;
+      if (otherAgent === agent) {
+        continue;
+      }
       const distance = agent.getDistanceTo(otherAgent.position);
       if (distance <= range) {
         nearby.push(otherAgent);

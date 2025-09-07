@@ -3,21 +3,40 @@
  */
 
 import { RouteHandler } from "../router/types";
+import { requireAuth, getAuthenticatedUserId } from "../middleware/auth";
+import { parseJsonBody } from "../utils/json";
 
 // GET /encounters - List encounters for a campaign
 export const listEncountersHandler: RouteHandler = async (ctx) => {
   try {
-    const campaignId = ctx.url.searchParams.get("campaignId");
+    // Require authentication
+    const userId = getAuthenticatedUserId(ctx);
+    
+    const gameSessionId = ctx.url.searchParams.get("gameSessionId");
     const limit = Math.min(parseInt(ctx.url.searchParams.get("limit") || "50"), 200);
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
 
-    if (!campaignId) {
+    if (!gameSessionId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing campaignId parameter" }));
+      ctx.res.end(JSON.stringify({ error: "Missing gameSessionId parameter" }));
       return;
     }
 
-    const where = { campaignId };
+    // Verify user has access to this game session by checking if they have PC tokens
+    const userTokenCount = await ctx.prisma.token.count({
+      where: {
+        gameSessionId,
+        type: 'PC'
+      }
+    });
+
+    if (userTokenCount === 0) {
+      ctx.res.writeHead(403, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Access denied to this game session" }));
+      return;
+    }
+
+    const where = { gameSessionId };
 
     const [items, total] = await Promise.all([
       ctx.prisma.encounter.findMany({
@@ -26,13 +45,17 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
         take: limit,
         orderBy: { createdAt: "desc" },
         include: {
-          participants: {
+          encounterTokens: {
             include: {
-              actor: {
-                include: {
-                  monster: true,
-                  character: true,
-                },
+              token: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  initiative: true,
+                  health: true,
+                  maxHealth: true
+                }
               },
             },
             orderBy: { initiative: "desc" },
@@ -50,46 +73,66 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// GET /encounters/:encounterId - Get encounter by ID
+// GET /encounters/:id - Get encounter by ID
 export const getEncounterHandler: RouteHandler = async (ctx) => {
   try {
-    const id = ctx.params?.encounterId || ctx.url.pathname.split("/")[2];
+    // Require authentication
+    const userId = getAuthenticatedUserId(ctx);
+    
+    const id = ctx.params?.id;
     if (!id) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing encounterId" }));
+      ctx.res.end(JSON.stringify({ error: "Missing encounter ID" }));
       return;
     }
 
     const encounter = await ctx.prisma.encounter.findUnique({
       where: { id },
       include: {
-        participants: {
+        encounterTokens: {
           include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-                appliedConditions: {
-                  include: {
-                    condition: true,
-                  },
-                },
-              },
-            },
-            appliedConditions: {
-              include: {
-                condition: true,
-              },
+            token: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                initiative: true,
+                health: true,
+                maxHealth: true,
+                x: true,
+                y: true
+              }
             },
           },
           orderBy: { initiative: "desc" },
         },
+        gameSession: {
+          select: {
+            id: true,
+            name: true,
+            campaignId: true
+          }
+        }
       },
     });
 
     if (!encounter) {
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Encounter not found" }));
+      return;
+    }
+
+    // Verify user has access to this game session
+    const userTokenCount = await ctx.prisma.token.count({
+      where: {
+        gameSessionId: encounter.gameSession.id,
+        type: 'PC'
+      }
+    });
+
+    if (userTokenCount === 0) {
+      ctx.res.writeHead(403, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Access denied to this encounter" }));
       return;
     }
 
@@ -101,37 +144,47 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// POST /encounters - Create a new encounter
+// POST /encounters - Create new encounter
 export const createEncounterHandler: RouteHandler = async (ctx) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    // Require authentication
+    const userId = getAuthenticatedUserId(ctx);
+    
+    const body = await parseRequestBody(ctx.req);
+    const { name, gameSessionId, description } = body;
 
-    if (!body?.name || !body?.campaignId) {
+    if (!name || !gameSessionId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing required fields: name, campaignId" }));
+      ctx.res.end(JSON.stringify({ error: "Missing required fields: name, gameSessionId" }));
       return;
     }
 
-    const encounterData = {
-      name: body.name,
-      campaignId: body.campaignId,
-      description: body.description || "",
-      currentRound: 0,
-      currentTurn: 0,
-      isActive: false,
-    };
+    // Verify user has tokens in this game session
+    const userTokenCount = await ctx.prisma.token.count({
+      where: {
+        gameSessionId,
+        type: 'PC'
+      }
+    });
 
-    const created = await ctx.prisma.encounter.create({
-      data: encounterData,
+    if (userTokenCount === 0) {
+      ctx.res.writeHead(403, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Access denied to create encounters in this session" }));
+      return;
+    }
+
+    const encounter = await ctx.prisma.encounter.create({
+      data: {
+        name,
+        gameSessionId,
+        roundNumber: 1,
+        currentTurn: 0,
+        status: 'PLANNED',
+      },
       include: {
-        participants: {
+        encounterTokens: {
           include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
+            token: true,
           },
           orderBy: { initiative: "desc" },
         },
@@ -139,82 +192,103 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
     });
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, encounter: created }));
+    ctx.res.end(JSON.stringify({ success: true, encounter }));
   } catch (error: any) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to create encounter" }));
   }
 };
 
-// POST /encounters/:encounterId/participants - Add actor to encounter
+// POST /encounters/:id/participants - Add participant to encounter
 export const addParticipantHandler: RouteHandler = async (ctx) => {
   try {
-    const encounterId = ctx.params?.encounterId || ctx.url.pathname.split("/")[2];
+    // Require authentication
+    const userId = getAuthenticatedUserId(ctx);
+    
+    const encounterId = ctx.params?.id;
     if (!encounterId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing encounterId" }));
+      ctx.res.end(JSON.stringify({ error: "Missing encounter ID" }));
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseRequestBody(ctx.req);
+    const { tokenId, initiative } = body;
 
-    if (!body?.actorId || typeof body.initiative !== "number") {
+    if (!tokenId || initiative === undefined) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing required fields: actorId, initiative" }));
+      ctx.res.end(JSON.stringify({ error: "Missing required fields: tokenId, initiative" }));
       return;
     }
 
-    // Validate encounter exists
-    const encounter = await ctx.prisma.encounter.findUnique({
-      where: { id: encounterId },
-    });
-    if (!encounter) {
+    // Verify user has access to this encounter and the token
+    const [encounter, token, userTokenCount] = await Promise.all([
+      ctx.prisma.encounter.findUnique({
+        where: { id: encounterId },
+        include: {
+          gameSession: {
+            select: {
+              id: true,
+              name: true,
+              campaignId: true
+            }
+          }
+        }
+      }),
+      ctx.prisma.token.findUnique({
+        where: { id: tokenId },
+        select: { id: true, type: true, metadata: true }
+      }),
+      ctx.prisma.token.count({
+        where: {
+          gameSessionId: { in: [] }, // Will be updated below
+          type: 'PC'
+        }
+      })
+    ]);
+
+    if (!encounter || !token) {
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Encounter not found" }));
+      ctx.res.end(JSON.stringify({ error: "Encounter or token not found" }));
       return;
     }
 
-    // Validate actor exists
-    const actor = await ctx.prisma.actor.findUnique({
-      where: { id: body.actorId },
-    });
-    if (!actor) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Actor not found" }));
-      return;
-    }
-
-    // Check if participant already exists
-    const existing = await ctx.prisma.encounterParticipant.findUnique({
+    // Now check access with the correct gameSessionId
+    const accessCount = await ctx.prisma.token.count({
       where: {
-        encounterId_actorId: {
-          encounterId,
-          actorId: body.actorId,
-        },
+        gameSessionId: encounter.gameSessionId,
+        type: 'PC'
+      }
+    });
+
+    if (accessCount === 0) {
+      ctx.res.writeHead(403, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Access denied" }));
+      return;
+    }
+
+    // Check if token already participating
+    const existing = await ctx.prisma.encounterToken.findFirst({
+      where: {
+        encounterId,
+        tokenId,
       },
     });
 
     if (existing) {
       ctx.res.writeHead(409, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Actor already in encounter" }));
+      ctx.res.end(JSON.stringify({ error: "Token already participating in this encounter" }));
       return;
     }
 
-    const participant = await ctx.prisma.encounterParticipant.create({
+    const participant = await ctx.prisma.encounterToken.create({
       data: {
         encounterId,
-        actorId: body.actorId,
-        initiative: body.initiative,
-        isActive: true,
-        hasActed: false,
+        tokenId,
+        initiative,
       },
       include: {
-        actor: {
-          include: {
-            monster: true,
-            character: true,
-          },
-        },
+        token: true,
       },
     });
 
@@ -226,132 +300,32 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// POST /encounters/:encounterId/start - Start encounter
-export const startEncounterHandler: RouteHandler = async (ctx) => {
+// PUT /encounters/:id - Update encounter
+export const updateEncounterHandler: RouteHandler = async (ctx) => {
   try {
-    const id = ctx.params?.encounterId || ctx.url.pathname.split("/")[2];
+    const id = ctx.params?.id;
     if (!id) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing encounterId" }));
+      ctx.res.end(JSON.stringify({ error: "Missing encounter ID" }));
       return;
     }
 
-    // Check if encounter has participants
-    const participantCount = await ctx.prisma.encounterParticipant.count({
-      where: { encounterId: id },
-    });
+    const body = await parseRequestBody(ctx.req);
+    const { name, status, roundNumber, currentTurn } = body;
 
-    if (participantCount === 0) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Cannot start encounter without participants" }));
-      return;
-    }
+    const data: any = {};
+    if (name !== undefined) data.name = name;
+    if (status !== undefined) data.status = status;
+    if (roundNumber !== undefined) data.roundNumber = roundNumber;
+    if (currentTurn !== undefined) data.currentTurn = currentTurn;
 
-    const updated = await ctx.prisma.encounter.update({
+    const encounter = await ctx.prisma.encounter.update({
       where: { id },
-      data: {
-        isActive: true,
-        currentRound: 1,
-        currentTurn: 0,
-      },
+      data,
       include: {
-        participants: {
+        encounterTokens: {
           include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
-          },
-          orderBy: { initiative: "desc" },
-        },
-      },
-    });
-
-    // Reset all participants' hasActed flag
-    await ctx.prisma.encounterParticipant.updateMany({
-      where: { encounterId: id },
-      data: { hasActed: false },
-    });
-
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, encounter: updated }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to start encounter" }));
-  }
-};
-
-// POST /encounters/:encounterId/next-turn - Advance to next turn
-export const nextTurnHandler: RouteHandler = async (ctx) => {
-  try {
-    const id = ctx.params?.encounterId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing encounterId" }));
-      return;
-    }
-
-    const encounter = await ctx.prisma.encounter.findUnique({
-      where: { id },
-      include: {
-        participants: {
-          where: { isActive: true },
-          orderBy: { initiative: "desc" },
-        },
-      },
-    });
-
-    if (!encounter) {
-      ctx.res.writeHead(404, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Encounter not found" }));
-      return;
-    }
-
-    if (!encounter.isActive) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Encounter is not active" }));
-      return;
-    }
-
-    const participants = encounter.participants;
-    if (participants.length === 0) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "No active participants" }));
-      return;
-    }
-
-    let newTurn = encounter.currentTurn + 1;
-    let newRound = encounter.currentRound;
-
-    // If we've gone through all participants, start new round
-    if (newTurn >= participants.length) {
-      newTurn = 0;
-      newRound += 1;
-
-      // Reset hasActed for all participants at start of new round
-      await ctx.prisma.encounterParticipant.updateMany({
-        where: { encounterId: id },
-        data: { hasActed: false },
-      });
-    }
-
-    const updated = await ctx.prisma.encounter.update({
-      where: { id },
-      data: {
-        currentTurn: newTurn,
-        currentRound: newRound,
-      },
-      include: {
-        participants: {
-          include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
+            token: true,
           },
           orderBy: { initiative: "desc" },
         },
@@ -359,86 +333,22 @@ export const nextTurnHandler: RouteHandler = async (ctx) => {
     });
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(
-      JSON.stringify({
-        success: true,
-        encounter: updated,
-        currentParticipant: participants[newTurn] || null,
-      }),
-    );
+    ctx.res.end(JSON.stringify({ success: true, encounter }));
   } catch (error: any) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to advance turn" }));
-  }
-};
-
-// POST /encounters/:encounterId/end - End encounter
-export const endEncounterHandler: RouteHandler = async (ctx) => {
-  try {
-    const id = ctx.params?.encounterId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing encounterId" }));
-      return;
-    }
-
-    const updated = await ctx.prisma.encounter.update({
-      where: { id },
-      data: {
-        isActive: false,
-      },
-      include: {
-        participants: {
-          include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
-          },
-          orderBy: { initiative: "desc" },
-        },
-      },
-    });
-
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, encounter: updated }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to end encounter" }));
-  }
-};
-
-// DELETE /encounters/:encounterId - Delete encounter
-export const deleteEncounterHandler: RouteHandler = async (ctx) => {
-  try {
-    const id = ctx.params?.encounterId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing encounterId" }));
-      return;
-    }
-
-    await ctx.prisma.encounter.delete({ where: { id } });
-
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to delete encounter" }));
+    ctx.res.end(JSON.stringify({ error: error.message || "Failed to update encounter" }));
   }
 };
 
 // Helper: parse JSON
-async function parseJsonBody(req: any): Promise<any> {
-  return new Promise((_resolve, __reject) => {
+async function parseRequestBody(req: any): Promise<any> {
+  return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", (_chunk: any) => (body += chunk.toString()));
+    req.on("data", (chunk: any) => (body += chunk.toString()));
     req.on("end", () => {
       try {
-        resolve(body ? JSON.parse(body) : Record<string, any>);
-      } catch (_err) {
+        resolve(body ? JSON.parse(body) : {});
+      } catch {
         reject(new Error("Invalid JSON"));
       }
     });

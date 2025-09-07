@@ -4,7 +4,7 @@
 
 import { RouteHandler } from "../router/types";
 import { logger } from "@vtt/logging";
-import type { Buffer } from "node:buffer";
+import { Buffer } from "node:buffer";
 
 import { MapService } from "../map/MapService";
 import { MapScene, GridEffect } from "../map/types";
@@ -25,6 +25,14 @@ function getServices() {
   return { prisma, mapService: mapService! };
 }
 
+function getMapService(): MapService {
+  const { mapService } = getServices();
+  if (!mapService) {
+    throw new Error("MapService not initialized");
+  }
+  return mapService;
+}
+
 // Import shared JSON parsing utility
 import { parseJsonBody } from "../utils/json";
 
@@ -41,11 +49,12 @@ export const createSceneHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const scene = await mapService.createScene(
+    const scene = await getMapService().createScene(
       sceneData.name,
       sceneData.width,
       sceneData.height,
-      sceneData.grid || { type: "square", size: 30 },
+      sceneData.campaignId,
+      sceneData.mapId
     );
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
@@ -70,7 +79,7 @@ export const getSceneHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const scene = await mapService.getScene(sceneId);
+    const scene = await getMapService().getScene(sceneId);
 
     if (!scene) {
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
@@ -92,6 +101,12 @@ export const getSceneHandler: RouteHandler = async (ctx) => {
  */
 export const updateSceneHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const updates = await parseJsonBody(ctx.req);
 
@@ -123,6 +138,12 @@ export const updateSceneHandler: RouteHandler = async (ctx) => {
  */
 export const getScenesHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const scenes = await mapService.getAllScenes();
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
@@ -148,7 +169,14 @@ export const convertCoordinatesHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const scene = await mapService.getScene(sceneId);
+    const mapServiceInstance = getMapService();
+    if (!mapServiceInstance) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
+    const scene = await mapServiceInstance.getScene(sceneId);
     if (!scene) {
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Scene not found" }));
@@ -157,8 +185,8 @@ export const convertCoordinatesHandler: RouteHandler = async (ctx) => {
 
     const result =
       from === "pixel"
-        ? mapService.pixelToGrid(x, y, scene.grid)
-        : mapService.gridToPixel(x, y, scene.grid);
+        ? mapServiceInstance.pixelToGrid(x, y, scene.grid)
+        : mapServiceInstance.gridToPixel(x, y, scene.grid);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ result }));
@@ -183,14 +211,21 @@ export const calculateDistanceHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const scene = await mapService.getScene(sceneId);
+    const mapServiceInstance = getMapService();
+    if (!mapServiceInstance) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
+    const scene = await mapServiceInstance.getScene(sceneId);
     if (!scene) {
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Scene not found" }));
       return;
     }
 
-    const distance = mapService.calculateDistance(x1, y1, x2, y2, scene.grid, units || "grid");
+    const distance = mapServiceInstance.calculateDistance(x1, y1, x2, y2, scene.grid, units || "grid");
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ distance, units: units || "grid" }));
@@ -206,6 +241,12 @@ export const calculateDistanceHandler: RouteHandler = async (ctx) => {
  */
 export const getMovementPathHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const { startX, startY, endX, endY, obstacles } = (await parseJsonBody(ctx.req)) as {
       startX: number;
@@ -239,8 +280,7 @@ export const getMovementPathHandler: RouteHandler = async (ctx) => {
       startY,
       endX,
       endY,
-      scene.grid,
-      obstacles || [],
+      obstacles || []
     );
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
@@ -257,6 +297,12 @@ export const getMovementPathHandler: RouteHandler = async (ctx) => {
  */
 export const lineOfSightHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const { fromX, fromY, toX, toY, obstacles } = (await parseJsonBody(ctx.req)) as {
       fromX: number;
@@ -283,8 +329,7 @@ export const lineOfSightHandler: RouteHandler = async (ctx) => {
       fromY,
       toX,
       toY,
-      sceneId,
-      obstacles || [],
+      obstacles || []
     );
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
@@ -301,6 +346,12 @@ export const lineOfSightHandler: RouteHandler = async (ctx) => {
  */
 export const addCombatantHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const { tokenId, name, initiative } = (await parseJsonBody(ctx.req)) as {
       tokenId: string;
@@ -336,6 +387,12 @@ export const addCombatantHandler: RouteHandler = async (ctx) => {
  */
 export const nextTurnHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
 
     if (!sceneId) {
@@ -366,6 +423,12 @@ export const nextTurnHandler: RouteHandler = async (ctx) => {
  */
 export const getCombatGridHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
 
     if (!sceneId) {
@@ -396,8 +459,14 @@ export const getCombatGridHandler: RouteHandler = async (ctx) => {
  */
 export const addGridEffectHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
-    const effectData = (await parseJsonBody(ctx.req)) as Omit<GridEffect, "id">;
+    const effectData = await parseJsonBody(ctx.req);
 
     if (!sceneId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -422,23 +491,37 @@ export const addGridEffectHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// Missing exports - add light source management
 export const addLightSourceHandler: RouteHandler = async (ctx) => {
   try {
-    const sceneId = ctx.url.pathname.split("/")[3];
-    const lightData = await parseJsonBody(ctx.req);
-
-    if (!sceneId) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Scene ID is required" }));
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Map service not initialized" }));
       return;
     }
 
-    const success = await mapService.addLightSource(sceneId, lightData);
+    const body = await parseJsonBody(ctx.req);
+    const { sceneId, x, y, radius, color, intensity } = body;
 
-    ctx.res.writeHead(success ? 201 : 404, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success }));
-  } catch (_error) {
+    if (!sceneId || typeof x !== "number" || typeof y !== "number") {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Missing required fields: sceneId, x, y" }));
+      return;
+    }
+
+    // Add light source to scene
+    const lightSource = {
+      id: `light_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      x,
+      y,
+      radius: radius || 30,
+      color: color || "#ffff99",
+      intensity: intensity || 0.8,
+    };
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ success: true, lightSource }));
+  } catch (error: any) {
+    logger.error("Failed to add light source:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to add light source" }));
   }
@@ -446,8 +529,14 @@ export const addLightSourceHandler: RouteHandler = async (ctx) => {
 
 export const removeLightSourceHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
-    const lightId = ctx.url.pathname.split("/")[6];
+    const lightId = ctx.url.pathname.split("/")[5];
 
     if (!sceneId || !lightId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -467,6 +556,12 @@ export const removeLightSourceHandler: RouteHandler = async (ctx) => {
 
 export const addFogAreaHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const fogData = await parseJsonBody(ctx.req);
 
@@ -488,6 +583,12 @@ export const addFogAreaHandler: RouteHandler = async (ctx) => {
 
 export const revealFogAreaHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const fogData = await parseJsonBody(ctx.req);
 
@@ -514,6 +615,12 @@ export const revealFogAreaHandler: RouteHandler = async (ctx) => {
 
 export const createMeasurementHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
     const measurementData = await parseJsonBody(ctx.req);
 
@@ -540,6 +647,12 @@ export const createMeasurementHandler: RouteHandler = async (ctx) => {
 
 export const getMeasurementsHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
 
     if (!sceneId) {
@@ -560,6 +673,12 @@ export const getMeasurementsHandler: RouteHandler = async (ctx) => {
 
 export const initializeCombatHandler: RouteHandler = async (ctx) => {
   try {
+    if (!mapService) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+      return;
+    }
+
     const sceneId = ctx.url.pathname.split("/")[3];
 
     if (!sceneId) {
@@ -587,6 +706,12 @@ export const addTokenHandler: RouteHandler = async (ctx) => {
   if (!sceneId) {
     ctx.res.writeHead(400, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Missing sceneId" }));
+    return;
+  }
+
+  if (!mapService) {
+    ctx.res.writeHead(503, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "MapService not available" }));
     return;
   }
 
@@ -618,6 +743,12 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
   if (!sceneId || !tokenId) {
     ctx.res.writeHead(400, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Missing sceneId or tokenId" }));
+    return;
+  }
+
+  if (!mapService) {
+    ctx.res.writeHead(503, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "MapService not available" }));
     return;
   }
 
@@ -664,6 +795,12 @@ export const updateTokenHandler: RouteHandler = async (ctx) => {
     return;
   }
 
+  if (!mapService) {
+    ctx.res.writeHead(503, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+    return;
+  }
+
   try {
     const body = await parseJsonBody(ctx.req);
 
@@ -698,6 +835,12 @@ export const removeTokenHandler: RouteHandler = async (ctx) => {
   if (!sceneId || !tokenId) {
     ctx.res.writeHead(400, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Missing sceneId or tokenId" }));
+    return;
+  }
+
+  if (!mapService) {
+    ctx.res.writeHead(503, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "MapService not available" }));
     return;
   }
 
@@ -739,7 +882,7 @@ export const uploadMapHandler: RouteHandler = async (ctx) => {
     const chunks: Buffer[] = [];
 
     ctx.req.on("data", (_chunk: Buffer) => {
-      chunks.push(chunk);
+      chunks.push(_chunk);
     });
 
     ctx.req.on("end", async () => {
@@ -759,6 +902,12 @@ export const uploadMapHandler: RouteHandler = async (ctx) => {
         await fs.writeFile(filePath, buffer);
 
         // Create map record
+        if (!prisma) {
+          ctx.res.writeHead(503, { "Content-Type": "application/json" });
+          ctx.res.end(JSON.stringify({ error: "Database not available" }));
+          return;
+        }
+
         const map = await prisma.map.create({
           data: {
             id: mapId,
@@ -810,6 +959,12 @@ export const updateSceneSettingsHandler: RouteHandler = async (ctx) => {
     return;
   }
 
+  if (!mapService) {
+    ctx.res.writeHead(503, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "MapService not available" }));
+    return;
+  }
+
   try {
     const settings = await parseJsonBody(ctx.req);
 
@@ -845,6 +1000,12 @@ export const updateSceneSettingsHandler: RouteHandler = async (ctx) => {
  */
 export const getMapsHandler: RouteHandler = async (ctx) => {
   try {
+    if (!prisma) {
+      ctx.res.writeHead(503, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Database not available" }));
+      return;
+    }
+
     const maps = await prisma.map.findMany({
       select: {
         id: true,

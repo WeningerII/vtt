@@ -21,19 +21,19 @@ export class BardClass extends BaseClass {
         className: "bard",
         level: 1,
         description: "Inspire allies with bonus action, d6 bonus die",
-        type: "active",
-        actionCost: "bonus_action",
+        type: "active" as const,
+        actionCost: "bonus_action" as const,
         uses: {
-          type: "per_short_rest",
+          type: "per_short_rest" as const,
           amount: Math.max(1, this.getCharismaModifier()),
           current: Math.max(1, this.getCharismaModifier()),
-          resetOn: "short_rest",
+          resetOn: "short_rest" as const,
         },
         effects: [{
           type: "bardic_inspiration",
           parameters: { die: level >= 15 ? "d12" : level >= 10 ? "d10" : level >= 5 ? "d8" : "d6" }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "jack_of_all_trades",
@@ -41,12 +41,12 @@ export class BardClass extends BaseClass {
         className: "bard",
         level: 2,
         description: "Add half proficiency to non-proficient ability checks",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "jack_of_all_trades",
           parameters: { bonus: Math.floor(this.getProficiencyBonus(level) / 2) }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "song_of_rest",
@@ -54,12 +54,12 @@ export class BardClass extends BaseClass {
         className: "bard",
         level: 2,
         description: "Extra healing during short rest",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "song_of_rest",
           parameters: { die: level >= 17 ? "d12" : level >= 13 ? "d10" : level >= 9 ? "d8" : "d6" }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "expertise",
@@ -67,12 +67,12 @@ export class BardClass extends BaseClass {
         className: "bard",
         level: 3,
         description: "Double proficiency bonus on 2 skills",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "expertise",
           parameters: { count: level >= 10 ? 4 : 2 }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "font_of_inspiration",
@@ -80,11 +80,11 @@ export class BardClass extends BaseClass {
         className: "bard",
         level: 5,
         description: "Bardic Inspiration recharges on short rest",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "font_of_inspiration"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "countercharm",
@@ -92,12 +92,12 @@ export class BardClass extends BaseClass {
         className: "bard",
         level: 6,
         description: "Grant advantage against charm and fear",
-        type: "active",
-        actionCost: "action",
+        type: "active" as const,
+        actionCost: "action" as const,
         effects: [{
           type: "countercharm"
         }],
-        source: "core"
+        source: "core" as const
       }
     ].filter(f => f.level <= level);
   }
@@ -111,20 +111,20 @@ export class BardClass extends BaseClass {
           className: "bard",
           level: 3,
           description: "Use reaction to reduce enemy attack/ability check/damage",
-          type: "reaction",
-          actionCost: "reaction",
+          type: "reaction" as const,
+          actionCost: "reaction" as const,
           uses: {
-            type: "per_short_rest",
+            type: "per_short_rest" as const,
             amount: Math.max(1, this.getCharismaModifier()),
             current: Math.max(1, this.getCharismaModifier()),
-            resetOn: "short_rest",
+            resetOn: "short_rest" as const,
           },
           effects: [{
             type: "cutting_words",
             parameters: { die: level >= 15 ? "d12" : level >= 10 ? "d10" : level >= 5 ? "d8" : "d6" }
           }],
-          subclass: "lore",
-          source: "subclass"
+          subclass: "lore" as const,
+          source: "subclass" as const
         },
         {
           id: "additional_magical_secrets",
@@ -132,13 +132,13 @@ export class BardClass extends BaseClass {
           className: "bard",
           level: 6,
           description: "Learn 2 additional spells from any class",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "additional_magical_secrets",
             parameters: { count: 2 }
           }],
-          subclass: "lore",
-          source: "subclass"
+          subclass: "lore" as const,
+          source: "subclass" as const
         }
       ].filter(f => f.level <= level);
     }

@@ -36,7 +36,7 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = 8081;
-server.listen(_PORT, () => {
+server.listen(PORT, () => {
   logger.info(`[spike] serving ${base} at http://localhost:${PORT}`);
   logger.info(`[spike] open that URL and watch the console for PICK logs.`);
 });

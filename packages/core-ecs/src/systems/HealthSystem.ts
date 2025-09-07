@@ -30,7 +30,7 @@ export class HealthSystem {
 
   update(deltaTime: number): void {
     // Process regeneration and damage over time
-    this.healthStore.forEach((_entity, __health) => {
+    this.healthStore.forEach((entity, _health) => {
       this.processRegeneration(entity, deltaTime);
       this.processDamageOverTime(entity, deltaTime);
     });
@@ -184,14 +184,14 @@ export class HealthSystem {
   }
 
   // Event system
-  on(_event: string, _handler: (...args: any[]) => any): void {
+  on(event: string, handler: (...args: any[]) => any): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  off(_event: string, _handler: (...args: any[]) => any): void {
+  off(event: string, handler: (...args: any[]) => any): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);

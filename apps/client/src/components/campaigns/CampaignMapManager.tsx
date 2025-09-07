@@ -1,8 +1,9 @@
 /**
  * Campaign Map Manager - Interface for managing scenes and maps within a campaign
  */
-import React, { useState, useEffect } from 'react'
-import { logger } from '@vtt/logging';
+import React, { useState, useEffect, useRef } from "react";
+import { logger } from "@vtt/logging";
+import { toErrorObject } from "../../utils/error-utils";
 
 // Mock lucide-react icons
 const MockIcon = ({ className }: { className?: string }) => (
@@ -256,7 +257,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
           setAvailableMaps(data.maps || []);
         }
       } catch (error) {
-        logger.error('Failed to load maps:', error);
+        logger.error("Failed to load map assets:", toErrorObject(error));
       }
     };
 
@@ -368,7 +369,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
         setActiveSceneId(_sceneId);
       }
     } catch (error) {
-      logger.error('Failed to set active scene:', error);
+      logger.error("Failed to set background:", toErrorObject(error));
     }
   };
   */
@@ -388,7 +389,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
         }
       }
     } catch (error) {
-      logger.error('Failed to delete scene:', error);
+      logger.error("Failed to delete asset:", toErrorObject(error));
     }
   };
 

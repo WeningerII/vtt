@@ -123,7 +123,7 @@ export function DashboardHome() {
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.firstName}! 🎲</h1>
+        <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.displayName || 'Player'}! 🎲</h1>
         <p className="text-primary-100">
           Ready to continue your adventures? Your next session is{" "}
           {formatRelativeTime(mockStats.nextSession)}.

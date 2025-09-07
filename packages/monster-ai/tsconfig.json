@@ -11,6 +11,10 @@
   "include": [
     "src/**/*"
   ],
+  "references": [
+    { "path": "../ai" },
+    { "path": "../logging" }
+  ],
   "exclude": [
     "dist",
     "node_modules"

@@ -10,8 +10,8 @@ import {
 } from '../providers/RealProviders';
 import { CampaignAssistant } from '../campaign/CampaignAssistant';
 import { NPCBehaviorSystem } from '../NPCBehaviorSystem';
-import { VisionStore } from '@vtt/core-ecs/components/Vision';
-import { CacheManager, _DEFAULT_CACHE_CONFIGS } from '@vtt/performance/CacheManager';
+import { VisionStore, VisionData, EntityId } from '@vtt/core-ecs';
+import { CacheManager, CacheConfig } from '@vtt/performance';
 
 // Simplified interfaces that work with existing types
 export interface SimpleAIProvider {
@@ -288,7 +288,7 @@ export class IntegratedVisionAI {
   private extractFromText(text: string, key: string): string | null {
     const regex = new RegExp(`${key}[:\\s]+([^\\n,]+)`, 'i');
     const match = text.match(regex);
-    return match ? match[1].trim() : null;
+    return match ? match[1]?.trim() ?? null : null;
   }
 
   private extractArrayFromText(text: string, key: string): string[] {
@@ -338,7 +338,14 @@ export class AISystemExample {
       }
     };
 
-    this.cache = new CacheManager(_DEFAULT_CACHE_CONFIGS.memory);
+    this.cache = new CacheManager({
+      maxMemorySize: 50 * 1024 * 1024,
+      maxEntries: 100,
+      defaultTtl: 300000,
+      evictionPolicy: "lru",
+      compressionEnabled: false,
+      cleanupInterval: 60000
+    });
     
     // Create campaign assistant and behavior system with minimal setup
     const campaignAssistant = new CampaignAssistant({} as any);

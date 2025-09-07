@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from "events";
-import type { PhysicsWorld, _RigidBody as RigidBody, Vector2 } from "@vtt/physics";
+import type { PhysicsWorld, RigidBody, Vector2 } from "@vtt/physics";
 import type { PhysicsSpellBridge, SpellProjectile } from "@vtt/physics-spell-bridge";
 
 export interface VisualEffect {

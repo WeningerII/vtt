@@ -36,7 +36,7 @@ export class ConditionSystem {
   }
 
   private processSavingThrows(): void {
-    this.conditionsStore.forEach((_entity, __conditions) => {
+    this.conditionsStore.forEach((entity, conditions) => {
       for (const condition of conditions) {
         if (condition.saveEndOfTurn) {
           const { ability, dc } = condition.saveEndOfTurn;
@@ -241,14 +241,14 @@ export class ConditionSystem {
   }
 
   // Event system
-  on(_event: string, _handler: (...args: any[]) => any): void {
+  on(event: string, handler: (...args: any[]) => any): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  off(_event: string, _handler: (...args: any[]) => any): void {
+  off(event: string, handler: (...args: any[]) => any): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);

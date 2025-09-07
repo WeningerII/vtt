@@ -630,9 +630,13 @@ export class ProfessionalAnimationSystem {
 
   private uploadBoneTexture(skelAnim: SkeletalAnimation): void {
     if (this.boneTexture && skelAnim.currentPose) {
+      const dataSource = skelAnim.currentPose.buffer instanceof ArrayBuffer 
+        ? skelAnim.currentPose 
+        : new Float32Array(skelAnim.currentPose);
+      
       this.device.queue.writeTexture(
         { texture: this.boneTexture },
-        skelAnim.currentPose,
+        dataSource as BufferSource,
         { bytesPerRow: 256 * 16 },
         { width: 256, height: 4 },
       );

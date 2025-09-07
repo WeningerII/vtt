@@ -21,7 +21,7 @@ function getServices() {
 }
 
 // Validation helpers
-const validateCharacterConcept = (_body: any) => {
+const validateCharacterConcept = (body: any) => {
   const schema = z.object({
     prompt: z.string().min(10).max(1000),
     preferences: z
@@ -36,7 +36,7 @@ const validateCharacterConcept = (_body: any) => {
   return schema.parse(body);
 };
 
-const validateRetryStep = (_body: any) => {
+const validateRetryStep = (body: any) => {
   const schema = z.object({
     stepName: z.enum([
       "concept",
@@ -70,7 +70,7 @@ export const generateCharacterHandler: RouteHandler = async (ctx) => {
     // Parse and validate request body
     let body;
     try {
-      const bodyData = await new Promise<string>((_resolve, __reject) => {
+      const bodyData = await new Promise<string>((resolve, reject) => {
         let data = "";
         ctx.req.on("data", (chunk) => (data += chunk));
         ctx.req.on("end", () => resolve(data));
@@ -86,6 +86,7 @@ export const generateCharacterHandler: RouteHandler = async (ctx) => {
     const { prompt, preferences } = validateCharacterConcept(body);
     const userId = user.id;
 
+    const { genesisService } = getServices();
     const generation = await genesisService.startGeneration({ prompt, preferences }, userId);
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
@@ -131,6 +132,7 @@ export const getGenerationStatusHandler: RouteHandler = async (ctx) => {
     const pathParts = ctx.url.pathname.split("/");
     const generationId = pathParts[pathParts.length - 1];
 
+    const { genesisService } = getServices();
     const generation = genesisService.getGeneration(generationId);
     if (!generation) {
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
@@ -192,7 +194,7 @@ export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
     // Parse request body
     let body;
     try {
-      const bodyData = await new Promise<string>((_resolve, __reject) => {
+      const bodyData = await new Promise<string>((resolve, reject) => {
         let data = "";
         ctx.req.on("data", (chunk) => (data += chunk));
         ctx.req.on("end", () => resolve(data));
@@ -207,6 +209,7 @@ export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
 
     const { stepName } = validateRetryStep(body);
 
+    const { genesisService } = getServices();
     await genesisService.retryStep(generationId, stepName);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
@@ -294,6 +297,7 @@ export const _handleGenesisWebSocket = (ws: any, message: any, _userId: string) 
         ws.generationSubscription = generationId;
 
         // Send current status
+        const { genesisService } = getServices();
         const generation = genesisService.getGeneration(generationId);
         if (generation) {
           ws.send(

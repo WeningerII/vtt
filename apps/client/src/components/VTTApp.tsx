@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
+import { toErrorObject } from "../utils/error-utils";
 import { io, Socket } from 'socket.io-client';
 import SceneCanvas from './SceneCanvas';
 import TokensPanel from './TokensPanel';
@@ -36,30 +37,34 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
   useEffect(() => {
     if (!socket) {return;}
 
-    socket.on("scene_joined", (data: { scene: Scene }) => {
-      logger.info("Joined scene:", data.scene);
-      setCurrentScene(data.scene);
-    });
+    try {
+      socket.on("scene_joined", (data: { scene: Scene }) => {
+        logger.info("Joined scene:", data.scene);
+        setCurrentScene(data.scene);
+      });
 
-    socket.on("user_joined_scene", (data: { user: any; _sceneId: string }) => {
-      logger.info("User joined scene:", data.user.displayName);
-    });
+      socket.on("user_joined_scene", (data: { user: any; _sceneId: string }) => {
+        logger.info("User joined scene:", { displayName: data.user.displayName });
+      });
 
-    socket.on("user_left_scene", (data: { userId: string; _sceneId: string }) => {
-      logger.info("User left scene:", data.userId);
-    });
+      socket.on("user_left_scene", (data: { userId: string; _sceneId: string }) => {
+        logger.info("User left scene:", { userId: data.userId });
+      });
 
-    socket.on("new_message", (message: ChatMessage) => {
-      logger.info("New chat message:", message);
-      setChatMessages(prev => [...prev, message]);
-    });
+      socket.on("new_message", (message: ChatMessage) => {
+        logger.info("New chat message:", message);
+        setChatMessages(prev => [...prev, message]);
+      });
 
-    return () => {
-      socket.off("scene_joined");
-      socket.off("user_joined_scene");
-      socket.off("user_left_scene");
-      socket.off("new_message");
-    };
+      return () => {
+        socket.off("scene_joined");
+        socket.off("user_joined_scene");
+        socket.off("user_left_scene");
+        socket.off("new_message");
+      };
+    } catch (error) {
+      logger.error("Failed to initialize VTT:", toErrorObject(error));
+    }
   }, [socket]);
 
   // Mock scene for development

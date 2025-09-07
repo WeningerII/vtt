@@ -2,6 +2,7 @@
  * Performance optimization package for VTT
  */
 
+export * from "./CacheManager";
 export * from "./LazyLoader";
 // export * from './PerformanceOptimizer'; // Module doesn't exist yet
 // export * from './metrics'; // Module doesn't exist yet
@@ -9,7 +10,6 @@ export * from "./LazyLoader";
 // export * from './ReactOptimizer'; // Module doesn't exist yet
 export * from "./MemoryProfiler";
 export * from "./PerformanceBudget";
-export * from "./LazyLoader";
 export * from "./PerformanceMonitor";
 
 import { Profiler } from "./Profiler";

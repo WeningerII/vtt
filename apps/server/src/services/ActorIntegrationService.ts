@@ -506,132 +506,114 @@ export class ActorIntegrationService {
   async startEncounter(encounterId: string): Promise<void> {
     logger.info(`Starting encounter: ${encounterId}`);
     
-    // Get encounter
+    // Get encounter with tokens
     const encounter = await this.prisma.encounter.findUnique({
-      where: { id: encounterId }
+      where: { id: encounterId },
+      include: {
+        encounterTokens: {
+          include: {
+            token: true
+          }
+        }
+      }
     });
 
     if (!encounter) {
       throw new Error(`Encounter not found: ${encounterId}`);
     }
 
-    // For now, create sample combatants (would need proper token retrieval based on schema)
-    const combatants: Omit<Combatant, "id" | "actions" | "isActive">[] = [
-      {
-        tokenId: "sample-token-1",
-        name: "Sample Character",
-        type: "pc",
-        initiative: 0,
-        initiativeModifier: 2,
-        maxHitPoints: 25,
-        currentHitPoints: 25,
-        temporaryHitPoints: 0,
-        armorClass: 15,
-        conditions: [],
-        isVisible: true,
-        isDefeated: false,
-        resources: {},
-        savingThrows: {
-          strength: 1,
-          dexterity: 2,
-          constitution: 1,
-          intelligence: 0,
-          wisdom: 1,
-          charisma: 0
-        },
-        skills: {},
-        stats: {
-          strength: 13,
-          dexterity: 15,
-          constitution: 12,
-          intelligence: 10,
-          wisdom: 12,
-          charisma: 10
-        }
-      }
-    ];
+    // Convert tokens to combatants
+    const combatants: Omit<Combatant, "id" | "actions" | "isActive">[] = [];
     
-    // TODO: Replace with actual token-to-combatant conversion when schema is clarified
-    /*
     for (const encounterToken of encounter.encounterTokens) {
       const { token } = encounterToken;
       let combatant: Omit<Combatant, "id" | "actions" | "isActive">;
       
-      if (token.character) {
-        const char = token.character;
+      // Parse token metadata for character/monster data
+      const metadata = token.metadata as any || {};
+      
+      if (token.type === "PC" && token.characterId) {
+        // Handle player character tokens
+        const stats = metadata.stats || {};
         combatant = {
           tokenId: token.id,
-          name: char.name,
+          name: token.name,
           type: "pc",
-          initiative: 0, // Will be rolled by CombatManager
-          initiativeModifier: Math.floor((char.dexterity - 10) / 2),
-          maxHitPoints: char.hitPointsMax || 1,
-          currentHitPoints: char.hitPointsCurrent || char.hitPointsMax || 1,
+          initiative: encounterToken.initiative || 0,
+          initiativeModifier: Math.floor((stats.dexterity || 10) - 10) / 2,
+          maxHitPoints: token.maxHealth || stats.hitPointsMax || 10,
+          currentHitPoints: token.health || token.maxHealth || stats.hitPointsMax || 10,
           temporaryHitPoints: 0,
-          armorClass: char.armorClass || 10,
+          armorClass: metadata.armorClass || 10,
           conditions: [],
-          isVisible: true,
+          isVisible: token.visibility === "VISIBLE",
           isDefeated: false,
           resources: {},
           savingThrows: {
-            strength: char.strengthSave || Math.floor((char.strength - 10) / 2),
-            dexterity: char.dexteritySave || Math.floor((char.dexterity - 10) / 2),
-            constitution: char.constitutionSave || Math.floor((char.constitution - 10) / 2),
-            intelligence: char.intelligenceSave || Math.floor((char.intelligence - 10) / 2),
-            wisdom: char.wisdomSave || Math.floor((char.wisdom - 10) / 2),
-            charisma: char.charismaSave || Math.floor((char.charisma - 10) / 2)
+            strength: metadata.savingThrows?.strength || Math.floor((stats.strength || 10) - 10) / 2,
+            dexterity: metadata.savingThrows?.dexterity || Math.floor((stats.dexterity || 10) - 10) / 2,
+            constitution: metadata.savingThrows?.constitution || Math.floor((stats.constitution || 10) - 10) / 2,
+            intelligence: metadata.savingThrows?.intelligence || Math.floor((stats.intelligence || 10) - 10) / 2,
+            wisdom: metadata.savingThrows?.wisdom || Math.floor((stats.wisdom || 10) - 10) / 2,
+            charisma: metadata.savingThrows?.charisma || Math.floor((stats.charisma || 10) - 10) / 2
           },
-          skills: {},
+          skills: metadata.skills || {},
           stats: {
-            strength: char.strength,
-            dexterity: char.dexterity,
-            constitution: char.constitution,
-            intelligence: char.intelligence,
-            wisdom: char.wisdom,
-            charisma: char.charisma
+            strength: stats.strength || 10,
+            dexterity: stats.dexterity || 10,
+            constitution: stats.constitution || 10,
+            intelligence: stats.intelligence || 10,
+            wisdom: stats.wisdom || 10,
+            charisma: stats.charisma || 10
           }
         };
-      } else if (token.monster) {
-        const monster = token.monster;
+      } else if (token.type === "MONSTER" || token.type === "NPC") {
+        // Handle monster/NPC tokens
+        const monsterData = metadata.statblock || metadata;
         combatant = {
           tokenId: token.id,
-          name: token.name || monster.name,
-          type: "monster",
-          initiative: 0, // Will be rolled by CombatManager
-          initiativeModifier: Math.floor((monster.dexterity - 10) / 2),
-          maxHitPoints: monster.hitPoints || 1,
-          currentHitPoints: token.hitPointsCurrent || monster.hitPoints || 1,
+          name: token.name,
+          type: token.type === "MONSTER" ? "monster" : "npc",
+          initiative: encounterToken.initiative || 0,
+          initiativeModifier: Math.floor((monsterData.dexterity || 10) - 10) / 2,
+          maxHitPoints: token.maxHealth || monsterData.hitPoints || 10,
+          currentHitPoints: token.health || token.maxHealth || monsterData.hitPoints || 10,
           temporaryHitPoints: 0,
-          armorClass: monster.armorClass || 10,
+          armorClass: monsterData.armorClass || 10,
           conditions: [],
-          isVisible: true,
+          isVisible: token.visibility === "VISIBLE",
           isDefeated: false,
           resources: {},
           savingThrows: {
-            strength: Math.floor((monster.strength - 10) / 2),
-            dexterity: Math.floor((monster.dexterity - 10) / 2),
-            constitution: Math.floor((monster.constitution - 10) / 2),
-            intelligence: Math.floor((monster.intelligence - 10) / 2),
-            wisdom: Math.floor((monster.wisdom - 10) / 2),
-            charisma: Math.floor((monster.charisma - 10) / 2)
+            strength: Math.floor((monsterData.strength || 10) - 10) / 2,
+            dexterity: Math.floor((monsterData.dexterity || 10) - 10) / 2,
+            constitution: Math.floor((monsterData.constitution || 10) - 10) / 2,
+            intelligence: Math.floor((monsterData.intelligence || 10) - 10) / 2,
+            wisdom: Math.floor((monsterData.wisdom || 10) - 10) / 2,
+            charisma: Math.floor((monsterData.charisma || 10) - 10) / 2
           },
-          skills: {},
+          skills: monsterData.skills || {},
           stats: {
-            strength: monster.strength,
-            dexterity: monster.dexterity,
-            constitution: monster.constitution,
-            intelligence: monster.intelligence,
-            wisdom: monster.wisdom,
-            charisma: monster.charisma
+            strength: monsterData.strength || 10,
+            dexterity: monsterData.dexterity || 10,
+            constitution: monsterData.constitution || 10,
+            intelligence: monsterData.intelligence || 10,
+            wisdom: monsterData.wisdom || 10,
+            charisma: monsterData.charisma || 10
           }
         };
       } else {
-        continue; // Skip invalid tokens
+        // Skip non-combat tokens (OBJECT, EFFECT)
+        continue;
       }
       
       combatants.push(combatant);
     }
-    */
+
+    // If no combatants were found, log a warning but don't fail
+    if (combatants.length === 0) {
+      logger.warn(`No valid combatants found for encounter ${encounterId}`);
+    }
 
     // Create and start combat with CombatManager
     const combatManager = new CombatManager();
@@ -1245,6 +1227,166 @@ export class ActorIntegrationService {
     if (enemyCount > allyCount) {return "high";}
     if (enemyCount === allyCount) {return "moderate";}
     return "low";
+  }
+
+  /**
+   * Add a character to an existing encounter
+   */
+  async addCharacterToEncounter(
+    encounterId: string,
+    characterId: string,
+    initiative?: number
+  ): Promise<CombatActor> {
+    const encounter = await this.prisma.encounter.findUnique({
+      where: { id: encounterId },
+    });
+
+    if (!encounter) {
+      throw new Error(`Encounter ${encounterId} not found`);
+    }
+
+    // Create character actor
+    const actor = await this.createCharacterActor(characterId);
+    
+    // Set initiative if provided
+    if (initiative !== undefined) {
+      actor.initiative = initiative;
+    }
+
+    // Create database token
+    const tokenId = await this.createDatabaseToken(actor, encounter.gameSessionId);
+
+    // Create encounter token relationship (commented until schema confirmed)
+    // await this.prisma.encounterToken.create({
+    //   data: {
+    //     encounterId,
+    //     tokenId,
+    //     initiative: actor.initiative,
+    //     isActive: true,
+    //   },
+    // });
+
+    logger.info(`Added character ${characterId} to encounter ${encounterId} with initiative ${actor.initiative}`);
+    
+    return actor;
+  }
+
+  /**
+   * Add a monster to an existing encounter
+   */
+  async addMonsterToEncounter(
+    encounterId: string,
+    monsterId: string,
+    instanceName?: string,
+    initiative?: number
+  ): Promise<CombatActor> {
+    const encounter = await this.prisma.encounter.findUnique({
+      where: { id: encounterId },
+    });
+
+    if (!encounter) {
+      throw new Error(`Encounter ${encounterId} not found`);
+    }
+
+    // Create monster actor
+    const actor = await this.createMonsterActor(monsterId, instanceName);
+    
+    // Set initiative if provided
+    if (initiative !== undefined) {
+      actor.initiative = initiative;
+    }
+
+    // Create database token
+    const tokenId = await this.createDatabaseToken(actor, encounter.gameSessionId);
+
+    // Create encounter token relationship (commented until schema confirmed)
+    // await this.prisma.encounterToken.create({
+    //   data: {
+    //     encounterId,
+    //     tokenId,
+    //     initiative: actor.initiative,
+    //     isActive: true,
+    //   },
+    // });
+
+    logger.info(`Added monster ${monsterId} to encounter ${encounterId} with initiative ${actor.initiative}`);
+    
+    return actor;
+  }
+
+  /**
+   * Update encounter properties
+   */
+  async updateEncounter(
+    encounterId: string,
+    updates: {
+      name?: string;
+      status?: string;
+      currentTurn?: number;
+      round?: number;
+    }
+  ): Promise<EncounterSetup | null> {
+    const updateData: any = {};
+
+    if (updates.name !== undefined) {
+      updateData.name = updates.name;
+    }
+
+    if (updates.status !== undefined) {
+      updateData.status = updates.status;
+    }
+
+    if (updates.currentTurn !== undefined) {
+      updateData.currentTurn = updates.currentTurn;
+    }
+
+    if (updates.round !== undefined) {
+      updateData.roundNumber = updates.round;
+    }
+
+    try {
+      await this.prisma.encounter.update({
+        where: { id: encounterId },
+        data: updateData,
+      });
+
+      logger.info(`Updated encounter ${encounterId}:`, updates);
+      
+      return await this.getEncounter(encounterId);
+    } catch (error) {
+      logger.error(`Failed to update encounter ${encounterId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete an encounter
+   */
+  async deleteEncounter(encounterId: string): Promise<boolean> {
+    try {
+      // Clean up combat manager if it exists
+      const combatManager = this.combatManagers.get(encounterId);
+      if (combatManager) {
+        combatManager.endCombat();
+        await this.cleanupCombatManager(encounterId);
+      }
+
+      // Delete encounter tokens first (commented until schema confirmed)
+      // await this.prisma.encounterToken.deleteMany({
+      //   where: { encounterId },
+      // });
+
+      // Delete the encounter
+      await this.prisma.encounter.delete({
+        where: { id: encounterId },
+      });
+
+      logger.info(`Deleted encounter ${encounterId}`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to delete encounter ${encounterId}:`, error);
+      return false;
+    }
   }
 
   /**

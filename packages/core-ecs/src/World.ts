@@ -1,6 +1,10 @@
 import { Transform2DStore, type EntityId } from './components/Transform2D';
 import { MovementStore } from './components/Movement';
 import { AppearanceStore } from './components/Appearance';
+import { StatsStore } from './components/Stats';
+import { CombatStore } from './components/Combat';
+import { HealthStore } from './components/Health';
+import { ConditionsStore } from './components/Conditions';
 
 export class World {
   readonly capacity: number;
@@ -11,6 +15,10 @@ export class World {
   readonly transforms: Transform2DStore;
   readonly movement: MovementStore;
   readonly appearance: AppearanceStore;
+  readonly stats: StatsStore;
+  readonly combat: CombatStore;
+  readonly health: HealthStore;
+  readonly conditions: ConditionsStore;
 
   constructor(capacity = 10_000) {
     this.capacity = capacity;
@@ -18,9 +26,17 @@ export class World {
     this.transforms = new Transform2DStore(capacity);
     this.movement = new MovementStore(capacity);
     this.appearance = new AppearanceStore(capacity);
+    this.stats = new StatsStore(capacity);
+    this.combat = new CombatStore(capacity);
+    this.health = new HealthStore(capacity);
+    this.conditions = new ConditionsStore(capacity);
   }
 
   create(): EntityId {
+    return this.createEntity();
+  }
+
+  createEntity(): EntityId {
     const id = this.free.length ? (this.free.pop() as number) : this.nextId++;
     if (id >= this.capacity) {throw new Error('World capacity exceeded');}
     this.alive[id] = 1;
@@ -28,11 +44,19 @@ export class World {
   }
 
   destroy(id: EntityId) {
+    return this.destroyEntity(id);
+  }
+
+  destroyEntity(id: EntityId) {
     if (!this.alive[id]) {return;}
     this.alive[id] = 0;
     this.transforms.remove(id);
     this.movement.remove(id);
     this.appearance.remove(id);
+    this.stats.remove(id);
+    this.combat.remove(id);
+    this.health.remove(id);
+    this.conditions.remove(id);
     this.free.push(id);
   }
 

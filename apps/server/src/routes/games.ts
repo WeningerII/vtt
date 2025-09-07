@@ -346,10 +346,10 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
 
 // Helper function to parse JSON from request body
 async function parseJsonBody(req: any): Promise<any> {
-  return new Promise((_resolve, __reject) => {
+  return new Promise((resolve, reject) => {
     let body = "";
 
-    req.on("data", (_chunk: any) => {
+    req.on("data", (chunk: any) => {
       body += chunk.toString();
     });
 

@@ -101,7 +101,7 @@ export function sanitizeURL(url: string): string | null {
 export function sanitizeFileName(fileName: string): string {
   // Remove any path separators and special characters
   return fileName
-    .replace(/[\/\\]/g, "")
+    .replace(/[/\\]/g, "")
     .replace(/\.\./g, "")
     .replace(/[^a-zA-Z0-9\-_.]/g, "_")
     .slice(0, 255); // Limit length

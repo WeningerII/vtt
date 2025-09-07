@@ -4,8 +4,9 @@ import {
   getEncounterHandler,
   updateEncounterHandler,
   deleteEncounterHandler,
+  addActorHandler,
 } from "../encounter";
-import { RouteContext } from "../../utils/router";
+import { Context } from "../../router/types";
 import { Readable } from "stream";
 
 // Mock dependencies
@@ -63,7 +64,7 @@ jest.mock("../services/MonsterService", () => ({
 }));
 
 // Helper to create mock request/response
-function createMockContext(method: string, url: string, body?: any): RouteContext {
+function createMockContext(method: string, url: string, body?: any): Context {
   const req = {
     method,
     url,
@@ -654,9 +655,3 @@ describe("Encounter Routes", () => {
     });
   });
 });
-
-// Mock handler functions that would be imported
-const addActorHandler = jest.fn();
-const getEncounterHandler = jest.fn();
-const updateEncounterHandler = jest.fn();
-const deleteEncounterHandler = jest.fn();

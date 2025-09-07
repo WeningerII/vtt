@@ -54,7 +54,7 @@ export function parseDiceNotation(
 /**
  * Roll a single die with given number of sides
  */
-export function rollDie(_sides: number): number {
+export function rollDie(sides: number): number {
   return Math.floor(Math.random() * sides) + 1;
 }
 
@@ -74,7 +74,7 @@ export function rollDice(dice: string): DiceRoll | null {
     rolls.push(rollDie(sides));
   }
 
-  const rollTotal = rolls.reduce((_sum, _roll) => sum + roll, 0);
+  const rollTotal = rolls.reduce((sum, roll) => sum + roll, 0);
   const total = rollTotal + modifier;
 
   return {
@@ -88,7 +88,7 @@ export function rollDice(dice: string): DiceRoll | null {
 /**
  * Create a complete dice roll result with metadata
  */
-export function createDiceRollResult(dice: string, _label?: string): DiceRollResult | null {
+export function createDiceRollResult(dice: string, label?: string): DiceRollResult | null {
   const roll = rollDice(dice);
   if (!roll) {
     return null;

@@ -6,57 +6,12 @@ import React, { memo } from "react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { cn } from "../../lib/utils";
-// Define Character interface locally until core-schemas export is fixed
-interface Ability {
-  name: string;
-  value: number;
-  modifier: number;
-}
-
-interface Skill {
-  name: string;
-  ability: string;
-  proficient: boolean;
-  expertise?: boolean;
-  value: number;
-  modifier: number;
-}
-
-interface SavingThrow {
-  proficient: boolean;
-  value: number;
-}
-
-interface HitPoints {
-  current: number;
-  max: number;
-  temporary: number;
-}
-
-interface Character {
-  id: string;
-  name: string;
-  race: string;
-  class: string;
-  level: number;
-  background: string;
-  experience: number;
-  hitPoints: HitPoints;
-  maxHitPoints: number; // Legacy property for backward compatibility
-  tempHitPoints: number; // Legacy property for backward compatibility
-  armorClass: number;
-  proficiencyBonus: number;
-  speed: number;
-  inspiration: boolean;
-  abilities: Record<string, Ability>;
-  skills: Record<string, Skill>;
-  savingThrows: Record<string, SavingThrow>;
-}
+import { Character, Ability, Skill, SavingThrow, HitPoints } from "@vtt/core-schemas";
 
 interface AbilityScoresProps {
   character: Character;
-  isEditing: boolean;
-  onUpdate: (_updates: Partial<Character>) => void;
+  isEditing?: boolean;
+  onUpdate: (updates: Partial<Character>) => void;
 }
 
 const ABILITIES = [
@@ -257,23 +212,7 @@ export const AbilityScores: React.FC<AbilityScoresProps> = ({ character, isEditi
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-primary mb-1">Inspiration</label>
-          <button
-            onClick={() => updateCharacterField("inspiration", !character.inspiration)}
-            disabled={!isEditing}
-            className={cn(
-              "w-full p-2 rounded border text-center font-medium transition-colors",
-              character.inspiration
-                ? "bg-accent-primary text-white border-accent-primary"
-                : "bg-bg-tertiary text-text-secondary border-border-primary",
-              isEditing && "hover:opacity-80 cursor-pointer",
-              !isEditing && "cursor-default",
-            )}
-          >
-            {character.inspiration ? "Inspired" : "No Inspiration"}
-          </button>
-        </div>
+        {/* Inspiration removed - not part of core Character schema */}
       </div>
 
       {/* Health and Defense */}

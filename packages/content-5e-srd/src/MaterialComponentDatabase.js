@@ -440,14 +440,16 @@ export class MaterialComponentValidator {
     }
     static getComponentCost(spellId) {
         const requirement = SPELL_MATERIAL_REQUIREMENTS[spellId];
-        if (!requirement)
+        if (!requirement) {
             return 0;
+        }
         return requirement.components.reduce((_total, _component) => total + (component.cost || 0), 0);
     }
     static consumeComponents(spellId, availableComponents) {
         const requirement = SPELL_MATERIAL_REQUIREMENTS[spellId];
-        if (!requirement)
+        if (!requirement) {
             return availableComponents;
+        }
         const consumed = requirement.components.filter((comp) => comp.consumed);
         return availableComponents.filter((available) => !consumed.some((consumedComp) => consumedComp.id === available.id));
     }

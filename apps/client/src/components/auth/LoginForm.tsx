@@ -3,6 +3,7 @@
  */
 import React, { useState } from "react";
 import { logger } from "@vtt/logging";
+import { toErrorObject } from "../../utils/error-utils";
 // Mock react-router-dom since module is not available
 const useNavigate = () => (path?: string) => console.log('Navigate to:', path);
 const useLocation = () => ({ pathname: '/', search: '', hash: '', state: null, key: 'mock' });
@@ -132,13 +133,12 @@ export function LoginForm() {
       const searchParams = new URLSearchParams(location.search);
       const redirectTo = searchParams.get("redirect") || "/dashboard";
       navigate(redirectTo);
-    } catch (err) {
-      // Error is handled by useAuth hook
-      logger.error("Login failed:", err);
+    } catch (error) {
+      logger.error("Login failed:", toErrorObject(error));
       
       // Set form-specific error if needed
-      if (err instanceof Error) {
-        setErrors({ general: err.message });
+      if (error instanceof Error) {
+        setErrors({ general: error.message });
       }
     } finally {
       setIsSubmitting(false);

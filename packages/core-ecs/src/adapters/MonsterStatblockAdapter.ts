@@ -2,7 +2,7 @@
  * Monster Statblock Adapter - Converts D&D 5e monster statblocks to ECS components
  */
 
-import { _Condition, ConditionType } from "../components/Conditions";
+import { Condition, ConditionType } from "../components/Conditions";
 
 export interface D5eStatblock {
   name: string;
@@ -92,7 +92,7 @@ export interface ECSMonsterData {
   actions: Action[];
   bonusActions: Action[];
   reactions: Action[];
-  legendaryActions?: LegendaryAction[];
+  legendaryActions: LegendaryAction[];
   spellcasting?: Spellcasting;
   traits: {
     damageResistances: string[];
@@ -155,8 +155,8 @@ export class MonsterStatblockAdapter {
       actions: statblock.actions || [],
       bonusActions: statblock.bonusActions || [],
       reactions: statblock.reactions || [],
-      legendaryActions: statblock.legendaryActions,
-      spellcasting: statblock.spellcasting,
+      legendaryActions: statblock.legendaryActions || [],
+      ...(statblock.spellcasting && { spellcasting: statblock.spellcasting }),
       traits: {
         damageResistances: statblock.damageResistances || [],
         damageImmunities: statblock.damageImmunities || [],
@@ -191,7 +191,20 @@ export class MonsterStatblockAdapter {
     range?: { normal: number; long?: number };
     description: string;
   }> {
-    const actions = [];
+    const actions: Array<{
+      id: string;
+      name: string;
+      actionType: "action" | "bonus_action" | "reaction";
+      attackBonus?: number;
+      damage?: {
+        diceExpression: string;
+        damageType: string;
+      };
+      saveDC?: number;
+      saveAbility?: string;
+      range?: { normal: number; long?: number };
+      description: string;
+    }> = [];
 
     // Convert main actions
     for (const action of monsterData.actions) {
@@ -199,16 +212,16 @@ export class MonsterStatblockAdapter {
         id: `${monsterData.name.toLowerCase().replace(/\s+/g, "")}_${action.name.toLowerCase().replace(/\s+/g, "")}`,
         name: action.name,
         actionType: "action" as const,
-        attackBonus: action.attackBonus,
-        damage: action.damage
-          ? {
-              diceExpression: action.damage.diceExpression,
-              damageType: action.damage.damageType,
-            }
-          : undefined,
-        saveDC: action.saveDC,
-        saveAbility: action.saveAbility,
-        range: action.range ? { normal: action.range } : undefined,
+        ...(action.attackBonus !== undefined && { attackBonus: action.attackBonus }),
+        ...(action.damage && {
+          damage: {
+            diceExpression: action.damage.diceExpression,
+            damageType: action.damage.damageType,
+          }
+        }),
+        ...(action.saveDC !== undefined && { saveDC: action.saveDC }),
+        ...(action.saveAbility !== undefined && { saveAbility: action.saveAbility }),
+        ...(action.range !== undefined && { range: { normal: action.range } }),
         description: action.description,
       });
     }
@@ -219,16 +232,16 @@ export class MonsterStatblockAdapter {
         id: `${monsterData.name.toLowerCase().replace(/\s+/g, "")}_${action.name.toLowerCase().replace(/\s+/g, "")}_bonus`,
         name: action.name,
         actionType: "bonus_action" as const,
-        attackBonus: action.attackBonus,
-        damage: action.damage
-          ? {
-              diceExpression: action.damage.diceExpression,
-              damageType: action.damage.damageType,
-            }
-          : undefined,
-        saveDC: action.saveDC,
-        saveAbility: action.saveAbility,
-        range: action.range ? { normal: action.range } : undefined,
+        ...(action.attackBonus !== undefined && { attackBonus: action.attackBonus }),
+        ...(action.damage && {
+          damage: {
+            diceExpression: action.damage.diceExpression,
+            damageType: action.damage.damageType,
+          }
+        }),
+        ...(action.saveDC !== undefined && { saveDC: action.saveDC }),
+        ...(action.saveAbility !== undefined && { saveAbility: action.saveAbility }),
+        ...(action.range !== undefined && { range: { normal: action.range } }),
         description: action.description,
       });
     }
@@ -239,16 +252,16 @@ export class MonsterStatblockAdapter {
         id: `${monsterData.name.toLowerCase().replace(/\s+/g, "")}_${action.name.toLowerCase().replace(/\s+/g, "")}_reaction`,
         name: action.name,
         actionType: "reaction" as const,
-        attackBonus: action.attackBonus,
-        damage: action.damage
-          ? {
-              diceExpression: action.damage.diceExpression,
-              damageType: action.damage.damageType,
-            }
-          : undefined,
-        saveDC: action.saveDC,
-        saveAbility: action.saveAbility,
-        range: action.range ? { normal: action.range } : undefined,
+        ...(action.attackBonus !== undefined && { attackBonus: action.attackBonus }),
+        ...(action.damage && {
+          damage: {
+            diceExpression: action.damage.diceExpression,
+            damageType: action.damage.damageType,
+          }
+        }),
+        ...(action.saveDC !== undefined && { saveDC: action.saveDC }),
+        ...(action.saveAbility !== undefined && { saveAbility: action.saveAbility }),
+        ...(action.range !== undefined && { range: { normal: action.range } }),
         description: action.description,
       });
     }

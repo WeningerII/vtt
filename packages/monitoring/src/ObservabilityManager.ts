@@ -4,8 +4,7 @@
 
 import { EventEmitter } from "events";
 import { Logger, LoggerConfig } from './logger';
-import { MetricsRegistry, SystemMetricsCollector } from './metrics';
-import type { MetricsCollector } from './metrics';
+import { MetricsRegistry, SystemMetricsCollector, type MetricsCollector } from './metrics';
 import { HealthCheckManager, HealthCheckConfig } from "./HealthCheck";
 import { AlertManager, AlertManagerConfig } from "./AlertManager";
 

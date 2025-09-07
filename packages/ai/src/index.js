@@ -81,37 +81,43 @@ export class AIRouter {
         const candidates = this.registry
             .byCapability(cap)
             .filter((p) => !(this.policy.forbid ?? []).includes(p.name));
-        if (candidates.length === 0)
+        if (candidates.length === 0) {
             throw new Error(`No providers registered with capability ${cap}`);
+        }
         const preferred = (this.policy.preferred ?? []).find((n) => candidates.some((c) => c.name === n));
-        if (preferred)
+        if (preferred) {
             return candidates.find((c) => c.name === preferred);
+        }
         const weights = candidates.map((c) => ({ p: c, w: this.policy.weights?.[c.name] ?? 1 }));
         const total = weights.reduce((s, x) => s + x.w, 0);
         let r = Math.random() * total;
         for (const { p, w } of weights) {
             r -= w;
-            if (r <= 0)
+            if (r <= 0) {
                 return p;
+            }
         }
         return candidates[0];
     }
     async textToImage(req, ctx) {
         const p = this.pick("textToImage");
-        if (!p.textToImage)
+        if (!p.textToImage) {
             throw new Error(`Provider ${p.name} lacks textToImage`);
+        }
         return p.textToImage(req, ctx);
     }
     async depth(req, ctx) {
         const p = this.pick("depth");
-        if (!p.depth)
+        if (!p.depth) {
             throw new Error(`Provider ${p.name} lacks depth`);
+        }
         return p.depth(req, ctx);
     }
     async segmentation(req, ctx) {
         const p = this.pick("segmentation");
-        if (!p.segmentation)
+        if (!p.segmentation) {
             throw new Error(`Provider ${p.name} lacks segmentation`);
+        }
         return p.segmentation(req, ctx);
     }
 }
@@ -161,7 +167,7 @@ export class DummyProvider {
             costUSD: 0,
             latencyMs: Date.now() - start,
             mask: { uri, mimeType: "image/png" },
-            classes: Record<string, unknown>,
+            classes: {}
         };
     }
 }

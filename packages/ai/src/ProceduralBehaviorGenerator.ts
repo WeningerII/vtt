@@ -4,9 +4,26 @@
  */
 
 import { BehaviorTree, BehaviorTreeBuilder, Blackboard, NodeStatus } from "./BehaviorTree";
-import { MonsterPersonalityTraits, TacticalPreferences } from "@vtt/monster-ai";
-import { PerlinNoise, NameGenerator } from "@vtt/content-creation/ProceduralGenerators";
-import { globalEventBus, AIEvents } from "@vtt/core/EventBus";
+// TODO: Re-enable when packages are available
+// import { MonsterPersonalityTraits, TacticalPreferences } from "@vtt/monster-ai";
+// import { PerlinNoise, NameGenerator } from "@vtt/content-creation/ProceduralGenerators";
+// import { globalEventBus, AIEvents } from "@vtt/core/EventBus";
+
+// Temporary interfaces until packages are available
+export interface MonsterPersonalityTraits {
+  aggression: number;
+  selfPreservation: number;
+  packMentality: number;
+  cunning: number;
+  curiosity: number;
+  loyalty: number;
+}
+
+export interface TacticalPreferences {
+  preferredRange: 'melee' | 'ranged' | 'mixed';
+  flankingTendency: number;
+  retreatThreshold: number;
+}
 
 export interface BehaviorTemplate {
   id: string;
@@ -250,7 +267,7 @@ export class ProceduralBehaviorGenerator {
     }));
 
     // Sort by score and select top templates
-    scoredTemplates.sort((_a, _b) => b.score - a.score);
+    scoredTemplates.sort((a, b) => b.score - a.score);
 
     const complexity = options.complexity || "moderate";
     const templateCount = complexity === "simple" ? 1 : complexity === "moderate" ? 2 : 3;
@@ -394,7 +411,7 @@ export class ProceduralBehaviorGenerator {
 
     // Berserker behavior for high aggression
     if (personality.aggression > 0.8 && personality.selfPreservation < 0.3) {
-      behaviors.push({
+      (behaviors as any[]).push({
         id: "berserker_rage",
         name: "Berserker Rage",
         trigger: "bloodied",
@@ -405,7 +422,7 @@ export class ProceduralBehaviorGenerator {
 
     // Pack tactics for high pack mentality
     if (personality.packMentality > 0.7) {
-      behaviors.push({
+      (behaviors as any[]).push({
         id: "pack_tactics",
         name: "Pack Tactics",
         trigger: "ally_nearby",
@@ -416,7 +433,7 @@ export class ProceduralBehaviorGenerator {
 
     // Cunning retreat for high cunning and self-preservation
     if (personality.cunning > 0.6 && personality.selfPreservation > 0.6) {
-      behaviors.push({
+      (behaviors as any[]).push({
         id: "cunning_retreat",
         name: "Cunning Retreat",
         trigger: "outnumbered",

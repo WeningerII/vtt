@@ -16,17 +16,23 @@ for (let i = 0; i < N; i++) {
   const hue = (i * 13) % 360;
   const color = `hsl(${hue} 70% 60%)`;
 
-  w.transforms.add(e, { x, y });
+  w.transforms.x[e] = x;
+  w.transforms.y[e] = y;
   const vx = (Math.random() * 2 - 1) * 40;
   const vy = (Math.random() * 2 - 1) * 40;
-  w.movement.add(e, { vx, vy, maxSpeed: 40 });
-  w.appearance.add(e, { size: 10, tintR: 1, tintG: 1, tintB: 1, alpha: 1, color });
+  w.movement.vx[e] = vx;
+  w.movement.vy[e] = vy;
+  w.movement.speed[e] = 40;
+  w.appearance.tintR[e] = 1;
+  w.appearance.tintG[e] = 1;
+  w.appearance.tintB[e] = 1;
+  w.appearance.alpha[e] = 1;
   ids.push(e);
 }
 
 const clients = new Set<Client>();
 
-function aoiFilter(c: Client, _id: number) {
+function aoiFilter(c: Client, id: number) {
   const halfX = c.spanX * 0.6,
     halfY = c.spanY * 0.6;
   const x = w.transforms.x[id],
@@ -34,7 +40,7 @@ function aoiFilter(c: Client, _id: number) {
   return x >= c.cx - halfX && x <= c.cx + halfX && y >= c.cy - halfY && y <= c.cy + halfY;
 }
 
-function tick(_dt: number) {
+function tick(dt: number) {
   MovementSystem(w, dt);
   for (const id of ids) {
     const x = w.transforms.x[id],
@@ -45,7 +51,7 @@ function tick(_dt: number) {
   const now = Date.now();
   for (const c of clients) {
     if (c.ws.readyState !== c.ws.OPEN) {continue;}
-    const visible = [];
+    const visible: any[] = [];
     let sent = 0;
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];
@@ -54,8 +60,8 @@ function tick(_dt: number) {
         id,
         x: +w.transforms.x[id].toFixed(2),
         y: +w.transforms.y[id].toFixed(2),
-        size: w.appearance?.size?.[id] ?? 10,
-        color: w.appearance.color[id] || "hsl(200 70% 60%)",
+        size: 10,
+        color: "hsl(200 70% 60%)",
       });
       if (++sent >= 2500) {break;}
     }

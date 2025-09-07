@@ -12,7 +12,8 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "@vtt/core-schemas": "workspace:*"
+    "@vtt/core-schemas": "workspace:*",
+    "events": "^3.3.0"
   },
   "devDependencies": {
     "@vtt/content-5e-srd": "workspace:*",

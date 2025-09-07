@@ -1,17 +1,5 @@
 
 
-> @vtt/server@0.0.0 prebuild /home/weningerii/vtt/apps/server
-> npm run clean
-
-[1G[0K⠙[1G[0K⠹[1G[0K
-> @vtt/server@0.0.0 clean
-> rm -rf dist
-
-[1G[0K⠹[1G[0K[1G[0K⠙[1G[0K
 > @vtt/server@0.0.0 build /home/weningerii/vtt/apps/server
 > tsc -b
-
-
-> @vtt/server@0.0.0 postbuild /home/weningerii/vtt/apps/server
-> cp -r prisma dist/
 

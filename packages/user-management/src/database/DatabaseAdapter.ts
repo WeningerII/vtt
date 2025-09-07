@@ -667,60 +667,365 @@ export class PostgreSQLAdapter implements DatabaseAdapter {
   }
 
   // Simplified billing reference methods
-  async getStripeCustomerByUserId(_userId: string): Promise<string | null> {
-    // Implementation to get Stripe customer ID from user record
-    throw new Error("Not implemented");
+  async getStripeCustomerByUserId(userId: string): Promise<string | null> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        SELECT stripe_customer_id 
+        FROM users 
+        WHERE id = $1
+      `;
+      const result = await client.query(query, [userId]);
+      return result.rows[0]?.stripe_customer_id || null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
-  async setStripeCustomerForUser(_userId: string, _stripeCustomerId: string): Promise<void> {
-    // Implementation to store Stripe customer ID for user
-    throw new Error("Not implemented");
+  async setStripeCustomerForUser(userId: string, stripeCustomerId: string): Promise<void> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        UPDATE users 
+        SET stripe_customer_id = $2, updated_at = NOW() 
+        WHERE id = $1
+      `;
+      await client.query(query, [userId, stripeCustomerId]);
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
-  async getUserSubscriptionInfo(_userId: string): Promise<{subscriptionId?: string, customerId?: string, status?: string} | null> {
-    // Implementation to get user subscription info
-    throw new Error("Not implemented");
+  async getUserSubscriptionInfo(userId: string): Promise<{subscriptionId?: string, customerId?: string, status?: string} | null> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        SELECT 
+          stripe_subscription_id as "subscriptionId",
+          stripe_customer_id as "customerId",
+          subscription_status as "status"
+        FROM users 
+        WHERE id = $1
+      `;
+      const result = await client.query(query, [userId]);
+      if (result.rows[0]) {
+        return {
+          subscriptionId: result.rows[0].subscriptionId,
+          customerId: result.rows[0].customerId,
+          status: result.rows[0].status
+        };
+      }
+      return null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
-  async updateUserSubscriptionInfo(_userId: string, _info: {subscriptionId?: string, status?: string}): Promise<void> {
-    // Implementation to update user subscription info
-    throw new Error("Not implemented");
+  async updateUserSubscriptionInfo(userId: string, info: {subscriptionId?: string, status?: string}): Promise<void> {
+    const client = await this.getClient();
+    try {
+      const updates: string[] = [];
+      const values: any[] = [userId];
+      let paramCount = 1;
+
+      if (info.subscriptionId !== undefined) {
+        paramCount++;
+        updates.push(`stripe_subscription_id = $${paramCount}`);
+        values.push(info.subscriptionId);
+      }
+
+      if (info.status !== undefined) {
+        paramCount++;
+        updates.push(`subscription_status = $${paramCount}`);
+        values.push(info.status);
+      }
+
+      if (updates.length > 0) {
+        updates.push('updated_at = NOW()');
+        const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $1`;
+        await client.query(query, values);
+      }
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async createEmailNotification(
-    _notification: Omit<EmailNotification, "id" | "createdAt">,
+    notification: Omit<EmailNotification, "id" | "createdAt">,
   ): Promise<EmailNotification> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const query = `
+        INSERT INTO email_notifications 
+        (user_id, template_id, subject, html_content, text_content, to_email, status, sent_at, opens, clicks)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id, user_id, template_id, subject, html_content, text_content, to_email, status, sent_at, created_at, opens, clicks
+      `;
+      const values = [
+        notification.userId,
+        notification.templateId,
+        notification.subject,
+        notification.htmlContent,
+        notification.textContent,
+        notification.to,
+        notification.status || 'pending',
+        notification.sentAt || null,
+        notification.opens || 0,
+        notification.clicks || 0
+      ];
+      const result = await client.query(query, values);
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        userId: row.user_id,
+        templateId: row.template_id,
+        to: row.to_email,
+        subject: row.subject,
+        htmlContent: row.html_content,
+        textContent: row.text_content,
+        status: row.status,
+        sentAt: row.sent_at,
+        failureReason: row.failure_reason,
+        opens: row.opens,
+        clicks: row.clicks,
+        createdAt: row.created_at
+      };
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async updateEmailNotification(
-    _id: string,
-    _updates: Partial<EmailNotification>,
+    id: string,
+    updates: Partial<EmailNotification>,
   ): Promise<EmailNotification | null> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const updateFields: string[] = [];
+      const values: any[] = [id];
+      let paramCount = 1;
+
+      if (updates.status !== undefined) {
+        paramCount++;
+        updateFields.push(`status = $${paramCount}`);
+        values.push(updates.status);
+      }
+      if (updates.sentAt !== undefined) {
+        paramCount++;
+        updateFields.push(`sent_at = $${paramCount}`);
+        values.push(updates.sentAt);
+      }
+      if (updates.failureReason !== undefined) {
+        paramCount++;
+        updateFields.push(`failure_reason = $${paramCount}`);
+        values.push(updates.failureReason);
+      }
+      if (updates.opens !== undefined) {
+        paramCount++;
+        updateFields.push(`opens = $${paramCount}`);
+        values.push(updates.opens);
+      }
+      if (updates.clicks !== undefined) {
+        paramCount++;
+        updateFields.push(`clicks = $${paramCount}`);
+        values.push(updates.clicks);
+      }
+
+      if (updateFields.length === 0) {return null;}
+
+      const query = `
+        UPDATE email_notifications 
+        SET ${updateFields.join(', ')}, updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, user_id, template_id, subject, html_content, text_content, to_email, status, sent_at, failure_reason, opens, clicks, created_at
+      `;
+      const result = await client.query(query, values);
+      if (result.rows[0]) {
+        const row = result.rows[0];
+        return {
+          id: row.id,
+          userId: row.user_id,
+          templateId: row.template_id,
+          to: row.to_email,
+          subject: row.subject,
+          htmlContent: row.html_content,
+          textContent: row.text_content,
+          status: row.status,
+          sentAt: row.sent_at,
+          failureReason: row.failure_reason,
+          opens: row.opens,
+          clicks: row.clicks,
+          createdAt: row.created_at
+        };
+      }
+      return null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async createPushNotification(
-    _notification: Omit<PushNotification, "id" | "createdAt">,
+    notification: Omit<PushNotification, "id" | "createdAt">,
   ): Promise<PushNotification> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const query = `
+        INSERT INTO push_notifications 
+        (user_id, title, body, icon, badge, data, status, sent_at, failure_reason)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, user_id, title, body, icon, badge, data, status, sent_at, failure_reason, created_at
+      `;
+      const values = [
+        notification.userId,
+        notification.title,
+        notification.body,
+        notification.icon || null,
+        notification.badge || null,
+        JSON.stringify(notification.data || {}),
+        notification.status || 'pending',
+        notification.sentAt || null,
+        notification.failureReason || null
+      ];
+      const result = await client.query(query, values);
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        body: row.body,
+        icon: row.icon,
+        badge: row.badge,
+        data: JSON.parse(row.data || '{}'),
+        status: row.status,
+        sentAt: row.sent_at,
+        failureReason: row.failure_reason,
+        createdAt: row.created_at
+      };
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async updatePushNotification(
-    _id: string,
-    _updates: Partial<PushNotification>,
+    id: string,
+    updates: Partial<PushNotification>,
   ): Promise<PushNotification | null> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      const updateFields: string[] = [];
+      const values: any[] = [id];
+      let paramCount = 1;
+
+      if (updates.status !== undefined) {
+        paramCount++;
+        updateFields.push(`status = $${paramCount}`);
+        values.push(updates.status);
+      }
+      if (updates.sentAt !== undefined) {
+        paramCount++;
+        updateFields.push(`sent_at = $${paramCount}`);
+        values.push(updates.sentAt);
+      }
+      if (updates.failureReason !== undefined) {
+        paramCount++;
+        updateFields.push(`failure_reason = $${paramCount}`);
+        values.push(updates.failureReason);
+      }
+      if (updates.data !== undefined) {
+        paramCount++;
+        updateFields.push(`data = $${paramCount}`);
+        values.push(JSON.stringify(updates.data));
+      }
+
+      if (updateFields.length === 0) {return null;}
+
+      const query = `
+        UPDATE push_notifications 
+        SET ${updateFields.join(', ')}, updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, user_id, title, body, icon, badge, data, status, sent_at, failure_reason, created_at
+      `;
+      const result = await client.query(query, values);
+      if (result.rows[0]) {
+        const row = result.rows[0];
+        return {
+          id: row.id,
+          userId: row.user_id,
+          title: row.title,
+          body: row.body,
+          icon: row.icon,
+          badge: row.badge,
+          data: JSON.parse(row.data || '{}'),
+          status: row.status,
+          sentAt: row.sent_at,
+          failureReason: row.failure_reason,
+          createdAt: row.created_at
+        };
+      }
+      return null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
-  async getNotificationPreferences(_userId: string): Promise<NotificationPreferences | null> {
-    throw new Error("Method not implemented");
+  async getNotificationPreferences(userId: string): Promise<NotificationPreferences | null> {
+    const client = await this.getClient();
+    try {
+      const query = `
+        SELECT user_id, email_preferences, push_preferences, in_app_preferences
+        FROM notification_preferences
+        WHERE user_id = $1
+      `;
+      const result = await client.query(query, [userId]);
+      if (result.rows[0]) {
+        const row = result.rows[0];
+        return {
+          userId: row.user_id,
+          email: JSON.parse(row.email_preferences || '{"enabled": true, "gameInvites": true, "gameUpdates": true, "friendRequests": true, "systemUpdates": true, "billing": true, "marketing": false}'),
+          push: JSON.parse(row.push_preferences || '{"enabled": true, "gameInvites": true, "gameUpdates": true, "friendRequests": true, "systemUpdates": true}'),
+          inApp: JSON.parse(row.in_app_preferences || '{"enabled": true, "gameInvites": true, "gameUpdates": true, "friendRequests": true, "systemUpdates": true}')
+        };
+      }
+      return null;
+    } finally {
+      this.releaseClient(client);
+    }
   }
 
   async updateNotificationPreferences(
-    _userId: string,
-    _preferences: Partial<NotificationPreferences>,
+    userId: string,
+    preferences: Partial<NotificationPreferences>,
   ): Promise<NotificationPreferences> {
-    throw new Error("Method not implemented");
+    const client = await this.getClient();
+    try {
+      // Use UPSERT pattern to create or update
+      const query = `
+        INSERT INTO notification_preferences 
+        (user_id, email_preferences, push_preferences, in_app_preferences)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (user_id) DO UPDATE SET
+          email_preferences = COALESCE($2, notification_preferences.email_preferences),
+          push_preferences = COALESCE($3, notification_preferences.push_preferences),
+          in_app_preferences = COALESCE($4, notification_preferences.in_app_preferences),
+          updated_at = NOW()
+        RETURNING user_id, email_preferences, push_preferences, in_app_preferences
+      `;
+      const values = [
+        userId,
+        preferences.email ? JSON.stringify(preferences.email) : null,
+        preferences.push ? JSON.stringify(preferences.push) : null,
+        preferences.inApp ? JSON.stringify(preferences.inApp) : null
+      ];
+      const result = await client.query(query, values);
+      const row = result.rows[0];
+      return {
+        userId: row.user_id,
+        email: JSON.parse(row.email_preferences || '{"enabled": true, "gameInvites": true, "gameUpdates": true, "friendRequests": true, "systemUpdates": true, "billing": true, "marketing": false}'),
+        push: JSON.parse(row.push_preferences || '{"enabled": true, "gameInvites": true, "gameUpdates": true, "friendRequests": true, "systemUpdates": true}'),
+        inApp: JSON.parse(row.in_app_preferences || '{"enabled": true, "gameInvites": true, "gameUpdates": true, "friendRequests": true, "systemUpdates": true}')
+      };
+    } finally {
+      this.releaseClient(client);
+    }
   }
 }

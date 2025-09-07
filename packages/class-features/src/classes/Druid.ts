@@ -21,13 +21,13 @@ export class DruidClass extends BaseClass {
         className: "druid",
         level: 1,
         description: "Minor nature magic cantrip",
-        type: "active",
-        actionCost: "action",
+        type: "active" as const,
+        actionCost: "action" as const,
         effects: [{
           type: "cantrip",
           parameters: { spell: "druidcraft" }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "wild_shape",
@@ -35,13 +35,13 @@ export class DruidClass extends BaseClass {
         className: "druid",
         level: 2,
         description: "Transform into beast forms",
-        type: "active",
-        actionCost: "action",
+        type: "active" as const,
+        actionCost: "action" as const,
         uses: {
-          type: "per_short_rest",
+          type: "per_short_rest" as const,
           amount: level >= 20 ? 999 : 2,
           current: level >= 20 ? 999 : 2,
-          resetOn: "short_rest",
+          resetOn: "short_rest" as const,
         },
         effects: [{
           type: "wild_shape",
@@ -51,7 +51,7 @@ export class DruidClass extends BaseClass {
             flying: level >= 8
           }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "timeless_body",
@@ -59,11 +59,11 @@ export class DruidClass extends BaseClass {
         className: "druid",
         level: 18,
         description: "Age at 1/10 rate, no aging penalties",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "timeless_body"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "beast_spells",
@@ -71,11 +71,11 @@ export class DruidClass extends BaseClass {
         className: "druid",
         level: 18,
         description: "Cast spells in Wild Shape",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "beast_spells"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "archdruid",
@@ -83,11 +83,11 @@ export class DruidClass extends BaseClass {
         className: "druid",
         level: 20,
         description: "Unlimited Wild Shape uses",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "archdruid"
         }],
-        source: "core"
+        source: "core" as const
       }
     ].filter(f => f.level <= level);
   }
@@ -101,13 +101,13 @@ export class DruidClass extends BaseClass {
           className: "druid",
           level: 2,
           description: "Learn one additional druid cantrip",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "bonus_cantrip",
             parameters: { count: 1 }
           }],
           subclass: "land",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "natural_recovery",
@@ -115,19 +115,19 @@ export class DruidClass extends BaseClass {
           className: "druid",
           level: 2,
           description: "Recover spell slots during short rest",
-          type: "active",
+          type: "active" as const,
           uses: {
-            type: "per_long_rest",
+            type: "per_long_rest" as const,
             amount: 1,
             current: 1,
-            resetOn: "long_rest",
+            resetOn: "long_rest" as const,
           },
           effects: [{
             type: "natural_recovery",
             parameters: { total_levels: Math.ceil(level / 2) }
           }],
           subclass: "land",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "circle_spells",
@@ -135,13 +135,13 @@ export class DruidClass extends BaseClass {
           className: "druid",
           level: 3,
           description: "Additional spells based on chosen land",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "circle_spells",
             parameters: { land_type: "forest" } // Default to forest
           }],
           subclass: "land",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "lands_stride",
@@ -149,12 +149,12 @@ export class DruidClass extends BaseClass {
           className: "druid",
           level: 6,
           description: "Move through difficult terrain and plants",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "lands_stride"
           }],
           subclass: "land",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "natures_ward",
@@ -162,12 +162,12 @@ export class DruidClass extends BaseClass {
           className: "druid",
           level: 10,
           description: "Immunity to charm/fear from elementals/fey",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "natures_ward"
           }],
           subclass: "land",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "natures_sanctuary",
@@ -175,12 +175,12 @@ export class DruidClass extends BaseClass {
           className: "druid",
           level: 14,
           description: "Beasts and plants must save to attack you",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "natures_sanctuary"
           }],
           subclass: "land",
-          source: "subclass"
+          source: "subclass" as const
         }
       ].filter(f => f.level <= level);
     }

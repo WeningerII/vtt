@@ -39,8 +39,9 @@ export class AIEntity {
      * Execute behavior tree and take actions
      */
     think(gameState) {
-        if (!this.state.behaviorTree)
+        if (!this.state.behaviorTree) {
             return;
+        }
         // Evaluate current situation and update goals
         this.evaluateGoals(gameState);
         // Execute behavior tree (simplified for now)
@@ -69,7 +70,8 @@ export class AIEntity {
                 return {
                     type: 'defend',
                     priority: 8,
-                    data: Record<string, unknown>};
+                    data: {}
+                };
             }
         }
         // Default patrol behavior
@@ -77,7 +79,8 @@ export class AIEntity {
             type: 'move',
             target: { x: Math.random() * 100, y: Math.random() * 100 },
             priority: 1,
-            data: Record<string, unknown>};
+            data: {}
+        };
     }
     /**
      * Evaluate and update goals based on current situation
@@ -123,8 +126,9 @@ export class AIEntity {
         }
     }
     executeMovement(action, gameSession) {
-        if (!action.target)
+        if (!action.target) {
             return;
+        }
         // Calculate path to target position
         const targetPos = action.target;
         const currentPos = { x: this.state.position.x, y: this.state.position.y };
@@ -143,8 +147,9 @@ export class AIEntity {
         }
     }
     executeAttack(action, gameSession) {
-        if (!action.targetId)
+        if (!action.targetId) {
             return;
+        }
         // Queue combat action
         gameSession.queueCombatAction({
             sourceId: this.entityId,
@@ -165,8 +170,9 @@ export class AIEntity {
         });
     }
     executeSupport(action, gameSession) {
-        if (!action.targetId)
+        if (!action.targetId) {
             return;
+        }
         // Cast support spell or ability
         gameSession.queueCombatAction({
             sourceId: this.entityId,
@@ -177,8 +183,9 @@ export class AIEntity {
         });
     }
     executeInteraction(action, gameSession) {
-        if (!action.targetId)
+        if (!action.targetId) {
             return;
+        }
         // Interact with object or character
         gameSession.queueInteraction({
             sourceId: this.entityId,

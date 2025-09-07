@@ -4,8 +4,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "types": [
-      "node",
-      "vitest/globals"
+      "node"
     ],
     "incremental": true,
     "tsBuildInfoFile": "./testing.tsbuildinfo",
@@ -13,6 +12,13 @@
   },
   "include": [
     "src/**/*"
+  ],
+  "references": [
+    { "path": "../rules-5e" },
+    { "path": "../physics" },
+    { "path": "../net" },
+    { "path": "../renderer" },
+    { "path": "../core-ecs" }
   ],
   "exclude": [
     "dist",

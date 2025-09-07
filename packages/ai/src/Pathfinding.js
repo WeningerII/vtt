@@ -161,54 +161,66 @@ export class AStar {
       };
     }
     grid.reset();
-    const openSet = [];
+    const openSet = [start];
     const closedSet = new Set();
-    let iterations = 0;
-    let nodesExplored = 0;
-    openSet.push(startNode);
-    while (openSet.length > 0 && iterations < opts.maxIterations) {
-      iterations++;
-      // Find node with lowest fCost
-      let currentNode = openSet[0];
-      let currentIndex = 0;
-      for (let i = 1; i < openSet.length; i++) {
-        if (
-          openSet[i].fCost < currentNode.fCost ||
-          (openSet[i].fCost === currentNode.fCost && openSet[i].hCost < currentNode.hCost)
-        ) {
-          currentNode = openSet[i];
-          currentIndex = i;
+    const gScore = new Map();
+    const fScore = new Map();
+    const cameFrom = new Map();
+    const startKey = `${start.x},${start.y}`;
+    gScore.set(startKey, 0);
+    fScore.set(startKey, this.heuristic(start, end));
+    while (openSet.length > 0) {
+      // Find node with lowest fScore
+      let current = openSet[0];
+      let lowestF = fScore.get(`${current.x},${current.y}`) || Infinity;
+      for (const node of openSet) {
+        const f = fScore.get(`${node.x},${node.y}`) || Infinity;
+        if (f < lowestF) {
+          current = node;
+          lowestF = f;
         }
       }
-      // Move current node from open to closed set
-      openSet.splice(currentIndex, 1);
-      closedSet.add(currentNode);
-      // Check if we reached the target
-      if (currentNode === endNode) {
-        const path = this.retracePath(startNode, endNode);
+      // Check if we've reached the goal
+      if (current.x === end.x && current.y === end.y) {
+        // Build the path
+        const path = [];
+        const currentKey = `${current.x},${current.y}`;
+        let node = currentKey;
+        while (node) {
+          const [x, y] = node.split(',').map(Number);
+          path.unshift({ x, y });
+          node = cameFrom.get(node);
+        }
         return {
           path,
           found: true,
-          iterations,
+          iterations: closedSet.size,
           executionTime: performance.now() - startTime,
-          nodesExplored,
+          nodesExplored: closedSet.size,
         };
       }
+      
+      // Move current from open to closed set
+      const currentIndex = openSet.indexOf(current);
+      openSet.splice(currentIndex, 1);
+      const currentKey = `${current.x},${current.y}`;
+      closedSet.add(currentKey);
       // Check neighbors
-      const neighbors = grid.getNeighbors(currentNode, opts.allowDiagonal);
+      const neighbors = this.getNeighbors(current);
       for (const neighbor of neighbors) {
-        if (closedSet.has(neighbor)) {
+        const neighborKey = `${neighbor.x},${neighbor.y}`;
+        if (closedSet.has(neighborKey)) {
           continue;
         }
-        nodesExplored++;
-        const newMovementCostToNeighbor =
-          currentNode.gCost + this.getMovementCost(currentNode, neighbor);
-        if (newMovementCostToNeighbor < neighbor.gCost || !openSet.includes(neighbor)) {
-          neighbor.gCost = newMovementCostToNeighbor;
-          neighbor.hCost = this.calculateDistance(neighbor, endNode, opts.heuristic) * opts.weight;
-          neighbor.fCost = neighbor.gCost + neighbor.hCost;
-          neighbor.parent = currentNode;
-          if (!openSet.includes(neighbor)) {
+        
+        const tentativeG = (gScore.get(currentKey) || 0) + 1;
+        
+        if (tentativeG < (gScore.get(neighborKey) || Infinity)) {
+          cameFrom.set(neighborKey, currentKey);
+          gScore.set(neighborKey, tentativeG);
+          fScore.set(neighborKey, tentativeG + this.heuristic(neighbor, end));
+          
+          if (!openSet.some(n => n.x === neighbor.x && n.y === neighbor.y)) {
             openSet.push(neighbor);
           }
         }
@@ -218,9 +230,9 @@ export class AStar {
     return {
       path: [],
       found: false,
-      iterations,
+      iterations: closedSet.size,
       executionTime: performance.now() - startTime,
-      nodesExplored,
+      nodesExplored: closedSet.size,
     };
   }
   static smoothPath(path) {
@@ -279,7 +291,9 @@ export class FlowField {
       const currentCost = this.costField[current.x][current.y];
       const neighbors = this.getNeighbors(current);
       for (const neighbor of neighbors) {
-        if (this.costField[neighbor.x][neighbor.y] === -1) continue; // Unwalkable
+        if (this.costField[neighbor.x][neighbor.y] === -1) {
+          continue; // Unwalkable
+        }
         const newCost = currentCost + 1;
         if (newCost < this.costField[neighbor.x][neighbor.y]) {
           this.costField[neighbor.x][neighbor.y] = newCost;
@@ -404,7 +418,9 @@ export class PathfindingManager {
   }
   createFlowField(gridId, target) {
     const grid = this.grids.get(gridId);
-    if (!grid) return null;
+    if (!grid) {
+      return null;
+    }
     const flowField = new FlowField(grid);
     flowField.generateFlowField(target);
     this.flowFields.set(gridId, flowField);
@@ -452,7 +468,9 @@ export function gridToWorld(gridPos, cellSize, gridOffset = { x: 0, y: 0 }) {
   };
 }
 export function simplifyPath(path, tolerance = 1) {
-  if (path.length <= 2) return path;
+  if (path.length <= 2) {
+    return path;
+  }
   const simplified = [path[0]];
   for (let i = 1; i < path.length - 1; i++) {
     const prev = simplified[simplified.length - 1];

@@ -221,7 +221,7 @@ export class Profiler {
         });
         this.gcObserver.observe({ entryTypes: ["measure", "mark"] });
       } catch (error) {
-        logger.warn("GC monitoring not available:", error);
+        logger.warn("GC monitoring not available:", error as Record<string, any>);
       }
     }
   }

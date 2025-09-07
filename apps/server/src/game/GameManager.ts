@@ -115,8 +115,8 @@ export class GameManager {
     return {
       totalGames: games.length,
       activeGames: activeGames.length,
-      totalPlayers: games.reduce((_sum, _game) => sum + game.getPlayerCount(), 0),
-      connectedPlayers: games.reduce((_sum, _game) => sum + game.getConnectedPlayerCount(), 0),
+      totalPlayers: games.reduce((sum, game) => sum + game.getPlayerCount(), 0),
+      connectedPlayers: games.reduce((sum, game) => sum + game.getConnectedPlayerCount(), 0),
     };
   }
 

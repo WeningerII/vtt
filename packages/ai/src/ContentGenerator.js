@@ -682,7 +682,9 @@ class MarkovChain {
   }
   generate(startKey, maxLength = 50) {
     const keys = Array.from(this.chains.keys());
-    if (keys.length === 0) return "";
+    if (keys.length === 0) {
+      return "";
+    }
     let currentKey =
       startKey && this.chains.has(startKey)
         ? startKey
@@ -690,7 +692,9 @@ class MarkovChain {
     const result = currentKey.split(" ");
     for (let i = 0; i < maxLength - this.order; i++) {
       const possibleNext = this.chains.get(currentKey);
-      if (!possibleNext || possibleNext.length === 0) break;
+      if (!possibleNext || possibleNext.length === 0) {
+        break;
+      }
       const next = possibleNext[Math.floor(Math.random() * possibleNext.length)];
       result.push(next);
       // Update key for next iteration
@@ -698,7 +702,9 @@ class MarkovChain {
       keyWords.shift();
       keyWords.push(next);
       currentKey = keyWords.join(" ");
-      if (!this.chains.has(currentKey)) break;
+      if (!this.chains.has(currentKey)) {
+        break;
+      }
     }
     return result.join(" ");
   }

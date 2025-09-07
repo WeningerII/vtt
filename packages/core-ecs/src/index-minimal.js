@@ -75,10 +75,12 @@ export class NetworkSyncSystem {
         const removed = [];
         // Collect current state for all alive entities that have transforms
         for (let id = 0; id < world.capacity; id++) {
-            if (!world.isAlive(id))
+            if (!world.isAlive(id)) {
                 continue;
-            if (!world.transforms.has(id))
+            }
+            if (!world.transforms.has(id)) {
                 continue;
+            }
             const state = {
                 id,
                 x: world.transforms.x[id] ?? 0,
@@ -99,8 +101,9 @@ export class NetworkSyncSystem {
         }
         // Compute removals
         for (const id of this.last.keys()) {
-            if (!next.has(id))
+            if (!next.has(id)) {
                 removed.push(id);
+            }
         }
         const baseSeq = this.seq;
         this.seq = baseSeq + 1;
@@ -114,10 +117,12 @@ export class NetworkSyncSystem {
 export function MovementSystem(world, deltaTime) {
     // Process movement for all entities with movement components
     for (const id of world.getEntities()) {
-        if (!world.movement.has(id))
+        if (!world.movement.has(id)) {
             continue;
-        if (!world.transforms.has(id))
+        }
+        if (!world.transforms.has(id)) {
             continue;
+        }
         const vx = world.movement.vx[id] ?? 0;
         const vy = world.movement.vy[id] ?? 0;
         if (vx !== 0 || vy !== 0) {

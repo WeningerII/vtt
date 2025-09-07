@@ -4,6 +4,60 @@
  */
 import { describe, it, expect, jest } from "@jest/globals";
 
+// Mock services used throughout the integration tests
+const mockServices = {
+  auth: {
+    validateCredentials: jest.fn(),
+    createSession: jest.fn(),
+    exchangeCode: jest.fn(),
+    findOrCreateUser: jest.fn(),
+    validateToken: jest.fn(),
+  },
+  database: {
+    connect: jest.fn(),
+    query: jest.fn(),
+    transaction: jest.fn(),
+    campaign: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      delete: jest.fn(),
+    },
+    character: {
+      create: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+    },
+    campaignMember: {
+      create: jest.fn(),
+    },
+    session: {
+      deleteMany: jest.fn(),
+    },
+    gameState: {
+      update: jest.fn(),
+    },
+  },
+  websocket: {
+    addConnection: jest.fn(),
+    handleMessage: jest.fn(),
+    sendToUser: jest.fn(),
+    getConnectedUsers: jest.fn(),
+    broadcast: jest.fn(),
+    removeConnection: jest.fn(),
+    notifyDisconnection: jest.fn(),
+  },
+  combat: {
+    validateAction: jest.fn(),
+    applyAction: jest.fn(),
+    executeAction: jest.fn(),
+  },
+  ai: {
+    makeTacticalDecision: jest.fn(),
+  },
+};
+
 describe("System Integration Tests", () => {
   describe("Server Startup", () => {
     it("should initialize all services", async () => {

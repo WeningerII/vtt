@@ -1,4 +1,10 @@
-import { logger } from "@vtt/logging";
+// Using console for logging until @vtt/logging is properly configured
+const logger = {
+  error: console.error,
+  warn: console.warn,
+  info: console.info,
+  debug: console.debug
+};
 
 /**
  * Professional Content Creation Suite - Triple A Quality Content Tools
@@ -459,6 +465,152 @@ export interface StoryBeat {
   consequences: string[];
 }
 
+// Stub classes until proper implementations are available
+class MapEditor {
+  create(params: any): ContentAsset {
+    console.warn('MapEditor not implemented');
+    return {
+      id: 'stub-map-' + Date.now(),
+      name: params?.name || 'Generated Map',
+      type: 'map' as any,
+      category: 'maps',
+      tags: [],
+      metadata: {
+        description: 'Generated content',
+        keywords: [],
+        customProperties: {}
+      },
+      content: {},
+      created: new Date(),
+      modified: new Date(),
+      author: 'system',
+      version: 1,
+      dependencies: [],
+      license: 'MIT',
+      variants: []
+    };
+  }
+}
+class CharacterBuilder {
+  create(params: any): ContentAsset {
+    console.warn('CharacterBuilder not implemented');
+    return {
+      id: 'stub-char-' + Date.now(),
+      name: params?.name || 'Generated Character',
+      type: 'character' as any,
+      category: 'characters',
+      tags: [],
+      metadata: {
+        description: 'Generated character content',
+        keywords: [],
+        customProperties: {}
+      },
+      content: {},
+      created: new Date(),
+      modified: new Date(),
+      author: 'system',
+      version: 1,
+      dependencies: [],
+      license: 'MIT',
+      variants: []
+    };
+  }
+}
+class ItemForge {
+  create(params: any): ContentAsset {
+    console.warn('ItemForge not implemented');
+    return {
+      id: 'stub-item-' + Date.now(),
+      name: params?.name || 'Generated Item',
+      type: 'item' as any,
+      category: 'items',
+      tags: [],
+      metadata: {
+        description: 'Generated content',
+        keywords: [],
+        customProperties: {}
+      },
+      content: {},
+      created: new Date(),
+      modified: new Date(),
+      author: 'system',
+      version: 1,
+      dependencies: [],
+      license: 'MIT',
+      variants: []
+    };
+  }
+}
+class SpellCrafter {
+  create(params: any): ContentAsset {
+    console.warn('SpellCrafter not implemented');
+    return {
+      id: 'stub-spell-' + Date.now(),
+      name: params?.name || 'Generated Spell',
+      type: 'spell' as any,
+      category: 'spells',
+      tags: [],
+      metadata: {
+        description: 'Generated content',
+        keywords: [],
+        customProperties: {}
+      },
+      content: {},
+      created: new Date(),
+      modified: new Date(),
+      author: 'system',
+      version: 1,
+      dependencies: [],
+      license: 'MIT',
+      variants: []
+    };
+  }
+}
+class EncounterDesigner {
+  create(params: any): ContentAsset {
+    console.warn('EncounterDesigner not implemented');
+    return {
+      id: 'stub-encounter-' + Date.now(),
+      name: params?.name || 'Generated Encounter',
+      type: 'encounter' as any,
+      category: 'encounters',
+      tags: [],
+      metadata: {
+        description: 'Generated content',
+        keywords: [],
+        customProperties: {}
+      },
+      content: {},
+      created: new Date(),
+      modified: new Date(),
+      author: 'system',
+      version: 1,
+      dependencies: [],
+      license: 'MIT',
+      variants: []
+    };
+  }
+}
+class ContentAI {
+  generate(prompt: any, type?: any, options?: any) { console.warn('ContentAI not implemented'); return {}; }
+  enhance(content: any, enhancement?: any) { console.warn('ContentAI enhance not implemented'); return content; }
+}
+class ImageGenerator {
+  generate(params: any) { console.warn('ImageGenerator not implemented'); return {}; }
+}
+class AudioGenerator {
+  generate(params: any) { console.warn('AudioGenerator not implemented'); return {}; }
+}
+class VersionControl {
+  commit() { console.warn('VersionControl not implemented'); }
+  saveVersion(id: string, data: any) { console.warn('VersionControl saveVersion not implemented'); }
+}
+class CollaborationEngine {
+  share(assetId: string, permissions: any): string { console.warn('CollaborationEngine not implemented'); return 'share-id'; }
+  notifyChange(change: any) { console.warn('CollaborationEngine notifyChange not implemented'); }
+  startSession(assetId: string, userId: string): CollaborationSession { console.warn('CollaborationEngine startSession not implemented'); return { id: 'session-id', assetId, userId, participants: [], active: true } as CollaborationSession; }
+}
+
 export class ProfessionalContentSuite {
   private assets: Map<string, ContentAsset> = new Map();
   private templates: Map<string, ContentTemplate> = new Map();
@@ -546,9 +698,9 @@ export class ProfessionalContentSuite {
       id: "",
       name: "",
       type: "map",
-      structure: Record<string, any>,
-      defaults: Record<string, any>,
-      validation: Record<string, any>,
+      structure: {} as Record<string, any>,
+      defaults: {} as Record<string, any>,
+      validation: {} as Record<string, any>,
       presets: [],
     };
   }
@@ -586,8 +738,8 @@ export class ProfessionalContentSuite {
     asset.modified = new Date();
     asset.version++;
 
-    this.versionControl.saveVersion(asset);
-    this.collaboration.notifyChange(id, updates);
+    this.versionControl.saveVersion(asset.id, asset);
+    this.collaboration.notifyChange(asset);
 
     return asset;
   }
@@ -647,7 +799,7 @@ export class ProfessionalContentSuite {
   private sortResults(results: ContentAsset[], sort?: SortOption): ContentAsset[] {
     if (!sort) {return results;}
 
-    return results.sort((_a, _b) => {
+    return results.sort((a, b) => {
       let comparison = 0;
 
       switch (sort.field) {
@@ -941,7 +1093,8 @@ class MapGenerator {
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const neighbors = this.countNeighbors(grid, x, y);
-          newGrid[y][x] = neighbors >= 4;
+          // newGrid is guaranteed to have all rows since we created it with Array(height)
+          newGrid[y]![x] = neighbors >= 4;
         }
       }
       grid = newGrid;
@@ -957,7 +1110,7 @@ class MapGenerator {
         if (dx === 0 && dy === 0) {continue;}
         const nx = x + dx,
           ny = y + dy;
-        if (nx < 0 || ny < 0 || nx >= grid[0].length || ny >= grid.length || grid[ny][nx]) {
+        if (nx < 0 || ny < 0 || nx >= (grid[0]?.length ?? 0) || ny >= grid.length || grid[ny]?.[nx]) {
           count++;
         }
       }
@@ -970,7 +1123,7 @@ class MapGenerator {
     height: number,
     complexity: number,
   ): Array<{ x: number; y: number; w: number; h: number }> {
-    const rooms = [];
+    const rooms: Array<{ x: number; y: number; w: number; h: number }> = [];
     const roomCount = Math.floor(complexity * 8) + 4;
 
     for (let i = 0; i < roomCount; i++) {
@@ -988,11 +1141,13 @@ class MapGenerator {
   private connectRooms(
     rooms: Array<{ x: number; y: number; w: number; h: number }>,
   ): Array<{ x1: number; y1: number; x2: number; y2: number }> {
-    const corridors = [];
+    const corridors: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
 
     for (let i = 0; i < rooms.length - 1; i++) {
       const room1 = rooms[i];
       const room2 = rooms[i + 1];
+      
+      if (!room1 || !room2) continue;
 
       const x1 = room1.x + Math.floor(room1.w / 2);
       const y1 = room1.y + Math.floor(room1.h / 2);
@@ -1030,8 +1185,10 @@ class MapGenerator {
 
     // Add walls
     for (let y = 0; y < wallMap.length; y++) {
-      for (let x = 0; x < wallMap[y].length; x++) {
-        if (wallMap[y][x]) {
+      const row = wallMap[y];
+      if (!row) continue;
+      for (let x = 0; x < row.length; x++) {
+        if (row[x]) {
           elements.push({
             id: `wall-${id++}`,
             type: "tile",
@@ -1047,7 +1204,8 @@ class MapGenerator {
     }
 
     // Add room floors
-    rooms.forEach((_room, __roomIndex) => {
+    rooms.forEach((room, roomIndex) => {
+      if (!room) return;
       for (let y = room.y; y < room.y + room.h; y++) {
         for (let x = room.x; x < room.x + room.w; x++) {
           elements.push({

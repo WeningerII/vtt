@@ -127,8 +127,9 @@ export class SpatialGrid {
     queryPoint(x, y) {
         const key = this.getCellKey(x, y);
         const cell = this.grid.get(key);
-        if (!cell)
+        if (!cell) {
             return [];
+        }
         const entities = [];
         for (const entityId of cell.entities) {
             const bounds = this.entityBounds.get(entityId);

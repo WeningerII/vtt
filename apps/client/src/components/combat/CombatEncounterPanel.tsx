@@ -199,11 +199,11 @@ export function CombatEncounterPanel({
     if (!encounter) {return;}
 
     try {
-      await fetch(`/api/combatants/${combatantId}`, {
+      await fetch(`/api/combatants/${_combatantId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(updates),
+        body: JSON.stringify(_updates),
       });
 
       // Update local state
@@ -212,7 +212,7 @@ export function CombatEncounterPanel({
         return {
           ...prev,
           combatants: prev.combatants.map(c => 
-            c.id === combatantId ? { ...c, ...updates } : c
+            c.id === _combatantId ? { ...c, ..._updates } : c
           )
         };
       });
@@ -225,7 +225,7 @@ export function CombatEncounterPanel({
     if (!encounter) {return;}
 
     try {
-      await fetch(`/api/combatants/${combatantId}`, {
+      await fetch(`/api/combatants/${_combatantId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -234,7 +234,7 @@ export function CombatEncounterPanel({
         if (!prev) {return prev;}
         return {
           ...prev,
-          combatants: prev.combatants.filter(c => c.id !== combatantId)
+          combatants: prev.combatants.filter(c => c.id !== _combatantId)
         };
       });
     } catch (error) {
@@ -268,7 +268,7 @@ export function CombatEncounterPanel({
   };
 
   const addCondition = async (_combatantId: string, _conditionName: string) => {
-    const condition = COMMON_CONDITIONS.find(c => c.name === conditionName);
+    const condition = COMMON_CONDITIONS.find(c => c.name === _conditionName);
     if (!condition) {return;}
 
     const newCondition = {
@@ -279,20 +279,20 @@ export function CombatEncounterPanel({
       color: condition.color,
     };
 
-    await updateCombatant(combatantId, {
+    await updateCombatant(_combatantId, {
       conditions: [
-        ...(encounter?.combatants.find(c => c.id === combatantId)?.conditions || []),
+        ...(encounter?.combatants.find(c => c.id === _combatantId)?.conditions || []),
         newCondition
       ]
     });
   };
 
   const removeCondition = async (_combatantId: string, _conditionId: string) => {
-    const combatant = encounter?.combatants.find(c => c.id === combatantId);
+    const combatant = encounter?.combatants.find(c => c.id === _combatantId);
     if (!combatant) {return;}
 
-    await updateCombatant(combatantId, {
-      conditions: combatant.conditions.filter(c => c.id !== conditionId)
+    await updateCombatant(_combatantId, {
+      conditions: combatant.conditions.filter(c => c.id !== _conditionId)
     });
   };
 
@@ -368,18 +368,18 @@ export function CombatEncounterPanel({
             {/* Combatants List */}
             <div className="space-y-2">
               {encounter.combatants
-                .sort((_a, _b) => b.initiative - a.initiative)
+                .sort((_a, _b) => _b.initiative - _a.initiative)
                 .map((combatant, _index) => (
                 <div
                   key={combatant.id}
                   className={cn(
                     "border rounded-lg p-3 transition-colors",
-                    index === encounter.currentTurn ? "border-primary-300 bg-primary-50" : "border-neutral-200"
+                    _index === encounter.currentTurn ? "border-primary-300 bg-primary-50" : "border-neutral-200"
                   )}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant={combatant.isPlayer ? "success" : "secondary"} className="text-xs">
+                      <Badge variant={combatant.isPlayer ? "default" : "secondary"} className="text-xs">
                         {combatant.initiative}
                       </Badge>
                       <span className="font-medium">{combatant.name}</span>
@@ -454,7 +454,7 @@ export function CombatEncounterPanel({
                           key={condition.id}
                           variant="outline"
                           className="text-xs cursor-pointer"
-                          style={{ borderColor: condition.color, _color: condition.color }}
+                          style={{ borderColor: condition.color, color: condition.color }}
                           onClick={() => removeCondition(combatant.id, condition.id)}
                         >
                           {condition.name}
@@ -476,8 +476,8 @@ export function CombatEncounterPanel({
                     >
                       <option value="">Add condition...</option>
                       {COMMON_CONDITIONS.map((_condition) => (
-                        <option key={condition.name} value={condition.name}>
-                          {condition.name}
+                        <option key={_condition.name} value={_condition.name}>
+                          {_condition.name}
                         </option>
                       ))}
                     </select>

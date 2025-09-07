@@ -9,13 +9,21 @@ async function globalSetup(_config: FullConfig) {
   // Load test environment variables
   dotenv.config({ path: join(process.cwd(), ".env.test") });
 
-  // Setup test database
+  // Setup test database with proper error handling
   const skipDb = !!process.env.E2E_SKIP_DB || !!process.env.E2E_SKIP_DB_SETUP;
   if (skipDb) {
     console.log("[E2E Setup] Skipping DB setup/seed (E2E_SKIP_DB)");
   } else {
-    await testDb.setup();
-    await testDb.seed();
+    try {
+      console.log("[E2E Setup] Setting up test database...");
+      await testDb.setup();
+      console.log("[E2E Setup] Seeding test data...");  
+      await testDb.seed();
+      console.log("[E2E Setup] Database setup complete");
+    } catch (error) {
+      console.error("[E2E Setup] Database setup failed:", error);
+      throw new Error(`Database initialization failed: ${error}`);
+    }
   }
 
   // Wait for services to be ready (webServer handles startup)

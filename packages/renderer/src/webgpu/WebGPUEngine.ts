@@ -147,7 +147,7 @@ export class WebGPUEngine {
     });
 
     this.context = this.canvas.getContext("webgpu") as unknown as GPUCanvasContext;
-    const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
+    const canvasFormat = navigator.gpu?.getPreferredCanvasFormat?.() || 'bgra8unorm';
 
     this.context.configure({
       device: this.device,

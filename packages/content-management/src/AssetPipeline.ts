@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from "events";
+import sharp from 'sharp';
 import { AssetMetadata, AssetType } from "./AssetManager";
 
 export interface PipelineStage {
@@ -250,53 +251,96 @@ class ImageOptimizer implements AssetProcessor {
     metadata: AssetMetadata,
     options?: Record<string, any>,
   ): Promise<ProcessingResult> {
-    // In a real implementation, you would use Sharp or similar
-    // For now, we'll simulate optimization
-
-    const quality = options?.quality || 0.85;
+    const quality = options?.quality || 85;
     const format = options?.format || "webp";
-    const _maxWidth = options?.maxWidth || 2048;
-    const _maxHeight = options?.maxHeight || 2048;
+    const maxWidth = options?.maxWidth || 2048;
+    const maxHeight = options?.maxHeight || 2048;
 
-    // Simulate processing delay
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    try {
+      // Convert ArrayBuffer to Buffer for sharp
+      const buffer = Buffer.from(data);
+      
+      // Process image with sharp
+      let sharpInstance = sharp(buffer);
+      
+      // Get image metadata
+      const imageMetadata = await sharpInstance.metadata();
+      
+      // Resize if needed
+      if (imageMetadata.width && imageMetadata.height) {
+        if (imageMetadata.width > maxWidth || imageMetadata.height > maxHeight) {
+          sharpInstance = sharpInstance.resize(maxWidth, maxHeight, {
+            fit: 'inside',
+            withoutEnlargement: true
+          });
+        }
+      }
+      
+      // Convert to specified format with quality
+      let outputBuffer: Buffer;
+      switch (format) {
+        case 'jpeg':
+        case 'jpg':
+          outputBuffer = await sharpInstance.jpeg({ quality }).toBuffer();
+          break;
+        case 'png':
+          outputBuffer = await sharpInstance.png({ 
+            compressionLevel: Math.floor((100 - quality) / 10) 
+          }).toBuffer();
+          break;
+        case 'webp':
+        default:
+          outputBuffer = await sharpInstance.webp({ quality }).toBuffer();
+          break;
+      }
+      
+      const optimizedData = outputBuffer.buffer.slice(
+        outputBuffer.byteOffset,
+        outputBuffer.byteOffset + outputBuffer.byteLength
+      ) as ArrayBuffer;
+      
+      const sizeReduction = data.byteLength - optimizedData.byteLength;
+      
+      const updatedMetadata: Partial<AssetMetadata> = {
+        size: optimizedData.byteLength,
+        customProperties: {
+          ...metadata.customProperties,
+          optimized: true,
+          originalSize: data.byteLength,
+          sizeReduction,
+          quality,
+          format,
+          dimensions: {
+            width: imageMetadata.width,
+            height: imageMetadata.height
+          }
+        },
+      };
 
-    // Mock optimization - in reality would compress/resize image
-    let optimizedData = data;
-    let sizeReduction = 0;
+      const warnings: string[] = [];
+      if (sizeReduction < 0) {
+        warnings.push("Optimized image is larger than original. Consider using a different format.");
+      }
 
-    // Simulate size reduction based on quality
-    if (quality < 1.0) {
-      const reductionFactor = 0.3 + quality * 0.4; // 30-70% of original size
-      sizeReduction = data.byteLength * (1 - reductionFactor);
-
-      // Create mock optimized data (in reality would be actual compressed image)
-      const mockSize = Math.floor(data.byteLength * reductionFactor);
-      optimizedData = data.slice(0, mockSize);
+      return {
+        data: optimizedData,
+        metadata: updatedMetadata,
+        warnings,
+      };
+    } catch (error) {
+      // If sharp fails, return original data with warning
+      return {
+        data,
+        metadata: {
+          customProperties: {
+            ...metadata.customProperties,
+            optimizationFailed: true,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }
+        },
+        warnings: [`Image optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      };
     }
-
-    const updatedMetadata: Partial<AssetMetadata> = {
-      size: optimizedData.byteLength,
-      customProperties: {
-        ...metadata.customProperties,
-        optimized: true,
-        originalSize: data.byteLength,
-        sizeReduction,
-        quality,
-        format,
-      },
-    };
-
-    const warnings: string[] = [];
-    if (sizeReduction > data.byteLength * 0.5) {
-      warnings.push("Significant quality reduction may affect visual appearance");
-    }
-
-    return {
-      data: optimizedData,
-      metadata: updatedMetadata,
-      warnings,
-    };
   }
 }
 
@@ -312,18 +356,20 @@ class AudioNormalizer implements AssetProcessor {
     metadata: AssetMetadata,
     options?: Record<string, any>,
   ): Promise<ProcessingResult> {
-    // Mock audio processing
-    await new Promise((resolve) => setTimeout(resolve, 200));
-
     const targetLUFS = options?.targetLUFS || -23; // Broadcast standard
     const format = options?.format || "ogg";
 
+    // For now, we'll pass through the audio data unchanged
+    // In production, this would use a proper audio processing library
+    // like ffmpeg or web audio API for normalization
+    
     const updatedMetadata: Partial<AssetMetadata> = {
       customProperties: {
         ...metadata.customProperties,
         normalized: true,
         targetLUFS,
         format,
+        processedAt: new Date().toISOString(),
       },
     };
 
@@ -346,37 +392,93 @@ class ThumbnailGenerator implements AssetProcessor {
     metadata: AssetMetadata,
     options?: Record<string, any>,
   ): Promise<ProcessingResult> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
     const thumbnailSize = options?.thumbnailSize || 128;
     const previewSize = options?.previewSize || 512;
+    const format = options?.format || 'webp';
 
     const derivatives = new Map<string, ArrayBuffer>();
+    
+    // Only process image types with sharp, other types need specialized handling
+    if (metadata.type === 'image') {
+      try {
+        const buffer = Buffer.from(data);
+        
+        // Generate thumbnail
+        const thumbnailBuffer = await sharp(buffer)
+          .resize(thumbnailSize, thumbnailSize, {
+            fit: 'cover',
+            position: 'center'
+          })
+          .webp({ quality: 80 })
+          .toBuffer();
+        
+        const thumbnailArrayBuffer = thumbnailBuffer.buffer.slice(
+          thumbnailBuffer.byteOffset,
+          thumbnailBuffer.byteOffset + thumbnailBuffer.byteLength
+        ) as ArrayBuffer;
+        derivatives.set("thumbnail", thumbnailArrayBuffer);
+        
+        // Generate preview
+        const previewBuffer = await sharp(buffer)
+          .resize(previewSize, previewSize, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .webp({ quality: 90 })
+          .toBuffer();
+        
+        const previewArrayBuffer = previewBuffer.buffer.slice(
+          previewBuffer.byteOffset,
+          previewBuffer.byteOffset + previewBuffer.byteLength
+        ) as ArrayBuffer;
+        derivatives.set("preview", previewArrayBuffer);
+        
+        const updatedMetadata: Partial<AssetMetadata> = {
+          thumbnailUrl: `thumbnail_${metadata.id}`,
+          previewUrl: `preview_${metadata.id}`,
+          customProperties: {
+            ...metadata.customProperties,
+            hasThumbnail: true,
+            hasPreview: true,
+            thumbnailSize,
+            previewSize,
+          },
+        };
 
-    // Mock thumbnail generation
-    const mockThumbnail = new ArrayBuffer(1024); // 1KB placeholder
-    const mockPreview = new ArrayBuffer(8192); // 8KB placeholder
-
-    derivatives.set("thumbnail", mockThumbnail);
-    derivatives.set("preview", mockPreview);
-
-    const updatedMetadata: Partial<AssetMetadata> = {
-      thumbnailUrl: `thumbnail_${metadata.id}`,
-      previewUrl: `preview_${metadata.id}`,
-      customProperties: {
-        ...metadata.customProperties,
-        hasThumbnail: true,
-        hasPreview: true,
-        thumbnailSize,
-        previewSize,
-      },
-    };
-
-    return {
-      data,
-      metadata: updatedMetadata,
-      derivatives,
-    };
+        return {
+          data,
+          metadata: updatedMetadata,
+          derivatives,
+        };
+      } catch (error) {
+        // If thumbnail generation fails, return original data with warning
+        return {
+          data,
+          metadata: {
+            customProperties: {
+              ...metadata.customProperties,
+              thumbnailGenerationFailed: true,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            }
+          },
+          warnings: [`Thumbnail generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        };
+      }
+    } else {
+      // For non-image types, we need specialized processors
+      // For now, return data as-is with a note that thumbnails aren't supported
+      return {
+        data,
+        metadata: {
+          customProperties: {
+            ...metadata.customProperties,
+            thumbnailsNotSupported: true,
+            assetType: metadata.type
+          }
+        },
+        warnings: [`Thumbnail generation not yet implemented for ${metadata.type} assets`]
+      };
+    }
   }
 }
 
@@ -392,23 +494,22 @@ class ModelOptimizer implements AssetProcessor {
     metadata: AssetMetadata,
     options?: Record<string, any>,
   ): Promise<ProcessingResult> {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
     const decimateRatio = options?.decimateRatio || 0.8; // Reduce poly count by 20%
-    const compressTextures = options?.compressTextures || true;
+    const compressTextures = options?.compressTextures !== false;
 
-    // Mock optimization
-    const optimizedSize = Math.floor(data.byteLength * decimateRatio);
-    const optimizedData = data.slice(0, optimizedSize);
-
+    // For now, pass through the model data unchanged
+    // In production, this would use a proper 3D model processing library
+    // like three.js GLTFExporter with draco compression or similar
+    
     const updatedMetadata: Partial<AssetMetadata> = {
-      size: optimizedData.byteLength,
+      size: data.byteLength,
       customProperties: {
         ...metadata.customProperties,
         optimized: true,
         originalSize: data.byteLength,
         decimateRatio,
         compressTextures,
+        processedAt: new Date().toISOString(),
       },
     };
 
@@ -416,9 +517,13 @@ class ModelOptimizer implements AssetProcessor {
     if (decimateRatio < 0.5) {
       warnings.push("Aggressive polygon reduction may affect model quality");
     }
+    
+    if (data.byteLength > 10 * 1024 * 1024) { // 10MB
+      warnings.push("Large model file may impact performance");
+    }
 
     return {
-      data: optimizedData,
+      data,
       metadata: updatedMetadata,
       warnings,
     };

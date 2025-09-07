@@ -4,8 +4,7 @@
 
 import pino from "pino";
 import { trace, context, SpanStatusCode } from "@opentelemetry/api";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import type { NodeSDKConfiguration } from "@opentelemetry/sdk-node";
+import { NodeSDK, type NodeSDKConfiguration } from "@opentelemetry/sdk-node";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { Resource } from "@opentelemetry/resources";
 import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";

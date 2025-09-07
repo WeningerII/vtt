@@ -16,7 +16,7 @@
   "dependencies": {
     "jszip": "^3.10.1",
     "mime-types": "^2.1.35",
-    "sharp": "^0.33.0",
+    "sharp": "^0.33.5",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

@@ -195,8 +195,9 @@ export class VisionSystem {
     let x = x1;
     let y = y1;
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    // Bresenham's line algorithm with explicit loop condition
+    let maxSteps = Math.abs(x2 - x1) + Math.abs(y2 - y1) + 1;
+    while (maxSteps-- > 0) {
       // Check if current cell blocks vision
       if (this.isObstacle(x, y)) {
         return false;
@@ -217,6 +218,9 @@ export class VisionSystem {
         y += sy;
       }
     }
+    
+    // Should not reach here in normal cases
+    return false;
   }
 
   // Update all vision calculations

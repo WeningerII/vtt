@@ -1,7 +1,7 @@
 // Browser-safe logger shim for @vtt/logging
 // Provides a minimal API compatible with client usage
 
-export type LogMethod = (...args: any[]) => void;
+export type LogMethod = (message: string, ...args: unknown[]) => void;
 
 export type BrowserLogger = {
   trace: LogMethod;

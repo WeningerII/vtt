@@ -3,6 +3,7 @@
  * Comprehensive test suite for caching functionality
  */
 
+import { describe, it, expect, beforeEach, afterEach, test, vi } from "vitest";
 import { CacheManager } from "../CacheManager";
 
 describe("CacheManager", () => {
@@ -297,7 +298,7 @@ describe("CacheManager", () => {
 
   describe("Prefetching", () => {
     test("should prefetch data using provided loader", async () => {
-      const loader = jest.fn().mockImplementation((key) => Promise.resolve(`loaded-${key}`));
+      const loader = vi.fn().mockImplementation((key) => Promise.resolve(`loaded-${key}`));
 
       const keys = ["prefetch1", "prefetch2", "prefetch3"];
       await cacheManager.prefetch(keys, loader);
@@ -311,7 +312,7 @@ describe("CacheManager", () => {
     });
 
     test("should not reload existing entries during prefetch", async () => {
-      const loader = jest.fn().mockImplementation((key) => Promise.resolve(`loaded-${key}`));
+      const loader = vi.fn().mockImplementation((key) => Promise.resolve(`loaded-${key}`));
 
       // Pre-populate cache
       await cacheManager.set("existing", "already-cached");
@@ -472,15 +473,12 @@ describe("CacheManager", () => {
   });
 
   describe("Events", () => {
-    test("should emit events for cache operations", (done) => {
+    test("should emit events for cache operations", async () => {
       let eventsReceived = 0;
       const expectedEvents = 4; // set, get, delete, clear
 
       const eventHandler = () => {
         eventsReceived++;
-        if (eventsReceived === expectedEvents) {
-          done();
-        }
       };
 
       cacheManager.on("set", eventHandler);
@@ -489,15 +487,15 @@ describe("CacheManager", () => {
       cacheManager.on("clear", eventHandler);
 
       // Trigger events
-      (async () => {
-        await cacheManager.set("event-key", "event-value");
-        await cacheManager.get("event-key");
-        await cacheManager.delete("event-key");
-        await cacheManager.clear();
-      })();
+      await cacheManager.set("event-key", "event-value");
+      await cacheManager.get("event-key");
+      await cacheManager.delete("event-key");
+      await cacheManager.clear();
+      
+      expect(eventsReceived).toBe(expectedEvents);
     });
 
-    test("should emit eviction events", (done) => {
+    test("should emit eviction events", async () => {
       const smallCache = new CacheManager({
         maxSize: 1,
         evictionPolicy: "lru",
@@ -508,17 +506,17 @@ describe("CacheManager", () => {
         cleanupInterval: 300000,
       });
 
+      let evictionData: any = null;
       smallCache.on("evicted", (data) => {
-        expect(data.key).toBe("first");
-        expect(data.reason).toBe("size_limit");
-        done();
+        evictionData = data;
       });
 
-      // Fill cache beyond capacity
-      (async () => {
-        await smallCache.set("first", "value1");
-        await smallCache.set("second", "value2"); // Should evict 'first'
-      })();
+      // Add entries to trigger eviction
+      await smallCache.set("first", "value1");
+      await smallCache.set("second", "value2"); // This should evict "first"
+      
+      expect(evictionData?.key).toBe("first");
+      expect(evictionData?.reason).toBe("size_limit");
     });
   });
 });

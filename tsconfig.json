@@ -19,7 +19,9 @@
     "paths": {
       "@vtt/*": ["packages/*/src", "apps/*/src"],
       "@/*": ["./src/*"]
-    }
+    },
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": []
   },
   "include": [
     "apps/*/src/**/*",

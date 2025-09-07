@@ -5,6 +5,14 @@
 		}
 	],
 	"settings": {
-		"php.validate.enable": false
+		"php.validate.enable": false,
+		"json.schemas": [
+			{
+				"fileMatch": ["**/package.json"],
+				"url": "https://json.schemastore.org/package.json"
+			}
+		],
+		"json.schemaDownload.enable": true,
+		"json.validate.enable": true
 	}
 }

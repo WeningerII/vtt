@@ -9,7 +9,7 @@ export interface GenerationTemplate {
   type: "encounter" | "npc" | "loot" | "location" | "quest" | "dialogue";
   description: string;
   parameters: GenerationParameter[];
-  generateContent: (params: Record<string, _any>) => Promise<GeneratedContent>;
+  generateContent: (params: Record<string, any>) => Promise<GeneratedContent>;
   tags: string[];
   difficulty?: "easy" | "medium" | "hard";
 }
@@ -365,7 +365,7 @@ export class ContentGenerator {
           ],
         },
       ],
-      _generateContent: async (params) => {
+      generateContent: async (params) => {
         const encounter = this.generateRandomEncounter(params);
         return {
           id: `encounter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -529,12 +529,12 @@ export class ContentGenerator {
     const count = baseCount + Math.floor(Math.random() * 3);
 
     return {
-      name: `${selectedCreature.charAt(0).toUpperCase() + selectedCreature.slice(1)} Encounter`,
+      name: `${(selectedCreature || 'Unknown').charAt(0).toUpperCase() + (selectedCreature || 'Unknown').slice(1)} Encounter`,
       description: `A group of ${count} ${selectedCreature}s blocks your path through the ${environment}.`,
       difficulty: Math.floor(partyLevel * modifier),
       enemies: [
         {
-          name: selectedCreature,
+          name: selectedCreature || 'Unknown Creature',
           count,
           level: Math.max(1, partyLevel - 2 + Math.floor(Math.random() * 4)),
           type: "hostile",
@@ -650,10 +650,20 @@ export class ContentGenerator {
             "dark past",
             "forbidden knowledge",
             "family shame",
-          ]),
+          ])
         ],
       },
-      stats: this.generateNPCStats(role),
+      stats: {
+        level: Math.max(1, Math.floor(Math.random() * 20) + 1),
+        hp: 8 + Math.floor(Math.random() * 12),
+        ac: 10 + Math.floor(Math.random() * 8),
+        str: 10 + Math.floor(Math.random() * 8),
+        dex: 10 + Math.floor(Math.random() * 8),
+        con: 10 + Math.floor(Math.random() * 8),
+        int: 10 + Math.floor(Math.random() * 8),
+        wis: 10 + Math.floor(Math.random() * 8),
+        cha: 10 + Math.floor(Math.random() * 8)
+      },
       skills: this.generateNPCSkills(role),
       equipment: this.generateNPCEquipment(role),
     };
@@ -745,7 +755,7 @@ export class ContentGenerator {
                 "Secret meetings happen here after midnight",
               ]),
             ]
-          : undefined,
+          : [],
     };
   }
 
@@ -804,14 +814,18 @@ export class ContentGenerator {
 
     for (let i = 0; i < numItems; i++) {
       const type = this.randomChoice(itemTypes);
-      loot.push(`${type} (level ${level})`);
+      (loot as string[]).push(`${type} (level ${level})`);
     }
 
     return loot;
   }
 
   private randomChoice<T>(array: T[]): T {
-    return array[Math.floor(Math.random() * array.length)];
+    const result = array[Math.floor(Math.random() * array.length)];
+    if (result === undefined) {
+      throw new Error('Cannot select from empty array');
+    }
+    return result;
   }
 
   /**
@@ -869,7 +883,10 @@ class MarkovChain {
       if (!this.chains.has(key)) {
         this.chains.set(key, []);
       }
-      this.chains.get(key)!.push(next);
+      const chain = this.chains.get(key);
+      if (chain && next) {
+        chain.push(next);
+      }
     }
   }
 
@@ -881,22 +898,27 @@ class MarkovChain {
       startKey && this.chains.has(startKey)
         ? startKey
         : keys[Math.floor(Math.random() * keys.length)];
+    if (!currentKey) {return '';}
     const result = currentKey.split(" ");
 
     for (let i = 0; i < maxLength - this.order; i++) {
-      const possibleNext = this.chains.get(currentKey);
+      const possibleNext = currentKey ? this.chains.get(currentKey) : undefined;
       if (!possibleNext || possibleNext.length === 0) {break;}
 
       const next = possibleNext[Math.floor(Math.random() * possibleNext.length)];
-      result.push(next);
+      if (next) {
+        result.push(next);
+      }
 
       // Update key for next iteration
-      const keyWords = currentKey.split(" ");
+      const keyWords = currentKey ? currentKey.split(" ") : [];
       keyWords.shift();
-      keyWords.push(next);
+      if (next) {
+        keyWords.push(next);
+      }
       currentKey = keyWords.join(" ");
 
-      if (!this.chains.has(currentKey)) {break;}
+      if (!currentKey || !this.chains.has(currentKey)) {break;}
     }
 
     return result.join(" ");

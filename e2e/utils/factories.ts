@@ -38,7 +38,12 @@ export class TestDataFactory {
     return testDb.getClient();
   }
 
-  constructor() {}
+  constructor() {
+    // Ensure database is initialized before factory operations
+    if (!testDb.getClient()) {
+      throw new Error('TestDatabase must be initialized before using TestDataFactory. Call testDb.setup() first.');
+    }
+  }
 
   async createUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
     const userData = {

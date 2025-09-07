@@ -38,7 +38,9 @@ export class NPCBehaviorSystem {
    */
   async updateNPC(npcId, context) {
     const npc = this.npcs.get(npcId);
-    if (!npc || !npc.isActive) return;
+    if (!npc || !npc.isActive) {
+      return;
+    }
     try {
       // Update NPC perception and memory
       this.updatePerception(npc, context);
@@ -156,11 +158,15 @@ export class NPCBehaviorSystem {
     const availableActions = npcBehaviors.filter((action) => {
       // Check cooldown
       const cooldown = npc.actionCooldowns.get(action.id) || 0;
-      if (Date.now() < cooldown) return false;
+      if (Date.now() < cooldown) {
+        return false;
+      }
       // Check if action can be executed
       return action.canExecute(npc, context);
     });
-    if (availableActions.length === 0) return null;
+    if (availableActions.length === 0) {
+      return null;
+    }
     // Score actions based on current goals and personality
     const scoredActions = availableActions.map((action) => ({
       action,
@@ -171,7 +177,9 @@ export class NPCBehaviorSystem {
     // Select from top 3 actions with weighted probability
     const topActions = scoredActions.slice(0, 3);
     const totalScore = topActions.reduce((sum, item) => sum + item.score, 0);
-    if (totalScore === 0) return null;
+    if (totalScore === 0) {
+      return null;
+    }
     let random = Math.random() * totalScore;
     for (const item of topActions) {
       random -= item.score;
@@ -188,31 +196,49 @@ export class NPCBehaviorSystem {
     if (currentGoal) {
       switch (currentGoal.type) {
         case "survival":
-          if (action.type === "utility" && action.name.includes("heal")) score += 0.5;
-          if (action.type === "movement" && action.name.includes("flee")) score += 0.3;
+          if (action.type === "utility" && action.name.includes("heal")) {
+            score += 0.5;
+          }
+          if (action.type === "movement" && action.name.includes("flee")) {
+            score += 0.3;
+          }
           break;
         case "combat":
-          if (action.type === "combat") score += 0.4;
+          if (action.type === "combat") {
+            score += 0.4;
+          }
           break;
         case "social":
-          if (action.type === "social") score += 0.3;
+          if (action.type === "social") {
+            score += 0.3;
+          }
           break;
         case "exploration":
-          if (action.type === "movement" && action.name.includes("explore")) score += 0.2;
+          if (action.type === "movement" && action.name.includes("explore")) {
+            score += 0.2;
+          }
           break;
       }
     }
     // Adjust score based on mood
     switch (npc.behaviorState.mood) {
       case "aggressive":
-        if (action.type === "combat") score += 0.3;
+        if (action.type === "combat") {
+          score += 0.3;
+        }
         break;
       case "fearful":
-        if (action.name.includes("flee") || action.name.includes("hide")) score += 0.4;
-        if (action.type === "combat") score -= 0.3;
+        if (action.name.includes("flee") || action.name.includes("hide")) {
+          score += 0.4;
+        }
+        if (action.type === "combat") {
+          score -= 0.3;
+        }
         break;
       case "curious":
-        if (action.name.includes("investigate") || action.name.includes("explore")) score += 0.2;
+        if (action.name.includes("investigate") || action.name.includes("explore")) {
+          score += 0.2;
+        }
         break;
     }
     // Adjust score based on personality traits
@@ -275,7 +301,9 @@ export class NPCBehaviorSystem {
         description: "Move away from threats",
         execute: async (npc, context) => {
           const threats = context.visibleEntities.filter((e) => e.isHostile);
-          if (threats.length === 0) return { success: false };
+          if (threats.length === 0) {
+            return { success: false };
+          }
           // Calculate average threat position
           let avgThreatX = 0,
             avgThreatY = 0;
@@ -306,8 +334,9 @@ export class NPCBehaviorSystem {
             duration: 1000,
           };
         },
-        canExecute: (npc, context) =>
-          npc.behaviorState.mood === "fearful" && context.visibleEntities.some((e) => e.isHostile),
+        canExecute: (npc, context) => {
+          return context.visibleEntities.some((e) => e.isHostile) && npc.behaviorState.mood === "fearful";
+        },
         priority: 0.8,
       },
       // Attack behavior
@@ -320,7 +349,9 @@ export class NPCBehaviorSystem {
           const threats = context.visibleEntities.filter(
             (e) => e.isHostile && e.distance <= npc.stats.attackRange,
           );
-          if (threats.length === 0) return { success: false };
+          if (threats.length === 0) {
+            return { success: false };
+          }
           threats.sort((a, b) => a.distance - b.distance);
           const target = threats[0];
           const hitChance = 0.7;

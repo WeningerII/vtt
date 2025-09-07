@@ -25,8 +25,9 @@ export class ActionSystem {
      */
     canUseAction(entityId, actionType) {
         const resources = this.actionResources.get(entityId);
-        if (!resources)
+        if (!resources) {
             return false;
+        }
         const resource = resources.find((r) => r.type === actionType);
         return resource ? !resource.used : false;
     }
@@ -35,11 +36,13 @@ export class ActionSystem {
      */
     useAction(entityId, actionType) {
         const resources = this.actionResources.get(entityId);
-        if (!resources)
+        if (!resources) {
             return false;
+        }
         const resource = resources.find((r) => r.type === actionType);
-        if (!resource || resource.used)
+        if (!resource || resource.used) {
             return false;
+        }
         resource.used = true;
         return true;
     }
@@ -224,8 +227,9 @@ export class ActionSystem {
      * Check if attack roll is a critical hit
      */
     isCriticalHit(attackRoll, criticalRange = 20) {
-        if (attackRoll.rolls.length === 0)
+        if (attackRoll.rolls.length === 0) {
             return false;
+        }
         const naturalRoll = attackRoll.rolls[0];
         return naturalRoll !== undefined && naturalRoll >= criticalRange;
     }
@@ -246,8 +250,9 @@ export class ActionSystem {
      */
     hasUsedAction(entityId, actionType) {
         const resources = this.actionResources.get(entityId);
-        if (!resources)
+        if (!resources) {
             return false;
+        }
         const resource = resources.find((r) => r.type === actionType);
         return resource ? resource.used : false;
     }

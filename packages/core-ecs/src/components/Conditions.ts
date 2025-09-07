@@ -25,13 +25,16 @@ export type ConditionType =
   | "slowed";
 
 export interface Condition {
+  id?: string; // Optional ID for tracking/syncing
   type: ConditionType;
   duration: number; // rounds remaining, -1 for permanent
   source?: string; // what caused this condition
+  appliedAt?: number; // Timestamp when condition was applied
   saveEndOfTurn?: {
     ability: "strength" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma";
     dc: number;
   };
+  metadata?: Record<string, any>; // Optional metadata for external sync
 }
 
 export class ConditionsStore {
@@ -238,7 +241,7 @@ export class ConditionsStore {
     return Array.from(this.entities.slice(0, this.count));
   }
 
-  forEach(_callback: (entity: number, conditions: Condition[]) => void): void {
+  forEach(callback: (entity: number, conditions: Condition[]) => void): void {
     for (const [entity, conditions] of this.conditions) {
       callback(entity, conditions);
     }

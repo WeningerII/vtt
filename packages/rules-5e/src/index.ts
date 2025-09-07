@@ -101,6 +101,9 @@ export function crToProficiency(cr: ChallengeRating): number {
     case "29":
     case "30":
       return 9;
+    default:
+      // Fallback for any unhandled CR values
+      return 2;
   }
 }
 

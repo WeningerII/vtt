@@ -138,7 +138,7 @@ export class HealthStore {
     return Array.from(this.entities.slice(0, this.count));
   }
 
-  forEach(_callback: (entity: number, _health: HealthData) => void): void {
+  forEach(callback: (entity: number, health: HealthData) => void): void {
     for (let i = 0; i < this.count; i++) {
       const entity = this.entities[i];
       if (entity !== undefined) {

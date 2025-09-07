@@ -100,7 +100,7 @@ export function MapUploadModal({ isOpen, onClose, onUploadComplete, campaignId }
     setDragOver(false);
     
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
+    if (files.length > 0 && files[0]) {
       handleFileSelect(files[0]);
     }
   };
@@ -261,7 +261,9 @@ export function MapUploadModal({ isOpen, onClose, onUploadComplete, campaignId }
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) {handleFileSelect(file);}
+              if (file) {
+                handleFileSelect(file);
+              }
             }}
           />
 

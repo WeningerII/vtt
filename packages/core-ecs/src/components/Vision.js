@@ -87,19 +87,23 @@ export class VisionStore {
     }
     canSeeEntity(observerId, targetId, distance, lightLevel, targetVision) {
         const observerVision = this.data.get(observerId);
-        if (!observerVision || (observerVision.isBlinded && !observerVision.immuneToBlindness))
+        if (!observerVision || (observerVision.isBlinded && !observerVision.immuneToBlindness)) {
             return false;
+        }
         // Get target vision data if not provided
         const targetData = targetVision || this.data.get(targetId);
         // Check target invisibility
         if (targetData?.isInvisible) {
             // Can only see invisible with truesight, blindsight, or special ability
-            if (distance <= observerVision.truesightRange)
+            if (distance <= observerVision.truesightRange) {
                 return true;
-            if (distance <= observerVision.blindsightRange)
+            }
+            if (distance <= observerVision.blindsightRange) {
                 return true;
-            if (observerVision.canSeeInvisible && !targetData.immuneToInvisibilityDetection)
+            }
+            if (observerVision.canSeeInvisible && !targetData.immuneToInvisibilityDetection) {
                 return true;
+            }
             return false;
         }
         // Check ethereal plane
@@ -112,21 +116,25 @@ export class VisionStore {
             return false;
         }
         // Truesight sees everything within range
-        if (distance <= observerVision.truesightRange)
+        if (distance <= observerVision.truesightRange) {
             return true;
+        }
         // Blindsight doesn't need light
-        if (distance <= observerVision.blindsightRange)
+        if (distance <= observerVision.blindsightRange) {
             return true;
+        }
         // Devil's sight penetrates magical darkness
         if (observerVision.hasDevilsSight && observerVision.hasMagicalDarkness) {
             return distance <= observerVision.sightRange;
         }
         // Normal sight in adequate light
-        if (lightLevel >= 0.5 && distance <= observerVision.sightRange)
+        if (lightLevel >= 0.5 && distance <= observerVision.sightRange) {
             return true;
+        }
         // Darkvision in dim light or darkness  
-        if (lightLevel < 0.5 && distance <= observerVision.darkvisionRange)
+        if (lightLevel < 0.5 && distance <= observerVision.darkvisionRange) {
             return true;
+        }
         return false;
     }
     clearFogOfWar(id) {

@@ -212,11 +212,13 @@ export class ConditionsEngine {
      */
     removeCondition(entityId, conditionId) {
         const conditions = this.activeConditions.get(entityId);
-        if (!conditions)
+        if (!conditions) {
             return false;
+        }
         const index = conditions.findIndex((c) => c.id === conditionId);
-        if (index === -1)
+        if (index === -1) {
             return false;
+        }
         conditions.splice(index, 1);
         return true;
     }

@@ -2,110 +2,60 @@
  * Character Sheet Component - Main character management interface
  */
 
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { logger } from "@vtt/logging";
-import { Download, Save, Settings, User } from "lucide-react";
-
+import { 
+  Download, 
+  Save, 
+  Settings, 
+  User,
+  Heart, 
+  Shield, 
+  Zap, 
+  Edit3,
+  X
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { Badge } from "../ui/Badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { Input } from "../ui/Input";
+import { Textarea } from "../ui/textarea";
+import { Label } from "../ui/label";
+import { Separator } from "../ui/separator";
+import { LoadingSpinner } from "../ui/LoadingSpinner";
+import { cn } from "../../lib/utils";
 import { useAuth } from "../../providers/AuthProvider";
-import { useWebSocket } from "../../providers/WebSocketProvider";
+import { Character, Ability, Skill, Equipment, Spell, Feature } from "@vtt/core-schemas";
 import { AbilityScores } from "./AbilityScores";
 import { SkillsPanel } from "./SkillsPanel";
 import { EquipmentPanel } from "./EquipmentPanel";
 import { SpellsPanel } from "./SpellsPanel";
+import { FeaturesPanel } from "./FeaturesPanel";
+import { useWebSocket } from "../../hooks/useWebSocket";
 import { NotesPanel } from "./NotesPanel";
-import { Button } from "../ui/Button";
-import { LoadingSpinner } from "../ui/LoadingSpinner";
+
 // Additional icons not in lucide-react
-const Shield = () => <span>🛡️</span>;
 const Sword = () => <span>⚔️</span>;
 const Book = () => <span>📚</span>;
 const Backpack = () => <span>🎒</span>;
 const FileText = () => <span>📄</span>;
-import { cn } from "../../lib/utils";
 
-export interface Character {
-  id: string;
-  userId: string;
-  name: string;
-  class: string;
-  race: string;
-  background: string;
-  level: number;
-  experience: number;
-  hitPoints: number;
-  maxHitPoints: number;
-  tempHitPoints: number;
-  armorClass: number;
-  speed: number;
-  proficiencyBonus: number;
-  inspiration: boolean;
-  abilities: {
-    strength: number;
-    dexterity: number;
-    constitution: number;
-    intelligence: number;
-    wisdom: number;
-    charisma: number;
-  };
-  savingThrows: {
-    strength: { proficient: boolean; value: number };
-    dexterity: { proficient: boolean; value: number };
-    constitution: { proficient: boolean; value: number };
-    intelligence: { proficient: boolean; value: number };
-    wisdom: { proficient: boolean; value: number };
-    charisma: { proficient: boolean; value: number };
-  };
-  skills: Record<string, { proficient: boolean; expertise: boolean; value: number }>;
-  equipment: Equipment[];
-  spells: Spell[];
-  features: Feature[];
-  notes: string;
-  avatar?: string;
+// Import additional types needed from core-schemas
+import { HitPoints, SavingThrow, Personality } from "@vtt/core-schemas";
+
+// Use unified Character type from core-schemas with date string conversion
+interface LocalCharacter extends Omit<Character, 'createdAt' | 'updatedAt'> {
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Equipment {
-  id: string;
-  name: string;
-  type: "weapon" | "armor" | "tool" | "consumable" | "treasure" | "other";
-  quantity: number;
-  weight: number;
-  value: number;
-  description: string;
-  equipped: boolean;
-  properties: string[];
-}
+// Re-export types for other components to use
+export type { Character, Equipment, Spell, Feature } from "@vtt/core-schemas";
 
-export interface Spell {
-  id: string;
-  name: string;
-  level: number;
-  school: string;
-  castingTime: string;
-  range: string;
-  components: string[];
-  duration: string;
-  description: string;
-  prepared: boolean;
-  known: boolean;
-}
-
-export interface Feature {
-  id: string;
-  name: string;
-  source: string;
-  description: string;
-  type: "class" | "race" | "background" | "feat" | "other";
-  uses?: {
-    current: number;
-    max: number;
-    resetOn: "short" | "long" | "other";
-  };
-}
-
-interface CharacterSheetProps {
-  characterId?: string | undefined;
+export interface CharacterSheetProps {
+  characterId: string;
+  onUpdate?: (character: Character) => void;
   className?: string;
   onCharacterUpdate?: (character: Character) => void;
 }
@@ -161,22 +111,30 @@ export const CharacterSheet = memo(({
       class: "Fighter",
       race: "Human",
       background: "Folk Hero",
+      alignment: "Lawful Good",
       level: 1,
       experience: 0,
-      hitPoints: 10,
-      maxHitPoints: 10,
-      tempHitPoints: 0,
+      hitPoints: { current: 10, max: 10, temporary: 0 },
       armorClass: 10,
       speed: 30,
       proficiencyBonus: 2,
-      inspiration: false,
+      initiative: 0,
+      hitDice: { total: 1, current: 1, type: "d10" },
+      currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+      traits: [],
+      personality: {
+        traits: [],
+        ideals: [],
+        bonds: [],
+        flaws: []
+      },
       abilities: {
-        strength: 15,
-        dexterity: 14,
-        constitution: 13,
-        intelligence: 12,
-        wisdom: 10,
-        charisma: 8,
+        strength: { name: "Strength", value: 15, modifier: 2 },
+        dexterity: { name: "Dexterity", value: 14, modifier: 2 },
+        constitution: { name: "Constitution", value: 13, modifier: 1 },
+        intelligence: { name: "Intelligence", value: 12, modifier: 1 },
+        wisdom: { name: "Wisdom", value: 10, modifier: 0 },
+        charisma: { name: "Charisma", value: 8, modifier: -1 },
       },
       savingThrows: {
         strength: { proficient: true, value: 4 },
@@ -187,17 +145,16 @@ export const CharacterSheet = memo(({
         charisma: { proficient: false, value: -1 },
       },
       skills: {
-        "Animal Handling": { proficient: true, expertise: false, value: 2 },
-        Athletics: { proficient: true, expertise: false, value: 4 },
-        Intimidation: { proficient: false, expertise: false, value: -1 },
-        Perception: { proficient: false, expertise: false, value: 0 },
+        "animalHandling": { name: "Animal Handling", ability: "wisdom", proficient: true, value: 2, modifier: 0 },
+        "athletics": { name: "Athletics", ability: "strength", proficient: true, value: 4, modifier: 2 },
+        "intimidation": { name: "Intimidation", ability: "charisma", proficient: false, value: -1, modifier: -1 },
+        "perception": { name: "Perception", ability: "wisdom", proficient: false, value: 0, modifier: 0 },
       },
       equipment: [],
-      spells: [],
       features: [],
       notes: "",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   };
 
@@ -210,11 +167,21 @@ export const CharacterSheet = memo(({
       class: "Fighter",
       race: "Dwarf",
       background: "Soldier",
+      alignment: "Lawful Good",
       level: 3,
       experience: 900,
-      hitPoints: 28,
-      maxHitPoints: 28,
+      hitPoints: { current: 28, max: 28, temporary: 0 },
       armorClass: 16,
+      initiative: 2,
+      hitDice: { total: 3, current: 2, type: "d10" },
+      currency: { cp: 50, sp: 100, ep: 0, gp: 75, pp: 0 },
+      traits: ["Darkvision", "Dwarven Resilience"],
+      personality: {
+        traits: ["Gruff but loyal"],
+        ideals: ["Honor above all"],
+        bonds: ["My clan and my comrades"],
+        flaws: ["Slow to trust outsiders"]
+      },
       equipment: [
         {
           id: "eq1",
@@ -238,6 +205,17 @@ export const CharacterSheet = memo(({
           equipped: true,
           properties: ["AC 16", "Disadvantage on Stealth"],
         },
+        {
+          id: "eq3",
+          name: "Shield",
+          type: "shield",
+          quantity: 1,
+          weight: 6,
+          value: 10,
+          description: "A sturdy wooden shield",
+          equipped: true,
+          properties: ["AC +2", "Disadvantage on Attack Rolls"],
+        },
       ],
       features: [
         {
@@ -257,6 +235,8 @@ export const CharacterSheet = memo(({
           uses: { current: 1, max: 1, resetOn: "short" },
         },
       ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
   };
 
@@ -267,7 +247,7 @@ export const CharacterSheet = memo(({
       const updatedCharacter = {
         ...character,
         ...updates,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       };
 
       setCharacter(updatedCharacter);
@@ -283,9 +263,11 @@ export const CharacterSheet = memo(({
     try {
       // Send character data to server
       send({
-        type: "CHARACTER_UPDATE" as const,
-        message: `Character ${character.name} updated`,
-        channel: "system",
+        type: "scene_update" as const,
+        payload: { characterUpdate: character },
+        sessionId: characterId,
+        userId: character.userId,
+        timestamp: Date.now()
       });
 
       setHasUnsavedChanges(false);

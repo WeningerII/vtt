@@ -1,4 +1,4 @@
-import { _PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { logger } from "@vtt/logging";
 import { Context } from "../router/types";
 
@@ -14,13 +14,8 @@ export async function getSceneHandler(ctx: Context) {
     const scene = await ctx.prisma.scene.findUnique({
       where: { id: sceneId },
       include: {
-        tokens: {
-          include: {
-            actor: true,
-            asset: true,
-          },
-        },
         campaign: true,
+        map: true,
       },
     });
 
@@ -47,7 +42,7 @@ export async function createSceneHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (_chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: any) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
@@ -63,16 +58,7 @@ export async function createSceneHandler(ctx: Context) {
         data: {
           name,
           campaignId,
-          gridSettings: JSON.stringify(
-            gridSettings || {
-              type: "square",
-              size: 70,
-              offsetX: 0,
-              offsetY: 0,
-            },
-          ),
-          lightingSettings: JSON.stringify(lightingSettings || {}),
-          fogSettings: JSON.stringify(fogSettings || {}),
+          // lightingSettings and fogSettings not part of Scene model
         },
       });
 
@@ -101,29 +87,21 @@ export async function updateSceneHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (_chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: any) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
       const updateData: any = { updatedAt: new Date() };
 
       if (data.name !== undefined) {updateData.name = data.name;}
-      if (data.gridSettings !== undefined)
-        {updateData.gridSettings = JSON.stringify(data.gridSettings);}
-      if (data.lightingSettings !== undefined)
-        {updateData.lightingSettings = JSON.stringify(data.lightingSettings);}
-      if (data.fogSettings !== undefined) {updateData.fogSettings = JSON.stringify(data.fogSettings);}
+      // lightingSettings and fogSettings not part of Scene model
 
       const scene = await ctx.prisma.scene.update({
         where: { id: sceneId },
         data: updateData,
         include: {
-          tokens: {
-            include: {
-              actor: true,
-              asset: true,
-            },
-          },
+          campaign: true,
+          map: true,
         },
       });
 
@@ -145,14 +123,13 @@ export async function createTokenHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (_chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: any) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
       const {
         name,
         sceneId,
-        actorId,
         assetId,
         x,
         y,
@@ -174,22 +151,16 @@ export async function createTokenHandler(ctx: Context) {
       const token = await ctx.prisma.token.create({
         data: {
           name,
+          type: 'NPC', // Default type
+          gameSessionId: 'default-session', // Default session ID
           sceneId,
-          actorId: actorId || null,
-          assetId: assetId || null,
           x,
           y,
-          width,
-          height,
           rotation,
           scale,
-          disposition,
-          isVisible,
-          layer,
         },
         include: {
-          actor: true,
-          asset: true,
+          gameSession: true,
         },
       });
 
@@ -218,7 +189,7 @@ export async function updateTokenHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (_chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: any) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
@@ -241,8 +212,7 @@ export async function updateTokenHandler(ctx: Context) {
         where: { id: tokenId },
         data: updateData,
         include: {
-          actor: true,
-          asset: true,
+          gameSession: true,
         },
       });
 
@@ -295,11 +265,6 @@ export async function getCampaignScenesHandler(ctx: Context) {
   try {
     const scenes = await ctx.prisma.scene.findMany({
       where: { campaignId },
-      include: {
-        _count: {
-          select: { tokens: true },
-        },
-      },
       orderBy: { createdAt: "asc" },
     });
 

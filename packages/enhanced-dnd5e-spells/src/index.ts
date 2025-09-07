@@ -26,16 +26,6 @@ export const ENHANCED_DND5E_SPELLS: Record<string, PhysicsSpellEffect> = {
     ],
     physics: {
       type: "mental_effect",
-      mental: {
-        requiresLineOfSight: true,
-        audible: false,
-        telepathic: true,
-      },
-      sound: {
-        directional: true,
-        range: 120,
-        private: true,
-      },
     },
   },
 
@@ -61,12 +51,6 @@ export const ENHANCED_DND5E_SPELLS: Record<string, PhysicsSpellEffect> = {
       persistent: {
         followsCaster: false,
         duration: 60000,
-        illusory: true,
-      },
-      illusion: {
-        type: "sound_or_image",
-        detectable: true,
-        investigationDC: 13,
       },
     },
   },
@@ -98,12 +82,6 @@ export const ENHANCED_DND5E_SPELLS: Record<string, PhysicsSpellEffect> = {
       persistent: {
         followsCaster: false,
         duration: 60000,
-        protective: true,
-      },
-      aura: {
-        radius: 5,
-        color: "#4169E1",
-        subtle: true,
       },
     },
   },
@@ -130,12 +108,6 @@ export const ENHANCED_DND5E_SPELLS: Record<string, PhysicsSpellEffect> = {
       persistent: {
         followsCaster: false,
         duration: 60000,
-        enhancement: true,
-      },
-      weapon: {
-        magicalDamage: true,
-        abilityOverride: "spellcasting",
-        damageDie: "d8",
       },
     },
   },
@@ -417,6 +389,7 @@ export const ENHANCED_DND5E_SPELLS: Record<string, PhysicsSpellEffect> = {
       },
       movementModifier: {
         type: "slow",
+        speedMultiplier: 0.7, // Reduce speed by 30%
         magnitude: 10,
         duration: 6000, // 1 round in milliseconds
       },
@@ -1243,9 +1216,9 @@ export const ENHANCED_DND5E_SPELLS: Record<string, PhysicsSpellEffect> = {
     },
   },
 
-  entangle: {
-    id: "entangle",
-    name: "Entangle",
+  entangleAlternate: {
+    id: "entangle_alternate",
+    name: "Entangle (Alternate)",
     level: 1,
     school: "conjuration",
     castingTime: "1 action",

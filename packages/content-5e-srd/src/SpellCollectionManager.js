@@ -39,8 +39,9 @@ export class SpellCollectionManager {
      */
     updateCollection(id, updates) {
         const collection = this.collections.get(id);
-        if (!collection)
+        if (!collection) {
             return undefined;
+        }
         const updated = {
             ...collection,
             ...updates,
@@ -60,8 +61,9 @@ export class SpellCollectionManager {
      */
     addSpellsToCollection(collectionId, spellIds) {
         const collection = this.collections.get(collectionId);
-        if (!collection)
+        if (!collection) {
             return false;
+        }
         const uniqueSpells = new Set([...collection.spellIds, ...spellIds]);
         collection.spellIds = Array.from(uniqueSpells);
         collection.updatedAt = new Date();
@@ -72,8 +74,9 @@ export class SpellCollectionManager {
      */
     removeSpellsFromCollection(collectionId, spellIds) {
         const collection = this.collections.get(collectionId);
-        if (!collection)
+        if (!collection) {
             return false;
+        }
         collection.spellIds = collection.spellIds.filter((id) => !spellIds.includes(id));
         collection.updatedAt = new Date();
         return true;
@@ -83,8 +86,9 @@ export class SpellCollectionManager {
      */
     exportCollection(collectionId, options) {
         const collection = this.collections.get(collectionId);
-        if (!collection)
+        if (!collection) {
             throw new Error("Collection not found");
+        }
         const spells = this.getSpellsForCollection(collection);
         const exportData = {
             ...collection,
@@ -198,8 +202,9 @@ export class SpellCollectionManager {
      */
     duplicateCollection(collectionId, newName) {
         const original = this.collections.get(collectionId);
-        if (!original)
+        if (!original) {
             return undefined;
+        }
         const duplicate = this.createCollection({
             ...original,
             name: newName || `${original.name} (Copy)`,
@@ -212,8 +217,9 @@ export class SpellCollectionManager {
      */
     getCollectionStats(collectionId) {
         const collection = this.collections.get(collectionId);
-        if (!collection)
+        if (!collection) {
             throw new Error("Collection not found");
+        }
         const spells = this.getSpellsForCollection(collection);
         const stats = {
             totalSpells: spells.length,
@@ -236,12 +242,14 @@ export class SpellCollectionManager {
                 stats.byClass[cls] = (stats.byClass[cls] || 0) + 1;
             });
             // Special properties
-            if (spell.concentration)
+            if (spell.concentration) {
                 stats.concentrationSpells++;
+            }
         });
         spells.forEach((spell) => {
-            if (spell.ritual)
+            if (spell.ritual) {
                 stats.ritualSpells++;
+            }
         });
         stats.averageLevel = spells.length > 0 ? totalLevels / spells.length : 0;
         return stats;
@@ -297,8 +305,9 @@ export class SpellCollectionManager {
         // Group by level
         const byLevel = spells.reduce((_acc, _spell) => {
             const level = spell.level === 0 ? "Cantrips" : `Level ${spell.level}`;
-            if (!acc[level])
+            if (!acc[level]) {
                 acc[level] = [];
+            }
             acc[level].push(spell);
             return acc;
         }, {});

@@ -304,23 +304,5 @@ export const LEVEL_7_SPELLS = {
         source: "SRD 5.1",
         tags: ["evocation", "force", "weapon", "concentration", "costly_components"],
     },
-    regenerate: {
-        id: "regenerate",
-        name: "Regenerate",
-        level: 7,
-        school: "transmutation",
-        castingTime: "1 minute",
-        range: "Touch",
-        components: ["V", "S", "M"],
-        materialComponent: "a prayer wheel and holy water",
-        duration: "1 hour",
-        description: "You touch a creature and stimulate its natural healing ability.",
-        healing: { diceExpression: "4d8+15", scalingDice: "0" },
-        concentration: false,
-        ritual: false,
-        classes: ["Bard", "Cleric", "Druid"],
-        source: "SRD 5.1",
-        tags: ["transmutation", "healing", "regeneration", "limb_restoration", "touch"],
-    },
 };
 //# sourceMappingURL=level7.js.map

@@ -370,4 +370,5 @@ if (require.main === module) {
     });
 }
 
-export { WebSocketPerformanceTest, TestConfig, TestResults };
+export { WebSocketPerformanceTest };
+export type { TestConfig, TestResults };

@@ -125,36 +125,85 @@ export const SpellsPanel = memo(({
       known: formData.known,
     };
 
+    const currentSpells = character.spellcasting?.spells || [];
     let newSpells;
     if (editingSpell) {
-      newSpells = character.spells.map((spell) =>
+      newSpells = currentSpells.map((spell) =>
         spell.id === editingSpell.id ? newSpell : spell,
       );
     } else {
-      newSpells = [...character.spells, newSpell];
+      newSpells = [...currentSpells, newSpell];
     }
 
-    onUpdate({ spells: newSpells });
+    onUpdate({ 
+      spellcasting: {
+        ...character.spellcasting,
+        spells: newSpells,
+        ability: character.spellcasting?.ability || 'INT',
+        spellAttackBonus: character.spellcasting?.spellAttackBonus || 0,
+        spellSaveDC: character.spellcasting?.spellSaveDC || 8,
+        spellSlots: character.spellcasting?.spellSlots || {},
+        cantripsKnown: character.spellcasting?.cantripsKnown || 0,
+        spellsKnown: character.spellcasting?.spellsKnown || 0
+      } 
+    });
     resetForm();
   };
 
   const removeSpell = (id: string) => {
-    const newSpells = character.spells.filter((spell) => spell.id !== id);
-    onUpdate({ spells: newSpells });
+    const spells = character.spellcasting?.spells || [];
+    const newSpells = spells.filter((spell) => spell.id !== id);
+    onUpdate({ 
+      spellcasting: {
+        ...character.spellcasting,
+        spells: newSpells,
+        ability: character.spellcasting?.ability || 'INT',
+        spellAttackBonus: character.spellcasting?.spellAttackBonus || 0,
+        spellSaveDC: character.spellcasting?.spellSaveDC || 8,
+        spellSlots: character.spellcasting?.spellSlots || {},
+        cantripsKnown: character.spellcasting?.cantripsKnown || 0,
+        spellsKnown: character.spellcasting?.spellsKnown || 0
+      } 
+    });
   };
 
-  const togglePrepared = (id: string) => {
-    const newSpells = character.spells.map((spell) =>
+  const toggleSpellPrepared = (id: string) => {
+    const currentSpells = character.spellcasting?.spells || [];
+    const newSpells = currentSpells.map((spell) =>
       spell.id === id ? { ...spell, prepared: !spell.prepared } : spell,
     );
-    onUpdate({ spells: newSpells });
+    onUpdate({ 
+      spellcasting: {
+        ...character.spellcasting,
+        spells: newSpells,
+        ability: character.spellcasting?.ability || 'INT',
+        spellAttackBonus: character.spellcasting?.spellAttackBonus || 0,
+        spellSaveDC: character.spellcasting?.spellSaveDC || 8,
+        spellSlots: character.spellcasting?.spellSlots || {},
+        cantripsKnown: character.spellcasting?.cantripsKnown || 0,
+        spellsKnown: character.spellcasting?.spellsKnown || 0
+      } 
+    });
   };
 
-  const toggleKnown = (id: string) => {
-    const newSpells = character.spells.map((spell) =>
+  const toggleSpellKnown = (id: string) => {
+    const currentSpells = character.spellcasting?.spells || [];
+    const newSpells = currentSpells.map((spell) =>
       spell.id === id ? { ...spell, known: !spell.known } : spell,
     );
-    onUpdate({ spells: newSpells });
+
+    onUpdate({ 
+      spellcasting: {
+        ...character.spellcasting,
+        spells: newSpells,
+        ability: character.spellcasting?.ability || 'INT',
+        spellAttackBonus: character.spellcasting?.spellAttackBonus || 0,
+        spellSaveDC: character.spellcasting?.spellSaveDC || 8,
+        spellSlots: character.spellcasting?.spellSlots || {},
+        cantripsKnown: character.spellcasting?.cantripsKnown || 0,
+        spellsKnown: character.spellcasting?.spellsKnown || 0
+      } 
+    });
   };
 
   const startEdit = (spell: Spell) => {
@@ -183,7 +232,9 @@ export const SpellsPanel = memo(({
     }));
   };
 
-  const filteredSpells = character.spells.filter((spell) => {
+  const spells = character.spellcasting?.spells || [];
+
+  const filteredSpells = spells.filter((spell) => {
     if (searchTerm && !spell.name.toLowerCase().includes(searchTerm.toLowerCase())) {
       return false;
     }
@@ -199,16 +250,17 @@ export const SpellsPanel = memo(({
     return true;
   });
 
-  const spellsByLevel = SPELL_LEVELS.reduce(
-    (acc, { value }) => {
-      acc[value] = filteredSpells.filter((spell) => spell.level === value);
+  const spellsByLevel = spells.reduce(
+    (acc, spell) => {
+      if (!acc[spell.level]) acc[spell.level] = [];
+      acc[spell.level]!.push(spell);
       return acc;
     },
     {} as Record<number, Spell[]>,
   );
 
-  const preparedSpells = character.spells.filter((spell) => spell.prepared);
-  const knownSpells = character.spells.filter((spell) => spell.known);
+  const preparedSpells = spells.filter((spell) => spell.prepared);
+  const knownSpells = spells.filter((spell) => spell.known);
 
   const _getSpellLevelLabel = (level: number): string => {
     return level === 0 ? "Cantrip" : `Level ${level}`;
@@ -233,7 +285,7 @@ export const SpellsPanel = memo(({
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Zap className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
           <div className="text-lg font-bold text-primary">
-            {preparedSpells.filter((s) => s.level === 0).length}
+            {preparedSpells.length}
           </div>
           <div className="text-xs text-text-secondary">Cantrips</div>
         </div>
@@ -241,7 +293,7 @@ export const SpellsPanel = memo(({
         <div className="bg-bg-tertiary rounded-lg border border-border-primary p-3 text-center">
           <Filter className="h-6 w-6 text-text-tertiary mx-auto mb-1" />
           <div className="text-lg font-bold text-primary">
-            {new Set(character.spells.map((s) => s.school)).size}
+            {new Set(spells.map((s) => s.school)).size}
           </div>
           <div className="text-xs text-text-secondary">Schools</div>
         </div>
@@ -485,7 +537,7 @@ export const SpellsPanel = memo(({
                           {isEditing && (
                             <div className="flex gap-1">
                               <button
-                                onClick={() => toggleKnown(spell.id)}
+                                onClick={() => toggleSpellKnown(spell.id)}
                                 className={cn(
                                   "w-4 h-4 transition-colors",
                                   spell.known ? "text-accent-primary" : "text-text-tertiary",
@@ -499,7 +551,7 @@ export const SpellsPanel = memo(({
                                 )}
                               </button>
                               <button
-                                onClick={() => togglePrepared(spell.id)}
+                                onClick={() => toggleSpellPrepared(spell.id)}
                                 className={cn(
                                   "w-4 h-4 transition-colors",
                                   spell.prepared ? "text-warning" : "text-text-tertiary",
@@ -573,7 +625,7 @@ export const SpellsPanel = memo(({
         })}
       </div>
 
-      {filteredSpells.length === 0 && (
+      {spells.length === 0 && (
         <div className="text-center py-8">
           <Book className="h-12 w-12 text-text-tertiary mx-auto mb-4" />
           <h3 className="text-lg font-medium text-primary mb-2">No Spells Found</h3>

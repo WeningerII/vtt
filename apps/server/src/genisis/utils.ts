@@ -13,7 +13,7 @@ export function buildSystemPrompt() {
   );
 }
 
-export function buildUserPrompt(_concept: string, _name?: string) {
+export function buildUserPrompt(concept: string, name?: string) {
   let base = `Create a character matching this concept: ${concept}.`;
   if (name) {base += ` The character's name should be: ${name}.`;}
   base += " Ensure the JSON is complete and consistent.";

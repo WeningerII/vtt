@@ -5,20 +5,17 @@
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
 import { useWebSocket } from "../../hooks/useWebSocket";
-
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Sword = MockIcon;
-const Shield = MockIcon;
-const Target = MockIcon;
-const Brain = MockIcon;
-const Zap = MockIcon;
-const Map = MockIcon;
-const Users = MockIcon;
-const AlertTriangle = MockIcon;
+import { toErrorObject } from "../../utils/error-utils";
+import { 
+  Sword, 
+  Shield, 
+  Target, 
+  Brain, 
+  Zap, 
+  Map, 
+  Users, 
+  AlertTriangle 
+} from "lucide-react";
 
 interface TacticalRecommendation {
   action: string;
@@ -74,7 +71,7 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
         setRecommendation(result.data);
       }
     } catch (error) {
-      logger.error("Failed to get tactical recommendation:", error);
+      logger.error("Failed to analyze threats:", toErrorObject(error));
     } finally {
       setIsAnalyzing(false);
     }
@@ -101,7 +98,7 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
         setPositions(result.data);
       }
     } catch (error) {
-      logger.error("Failed to get positioning:", error);
+      logger.error("Failed to get positioning guidance:", toErrorObject(error));
     }
   };
 

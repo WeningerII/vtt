@@ -120,7 +120,7 @@ export class EmailService extends EventEmitter {
           });
           break;
 
-        case 'mailgun':
+        case 'mailgun': {
           const mg = require('nodemailer-mailgun-transport');
           this.transporter = nodemailer.createTransport(mg({
             auth: {
@@ -129,8 +129,9 @@ export class EmailService extends EventEmitter {
             },
           }));
           break;
+        }
 
-        case 'ses':
+        case 'ses': {
           const aws = require('aws-sdk');
           this.transporter = nodemailer.createTransport({
             SES: new aws.SES({
@@ -140,6 +141,7 @@ export class EmailService extends EventEmitter {
             }),
           });
           break;
+        }
 
         default:
           throw new Error(`Unsupported email provider: ${this.config.provider}`);

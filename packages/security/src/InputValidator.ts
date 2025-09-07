@@ -179,7 +179,7 @@ export class InputValidator {
         code: "MAX_LENGTH",
         value: file.name,
       });
-    } else if (/[<>:"/\\|?*\x00-\x1f]/.test(file.name)) {
+    } else if (/[<>:"/\\|?*]/.test(file.name)) {
       errors.push({
         field: "name",
         message: "File name contains invalid characters",

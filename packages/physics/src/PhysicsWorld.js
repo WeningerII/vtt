@@ -88,8 +88,9 @@ export class PhysicsWorld extends EventEmitter {
      * Apply gravity to all dynamic bodies
      */
     applyGravity() {
-        if (this.config.gravity.x === 0 && this.config.gravity.y === 0)
+        if (this.config.gravity.x === 0 && this.config.gravity.y === 0) {
             return;
+        }
         for (const body of this.bodies.values()) {
             if (!body.config.isStatic) {
                 body.applyGravity(this.config.gravity);
@@ -128,8 +129,9 @@ export class PhysicsWorld extends EventEmitter {
         for (const [idA, idB] of potentialPairs) {
             const bodyA = this.bodies.get(idA);
             const bodyB = this.bodies.get(idB);
-            if (!bodyA || !bodyB || !bodyA.shouldCollideWith(bodyB))
+            if (!bodyA || !bodyB || !bodyA.shouldCollideWith(bodyB)) {
                 continue;
+            }
             const collision = this.checkAABBCollision(bodyA, bodyB);
             if (collision) {
                 collisions.push(collision);
@@ -147,8 +149,9 @@ export class PhysicsWorld extends EventEmitter {
         // Check overlap
         const overlapX = Math.min(aabbA.maxX, aabbB.maxX) - Math.max(aabbA.minX, aabbB.minX);
         const overlapY = Math.min(aabbA.maxY, aabbB.maxY) - Math.max(aabbA.minY, aabbB.minY);
-        if (overlapX <= 0 || overlapY <= 0)
+        if (overlapX <= 0 || overlapY <= 0) {
             return null;
+        }
         // Calculate collision normal and penetration
         let normal;
         let penetration;
@@ -191,8 +194,9 @@ export class PhysicsWorld extends EventEmitter {
      */
     constrainVelocities() {
         for (const body of this.bodies.values()) {
-            if (body.config.isStatic)
+            if (body.config.isStatic) {
                 continue;
+            }
             // Max velocity constraint
             const speed = Math.sqrt(body.velocity.x * body.velocity.x + body.velocity.y * body.velocity.y);
             if (speed > this.config.maxVelocity) {
@@ -231,8 +235,9 @@ export class PhysicsWorld extends EventEmitter {
     raycast(origin, direction, maxDistance) {
         // Normalize direction
         const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-        if (length === 0)
+        if (length === 0) {
             return { hit: false };
+        }
         const normalizedDir = { x: direction.x / length, y: direction.y / length };
         // Step along ray
         const stepSize = Math.min(this.config.cellSize * 0.1, maxDistance * 0.01);

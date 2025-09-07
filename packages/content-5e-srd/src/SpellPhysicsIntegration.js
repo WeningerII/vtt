@@ -23,8 +23,9 @@ export class GeometryCalculator {
         return entities.filter((entity) => {
             const toEntity = this.subtract(entity.position, apex);
             const distance = this.magnitude(toEntity);
-            if (distance > length)
+            if (distance > length) {
                 return false;
+            }
             const normalizedToEntity = this.normalize(toEntity);
             const dot = this.dot(normalizedDirection, normalizedToEntity);
             const entityAngle = Math.acos(Math.max(-1, Math.min(1, dot)));
@@ -41,8 +42,9 @@ export class GeometryCalculator {
         const lineVec = this.subtract(lineEnd, lineStart);
         const pointVec = this.subtract(point, lineStart);
         const lineLength = this.magnitude(lineVec);
-        if (lineLength === 0)
+        if (lineLength === 0) {
             return this.distance(point, lineStart);
+        }
         const t = Math.max(0, Math.min(1, this.dot(pointVec, lineVec) / (lineLength * lineLength)));
         const projection = this.add(lineStart, this.multiply(lineVec, t));
         return this.distance(point, projection);
@@ -120,8 +122,9 @@ export class PhysicsSpellExecutor {
                 velocity: (ctx) => {
                     // Calculate initial velocity toward target
                     const target = ctx.targets[0];
-                    if (!target)
+                    if (!target) {
                         return { x: 0, y: 0, z: 0 };
+                    }
                     const direction = GeometryCalculator.subtract(target.position, ctx.caster.position);
                     const distance = GeometryCalculator.magnitude(direction);
                     const normalized = GeometryCalculator.normalize(direction);
@@ -153,8 +156,9 @@ export class PhysicsSpellExecutor {
                     const center = ctx.targets[0]?.position || ctx.caster.position;
                     const distance = GeometryCalculator.distance(position, center);
                     const radius = effect.areaOfEffect.size(ctx);
-                    if (distance > radius)
-                        return 0;
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                    }
                     const timeDecay = Math.max(0, 1 - time / 100);
                     const distanceDecay = Math.max(0, 1 - distance / radius);
                     return timeDecay * distanceDecay;
@@ -231,8 +235,9 @@ export class PhysicsSpellExecutor {
     updateProjectile(effect, deltaTime) {
         const physics = effect.physicsEffect.physics;
         const entity = effect.entity;
-        if (!entity)
+        if (!entity) {
             return;
+        }
         // Apply acceleration
         if (physics.acceleration) {
             const accel = physics.acceleration(effect.context);
@@ -255,8 +260,9 @@ export class PhysicsSpellExecutor {
     }
     updateAreaField(effect, elapsed) {
         const physics = effect.physicsEffect.physics;
-        if (!physics.fieldStrength || !physics.fieldGradient)
+        if (!physics.fieldStrength || !physics.fieldGradient) {
             return;
+        }
         // Apply field forces to all entities in range
         for (const entity of this.physicsWorld.entities.values()) {
             const strength = physics.fieldStrength(entity.position, elapsed);
@@ -279,8 +285,9 @@ export class PhysicsSpellExecutor {
     updatePhysicsWorld(deltaTime) {
         // Update all entities in the physics world
         for (const entity of this.physicsWorld.entities.values()) {
-            if (entity.isStatic)
+            if (entity.isStatic) {
                 continue;
+            }
             // Apply forces
             let totalForce = { x: 0, y: 0, z: 0 };
             for (const force of entity.forces) {
@@ -289,9 +296,12 @@ export class PhysicsSpellExecutor {
             // Apply gravity
             totalForce = GeometryCalculator.add(totalForce, GeometryCalculator.multiply(this.physicsWorld.gravity, entity.mass));
             // Calculate acceleration (F = ma)
-            const acceleration = entity.mass > 0
-                ? GeometryCalculator.multiply(totalForce, 1 / entity.mass)
-                : { x: 0, y: 0, z: 0 };
+            let acceleration;
+            if (entity.mass && entity.mass > 0) {
+                acceleration = GeometryCalculator.multiply(totalForce, 1 / entity.mass);
+            } else {
+                acceleration = { x: 0, y: 0, z: 0 };
+            }
             // Update velocity
             entity.velocity = GeometryCalculator.add(entity.velocity, GeometryCalculator.multiply(acceleration, deltaTime));
             // Apply air resistance
@@ -308,8 +318,9 @@ export class PhysicsSpellExecutor {
     }
     checkCollisions(entity) {
         for (const other of this.physicsWorld.entities.values()) {
-            if (other.id === entity.id)
+            if (other.id === entity.id) {
                 continue;
+            }
             const collision = this.physicsWorld.collisionDetection.checkCollision(entity, other);
             if (collision) {
                 return collision;
@@ -319,8 +330,9 @@ export class PhysicsSpellExecutor {
     }
     resolveCollisions(entity) {
         for (const other of this.physicsWorld.entities.values()) {
-            if (other.id === entity.id)
+            if (other.id === entity.id) {
                 continue;
+            }
             const collision = this.physicsWorld.collisionDetection.checkCollision(entity, other);
             if (collision) {
                 // Separate entities
@@ -335,8 +347,9 @@ export class PhysicsSpellExecutor {
                 if (!entity.isStatic && !other.isStatic) {
                     const relativeVelocity = GeometryCalculator.subtract(entity.velocity, other.velocity);
                     const velocityAlongNormal = GeometryCalculator.dot(relativeVelocity, collision.normal);
-                    if (velocityAlongNormal > 0)
+                    if (velocityAlongNormal > 0) {
                         continue; // Objects separating
+                    }
                     const restitution = 0.8; // Bounciness
                     const impulse = (-(1 + restitution) * velocityAlongNormal) / (1 / entity.mass + 1 / other.mass);
                     const impulseVector = GeometryCalculator.multiply(collision.normal, impulse);

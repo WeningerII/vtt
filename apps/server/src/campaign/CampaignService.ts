@@ -2,10 +2,28 @@
  * Campaign management service with database persistence and map integration
  */
 
-import { Campaign } from "../character/types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { PrismaClient } from "@prisma/client";
+import { MapScene } from "../map/types.js";
 import { MapService } from "../map/MapService";
 import { v4 as _uuidv4 } from "uuid";
+
+// Custom Campaign interface that extends database model with computed fields
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  gameSystem: string;
+  gameMasterId: string;
+  players: string[];
+  characters: string[];
+  sessions: number;
+  totalHours: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface CreateCampaignRequest {
   name: string;
@@ -110,20 +128,16 @@ export class CampaignService {
       },
     });
 
-    const campaign: Campaign = {
-      id: dbCampaign.id,
-      name: dbCampaign.name,
-      description: request.description || "",
-      gameSystem: request.gameSystem || "dnd5e",
-      gameMasterId,
-      players: [gameMasterId],
-      characters: [],
-      sessions: 0,
-      totalHours: 0,
-      isActive: request.isActive !== false,
-      createdAt: dbCampaign.createdAt,
-      updatedAt: new Date(),
-    };
+    const campaign = this.mapDbCampaignToCampaign({
+      ...dbCampaign,
+      members: dbCampaign.members || [],
+      scenes: dbCampaign.scenes || []
+    });
+
+    // Apply request data
+    campaign.description = request.description || "";
+    campaign.gameSystem = request.gameSystem || "dnd5e";
+    campaign.isActive = request.isActive !== false;
 
     this.campaigns.set(dbCampaign.id, campaign);
     return campaign;
@@ -155,20 +169,11 @@ export class CampaignService {
     const gameMaster = dbCampaign.members.find((m) => m.role === "GM");
     const players = dbCampaign.members.map((m) => m.userId);
 
-    const campaign: Campaign = {
-      id: dbCampaign.id,
-      name: dbCampaign.name,
-      description: "", // Default empty description
-      gameSystem: "dnd5e", // Default game system
-      gameMasterId: gameMaster?.userId || "",
-      players,
-      characters: [],
-      sessions: 0,
-      totalHours: 0,
-      isActive: true, // Default active
-      createdAt: dbCampaign.createdAt,
-      updatedAt: new Date(),
-    };
+    const campaign = this.mapDbCampaignToCampaign({
+      ...dbCampaign,
+      members: dbCampaign.members || [],
+      scenes: dbCampaign.scenes || []
+    });
 
     this.campaigns.set(campaignId, campaign);
     return campaign;
@@ -208,7 +213,7 @@ export class CampaignService {
     userId: string,
     sceneName: string,
     mapId?: string,
-  ): Promise<any> {
+  ): Promise<MapScene> {
     const campaign = await this.getCampaign(campaignId);
     if (!campaign || campaign.gameMasterId !== userId) {
       throw new Error("Unauthorized or campaign not found");
@@ -253,18 +258,55 @@ export class CampaignService {
    * Get campaigns where user is GM or player
    */
   async getCampaignsForUser(userId: string): Promise<Campaign[]> {
-    return Array.from(this.campaigns.values()).filter(
-      (campaign) => campaign.gameMasterId === userId || campaign.players.includes(userId),
-    );
+    // Load from database
+    const dbCampaigns = await this.prisma.campaign.findMany({
+      where: {
+        members: {
+          some: {
+            userId: userId
+          }
+        }
+      },
+      include: {
+        members: {
+          include: {
+            user: true,
+          },
+        },
+        scenes: true,
+      },
+    });
+
+    // Convert to service interface
+    return dbCampaigns.map(dbCampaign => this.mapDbCampaignToCampaign(dbCampaign));
   }
 
   /**
    * Get campaigns where user is the game master
    */
   async getCampaignsAsMaster(userId: string): Promise<Campaign[]> {
-    return Array.from(this.campaigns.values()).filter(
-      (campaign) => campaign.gameMasterId === userId,
-    );
+    // Load from database
+    const dbCampaigns = await this.prisma.campaign.findMany({
+      where: {
+        members: {
+          some: {
+            userId: userId,
+            role: "GM"
+          }
+        }
+      },
+      include: {
+        members: {
+          include: {
+            user: true,
+          },
+        },
+        scenes: true,
+      },
+    });
+
+    // Convert to service interface
+    return dbCampaigns.map(dbCampaign => this.mapDbCampaignToCampaign(dbCampaign));
   }
 
   /**
@@ -275,44 +317,77 @@ export class CampaignService {
     userId: string,
     update: UpdateCampaignRequest,
   ): Promise<Campaign | null> {
-    const campaign = this.campaigns.get(campaignId);
+    // Verify user is GM
+    const isGM = await this.prisma.campaignMember.findFirst({
+      where: {
+        campaignId,
+        userId,
+        role: "GM"
+      }
+    });
 
-    if (!campaign || campaign.gameMasterId !== userId) {
+    if (!isGM) {
       return null; // Only GM can update campaign
     }
 
-    // Apply updates (only update fields that exist in database)
+    // Update in database
     if (update.name) {
-      // Update in database
       await this.prisma.campaign.update({
         where: { id: campaignId },
         data: { name: update.name },
       });
-      campaign.name = update.name;
+    }
+
+    // Get updated campaign
+    const updatedCampaign = await this.getCampaign(campaignId);
+    if (updatedCampaign) {
+      // Update in-memory fields that don't exist in DB
+      if (update.description !== undefined) {updatedCampaign.description = update.description;}
+      if (update.gameSystem) {updatedCampaign.gameSystem = update.gameSystem;}
+      if (update.isActive !== undefined) {updatedCampaign.isActive = update.isActive;}
+      if (update.players) {updatedCampaign.players = update.players;}
+      if (update.characters) {updatedCampaign.characters = update.characters;}
+      updatedCampaign.updatedAt = new Date();
+      
+      // Update cache
+      this.campaigns.set(campaignId, updatedCampaign);
     }
     
-    // Update in-memory fields that don't exist in DB
-    if (update.description !== undefined) {campaign.description = update.description;}
-    if (update.gameSystem) {campaign.gameSystem = update.gameSystem;}
-    if (update.isActive !== undefined) {campaign.isActive = update.isActive;}
-    if (update.players) {campaign.players = update.players;}
-    if (update.characters) {campaign.characters = update.characters;}
-
-    campaign.updatedAt = new Date();
-    return campaign;
+    return updatedCampaign;
   }
 
   /**
    * Delete campaign
    */
   async deleteCampaign(campaignId: string, userId: string): Promise<boolean> {
-    const campaign = this.campaigns.get(campaignId);
+    // Verify user is GM
+    const isGM = await this.prisma.campaignMember.findFirst({
+      where: {
+        campaignId,
+        userId,
+        role: "GM"
+      }
+    });
 
-    if (!campaign || campaign.gameMasterId !== userId) {
+    if (!isGM) {
       return false; // Only GM can delete campaign
     }
 
-    return this.campaigns.delete(campaignId);
+    try {
+      // Delete from database (cascade will handle related records)
+      await this.prisma.campaign.delete({
+        where: { id: campaignId }
+      });
+      
+      // Remove from cache
+      this.campaigns.delete(campaignId);
+      this.activeScenes.delete(campaignId);
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+      return false;
+    }
   }
 
   async addPlayerToCampaign(campaignId: string, playerId: string): Promise<void> {
@@ -345,7 +420,7 @@ export class CampaignService {
    * Get campaign statistics
    */
   async getCampaignStats(campaignId: string): Promise<any> {
-    const campaign = this.campaigns.get(campaignId);
+    const campaign = await this.getCampaign(campaignId);
 
     if (!campaign) {
       return null;
@@ -907,5 +982,28 @@ export class CampaignService {
     return await this.prisma.user.findUnique({
       where: { email },
     });
+  }
+
+  /**
+   * Helper method to map database campaign to service interface
+   */
+  private mapDbCampaignToCampaign(dbCampaign: any): Campaign {
+    const gameMaster = dbCampaign.members?.find((m: any) => m.role === "GM");
+    const players = dbCampaign.members?.map((m: any) => m.userId) || [];
+
+    return {
+      id: dbCampaign.id,
+      name: dbCampaign.name,
+      description: "", // Default empty description (not stored in DB)
+      gameSystem: "dnd5e", // Default game system (not stored in DB)
+      gameMasterId: gameMaster?.userId || "",
+      players,
+      characters: [], // Not stored in DB, managed in-memory
+      sessions: 0, // Not stored in DB, managed in-memory
+      totalHours: 0, // Not stored in DB, managed in-memory
+      isActive: true, // Default active (not stored in DB)
+      createdAt: dbCampaign.createdAt,
+      updatedAt: new Date(),
+    };
   }
 }

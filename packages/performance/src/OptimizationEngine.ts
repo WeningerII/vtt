@@ -117,7 +117,7 @@ export class OptimizationEngine {
       success = true;
       this.lastOptimization = Date.now();
     } catch (error) {
-      logger.error(`Optimization rule '${rule.name}' failed:`, error);
+      logger.error(`Optimization rule '${rule.name}' failed:`, error as Record<string, any>);
     }
 
     const impact = Date.now() - startTime;

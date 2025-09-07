@@ -1,12 +1,45 @@
 /**
  * Condition service for business logic and status effect management
+ * Provides full CRUD operations and condition tracking for VTT entities
+ * FIXED: Proper Prisma integration with type safety
  */
 
 import { PrismaClient } from "@prisma/client";
 
+// Define types matching the Prisma schema exactly
+type ConditionType = 'BUFF' | 'DEBUFF' | 'NEUTRAL';
+
+interface Condition {
+  id: string;
+  name: string;
+  type: ConditionType;
+  description: string;
+  duration: number | null;
+  metadata: any;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface AppliedCondition {
+  id: string;
+  conditionId: string;
+  targetId: string;
+  targetType: string;
+  duration: number | null;
+  metadata: any;
+  appliedBy: string | null;
+  appliedAt: Date;
+  expiresAt: Date | null;
+  isActive: boolean;
+  condition?: Condition;
+}
+
+// Re-export types for convenience
+export type { Condition, AppliedCondition, ConditionType };
+
 export interface CreateConditionRequest {
   name: string;
-  type: "BUFF" | "DEBUFF" | "NEUTRAL";
+  type: ConditionType;
   description?: string;
   duration?: number;
   metadata?: any;
@@ -14,7 +47,7 @@ export interface CreateConditionRequest {
 
 export interface UpdateConditionRequest {
   name?: string;
-  type?: "BUFF" | "DEBUFF" | "NEUTRAL";
+  type?: ConditionType;
   description?: string;
   duration?: number;
   metadata?: any;
@@ -28,305 +61,302 @@ export interface ApplyConditionRequest {
 }
 
 export interface ConditionSearchOptions {
-  type?: "BUFF" | "DEBUFF" | "NEUTRAL" | undefined;
+  type?: ConditionType | undefined;
   limit?: number;
   offset?: number;
+}
+
+export interface ConditionSearchResult {
+  items: Condition[];
+  total: number;
+  offset: number;
+  limit: number;
 }
 
 export class ConditionService {
   constructor(private prisma: PrismaClient) {}
 
-  async searchConditions(options: ConditionSearchOptions = {}) {
-    const { type, limit = 50, offset = 0 } = options;
-
-    const where: any = {};
-    if (type) {where.type = type;}
-
+  async searchConditions(options: ConditionSearchOptions): Promise<ConditionSearchResult> {
+    const limit = options.limit || 50;
+    const offset = options.offset || 0;
+    
+    const where = options.type ? { type: options.type } : {};
+    
     const [items, total] = await Promise.all([
       this.prisma.condition.findMany({
         where,
         skip: offset,
-        take: Math.min(limit, 200),
-        orderBy: { name: "asc" },
+        take: limit,
+        orderBy: { createdAt: 'desc' }
       }),
-      this.prisma.condition.count({ where }),
+      this.prisma.condition.count({ where })
     ]);
-
-    return { items, total, limit, offset };
+    
+    return { items, total, offset, limit };
   }
 
   async getCondition(id: string) {
-    return this.prisma.condition.findUnique({
+    return await this.prisma.condition.findUnique({
       where: { id },
       include: {
         appliedConditions: {
-          include: {
-            actor: true,
-            token: true,
-            encounterParticipant: {
-              include: {
-                actor: true,
-              },
-            },
-          },
-        },
-      },
+          where: { isActive: true }
+        }
+      }
     });
   }
 
   async createCondition(request: CreateConditionRequest) {
-    return this.prisma.condition.create({
+    return await this.prisma.condition.create({
       data: {
         name: request.name,
         type: request.type,
         description: request.description || "",
         duration: request.duration,
-        metadata: request.metadata || {},
-      },
+        metadata: request.metadata
+      }
     });
   }
 
   async updateCondition(id: string, request: UpdateConditionRequest) {
-    const data: any = {};
-    if (request.name !== undefined) {data.name = request.name;}
-    if (request.type !== undefined) {data.type = request.type;}
-    if (request.description !== undefined) {data.description = request.description;}
-    if (request.duration !== undefined) {data.duration = request.duration;}
-    if (request.metadata !== undefined) {data.metadata = request.metadata;}
-
-    return this.prisma.condition.update({
+    const updateData: any = {};
+    if (request.name !== undefined) updateData.name = request.name;
+    if (request.type !== undefined) updateData.type = request.type;
+    if (request.description !== undefined) updateData.description = request.description;
+    if (request.duration !== undefined) updateData.duration = request.duration;
+    if (request.metadata !== undefined) updateData.metadata = request.metadata;
+    
+    return await this.prisma.condition.update({
       where: { id },
-      data,
+      data: updateData
     });
   }
 
   async deleteCondition(id: string) {
-    return this.prisma.condition.delete({
+    await this.prisma.condition.delete({ where: { id } });
+    return true;
+  }
+
+  async applyCondition(targetId: string, targetType: string, request: ApplyConditionRequest) {
+    // Get the base condition to calculate expiration
+    const condition = await this.prisma.condition.findUnique({
+      where: { id: request.conditionId }
+    });
+    
+    if (!condition) {
+      throw new Error('Condition not found');
+    }
+    
+    const duration = request.duration ?? condition.duration;
+    const expiresAt = duration ? new Date(Date.now() + duration * 60000) : null; // Convert rounds to milliseconds
+    
+    return await this.prisma.appliedCondition.create({
+      data: {
+        conditionId: request.conditionId,
+        targetId,
+        targetType,
+        duration,
+        metadata: request.metadata,
+        appliedBy: request.appliedBy,
+        expiresAt,
+        isActive: true
+      },
+      include: {
+        condition: true
+      }
+    });
+  }
+
+  async removeCondition(appliedConditionId: string) {
+    try {
+      await this.prisma.appliedCondition.delete({
+        where: { id: appliedConditionId }
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async getAppliedConditions(targetId: string, targetType?: string) {
+    const where: any = {
+      targetId,
+      isActive: true
+    };
+    
+    if (targetType) {
+      where.targetType = targetType;
+    }
+    
+    return await this.prisma.appliedCondition.findMany({
+      where,
+      include: {
+        condition: true
+      },
+      orderBy: { appliedAt: 'desc' }
+    });
+  }
+
+  async updateAppliedCondition(id: string, updates: any) {
+    return await this.prisma.appliedCondition.update({
       where: { id },
+      data: updates,
+      include: {
+        condition: true
+      }
     });
   }
 
-  async applyConditionToActor(actorId: string, request: ApplyConditionRequest) {
-    // Validate condition exists
-    const condition = await this.prisma.condition.findUnique({
-      where: { id: request.conditionId },
-    });
-    if (!condition) {
-      throw new Error("Condition not found");
-    }
-
-    // Validate actor exists
-    const actor = await this.prisma.actor.findUnique({
-      where: { id: actorId },
-    });
-    if (!actor) {
-      throw new Error("Actor not found");
-    }
-
-    return this.prisma.appliedCondition.create({
-      data: {
-        conditionId: request.conditionId,
-        actorId,
-        duration: request.duration || condition.duration,
-        metadata: request.metadata || {},
-        appliedBy: request.appliedBy,
-        appliedAt: new Date(),
+  async processExpiredConditions() {
+    const expiredConditions = await this.prisma.appliedCondition.findMany({
+      where: {
+        isActive: true,
+        expiresAt: {
+          lte: new Date()
+        }
       },
       include: {
-        condition: true,
-        actor: true,
-      },
+        condition: true
+      }
     });
+    
+    if (expiredConditions.length > 0) {
+      await this.prisma.appliedCondition.deleteMany({
+        where: {
+          id: {
+            in: expiredConditions.map((c) => c.id)
+          }
+        }
+      });
+    }
+    
+    return expiredConditions;
   }
 
-  async applyConditionToToken(tokenId: string, request: ApplyConditionRequest) {
-    // Validate condition exists
-    const condition = await this.prisma.condition.findUnique({
-      where: { id: request.conditionId },
-    });
-    if (!condition) {
-      throw new Error("Condition not found");
-    }
-
-    // Validate token exists
-    const token = await this.prisma.token.findUnique({
-      where: { id: tokenId },
-    });
-    if (!token) {
-      throw new Error("Token not found");
-    }
-
-    return this.prisma.appliedCondition.create({
-      data: {
-        conditionId: request.conditionId,
-        tokenId,
-        duration: request.duration || condition.duration,
-        metadata: request.metadata || {},
-        appliedBy: request.appliedBy,
-        appliedAt: new Date(),
-      },
-      include: {
-        condition: true,
-        token: true,
-      },
-    });
+  async getConditionsByTarget(targetId: string) {
+    return await this.getAppliedConditions(targetId);
   }
 
-  async applyConditionToEncounterParticipant(
-    participantId: string,
-    request: ApplyConditionRequest,
-  ) {
-    // Validate condition exists
-    const condition = await this.prisma.condition.findUnique({
-      where: { id: request.conditionId },
-    });
-    if (!condition) {
-      throw new Error("Condition not found");
-    }
-
-    // Validate participant exists
-    const participant = await this.prisma.encounterParticipant.findUnique({
-      where: { id: participantId },
-    });
-    if (!participant) {
-      throw new Error("Encounter participant not found");
-    }
-
-    return this.prisma.appliedCondition.create({
-      data: {
-        conditionId: request.conditionId,
-        encounterParticipantId: participantId,
-        duration: request.duration || condition.duration,
-        metadata: request.metadata || {},
-        appliedBy: request.appliedBy,
-        appliedAt: new Date(),
-      },
-      include: {
-        condition: true,
-        encounterParticipant: {
-          include: {
-            actor: true,
-          },
+  async bulkRemoveConditions(targetIds: string[]) {
+    const deleted = await this.prisma.appliedCondition.deleteMany({
+      where: {
+        targetId: {
+          in: targetIds
         },
-      },
+        isActive: true
+      }
     });
+    
+    return { removed: deleted.count };
+  }
+
+  async addConditionToEncounterParticipant(participantId: string, request: ApplyConditionRequest) {
+    return await this.applyCondition(participantId, 'encounterParticipant', request);
   }
 
   async removeAppliedCondition(appliedConditionId: string) {
-    return this.prisma.appliedCondition.delete({
-      where: { id: appliedConditionId },
-    });
+    return await this.removeCondition(appliedConditionId);
   }
 
   async getAppliedCondition(id: string) {
-    return this.prisma.appliedCondition.findUnique({
+    return await this.prisma.appliedCondition.findUnique({
       where: { id },
       include: {
-        condition: true,
-        actor: true,
-        token: true,
-        encounterParticipant: {
-          include: {
-            actor: true,
-          },
-        },
-      },
+        condition: true
+      }
     });
+  }
+
+  async getActiveConditions(targetId: string, targetType?: string) {
+    return await this.getAppliedConditions(targetId, targetType);
   }
 
   async getActorConditions(actorId: string) {
-    return this.prisma.appliedCondition.findMany({
-      where: { actorId },
-      include: {
-        condition: true,
-      },
-      orderBy: { appliedAt: "desc" },
-    });
+    return await this.getAppliedConditions(actorId, 'actor');
   }
 
   async getTokenConditions(tokenId: string) {
-    return this.prisma.appliedCondition.findMany({
-      where: { tokenId },
-      include: {
-        condition: true,
-      },
-      orderBy: { appliedAt: "desc" },
-    });
+    return await this.getAppliedConditions(tokenId, 'token');
   }
 
   async getEncounterParticipantConditions(participantId: string) {
-    return this.prisma.appliedCondition.findMany({
-      where: { encounterParticipantId: participantId },
-      include: {
-        condition: true,
-      },
-      orderBy: { appliedAt: "desc" },
-    });
-  }
-
-  async updateAppliedCondition(id: string, updates: { duration?: number; metadata?: any }) {
-    const data: any = {};
-    if (updates.duration !== undefined) {data.duration = updates.duration;}
-    if (updates.metadata !== undefined) {data.metadata = updates.metadata;}
-
-    return this.prisma.appliedCondition.update({
-      where: { id },
-      data,
-      include: {
-        condition: true,
-        actor: true,
-        token: true,
-        encounterParticipant: {
-          include: {
-            actor: true,
-          },
-        },
-      },
-    });
+    return await this.getAppliedConditions(participantId, 'encounterParticipant');
   }
 
   async getConditionStats() {
-    const [total, byType, activeCount] = await Promise.all([
-      this.prisma.condition.count(),
-      this.prisma.condition.groupBy({
-        by: ["type"],
-        _count: true,
-      }),
-      this.prisma.appliedCondition.count(),
-    ]);
-
-    return {
-      total,
-      active: activeCount,
-      byType: byType.reduce((_acc: Record<string, _number>, group: any) => {
-        acc[group.type] = group._count;
-        return acc;
-      }, {}),
-    };
+    const total = await this.prisma.condition.count();
+    const active = await this.prisma.appliedCondition.count({
+      where: { isActive: true }
+    });
+    const byTypeResults = await this.prisma.condition.groupBy({
+      by: ['type'],
+      _count: { type: true }
+    });
+    
+    const byType = byTypeResults.reduce((acc, result) => {
+      acc[result.type] = result._count.type;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    return { total, active, byType };
   }
 
   async cleanupExpiredConditions() {
-    const now = new Date();
+    return await this.processExpiredConditions();
+  }
 
-    // Find conditions that have expired (duration-based)
-    const expiredConditions = await this.prisma.appliedCondition.findMany({
+  async advanceConditionsOneRound(targetIds: string[], targetType: string = 'token') {
+    const conditionsToAdvance = await this.prisma.appliedCondition.findMany({
       where: {
-        duration: { not: null },
-        appliedAt: {
-          lte: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Example: 24 hours ago
-        },
+        targetId: { in: targetIds },
+        targetType,
+        isActive: true
       },
+      include: {
+        condition: true
+      }
     });
-
-    // Delete expired conditions
-    const deletePromises = expiredConditions.map((condition) =>
-      this.prisma.appliedCondition.delete({
-        where: { id: condition.id },
-      }),
-    );
-
-    await Promise.all(deletePromises);
-
-    return { removed: expiredConditions.length };
+    
+    const updates: Promise<any>[] = [];
+    
+    for (const appliedCondition of conditionsToAdvance) {
+      if (appliedCondition.duration && appliedCondition.duration > 0) {
+        const newDuration = appliedCondition.duration - 1;
+        
+        if (newDuration <= 0) {
+          // Condition expires
+          updates.push(
+            this.prisma.appliedCondition.update({
+              where: { id: appliedCondition.id },
+              data: { isActive: false, duration: 0 }
+            })
+          );
+        } else {
+          // Reduce duration
+          updates.push(
+            this.prisma.appliedCondition.update({
+              where: { id: appliedCondition.id },
+              data: { duration: newDuration }
+            })
+          );
+        }
+      }
+    }
+    
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
+    
+    // Return the updated conditions
+    return await this.prisma.appliedCondition.findMany({
+      where: {
+        targetId: { in: targetIds },
+        targetType,
+        isActive: true
+      },
+      include: {
+        condition: true
+      }
+    });
   }
 }

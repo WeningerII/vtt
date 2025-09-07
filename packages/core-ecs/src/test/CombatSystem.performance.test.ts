@@ -170,7 +170,7 @@ describe("CombatSystem Performance Benchmarks", () => {
     const startTime = performance.now();
 
     // Simulate concurrent operations
-    const promises = [];
+    const promises: Promise<void>[] = [];
     for (let batch = 0; batch < 50; batch++) {
       promises.push(
         new Promise<void>((resolve) => {

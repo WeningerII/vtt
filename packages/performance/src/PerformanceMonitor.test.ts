@@ -5,7 +5,24 @@ describe("PerformanceMonitor", () => {
   let service: PerformanceMonitor;
 
   beforeEach(() => {
-    service = new PerformanceMonitor();
+    const config = {
+      sampleRate: 0.1,
+      maxSamples: 1000,
+      maxMetrics: 500,
+      enableAutomaticProfiling: false,
+      performanceThresholds: {
+        frameTime: 16.67,
+        memoryUsage: 1024 * 1024 * 100,
+        cpuUsage: 0.8,
+        networkLatency: 1000
+      },
+      alertThresholds: {
+        consecutiveSlowFrames: 5,
+        memoryLeakDetection: true,
+        highCpuUsage: 3
+      }
+    };
+    service = new PerformanceMonitor(config);
   });
 
   afterEach(() => {

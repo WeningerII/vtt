@@ -155,7 +155,7 @@ describe("Physics System Unit Tests", () => {
     });
 
     it("should handle spatial queries correctly", () => {
-      const bodies = TestUtils.generateTestEntities(10);
+      const bodies = TestUtils.createMockEntities(10);
 
       bodies.forEach((entity) => {
         const body = new RigidBody(entity.id, entity.x, entity.y, entity.width, entity.height);
@@ -202,14 +202,11 @@ describe("Physics System Unit Tests", () => {
       }
 
       const benchmark = await TestUtils.benchmark(
-        "Physics Update",
-        () => {
-          physicsWorld.update(0.016);
-        },
-        100,
+        () => { physicsWorld.update(16); },
+        100
       );
 
-      expect(benchmark.averageTime).toBeLessThan(16); // Should maintain 60 FPS
+      expect(benchmark.average).toBeLessThan(16); // Should maintain 60 FPS
     });
   });
 
@@ -242,7 +239,7 @@ describe("Physics System Unit Tests", () => {
 
       let collisionInfo: any = null;
       physicsWorld.on("collision", (_info: any) => {
-        collisionInfo = info;
+        collisionInfo = _info;
       });
 
       physicsWorld.update(0.016);

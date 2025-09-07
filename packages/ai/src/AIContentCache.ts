@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { CacheManager, CacheConfig } from '@vtt/performance/CacheManager';
+import { CacheManager, CacheConfig } from '@vtt/performance';
 import { AIProvider } from './types';
 import { logger } from '@vtt/logging';
 

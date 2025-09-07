@@ -54,11 +54,13 @@ export class SpellSearchEngine {
         const maxSpellLevel = this.getMaxSpellLevelForCharacter(characterLevel);
         return this.spells.filter((spell) => {
             // Check if class can cast this spell
-            if (!spell.classes.includes(className))
+            if (!spell.classes.includes(className)) {
                 return false;
+            }
             // Check spell level limits
-            if (spell.level === 0)
+            if (spell.level === 0) {
                 return includeCantrips;
+            }
             return spell.level <= maxSpellLevel;
         });
     }
@@ -81,8 +83,9 @@ export class SpellSearchEngine {
      */
     findSimilarSpells(spellId, limit = 5) {
         const targetSpell = this.spells.find((s) => s.id === spellId);
-        if (!targetSpell)
+        if (!targetSpell) {
             return [];
+        }
         return this.spells
             .filter((spell) => spell.id !== spellId)
             .map((spell) => ({
@@ -107,36 +110,36 @@ export class SpellSearchEngine {
             if (criteria.level !== undefined) {
                 const levels = Array.isArray(criteria.level) ? criteria.level : [criteria.level];
                 if (!levels.includes(spell.level))
-                    return false;
+                    {return false;}
             }
             // School filter
             if (criteria.school !== undefined) {
                 const schools = Array.isArray(criteria.school) ? criteria.school : [criteria.school];
                 if (!schools.includes(spell.school))
-                    return false;
+                    {return false;}
             }
             // Class filter
             if (criteria.classes !== undefined) {
                 const classes = Array.isArray(criteria.classes) ? criteria.classes : [criteria.classes];
                 if (!classes.some((cls) => spell.classes.includes(cls)))
-                    return false;
+                    {return false;}
             }
             // Component filters
             if (criteria.components) {
                 if (criteria.components.verbal !== undefined) {
                     const hasVerbal = spell.components.includes("V");
                     if (criteria.components.verbal !== hasVerbal)
-                        return false;
+                        {return false;}
                 }
                 if (criteria.components.somatic !== undefined) {
                     const hasSomatic = spell.components.includes("S");
                     if (criteria.components.somatic !== hasSomatic)
-                        return false;
+                        {return false;}
                 }
                 if (criteria.components.material !== undefined) {
                     const hasMaterial = spell.components.includes("M");
                     if (criteria.components.material !== hasMaterial)
-                        return false;
+                        {return false;}
                 }
             }
             // Concentration filter
@@ -153,7 +156,7 @@ export class SpellSearchEngine {
                     ? criteria.damageType
                     : [criteria.damageType];
                 if (!damageTypes.includes(spell.damage.damageType))
-                    return false;
+                    {return false;}
             }
             // Saving throw filter
             if (criteria.savingThrow !== undefined && spell.savingThrow) {
@@ -161,31 +164,31 @@ export class SpellSearchEngine {
                     ? criteria.savingThrow
                     : [criteria.savingThrow];
                 if (!saves.includes(spell.savingThrow.ability))
-                    return false;
+                    {return false;}
             }
             // Has healing filter
             if (criteria.hasHealing !== undefined) {
                 const hasHealing = !!spell.healing;
                 if (criteria.hasHealing !== hasHealing)
-                    return false;
+                    {return false;}
             }
             // Has damage filter
             if (criteria.hasDamage !== undefined) {
                 const hasDamage = !!spell.damage;
                 if (criteria.hasDamage !== hasDamage)
-                    return false;
+                    {return false;}
             }
             // Tags filter
             if (criteria.tags !== undefined) {
                 const tags = Array.isArray(criteria.tags) ? criteria.tags : [criteria.tags];
                 if (!tags.some((tag) => spell.tags.includes(tag)))
-                    return false;
+                    {return false;}
             }
             // Upcastable filter
             if (criteria.upcastable !== undefined) {
                 const isUpcastable = !!spell.upcastDescription;
                 if (criteria.upcastable !== isUpcastable)
-                    return false;
+                    {return false;}
             }
             // Custom filter
             if (criteria.customFilter && !criteria.customFilter(spell)) {
@@ -205,9 +208,9 @@ export class SpellSearchEngine {
             }
             let comparison = 0;
             if (aVal < bVal)
-                comparison = -1;
+                {comparison = -1;}
             else if (aVal > bVal)
-                comparison = 1;
+                {comparison = 1;}
             return sort.direction === "desc" ? -comparison : comparison;
         });
     }
@@ -244,25 +247,25 @@ export class SpellSearchEngine {
         let score = 0;
         // Exact name match gets highest score
         if (spell.name.toLowerCase() === query)
-            score += 100;
+            {score += 100;}
         // Name starts with query
         else if (spell.name.toLowerCase().startsWith(query))
-            score += 50;
+            {score += 50;}
         // Name contains query
         else if (spell.name.toLowerCase().includes(query))
-            score += 25;
+            {score += 25;}
         // Description contains query
         if (spell.description.toLowerCase().includes(query))
-            score += 10;
+            {score += 10;}
         // School matches
         if (spell.school.toLowerCase().includes(query))
-            score += 15;
+            {score += 15;}
         // Class matches
         if (spell.classes.some((cls) => cls.toLowerCase().includes(query)))
-            score += 15;
+            {score += 15;}
         // Tags match
         if (spell.tags.some((tag) => tag.toLowerCase().includes(query)))
-            score += 10;
+            {score += 10;}
         return score;
     }
     calculateSuggestionScore(spell, preferredSchools, preferredTags) {
@@ -270,7 +273,7 @@ export class SpellSearchEngine {
         // Base score by utility and popularity
         const utilitySpells = ["shield", "counterspell", "fireball", "healing_word", "misty_step"];
         if (utilitySpells.includes(spell.id))
-            score += 20;
+            {score += 20;}
         // Preferred school bonus
         if (preferredSchools && preferredSchools.includes(spell.school)) {
             score += 15;
@@ -282,7 +285,7 @@ export class SpellSearchEngine {
         }
         // Concentration spells are slightly less preferred for new players
         if (spell.concentration)
-            score -= 5;
+            {score -= 5;}
         // Higher level spells get slight preference (more impactful)
         score += spell.level * 2;
         return score;
@@ -291,13 +294,13 @@ export class SpellSearchEngine {
         let similarity = 0;
         // Same school
         if (spell1.school === spell2.school)
-            similarity += 20;
+            {similarity += 20;}
         // Same level
         if (spell1.level === spell2.level)
-            similarity += 15;
+            {similarity += 15;}
         // Same casting time
         if (spell1.castingTime === spell2.castingTime)
-            similarity += 10;
+            {similarity += 10;}
         // Similar damage type
         if (spell1.damage && spell2.damage && spell1.damage.damageType === spell2.damage.damageType) {
             similarity += 25;
@@ -313,28 +316,28 @@ export class SpellSearchEngine {
         similarity += commonTags.length * 5;
         // Both concentration or both non-concentration
         if (spell1.concentration === spell2.concentration)
-            similarity += 10;
+            {similarity += 10;}
         return similarity;
     }
     getMaxSpellLevelForCharacter(characterLevel) {
         if (characterLevel >= 17)
-            return 9;
+            {return 9;}
         if (characterLevel >= 15)
-            return 8;
+            {return 8;}
         if (characterLevel >= 13)
-            return 7;
+            {return 7;}
         if (characterLevel >= 11)
-            return 6;
+            {return 6;}
         if (characterLevel >= 9)
-            return 5;
+            {return 5;}
         if (characterLevel >= 7)
-            return 4;
+            {return 4;}
         if (characterLevel >= 5)
-            return 3;
+            {return 3;}
         if (characterLevel >= 3)
-            return 2;
+            {return 2;}
         if (characterLevel >= 1)
-            return 1;
+            {return 1;}
         return 0;
     }
 }

@@ -1,28 +1,6 @@
-// MSW handlers - mock implementation for testing
-// Note: MSW is not available, using mock implementation
+// MSW handlers for testing
+import { http, HttpResponse } from "msw";
 import { DiceRoll } from "../components/DiceRoller";
-
-// Mock HTTP response utility
-const mockResponse = (data: any, status = 200) => ({
-  json: async () => data,
-  status,
-  ok: status >= 200 && status < 300
-});
-
-// Mock HTTP methods
-const http = {
-  get: (path: string, handler: any) => ({ path, method: 'GET', handler }),
-  post: (path: string, handler: any) => ({ path, method: 'POST', handler }),
-  put: (path: string, handler: any) => ({ path, method: 'PUT', handler }),
-  delete: (path: string, handler: any) => ({ path, method: 'DELETE', handler }),
-  patch: (path: string, handler: any) => ({ path, method: 'PATCH', handler }),
-};
-
-const HttpResponse = {
-  json: (data: any, options?: { status?: number }) => mockResponse(data, options?.status),
-  text: (text: string, options?: { status?: number }) => mockResponse(text, options?.status),
-  networkError: (message: string) => mockResponse({ error: message }, 500)
-};
 
 // Mock data
 const mockCharacters = [
@@ -571,7 +549,7 @@ export const handlers = [
   }),
 
   http.get("/api/test/network-error", async ({ request }) => {
-    return HttpResponse.networkError("Network connection failed");
+    return new Response(null, { status: 500, statusText: "Network connection failed" });
   }),
 ];
 

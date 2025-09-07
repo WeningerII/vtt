@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 // import { AnthropicProvider } from "@vtt/ai"; // Temporarily disabled due to build issues
 
 export interface ContentGenerationRequest {
-  type: "npc" | "location" | "quest" | "item";
+  type: "npc" | "location" | "quest" | "item" | "encounter";
   context: {
     setting?: string;
     theme?: string;
@@ -14,6 +14,9 @@ export interface ContentGenerationRequest {
     playerLevel?: number;
     additionalContext?: string;
     campaignId?: string;
+    challengeRating?: number;
+    timestamp?: string;
+    [key: string]: any; // Allow additional properties for extensibility
   };
 }
 
@@ -162,12 +165,79 @@ export function createContentGenerationService(prisma: PrismaClient) {
     return [];
   }
 
+  async function generateEncounter(context: {
+    playerLevel: number;
+    partySize: number;
+    setting: string;
+    difficulty: string;
+    theme?: string;
+    environment?: string;
+  }) {
+    // Generate encounter based on party parameters
+    const encounterContent = await generateContent({
+      type: "encounter",
+      context: {
+        ...context,
+        challengeRating: calculateChallengeRating(context.playerLevel, context.partySize, context.difficulty)
+      }
+    });
+    
+    return {
+      ...encounterContent,
+      enemies: [
+        {
+          name: "Goblin Warrior",
+          quantity: Math.max(1, Math.floor(context.partySize * 0.75)),
+          cr: "1/4"
+        }
+      ],
+      environment: context.environment || "dungeon",
+      difficulty: context.difficulty,
+      rewards: {
+        xp: 100 * context.partySize,
+        gold: 50 * context.partySize
+      }
+    };
+  }
+
+  async function generateCampaignContent(campaignId: string, contentType: string) {
+    // Generate content specific to a campaign
+    const validTypes = ["quest", "npc", "location", "item", "encounter"];
+    
+    if (!validTypes.includes(contentType)) {
+      throw new Error(`Invalid content type: ${contentType}. Must be one of: ${validTypes.join(", ")}`);
+    }
+    
+    return generateContent({
+      type: contentType as any,
+      context: {
+        campaignId,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+
+  function calculateChallengeRating(playerLevel: number, partySize: number, difficulty: string): number {
+    const baseRating = playerLevel;
+    const partyModifier = Math.log2(partySize);
+    const difficultyModifiers: Record<string, number> = {
+      easy: -2,
+      medium: 0,
+      hard: 2,
+      deadly: 4
+    };
+    
+    return Math.max(0.25, baseRating + partyModifier + (difficultyModifiers[difficulty] || 0));
+  }
+
   return {
     generateContent,
     generateNPC,
     generateLocation,
     generateQuest,
     generateItem,
+    generateEncounter,
+    generateCampaignContent,
     listGenerationHistory,
   };
 }

@@ -6,17 +6,10 @@ import React, { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-import { useTranslation } from "@vtt/i18n";
-
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Eye = MockIcon;
-const EyeOff = MockIcon;
-const Github = MockIcon;
-const Mail = MockIcon;
+// import { useTranslation } from "@vtt/i18n";
+// TODO: Implement i18n integration - using fallback for now
+const useTranslation = () => ({ t: (key: string) => key });
+import { Eye, EyeOff, Github, Mail } from "lucide-react";
 
 interface LoginPageProps {
   router: {

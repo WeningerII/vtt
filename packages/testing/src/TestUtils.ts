@@ -2,10 +2,11 @@
  * Testing utilities for VTT components
  */
 
-import { World } from "@vtt/core-ecs";
-import { PhysicsWorld } from "@vtt/physics";
-import { GameSession, Player } from "@vtt/net";
+import { vi } from "vitest";
 import { DiceRoller } from "@vtt/rules-5e";
+import { PhysicsWorld } from "@vtt/physics";
+import { World } from "@vtt/core-ecs";
+import { GameSession, Player } from "@vtt/net";
 
 export interface TestWorld {
   ecs: World;
@@ -78,7 +79,7 @@ export class TestUtils {
     const mockRng = (): number => {
       const value = sequence[index % sequence.length];
       index++;
-      return value;
+      return value ?? 0;
     };
 
     return new DiceRoller(mockRng);
@@ -122,16 +123,22 @@ export class TestUtils {
   }
 
   /**
-   * Generate test entity data
+   * Create mock entities
    */
-  static generateTestEntities(count: number): Array<{
+  static createMockEntities(count: number = 10): Array<{
     id: number;
     x: number;
     y: number;
     width: number;
     height: number;
   }> {
-    const entities = [];
+    const entities: Array<{
+      id: number;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }> = [];
 
     for (let i = 0; i < count; i++) {
       entities.push({
@@ -154,12 +161,16 @@ export class TestUtils {
     timestamp: number;
     data: Record<string, any>;
   }> {
-    const events = [];
+    const events: Array<{
+      type: string;
+      timestamp: number;
+      data: Record<string, any>;
+    }> = [];
     const eventTypes = ["user_action", "system_event", "error", "performance"];
 
     for (let i = 0; i < eventCount; i++) {
       events.push({
-        type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+        type: eventTypes[Math.floor(Math.random() * eventTypes.length)] as string,
         timestamp: Date.now() - Math.random() * 86400000, // Last 24 hours
         data: {
           userId: `user-${Math.floor(Math.random() * 10)}`,
@@ -208,28 +219,63 @@ export class TestUtils {
   /**
    * Mock fetch for network tests
    */
-  static createMockFetch(url: string, response: any): jest.Mock {
-    const mockFetch = jest.fn((fetchUrl: string) => {
-      if (fetchUrl === url) {
+  static createMockFetch(url: string, response: any): any {
+    const mockFetch = vi.fn((fetchUrl: RequestInfo | URL) => {
+      const urlString = typeof fetchUrl === 'string' ? fetchUrl : fetchUrl.toString();
+      if (urlString === url) {
         return Promise.resolve({
-          url: fetchUrl,
+          url: urlString,
           ok: true,
           json: () => Promise.resolve(response),
           text: () => Promise.resolve(JSON.stringify(response)),
-        } as any);
+        } as Response);
       } else {
-        throw new Error(`No mock response for ${fetchUrl}`);
+        throw new Error(`No mock response for ${urlString}`);
       }
-    });
+    }) as any;
 
     const originalFetch = global.fetch;
     global.fetch = mockFetch;
 
     return {
+      mockFetch,
       restore: () => {
         global.fetch = originalFetch;
       },
     };
+  }
+
+  /**
+   * Create performance benchmark (alias for measurePerformance)
+   */
+  static async benchmark(
+    fn: () => Promise<void> | void,
+    times: number = 10,
+  ): Promise<{
+    average: number;
+    min: number;
+    max: number;
+    total: number;
+  }> {
+    return this.measurePerformance(fn, times);
+  }
+
+  /**
+   * Wait for a condition to be true
+   */
+  static async waitFor(
+    condition: () => boolean,
+    timeout: number = 5000,
+    interval: number = 100
+  ): Promise<void> {
+    const start = Date.now();
+    
+    while (!condition()) {
+      if (Date.now() - start > timeout) {
+        throw new Error(`Timeout waiting for condition after ${timeout}ms`);
+      }
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
   }
 
   /**

@@ -53,16 +53,16 @@ sessionsRouter.get('/', async (req, res) => {
       name: session.name,
       description: `Campaign session - ${session.status}`,
       gamemaster: {
-        id: session.metadata?.gamemasterId || 'unknown',
+        id: (session.metadata as any)?.gamemasterId || 'unknown',
         username: 'gamemaster',
         displayName: 'Game Master'
       },
       players: [], // Will be populated from WebSocket connections
       status: session.status.toLowerCase(),
       settings: {
-        maxPlayers: session.metadata?.maxPlayers || 4,
-        isPrivate: session.metadata?.isPrivate || false,
-        allowSpectators: session.metadata?.allowSpectators || true
+        maxPlayers: (session.metadata as any)?.maxPlayers || 4,
+        isPrivate: (session.metadata as any)?.isPrivate || false,
+        allowSpectators: (session.metadata as any)?.allowSpectators || true
       },
       createdAt: session.createdAt.toISOString(),
       lastActivity: session.updatedAt.toISOString()
@@ -96,16 +96,16 @@ sessionsRouter.get('/:id', async (req, res) => {
       name: session.name,
       description: `Campaign session - ${session.status}`,
       gamemaster: {
-        id: session.metadata?.gamemasterId || 'unknown',
+        id: (session.metadata as any)?.gamemasterId || 'unknown',
         username: 'gamemaster',
         displayName: 'Game Master'
       },
       players: [],
       status: session.status.toLowerCase(),
       settings: {
-        maxPlayers: session.metadata?.maxPlayers || 4,
-        isPrivate: session.metadata?.isPrivate || false,
-        allowSpectators: session.metadata?.allowSpectators || true
+        maxPlayers: (session.metadata as any)?.maxPlayers || 4,
+        isPrivate: (session.metadata as any)?.isPrivate || false,
+        allowSpectators: (session.metadata as any)?.allowSpectators || true
       },
       createdAt: session.createdAt.toISOString(),
       lastActivity: session.updatedAt.toISOString(),
@@ -122,16 +122,59 @@ sessionsRouter.get('/:id', async (req, res) => {
 // Create new session
 sessionsRouter.post('/', requireAuth, async (req: any, res) => {
   try {
-    const { name, description, maxPlayers, isPrivate, allowSpectators } = req.body;
+    const { name, description, campaignId, maxPlayers, isPrivate, allowSpectators } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Session name is required' });
     }
 
+    // Validate campaign exists and user has access
+    let actualCampaignId = campaignId;
+    if (campaignId) {
+      const campaign = await prisma.campaign.findFirst({
+        where: {
+          id: campaignId,
+          members: {
+            some: {
+              userId: req.user.id,
+              status: 'active',
+              role: { in: ['gamemaster', 'co-gamemaster'] }
+            }
+          }
+        }
+      });
+
+      if (!campaign) {
+        return res.status(403).json({ error: 'Campaign not found or insufficient permissions' });
+      }
+    } else {
+      // Create a new campaign for this session if none provided
+      const newCampaign = await prisma.campaign.create({
+        data: {
+          name: `${name} Campaign`,
+          members: {
+            create: {
+              userId: req.user.id,
+              role: 'gamemaster',
+              status: 'active'
+            }
+          },
+          settings: {
+            create: {
+              isPublic: !isPrivate,
+              allowSpectators: allowSpectators !== false,
+              maxPlayers: maxPlayers || 4
+            }
+          }
+        }
+      });
+      actualCampaignId = newCampaign.id;
+    }
+
     const session = await prisma.gameSession.create({
       data: {
         name,
-        campaignId: 'default-campaign', // TODO: Link to actual campaigns
+        campaignId: actualCampaignId,
         status: 'WAITING',
         metadata: {
           description: description || '',
@@ -215,7 +258,7 @@ sessionsRouter.delete('/:id', requireAuth, async (req: any, res) => {
     }
 
     // Check if user is the GM
-    if (session.metadata?.gamemasterId !== req.user.id) {
+    if ((session.metadata as any)?.gamemasterId !== req.user.id) {
       return res.status(403).json({ error: 'Only the game master can delete this session' });
     }
 

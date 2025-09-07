@@ -54,7 +54,9 @@ export class StateMachine {
   }
   setState(stateName) {
     const newState = this.states.get(stateName);
-    if (!newState) return false;
+    if (!newState) {
+      return false;
+    }
     const oldStateName = this.currentState?.name || "none";
     if (this.currentState) {
       this.currentState.onExit();
@@ -81,7 +83,9 @@ export class StateMachine {
     Object.assign(this.context, updates);
   }
   start(initialState) {
-    if (!this.states.has(initialState)) return false;
+    if (!this.states.has(initialState)) {
+      return false;
+    }
     this.isRunning = true;
     return this.setState(initialState);
   }
@@ -93,16 +97,22 @@ export class StateMachine {
     }
   }
   update(deltaTime) {
-    if (!this.isRunning || !this.currentState) return;
+    if (!this.isRunning || !this.currentState) {
+      return;
+    }
     // Update current state
     this.currentState.onUpdate(deltaTime);
     // Check for transitions
     this.checkTransitions();
   }
   checkTransitions() {
-    if (!this.currentState) return;
+    if (!this.currentState) {
+      return;
+    }
     for (const transition of this.transitions) {
-      if (transition.from !== this.currentState.name) continue;
+      if (transition.from !== this.currentState.name) {
+        continue;
+      }
       if (!transition.condition || transition.condition(this.context)) {
         if (transition.action) {
           transition.action(this.context);
@@ -248,9 +258,9 @@ export class ConditionalState extends State {
   }
   onUpdate(deltaTime) {
     if (this.condition(this.context)) {
-      if (this.onTrue) this.onTrue();
+      this.onTrue(this.context);
     } else {
-      if (this.onFalse) this.onFalse();
+      this.onFalse(this.context);
     }
   }
 }

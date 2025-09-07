@@ -7,7 +7,9 @@ import { logger } from "@vtt/logging";
 import { Button } from "../ui/Button";
 import { X, Users, Settings, Eye, EyeOff, Lock, Unlock } from "lucide-react";
 import { CreateSessionRequest, sessionsService } from "../../services/sessions";
-import { useTranslation } from "@vtt/i18n";
+// import { useTranslation } from "@vtt/i18n";
+// TODO: Implement i18n integration - using fallback for now
+const useTranslation = () => ({ t: (key: string) => key });
 
 interface CreateSessionModalProps {
   isOpen: boolean;

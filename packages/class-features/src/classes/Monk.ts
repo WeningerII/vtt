@@ -23,11 +23,11 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 1,
         description: "AC = 10 + Dex modifier + Wis modifier when unarmored",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "unarmored_defense_monk"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "martial_arts",
@@ -35,14 +35,14 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 1,
         description: "Unarmed strikes and monk weapons use martial arts die",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "martial_arts",
           parameters: { 
             die: level >= 17 ? "d10" : level >= 11 ? "d8" : level >= 5 ? "d6" : "d4"
           }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "ki",
@@ -50,18 +50,18 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 2,
         description: "Spend ki points for special abilities",
-        type: "passive",
+        type: "passive" as const,
         uses: {
-          type: "per_short_rest",
+          type: "per_short_rest" as const,
           amount: kiPoints,
           current: kiPoints,
-          resetOn: "short_rest",
+          resetOn: "short_rest" as const,
         },
         effects: [{
           type: "ki_pool",
           parameters: { points: kiPoints }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "flurry_of_blows",
@@ -69,13 +69,13 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 2,
         description: "Spend 1 ki for 2 bonus unarmed strikes",
-        type: "active",
-        actionCost: "bonus_action",
+        type: "active" as const,
+        actionCost: "bonus_action" as const,
         effects: [{
           type: "flurry_of_blows",
           parameters: { ki_cost: 1 }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "patient_defense",
@@ -83,13 +83,13 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 2,
         description: "Spend 1 ki to Dodge as bonus action",
-        type: "active",
-        actionCost: "bonus_action",
+        type: "active" as const,
+        actionCost: "bonus_action" as const,
         effects: [{
           type: "patient_defense",
           parameters: { ki_cost: 1 }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "step_of_the_wind",
@@ -97,13 +97,13 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 2,
         description: "Spend 1 ki to Dash/Disengage as bonus action, double jump",
-        type: "active",
-        actionCost: "bonus_action",
+        type: "active" as const,
+        actionCost: "bonus_action" as const,
         effects: [{
           type: "step_of_the_wind",
           parameters: { ki_cost: 1 }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "unarmored_movement",
@@ -111,14 +111,14 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 2,
         description: "Speed increases when unarmored",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "unarmored_movement",
           parameters: { 
             bonus: level >= 18 ? 30 : level >= 14 ? 25 : level >= 10 ? 20 : level >= 6 ? 15 : 10
           }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "deflect_missiles",
@@ -126,12 +126,12 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 3,
         description: "Reduce ranged weapon damage, spend 1 ki to throw back",
-        type: "reaction",
-        actionCost: "reaction",
+        type: "reaction" as const,
+        actionCost: "reaction" as const,
         effects: [{
           type: "deflect_missiles"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "slow_fall",
@@ -139,12 +139,12 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 4,
         description: "Reduce falling damage by 5 × monk level",
-        type: "reaction",
+        type: "reaction" as const,
         effects: [{
           type: "slow_fall",
           parameters: { reduction: level * 5 }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "stunning_strike",
@@ -152,12 +152,12 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 5,
         description: "Spend 1 ki to attempt to stun target",
-        type: "active",
+        type: "active" as const,
         effects: [{
           type: "stunning_strike",
           parameters: { ki_cost: 1 }
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "ki_empowered_strikes",
@@ -165,11 +165,11 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 6,
         description: "Unarmed strikes count as magical",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "ki_empowered_strikes"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "evasion",
@@ -177,11 +177,11 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 7,
         description: "Take no damage on successful Dex save, half on failure",
-        type: "passive",
+        type: "passive" as const,
         effects: [{
           type: "evasion"
         }],
-        source: "core"
+        source: "core" as const
       },
       {
         id: "stillness_of_mind",
@@ -189,12 +189,12 @@ export class MonkClass extends BaseClass {
         className: "monk",
         level: 7,
         description: "End charm or fear effect as action",
-        type: "active",
-        actionCost: "action",
+        type: "active" as const,
+        actionCost: "action" as const,
         effects: [{
           type: "stillness_of_mind"
         }],
-        source: "core"
+        source: "core" as const
       }
     ].filter(f => f.level <= level);
   }
@@ -208,12 +208,12 @@ export class MonkClass extends BaseClass {
           className: "monk",
           level: 3,
           description: "Flurry of Blows adds special effects",
-          type: "passive",
+          type: "passive" as const,
           effects: [{
             type: "open_hand_technique"
           }],
           subclass: "open_hand",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "wholeness_of_body",
@@ -221,20 +221,20 @@ export class MonkClass extends BaseClass {
           className: "monk",
           level: 6,
           description: "Heal yourself as action",
-          type: "active",
-          actionCost: "action",
+          type: "active" as const,
+          actionCost: "action" as const,
           uses: {
-            type: "per_long_rest",
+            type: "per_long_rest" as const,
             amount: 1,
             current: 1,
-            resetOn: "long_rest",
+            resetOn: "long_rest" as const,
           },
           effects: [{
             type: "wholeness_of_body",
             parameters: { healing: level * 3 }
           }],
           subclass: "open_hand",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "tranquility",
@@ -242,18 +242,18 @@ export class MonkClass extends BaseClass {
           className: "monk",
           level: 11,
           description: "Cast sanctuary on self without spell slot",
-          type: "active",
+          type: "active" as const,
           uses: {
-            type: "per_long_rest",
+            type: "per_long_rest" as const,
             amount: 1,
             current: 1,
-            resetOn: "long_rest",
+            resetOn: "long_rest" as const,
           },
           effects: [{
             type: "tranquility"
           }],
           subclass: "open_hand",
-          source: "subclass"
+          source: "subclass" as const
         },
         {
           id: "quivering_palm",
@@ -261,13 +261,13 @@ export class MonkClass extends BaseClass {
           className: "monk",
           level: 17,
           description: "Spend 3 ki to set up devastating vibrations",
-          type: "active",
+          type: "active" as const,
           effects: [{
             type: "quivering_palm",
             parameters: { ki_cost: 3 }
           }],
           subclass: "open_hand",
-          source: "subclass"
+          source: "subclass" as const
         }
       ].filter(f => f.level <= level);
     }

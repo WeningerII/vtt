@@ -329,7 +329,7 @@ Generate a response as JSON:
     const action = actions[Math.floor(Math.random() * actions.length)];
     
     return {
-      action,
+      action: action || 'unknown',
       description: `${context.npc.name} ${action}s quietly in the ${context.location}.`,
       priority: 0.3
     };
@@ -341,7 +341,7 @@ Generate a response as JSON:
       `${context.npc.name} looks around cautiously.`,
       `${context.npc.name} seems deep in thought.`
     ];
-    return [responses[Math.floor(Math.random() * responses.length)]];
+    return [responses[Math.floor(Math.random() * responses.length)] || 'I understand.'];
   }
 
   private createFallbackResponse(npcId: string, playerAction: string): NPCResponse {

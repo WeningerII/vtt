@@ -133,7 +133,7 @@ describe("DiceRoller Unit Tests", () => {
       const expressions = ["1d20", "2d6+3", "d8+1", "4d4-2", "1d100"];
 
       expressions.forEach((_expr) => {
-        expect(() => diceRoller.roll(expr)).not.toThrow();
+        expect(() => diceRoller.roll(_expr)).not.toThrow();
       });
     });
 
@@ -141,7 +141,7 @@ describe("DiceRoller Unit Tests", () => {
       const invalidExpressions = ["invalid", "2d", "d+3", "2x6+3"];
 
       invalidExpressions.forEach((_expr) => {
-        expect(() => diceRoller.roll(expr)).toThrow();
+        expect(() => diceRoller.roll(_expr)).toThrow();
       });
     });
   });
@@ -151,14 +151,11 @@ describe("DiceRoller Unit Tests", () => {
       const rollCount = 10000;
 
       const benchmark = await TestUtils.benchmark(
-        "Dice Rolling",
-        () => {
-          diceRoller.roll("2d6+3");
-        },
-        rollCount,
+        () => { diceRoller.roll("1d20+5"); },
+        rollCount
       );
 
-      expect(benchmark.averageTime).toBeLessThan(0.1); // Less than 0.1ms per roll
+      expect(benchmark.average).toBeLessThan(0.1); // Less than 0.1ms per roll
     });
   });
 });

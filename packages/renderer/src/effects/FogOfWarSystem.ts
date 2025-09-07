@@ -516,10 +516,8 @@ export class FogOfWarSystem extends EventEmitter {
     let x = from.x;
     let y = from.y;
 
-    while (true) {
+    while (x !== to.x || y !== to.y) {
       points.push({ x, y });
-
-      if (x === to.x && y === to.y) {break;}
 
       const e2 = 2 * err;
       if (e2 > -dy) {
@@ -531,6 +529,9 @@ export class FogOfWarSystem extends EventEmitter {
         y += sy;
       }
     }
+    
+    // Add final point
+    points.push({ x, y });
 
     return points;
   }

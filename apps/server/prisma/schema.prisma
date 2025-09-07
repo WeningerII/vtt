@@ -118,15 +118,17 @@ model RefreshToken {
 }
 
 model Campaign {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  members   CampaignMember[]
-  scenes    Scene[]
-  settings  CampaignSettings?
+  id            String   @id @default(uuid())
+  name          String
+  activeSceneId String?
+  createdAt     DateTime @default(now())
+  members       CampaignMember[]
+  scenes        Scene[]
+  settings      CampaignSettings?
 
   @@index([name]) // For campaign search
   @@index([createdAt]) // For pagination and sorting
+  @@index([activeSceneId]) // For active scene queries
 }
 
 model CampaignMember {
@@ -382,4 +384,48 @@ model CampaignSettings {
   campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   
   @@index([campaignId]) // For campaign settings lookup
+}
+
+enum ConditionType {
+  BUFF
+  DEBUFF
+  NEUTRAL
+}
+
+model Condition {
+  id              String        @id @default(uuid())
+  name            String
+  type            ConditionType
+  description     String        @default("")
+  duration        Int?          // Duration in rounds, null for permanent
+  metadata        Json?         // Additional condition data (damage per turn, stat modifiers, etc.)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  appliedConditions AppliedCondition[]
+  
+  @@index([name]) // For condition search
+  @@index([type]) // For filtering by condition type
+  @@index([createdAt]) // For pagination and sorting
+}
+
+model AppliedCondition {
+  id            String    @id @default(uuid())
+  conditionId   String
+  targetId      String    // Can reference Token, Character, or other entities
+  targetType    String    // "token", "character", "encounterParticipant", etc.
+  duration      Int?      // Remaining duration in rounds, null for permanent
+  metadata      Json?     // Instance-specific data (current damage taken, etc.)
+  appliedBy     String?   // ID of who/what applied this condition
+  appliedAt     DateTime  @default(now())
+  expiresAt     DateTime? // Calculated expiration time
+  isActive      Boolean   @default(true)
+  
+  condition     Condition @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  
+  @@index([targetId, targetType]) // For finding conditions on a target
+  @@index([conditionId]) // Foreign key index
+  @@index([isActive]) // For active condition filtering
+  @@index([expiresAt]) // For expiration cleanup
+  @@index([appliedAt]) // For condition history
 }

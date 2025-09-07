@@ -6,7 +6,7 @@ import { PrismaClient } from "@prisma/client";
 
 export interface CreateEncounterRequest {
   name: string;
-  campaignId: string;
+  campaignId: string; // This will be mapped to gameSessionId
   description?: string;
 }
 
@@ -16,8 +16,8 @@ export interface AddParticipantRequest {
 }
 
 export interface EncounterSearchOptions {
-  campaignId: string;
-  isActive?: boolean;
+  gameSessionId: string;
+  status?: string; // 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED'
   limit?: number;
   offset?: number;
 }
@@ -26,10 +26,10 @@ export class EncounterService {
   constructor(private prisma: PrismaClient) {}
 
   async searchEncounters(options: EncounterSearchOptions) {
-    const { campaignId, isActive, limit = 50, offset = 0 } = options;
+    const { gameSessionId, status, limit = 50, offset = 0 } = options;
 
-    const where: any = { campaignId };
-    if (isActive !== undefined) {where.isActive = isActive;}
+    const where: any = { gameSessionId };
+    if (status !== undefined) {where.status = status;}
 
     const [items, total] = await Promise.all([
       this.prisma.encounter.findMany({
@@ -38,13 +38,17 @@ export class EncounterService {
         take: Math.min(limit, 200),
         orderBy: { createdAt: "desc" },
         include: {
-          participants: {
+          encounterTokens: {
             include: {
-              actor: {
-                include: {
-                  monster: true,
-                  character: true,
-                },
+              token: {
+                select: {
+                  id: true,
+                  name: true,
+                  type: true,
+                  initiative: true,
+                  health: true,
+                  maxHealth: true
+                }
               },
             },
             orderBy: { initiative: "desc" },
@@ -61,27 +65,30 @@ export class EncounterService {
     return this.prisma.encounter.findUnique({
       where: { id },
       include: {
-        participants: {
+        encounterTokens: {
           include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-                appliedConditions: {
-                  include: {
-                    condition: true,
-                  },
-                },
-              },
-            },
-            appliedConditions: {
-              include: {
-                condition: true,
-              },
+            token: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                initiative: true,
+                health: true,
+                maxHealth: true,
+                x: true,
+                y: true
+              }
             },
           },
           orderBy: { initiative: "desc" },
         },
+        gameSession: {
+          select: {
+            id: true,
+            name: true,
+            campaignId: true
+          }
+        }
       },
     });
   }
@@ -90,21 +97,15 @@ export class EncounterService {
     return this.prisma.encounter.create({
       data: {
         name: request.name,
-        campaignId: request.campaignId,
-        description: request.description || "",
-        currentRound: 0,
+        gameSessionId: request.campaignId, // Note: This might need to be actual gameSessionId
+        roundNumber: 1,
         currentTurn: 0,
-        isActive: false,
+        status: 'PLANNED',
       },
       include: {
-        participants: {
+        encounterTokens: {
           include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
+            token: true,
           },
           orderBy: { initiative: "desc" },
         },
@@ -121,183 +122,90 @@ export class EncounterService {
       throw new Error("Encounter not found");
     }
 
-    // Validate actor exists
-    const actor = await this.prisma.actor.findUnique({
-      where: { id: request.actorId },
-    });
-    if (!actor) {
-      throw new Error("Actor not found");
-    }
-
     // Check if participant already exists
-    const existing = await this.prisma.encounterParticipant.findUnique({
+    const existing = await this.prisma.encounterToken.findFirst({
       where: {
-        encounterId_actorId: {
-          encounterId,
-          actorId: request.actorId,
-        },
+        encounterId,
+        tokenId: request.actorId,
       },
     });
-
     if (existing) {
-      throw new Error("Actor already in encounter");
+      throw new Error("Token already participating in encounter");
     }
 
-    return this.prisma.encounterParticipant.create({
+    const participant = await this.prisma.encounterToken.create({
       data: {
         encounterId,
-        actorId: request.actorId,
+        tokenId: request.actorId,
         initiative: request.initiative,
-        isActive: true,
-        hasActed: false,
       },
       include: {
-        actor: {
-          include: {
-            monster: true,
-            character: true,
-          },
-        },
+        token: true,
       },
     });
+
+    return participant;
   }
 
-  async removeParticipant(encounterId: string, actorId: string) {
-    return this.prisma.encounterParticipant.delete({
+  async removeParticipant(encounterId: string, participantId: string) {
+    await this.prisma.encounterToken.delete({
       where: {
-        encounterId_actorId: {
-          encounterId,
-          actorId,
-        },
+        id: participantId,
+        encounterId,
       },
     });
+
+    return true;
   }
 
   async startEncounter(id: string) {
-    // Check if encounter has participants
-    const participantCount = await this.prisma.encounterParticipant.count({
-      where: { encounterId: id },
-    });
-
-    if (participantCount === 0) {
-      throw new Error("Cannot start encounter without participants");
-    }
-
-    // Reset all participants' hasActed flag
-    await this.prisma.encounterParticipant.updateMany({
-      where: { encounterId: id },
-      data: { hasActed: false },
-    });
-
-    return this.prisma.encounter.update({
+    const encounter = await this.prisma.encounter.update({
       where: { id },
       data: {
-        isActive: true,
-        currentRound: 1,
+        status: 'ACTIVE',
+        startedAt: new Date(),
+        roundNumber: 1,
         currentTurn: 0,
       },
-      include: {
-        participants: {
-          include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
-          },
-          orderBy: { initiative: "desc" },
-        },
-      },
     });
+
+    return encounter;
   }
 
   async nextTurn(id: string) {
-    const encounter = await this.prisma.encounter.findUnique({
-      where: { id },
-      include: {
-        participants: {
-          where: { isActive: true },
-          orderBy: { initiative: "desc" },
-        },
-      },
-    });
-
-    if (!encounter) {
-      throw new Error("Encounter not found");
+    const encounter = await this.getEncounter(id);
+    if (!encounter || encounter.status !== 'ACTIVE') {
+      throw new Error("Encounter not found or not active");
     }
 
-    if (!encounter.isActive) {
-      throw new Error("Encounter is not active");
+    const participantCount = encounter.encounterTokens.length;
+    let nextTurn = encounter.currentTurn + 1;
+    let nextRound = encounter.roundNumber;
+
+    if (nextTurn >= participantCount) {
+      nextTurn = 0;
+      nextRound += 1;
     }
 
-    const participants = encounter.participants;
-    if (participants.length === 0) {
-      throw new Error("No active participants");
-    }
-
-    let newTurn = encounter.currentTurn + 1;
-    let newRound = encounter.currentRound;
-
-    // If we've gone through all participants, start new round
-    if (newTurn >= participants.length) {
-      newTurn = 0;
-      newRound += 1;
-
-      // Reset hasActed for all participants at start of new round
-      await this.prisma.encounterParticipant.updateMany({
-        where: { encounterId: id },
-        data: { hasActed: false },
-      });
-    }
-
-    const updated = await this.prisma.encounter.update({
-      where: { id },
-      data: {
-        currentTurn: newTurn,
-        currentRound: newRound,
-      },
-      include: {
-        participants: {
-          include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
-          },
-          orderBy: { initiative: "desc" },
-        },
-      },
-    });
-
-    return {
-      encounter: updated,
-      currentParticipant: participants[newTurn] || null,
-    };
-  }
-
-  async endEncounter(id: string) {
     return this.prisma.encounter.update({
       where: { id },
       data: {
-        isActive: false,
-      },
-      include: {
-        participants: {
-          include: {
-            actor: {
-              include: {
-                monster: true,
-                character: true,
-              },
-            },
-          },
-          orderBy: { initiative: "desc" },
-        },
+        currentTurn: nextTurn,
+        roundNumber: nextRound,
       },
     });
+  }
+
+  async endEncounter(id: string) {
+    const encounter = await this.prisma.encounter.update({
+      where: { id },
+      data: {
+        status: 'COMPLETED',
+        endedAt: new Date(),
+      },
+    });
+
+    return encounter;
   }
 
   async deleteEncounter(id: string) {
@@ -308,98 +216,94 @@ export class EncounterService {
 
   async getCurrentParticipant(id: string) {
     const encounter = await this.getEncounter(id);
-    if (!encounter || !encounter.isActive) {
+    if (!encounter || encounter.status !== 'ACTIVE') {
       return null;
     }
 
-    const participants = encounter.participants.filter((p) => p.isActive);
-    if (participants.length === 0 || encounter.currentTurn >= participants.length) {
+    const participantCount = encounter.encounterTokens.length;
+    if (participantCount === 0 || encounter.currentTurn >= participantCount) {
       return null;
     }
 
-    return participants[encounter.currentTurn];
+    return encounter.encounterTokens[encounter.currentTurn];
   }
 
-  async markParticipantActed(encounterId: string, actorId: string, hasActed: boolean = true) {
-    return this.prisma.encounterParticipant.update({
+  async markParticipantActed(encounterId: string, tokenId: string, hasActed: boolean = true) {
+    // Note: EncounterToken schema doesn't have hasActed field
+    // This could be implemented using metadata or separate tracking
+    return this.prisma.encounterToken.update({
       where: {
-        encounterId_actorId: {
-          encounterId,
-          actorId,
-        },
+        id: tokenId,
+        encounterId,
       },
-      data: { hasActed },
+      data: { isActive: hasActed },
     });
   }
 
-  async setParticipantActive(encounterId: string, actorId: string, isActive: boolean) {
-    return this.prisma.encounterParticipant.update({
+  async setParticipantActive(encounterId: string, tokenId: string, isActive: boolean) {
+    return this.prisma.encounterToken.update({
       where: {
-        encounterId_actorId: {
-          encounterId,
-          actorId,
-        },
+        id: tokenId,
+        encounterId,
       },
       data: { isActive },
     });
   }
 
-  async updateInitiative(encounterId: string, actorId: string, initiative: number) {
-    return this.prisma.encounterParticipant.update({
+  async updateInitiative(encounterId: string, tokenId: string, initiative: number) {
+    return this.prisma.encounterToken.update({
       where: {
-        encounterId_actorId: {
-          encounterId,
-          actorId,
-        },
+        id: tokenId,
+        encounterId,
       },
       data: { initiative },
     });
   }
 
   async rollInitiativeForAll(encounterId: string) {
-    const participants = await this.prisma.encounterParticipant.findMany({
+    const participants = await this.prisma.encounterToken.findMany({
       where: { encounterId },
       include: {
-        actor: {
-          include: {
-            monster: true,
-          },
-        },
+        token: true,
       },
     });
 
     const updates = participants.map(async (participant) => {
-      // Roll d20 + dex modifier (simplified)
+      // Roll d20 + dex modifier (simplified from token data)
       let dexMod = 0;
-      if (participant.actor.monster?.statblock) {
-        const statblock = participant.actor.monster.statblock as any;
-        const dex = statblock.abilities?.DEX || 10;
+      if (participant.token && participant.token.metadata) {
+        const metadata = participant.token.metadata as any;
+        const dex = metadata?.abilities?.DEX || 10;
         dexMod = Math.floor((dex - 10) / 2);
       }
 
       const roll = Math.floor(Math.random() * 20) + 1 + dexMod;
 
-      return this.updateInitiative(encounterId, participant.actorId, roll);
+      return this.updateInitiative(encounterId, participant.id, roll);
     });
 
     await Promise.all(updates);
     return this.getEncounter(encounterId);
   }
 
-  async getEncounterStats(campaignId: string) {
-    const [total, active, avgRounds] = await Promise.all([
-      this.prisma.encounter.count({ where: { campaignId } }),
-      this.prisma.encounter.count({ where: { campaignId, isActive: true } }),
+  async getEncounterStats(gameSessionId: string) {
+    const [activeCount, totalCount, avgRounds] = await Promise.all([
+      this.prisma.encounter.count({
+        where: { gameSessionId, status: 'ACTIVE' },
+      }),
+      this.prisma.encounter.count({
+        where: { gameSessionId },
+      }),
       this.prisma.encounter.aggregate({
-        where: { campaignId, isActive: false },
-        _avg: { currentRound: true },
+        where: { gameSessionId, status: 'COMPLETED' },
+        _avg: { roundNumber: true },
       }),
     ]);
 
     return {
-      total,
-      active,
-      averageRounds: avgRounds._avg.currentRound || 0,
+      active: activeCount,
+      total: totalCount,
+      averageRounds: avgRounds._avg.roundNumber || 0,
     };
   }
 }

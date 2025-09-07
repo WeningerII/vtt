@@ -154,17 +154,21 @@ export class SpellExecutionEngine {
         return { effectIndex: index, success: true, targets: [] };
     }
     applyDamageResistance(damage, damageType, target) {
-        if (target.immunities.has(damageType))
+        if (target.immunities.has(damageType)) {
             return 0;
-        if (target.resistances.has(damageType))
+        }
+        if (target.resistances.has(damageType)) {
             return Math.floor(damage / 2);
-        if (target.vulnerabilities.has(damageType))
+        }
+        if (target.vulnerabilities.has(damageType)) {
             return damage * 2;
+        }
         return damage;
     }
     applyScaling(spell, level, ctx) {
-        if (!spell.scaling)
+        if (!spell.scaling) {
             return spell;
+        }
         const scaledSpell = JSON.parse(JSON.stringify(spell)); // Deep clone
         for (const scalingRule of spell.scaling.effects) {
             if (level >= scalingRule.threshold) {

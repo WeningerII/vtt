@@ -97,7 +97,9 @@ export class ConditionSyncService {
         };
 
         this.conditionsStore.add(entityId, ecsCondition);
-        this.appliedConditionMap.set(ecsCondition.id, dbCondition.id);
+        if (ecsCondition.id) {
+          this.appliedConditionMap.set(ecsCondition.id, dbCondition.id);
+        }
       }
     } catch (error) {
       logger.error(`Failed to sync conditions from database for entity ${entityId}:`, error);
@@ -118,30 +120,30 @@ export class ConditionSyncService {
       const dbConditions = await this.database.getAppliedConditions(actorId);
 
       // Create maps for efficient lookup
-      const _ecsConditionMap = new Map(_ecsConditions.map((c: Condition) => [c.id, c]));
+      const _ecsConditionMap = new Map(ecsConditions.map((c: Condition) => [c.id, c]));
       const dbConditionMap = new Map(dbConditions.map((c) => [c.id, c]));
 
       // Update existing conditions in database
-      for (const ecsCondition of ecsConditions) {
-        const dbId = this.appliedConditionMap.get(ecsCondition.id);
+      for (const condition of ecsConditions) {
+        const dbId = this.appliedConditionMap.get(condition.id);
 
         if (dbId && dbConditionMap.has(dbId)) {
           // Update duration in database
           const dbCondition = dbConditionMap.get(dbId)!;
-          if (dbCondition.remainingDuration !== ecsCondition.duration) {
-            await this.database.updateConditionDuration(dbId, ecsCondition.duration);
+          if (dbCondition.remainingDuration !== condition.duration) {
+            await this.database.updateConditionDuration(dbId, condition.duration);
           }
-        } else if (!ecsCondition.metadata?.dbId) {
+        } else if (!condition.metadata?.dbId) {
           // New ECS condition that needs to be added to database
-          const conditionName = this.mapECSTypeToDbCondition(ecsCondition.type);
+          const conditionName = this.mapECSTypeToDbCondition(condition.type);
           if (conditionName) {
             const newDbId = await this.database.applyCondition(
               actorId,
               conditionName,
-              ecsCondition.duration,
-              ecsCondition.source,
+              condition.duration,
+              condition.source,
             );
-            this.appliedConditionMap.set(ecsCondition.id, newDbId);
+            this.appliedConditionMap.set(condition.id, newDbId);
           }
         }
       }
@@ -149,11 +151,13 @@ export class ConditionSyncService {
       // Remove conditions from database that no longer exist in ECS
       for (const dbCondition of dbConditions) {
         const correspondingECSCondition = ecsConditions.find(
-          (c: Condition) => this.appliedConditionMap.get(c.id) === dbCondition.id,
+          (c: Condition) => c.id && this.appliedConditionMap.get(c.id) === dbCondition.id,
         );
 
         if (!correspondingECSCondition) {
-          await this.database.removeCondition(dbCondition.id);
+          if (dbCondition.conditionId) {
+            this.database.removeCondition(dbCondition.conditionId);
+          }
           // Remove from our mapping
           const ecsId = [...this.appliedConditionMap.entries()].find(
             ([, dbId]) => dbId === dbCondition.id,
@@ -184,7 +188,7 @@ export class ConditionSyncService {
       duration,
       source: source || "system",
       appliedAt: Date.now(),
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
     };
 
     this.conditionsStore.add(entityId, condition);
@@ -202,9 +206,14 @@ export class ConditionSyncService {
               duration,
               source,
             );
-            this.appliedConditionMap.set(condition.id, dbId);
+            if (condition.id) {
+              this.appliedConditionMap.set(condition.id, dbId);
+            }
 
             // Update condition metadata
+            if (!condition.metadata) {
+              condition.metadata = {};
+            }
             condition.metadata.dbId = dbId;
           }
         } catch (error) {
@@ -301,7 +310,7 @@ export class ConditionSyncService {
    */
   private mapECSTypeToDbCondition(conditionType: ConditionType): string | null {
     // Reverse mapping
-    const mapping: Record<ConditionType, string> = {
+    const mapping: Partial<Record<ConditionType, string>> = {
       blinded: "blinded",
       charmed: "charmed",
       deafened: "deafened",
@@ -317,7 +326,11 @@ export class ConditionSyncService {
       stunned: "stunned",
       unconscious: "unconscious",
       exhaustion: "exhaustion",
-      custom: "custom",
+      concentration: "concentration",
+      blessed: "blessed",
+      cursed: "cursed",
+      hasted: "hasted",
+      slowed: "slowed",
     };
 
     return mapping[conditionType] || null;

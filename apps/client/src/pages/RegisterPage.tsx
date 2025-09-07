@@ -6,17 +6,7 @@ import React, { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Eye = MockIcon;
-const EyeOff = MockIcon;
-const Mail = MockIcon;
-const User = MockIcon;
-const Github = MockIcon;
+import { Eye, EyeOff, Mail, User, Github } from "lucide-react";
 
 interface RegisterPageProps {
   router: {

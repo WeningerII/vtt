@@ -262,8 +262,9 @@ export function getSpellSlotsForClass(_className, _level) {
 }
 export function getCantripsKnown(_className, _level) {
     const classData = SPELLCASTING_CLASSES[className];
-    if (!classData || level < 1)
+    if (!classData || level < 1) {
         return 0;
+    }
     return classData.cantripsKnownProgression[level] || 0;
 }
 export function getSpellsKnown(_className, _level) {

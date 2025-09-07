@@ -1,16 +1,27 @@
+"use strict";
 /**
  * @vtt/logging - Structured logging with Pino and OpenTelemetry
  */
-import pino from "pino";
-import { trace, context, SpanStatusCode } from "@opentelemetry/api";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
-import { Resource } from "@opentelemetry/resources";
-import { SemanticResourceAttributes } from "@opentelemetry/semantic-conventions";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import os from "node:os";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.pino = exports.logger = exports.StructuredLogger = void 0;
+exports.createLogger = createLogger;
+exports.initTelemetry = initTelemetry;
+exports.withTrace = withTrace;
+exports.requestLoggingMiddleware = requestLoggingMiddleware;
+const pino_1 = __importDefault(require("pino"));
+exports.pino = pino_1.default;
+const api_1 = require("@opentelemetry/api");
+const sdk_node_1 = require("@opentelemetry/sdk-node");
+const auto_instrumentations_node_1 = require("@opentelemetry/auto-instrumentations-node");
+const resources_1 = require("@opentelemetry/resources");
+const semantic_conventions_1 = require("@opentelemetry/semantic-conventions");
+const exporter_trace_otlp_http_1 = require("@opentelemetry/exporter-trace-otlp-http");
+const node_os_1 = __importDefault(require("node:os"));
 // Create Pino logger instance
-export function createLogger(config = {}) {
+function createLogger(config = {}) {
     const options = {
         level: config.level || process.env.LOG_LEVEL || "info",
         formatters: {
@@ -20,20 +31,20 @@ export function createLogger(config = {}) {
                 version: config.version || "0.0.0",
                 environment: config.environment || process.env.NODE_ENV || "development",
                 pid: process.pid,
-                hostname: os.hostname(),
+                hostname: node_os_1.default.hostname(),
             }),
         },
-        timestamp: pino.stdTimeFunctions.isoTime,
+        timestamp: pino_1.default.stdTimeFunctions.isoTime,
         serializers: {
-            err: pino.stdSerializers.err,
-            error: pino.stdSerializers.err,
-            req: pino.stdSerializers.req,
-            res: pino.stdSerializers.res,
+            err: pino_1.default.stdSerializers.err,
+            error: pino_1.default.stdSerializers.err,
+            req: pino_1.default.stdSerializers.req,
+            res: pino_1.default.stdSerializers.res,
         },
     };
     // Add pretty printing in development
     if (config.pretty || process.env.NODE_ENV === "development") {
-        return pino({
+        return (0, pino_1.default)({
             ...options,
             transport: {
                 target: "pino-pretty",
@@ -45,22 +56,22 @@ export function createLogger(config = {}) {
             },
         });
     }
-    return pino(options);
+    return (0, pino_1.default)(options);
 }
 // Initialize OpenTelemetry
-export function initTelemetry(config = {}) {
-    const resource = new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: config.service || "vtt",
-        [SemanticResourceAttributes.SERVICE_VERSION]: config.version || "0.0.0",
-        [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: config.environment || process.env.NODE_ENV || "development",
+function initTelemetry(config = {}) {
+    const resource = new resources_1.Resource({
+        [semantic_conventions_1.SemanticResourceAttributes.SERVICE_NAME]: config.service || "vtt",
+        [semantic_conventions_1.SemanticResourceAttributes.SERVICE_VERSION]: config.version || "0.0.0",
+        [semantic_conventions_1.SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: config.environment || process.env.NODE_ENV || "development",
     });
     const traceExporter = config.otlpEndpoint
-        ? new OTLPTraceExporter({
+        ? new exporter_trace_otlp_http_1.OTLPTraceExporter({
             url: `${config.otlpEndpoint}/v1/traces`,
             headers: {},
         })
         : undefined;
-    const instrumentations = getNodeAutoInstrumentations({
+    const instrumentations = (0, auto_instrumentations_node_1.getNodeAutoInstrumentations)({
         "@opentelemetry/instrumentation-fs": {
             enabled: false, // Disable fs instrumentation to reduce noise
         },
@@ -72,22 +83,22 @@ export function initTelemetry(config = {}) {
     if (traceExporter) {
         sdkOptions.traceExporter = traceExporter;
     }
-    const sdk = new NodeSDK(sdkOptions);
+    const sdk = new sdk_node_1.NodeSDK(sdkOptions);
     sdk.start();
     return sdk;
 }
 // Trace wrapper for async operations
-export async function withTrace(name, fn, attributes) {
-    const tracer = trace.getTracer("vtt");
+async function withTrace(name, fn, attributes) {
+    const tracer = api_1.trace.getTracer("vtt");
     const span = attributes ? tracer.startSpan(name, { attributes }) : tracer.startSpan(name);
     try {
-        const result = await context.with(trace.setSpan(context.active(), span), fn);
-        span.setStatus({ code: SpanStatusCode.OK });
+        const result = await api_1.context.with(api_1.trace.setSpan(api_1.context.active(), span), fn);
+        span.setStatus({ code: api_1.SpanStatusCode.OK });
         return result;
     }
     catch (error) {
         span.setStatus({
-            code: SpanStatusCode.ERROR,
+            code: api_1.SpanStatusCode.ERROR,
             message: error instanceof Error ? error.message : "Unknown error",
         });
         span.recordException(error);
@@ -98,7 +109,7 @@ export async function withTrace(name, fn, attributes) {
     }
 }
 // Structured logging helpers
-export class StructuredLogger {
+class StructuredLogger {
     constructor(config = {}) {
         this.logger = createLogger(config);
     }
@@ -188,8 +199,9 @@ export class StructuredLogger {
         this.logger.fatal(obj, msg);
     }
 }
+exports.StructuredLogger = StructuredLogger;
 // Express middleware for request logging
-export function requestLoggingMiddleware(logger) {
+function requestLoggingMiddleware(logger) {
     return (req, res, next) => {
         const start = Date.now();
         res.on("finish", () => {
@@ -204,7 +216,5 @@ export function requestLoggingMiddleware(logger) {
     };
 }
 // Default logger instance
-export const logger = new StructuredLogger();
-// Re-export types
-export { pino };
+exports.logger = new StructuredLogger();
 //# sourceMappingURL=index.js.map

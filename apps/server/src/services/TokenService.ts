@@ -6,41 +6,47 @@ import { PrismaClient } from "@prisma/client";
 
 export interface CreateTokenRequest {
   name: string;
-  sceneId: string;
-  actorId?: string;
-  assetId?: string;
+  gameSessionId: string;
+  sceneId?: string;
+  characterId?: string;
   x: number;
   y: number;
-  width?: number;
-  height?: number;
+  z?: number;
   rotation?: number;
   scale?: number;
-  disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
-  isVisible?: boolean;
-  isLocked?: boolean;
-  layer?: number;
+  type?: "PC" | "NPC" | "MONSTER" | "OBJECT" | "EFFECT";
+  visibility?: "VISIBLE" | "HIDDEN" | "PARTIAL" | "REVEALED";
+  health?: number;
+  maxHealth?: number;
+  initiative?: number;
+  speed?: number;
+  imageUrl?: string;
+  metadata?: any;
 }
 
 export interface UpdateTokenRequest {
   name?: string;
   x?: number;
   y?: number;
-  width?: number;
-  height?: number;
+  z?: number;
   rotation?: number;
   scale?: number;
-  disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
-  isVisible?: boolean;
-  isLocked?: boolean;
-  layer?: number;
+  type?: "PC" | "NPC" | "MONSTER" | "OBJECT" | "EFFECT";
+  visibility?: "VISIBLE" | "HIDDEN" | "PARTIAL" | "REVEALED";
+  health?: number;
+  maxHealth?: number;
+  initiative?: number;
+  speed?: number;
+  imageUrl?: string;
+  metadata?: any;
 }
 
 export interface TokenSearchOptions {
-  sceneId: string;
-  actorId?: string | undefined;
-  disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN" | undefined;
-  isVisible?: boolean | undefined;
-  layer?: number | undefined;
+  gameSessionId: string;
+  sceneId?: string;
+  characterId?: string;
+  type?: "PC" | "NPC" | "MONSTER" | "OBJECT" | "EFFECT";
+  visibility?: "VISIBLE" | "HIDDEN" | "PARTIAL" | "REVEALED";
   limit?: number;
   offset?: number;
 }
@@ -49,13 +55,13 @@ export class TokenService {
   constructor(private prisma: PrismaClient) {}
 
   async searchTokens(options: TokenSearchOptions) {
-    const { sceneId, actorId, disposition, isVisible, layer, limit = 100, offset = 0 } = options;
+    const { gameSessionId, sceneId, characterId, type, visibility, limit = 100, offset = 0 } = options;
 
-    const where: any = { sceneId };
-    if (actorId) {where.actorId = actorId;}
-    if (disposition) {where.disposition = disposition;}
-    if (isVisible !== undefined) {where.isVisible = isVisible;}
-    if (layer !== undefined) {where.layer = layer;}
+    const where: any = { gameSessionId };
+    if (sceneId) {where.sceneId = sceneId;}
+    if (characterId) {where.characterId = characterId;}
+    if (type) {where.type = type;}
+    if (visibility) {where.visibility = visibility;}
 
     const [items, total] = await Promise.all([
       this.prisma.token.findMany({
@@ -64,18 +70,8 @@ export class TokenService {
         take: Math.min(limit, 500),
         orderBy: { name: "asc" },
         include: {
-          actor: {
-            include: {
-              monster: true,
-              character: true,
-            },
-          },
-          asset: true,
-          appliedConditions: {
-            include: {
-              condition: true,
-            },
-          },
+          gameSession: true,
+          encounterTokens: true,
         },
       }),
       this.prisma.token.count({ where }),
@@ -88,21 +84,10 @@ export class TokenService {
     return this.prisma.token.findUnique({
       where: { id },
       include: {
-        actor: {
+        gameSession: true,
+        encounterTokens: {
           include: {
-            monster: true,
-            character: true,
-            appliedConditions: {
-              include: {
-                condition: true,
-              },
-            },
-          },
-        },
-        asset: true,
-        appliedConditions: {
-          include: {
-            condition: true,
+            encounter: true,
           },
         },
       },
@@ -110,122 +95,68 @@ export class TokenService {
   }
 
   async createToken(request: CreateTokenRequest) {
-    // Validate references
-    if (request.actorId) {
-      const actor = await this.prisma.actor.findUnique({
-        where: { id: request.actorId },
-      });
-      if (!actor) {
-        throw new Error("Actor not found");
-      }
-    }
-
-    if (request.assetId) {
-      const asset = await this.prisma.asset.findUnique({
-        where: { id: request.assetId },
-      });
-      if (!asset) {
-        throw new Error("Asset not found");
-      }
+    // Validate game session exists
+    const gameSession = await this.prisma.gameSession.findUnique({
+      where: { id: request.gameSessionId },
+    });
+    if (!gameSession) {
+      throw new Error("Game session not found");
     }
 
     return this.prisma.token.create({
       data: {
         name: request.name,
+        gameSessionId: request.gameSessionId,
         sceneId: request.sceneId,
-        actorId: request.actorId,
-        assetId: request.assetId,
+        characterId: request.characterId,
+        type: request.type || "OBJECT",
+        visibility: request.visibility || "VISIBLE",
         x: request.x,
         y: request.y,
-        width: request.width || 1,
-        height: request.height || 1,
+        z: request.z || 0,
         rotation: request.rotation || 0,
         scale: request.scale || 1.0,
-        disposition: request.disposition || "NEUTRAL",
-        isVisible: request.isVisible !== false,
-        isLocked: request.isLocked === true,
-        layer: request.layer || 0,
+        health: request.health,
+        maxHealth: request.maxHealth,
+        initiative: request.initiative,
+        speed: request.speed || 30,
+        imageUrl: request.imageUrl,
+        metadata: request.metadata,
       },
       include: {
-        actor: {
-          include: {
-            monster: true,
-            character: true,
-          },
-        },
-        asset: true,
+        gameSession: true,
+        encounterTokens: true,
       },
     });
   }
 
-  async createTokenFromActor(
-    actorId: string,
+  async createTokenFromCharacter(
+    characterId: string,
+    gameSessionId: string,
     sceneId: string,
     x: number,
     y: number,
     options: Partial<CreateTokenRequest> = {},
   ) {
-    const actor = await this.prisma.actor.findUnique({
-      where: { id: actorId },
-      include: {
-        monster: true,
-        character: true,
-      },
-    });
-
-    if (!actor) {
-      throw new Error("Actor not found");
-    }
-
-    // Determine token size from monster statblock if available
-    let width = 1;
-    let height = 1;
-    if (actor.monster?.statblock) {
-      const statblock = actor.monster.statblock as any;
-      const size = statblock.size;
-      // Map D&D sizes to grid squares
-      switch (size) {
-        case "TINY":
-          width = height = 0.5;
-          break;
-        case "SMALL":
-        case "MEDIUM":
-          width = height = 1;
-          break;
-        case "LARGE":
-          width = height = 2;
-          break;
-        case "HUGE":
-          width = height = 3;
-          break;
-        case "GARGANTUAN":
-          width = height = 4;
-          break;
-        default:
-          width = height = 1;
-      }
-    }
-
-    // Determine disposition based on actor kind
-    let disposition: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN" = "NEUTRAL";
-    if (actor.kind === "PC") {disposition = "FRIENDLY";}
-    else if (actor.kind === "MONSTER") {disposition = "HOSTILE";}
-
+    // For now, create a basic token - character integration can be added later
     return this.createToken({
-      name: options.name || actor.name,
+      name: options.name || "Character Token",
+      gameSessionId,
       sceneId,
-      actorId: actor.id,
-      assetId: options.assetId,
+      characterId,
+      type: "PC",
       x,
       y,
-      width: options.width || width,
-      height: options.height || height,
+      z: options.z || 0,
       rotation: options.rotation || 0,
       scale: options.scale || 1.0,
-      disposition: options.disposition || disposition,
-      isVisible: options.isVisible !== false,
-      isLocked: options.isLocked === true,
-      layer: options.layer || 0,
+      visibility: options.visibility || "VISIBLE",
+      health: options.health,
+      maxHealth: options.maxHealth,
+      initiative: options.initiative,
+      speed: options.speed || 30,
+      imageUrl: options.imageUrl,
+      metadata: options.metadata,
     });
   }
 
@@ -234,26 +165,24 @@ export class TokenService {
     if (request.name !== undefined) {data.name = request.name;}
     if (request.x !== undefined) {data.x = request.x;}
     if (request.y !== undefined) {data.y = request.y;}
-    if (request.width !== undefined) {data.width = request.width;}
-    if (request.height !== undefined) {data.height = request.height;}
+    if (request.z !== undefined) {data.z = request.z;}
     if (request.rotation !== undefined) {data.rotation = request.rotation;}
     if (request.scale !== undefined) {data.scale = request.scale;}
-    if (request.disposition !== undefined) {data.disposition = request.disposition;}
-    if (request.isVisible !== undefined) {data.isVisible = request.isVisible;}
-    if (request.isLocked !== undefined) {data.isLocked = request.isLocked;}
-    if (request.layer !== undefined) {data.layer = request.layer;}
+    if (request.type !== undefined) {data.type = request.type;}
+    if (request.visibility !== undefined) {data.visibility = request.visibility;}
+    if (request.health !== undefined) {data.health = request.health;}
+    if (request.maxHealth !== undefined) {data.maxHealth = request.maxHealth;}
+    if (request.initiative !== undefined) {data.initiative = request.initiative;}
+    if (request.speed !== undefined) {data.speed = request.speed;}
+    if (request.imageUrl !== undefined) {data.imageUrl = request.imageUrl;}
+    if (request.metadata !== undefined) {data.metadata = request.metadata;}
 
     return this.prisma.token.update({
       where: { id },
       data,
       include: {
-        actor: {
-          include: {
-            monster: true,
-            character: true,
-          },
-        },
-        asset: true,
+        gameSession: true,
+        encounterTokens: true,
       },
     });
   }
@@ -271,7 +200,7 @@ export class TokenService {
     });
   }
 
-  async getTokensInArea(sceneId: string, x1: number, y1: number, x2: number, y2: number) {
+  async getTokensInArea(gameSessionId: string, sceneId: string, x1: number, y1: number, x2: number, y2: number) {
     const minX = Math.min(x1, x2);
     const maxX = Math.max(x1, x2);
     const minY = Math.min(y1, y2);
@@ -279,34 +208,25 @@ export class TokenService {
 
     return this.prisma.token.findMany({
       where: {
+        gameSessionId,
         sceneId,
         x: { gte: minX, lte: maxX },
         y: { gte: minY, lte: maxY },
       },
       include: {
-        actor: {
-          include: {
-            monster: true,
-            character: true,
-          },
-        },
-        asset: true,
+        gameSession: true,
+        encounterTokens: true,
       },
     });
   }
 
-  async getTokensNear(sceneId: string, x: number, y: number, radius: number) {
+  async getTokensNear(gameSessionId: string, sceneId: string, x: number, y: number, radius: number) {
     // Simple distance check - could be optimized with spatial indexing
     const tokens = await this.prisma.token.findMany({
-      where: { sceneId },
+      where: { gameSessionId, sceneId },
       include: {
-        actor: {
-          include: {
-            monster: true,
-            character: true,
-          },
-        },
-        asset: true,
+        gameSession: true,
+        encounterTokens: true,
       },
     });
 
@@ -316,47 +236,62 @@ export class TokenService {
     });
   }
 
-  async setTokenVisibility(id: string, isVisible: boolean) {
-    return this.updateToken(id, { isVisible });
+  async setTokenVisibility(id: string, visibility: "VISIBLE" | "HIDDEN" | "PARTIAL" | "REVEALED") {
+    return this.updateToken(id, { visibility });
   }
 
-  async lockToken(id: string, isLocked: boolean) {
-    return this.updateToken(id, { isLocked });
+  // Lock functionality not in schema - could be added to metadata if needed
+  async setTokenMetadata(id: string, metadata: any) {
+    return this.updateToken(id, { metadata });
   }
 
-  async getTokenStats(sceneId: string) {
-    const [total, byDisposition, byLayer, visible] = await Promise.all([
-      this.prisma.token.count({ where: { sceneId } }),
+  async getTokenStats(gameSessionId: string, sceneId?: string) {
+    const where: any = { gameSessionId };
+    if (sceneId) where.sceneId = sceneId;
+
+    const [total, byType, byVisibility, visible] = await Promise.all([
+      this.prisma.token.count({ where }),
       this.prisma.token.groupBy({
-        by: ["disposition"],
-        where: { sceneId },
+        by: ["type"],
+        where,
         _count: true,
       }),
       this.prisma.token.groupBy({
-        by: ["layer"],
-        where: { sceneId },
+        by: ["visibility"],
+        where,
         _count: true,
       }),
-      this.prisma.token.count({ where: { sceneId, isVisible: true } }),
+      this.prisma.token.count({ where: { ...where, visibility: "VISIBLE" } }),
     ]);
 
     return {
       total,
       visible,
-      byDisposition: byDisposition.reduce(
-        (_acc, _group) => {
-          acc[group.disposition] = group._count;
+      byType: byType.reduce(
+        (acc, group) => {
+          acc[group.type] = group._count;
           return acc;
         },
         {} as Record<string, number>,
       ),
-      byLayer: byLayer.reduce(
-        (_acc, _group) => {
-          acc[group.layer] = group._count;
+      byVisibility: byVisibility.reduce(
+        (acc, group) => {
+          acc[group.visibility] = group._count;
           return acc;
         },
-        {} as Record<number, number>,
+        {} as Record<string, number>,
       ),
     };
+  }
+
+  async getTokensByGameSession(gameSessionId: string) {
+    return this.prisma.token.findMany({
+      where: { gameSessionId },
+      include: {
+        gameSession: true,
+        encounterTokens: true,
+      },
+      orderBy: { name: "asc" },
+    });
   }
 }

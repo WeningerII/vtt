@@ -355,7 +355,7 @@ export const _ContentUtils = {
     const tags: string[] = [];
 
     // Extract from filename
-    const nameParts = filename.toLowerCase().split(/[_\-\s\.]+/);
+    const nameParts = filename.toLowerCase().split(/[_\-\s.]+/);
     for (const part of nameParts) {
       if (part.length > 2 && part.length < 20) {
         tags.push(part);

@@ -97,15 +97,11 @@ export class HealthCheckManager {
       setTimeout(() => __reject(new Error("Health check timeout")), check.timeout);
     });
 
-    try {
-      const result = await Promise.race([check.check(), timeoutPromise]);
-      return {
-        ...result,
-        duration: Date.now() - startTime,
-      };
-    } catch (error) {
-      throw error;
-    }
+    const result = await Promise.race([check.check(), timeoutPromise]);
+    return {
+      ...result,
+      duration: Date.now() - startTime,
+    };
   }
 
   private sleep(ms: number): Promise<void> {

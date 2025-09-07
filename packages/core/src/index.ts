@@ -66,3 +66,14 @@ if (autoInit && typeof window !== "undefined") {
 export { initializeCore };
 
 export * from "./errors";
+
+// Export EventBus components (avoiding SystemEvent conflict)
+export { 
+  UnifiedEventBus, 
+  EventCorrelation, 
+  _globalEventBus as globalEventBus, 
+  _AIEvents as AIEvents, 
+  _GameEvents as GameEvents, 
+  _ContentEvents as ContentEvents, 
+  _RuleEvents as RuleEvents 
+} from "./EventBus";

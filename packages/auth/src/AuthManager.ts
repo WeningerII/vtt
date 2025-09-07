@@ -23,13 +23,13 @@ import {
   PasswordReset,
   AuthEvent,
 } from "./types";
+import { userRepository } from "./database/UserRepository";
 
 export class AuthManager extends EventEmitter {
   private config: AuthConfig;
   private activeSessions = new Map<string, AuthSession>();
   private failedAttempts = new Map<string, { count: number; lastAttempt: Date }>();
   private userCache = new Map<string, User>();
-  private mockDatabase = { users: [] as User[] };
 
   constructor(config: AuthConfig) {
     super();
@@ -98,9 +98,8 @@ export class AuthManager extends EventEmitter {
         return cachedUser;
       }
 
-      // Query database (using mock data for now)
-      // In production, this would be a proper database query
-      const user = this.mockDatabase.users.find((u) => u.id === id);
+      // Query database
+      const user = await userRepository.findById(id);
 
       if (user) {
         // Cache the user for future requests
@@ -630,32 +629,33 @@ export class AuthManager extends EventEmitter {
     this.emit("authEvent", event);
   }
 
-  // Database interaction methods (would be implemented with actual database)
-  async findUserByEmail(_email: string): Promise<User | null> {
-    // Placeholder - would query database
-    return null;
+  // Database interaction methods
+  async findUserByEmail(email: string): Promise<User | null> {
+    return userRepository.findByEmail(email);
   }
 
-  private async findUserByUsername(_username: string): Promise<User | null> {
-    // Placeholder - would query database
-    return null;
+  private async findUserByUsername(username: string): Promise<User | null> {
+    return userRepository.findByUsername(username);
   }
 
-  private async storeUser(_user: User, _hashedPassword: string): Promise<void> {
-    // Placeholder - would store in database
+  private async storeUser(user: User, hashedPassword: string): Promise<void> {
+    await userRepository.create(user, hashedPassword);
   }
 
-  private async updateUser(_user: User): Promise<void> {
-    // Placeholder - would update database
+  private async updateUser(user: User): Promise<void> {
+    await userRepository.update(user);
   }
 
-  private async getStoredPassword(_userId: string): Promise<string> {
-    // Placeholder - would query database
-    return "";
+  private async getStoredPassword(userId: string): Promise<string> {
+    const password = await userRepository.getPassword(userId);
+    if (!password) {
+      throw new Error('Password not found for user');
+    }
+    return password;
   }
 
-  private async updatePassword(_userId: string, _hashedPassword: string): Promise<void> {
-    // Placeholder - would update database
+  private async updatePassword(userId: string, hashedPassword: string): Promise<void> {
+    await userRepository.updatePassword(userId, hashedPassword);
   }
 
   private async sendVerificationEmail(_user: User): Promise<void> {
@@ -667,60 +667,57 @@ export class AuthManager extends EventEmitter {
   }
 
   private async storeTempTwoFactorSecret(
-    _userId: string,
-    _secret: string,
-    _backupCodes: string[],
+    userId: string,
+    secret: string,
+    backupCodes: string[],
   ): Promise<void> {
-    // Placeholder - would store in database
+    await userRepository.storeTempTwoFactorSecret(userId, secret, backupCodes);
   }
 
   private async getTempTwoFactorSecret(
-    _userId: string,
+    userId: string,
   ): Promise<{ secret: string; backupCodes: string[] } | null> {
-    // Placeholder - would query database
-    return null;
+    return userRepository.getTempTwoFactorSecret(userId);
   }
 
-  private async deleteTempTwoFactorSecret(_userId: string): Promise<void> {
-    // Placeholder - would delete from database
+  private async deleteTempTwoFactorSecret(userId: string): Promise<void> {
+    await userRepository.deleteTempTwoFactorSecret(userId);
   }
 
   private async storeTwoFactorSecret(
-    _userId: string,
-    _secret: string,
-    _backupCodes: string[],
+    userId: string,
+    secret: string,
+    backupCodes: string[],
   ): Promise<void> {
-    // Placeholder - would store in database
+    await userRepository.storeTwoFactorSecret(userId, secret, backupCodes);
   }
 
   private async getTwoFactorSecret(
-    _userId: string,
+    userId: string,
   ): Promise<{ secret: string; backupCodes: string[] } | null> {
-    // Placeholder - would query database
-    return null;
+    return userRepository.getTwoFactorSecret(userId);
   }
 
-  private async updateBackupCodes(_userId: string, _backupCodes: string[]): Promise<void> {
-    // Placeholder - would update database
+  private async updateBackupCodes(userId: string, backupCodes: string[]): Promise<void> {
+    await userRepository.updateBackupCodes(userId, backupCodes);
   }
 
   private async storePasswordResetToken(
-    _userId: string,
-    _token: string,
-    _expiresAt: Date,
+    userId: string,
+    token: string,
+    expiresAt: Date,
   ): Promise<void> {
-    // Placeholder - would store in database
+    await userRepository.storePasswordResetToken(userId, token, expiresAt);
   }
 
   private async getPasswordResetToken(
-    _token: string,
+    token: string,
   ): Promise<{ userId: string; expiresAt: Date } | null> {
-    // Placeholder - would query database
-    return null;
+    return userRepository.getPasswordResetToken(token);
   }
 
-  private async deletePasswordResetToken(_token: string): Promise<void> {
-    // Placeholder - would delete from database
+  private async deletePasswordResetToken(token: string): Promise<void> {
+    await userRepository.deletePasswordResetToken(token);
   }
 
   private async invalidateUserSessions(userId: string): Promise<void> {

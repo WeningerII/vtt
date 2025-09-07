@@ -3,6 +3,7 @@
  */
 import React, { useState } from "react";
 import { logger } from "@vtt/logging";
+import { toErrorObject } from "../../utils/error-utils";
 
 // Mock lucide-react icons
 const MockIcon = ({ className }: { className?: string }) => (
@@ -195,8 +196,8 @@ export function RegisterForm() {
 
       // Redirect to dashboard on success
       navigate("/dashboard");
-    } catch (err) {
-      logger.error("Registration failed:", err);
+    } catch (error) {
+      logger.error("Registration failed:", toErrorObject(error));
     }
   };
 

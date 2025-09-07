@@ -10,7 +10,7 @@ import { parseJsonBody } from "../utils/json";
 import { AssetUploadRequest, AssetUpdateRequest, AssetSearchQuery } from "../assets/types";
 import { AssetService } from "../assets/AssetService";
 import { getAuthenticatedUserId } from "../middleware/auth";
-import * as formidable from "formidable";
+import formidable from "formidable";
 
 // Initialize real AssetService
 const assetService = new AssetService(process.env.UPLOAD_PATH || "./uploads");

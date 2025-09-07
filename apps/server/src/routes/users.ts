@@ -17,7 +17,12 @@ export const createUserHandler: RouteHandler = async (ctx) => {
     return sendJson(ctx.res, { error: "Invalid body", details: parsed.error.flatten() }, 400);
   }
   const user = await ctx.prisma.user.create({
-    data: { displayName: parsed.data.displayName },
+    data: { 
+      email: `user-${Date.now()}@example.com`, // Generated email
+      username: parsed.data.displayName.toLowerCase().replace(/\s+/g, '_'),
+      displayName: parsed.data.displayName,
+      passwordHash: 'temporary-hash' // Should be properly hashed in real implementation
+    },
   });
   sendJson(ctx.res, user, 201);
 };

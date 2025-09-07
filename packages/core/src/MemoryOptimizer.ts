@@ -7,23 +7,7 @@ import { EventEmitter, SystemEvents } from "./EventEmitter";
 import { logger } from '@vtt/logging';
 import { Disposable } from "./SharedInterfaces";
 
-// Declare WeakRef and FinalizationRegistry if not available
-interface WeakRef<T extends object> {
-  deref(): T | undefined;
-}
-
-interface FinalizationRegistry<T> {
-  register(target: object, heldValue: T, unregisterToken?: object): void;
-  unregister(unregisterToken: object): boolean;
-}
-
-declare const WeakRef: {
-  new <T extends object>(target: T): WeakRef<T>;
-};
-
-declare const FinalizationRegistry: {
-  new <T>(cleanupCallback: (heldValue: T) => void): FinalizationRegistry<T>;
-};
+// Use built-in WeakRef and FinalizationRegistry types
 
 export interface MemoryConfig {
   enableObjectPooling: boolean;
@@ -105,11 +89,38 @@ export class GenericObjectPool<T> implements ObjectPool<T> {
   }
 }
 
+// WeakRef and FinalizationRegistry are ES2021 features
+// Ensure TypeScript config includes ES2021 or add polyfill
+declare global {
+  interface WeakRef<T extends object> {
+    readonly [Symbol.toStringTag]: "WeakRef";
+    deref(): T | undefined;
+  }
+  interface WeakRefConstructor {
+    new<T extends object>(target: T): WeakRef<T>;
+    prototype: WeakRef<any>;
+  }
+  const WeakRef: WeakRefConstructor;
+
+  interface FinalizationRegistry<T> {
+    readonly [Symbol.toStringTag]: "FinalizationRegistry";
+    register(target: object, heldValue: T, unregisterToken?: object): void;
+    unregister(unregisterToken: object): boolean;
+  }
+  interface FinalizationRegistryConstructor {
+    new<T>(cleanupCallback: (heldValue: T) => void): FinalizationRegistry<T>;
+    prototype: FinalizationRegistry<any>;
+  }
+  const FinalizationRegistry: FinalizationRegistryConstructor;
+}
+
 export class WeakRefCache<K, V extends object> {
   private cache = new Map<K, WeakRef<V>>();
-  private registry = new FinalizationRegistry<K>((_key) => {
-    this.cache.delete(_key);
-  });
+  private registry = typeof FinalizationRegistry !== 'undefined' 
+    ? new FinalizationRegistry<K>((key) => {
+        this.cache.delete(key);
+      })
+    : null;
 
   set(key: K, value: V): void {
     const existingRef = this.cache.get(key);
@@ -118,8 +129,12 @@ export class WeakRefCache<K, V extends object> {
       return;
     }
 
-    this.cache.set(key, new WeakRef(value));
-    this.registry.register(value, key);
+    if (typeof WeakRef !== 'undefined') {
+      this.cache.set(key, new WeakRef(value));
+      if (this.registry) {
+        this.registry.register(value, key);
+      }
+    }
   }
 
   get(key: K): V | undefined {

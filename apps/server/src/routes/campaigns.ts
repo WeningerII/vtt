@@ -1,8 +1,11 @@
 /**
- * Campaign management routes
+ * Campaign routes with comprehensive REST API
+ * Provides full CRUD operations and campaign management
  */
 
-import { RouteHandler } from "../router/types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Router import removed as it's not used in this file 
 import {
   CampaignService,
   CreateCampaignRequest,
@@ -10,7 +13,8 @@ import {
 } from "../campaign/CampaignService";
 import { MapService } from "../map/MapService";
 import { PrismaClient } from "@prisma/client";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth, getAuthenticatedUserId as getAuthUserId } from "../middleware/auth";
+import { RouteHandler, Context } from "../router/types";
 
 // Lazy-load services to avoid initialization issues during module loading
 let prisma: PrismaClient | null = null;
@@ -27,27 +31,22 @@ function getServices() {
 }
 
 // Initialize services on first use
-function getCampaignService() {
+function getCampaignService(): CampaignService {
   const { campaignService } = getServices();
-  return campaignService;
+  return campaignService; // getServices() guarantees non-null campaignService
 }
 
 /**
  * Helper to get authenticated user ID from request
  */
-function getAuthenticatedUserId(ctx: any): string {
-  const user = ctx.req.user;
-  if (!user?.id) {
-    throw new Error("User not authenticated");
-  }
-  return user.id;
+function getAuthenticatedUserId(ctx: Context): string {
+  return getAuthUserId(ctx);
 }
 
 /**
  * POST /campaigns - Create a new campaign
  */
 export const createCampaignHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   try {
     const body = await parseJsonBody(ctx.req);
     const userId = getAuthenticatedUserId(ctx);
@@ -121,7 +120,6 @@ export const getCampaignHandler: RouteHandler = async (ctx) => {
  * GET /campaigns - Get campaigns for current user
  */
 export const getUserCampaignsHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   try {
     const userId = getAuthenticatedUserId(ctx);
     const asGM = ctx.url.searchParams.get("asGM") === "true";
@@ -151,7 +149,6 @@ export const getUserCampaignsHandler: RouteHandler = async (ctx) => {
  * PUT /campaigns/:campaignId - Update campaign
  */
 export const updateCampaignHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -202,7 +199,6 @@ export const updateCampaignHandler: RouteHandler = async (ctx) => {
  * DELETE /campaigns/:campaignId - Delete campaign
  */
 export const deleteCampaignHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -265,7 +261,6 @@ export const getCampaignPlayersHandler: RouteHandler = async (ctx) => {
  * POST /campaigns/:campaignId/players - Add/Invite player to campaign
  */
 export const addPlayerHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -323,7 +318,6 @@ export const addPlayerHandler: RouteHandler = async (ctx) => {
  * PUT /campaigns/:campaignId/players/:playerId - Update player role/status
  */
 export const updatePlayerHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const pathParts = ctx.url.pathname.split("/");
   const campaignId = pathParts[2];
   const playerId = pathParts[4];
@@ -365,7 +359,6 @@ export const updatePlayerHandler: RouteHandler = async (ctx) => {
  * DELETE /campaigns/:campaignId/players/:playerId - Remove player from campaign
  */
 export const removePlayerHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const pathParts = ctx.url.pathname.split("/");
   const campaignId = pathParts[2];
   const playerId = pathParts[4];
@@ -403,7 +396,6 @@ export const removePlayerHandler: RouteHandler = async (ctx) => {
  * POST /campaigns/:campaignId/characters - Add character to campaign
  */
 export const addCharacterToCampaignHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -448,7 +440,6 @@ export const addCharacterToCampaignHandler: RouteHandler = async (ctx) => {
  * DELETE /campaigns/:campaignId/characters/:characterId - Remove character from campaign
  */
 export const removeCharacterFromCampaignHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const pathParts = ctx.url.pathname.split("/");
   const campaignId = pathParts[2];
   const characterId = pathParts[4];
@@ -486,7 +477,6 @@ export const removeCharacterFromCampaignHandler: RouteHandler = async (ctx) => {
  * POST /campaigns/:campaignId/archive - Archive campaign
  */
 export const archiveCampaignHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -615,7 +605,6 @@ export const getCampaignScenesHandler: RouteHandler = async (ctx) => {
  * POST /campaigns/:campaignId/scenes - Create scene for campaign
  */
 export const createCampaignSceneHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -657,7 +646,6 @@ export const createCampaignSceneHandler: RouteHandler = async (ctx) => {
  * PUT /campaigns/:campaignId/active-scene - Set active scene
  */
 export const setActiveCampaignSceneHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -700,7 +688,6 @@ export const setActiveCampaignSceneHandler: RouteHandler = async (ctx) => {
  * POST /campaigns/:campaignId/sessions - Start session
  */
 export const startSessionHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {
@@ -737,7 +724,6 @@ export const startSessionHandler: RouteHandler = async (ctx) => {
  * DELETE /campaigns/:campaignId/sessions/:sessionId - End session
  */
 export const endSessionHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const pathParts = ctx.url.pathname.split("/");
   const campaignId = pathParts[2];
   const sessionId = pathParts[4];
@@ -785,7 +771,7 @@ export const getActiveSessionHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const session = getCampaignService().getActiveSession(campaignId);
+    const session = await getCampaignService().getActiveSession(campaignId);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ session }));
@@ -830,7 +816,6 @@ export const getCampaignSettingsHandler: RouteHandler = async (ctx) => {
  * PUT /campaigns/:campaignId/settings - Update campaign settings
  */
 export const updateCampaignSettingsHandler: RouteHandler = async (ctx) => {
-  await requireAuth(ctx, async () => {});
   const campaignId = ctx.url.pathname.split("/")[2];
 
   if (!campaignId) {

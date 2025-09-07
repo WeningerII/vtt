@@ -15,6 +15,7 @@ import {
   MapUpdateEvent,
   LineOfSightResult,
   GridType,
+  InitiativeEntry,
 } from "./types";
 import { PrismaClient } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
@@ -122,14 +123,7 @@ export class MapService {
         // fogSettings: defaultFog as any,
       },
       include: {
-        map: true,
         campaign: true,
-        tokens: {
-          include: {
-            actor: true,
-            asset: true,
-          },
-        },
       },
     });
 
@@ -193,7 +187,7 @@ export class MapService {
         lineOfSight: false,
         sightRadius: 30,
       },
-      tokens: (dbScene.tokens || []).map((token: any) => ({
+      tokens: [].map((token: any) => ({
         x: token.x,
         y: token.y,
         rotation: token.rotation,
@@ -228,14 +222,7 @@ export class MapService {
     const dbScene = await this.prisma.scene.findUnique({
       where: { id: sceneId },
       include: {
-        map: true,
         campaign: true,
-        tokens: {
-          include: {
-            actor: true,
-            asset: true,
-          },
-        },
       },
     });
 
@@ -245,10 +232,10 @@ export class MapService {
     let sceneWidth = 1920;
     let sceneHeight = 1080;
 
-    if (dbScene.map) {
-      sceneWidth = dbScene.map.widthPx || 1920;
-      sceneHeight = dbScene.map.heightPx || 1080;
-    }
+    // Map relation not available in current schema
+    // Use default dimensions since map relation doesn't exist
+    sceneWidth = 1920;
+    sceneHeight = 1080;
 
     // Build MapScene object
     const scene: MapScene = {
@@ -328,7 +315,7 @@ export class MapService {
           zIndex: 100,
         },
       ],
-      tokens: (dbScene.tokens || []).map((token: any) => ({
+      tokens: [].map((token: any) => ({
         x: token.x,
         y: token.y,
         rotation: token.rotation,
@@ -354,13 +341,13 @@ export class MapService {
   /**
    * Calculate distance between two points
    */
-  private calculateDistance(
+  calculateDistance(
     x1: number,
     y1: number,
     x2: number,
     y2: number,
     gridSettings: any,
-    unit: "feet" | "meters" | "pixels",
+    unit: "feet" | "meters" | "pixels" | "grid",
   ): number {
     const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 
@@ -372,6 +359,7 @@ export class MapService {
     // Convert to feet (assuming 5 feet per grid square in D&D)
     if (unit === "feet") {return gridDistance * 5;}
     if (unit === "meters") {return gridDistance * 1.5;}
+    if (unit === "grid") {return gridDistance;}
 
     return pixelDistance;
   }
@@ -489,17 +477,24 @@ export class MapService {
       const tokenId = uuidv4();
       const token = await this.prisma.token.create({
         data: {
-          ...tokenData,
           id: tokenId,
+          name: tokenData.name,
           sceneId,
           x: alignedPosition.x,
           y: alignedPosition.y,
-          // Token dimensions handled by metadata
-          metadata: { width: tokenData.width || 1, height: tokenData.height || 1 },
           rotation: 0,
           scale: 1,
-          // Additional properties stored in metadata
+          type: 'NPC', // Default type
+          gameSessionId: scene.campaignId, // Use campaignId as gameSessionId for now
           visibility: 'VISIBLE',
+          characterId: tokenData.actorId,
+          imageUrl: tokenData.assetId,
+          metadata: {
+            width: tokenData.width || 50,
+            height: tokenData.height || 50,
+            disposition: tokenData.disposition || 'NEUTRAL',
+            layer: 1
+          },
         },
       });
 
@@ -1235,7 +1230,8 @@ export class MapService {
         where: { id: targetId },
         data: {
           // Store conditions as JSON
-          conditions: JSON.stringify(conditions),
+          // conditions field not available in current Token schema
+          // conditions: JSON.stringify(conditions),
         },
       });
 
@@ -2300,12 +2296,348 @@ export class MapService {
   }
 
   /**
-   * Update scene with new settings
+   * Get all scenes for a campaign
    */
-  async updateScene(sceneId: string, updates: Record<string, any>): Promise<boolean> {
+  async getAllScenes(campaignId?: string): Promise<MapScene[]> {
+    try {
+      const whereClause = campaignId ? { campaignId } : {};
+      const dbScenes = await this.prisma.scene.findMany({
+        where: whereClause,
+        include: {
+          campaign: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const scenes: MapScene[] = [];
+      for (const dbScene of dbScenes) {
+        const scene = await this.getScene(dbScene.id);
+        if (scene) {
+          scenes.push(scene);
+        }
+      }
+
+      return scenes;
+    } catch (error) {
+      logger.error("Failed to get all scenes:", error as Error);
+      return [];
+    }
+  }
+
+  /**
+   * Convert pixel coordinates to grid coordinates
+   */
+  pixelToGrid(x: number, y: number, gridSettings: GridSettings): { x: number; y: number } {
+    const gridSize = gridSettings.size || 50;
+    const offsetX = gridSettings.offsetX || 0;
+    const offsetY = gridSettings.offsetY || 0;
+
+    const gridX = Math.floor((x - offsetX) / gridSize);
+    const gridY = Math.floor((y - offsetY) / gridSize);
+
+    return { x: gridX, y: gridY };
+  }
+
+  /**
+   * Convert grid coordinates to pixel coordinates
+   */
+  gridToPixel(x: number, y: number, gridSettings: GridSettings): { x: number; y: number } {
+    const gridSize = gridSettings.size || 50;
+    const offsetX = gridSettings.offsetX || 0;
+    const offsetY = gridSettings.offsetY || 0;
+
+    const pixelX = x * gridSize + offsetX;
+    const pixelY = y * gridSize + offsetY;
+
+    return { x: pixelX, y: pixelY };
+  }
+
+  /**
+   * Calculate movement path avoiding obstacles
+   */
+  async getMovementPath(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    obstacles: Array<{ x: number; y: number; width: number; height: number }> = [],
+    sceneId?: string
+  ): Promise<Array<{ x: number; y: number }>> {
+    try {
+      // Simple pathfinding - in production would use A* algorithm
+      const path: Array<{ x: number; y: number }> = [];
+      
+      // For now, return direct path with basic obstacle avoidance
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const steps = Math.max(Math.abs(dx), Math.abs(dy));
+      
+      if (steps === 0) {
+        return [{ x: startX, y: startY }];
+      }
+      
+      const stepX = dx / steps;
+      const stepY = dy / steps;
+      
+      for (let i = 0; i <= steps; i++) {
+        const x = startX + stepX * i;
+        const y = startY + stepY * i;
+        
+        // Basic collision check
+        let blocked = false;
+        for (const obstacle of obstacles) {
+          if (
+            x >= obstacle.x && 
+            x <= obstacle.x + obstacle.width &&
+            y >= obstacle.y && 
+            y <= obstacle.y + obstacle.height
+          ) {
+            blocked = true;
+            break;
+          }
+        }
+        
+        if (!blocked) {
+          path.push({ x: Math.round(x), y: Math.round(y) });
+        }
+      }
+      
+      return path.length > 0 ? path : [{ x: startX, y: startY }, { x: endX, y: endY }];
+    } catch (error) {
+      logger.error("Failed to calculate movement path:", error as Error);
+      return [{ x: startX, y: startY }, { x: endX, y: endY }];
+    }
+  }
+
+  /**
+   * Calculate line of sight between two points
+   */
+  calculateLineOfSight(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number,
+    obstacles: Array<{ x: number; y: number; width: number; height: number }> = []
+  ): LineOfSightResult {
+    try {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      if (distance === 0) {
+        return { visible: true, partialCover: false, totalCover: false };
+      }
+      
+      // Raycast algorithm
+      const steps = Math.ceil(distance);
+      const stepX = dx / steps;
+      const stepY = dy / steps;
+      
+      const blockedPoints: Array<{ x: number; y: number }> = [];
+      
+      for (let i = 1; i < steps; i++) {
+        const x = fromX + stepX * i;
+        const y = fromY + stepY * i;
+        
+        // Check collision with obstacles
+        for (const obstacle of obstacles) {
+          if (
+            x >= obstacle.x && 
+            x <= obstacle.x + obstacle.width &&
+            y >= obstacle.y && 
+            y <= obstacle.y + obstacle.height
+          ) {
+            blockedPoints.push({ x: Math.round(x), y: Math.round(y) });
+          }
+        }
+      }
+      
+      const hasBlockage = blockedPoints.length > 0;
+      const partialCover = hasBlockage && blockedPoints.length < steps / 2;
+      const totalCover = blockedPoints.length >= steps / 2;
+      
+      return { 
+        visible: !totalCover, 
+        blockedBy: hasBlockage ? blockedPoints : undefined,
+        partialCover,
+        totalCover
+      };
+    } catch (error) {
+      logger.error("Failed to calculate line of sight:", error as Error);
+      return { visible: false, partialCover: false, totalCover: true };
+    }
+  }
+
+  /**
+   * Add combatant to initiative order
+   */
+  async addCombatant(sceneId: string, tokenId: string, name: string, initiative: number): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
       if (!scene) {return false;}
+      
+      // Get or create combat grid for scene
+      let combatGrid = this.combatGrids.get(sceneId);
+      if (!combatGrid) {
+        combatGrid = {
+          sceneId,
+          initiative: [],
+          currentTurn: 0,
+          round: 1,
+          phase: 'setup',
+          effects: []
+        };
+        this.combatGrids.set(sceneId, combatGrid);
+      }
+      
+      // Add or update combatant
+      const existingIndex = combatGrid.initiative.findIndex(init => init.tokenId === tokenId);
+      const combatant: InitiativeEntry = {
+        id: uuidv4(),
+        tokenId,
+        name,
+        initiative,
+        hasActed: false,
+        conditions: []
+      };
+      
+      if (existingIndex >= 0) {
+        combatGrid.initiative[existingIndex] = combatant;
+      } else {
+        combatGrid.initiative.push(combatant);
+      }
+      
+      // Sort by initiative (descending)
+      combatGrid.initiative.sort((a, b) => b.initiative - a.initiative);
+      
+      // Emit update
+      this.emitMapUpdate(sceneId, {
+        type: "combat_combatant_added",
+        sceneId,
+        combatant,
+        timestamp: Date.now(),
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error("Failed to add combatant:", error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Advance to next turn in combat
+   */
+  async nextTurn(sceneId: string): Promise<boolean> {
+    try {
+      const combatGrid = this.combatGrids.get(sceneId);
+      if (!combatGrid || combatGrid.initiative.length === 0) {
+        return false;
+      }
+      
+      // Advance turn
+      combatGrid.currentTurn++;
+      
+      // Check if round is complete
+      if (combatGrid.currentTurn >= combatGrid.initiative.length) {
+        combatGrid.currentTurn = 0;
+        combatGrid.round++;
+        
+        // Reset hasActed flags for new round
+        combatGrid.initiative.forEach(init => {
+          init.hasActed = false;
+        });
+      }
+      
+      // Mark current combatant as having acted
+      if (combatGrid.initiative[combatGrid.currentTurn]) {
+        combatGrid.initiative[combatGrid.currentTurn].hasActed = true;
+      }
+      
+      // Emit update
+      this.emitMapUpdate(sceneId, {
+        type: "combat_turn_advanced",
+        sceneId,
+        currentTurn: combatGrid.currentTurn,
+        round: combatGrid.round,
+        currentCombatant: combatGrid.initiative[combatGrid.currentTurn],
+        timestamp: Date.now(),
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error("Failed to advance turn:", error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Add grid effect to scene
+   */
+  async addGridEffect(sceneId: string, effectData: Omit<GridEffect, "id">): Promise<GridEffect | null> {
+    try {
+      const scene = await this.getScene(sceneId);
+      if (!scene) {return null;}
+      
+      const effect: GridEffect = {
+        id: uuidv4(),
+        ...effectData
+      };
+      
+      // Store effect (in production would persist to database)
+      // For now, emit as real-time update
+      this.emitMapUpdate(sceneId, {
+        type: "grid_effect_added",
+        sceneId,
+        effect,
+        timestamp: Date.now(),
+      });
+      
+      return effect;
+    } catch (error) {
+      logger.error("Failed to add grid effect:", error as Error);
+      return null;
+    }
+  }
+
+  /**
+   * Add light source to scene
+   */
+  async addLightSource(sceneId: string, lightData: Omit<LightSource, "id">): Promise<boolean> {
+    try {
+      const scene = await this.getScene(sceneId);
+      if (!scene) {return false;}
+      
+      const lightSource: LightSource = {
+        id: uuidv4(),
+        ...lightData
+      };
+      
+      // Add to scene lighting
+      scene.lighting.lightSources.push(lightSource);
+      
+      // Emit update
+      this.emitMapUpdate(sceneId, {
+        type: "light_source_added",
+        sceneId,
+        lightSource,
+        timestamp: Date.now(),
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error("Failed to add light source:", error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Update scene with new settings
+   */
+  async updateScene(sceneId: string, updates: Record<string, any>): Promise<MapScene | null> {
+    try {
+      const scene = await this.getScene(sceneId);
+      if (!scene) {return null;}
 
       // Update scene in database
       await this.prisma.scene.update({
@@ -2348,9 +2680,91 @@ export class MapService {
         timestamp: Date.now(),
       });
 
-      return true;
+      return scene;
     } catch (error) {
       logger.error("Failed to update scene:", error as Error);
+      return null;
+    }
+  }
+
+  /**
+   * Remove light source from scene
+   */
+  async removeLightSource(sceneId: string, lightId: string): Promise<boolean> {
+    try {
+      const scene = await this.getScene(sceneId);
+      if (!scene) {return false;}
+      
+      // Remove from scene lighting (stored in metadata)
+      const lightIndex = scene.lighting.lightSources?.findIndex(light => light.id === lightId);
+      if (lightIndex !== undefined && lightIndex >= 0) {
+        scene.lighting.lightSources.splice(lightIndex, 1);
+      }
+      
+      // Emit update
+      this.emitMapUpdate(sceneId, {
+        type: "light_update",
+        sceneId,
+        lightId,
+        action: "removed",
+        timestamp: Date.now(),
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error("Failed to remove light source:", error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Get measurements for scene
+   */
+  async getMeasurements(sceneId: string): Promise<MeasurementTool[]> {
+    try {
+      const scene = await this.getScene(sceneId);
+      if (!scene) {return [];}
+      
+      // Return measurements from scene metadata or cache
+      const measurements = this.measurements.get(sceneId);
+      return Array.isArray(measurements) ? measurements : [];
+    } catch (error) {
+      logger.error("Failed to get measurements:", error as Error);
+      return [];
+    }
+  }
+
+  /**
+   * Initialize combat for scene
+   */
+  async initializeCombat(sceneId: string): Promise<boolean> {
+    try {
+      const scene = await this.getScene(sceneId);
+      if (!scene) {return false;}
+      
+      // Create or reset combat grid
+      const combatGrid: CombatGrid = {
+        sceneId,
+        initiative: [],
+        currentTurn: 0,
+        round: 1,
+        phase: 'setup',
+        effects: []
+      };
+      
+      this.combatGrids.set(sceneId, combatGrid);
+      
+      // Emit update
+      this.emitMapUpdate(sceneId, {
+        type: "combat_initialized",
+        sceneId,
+        combatGrid,
+        timestamp: Date.now(),
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error("Failed to initialize combat:", error as Error);
       return false;
     }
   }

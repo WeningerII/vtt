@@ -22,7 +22,9 @@ export class StabilityProvider {
       height,
       samples: 1,
     };
-    if (typeof req.seed === "number") body.seed = req.seed;
+    if (typeof req.seed === "number") {
+      body.seed = req.seed;
+    }
     const url = `${this.baseUrl}/v1/generation/${this.engine}/text-to-image`;
     const res = await fetch(url, {
       method: "POST",
@@ -40,7 +42,9 @@ export class StabilityProvider {
     }
     const json = await res.json();
     const artifact = json?.artifacts?.[0];
-    if (!artifact?.base64) throw new Error("Stability returned no artifact");
+    if (!artifact?.base64) {
+      throw new Error("Stability returned no artifact");
+    }
     const uri = `data:image/png;base64,${artifact.base64}`;
     const image = { uri, width, height, mimeType: "image/png" };
     return {
@@ -57,7 +61,9 @@ function clampTo64(n) {
 }
 function buildPrompts(prompt, negative) {
   const arr = [{ text: String(prompt ?? "") }];
-  if (negative && negative.trim().length) arr.push({ text: negative, weight: -1 });
+  if (negative && negative.trim().length) {
+    arr.push({ text: negative, weight: -1 });
+  }
   return arr;
 }
 async function safeText(res) {

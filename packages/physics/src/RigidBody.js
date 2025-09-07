@@ -27,16 +27,18 @@ export class RigidBody {
      * Add force to be applied this frame
      */
     addForce(force) {
-        if (this.config.isStatic)
+        if (this.config.isStatic) {
             return;
+        }
         this.forces.push({ ...force });
     }
     /**
      * Add impulse (instantaneous force)
      */
     addImpulse(impulse) {
-        if (this.config.isStatic)
+        if (this.config.isStatic) {
             return;
+        }
         this.velocity.x += impulse.x / this.config.mass;
         this.velocity.y += impulse.y / this.config.mass;
     }
@@ -44,8 +46,9 @@ export class RigidBody {
      * Add torque for rotation
      */
     addTorque(torque) {
-        if (this.config.isStatic)
+        if (this.config.isStatic) {
             return;
+        }
         this.torques.push(torque);
     }
     /**
@@ -74,8 +77,9 @@ export class RigidBody {
      * Integrate physics (called by physics system)
      */
     integrate(deltaTime) {
-        if (this.config.isStatic)
+        if (this.config.isStatic) {
             return;
+        }
         // Apply forces
         this.acceleration.x = 0;
         this.acceleration.y = 0;
@@ -109,10 +113,12 @@ export class RigidBody {
      * Apply collision response with another body
      */
     resolveCollision(other, normal, penetration) {
-        if (this.config.isTrigger || other.config.isTrigger)
+        if (this.config.isTrigger || other.config.isTrigger) {
             return;
-        if (this.config.isStatic && other.config.isStatic)
+        }
+        if (this.config.isStatic && other.config.isStatic) {
             return;
+        }
         // Calculate relative velocity
         const relativeVelocity = {
             x: this.velocity.x - other.velocity.x,
@@ -121,8 +127,9 @@ export class RigidBody {
         // Calculate relative velocity in collision normal direction
         const velAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
         // Don't resolve if velocities are separating
-        if (velAlongNormal > 0)
+        if (velAlongNormal > 0) {
             return;
+        }
         // Calculate restitution
         const restitution = Math.min(this.config.restitution, other.config.restitution);
         // Calculate impulse scalar
@@ -170,8 +177,9 @@ export class RigidBody {
      * Set velocity
      */
     setVelocity(x, y) {
-        if (this.config.isStatic)
+        if (this.config.isStatic) {
             return;
+        }
         this.velocity.x = x;
         this.velocity.y = y;
     }
@@ -187,8 +195,9 @@ export class RigidBody {
      * Apply gravity
      */
     applyGravity(gravity) {
-        if (this.config.isStatic)
+        if (this.config.isStatic) {
             return;
+        }
         this.addForce({
             x: gravity.x * this.config.mass,
             y: gravity.y * this.config.mass,

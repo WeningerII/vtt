@@ -632,7 +632,7 @@ export class OBJLoader implements AssetLoader<ModelData> {
           texCoords.push(parseFloat(parts[1] || "0"), parseFloat(parts[2] || "0"));
           break;
 
-        case "f": // Face {
+        case "f": { // Face
           const face: number[] = [];
           for (let i = 1; i < parts.length; i++) {
             const part = parts[i];
@@ -646,6 +646,7 @@ export class OBJLoader implements AssetLoader<ModelData> {
           }
           faces.push(face);
           break;
+        }
 
         case "usemtl": // Use material
           currentMaterial = parts[1] || null;

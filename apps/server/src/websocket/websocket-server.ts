@@ -227,11 +227,56 @@ export class VTTWebSocketServer {
         return;
       }
 
+      // Validate or create campaign
+      let actualCampaignId = sessionData.campaignId;
+      if (sessionData.campaignId) {
+        // Verify user has access to the campaign
+        const campaign = await this.prisma.campaign.findFirst({
+          where: {
+            id: sessionData.campaignId,
+            members: {
+              some: {
+                userId: client.userId,
+                status: 'active',
+                role: { in: ['gamemaster', 'co-gamemaster'] }
+              }
+            }
+          }
+        });
+
+        if (!campaign) {
+          this.sendError(ws, 'Campaign not found or insufficient permissions');
+          return;
+        }
+      } else {
+        // Create a new campaign for this session
+        const newCampaign = await this.prisma.campaign.create({
+          data: {
+            name: `${sessionData.name} Campaign`,
+            members: {
+              create: {
+                userId: client.userId!,
+                role: 'gamemaster',
+                status: 'active'
+              }
+            },
+            settings: {
+              create: {
+                isPublic: !sessionData.isPrivate,
+                allowSpectators: sessionData.allowSpectators !== false,
+                maxPlayers: sessionData.maxPlayers || 4
+              }
+            }
+          }
+        });
+        actualCampaignId = newCampaign.id;
+      }
+
       // Create session in database
       const session = await this.prisma.gameSession.create({
         data: {
           name: sessionData.name,
-          campaignId: sessionData.campaignId || 'default-campaign',
+          campaignId: actualCampaignId,
           status: 'WAITING',
           metadata: {
             maxPlayers: sessionData.maxPlayers || 4,

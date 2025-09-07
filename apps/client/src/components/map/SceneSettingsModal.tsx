@@ -27,7 +27,7 @@ interface SceneSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   sceneId: string;
-  initialSettings?: SceneSettings;
+  initialSettings?: Partial<SceneSettings>;
   onSettingsUpdate: (settings: SceneSettings) => void;
 }
 
@@ -109,36 +109,10 @@ export const SceneSettingsModal: React.FC<SceneSettingsModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
-  const [settings, setSettings] = useState<SceneSettings>(initialSettings || {
-    grid: {
-      enabled: false,
-      size: 25,
-      opacity: 0.5,
-      color: "#ffffff",
-      type: "square",
-      snapToGrid: true,
-      showLabels: false,
-      offsetX: 0,
-      offsetY: 0,
-    },
-    lighting: initialSettings?.lighting || {
-      enabled: false,
-      ambientLight: 0.2,
-      shadowQuality: "medium",
-      globalIllumination: false,
-      colorTemperature: 5500,
-      contrast: 1.0,
-    },
-    fog: initialSettings?.fog || {
-      enabled: false,
-      type: "static",
-      color: "#000000",
-      opacity: 0.8,
-      blurRadius: 2,
-      revealOnMove: true,
-      persistReveal: false,
-    },
-  });
+  const [settings, setSettings] = useState<SceneSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    ...initialSettings,
+  }));
 
   const updateGridSettings = (updates: Partial<GridSettings>) => {
     setHasChanges(true);
@@ -184,35 +158,9 @@ export const SceneSettingsModal: React.FC<SceneSettingsModalProps> = ({
 
   const handleReset = () => {
     setHasChanges(false);
-    setSettings(initialSettings || {
-      grid: {
-        enabled: false,
-        size: 25,
-        opacity: 0.5,
-        color: "#ffffff",
-        type: "square",
-        snapToGrid: true,
-        showLabels: false,
-        offsetX: 0,
-        offsetY: 0,
-      },
-      lighting: {
-        enabled: false,
-        ambientLight: 0.2,
-        shadowQuality: "medium",
-        globalIllumination: false,
-        colorTemperature: 5500,
-        contrast: 1.0,
-      },
-      fog: {
-        enabled: false,
-        type: "static",
-        color: "#000000",
-        opacity: 0.8,
-        blurRadius: 2,
-        revealOnMove: true,
-        persistReveal: false,
-      },
+    setSettings({
+      ...DEFAULT_SETTINGS,
+      ...initialSettings,
     });
   };
 

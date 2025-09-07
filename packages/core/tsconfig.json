@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": [],
+    "types": ["node"],
     "skipLibCheck": true,
     "incremental": true,
     "tsBuildInfoFile": "./core.tsbuildinfo",

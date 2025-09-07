@@ -247,7 +247,7 @@ export class VisualEffectsSystem extends EventEmitter {
     const effectIds: string[] = [];
 
     switch (spellName.toLowerCase()) {
-      case 'fireball':
+      case 'fireball': {
         // Launch effect
         const launchId = this.createEffect('fire_projectile', casterPosition, {
           targetId: targetId ?? '',
@@ -265,8 +265,9 @@ export class VisualEffectsSystem extends EventEmitter {
           }, 1000);
         }
         break;
+      }
 
-      case 'magic missile':
+      case 'magic missile': {
         // Multiple missile effects
         for (let i = 0; i < 3; i++) {
           setTimeout(() => {
@@ -278,29 +279,34 @@ export class VisualEffectsSystem extends EventEmitter {
           }, i * 200);
         }
         break;
+      }
 
-      case 'healing word':
+      case 'healing word': {
         const healId = this.createEffect('healing_sparkles', targetPosition || casterPosition, {
           targetId: targetId ?? '',
+          duration: 2000,
         });
         if (healId) {effectIds.push(healId);}
         break;
+      }
 
-      case 'shield':
+      case 'shield': {
         const shieldId = this.createEffect('magical_shield', casterPosition, {
           targetId: targetId ?? '',
           duration: 6000, // 1 round
         });
         if (shieldId) {effectIds.push(shieldId);}
         break;
+      }
 
-      default:
+      default: {
         // Generic spell effect
         const genericId = this.createEffect('generic_spell', casterPosition, {
           targetId: targetId ?? '',
         });
         if (genericId) {effectIds.push(genericId);}
         break;
+      }
     }
 
     return effectIds;
@@ -326,29 +332,32 @@ export class VisualEffectsSystem extends EventEmitter {
     switch (weaponType.toLowerCase()) {
       case 'sword':
       case 'longsword':
-      case 'shortsword':
+      case 'shortsword': {
         const slashId = this.createEffect('sword_slash', attackerPosition, {
           data: { targetPosition },
         });
         if (slashId) {effectIds.push(slashId);}
         break;
+      }
 
       case 'bow':
       case 'longbow':
-      case 'shortbow':
+      case 'shortbow': {
         const arrowId = this.createEffect('arrow_trail', attackerPosition, {
           data: { targetPosition },
         });
         if (arrowId) {effectIds.push(arrowId);}
         break;
+      }
 
       case 'staff':
-      case 'wand':
+      case 'wand': {
         const magicId = this.createEffect('magic_bolt', attackerPosition, {
           data: { targetPosition },
         });
         if (magicId) {effectIds.push(magicId);}
         break;
+      }
     }
 
     return effectIds;

@@ -121,8 +121,6 @@ export class GridManager {
   /**
    * Snap pixel coordinates to grid
    */
-  snapToGrid(coord: GridCoordinate): GridCoordinate;
-  snapToGrid(pixelX: number, pixelY: number): GridCoordinate;
   snapToGrid(coordOrX: GridCoordinate | number, pixelY?: number): GridCoordinate {
     let x: number, y: number;
 
@@ -338,8 +336,6 @@ export class GridManager {
   /**
    * Get grid bounds (alternative method name for compatibility)
    */
-  getGridBounds(): GridBounds;
-  getGridBounds(viewport?: { x: number; y: number; width: number; height: number }): GridBounds;
   getGridBounds(viewport?: { x: number; y: number; width: number; height: number }): GridBounds {
     // Ignore viewport parameter for now, just return standard bounds
     return this.getBounds();
@@ -348,8 +344,6 @@ export class GridManager {
   /**
    * Convert world coordinates to grid coordinates (alternative method name)
    */
-  worldToGrid(coord: GridCoordinate): GridCoordinate;
-  worldToGrid(x: number, y: number): GridCoordinate;
   worldToGrid(coordOrX: GridCoordinate | number, y?: number): GridCoordinate {
     if (typeof coordOrX === "object") {
       return this.pixelToGrid(coordOrX.x, coordOrX.y);

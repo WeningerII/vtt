@@ -378,9 +378,9 @@ export const getActiveSimulationsHandler: RouteHandler = async (ctx) => {
         success: true,
         data: simulations.map((sim) => ({
           id: sim.id,
-          participants: sim.participants.length,
+          participants: 0, // Not tracking participants in basic implementation
           rounds: sim.rounds,
-          currentRound: sim.currentRound,
+          currentRound: sim.rounds, // Use total rounds as current round for completed simulations
           winner: sim.winner,
           isComplete: sim.isComplete,
         })),

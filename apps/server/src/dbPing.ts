@@ -4,8 +4,15 @@ const prisma = new PrismaClient();
 (async () => {
   const count = await prisma.user.count();
   if (count === 0) {
-    const u = await prisma.user.create({ data: { displayName: "First GM" } });
-    logger.info("Inserted user:", u.id, u.displayName);
+    const u = await prisma.user.create({ 
+      data: { 
+        email: `gm_${Date.now()}@example.com`,
+        username: `gm_${Date.now()}`,
+        displayName: "First GM",
+        passwordHash: "temp_hash" // This should be properly hashed in production
+      } 
+    });
+    logger.info(`Inserted user: ${u.id} - ${u.displayName}`);
   }
   const users = await prisma.user.findMany({ take: 3, orderBy: { createdAt: "desc" } });
   logger.info(

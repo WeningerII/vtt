@@ -3,7 +3,7 @@
  * Integrates spell effects with physics simulation for realistic magical interactions
  */
 
-import type { PhysicsWorld, _RigidBody, Vector2 } from "../../../packages/physics/src";
+import type { PhysicsWorld, RigidBody, Vector2 } from "../../../packages/physics/src";
 import type { SpellEngine, SpellEffect, CastingResult } from "../../../packages/spell-engine/src";
 import { EventEmitter } from "events";
 

@@ -163,10 +163,12 @@ export class SpellScalingEngine {
      * Multiply dice expression by a factor
      */
     multiplyDice(diceExpression, multiplier) {
-        if (multiplier <= 0)
+        if (multiplier <= 0) {
             return "";
-        if (multiplier === 1)
+        }
+        if (multiplier === 1) {
             return diceExpression;
+        }
         // Handle expressions like "1d6", "2d8+1", etc.
         const diceRegex = /(\d+)d(\d+)(\+\d+)?/g;
         return diceExpression.replace(diceRegex, (match, _numDice, _diceSize, _bonus) => {
@@ -179,10 +181,12 @@ export class SpellScalingEngine {
      * Add two dice expressions together
      */
     addDice(baseDice, bonusDice) {
-        if (!bonusDice)
+        if (!bonusDice) {
             return baseDice;
-        if (!baseDice)
+        }
+        if (!baseDice) {
             return bonusDice;
+        }
         return `${baseDice}+${bonusDice}`;
     }
     /**
@@ -211,8 +215,9 @@ export class SpellScalingEngine {
      * Get all possible upcasting levels for a spell
      */
     getAvailableUpcastLevels(spell, availableSlots) {
-        if (spell.level === 0)
+        if (spell.level === 0) {
             return [0]; // Cantrips don't upcast with slots
+        }
         const levels = [];
         for (let level = spell.level; level <= 9; level++) {
             if (availableSlots[level] && availableSlots[level] > 0) {
@@ -241,9 +246,7 @@ export class SpellScalingEngine {
             }
             if (scaledEffect.additionalTargets) {
                 effectiveness += scaledEffect.additionalTargets * 2; // Additional targets are valuable
-                recommendation +=
-                    (recommendation ? ", " : "") +
-                        `+${scaledEffect.additionalTargets} target${scaledEffect.additionalTargets > 1 ? "s" : ""}`;
+                recommendation += `${recommendation ? ", " : ""}+${scaledEffect.additionalTargets} target${scaledEffect.additionalTargets > 1 ? "s" : ""}`;
             }
             if (scaledEffect.enhancedEffects && scaledEffect.enhancedEffects.length > 0) {
                 effectiveness += scaledEffect.enhancedEffects.length;

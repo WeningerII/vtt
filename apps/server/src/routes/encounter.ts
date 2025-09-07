@@ -21,7 +21,7 @@ function getServices() {
     prisma = new PrismaClient();
     characterService = new CharacterService();
     monsterService = new MonsterService(prisma);
-    actorService = new ActorIntegrationService(prisma, characterService, monsterService);
+    actorService = new ActorIntegrationService();
   }
   return {
     prisma,
@@ -38,23 +38,23 @@ function getServices() {
 export const createEncounterHandler: RouteHandler = async (ctx) => {
   try {
     const body = await parseJsonBody(ctx.req);
-    const { name, gameSessionId, characterIds = [], monsters = [] } = body;
+    const { name, campaignId, characterIds = [], monsters = [] } = body;
 
-    if (!name || !gameSessionId) {
+    if (!name || !campaignId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Name and gameSessionId are required" }));
+      ctx.res.end(JSON.stringify({ error: "Name and campaignId are required" }));
       return;
     }
 
     const { actorService } = getServices();
-    const encounter = await actorService.createEncounter(name, gameSessionId, characterIds, monsters);
+    const encounter = await actorService.createEncounter(name, campaignId, characterIds, monsters);
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, encounter }));
+    ctx.res.end(JSON.stringify(encounter));
   } catch (error: any) {
     logger.error("Failed to create encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to create encounter" }));
+    ctx.res.end(JSON.stringify({ error: "Failed to create encounter" }));
   }
 };
 
@@ -166,7 +166,7 @@ export const updateTokenHealthHandler: RouteHandler = async (ctx) => {
     }
 
     const { actorService } = getServices();
-    await actorService.updateTokenHealth(tokenId, { current, max, temporary });
+    await actorService.updateTokenHealth(tokenId, current);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
@@ -314,6 +314,154 @@ export const getAIDecisionHandler: RouteHandler = async (ctx) => {
     logger.error("Failed to get AI decision:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to get AI decision" }));
+  }
+};
+
+/**
+ * POST /encounters/:id/actors
+ * Add an actor (character or monster) to encounter
+ */
+export const addActorHandler: RouteHandler = async (ctx) => {
+  try {
+    const { params } = ctx;
+    const encounterId = params?.id;
+
+    if (!encounterId) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Encounter ID is required" }));
+      return;
+    }
+
+    const body = await parseJsonBody(ctx.req);
+    const { type, characterId, monsterId, name, initiative } = body;
+
+    if (!type || !["character", "monster"].includes(type)) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Actor type must be character or monster" }));
+      return;
+    }
+
+    if (typeof initiative !== "number") {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Initiative must be a number" }));
+      return;
+    }
+
+    const { actorService } = getServices();
+
+    if (type === "character") {
+      if (!characterId) {
+        ctx.res.writeHead(400, { "Content-Type": "application/json" });
+        ctx.res.end(JSON.stringify({ error: "Character ID is required for character actors" }));
+        return;
+      }
+      
+      const actor = await actorService.addCharacterToEncounter(encounterId, characterId, initiative);
+      ctx.res.writeHead(201, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify(actor));
+    } else if (type === "monster") {
+      if (!monsterId) {
+        ctx.res.writeHead(400, { "Content-Type": "application/json" });
+        ctx.res.end(JSON.stringify({ error: "Monster ID is required for monster actors" }));
+        return;
+      }
+      
+      const actor = await actorService.addMonsterToEncounter(encounterId, monsterId, name || "Monster", initiative);
+      ctx.res.writeHead(201, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify(actor));
+    }
+  } catch (error: any) {
+    logger.error("Failed to add actor to encounter:", error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: error.message || "Failed to add actor to encounter" }));
+  }
+};
+
+/**
+ * PUT /encounters/:id
+ * Update encounter details
+ */
+export const updateEncounterHandler: RouteHandler = async (ctx) => {
+  try {
+    const { params } = ctx;
+    const encounterId = params?.id;
+
+    if (!encounterId) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Encounter ID is required" }));
+      return;
+    }
+
+    const body = await parseJsonBody(ctx.req);
+    const { name, status, currentTurn, round } = body;
+
+    // Validate status if provided
+    if (status !== undefined && !["active", "inactive", "completed"].includes(status)) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Invalid encounter status" }));
+      return;
+    }
+
+    // Validate turn and round numbers
+    if ((currentTurn !== undefined && currentTurn < 0) || (round !== undefined && round < 1)) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Turn and round must be non-negative numbers" }));
+      return;
+    }
+
+    const { actorService } = getServices();
+    const updatedEncounter = await actorService.updateEncounter(encounterId, {
+      name,
+      status,
+      currentTurn,
+      round
+    });
+
+    if (!updatedEncounter) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Encounter not found" }));
+      return;
+    }
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify(updatedEncounter));
+  } catch (error: any) {
+    logger.error("Failed to update encounter:", error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: error.message || "Failed to update encounter" }));
+  }
+};
+
+/**
+ * DELETE /encounters/:id
+ * Delete an encounter
+ */
+export const deleteEncounterHandler: RouteHandler = async (ctx) => {
+  try {
+    const { params } = ctx;
+    const encounterId = params?.id;
+
+    if (!encounterId) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Encounter ID is required" }));
+      return;
+    }
+
+    const { actorService } = getServices();
+    const deleted = await actorService.deleteEncounter(encounterId);
+
+    if (!deleted) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Encounter not found" }));
+      return;
+    }
+
+    ctx.res.writeHead(204);
+    ctx.res.end();
+  } catch (error: any) {
+    logger.error("Failed to delete encounter:", error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: error.message || "Failed to delete encounter" }));
   }
 };
 

@@ -1,4 +1,4 @@
-import { _SparseSet, MultiSparseSet } from "./SparseSet";
+import { SparseSet, MultiSparseSet } from "./SparseSet";
 
 export interface ComponentChange {
   entityId: number;
@@ -29,7 +29,7 @@ export class ComponentManager {
   /**
    * Register a component type with optional initialization
    */
-  registerComponent<T>(_componentType: string, _initializer?: () => T): void {
+  registerComponent<T>(componentType: string, _initializer?: () => T): void {
     this.componentStorage.getSet<T>(componentType);
   }
 
@@ -210,7 +210,7 @@ export class ComponentManager {
   /**
    * Batch operations for better performance
    */
-  batch(_operations: (() => void)[]): void {
+  batch(operations: (() => void)[]): void {
     const startVersion = this.globalVersion;
 
     // Execute all operations without triggering individual updates

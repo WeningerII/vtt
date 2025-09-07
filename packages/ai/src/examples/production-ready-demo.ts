@@ -101,7 +101,7 @@ class ProductionMockProvider implements CompatibleAIProvider {
       `${npcName} performs their routine tasks while staying aware of their surroundings in ${location}.`
     ];
     
-    return descriptions[Math.floor(Math.random() * descriptions.length)];
+    return descriptions[Math.floor(Math.random() * descriptions.length)] || 'A mysterious location';
   }
 
   private generateDialogueOptions(prompt: string): string[] {
@@ -145,12 +145,12 @@ class ProductionMockProvider implements CompatibleAIProvider {
 
   private extractNPCName(prompt: string): string | null {
     const match = prompt.match(/npc\s+"([^"]+)"/i);
-    return match ? match[1] : null;
+    return match ? match[1] ?? null : null;
   }
 
   private extractLocation(prompt: string): string | null {
     const match = prompt.match(/location:\s*([^\n,]+)/i);
-    return match ? match[1].trim() : null;
+    return match ? match[1]?.trim() ?? null : null;
   }
 
   private extractThreatLevel(prompt: string): string {
@@ -161,7 +161,7 @@ class ProductionMockProvider implements CompatibleAIProvider {
 
   private extractPlayerAction(prompt: string): string | null {
     const match = prompt.match(/player action:\s*"([^"]+)"/i);
-    return match ? match[1] : null;
+    return match ? match[1] ?? null : null;
   }
 }
 

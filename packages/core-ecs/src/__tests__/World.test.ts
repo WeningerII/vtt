@@ -160,7 +160,7 @@ describe('World Interface Compatibility', () => {
       const startTime = performance.now();
       
       // Create 1000 entities
-      const entities = [];
+      const entities: number[] = [];
       for (let i = 0; i < 1000; i++) {
         entities.push(world.create());
       }

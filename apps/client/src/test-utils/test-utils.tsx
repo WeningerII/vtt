@@ -1,32 +1,7 @@
 import React, { ReactElement } from "react";
 import { render, RenderOptions } from "@testing-library/react";
-// Mock implementations for missing dependencies
-// import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// import { BrowserRouter } from "react-router-dom";
-
-// Mock QueryClient and Provider
-class MockQueryClient {
-  defaultOptions = {};
-  constructor(options?: any) {
-    this.defaultOptions = options || {};
-  }
-  
-  getQueryCache() {
-    return {
-      clear: () => {},
-      getAll: () => [],
-    };
-  }
-}
-
-const QueryClientProvider = ({ children, client }: { children: React.ReactNode; client: any }) => {
-  return <div data-testid="query-provider">{children}</div>;
-};
-
-// Mock BrowserRouter
-const BrowserRouter = ({ children }: { children: React.ReactNode }) => {
-  return <div data-testid="browser-router">{children}</div>;
-};
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
 import { setupMSW } from "./msw-setup";
 
 // Setup MSW for all tests
@@ -35,12 +10,12 @@ setupMSW();
 // Custom render function with providers
 interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
   initialEntries?: string[];
-  queryClient?: MockQueryClient;
+  queryClient?: QueryClient;
 }
 
 const AllTheProviders = ({
   children,
-  queryClient = new MockQueryClient({
+  queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
@@ -50,11 +25,11 @@ const AllTheProviders = ({
   }),
 }: {
   children: React.ReactNode;
-  queryClient?: MockQueryClient;
+  queryClient?: QueryClient;
 }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children}</BrowserRouter>
+      <BrowserRouter>{children as any}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -69,9 +44,9 @@ const customRender = (ui: ReactElement, options: CustomRenderOptions = {}): any 
   return render(ui, { wrapper: Wrapper, ...renderOptions });
 };
 
-// Helper to create a fresh MockQueryClient for tests
+// Helper to create a fresh QueryClient for tests
 export const createTestQueryClient = () =>
-  new MockQueryClient({
+  new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
@@ -85,8 +60,9 @@ export const createTestQueryClient = () =>
   });
 
 // Helper to wait for queries to settle
-export const waitForQueries = async (queryClient: MockQueryClient) => {
-  // Mock implementation - just resolve immediately since we're using mock queries
+export const waitForQueries = async (queryClient: QueryClient) => {
+  // Wait for all queries to be idle
+  await queryClient.isFetching();
   return Promise.resolve();
 };
 

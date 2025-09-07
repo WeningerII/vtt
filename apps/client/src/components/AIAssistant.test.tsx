@@ -1,23 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
-// Mock user-event since module is not available
-// import userEvent from '@testing-library/user-event';
-const userEvent = {
-  setup: () => ({
-    click: async (element: Element) => {
-      console.log('Mock click on', element);
-    },
-    type: async (element: Element, text: string) => {
-      console.log('Mock type on', element, 'text:', text);
-    }
-  }),
-  click: async (element: Element) => {
-    console.log('Mock click on', element);
-  },
-  type: async (element: Element, text: string) => {
-    console.log('Mock type on', element, 'text:', text);
-  }
-};
+import userEvent from "@testing-library/user-event";
 import { AIAssistant } from "./AIAssistant";
 import "@testing-library/jest-dom";
 
@@ -87,8 +70,8 @@ describe("AIAssistant", () => {
       const input = screen.getByPlaceholderText(/ask me anything/i);
       const sendButton = screen.getByRole("button", { name: /send/i });
 
-      await userEvent.type(input, "Test query");
-      await userEvent.click(sendButton);
+      fireEvent.change(input, { target: { value: "Test query" } });
+      fireEvent.click(sendButton);
 
       expect(screen.getByTestId("loading-indicator")).toBeInTheDocument();
 
@@ -103,7 +86,7 @@ describe("AIAssistant", () => {
       render(<AIAssistant />);
       const input = screen.getByPlaceholderText(/ask me anything/i) as HTMLInputElement;
 
-      await userEvent.type(input, "What are the rules for grappling?");
+      fireEvent.change(input, { target: { value: "What are the rules for grappling?" } });
       expect(input.value).toBe("What are the rules for grappling?");
     });
 
@@ -120,8 +103,8 @@ describe("AIAssistant", () => {
       const input = screen.getByPlaceholderText(/ask me anything/i);
       const sendButton = screen.getByRole("button", { name: /send/i });
 
-      await userEvent.type(input, "Explain grappling");
-      await userEvent.click(sendButton);
+      fireEvent.change(input, { target: { value: "Explain grappling" } });
+      fireEvent.click(sendButton);
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith("/api/assistant/query", {
@@ -141,7 +124,8 @@ describe("AIAssistant", () => {
       render(<AIAssistant />);
       const input = screen.getByPlaceholderText(/ask me anything/i);
 
-      await userEvent.type(input, "Test query{Enter}");
+      fireEvent.change(input, { target: { value: "Test query" } });
+      fireEvent.keyPress(input, { key: "Enter", code: "Enter", charCode: 13 });
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -157,7 +141,7 @@ describe("AIAssistant", () => {
       render(<AIAssistant />);
       const npcButton = screen.getByRole("button", { name: /generate NPC/i });
 
-      await userEvent.click(npcButton);
+      fireEvent.click(npcButton);
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith("/api/assistant/query", {
@@ -177,10 +161,10 @@ describe("AIAssistant", () => {
       render(<AIAssistant />);
       const input = screen.getByPlaceholderText(/ask me anything/i) as HTMLInputElement;
 
-      await userEvent.type(input, "Test query");
+      fireEvent.change(input, { target: { value: "Test query" } });
       expect(input.value).toBe("Test query");
 
-      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+      fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
       await waitFor(() => {
         expect(input.value).toBe("");
@@ -205,8 +189,8 @@ describe("AIAssistant", () => {
       const sendButton = screen.getByRole("button", { name: /send/i });
 
       // First message
-      await userEvent.type(input, "First query");
-      await userEvent.click(sendButton);
+      fireEvent.change(input, { target: { value: "First query" } });
+      fireEvent.click(sendButton);
 
       await waitFor(() => {
         expect(screen.getByText("First query")).toBeInTheDocument();
@@ -214,8 +198,8 @@ describe("AIAssistant", () => {
       });
 
       // Second message
-      await userEvent.type(input, "Second query");
-      await userEvent.click(sendButton);
+      fireEvent.change(input, { target: { value: "Second query" } });
+      fireEvent.click(sendButton);
 
       await waitFor(() => {
         expect(screen.getByText("Second query")).toBeInTheDocument();
@@ -239,8 +223,9 @@ describe("AIAssistant", () => {
 
       render(<AIAssistant />);
 
-      await userEvent.type(screen.getByPlaceholderText(/ask me anything/i), "Test");
-      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+      const testInput = screen.getByPlaceholderText(/ask me anything/i);
+      fireEvent.change(testInput, { target: { value: "Test" } });
+      fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/gpt-4/i)).toBeInTheDocument();
@@ -255,8 +240,8 @@ describe("AIAssistant", () => {
       render(<AIAssistant />);
       const input = screen.getByPlaceholderText(/ask me anything/i);
 
-      await userEvent.type(input, "Test query");
-      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+      fireEvent.change(input, { target: { value: "Test query" } });
+      fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -273,8 +258,9 @@ describe("AIAssistant", () => {
 
       render(<AIAssistant />);
 
-      await userEvent.type(screen.getByPlaceholderText(/ask me anything/i), "Test");
-      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+      const testInput = screen.getByPlaceholderText(/ask me anything/i);
+      fireEvent.change(testInput, { target: { value: "Test" } });
+      fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -286,8 +272,9 @@ describe("AIAssistant", () => {
 
       render(<AIAssistant />);
 
-      await userEvent.type(screen.getByPlaceholderText(/ask me anything/i), "Test");
-      await userEvent.click(screen.getByRole("button", { name: /send/i }));
+      const testInput = screen.getByPlaceholderText(/ask me anything/i);
+      fireEvent.change(testInput, { target: { value: "Test" } });
+      fireEvent.click(screen.getByRole("button", { name: /send/i }));
 
       await waitFor(() => {
         expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -323,7 +310,8 @@ describe("AIAssistant", () => {
       expect(document.activeElement).toBe(input);
 
       // Type and submit with Enter
-      await userEvent.type(input, "Test{Enter}");
+      fireEvent.change(input, { target: { value: "Test" } });
+      fireEvent.keyPress(input, { key: "Enter", code: "Enter", charCode: 13 });
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalled();

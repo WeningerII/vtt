@@ -537,7 +537,7 @@ export class CharacterService {
   }
 
   private getClassFeatures(characterClass: string, level: number): any[] {
-    const features = [];
+    const features: any[] = [];
 
     // Level 1 features for each class
     switch (characterClass.toLowerCase()) {

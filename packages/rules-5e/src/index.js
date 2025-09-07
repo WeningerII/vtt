@@ -139,8 +139,9 @@ export class CombatEngine extends EventEmitter {
         this.currentTurnIndex = 0;
     }
     nextTurn() {
-        if (!this.isActive)
+        if (!this.isActive) {
             return;
+        }
         this.currentTurnIndex++;
         if (this.currentTurnIndex >= this.turnOrder.length) {
             this.currentTurnIndex = 0;
@@ -148,8 +149,9 @@ export class CombatEngine extends EventEmitter {
         }
     }
     getCurrentCombatant() {
-        if (!this.isActive || this.turnOrder.length === 0)
+        if (!this.isActive || this.turnOrder.length === 0) {
             return null;
+        }
         const id = this.turnOrder[this.currentTurnIndex];
         return this.combatants.find((c) => c.id === id) || null;
     }

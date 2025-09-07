@@ -1,5 +1,4 @@
-import { EntityId } from "../components/Combat";
-import { CombatStore } from "../components/Combat";
+import { EntityId, CombatStore } from "../components/Combat";
 import { HealthStore } from "../components/Health";
 import { StatsStore } from "../components/Stats";
 import { LegendaryAction } from "../adapters/MonsterStatblockAdapter";
@@ -145,7 +144,7 @@ export class MonsterAISystem {
 
     // Return highest priority decision or wait
     const sortedDecisions = decisions.sort((a, b) => b.priority - a.priority);
-    const bestDecision =
+    const bestDecision: AIDecision =
       sortedDecisions.length > 0 ? sortedDecisions[0] : { entityId, action: "wait", priority: 0 };
 
     this.recordDecision(entityId, bestDecision);
@@ -186,7 +185,7 @@ export class MonsterAISystem {
     return {
       entityId,
       action: "legendary_action",
-      targetId,
+      targetId: targetId || 0, // Provide default value for required targetId
       legendaryActionName: preferredAction.name,
       priority: 7, // High priority for legendary actions
     };
@@ -221,7 +220,11 @@ export class MonsterAISystem {
 
   private findTargets(entityId: EntityId, allEntities: EntityId[]): EntityId[] {
     // Simple targeting: find all other entities (in real implementation, would filter by hostility)
-    return allEntities.filter((id) => id !== entityId && this.healthStore.get(id)?.current > 0);
+    return allEntities.filter((id) => {
+      if (id === entityId) {return false;}
+      const health = this.healthStore.get(id);
+      return health !== undefined && health !== null && health.current > 0;
+    });
   }
 
   private evaluateAttack(

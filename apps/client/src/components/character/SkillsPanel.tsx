@@ -70,7 +70,8 @@ export const SkillsPanel = memo(({
     if (!skillData) {return 0;}
 
     const abilityScore = character.abilities[skillData.ability as keyof Character["abilities"]];
-    const baseModifier = getModifier(abilityScore);
+    if (!abilityScore) return 0;
+    const baseModifier = getModifier(abilityScore.value);
     const skill = character.skills[skillName];
 
     if (!skill) {return baseModifier;}
@@ -87,29 +88,43 @@ export const SkillsPanel = memo(({
   };
 
   const toggleSkillProficiency = (skillName: string) => {
+    const skillData = SKILLS_DATA[skillName as keyof typeof SKILLS_DATA];
     const currentSkill = character.skills[skillName] || {
+      name: skillName,
+      ability: skillData?.ability || "strength",
       proficient: false,
-      expertise: false,
       value: 0,
+      modifier: 0,
     };
+    const updatedSkill = {
+      ...currentSkill,
+      proficient: !currentSkill.proficient,
+      value: getSkillModifier(skillName),
+    };
+    
+    // Only include expertise if removing proficiency and it was previously set
+    if (!currentSkill.proficient && currentSkill.expertise) {
+      // Remove expertise when removing proficiency - don't set undefined explicitly
+    } else if (currentSkill.expertise !== undefined) {
+      updatedSkill.expertise = currentSkill.expertise;
+    }
+
     const newSkills = {
       ...character.skills,
-      [skillName]: {
-        ...currentSkill,
-        proficient: !currentSkill.proficient,
-        expertise: currentSkill.proficient ? false : currentSkill.expertise, // Remove expertise if removing proficiency
-        value: getSkillModifier(skillName),
-      },
+      [skillName]: updatedSkill,
     };
 
     onUpdate({ skills: newSkills });
   };
 
   const toggleSkillExpertise = (skillName: string) => {
+    const skillData = SKILLS_DATA[skillName as keyof typeof SKILLS_DATA];
     const currentSkill = character.skills[skillName] || {
+      name: skillName,
+      ability: skillData?.ability || "strength",
       proficient: false,
-      expertise: false,
       value: 0,
+      modifier: 0,
     };
     if (!currentSkill.proficient) {return;} // Can't have expertise without proficiency
 

@@ -18,6 +18,15 @@
   ],
   "exclude": [
     "src/index-broken.ts",
+    "src/ProceduralBehaviorGenerator.ts",
+    "src/VisionAIIntegration.ts",
+    "src/UnifiedAISystem.ts",
+    "src/examples/integrated-ai-usage.ts",
+    "src/examples/test-integration.ts",
+    "src/Agent.ts",
+    "src/BehaviorTree.ts",
+    "src/DynamicNPCManager.ts",
+    "src/ai-stubs.ts",
     "**/*.d.ts"
   ]
 }

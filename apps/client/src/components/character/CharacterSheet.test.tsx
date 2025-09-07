@@ -3,22 +3,28 @@ import { CharacterSheet } from "./CharacterSheet";
 import "@testing-library/jest-dom";
 
 describe("CharacterSheet", () => {
+  const mockCharacterId = "test-character-id";
+  const mockProps = {
+    characterId: mockCharacterId,
+    onCharacterUpdate: jest.fn(),
+  };
+
   it("renders without crashing", () => {
-    render(<CharacterSheet />);
+    render(<CharacterSheet {...mockProps} />);
   });
 
   it("displays correct content", () => {
-    render(<CharacterSheet />);
+    render(<CharacterSheet {...mockProps} />);
     // Add specific content assertions based on component
   });
 
   it("handles user interactions", async () => {
-    render(<CharacterSheet />);
+    render(<CharacterSheet {...mockProps} />);
     // Add interaction tests
   });
 
   it("updates state correctly", async () => {
-    render(<CharacterSheet />);
+    render(<CharacterSheet {...mockProps} />);
     // Add state update tests
   });
 

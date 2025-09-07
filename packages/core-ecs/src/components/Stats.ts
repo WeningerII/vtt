@@ -19,6 +19,13 @@ export interface StatsData {
   speed: number;
   level: number;
   hitDie: string;
+  // D&D 5e ability score format for compatibility
+  STR?: { value: number; modifier: number };
+  DEX?: { value: number; modifier: number };
+  CON?: { value: number; modifier: number };
+  INT?: { value: number; modifier: number };
+  WIS?: { value: number; modifier: number };
+  CHA?: { value: number; modifier: number };
 }
 
 export class StatsStore {
@@ -197,7 +204,7 @@ export class StatsStore {
     return Array.from(this.entities.slice(0, this.count));
   }
 
-  forEach(_callback: (entity: number, _stats: StatsData) => void): void {
+  forEach(callback: (entity: number, stats: StatsData) => void): void {
     for (let i = 0; i < this.count; i++) {
       const entity = this.entities[i];
       if (entity !== undefined) {

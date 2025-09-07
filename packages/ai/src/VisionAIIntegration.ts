@@ -1,11 +1,12 @@
 import { EventEmitter } from 'events';
-import { VisionStore, VisionData, EntityId } from '@vtt/core-ecs/components/Vision';
+import { VisionStore, VisionData, EntityId } from '@vtt/core-ecs';
 import { AIProvider } from './types';
-import { CacheManager } from '@vtt/performance/CacheManager';
+import { CacheManager, CacheConfig } from '@vtt/performance';
 import { logger } from '@vtt/logging';
 
 export interface TokenAnalysis {
   entityId: EntityId;
+  entities: EntityId[];
   description: string;
   detectedFeatures: string[];
   threatLevel: 'none' | 'low' | 'medium' | 'high' | 'extreme';
@@ -37,7 +38,7 @@ export interface MapAnalysis {
 
 export interface VisionEvent {
   observerId: EntityId;
-  targetId?: EntityId;
+  targetId: EntityId;
   eventType: 'spotted' | 'lost_sight' | 'analyzed' | 'threat_detected';
   timestamp: number;
   analysis?: TokenAnalysis;
@@ -63,6 +64,7 @@ export class VisionAIIntegration extends EventEmitter {
   private tokenAnalysisCache = new Map<string, TokenAnalysis>();
   private mapAnalysisCache = new Map<string, MapAnalysis>();
   private visionEventHistory: VisionEvent[] = [];
+  // Implementation moved from abstract declaration
   private analysisTimer?: NodeJS.Timeout;
   private pendingAnalysis = new Set<string>();
 
@@ -106,7 +108,7 @@ export class VisionAIIntegration extends EventEmitter {
 
       const prompt = this.buildTokenAnalysisPrompt(context);
       
-      if (!this.config.aiProvider) {return null;}
+      if (!this.config.aiProvider?.analyzeImage) {return null;}
 
       const response = await this.config.aiProvider.analyzeImage({
         image: imageData as any, // Type assertion for compatibility
@@ -170,7 +172,7 @@ export class VisionAIIntegration extends EventEmitter {
 
       const prompt = this.buildMapAnalysisPrompt(context);
       
-      if (!this.config.aiProvider) {return null;}
+      if (!this.config.aiProvider?.analyzeImage) {return null;}
 
       const response = await this.config.aiProvider.analyzeImage({
         image: imageData as any, // Type assertion for compatibility
@@ -255,7 +257,7 @@ export class VisionAIIntegration extends EventEmitter {
           targetId: entity.id,
           eventType: 'spotted',
           timestamp: Date.now(),
-          analysis: analysis || undefined,
+          ...(analysis && { analysis }),
           confidence: this.calculateDetectionConfidence(observer, entity.distance, entity.lightLevel)
         };
 
@@ -341,7 +343,7 @@ ${visibleAnalyses.map(a => `- ${a.species} at distance ${a.confidence}, threat l
 
 Generate a 2-3 sentence description of what the character observes, focusing on the most important or threatening elements first.`;
 
-      if (!this.config.aiProvider) {return 'Unable to generate vision description';}
+      if (!this.config.aiProvider?.generateText) {return 'Unable to generate vision description';}
 
       const response = await this.config.aiProvider.generateText({
         prompt,
@@ -438,6 +440,7 @@ Return analysis in JSON format:
       const parsed = JSON.parse(response);
       return {
         entityId,
+        entities: [entityId],
         description: `${parsed.species} displaying ${parsed.emotions?.join(', ') || 'neutral emotions'}`,
         detectedFeatures: parsed.detectedFeatures || [],
         threatLevel: parsed.threatLevel || 'none',
@@ -543,7 +546,7 @@ Return analysis in JSON format:
   private generateBasicVisionDescription(observer: VisionData): string {
     if (observer.isBlinded) {return "You are blinded and cannot see anything.";}
     
-    const capabilities = [];
+    const capabilities: string[] = [];
     if (observer.darkvisionRange > 0) {capabilities.push(`darkvision (${observer.darkvisionRange} units)`);}
     if (observer.truesightRange > 0) {capabilities.push(`truesight (${observer.truesightRange} units)`);}
     if (observer.blindsightRange > 0) {capabilities.push(`blindsight (${observer.blindsightRange} units)`);}

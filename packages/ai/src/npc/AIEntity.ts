@@ -2,7 +2,63 @@
  * AI-driven NPC entity that integrates with the ECS system
  */
 
-import { AIBehaviorEngine, NPCPersonality, NPCGoal, BehaviorTreeNode } from "../index";
+// Proper NPC personality interface
+export interface NPCPersonality {
+  id: string;
+  name: string;
+  aggression: number; // 0-1
+  intelligence: number; // 0-1
+  caution: number; // 0-1
+  traits: {
+    curiosity: number;
+    loyalty: number;
+    courage: number;
+    empathy: number;
+  };
+  motivations: string[];
+  fears: string[];
+  goals: NPCGoal[];
+  relationships: Map<string, number>; // entityId -> relationship value (-1 to 1)
+  combatStyle?: 'aggressive' | 'defensive' | 'tactical' | 'supportive';
+}
+
+export interface NPCGoal {
+  id: string;
+  type: string;
+  priority: number;
+  target?: string;
+  isComplete?: boolean;
+  isActive?: boolean;
+  conditions?: any;
+}
+
+export interface BehaviorTreeNode {
+  type: 'sequence' | 'selector' | 'action' | 'condition';
+  children?: BehaviorTreeNode[];
+  action?: () => boolean;
+  condition?: () => boolean;
+}
+
+// Stub for missing AIBehaviorEngine
+class AIBehaviorEngine {
+  evaluateBehavior(tree: BehaviorTreeNode | undefined, state: GameStateSnapshot): AIAction {
+    // Basic fallback behavior
+    if (state.isUnderThreat && state.healthPercentage < 0.3) {
+      return { type: 'defend', priority: 10 };
+    }
+    if (state.nearbyEnemies.length > 0 && state.canAttack) {
+      const targetId = state.nearbyEnemies[0]?.id;
+      if (targetId) {
+        return { 
+          type: 'attack', 
+          targetId,
+          priority: 5 
+        };
+      }
+    }
+    return { type: 'move', priority: 1 };
+  }
+}
 import { logger } from "@vtt/logging";
 
 export interface AIAction {
@@ -38,6 +94,9 @@ export interface GameStateSnapshot {
   canMove: boolean;
   canAttack: boolean;
 }
+
+// Export NPCGoal with underscore prefix for backward compatibility
+export type { NPCGoal as _NPCGoal };
 
 export class AIEntity {
   private behaviorEngine = new AIBehaviorEngine();
@@ -76,11 +135,6 @@ export class AIEntity {
     if (now - this.state.lastThinkTime >= this.state.thinkInterval) {
       this.think(gameState);
       this.state.lastThinkTime = now;
-    }
-
-    // Execute current behavior tree
-    if (this.state.behaviorTree) {
-      this.state.behaviorTree.tick();
     }
   }
 

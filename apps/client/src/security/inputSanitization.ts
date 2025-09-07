@@ -3,21 +3,7 @@ import React from 'react';
  * Input sanitization and validation utilities for the VTT application
  */
 
-// DOMPurify module not available, using mock implementation
-// import DOMPurify from "dompurify";
-
-// Mock DOMPurify for compilation
-const DOMPurify = {
-  sanitize: (input: string, config?: any): string => {
-    // Basic sanitization - remove script tags and event handlers
-    return input
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/on\w+="[^"]*"/gi, '')
-      .replace(/on\w+='[^']*'/gi, '')
-      .replace(/javascript:/gi, '');
-  },
-  isSupported: true,
-};
+import DOMPurify from "dompurify";
 
 // Input validation patterns
 const VALIDATION_PATTERNS = {
