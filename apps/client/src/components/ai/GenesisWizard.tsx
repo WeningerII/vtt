@@ -122,7 +122,7 @@ export const GenesisWizard: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch("/api/genesis/generate", {
+      const response = await fetch("/api/v1/genesis/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

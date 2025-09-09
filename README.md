@@ -116,7 +116,7 @@ pnpm run dev
 
 5. **Access the application**
 - **Client**: http://localhost:3000
-- **API**: http://localhost:3001
+- **API**: http://localhost:8080
 - **MinIO Console**: http://localhost:9090
 
 ### **Available Scripts**
@@ -274,7 +274,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 Comprehensive API documentation is available at:
 
-- **Development**: http://localhost:3001/api/docs
+- **Development**: http://localhost:8080/docs
 - **Production**: https://api.vtt.platform.com/docs
 
 Key API endpoints:

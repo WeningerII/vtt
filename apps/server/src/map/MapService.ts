@@ -20,22 +20,21 @@ import {
 import { PrismaClient } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { GameEventBridge } from "../integration/GameEventBridge";
-// Re-enabling spell engine imports after successful build
-// import { SpellEngine } from '@vtt/spell-engine'; // Temporarily disabled for e2e tests
-// import { DiceEngine } from '@vtt/dice-engine'; // Temporarily disabled for e2e tests
-// import { ConditionsEngine } from '@vtt/conditions-engine'; // Temporarily disabled for e2e tests
+import { SpellEngine } from '@vtt/spell-engine';
+import { DiceEngine } from '@vtt/dice-engine';
+import { ConditionsEngine } from '@vtt/conditions-engine';
 import { WebSocketManager } from "../websocket/WebSocketManager";
-// import { PhysicsWorld, RigidBody } from '@vtt/physics'; // Temporarily disabled for e2e tests
+import { PhysicsWorld, RigidBody } from '@vtt/physics';
 
 export class MapService {
   private scenes = new Map<string, MapScene>();
   private combatGrids = new Map<string, CombatGrid>();
   private measurements = new Map<string, MeasurementTool>();
   private eventBridge?: GameEventBridge;
-  private physicsWorld: any; // Stubbed for build compatibility
-  private spellEngine: any; // Stubbed for build compatibility
-  private diceEngine: any; // Stubbed for build compatibility
-  private conditionsEngine: any; // Stubbed for build compatibility
+  private physicsWorld: PhysicsWorld;
+  private spellEngine: SpellEngine;
+  private diceEngine: DiceEngine;
+  private conditionsEngine: ConditionsEngine;
   private activeSpellEffects = new Map<string, any>();
   private spellProjectiles = new Map<string, any>();
   private spatialIndex = new Map<string, Map<string, Set<string>>>();
@@ -47,21 +46,16 @@ export class MapService {
     private prisma: PrismaClient,
     private webSocketManager?: WebSocketManager,
   ) {
-    // Initialize stubbed physics world for build compatibility
-    this.physicsWorld = {
-      addBody: () => ({ id: Math.random() }),
-      removeBody: () => true,
-      updateBody: () => true,
-      checkCollisions: () => [],
-      step: () => {},
-    }; // Temporarily disabled for e2e tests
+    // Initialize physics world
+    this.physicsWorld = new PhysicsWorld();
 
     // Initialize spell engines
-    // this.spellEngine = new SpellEngine(); // Temporarily disabled
-    // this.diceEngine = new DiceEngine(); // Temporarily disabled for e2e tests
-    // this.conditionsEngine = new ConditionsEngine(); // Temporarily disabled for e2e tests
+    this.spellEngine = new SpellEngine();
+    this.diceEngine = new DiceEngine();
+    this.conditionsEngine = new ConditionsEngine();
 
     this.initializeSpatialIndexing();
+    this.setupPhysicsIntegration();
   }
 
   /**
@@ -501,21 +495,23 @@ export class MapService {
       const bodySize = Math.min(gridBounds.cellWidth, gridBounds.cellHeight) * 0.8;
       try {
         const numericId = this.generateNumericId(tokenId);
-        const rigidBody = {
-          id: numericId,
-          x: alignedPosition.x,
-          y: alignedPosition.y,
-          width: bodySize,
-          height: bodySize,
-          mass: 1,
-          friction: 0.8,
-          restitution: 0.3,
-          isStatic: false,
-          isTrigger: false,
-          layer: 1,
-          mask: 0xffffffff,
-        };
-        this.physicsWorld.addBody?.(rigidBody);
+        const rigidBody = new RigidBody(
+          numericId,
+          alignedPosition.x,
+          alignedPosition.y,
+          bodySize,
+          bodySize,
+          {
+            mass: 1,
+            friction: 0.8,
+            restitution: 0.3,
+            isStatic: false,
+            isTrigger: false,
+            layer: 1,
+            mask: 0xffffffff,
+          }
+        );
+        this.physicsWorld.addBody(rigidBody);
       } catch (error) {
         logger.warn(`Failed to create physics body for token: ${tokenId}`, error as Error);
       }
@@ -595,7 +591,7 @@ export class MapService {
       // Remove corresponding physics body
       try {
         const numericId = this.generateNumericId(tokenId);
-        this.physicsWorld.removeBody?.(numericId);
+        this.physicsWorld.removeBody(numericId);
       } catch (error) {
         logger.warn(`Failed to remove physics body for token: ${tokenId}`, error as Error);
       }
@@ -642,7 +638,8 @@ export class MapService {
         const numericId = this.generateNumericId(tokenId);
         const physicsBody = this.physicsWorld.getBody(numericId);
         if (physicsBody) {
-          this.physicsWorld.updateBody?.(numericId, alignedPosition.x, alignedPosition.y);
+          physicsBody.position.x = alignedPosition.x;
+          physicsBody.position.y = alignedPosition.y;
         }
       } catch (error) {
         logger.warn(`Failed to update physics body for token: ${tokenId}`, error as Error);
@@ -716,20 +713,15 @@ export class MapService {
    * Setup physics integration
    */
   private setupPhysicsIntegration(): void {
-    // Physics integration ready when spell engine packages are available
-    /*
-  this.physicsSpellBridge.on('spell_projectile_hit', (data) => {
-    this.handleSpellProjectileHit(data);
-  });
+    // Set up physics world event listeners
+    this.physicsWorld.on('collision', (data: any) => {
+      this.handleTokenCollision(data);
+    });
 
-  this.physicsSpellBridge.on('spell_effect_expired', (data) => {
-    this.handleSpellEffectExpired(data);
-  });
-
-  this.physicsSpellBridge.on('spell_area_entered', (data) => {
-    this.handleSpellAreaEffect(data);
-  });
-  */
+    // Start physics update loop
+    this.physicsUpdateInterval = setInterval(() => {
+      this.physicsWorld.update(1/60);
+    }, 1000/60);
   }
 
   /**
@@ -746,15 +738,9 @@ export class MapService {
     for (const token of tokens) {
       if (this.isTokenInSpellArea(token, center, radius, areaType)) {
         // Check line of sight using physics raycasting
-        const hasLineOfSight = this.physicsWorld.raycast(
-          center,
-          { x: token.x - center.x, y: token.y - center.y },
-          radius,
-        );
-
-        if (!hasLineOfSight.hit || (hasLineOfSight.distance && hasLineOfSight.distance >= radius)) {
-          targets.push(token.id);
-        }
+        // Check line of sight using physics detection
+        // Simplified for now - raycast API not available, assume line of sight
+        targets.push(token.id);
       }
     }
 
@@ -822,7 +808,8 @@ export class MapService {
       const numericId = this.generateNumericId(token.id);
       const physicsBody = this.physicsWorld.getBody(numericId);
       if (physicsBody) {
-        physicsBody.setPosition(alignedPosition.x, alignedPosition.y);
+        physicsBody.position.x = alignedPosition.x;
+        physicsBody.position.y = alignedPosition.y;
       }
 
       // Update token position if it was misaligned
@@ -847,7 +834,7 @@ export class MapService {
     // Clear existing physics bodies for this scene
     scene.tokens.forEach((token) => {
       const numericId = this.generateNumericId(token.id);
-      this.physicsWorld.removeBody?.(numericId);
+      this.physicsWorld.removeBody(numericId);
     });
 
     // Add physics bodies for all tokens with proper grid alignment
@@ -857,21 +844,23 @@ export class MapService {
 
       try {
         const numericId = this.generateNumericId(token.id);
-        const rigidBody = {
-          id: numericId,
-          x: alignedPosition.x,
-          y: alignedPosition.y,
-          width: bodySize,
-          height: bodySize,
-          mass: 1,
-          friction: 0.8,
-          restitution: 0.3,
-          isStatic: false,
-          isTrigger: false,
-          layer: 1,
-          mask: 0xffffffff,
-        };
-        this.physicsWorld.addBody?.(rigidBody);
+        const rigidBody = new RigidBody(
+          numericId,
+          alignedPosition.x,
+          alignedPosition.y,
+          bodySize,
+          bodySize,
+          {
+            mass: 1,
+            friction: 0.8,
+            restitution: 0.3,
+            isStatic: false,
+            isTrigger: false,
+            layer: 1,
+            mask: 0xffffffff,
+          }
+        );
+        this.physicsWorld.addBody(rigidBody);
       } catch (error) {
         logger.warn(`Failed to create physics body for token: ${token.id}`, error as Error);
       }
@@ -893,7 +882,8 @@ export class MapService {
       const numericId = this.generateNumericId(token.id);
       const physicsBody = this.physicsWorld.getBody(numericId);
       if (physicsBody) {
-        physicsBody.setPosition(token.x, token.y);
+        physicsBody.position.x = token.x;
+        physicsBody.position.y = token.y;
       }
     }
   }
@@ -1807,29 +1797,32 @@ export class MapService {
         };
       }
 
-      const physicsBody = this.physicsWorld.createBody?.({
-        ...bodyConfig,
-        shape: bodyShape,
-      });
+      // Create physics body for spell effect
+      const numericId = this.generateNumericId(spellEffect.id);
+      const physicsBody = new RigidBody(
+        numericId,
+        position.x,
+        position.y,
+        size?.width || 50,
+        size?.height || 50,
+        bodyConfig
+      );
+      this.physicsWorld.addBody(physicsBody);
 
-      if (physicsBody) {
-        // Store mapping for cleanup
-        this.spellEffectPhysicsBodies.set(spellEffect.id, physicsBody.id);
+      // Store mapping for cleanup
+      this.spellEffectPhysicsBodies.set(spellEffect.id, numericId);
 
         // Emit physics body created event
-        this.emitMapUpdate(sceneId, {
-          type: "spell_effect_physics_created",
-          spellEffectId: spellEffect.id,
-          physicsBodyId: physicsBody.id,
-          position,
-          shape: bodyShape,
-          timestamp: Date.now(),
-        });
+      this.emitMapUpdate(sceneId, {
+        type: "spell_effect_physics_created",
+        spellEffectId: spellEffect.id,
+        physicsBodyId: numericId,
+        position,
+        shape: bodyShape,
+        timestamp: Date.now(),
+      });
 
-        return physicsBody.id;
-      }
-
-      return null;
+      return numericId;
     } catch (error) {
       logger.error("Failed to create spell effect physics body:", error as Error);
       return null;
@@ -1852,22 +1845,14 @@ export class MapService {
       if (!physicsBody) {return false;}
 
       if (position) {
-        physicsBody.setPosition(position.x, position.y);
+        physicsBody.position.x = position.x;
+        physicsBody.position.y = position.y;
       }
 
-      // Update shape if size changed (would need physics engine support)
-      if (size && physicsBody.updateShape) {
-        let newShape;
-        if (size.radius) {
-          newShape = { type: "circle", radius: size.radius };
-        } else {
-          newShape = {
-            type: "rectangle",
-            width: size.width || 50,
-            height: size.height || 50,
-          };
-        }
-        physicsBody.updateShape(newShape);
+      // Update size if changed
+      if (size) {
+        if (size.width !== undefined) physicsBody.width = size.width;
+        if (size.height !== undefined) physicsBody.height = size.height;
       }
 
       return true;
@@ -1886,11 +1871,9 @@ export class MapService {
       if (!physicsBodyId) {return false;}
 
       const removed = this.physicsWorld.removeBody(physicsBodyId);
-      if (removed) {
-        this.spellEffectPhysicsBodies.delete(spellEffectId);
-      }
-
-      return removed;
+      this.spellEffectPhysicsBodies.delete(spellEffectId);
+      
+      return removed !== null;
     } catch (error) {
       logger.error("Failed to remove spell effect physics body:", error as Error);
       return false;
@@ -1929,13 +1912,19 @@ export class MapService {
           const spellBody = this.physicsWorld.getBody(spellBodyId);
           if (!spellBody) {continue;}
 
-          // Check if bodies are overlapping (sensor collision)
-          const collision = this.physicsWorld.checkCollision(tokenPhysicsBody, spellBody);
-          if (collision) {
+          // Check if bodies are overlapping using AABB
+          const tokenAABB = tokenPhysicsBody.getAABB();
+          const spellAABB = spellBody.getAABB();
+          const overlapping = tokenAABB.minX < spellAABB.maxX && 
+                            tokenAABB.maxX > spellAABB.minX &&
+                            tokenAABB.minY < spellAABB.maxY && 
+                            tokenAABB.maxY > spellAABB.minY;
+          
+          if (overlapping) {
             collisions.push({
               tokenId: token.id,
               spellEffectId,
-              collision,
+              collision: true,
             });
           }
         }
@@ -2123,7 +2112,7 @@ export class MapService {
       }
 
       // Step physics simulation
-      this.physicsWorld.step(deltaTime);
+      this.physicsWorld.update(deltaTime);
 
       // Check for collisions after physics step
       const collisions = await this.checkTokenSpellCollisions("current"); // Would need current scene ID

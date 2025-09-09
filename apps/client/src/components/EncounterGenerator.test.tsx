@@ -4,19 +4,19 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 // import userEvent from '@testing-library/user-event';
 const userEvent = {
   setup: () => ({
-    click: async (element: Element) => { console.log('Mock click on', element); },
-    type: async (element: Element, text: string) => { console.log('Mock type on', element, 'text:', text); },
-    clear: async (element: Element) => { console.log('Mock clear element:', element); },
-    tab: async () => { console.log('Mock tab navigation'); },
-    keyboard: async (keys: string) => { console.log('Mock keyboard:', keys); },
-    selectOptions: async (element: Element, values: string[]) => { console.log('Mock select options:', element, values); }
+    click: async (_element: Element) => { /* Mock click */ },
+    type: async (_element: Element, _text: string) => { /* Mock type */ },
+    clear: async (_element: Element) => { /* Mock clear */ },
+    tab: async () => { /* Mock tab */ },
+    keyboard: async (_keys: string) => { /* Mock keyboard */ },
+    selectOptions: async (_element: Element, _values: string[]) => { /* Mock select */ }
   }),
-  click: async (element: Element) => { console.log('Mock click on', element); },
-  type: async (element: Element, text: string) => { console.log('Mock type on', element, 'text:', text); },
-  clear: async (element: Element) => { console.log('Mock clear element:', element); },
-  tab: async () => { console.log('Mock tab navigation'); },
-  keyboard: async (keys: string) => { console.log('Mock keyboard:', keys); },
-  selectOptions: async (element: Element, values: string[]) => { console.log('Mock select options:', element, values); }
+  click: async (_element: Element) => { /* Mock click */ },
+  type: async (_element: Element, _text: string) => { /* Mock type */ },
+  clear: async (_element: Element) => { /* Mock clear */ },
+  tab: async () => { /* Mock tab */ },
+  keyboard: async (_keys: string) => { /* Mock keyboard */ },
+  selectOptions: async (_element: Element, _values: string[]) => { /* Mock select */ }
 };
 import { EncounterGenerator } from "./EncounterGenerator";
 import "@testing-library/jest-dom";

@@ -72,7 +72,7 @@ export const EncounterGenerator: React.FC<EncounterGeneratorProps> = ({
     setError(null);
 
     try {
-      const response = await fetch("/api/content/encounter", {
+      const response = await fetch("/api/v1/content/encounter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

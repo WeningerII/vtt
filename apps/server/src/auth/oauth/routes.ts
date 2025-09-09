@@ -23,7 +23,7 @@ export function createOAuthRoutes(userManager: UserManager): Router {
   const googleProvider = new GoogleOAuthProvider({
     clientId: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    redirectUri: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3001/auth/google/callback'
+    redirectUri: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:8080/auth/google/callback'
   }, userManager, stateManager);
 
   const discordProvider = new DiscordOAuthProvider({

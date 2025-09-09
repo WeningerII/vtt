@@ -3,7 +3,8 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-// import { OpenAIProvider, AnthropicProvider } from "@vtt/ai"; // Temporarily disabled due to build issues
+// AI providers temporarily disabled - using fallback implementation
+// import { LegacyOpenAIProvider as OpenAIProvider, LegacyAnthropicProvider as AnthropicProvider } from "@vtt/ai";
 
 export interface AssistantQuery {
   question: string;
@@ -33,22 +34,72 @@ export function createAssistantService(prisma: PrismaClient) {
   const openaiKey = process.env.OPENAI_API_KEY;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
-  // let openaiProvider: OpenAIProvider | null = null;
-  // let anthropicProvider: AnthropicProvider | null = null;
+  // AI providers disabled for build compatibility
+  const openaiProvider: any = null;
+  const anthropicProvider: any = null;
 
+  // Providers would be initialized here when AI package is available
   // if (openaiKey && openaiKey.trim().length > 0) {
   //   openaiProvider = new OpenAIProvider({ apiKey: openaiKey });
   // }
-
   // if (anthropicKey && anthropicKey.trim().length > 0) {
   //   anthropicProvider = new AnthropicProvider({ apiKey: anthropicKey });
   // }
 
   async function askQuestion(query: AssistantQuery): Promise<AssistantResponse> {
-    // Fallback implementation using rule-based responses
     const startTime = Date.now();
     
     try {
+      // Try AI providers first if available
+      if (anthropicProvider) {
+        const response = await anthropicProvider.complete({
+          messages: [
+            { role: 'system', content: 'You are a helpful D&D 5e assistant. Provide accurate rule information and game guidance.' },
+            { role: 'user', content: query.question }
+          ],
+          model: 'claude-3-haiku-20240307',
+          maxTokens: 500
+        });
+        
+        return {
+          answer: response.content,
+          sources: ["Anthropic Claude", "D&D 5e Knowledge Base"],
+          confidence: 0.9,
+          metadata: {
+            provider: "anthropic",
+            model: "claude-3-haiku",
+            costUSD: response.cost || 0,
+            latencyMs: Date.now() - startTime,
+            respondedAt: new Date()
+          }
+        };
+      }
+      
+      if (openaiProvider) {
+        const response = await openaiProvider.complete({
+          messages: [
+            { role: 'system', content: 'You are a helpful D&D 5e assistant. Provide accurate rule information and game guidance.' },
+            { role: 'user', content: query.question }
+          ],
+          model: 'gpt-3.5-turbo',
+          maxTokens: 500
+        });
+        
+        return {
+          answer: response.content,
+          sources: ["OpenAI GPT-3.5", "D&D 5e Knowledge Base"],
+          confidence: 0.85,
+          metadata: {
+            provider: "openai",
+            model: "gpt-3.5-turbo",
+            costUSD: response.cost || 0,
+            latencyMs: Date.now() - startTime,
+            respondedAt: new Date()
+          }
+        };
+      }
+      
+      // Fallback to rule-based if no AI providers
       const answer = generateRuleBasedAnswer(query);
       
       return {

@@ -51,10 +51,14 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -121,10 +125,14 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
   }, [scene, tokens, canvasWidth, canvasHeight, socket, onTokenMove]);
 
   const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (readOnly || isDragging) return;
+    if (readOnly || isDragging) {
+      return;
+    }
     
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;

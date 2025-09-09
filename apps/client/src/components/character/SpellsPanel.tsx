@@ -233,6 +233,7 @@ export const SpellsPanel = memo(({
   };
 
   const spells = character.spellcasting?.spells || [];
+  const maxSpellLevel = character.level ? Math.ceil(character.level / 2) : 9; // Calculate max spell level based on character level
 
   const filteredSpells = spells.filter((spell) => {
     if (searchTerm && !spell.name.toLowerCase().includes(searchTerm.toLowerCase())) {
@@ -513,6 +514,9 @@ export const SpellsPanel = memo(({
       <div className="space-y-4">
         {SPELL_LEVELS.map(({ value: level, label }) => {
           const levelSpells = spellsByLevel[level] || [];
+          if (level > maxSpellLevel) {
+            return null;
+          }
           if (levelSpells.length === 0) {return null;}
 
           return (

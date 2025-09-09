@@ -3,8 +3,7 @@
  */
 
 import { RouteHandler } from "../router/types";
-// import SRDMonsters from "@vtt/content-5e-srd";
-// import { MonsterService } from "../services/MonsterService";
+import { MonsterService } from "../services/MonsterService";
 import {
   handleRouteError,
   validateRequired,
@@ -15,12 +14,15 @@ import {
 
 export const seedSRDMonstersHandler: RouteHandler = async (ctx) => {
   try {
-    // Temporarily disabled - MonsterService import commented out
-    // const monsterService = new MonsterService(ctx.prisma);
-    // const result = await monsterService.seedSRDMonsters();
+    const monsterService = new MonsterService(ctx.prisma);
+    const result = await monsterService.seedSRDMonsters();
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, message: "Monster seeding temporarily disabled" }));
+    ctx.res.end(JSON.stringify({ 
+      success: true, 
+      message: `Successfully seeded SRD monsters`,
+      ...result 
+    }));
   } catch (error: any) {
     handleRouteError(ctx, error);
   }
@@ -28,17 +30,16 @@ export const seedSRDMonstersHandler: RouteHandler = async (ctx) => {
 
 export const listMonstersHandler: RouteHandler = async (ctx) => {
   try {
-    // Temporarily disabled - MonsterService import commented out
-    // const monsterService = new MonsterService(ctx.prisma);
+    const monsterService = new MonsterService(ctx.prisma);
     const query = ctx.url.searchParams.get("q") || undefined;
     const tags = ctx.url.searchParams.get("tags")?.split(",").filter(Boolean) || undefined;
     const limit = parseInt(ctx.url.searchParams.get("limit") || "50");
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
 
-    // const result = await monsterService.searchMonsters({ query, tags, limit, offset });
+    const result = await monsterService.searchMonsters({ query, tags, limit, offset });
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ message: "Monster search temporarily disabled" }));
+    ctx.res.end(JSON.stringify(result));
   } catch (error: any) {
     handleRouteError(ctx, error);
   }
@@ -51,15 +52,15 @@ export const getMonsterHandler: RouteHandler = async (ctx) => {
       throw new NotFoundError("Monster", "missing id");
     }
 
-    // const monsterService = new MonsterService(ctx.prisma);
-    // const monster = await monsterService.getMonster(idOrStableId);
+    const monsterService = new MonsterService(ctx.prisma);
+    const monster = await monsterService.getMonster(idOrStableId);
 
-    // if (!monster) {
-    //   throw new NotFoundError("Monster", idOrStableId);
-    // }
+    if (!monster) {
+      throw new NotFoundError("Monster", idOrStableId);
+    }
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ message: "Monster get temporarily disabled" }));
+    ctx.res.end(JSON.stringify(monster));
   } catch (error: any) {
     handleRouteError(ctx, error);
   }
@@ -79,16 +80,16 @@ export const createMonsterHandler: RouteHandler = async (ctx) => {
           {validateString(data.stableId, "stableId", { minLength: 1, maxLength: 100 });}
         if (data.tags) {validateArray(data.tags, "tags", { maxLength: 50 });}
 
-        // const monsterService = new MonsterService(ctx.prisma);
-        // const monster = await monsterService.createMonster({
-        //   name: data.name,
-        //   stableId: data.stableId,
-        //   statblock: data.statblock,
-        //   tags: data.tags,
-        // });
+        const monsterService = new MonsterService(ctx.prisma);
+        const monster = await monsterService.createMonster({
+          name: data.name,
+          stableId: data.stableId,
+          statblock: data.statblock,
+          tags: data.tags,
+        });
 
         ctx.res.writeHead(201, { "Content-Type": "application/json" });
-        ctx.res.end(JSON.stringify({ message: "Monster creation temporarily disabled" }));
+        ctx.res.end(JSON.stringify(monster));
       } catch (error: any) {
         handleRouteError(ctx, error);
       }
@@ -114,15 +115,15 @@ export const updateMonsterHandler: RouteHandler = async (ctx) => {
         if (data.name) {validateString(data.name, "name", { minLength: 1, maxLength: 200 });}
         if (data.tags) {validateArray(data.tags, "tags", { maxLength: 50 });}
 
-        // const monsterService = new MonsterService(ctx.prisma);
-        // const monster = await monsterService.updateMonster(idOrStableId, {
-        //   name: data.name,
-        //   statblock: data.statblock,
-        //   tags: data.tags,
-        // });
+        const monsterService = new MonsterService(ctx.prisma);
+        const monster = await monsterService.updateMonster(idOrStableId, {
+          name: data.name,
+          statblock: data.statblock,
+          tags: data.tags,
+        });
 
         ctx.res.writeHead(200, { "Content-Type": "application/json" });
-        ctx.res.end(JSON.stringify({ message: "Monster update temporarily disabled" }));
+        ctx.res.end(JSON.stringify(monster));
       } catch (error: any) {
         handleRouteError(ctx, error);
       }
@@ -139,8 +140,8 @@ export const deleteMonsterHandler: RouteHandler = async (ctx) => {
       throw new NotFoundError("Monster", "missing id");
     }
 
-    // const monsterService = new MonsterService(ctx.prisma);
-    // await monsterService.deleteMonster(idOrStableId);
+    const monsterService = new MonsterService(ctx.prisma);
+    await monsterService.deleteMonster(idOrStableId);
 
     ctx.res.writeHead(204);
     ctx.res.end();
@@ -151,11 +152,11 @@ export const deleteMonsterHandler: RouteHandler = async (ctx) => {
 
 export const getMonsterStatsHandler: RouteHandler = async (ctx) => {
   try {
-    // const monsterService = new MonsterService(ctx.prisma);
-    // const stats = await monsterService.getMonsterStats();
+    const monsterService = new MonsterService(ctx.prisma);
+    const stats = await monsterService.getMonsterStats();
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ message: "Monster stats temporarily disabled" }));
+    ctx.res.end(JSON.stringify(stats));
   } catch (error: any) {
     handleRouteError(ctx, error);
   }

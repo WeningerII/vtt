@@ -37,28 +37,28 @@ export class CampaignsApi {
    * Get all campaigns for the current user
    */
   static async getCampaigns(): Promise<ApiResponse<Campaign[]>> {
-    return apiRequest<Campaign[]>("/api/campaigns");
+    return apiRequest<Campaign[]>("/api/v1/campaigns");
   }
 
   /**
    * Get campaigns where user is game master
    */
   static async getCampaignsAsMaster(): Promise<ApiResponse<Campaign[]>> {
-    return apiRequest<Campaign[]>("/api/campaigns/as-master");
+    return apiRequest<Campaign[]>("/api/v1/campaigns/as-master");
   }
 
   /**
    * Get a specific campaign by ID
    */
   static async getCampaign(campaignId: string): Promise<ApiResponse<Campaign>> {
-    return apiRequest<Campaign>(`/api/campaigns/${campaignId}`);
+    return apiRequest<Campaign>(`/api/v1/campaigns/${campaignId}`);
   }
 
   /**
    * Create a new campaign
    */
   static async createCampaign(request: CreateCampaignRequest): Promise<ApiResponse<Campaign>> {
-    return apiRequest<Campaign>("/api/campaigns", {
+    return apiRequest<Campaign>("/api/v1/campaigns", {
       method: "POST",
       body: JSON.stringify(request),
     });
@@ -71,7 +71,7 @@ export class CampaignsApi {
     campaignId: string,
     request: UpdateCampaignRequest,
   ): Promise<ApiResponse<Campaign>> {
-    return apiRequest<Campaign>(`/api/campaigns/${campaignId}`, {
+    return apiRequest<Campaign>(`/api/v1/campaigns/${campaignId}`, {
       method: "PUT",
       body: JSON.stringify(request),
     });
@@ -81,7 +81,7 @@ export class CampaignsApi {
    * Delete a campaign
    */
   static async deleteCampaign(campaignId: string): Promise<ApiResponse<void>> {
-    return apiRequest<void>(`/api/campaigns/${campaignId}`, {
+    return apiRequest<void>(`/api/v1/campaigns/${campaignId}`, {
       method: "DELETE",
     });
   }
@@ -90,7 +90,7 @@ export class CampaignsApi {
    * Set active scene for a campaign
    */
   static async setActiveScene(campaignId: string, sceneId: string): Promise<ApiResponse<boolean>> {
-    return apiRequest<boolean>(`/api/campaigns/${campaignId}/active-scene`, {
+    return apiRequest<boolean>(`/api/v1/campaigns/${campaignId}/active-scene`, {
       method: "POST",
       body: JSON.stringify({ sceneId }),
     });

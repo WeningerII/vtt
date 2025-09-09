@@ -1,141 +1,163 @@
 // MSW handlers for testing
 import { http, HttpResponse } from "msw";
 import { DiceRoll } from "../components/DiceRoller";
+import type { Character } from "@vtt/core-schemas/src/character";
+import type { Campaign, User } from "@vtt/core-schemas/src/index";
 
-// Mock data
-const mockCharacters = [
+// Mock data that matches the actual Character interface from core-schemas
+const mockCharacters: Character[] = [
   {
+    // Core Identity
     id: "char-1",
+    userId: "user-1", 
+    campaignId: "campaign-1",
+
+    // Basic Information
     name: "Aragorn",
+    race: "Human",
     class: "Ranger",
     level: 10,
-    race: "Human",
     background: "Outlander",
     alignment: "Lawful Good",
-    experiencePoints: 64000,
-    abilities: {
-      strength: 16,
-      dexterity: 14,
-      constitution: 15,
-      intelligence: 12,
-      wisdom: 16,
-      charisma: 13,
-    },
+
+    // Experience and Progression
+    experience: 64000,
+
+    // Core Combat Stats
     hitPoints: { current: 75, max: 100, temporary: 0 },
     armorClass: 16,
-    initiative: 2,
-    speed: 30,
     proficiencyBonus: 4,
-    savingThrows: {
-      strength: { proficient: true, value: 7 },
-      dexterity: { proficient: true, value: 6 },
-      constitution: { proficient: false, value: 2 },
-      intelligence: { proficient: false, value: 1 },
-      wisdom: { proficient: false, value: 3 },
-      charisma: { proficient: false, value: 1 },
+    speed: 30,
+    initiative: 2,
+
+    // Hit Dice for resting
+    hitDice: { total: 10, current: 8, type: "d10" },
+
+    // Core Abilities (matching interface structure)
+    abilities: {
+      STR: { name: "Strength", value: 16, modifier: 3 },
+      DEX: { name: "Dexterity", value: 14, modifier: 2 },
+      CON: { name: "Constitution", value: 15, modifier: 2 },
+      INT: { name: "Intelligence", value: 12, modifier: 1 },
+      WIS: { name: "Wisdom", value: 16, modifier: 3 },
+      CHA: { name: "Charisma", value: 13, modifier: 1 },
     },
+
+    // Skills and Saves
     skills: {
-      "Animal Handling": { proficient: true, expertise: false, value: 7 },
-      Athletics: { proficient: true, expertise: false, value: 7 },
-      Insight: { proficient: true, expertise: false, value: 7 },
-      Investigation: { proficient: true, expertise: false, value: 5 },
-      Nature: { proficient: true, expertise: false, value: 5 },
-      Perception: { proficient: true, expertise: false, value: 7 },
-      Survival: { proficient: true, expertise: false, value: 7 },
+      "Animal Handling": { name: "Animal Handling", ability: "WIS", proficient: true, value: 7, modifier: 7 },
+      Athletics: { name: "Athletics", ability: "STR", proficient: true, value: 7, modifier: 7 },
+      Insight: { name: "Insight", ability: "WIS", proficient: true, value: 7, modifier: 7 },
+      Investigation: { name: "Investigation", ability: "INT", proficient: true, value: 5, modifier: 5 },
+      Nature: { name: "Nature", ability: "INT", proficient: true, value: 5, modifier: 5 },
+      Perception: { name: "Perception", ability: "WIS", proficient: true, value: 7, modifier: 7 },
+      Survival: { name: "Survival", ability: "WIS", proficient: true, value: 7, modifier: 7 },
     },
-    attacks: [
-      {
-        id: "attack-1",
-        name: "Longsword",
-        attackBonus: 7,
-        damage: "1d8+3",
-        damageType: "slashing",
-      },
-      {
-        id: "attack-2",
-        name: "Longbow",
-        attackBonus: 6,
-        damage: "1d8+2",
-        damageType: "piercing",
-      },
-    ],
-    spells: {
-      spellcastingAbility: "wisdom" as const,
-      spellSaveDC: 15,
-      spellAttackBonus: 7,
-      spellSlots: {
-        1: { max: 4, current: 3 },
-        2: { max: 3, current: 2 },
-        3: { max: 3, current: 1 },
-      },
-      knownSpells: [
-        {
-          id: "spell-1",
-          name: "Hunter's Mark",
-          level: 1,
-          school: "divination",
-          castingTime: "1 bonus action",
-          range: "90 feet",
-          components: "V",
-          duration: "Concentration, up to 1 hour",
-          description:
-            "You choose a creature you can see within range and mystically mark it as your quarry.",
-          prepared: true,
-        },
-        {
-          id: "spell-2",
-          name: "Cure Wounds",
-          level: 1,
-          school: "evocation",
-          castingTime: "1 action",
-          range: "Touch",
-          components: "V, S",
-          duration: "Instantaneous",
-          description:
-            "A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier.",
-          prepared: true,
-        },
-      ],
+    savingThrows: {
+      STR: { proficient: true, value: 7 },
+      DEX: { proficient: true, value: 6 },
+      CON: { proficient: false, value: 2 },
+      INT: { proficient: false, value: 1 },
+      WIS: { proficient: false, value: 3 },
+      CHA: { proficient: false, value: 1 },
     },
+
+    // Equipment and Wealth
     equipment: [
       {
         id: "item-1",
         name: "Longsword",
+        type: "weapon",
         quantity: 1,
         weight: 3,
         description: "A versatile martial weapon",
+        equipped: true,
+        properties: ["Versatile (1d10)"],
+        value: 15,
+        attackBonus: 7,
+        damage: {
+          diceExpression: "1d8+3",
+          damageType: "slashing",
+          versatile: "1d10+3",
+        },
       },
       {
-        id: "item-2",
+        id: "item-2", 
         name: "Longbow",
+        type: "weapon",
         quantity: 1,
         weight: 2,
         description: "A ranged martial weapon",
-      },
-      {
-        id: "item-3",
-        name: "Arrows",
-        quantity: 60,
-        weight: 3,
-        description: "Ammunition for bows",
+        equipped: true,
+        properties: ["Heavy", "Two-handed", "Range (150/600)"],
+        value: 50,
+        attackBonus: 6,
+        damage: {
+          diceExpression: "1d8+2",
+          damageType: "piercing",
+        },
       },
     ],
+    currency: { cp: 0, sp: 0, ep: 0, gp: 250, pp: 0 },
+
+    // Magic (optional)
+    spellcasting: {
+      ability: "WIS",
+      spellSaveDC: 15,
+      spellAttackBonus: 7,
+      spellSlots: {
+        "1": { max: 4, current: 3 },
+        "2": { max: 3, current: 2 },
+        "3": { max: 2, current: 1 },
+      },
+      spells: [
+        {
+          id: "spell-1",
+          name: "Hunter's Mark",
+          level: 1,
+          school: "Divination",
+          castingTime: "1 bonus action",
+          range: "90 feet",
+          components: ["V"],
+          duration: "Concentration, up to 1 hour",
+          description: "You choose a creature you can see within range and mystically mark it as your quarry.",
+          prepared: true,
+          known: true,
+          concentration: true,
+        },
+      ],
+      cantripsKnown: 2,
+      spellsKnown: 6,
+      spellsPrepared: 7,
+      ritualCasting: false,
+    },
+
+    // Features and Traits
     features: [
       {
         id: "feat-1",
         name: "Favored Enemy",
-        description:
-          "You have significant experience studying, tracking, hunting, and even talking to a certain type of creature.",
+        description: "You have significant experience studying, tracking, hunting, and even talking to a certain type of creature.",
         source: "Ranger Level 1",
-      },
-      {
-        id: "feat-2",
-        name: "Natural Explorer",
-        description: "You are particularly familiar with one type of natural environment.",
-        source: "Ranger Level 1",
+        type: "class",
+        uses: { current: 0, max: 0, resetOn: "other" },
       },
     ],
-    conditions: [],
+    traits: ["Versatile", "Skilled"],
+
+    // Roleplay
+    personality: {
+      traits: ["I am driven by a wanderlust that led me away from home."],
+      ideals: ["Glory. I must earn glory in battle, for myself and my clan."],
+      bonds: ["My honor is my life."],
+      flaws: ["I have trouble trusting in my allies."],
+    },
+    notes: "Ranger of the North, heir to the throne of Gondor",
+    avatar: "/avatars/aragorn.jpg",
+
+    // Meta
+    createdAt: new Date("2023-01-01T00:00:00Z"),
+    updatedAt: new Date("2023-12-01T00:00:00Z"),
   },
 ];
 
@@ -174,17 +196,27 @@ const mockEncounters = [
   },
 ];
 
-const mockCampaigns = [
+// Mock users to use in campaigns
+const mockUsers: User[] = [
+  {
+    id: "user-1",
+    displayName: "Dungeon Master",
+    roles: ["dm", "player"],
+  },
+  {
+    id: "user-2", 
+    displayName: "Player One",
+    roles: ["player"],
+  },
+];
+
+const mockCampaigns: Campaign[] = [
   {
     id: "campaign-1",
-    name: "Lost Mine of Phandelver",
-    description: "A classic D&D adventure",
-    dmId: "user-1",
-    isActive: true,
-    system: "dnd5e",
-    createdAt: "2023-01-01T00:00:00Z",
-    characters: mockCharacters,
-    encounters: mockEncounters,
+    name: "The Fellowship of the Ring", 
+    members: mockUsers,
+    sessions: 12,
+    totalHours: 36.5,
   },
 ];
 
@@ -212,11 +244,11 @@ const mockRolls: DiceRoll[] = [
 // API handlers
 export const handlers = [
   // Character endpoints
-  http.get("/api/characters", () => {
+  http.get("/api/v1/characters", () => {
     return HttpResponse.json(mockCharacters);
   }),
 
-  http.get("/api/characters/:id", ({ params }) => {
+  http.get("/api/v1/characters/:id", ({ params }) => {
     const { id } = params;
     const character = mockCharacters.find((c) => c.id === id);
 
@@ -227,19 +259,82 @@ export const handlers = [
     return HttpResponse.json(character);
   }),
 
-  http.post("/api/characters", async ({ request }) => {
+  http.post("/api/v1/characters", async ({ request }) => {
     const body = await request.json() as any;
-    const newCharacter = {
+    const newCharacter: Character = {
+      // Core Identity
       id: `char-${Date.now()}`,
-      ...(body as any),
-      createdAt: new Date().toISOString(),
-    };
+      userId: "user-1",
+      campaignId: body.campaignId,
 
+      // Basic Information  
+      name: body.name || "New Character",
+      race: body.race || "Human",
+      class: body.class || "Fighter", 
+      level: body.level || 1,
+      background: body.background || "Folk Hero",
+      alignment: body.alignment || "Lawful Good",
+
+      // Experience and Progression
+      experience: 0,
+
+      // Core Combat Stats
+      hitPoints: { current: 10, max: 10, temporary: 0 },
+      armorClass: 14,
+      proficiencyBonus: 2,
+      speed: 30,
+      initiative: 0,
+
+      // Hit Dice
+      hitDice: { total: 1, current: 1, type: "d10" },
+
+      // Core Abilities
+      abilities: {
+        STR: { name: "Strength", value: 13, modifier: 1 },
+        DEX: { name: "Dexterity", value: 12, modifier: 1 },
+        CON: { name: "Constitution", value: 14, modifier: 2 },
+        INT: { name: "Intelligence", value: 10, modifier: 0 },
+        WIS: { name: "Wisdom", value: 13, modifier: 1 },
+        CHA: { name: "Charisma", value: 11, modifier: 0 },
+      },
+
+      // Skills and Saves
+      skills: {},
+      savingThrows: {
+        STR: { proficient: false, value: 1 },
+        DEX: { proficient: false, value: 1 }, 
+        CON: { proficient: true, value: 4 },
+        INT: { proficient: false, value: 0 },
+        WIS: { proficient: true, value: 3 },
+        CHA: { proficient: false, value: 0 },
+      },
+
+      // Equipment and Wealth
+      equipment: [],
+      currency: { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 },
+
+      // Features and Traits
+      features: [],
+      traits: [],
+
+      // Roleplay
+      personality: {
+        traits: [],
+        ideals: [],
+        bonds: [],
+        flaws: [],
+      },
+      notes: "",
+
+      // Meta
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     mockCharacters.push(newCharacter);
     return HttpResponse.json(newCharacter, { status: 201 });
   }),
 
-  http.put("/api/characters/:id", async ({ params, request }) => {
+  http.put("/api/v1/characters/:id", async ({ params, request }) => {
     const { id } = params;
     const body = await request.json() as any;
     const characterIndex = mockCharacters.findIndex((c) => c.id === id);
@@ -248,16 +343,17 @@ export const handlers = [
       return HttpResponse.json({ error: "Character not found" }, { status: 404 });
     }
 
-    const existingCharacter = mockCharacters[characterIndex];
-    if (existingCharacter) {
-      mockCharacters[characterIndex] = { ...existingCharacter, ...(body as any) };
-      return HttpResponse.json(mockCharacters[characterIndex]);
-    }
+    const updatedCharacter = {
+      ...mockCharacters[characterIndex],
+      ...body,
+      updatedAt: new Date().toISOString(),
+    };
+    mockCharacters[characterIndex] = updatedCharacter;
 
-    return HttpResponse.json({ error: "Character not found" }, { status: 404 });
+    return HttpResponse.json(updatedCharacter);
   }),
 
-  http.delete("/api/characters/:id", ({ params }) => {
+  http.delete("/api/v1/characters/:id", ({ params }) => {
     const { id } = params;
     const characterIndex = mockCharacters.findIndex((c) => c.id === id);
 
@@ -266,15 +362,15 @@ export const handlers = [
     }
 
     mockCharacters.splice(characterIndex, 1);
-    return HttpResponse.json(null, { status: 204 });
+    return HttpResponse.json({ success: true });
   }),
 
   // Campaign endpoints
-  http.get("/api/campaigns", () => {
+  http.get("/api/v1/campaigns", () => {
     return HttpResponse.json(mockCampaigns);
   }),
 
-  http.get("/api/campaigns/:id", ({ params }) => {
+  http.get("/api/v1/campaigns/:id", ({ params }) => {
     const { id } = params;
     const campaign = mockCampaigns.find((c) => c.id === id);
 
@@ -285,19 +381,20 @@ export const handlers = [
     return HttpResponse.json(campaign);
   }),
 
-  http.post("/api/campaigns", async ({ request }) => {
+  http.post("/api/v1/campaigns", async ({ request }) => {
     const body = (await request.json()) as any;
-    const newCampaign = {
+    const newCampaign: Campaign = {
       id: `campaign-${Date.now()}`,
-      ...(body as any),
-      createdAt: new Date().toISOString(),
+      name: body.name || "New Campaign",
+      members: mockUsers.slice(0, 1), // Add DM as initial member
+      sessions: 0,
+      totalHours: 0,
     };
-
     mockCampaigns.push(newCampaign);
     return HttpResponse.json(newCampaign, { status: 201 });
   }),
 
-  http.put("/api/campaigns/:id", async ({ params, request }) => {
+  http.put("/api/v1/campaigns/:id", async ({ params, request }) => {
     const { id } = params;
     const body = (await request.json()) as any;
     const campaignIndex = mockCampaigns.findIndex((c) => c.id === id);
@@ -306,21 +403,22 @@ export const handlers = [
       return HttpResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
-    const existingCampaign = mockCampaigns[campaignIndex];
-    if (existingCampaign) {
-      mockCampaigns[campaignIndex] = { ...existingCampaign, ...(body as any) };
-      return HttpResponse.json(mockCampaigns[campaignIndex]);
-    }
+    const updatedCampaign = {
+      ...mockCampaigns[campaignIndex],
+      ...body,
+      updatedAt: new Date().toISOString(),
+    };
+    mockCampaigns[campaignIndex] = updatedCampaign;
 
-    return HttpResponse.json({ error: "Campaign not found" }, { status: 404 });
+    return HttpResponse.json(updatedCampaign);
   }),
 
   // Encounter endpoints
-  http.get("/api/encounters", () => {
+  http.get("/api/v1/encounters", () => {
     return HttpResponse.json(mockEncounters);
   }),
 
-  http.put("/api/encounters/:id", async ({ params, request }) => {
+  http.put("/api/v1/encounters/:id", async ({ params, request }) => {
     const { id } = params;
     const body = (await request.json()) as any;
     const encounterIndex = mockEncounters.findIndex((e) => e.id === id);
@@ -338,7 +436,7 @@ export const handlers = [
     return HttpResponse.json({ error: "Encounter not found" }, { status: 404 });
   }),
 
-  http.post("/api/encounters/:id/start", ({ params }) => {
+  http.post("/api/v1/encounters/:id/start", ({ params }) => {
     const { id } = params;
     const encounterIndex = mockEncounters.findIndex((e) => e.id === id);
 
@@ -355,7 +453,7 @@ export const handlers = [
     return HttpResponse.json({ error: "Encounter not found" }, { status: 404 });
   }),
 
-  http.post("/api/encounters/:id/end", ({ params }) => {
+  http.post("/api/v1/encounters/:id/end", ({ params }) => {
     const { id } = params;
     const encounterIndex = mockEncounters.findIndex((e) => e.id === id);
 
@@ -373,7 +471,7 @@ export const handlers = [
   }),
 
   // Combat AI endpoints
-  http.post("/api/combat/suggestions", async ({ request }) => {
+  http.post("/api/v1/combat/suggestions", async ({ request }) => {
     const body = await request.json() as any;
 
     return HttpResponse.json({
@@ -394,7 +492,7 @@ export const handlers = [
     });
   }),
 
-  http.post("/api/combat/analysis", async ({ request }) => {
+  http.post("/api/v1/combat/analysis", async ({ request }) => {
     const body = await request.json() as any;
 
     return HttpResponse.json({
@@ -440,7 +538,7 @@ export const handlers = [
   }),
 
   // Error simulation endpoints
-  http.get("/api/test/server-error", () => {
+  http.get("/api/v1/test/server-error", () => {
     return HttpResponse.json({ error: "Internal server error" }, { status: 500 });
   }),
 
@@ -454,7 +552,7 @@ export const handlers = [
   }),
 
   // AI Assistant endpoints
-  http.post("/api/assistant/query", async ({ request }) => {
+  http.post("/api/v1/assistant/query", async ({ request }) => {
     const body = await request.json() as any;
     const { query, context } = body as { query: string; context?: any };
 
@@ -533,13 +631,13 @@ export const handlers = [
     return HttpResponse.json(HttpResponse.json(roll));
   }),
 
-  http.get("/api/dice/recent", async ({ request }) => {
+  http.get("/api/v1/dice/recent", async ({ request }) => {
     const limit = parseInt(new URL(request.url).searchParams.get("limit") || "10");
     return HttpResponse.json(HttpResponse.json(mockRolls.slice(0, limit)));
   }),
 
   // Error simulation endpoints for testing
-  http.get("/api/test/error", async ({ request }) => {
+  http.get("/api/v1/test/error", async ({ request }) => {
     return HttpResponse.json({ error: "Simulated server error" }, { status: 500 });
   }),
 

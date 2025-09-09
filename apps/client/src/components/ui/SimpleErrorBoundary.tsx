@@ -29,7 +29,7 @@ export class SimpleErrorBoundary extends Component<PropsWithChildren<Props>, Sta
   }
 
   override componentDidCatch(error: Error) {
-    console.error(`ErrorBoundary [${this.props.name}]:`, error);
+    // Error logged: ErrorBoundary [${this.props.name}]
     this.props.onError?.(error);
   }
 

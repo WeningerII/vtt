@@ -83,7 +83,7 @@ router.get("/api/health", async (ctx: Context) => {
 
 // Test endpoint for debugging hanging requests
 router.get("/api/test", async (ctx: Context) => {
-  console.log("Test endpoint hit");
+  // Test endpoint accessed
   ctx.res.writeHead(200, { "Content-Type": "application/json" });
   ctx.res.end(
     JSON.stringify({
@@ -118,7 +118,7 @@ const server = http.createServer(async (req, res) => {
     }
   } catch (error) {
     // Error handling
-    console.error("Server error:", error);
+    // Server error occurred
     if (!res.headersSent) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Internal server error" }));
@@ -128,29 +128,23 @@ const server = http.createServer(async (req, res) => {
 
 // Start server
 server.listen(PORT, () => {
-  console.log(`🚀 Minimal server running on http://localhost:${PORT}`);
-  console.log("Available endpoints:");
-  console.log("  GET  /api/health - Health check");
-  console.log("  GET  /api/test - Test endpoint");
-  console.log("  POST /api/auth/login - Login");
-  console.log("  POST /api/auth/logout - Logout");
-  console.log("  GET  /api/auth/session - Get session");
-  console.log("  POST /api/auth/register - Register");
+  // Minimal server started on port ${PORT}
+  // Available endpoints: health, test, auth routes
 });
 
 // Handle graceful shutdown
 process.on("SIGTERM", () => {
-  console.log("SIGTERM received, closing server...");
+  // SIGTERM received, closing server
   server.close(() => {
-    console.log("Server closed");
+    // Server closed
     process.exit(0);
   });
 });
 
 process.on("SIGINT", () => {
-  console.log("SIGINT received, closing server...");
+  // SIGINT received, closing server
   server.close(() => {
-    console.log("Server closed");
+    // Server closed
     process.exit(0);
   });
 });

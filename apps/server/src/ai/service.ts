@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { logger } from "@vtt/logging";
 // Temporarily disable AI imports due to build issues
 // import {
 //   AIContext,
@@ -102,7 +103,7 @@ export function createAIServices(prisma: PrismaClient) {
   
   // Temporarily disable real providers due to compilation issues
   // Using only DummyProvider to get server running for campaign testing
-  console.log('AI Service: Using DummyProvider only (real providers disabled for campaign testing)');
+  logger.info('AI Service: Using DummyProvider only (real providers disabled for campaign testing)');
 
   // Configure routing policy with preferred providers
   const routingPolicy = {

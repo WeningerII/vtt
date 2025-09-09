@@ -59,7 +59,7 @@ export class RigidBody {
       restitution: config.restitution ?? 0.3,
       isStatic: config.isStatic ?? false,
       isTrigger: config.isTrigger ?? false,
-      layer: config.layer ?? 1,
+      layer: config.layer ?? 0, // Use 0-based layer indexing for consistency with bit operations
       mask: config.mask ?? 0xffffffff,
     };
   }
@@ -130,9 +130,10 @@ export class RigidBody {
       this.acceleration.y += force.y / this.config.mass;
     }
 
-    // Apply friction
-    this.velocity.x *= 1 - this.config.friction * deltaTime;
-    this.velocity.y *= 1 - this.config.friction * deltaTime;
+    // Apply friction with clamping to prevent negative damping
+    const linearDamping = Math.max(0, 1 - this.config.friction * deltaTime);
+    this.velocity.x *= linearDamping;
+    this.velocity.y *= linearDamping;
 
     // Integrate velocity
     this.velocity.x += this.acceleration.x * deltaTime;
@@ -150,7 +151,8 @@ export class RigidBody {
 
     // Simple angular integration (moment of inertia = 1 for simplicity)
     this.angularVelocity += totalTorque * deltaTime;
-    this.angularVelocity *= 1 - this.config.friction * deltaTime;
+    const angularDamping = Math.max(0, 1 - this.config.friction * deltaTime);
+    this.angularVelocity *= angularDamping;
     this.rotation += this.angularVelocity * deltaTime;
 
     // Clear force accumulators
@@ -180,44 +182,52 @@ export class RigidBody {
     // Calculate restitution
     const restitution = Math.min(this.config.restitution, other.config.restitution);
 
-    // Calculate impulse scalar
-    let impulseScalar = -(1 + restitution) * velAlongNormal;
-    const totalMass = this.config.isStatic
-      ? other.config.mass
-      : other.config.isStatic
-        ? this.config.mass
-        : this.config.mass + other.config.mass;
-    impulseScalar /= totalMass;
+    // Calculate impulse using proper inverse mass formula
+    // j = -(1 + e) * vr·n / (1/m1 + 1/m2)
+    const invMass1 = this.config.isStatic ? 0 : 1 / this.config.mass;
+    const invMass2 = other.config.isStatic ? 0 : 1 / other.config.mass;
+    const invMassSum = invMass1 + invMass2;
+    
+    if (invMassSum === 0) {return;} // Both static - shouldn't happen due to earlier check
+    
+    const impulseScalar = -(1 + restitution) * velAlongNormal / invMassSum;
 
-    // Apply impulse
+    // Apply impulse using Newton's 3rd law (equal and opposite)
     const impulse = {
       x: impulseScalar * normal.x,
       y: impulseScalar * normal.y,
     };
 
     if (!this.config.isStatic) {
-      this.velocity.x += (impulse.x * this.config.mass) / totalMass;
-      this.velocity.y += (impulse.y * this.config.mass) / totalMass;
+      this.velocity.x += impulse.x * invMass1;
+      this.velocity.y += impulse.y * invMass1;
     }
 
     if (!other.config.isStatic) {
-      other.velocity.x -= (impulse.x * other.config.mass) / totalMass;
-      other.velocity.y -= (impulse.y * other.config.mass) / totalMass;
+      other.velocity.x -= impulse.x * invMass2;
+      other.velocity.y -= impulse.y * invMass2;
     }
 
-    // Position correction to prevent sinking
+    // Position correction to prevent sinking (using proper inverse mass weighting)
     const correctionPercent = 0.8;
     const slop = 0.01;
-    const correction = (Math.max(penetration - slop, 0) * correctionPercent) / totalMass;
+    const correctionMagnitude = Math.max(penetration - slop, 0) * correctionPercent;
+    
+    if (correctionMagnitude > 0 && invMassSum > 0) {
+      const correction = {
+        x: (correctionMagnitude * normal.x) / invMassSum,
+        y: (correctionMagnitude * normal.y) / invMassSum,
+      };
 
-    if (!this.config.isStatic) {
-      this.position.x += (correction * normal.x * other.config.mass) / totalMass;
-      this.position.y += (correction * normal.y * other.config.mass) / totalMass;
-    }
+      if (!this.config.isStatic) {
+        this.position.x += correction.x * invMass1;
+        this.position.y += correction.y * invMass1;
+      }
 
-    if (!other.config.isStatic) {
-      other.position.x -= (correction * normal.x * this.config.mass) / totalMass;
-      other.position.y -= (correction * normal.y * this.config.mass) / totalMass;
+      if (!other.config.isStatic) {
+        other.position.x -= correction.x * invMass2;
+        other.position.y -= correction.y * invMass2;
+      }
     }
   }
 

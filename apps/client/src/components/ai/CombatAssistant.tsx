@@ -51,7 +51,7 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
   const getTacticalRecommendation = async () => {
     setIsAnalyzing(true);
     try {
-      const response = await fetch("/api/combat/tactical-decision", {
+      const response = await fetch("/api/v1/combat/tactical-decision", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +79,7 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
 
   const getPositioning = async () => {
     try {
-      const response = await fetch("/api/combat/positioning", {
+      const response = await fetch("/api/v1/combat/positioning", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,7 +104,7 @@ export const CombatAssistant: React.FC<CombatAssistantProps> = ({
 
   const simulateCombat = async () => {
     try {
-      const response = await fetch("/api/combat/simulate", {
+      const response = await fetch("/api/v1/combat/simulate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

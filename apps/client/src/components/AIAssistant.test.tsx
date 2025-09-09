@@ -107,7 +107,7 @@ describe("AIAssistant", () => {
       fireEvent.click(sendButton);
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith("/api/assistant/query", {
+        expect(mockFetch).toHaveBeenCalledWith("/api/v1/assistant/query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: "Explain grappling" }),
@@ -144,7 +144,7 @@ describe("AIAssistant", () => {
       fireEvent.click(npcButton);
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith("/api/assistant/query", {
+        expect(mockFetch).toHaveBeenCalledWith("/api/v1/assistant/query", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ query: "Generate a random NPC with personality and backstory" }),

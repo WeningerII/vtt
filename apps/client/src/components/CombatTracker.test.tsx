@@ -4,30 +4,30 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 // import userEvent from '@testing-library/user-event';
 const userEvent = {
   setup: () => ({
-    click: async (element: Element) => {
-      console.log('Mock click on', element);
+    click: async (_element: Element) => {
+      // Mock click
     },
-    type: async (element: Element, text: string) => {
-      console.log('Mock type on', element, 'text:', text);
+    type: async (_element: Element, _text: string) => {
+      // Mock type
     },
-    keyboard: async (text: string) => {
-      console.log('Mock keyboard input:', text);
+    keyboard: async (_text: string) => {
+      // Mock keyboard
     },
     tab: async () => {
-      console.log('Mock tab navigation');
+      // Mock tab
     }
   }),
-  click: async (element: Element) => {
-    console.log('Mock click on', element);
+  click: async (_element: Element) => {
+    // Mock click
   },
-  type: async (element: Element, text: string) => {
-    console.log('Mock type on', element, 'text:', text);
+  type: async (_element: Element, _text: string) => {
+    // Mock type
   },
-  keyboard: async (text: string) => {
-    console.log('Mock keyboard input:', text);
+  keyboard: async (_text: string) => {
+    // Mock keyboard
   },
   tab: async () => {
-    console.log('Mock tab navigation');
+    // Mock tab
   }
 };
 import { CombatTracker } from "./CombatTracker";

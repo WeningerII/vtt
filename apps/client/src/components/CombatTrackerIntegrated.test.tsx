@@ -4,36 +4,36 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 // import userEvent from '@testing-library/user-event';
 const userEvent = {
   setup: () => ({
-    click: async (element: Element) => {
-      console.log('Mock click on', element);
+    click: async (_element: Element) => {
+      // Mock click
     },
-    type: async (element: Element, text: string) => {
-      console.log('Mock type on', element, 'text:', text);
+    type: async (_element: Element, _text: string) => {
+      // Mock type
     },
-    clear: async (element: Element) => {
-      console.log('Mock clear element:', element);
+    keyboard: async (_text: string) => {
+      // Mock keyboard
     },
     tab: async () => {
-      console.log('Mock tab navigation');
-    },
-    selectOptions: async (element: Element, values: string[]) => {
-      console.log('Mock select options:', element, values);
+      // Mock tab
     }
   }),
-  click: async (element: Element) => {
-    console.log('Mock click on', element);
+  click: async (_element: Element) => {
+    // Mock click
   },
-  type: async (element: Element, text: string) => {
-    console.log('Mock type on', element, 'text:', text);
+  type: async (_element: Element, _text: string) => {
+    // Mock type
   },
-  clear: async (element: Element) => {
-    console.log('Mock clear element:', element);
+  keyboard: async (_text: string) => {
+    // Mock keyboard
   },
   tab: async () => {
-    console.log('Mock tab navigation');
+    // Mock tab
   },
-  selectOptions: async (element: Element, values: string[]) => {
-    console.log('Mock select options:', element, values);
+  clear: async (_element: Element) => {
+    // Mock clear
+  },
+  selectOptions: async (_element: Element, _values: string[]) => {
+    // Mock select
   }
 };
 import "@testing-library/jest-dom";

@@ -1,5 +1,4 @@
 
-
 > @vtt/files-service@0.0.0 build /home/weningerii/vtt/services/files
 > tsc -b
 

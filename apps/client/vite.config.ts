@@ -31,9 +31,36 @@ export default defineConfig({
     sourcemap: true,
   },
   server: {
-    port: 5173,
+    port: 3000,
     strictPort: false,
     host: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      "/auth": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/docs": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/api-docs.json": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/ws": {
+        target: "ws://localhost:8080",
+        ws: true,
+      },
+    },
   },
   preview: {
     port: 5175,

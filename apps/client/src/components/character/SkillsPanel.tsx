@@ -70,7 +70,9 @@ export const SkillsPanel = memo(({
     if (!skillData) {return 0;}
 
     const abilityScore = character.abilities[skillData.ability as keyof Character["abilities"]];
-    if (!abilityScore) return 0;
+    if (!abilityScore) {
+      return 0;
+    }
     const baseModifier = getModifier(abilityScore.value);
     const skill = character.skills[skillName];
 
@@ -78,8 +80,9 @@ export const SkillsPanel = memo(({
 
     let modifier = baseModifier;
     if (skill.proficient) {
-      modifier += character.proficiencyBonus;
+      return character.proficiencyBonus;
     }
+    modifier += character.proficiencyBonus;
     if (skill.expertise) {
       modifier += character.proficiencyBonus; // Expertise doubles proficiency bonus
     }

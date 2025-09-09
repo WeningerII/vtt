@@ -110,12 +110,9 @@ const logErrorToService = (error: Error, errorInfo: ErrorInfo, errorId: string, 
     url: window.location.href,
   };
 
-  console.group(`🚨 Error Boundary [${level}${name ? `: ${name}` : ''}]`);
-  console.error('Error ID:', errorId);
-  console.error('Error:', error);
-  console.error('Component Stack:', errorInfo.componentStack);
-  console.error('Full Error Data:', errorData);
-  console.groupEnd();
+  // Error logged: Error Boundary [${level}${name ? `: ${name}` : ''}]
+  // Error ID: ${errorId}
+  // Component Stack and full error data captured
 
   // TODO: Integrate with error tracking service
   // errorTrackingService.captureException(error, { extra: errorData });

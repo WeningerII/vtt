@@ -31,7 +31,9 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(({
   const percentage = ((currentValue - min) / (max - min)) * 100;
 
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    if (disabled) return;
+    if (disabled) {
+      return;
+    }
     
     event.preventDefault();
     setIsDragging(true);
@@ -73,7 +75,9 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(({
   }, [disabled, min, max, step, orientation, onValueChange]);
 
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (disabled) return;
+    if (disabled) {
+      return;
+    }
 
     let newValue = currentValue;
     

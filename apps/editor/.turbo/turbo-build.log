@@ -1,5 +1,6 @@
 
-
 > @vtt/editor@0.0.0 build /home/weningerii/vtt/apps/editor
 > tsc -b
 
+src/MonsterBrowser.tsx(2,25): error TS6305: Output file '/home/weningerii/vtt/packages/content-5e-srd/dist/src/index.d.ts' has not been built from source file '/home/weningerii/vtt/packages/content-5e-srd/src/index.ts'.
+ ELIFECYCLE  Command failed with exit code 1.

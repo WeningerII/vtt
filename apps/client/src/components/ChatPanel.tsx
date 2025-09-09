@@ -63,7 +63,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   }, [messages, currentUser]);
 
   const handleSendMessage = () => {
-    if (!messageText.trim()) return;
+    const trimmedMessage = messageText.trim();
+    if (!trimmedMessage) {
+      return;
+    }
     
     let finalMessage = messageText;
     
@@ -87,7 +90,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const handleClearChat = () => {
     // This would need to be implemented at parent level
-    console.log('Clear chat requested');
+    // Log error silently
+    // Failed to send message
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

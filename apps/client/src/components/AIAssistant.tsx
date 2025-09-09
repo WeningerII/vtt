@@ -76,7 +76,7 @@ What would you like to know?`,
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/assistant/query", {
+      const response = await fetch("/api/v1/assistant/query", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
