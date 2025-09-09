@@ -68,10 +68,13 @@ sessionsRouter.get('/', async (req, res) => {
       lastActivity: session.updatedAt.toISOString()
     }));
 
-    res.json(formattedSessions);
+    res.json({
+      success: true,
+      data: formattedSessions
+    });
   } catch (error) {
     console.error('Get sessions error:', error);
-    res.status(500).json({ error: 'Failed to fetch sessions' });
+    res.status(500).json({ success: false, error: 'Failed to fetch sessions' });
   }
 });
 
@@ -88,7 +91,7 @@ sessionsRouter.get('/:id', async (req, res) => {
     });
 
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
     const formattedSession = {
@@ -112,10 +115,13 @@ sessionsRouter.get('/:id', async (req, res) => {
       tokens: session.tokens
     };
 
-    res.json(formattedSession);
+    res.json({
+      success: true,
+      data: formattedSession
+    });
   } catch (error) {
     console.error('Get session error:', error);
-    res.status(500).json({ error: 'Failed to fetch session' });
+    res.status(500).json({ success: false, error: 'Failed to fetch session' });
   }
 });
 
@@ -125,7 +131,7 @@ sessionsRouter.post('/', requireAuth, async (req: any, res) => {
     const { name, description, campaignId, maxPlayers, isPrivate, allowSpectators } = req.body;
 
     if (!name) {
-      return res.status(400).json({ error: 'Session name is required' });
+      return res.status(400).json({ success: false, error: 'Session name is required' });
     }
 
     // Validate campaign exists and user has access
@@ -145,7 +151,7 @@ sessionsRouter.post('/', requireAuth, async (req: any, res) => {
       });
 
       if (!campaign) {
-        return res.status(403).json({ error: 'Campaign not found or insufficient permissions' });
+        return res.status(403).json({ success: false, error: 'Campaign not found or insufficient permissions' });
       }
     } else {
       // Create a new campaign for this session if none provided
@@ -206,10 +212,13 @@ sessionsRouter.post('/', requireAuth, async (req: any, res) => {
       lastActivity: session.updatedAt.toISOString()
     };
 
-    res.status(201).json(formattedSession);
+    res.status(201).json({
+      success: true,
+      data: formattedSession
+    });
   } catch (error) {
     console.error('Create session error:', error);
-    res.status(500).json({ error: 'Failed to create session' });
+    res.status(500).json({ success: false, error: 'Failed to create session' });
   }
 });
 
@@ -223,24 +232,27 @@ sessionsRouter.post('/:id/join', requireAuth, async (req: any, res) => {
     });
 
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
     if (session.status !== 'WAITING' && session.status !== 'ACTIVE') {
-      return res.status(400).json({ error: 'Cannot join this session' });
+      return res.status(400).json({ success: false, error: 'Cannot join this session' });
     }
 
     // In a real implementation, you'd track players in the database
     // For now, we'll rely on WebSocket connections for player tracking
     
     res.json({ 
-      message: 'Ready to join session',
-      sessionId: id,
-      websocketUrl: '/ws'
+      success: true,
+      data: {
+        message: 'Ready to join session',
+        sessionId: id,
+        websocketUrl: '/ws'
+      }
     });
   } catch (error) {
     console.error('Join session error:', error);
-    res.status(500).json({ error: 'Failed to join session' });
+    res.status(500).json({ success: false, error: 'Failed to join session' });
   }
 });
 
@@ -254,21 +266,21 @@ sessionsRouter.delete('/:id', requireAuth, async (req: any, res) => {
     });
 
     if (!session) {
-      return res.status(404).json({ error: 'Session not found' });
+      return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
     // Check if user is the GM
     if ((session.metadata as any)?.gamemasterId !== req.user.id) {
-      return res.status(403).json({ error: 'Only the game master can delete this session' });
+      return res.status(403).json({ success: false, error: 'Only the game master can delete this session' });
     }
 
     await prisma.gameSession.delete({
       where: { id }
     });
 
-    res.json({ message: 'Session deleted successfully' });
+    res.json({ success: true, data: { message: 'Session deleted successfully' } });
   } catch (error) {
     console.error('Delete session error:', error);
-    res.status(500).json({ error: 'Failed to delete session' });
+    res.status(500).json({ success: false, error: 'Failed to delete session' });
   }
 });

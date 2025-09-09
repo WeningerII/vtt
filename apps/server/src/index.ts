@@ -6,6 +6,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import { logger } from "@vtt/logging";
 import { createServer } from "http";
+import { URL } from "url";
 import { WebSocketServer } from "ws";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -20,9 +21,10 @@ import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { corsMiddleware } from "./middleware/cors";
 import { csrfMiddleware, csrfTokenMiddleware } from "./middleware/csrf";
 import { requireAdmin, requirePermission, optionalAuth } from "./middleware/auth";
+import { getAuthenticatedUserId } from "./middleware/auth";
+import { getCorsConfig, isOriginAllowed } from "./config/cors";
 import { metricsMiddleware, addDatabaseHealthCheck, addAIServiceHealthCheck } from "./middleware/metrics";
 import session from "express-session";
-import passport from "passport";
 import {
   listProvidersHandler,
   textToImageHandler,
@@ -167,7 +169,11 @@ import { createUnifiedWebSocketManager } from "./websocket/UnifiedWebSocketManag
 import { DatabaseManager } from "./database/connection";
 import { initializeAuth } from "./auth";
 import { Router } from "./router/router";
+import type { Context } from "./router/types";
 import { AuthManager, AuthConfig } from "./auth/auth-manager";
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as DiscordStrategy } from 'passport-discord';
 
 // Use DatabaseManager singleton for consistent database connection
 const prisma = DatabaseManager.getInstance();
@@ -180,30 +186,177 @@ const authConfig: AuthConfig = {
   bcryptRounds: 12,
 };
 const authManager = new AuthManager(prisma, authConfig);
+
+// Initialize Passport OAuth strategies
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID || 'dummy-google-client-id',
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-google-client-secret',
+  callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:8080/api/v1/auth/google/callback'
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    // For now, create a simple user object - you can enhance this later
+    const user = {
+      id: profile.id,
+      email: profile.emails?.[0]?.value,
+      displayName: profile.displayName,
+      provider: 'google'
+    };
+    return done(null, user);
+  } catch (error) {
+    return done(error, false);
+  }
+}));
+
+passport.use(new DiscordStrategy({
+  clientID: process.env.DISCORD_CLIENT_ID || '123456789012345678',
+  clientSecret: process.env.DISCORD_CLIENT_SECRET || 'dummy-discord-client-secret',
+  callbackURL: process.env.DISCORD_CALLBACK_URL || 'http://localhost:8080/api/v1/auth/discord/callback',
+  scope: ['identify', 'email']
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    const user = {
+      id: profile.id,
+      email: profile.email,
+      displayName: profile.global_name || profile.username,
+      provider: 'discord'
+    };
+    return done(null, user);
+  } catch (error) {
+    return done(error, false);
+  }
+}));
+
+passport.serializeUser((user: any, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser((id: string, done) => {
+  done(null, { id });
+});
+
 const PORT = Number(process.env.PORT ?? 8080);
 
 // Create Express app for easier middleware handling
 const app = express();
+
+// Add CORS middleware BEFORE other middleware (Express variant using shared config)
+app.use((req, res, next) => {
+  const config = getCorsConfig();
+  const origin = req.headers.origin as string | undefined;
+
+  let allow = false;
+  if (config.origin === true) {
+    allow = true;
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+  } else if (isOriginAllowed(origin, config)) {
+    allow = true;
+    res.setHeader("Access-Control-Allow-Origin", origin!);
+  }
+
+  if (allow) {
+    res.setHeader("Access-Control-Allow-Methods", config.methods.join(","));
+    res.setHeader("Access-Control-Allow-Headers", config.allowedHeaders.join(","));
+    res.setHeader("Access-Control-Expose-Headers", config.exposedHeaders.join(","));
+    res.setHeader("Access-Control-Max-Age", String(config.maxAge));
+    if (config.credentials) {
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+  }
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// Add CORS middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+// Add our new auth and session routes
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/sessions', sessionsRouter);
+
+// Bridge: Delegate requests to our custom Router. If not handled, continue with Express.
+app.use(async (req, res, next) => {
+  try {
+    const url = new URL(req.originalUrl || req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const ctx: Context = {
+      req: req as any,
+      res: res as any,
+      prisma,
+      url,
+      requestId:
+        (req.headers["x-request-id"] as string) || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    };
+
+    const handled = await router.handle(ctx);
+    if (!handled) {return next();}
+  } catch (error) {
+    logger.error("[server] Router bridge error:", error as Error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 });
 
-// Add our new auth and session routes
-app.use('/auth', authRouter);
-app.use('/api/sessions', sessionsRouter);
+// Root route - serve a welcome page
+app.get('/', (req, res) => {
+  // Set CSP header to allow inline styles for the welcome page
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+  );
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>VTT Server</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .endpoints { display: grid; gap: 10px; }
+        .endpoint { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+        .method { font-weight: bold; color: #007acc; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🎲 VTT Server</h1>
+        <p>Virtual Tabletop Server is running successfully!</p>
+        <p><strong>Status:</strong> Healthy | <strong>Port:</strong> ${PORT}</p>
+      </div>
+      
+      <h2>Available Endpoints</h2>
+      <div class="endpoints">
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/health</code> - Health check
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/health</code> - Detailed health status
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/login</code> - Login page
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/docs</code> - API documentation
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/games</code> - Game management
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/characters</code> - Character management
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/campaigns</code> - Campaign management
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
 
 // Session configuration
 const sessionConfig = {
@@ -216,6 +369,10 @@ const sessionConfig = {
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   },
 };
+
+app.use(session(sessionConfig) as any);
+app.use(passport.initialize() as any);
+app.use(passport.session() as any);
 
 // Router setup
 const router = new Router();
@@ -230,6 +387,8 @@ router.use(csrfTokenMiddleware); // Add CSRF token to response headers
 router.use(securityHeadersMiddleware);
 router.use(rateLimitMiddleware);
 router.use(metricsMiddleware);
+// Populate ctx.req.user when a valid token is present so route handlers can access it
+router.use(optionalAuth);
 
 // Session and passport middleware
 router.use(async (ctx, next) => {
@@ -251,6 +410,60 @@ router.use(async (ctx, next) => {
 router.use(loggingMiddleware);
 
 // Routes
+// Root route - serve a welcome page
+router.get("/", (ctx) => {
+  ctx.res.writeHead(200, { "Content-Type": "text/html" });
+  ctx.res.end(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>VTT Server</title>
+      <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .endpoints { display: grid; gap: 10px; }
+        .endpoint { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+        .method { font-weight: bold; color: #007acc; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🎲 VTT Server</h1>
+        <p>Virtual Tabletop Server is running successfully!</p>
+        <p><strong>Status:</strong> Healthy | <strong>Port:</strong> ${PORT}</p>
+      </div>
+      
+      <h2>Available Endpoints</h2>
+      <div class="endpoints">
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/health</code> - Health check
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/health</code> - Detailed health status
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/login</code> - Login page
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/docs</code> - API documentation
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/games</code> - Game management
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/characters</code> - Character management
+        </div>
+        <div class="endpoint">
+          <span class="method">GET</span> <code>/api/v1/campaigns</code> - Campaign management
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 router.get("/ai/providers", listProvidersHandler);
 router.post("/ai/text-to-image", textToImageHandler);
 router.post("/ai/depth", depthHandler);
@@ -402,13 +615,87 @@ router.get("/maps", getMapsHandler);
 // API Scene routes (for client compatibility)
 router.put("/api/scenes/*/settings", updateSceneSettingsHandler);
 
+// Provide the active scene for the authenticated user
+router.get("/api/scenes/active", async (ctx) => {
+  try {
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Not authenticated" }));
+      return;
+    }
+
+    // Find most recent campaign the user belongs to
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        members: {
+          some: {
+            userId: user.id,
+            status: "active",
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      include: { scenes: true },
+    });
+
+    if (!campaign) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "No campaigns found for user" }));
+      return;
+    }
+
+    // Determine GM status
+    const membership = await prisma.campaignMember.findFirst({
+      where: { campaignId: campaign.id, userId: user.id },
+    });
+    const isGameMaster = ["gamemaster", "co-gamemaster", "admin"].includes(
+      (membership?.role || "").toLowerCase(),
+    );
+
+    const targetSceneId = campaign.activeSceneId || campaign.scenes[0]?.id;
+    if (!targetSceneId) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "No active scene available" }));
+      return;
+    }
+
+    const dbScene = await prisma.scene.findUnique({ where: { id: targetSceneId } });
+    if (!dbScene) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Scene not found" }));
+      return;
+    }
+
+    // Minimal scene payload compatible with client `Scene` type
+    const scenePayload = {
+      id: dbScene.id,
+      name: dbScene.name,
+      gridSettings: {
+        type: "square",
+        size: 70,
+        offsetX: 0,
+        offsetY: 0,
+      },
+      tokens: [],
+    };
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ scene: scenePayload, isGameMaster }));
+  } catch (error) {
+    logger.error("[server] Failed to get active scene:", error as Error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "Failed to get active scene" }));
+  }
+});
+
 // OAuth routes - directly implement using passport
-router.get("/auth/discord", async (ctx) => {
+router.get("/api/v1/auth/discord", async (ctx) => {
   const authenticateDiscord = passport.authenticate("discord", { scope: ["identify", "email"] });
   authenticateDiscord(ctx.req as any, ctx.res as any, () => {});
 });
 
-router.get("/auth/discord/callback", async (ctx) => {
+router.get("/api/v1/auth/discord/callback", async (ctx) => {
   const authenticateCallback = passport.authenticate("discord", {
     failureRedirect: "/login?error=discord_auth_failed",
     session: true,
@@ -442,12 +729,12 @@ router.get("/auth/discord/callback", async (ctx) => {
   });
 });
 
-router.get("/auth/google", async (ctx) => {
+router.get("/api/v1/auth/google", async (ctx) => {
   const authenticateGoogle = passport.authenticate("google", { scope: ["profile", "email"] });
   authenticateGoogle(ctx.req as any, ctx.res as any, () => {});
 });
 
-router.get("/auth/google/callback", async (ctx) => {
+router.get("/api/v1/auth/google/callback", async (ctx) => {
   const authenticateCallback = passport.authenticate("google", {
     failureRedirect: "/login?error=google_auth_failed",
     session: true,
@@ -581,8 +868,21 @@ router.get("/favicon-32x32.png", (ctx) => {
 // HTTP server - use Express app
 const server = createServer(app);
 
-// WebSocket setup
+// WebSocket setup with explicit upgrade handling
 const vttWebSocketServer = new VTTWebSocketServer(server, prisma);
+
+// Handle WebSocket upgrade requests explicitly
+server.on('upgrade', (request, socket, head) => {
+  const pathname = request.url || '';
+  
+  if (pathname === '/ws') {
+    // Let the WebSocketServer handle the upgrade
+    vttWebSocketServer.handleUpgrade(request, socket, head);
+  } else {
+    // Reject non-WebSocket paths
+    socket.destroy();
+  }
+});
 
 // Graceful shutdown
 async function shutdown(signal: string) {

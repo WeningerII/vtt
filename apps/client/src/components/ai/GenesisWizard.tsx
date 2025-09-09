@@ -8,33 +8,23 @@ import { logger } from "@vtt/logging";
 import { toErrorObject } from "../../utils/error-utils";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useCharacter } from "../../hooks/useCharacter";
-
-// Mock framer-motion components
-const motion = {
-  div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
-};
-const AnimatePresence = ({ children, mode }: { children: React.ReactNode; mode?: string }) => <>{children}</>;
-
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Wand2 = MockIcon;
-const User = MockIcon;
-const Shield = MockIcon;
-const Book = MockIcon;
-const Dices = MockIcon;
-const Sword = MockIcon;
-const Sparkles = MockIcon;
-const Heart = MockIcon;
-const Brain = MockIcon;
-const CheckCircle = MockIcon;
-const AlertCircle = MockIcon;
-const RefreshCw = MockIcon;
-const Play = MockIcon;
-const Download = MockIcon;
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Wand2,
+  User,
+  Shield,
+  Book,
+  Dices,
+  Sword,
+  Sparkles,
+  Heart,
+  Brain,
+  CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  Play,
+  Download
+} from "lucide-react";
 
 interface CharacterConcept {
   prompt: string;

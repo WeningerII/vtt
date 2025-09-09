@@ -648,4 +648,3 @@ interface ActivePhysicsEffect {
   entity?: PhysicsEntity;
 }
 
-export { GeometryCalculator, PhysicsSpellExecutor };

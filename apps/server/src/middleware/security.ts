@@ -26,6 +26,17 @@ export const securityHeadersMiddleware: Middleware = async (ctx, _next) => {
         "font-src 'self' data:; " +
         "frame-ancestors 'none'; " +
         "base-uri 'self'";
+  } else if (ctx.url.pathname === "/") {
+    // Relaxed CSP for root welcome page
+    csp =
+      process.env.CSP_ROOT ??
+      "default-src 'self'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "script-src 'self'; " +
+        "img-src 'self' data:; " +
+        "font-src 'self'; " +
+        "frame-ancestors 'none'; " +
+        "base-uri 'self'";
   } else {
     // Strict CSP for API endpoints
     csp = process.env.CSP ?? "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";

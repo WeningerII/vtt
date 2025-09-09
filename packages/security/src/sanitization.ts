@@ -1,33 +1,5 @@
-// Import statements commented out - install packages if needed
-// import DOMPurify from 'isomorphic-dompurify';
-// import validator from 'validator';
-
-// Mock implementations for now
-const DOMPurify = {
-  sanitize: (html: string, options?: any) => {
-    // Basic HTML sanitization
-    return html
-      .replace(/<script[^>]*>.*?<\/script>/gi, "")
-      .replace(/on\w+="[^"]*"/gi, "")
-      .replace(/javascript:/gi, "");
-  },
-};
-
-const validator = {
-  isEmail: (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-  normalizeEmail: (email: string) => email.toLowerCase().trim(),
-  isURL: (url: string, options?: any) => {
-    try {
-      const u = new URL(url);
-      if (options?.protocols) {
-        return options.protocols.includes(u.protocol.slice(0, -1));
-      }
-      return true;
-    } catch {
-      return false;
-    }
-  },
-};
+import DOMPurify from 'isomorphic-dompurify';
+import validator from 'validator';
 
 /**
  * Input sanitization utilities for preventing XSS and injection attacks

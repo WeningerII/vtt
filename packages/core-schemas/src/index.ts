@@ -399,6 +399,6 @@ export const MonsterSchema = z.object({
 export type Monster = z.infer<typeof MonsterSchema>;
 
 // Re-exports for shared protocol schemas
-export * from "./messages";
-export * from "./http";
-export * from "./character";
+export * from "./messages.js";
+export * from "./http.js";
+export * from "./character.js";

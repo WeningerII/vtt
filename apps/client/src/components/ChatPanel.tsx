@@ -6,21 +6,17 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ChatMessage } from '../types/vtt';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
-
-// Mock lucide-react icons since module is not available
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Mic = MockIcon;
-const MicOff = MockIcon;
-const Send = MockIcon;
-const Settings = MockIcon;
-const Users = MockIcon;
-const Volume2 = MockIcon;
-const VolumeX = MockIcon;
-const Dice6 = MockIcon;
-const ArrowDown = MockIcon;
+import { 
+  Mic, 
+  MicOff, 
+  Send, 
+  Settings, 
+  Users, 
+  Volume2, 
+  VolumeX, 
+  Dice6, 
+  ArrowDown 
+} from 'lucide-react';
 
 interface ChatPanelProps {
   messages: ChatMessage[];

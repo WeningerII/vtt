@@ -28,13 +28,43 @@ export const PongMessageSchema = z.object({
 });
 export type PongMessage = z.infer<typeof PongMessageSchema>;
 
-export const ErrorMessageSchema = z.object({
-  type: z.literal("ERROR"),
-  code: z.string(),
-  message: z.string(),
-  id: z.string().optional(),
-});
+export const ErrorMessageSchema = z
+  .object({
+    type: z.literal("ERROR"),
+    code: z.string().optional(),
+    message: z.string().optional(),
+    error: z.string().optional(),
+    id: z.string().optional(),
+  })
+  .refine((obj) => Boolean(obj.message || obj.error), {
+    message: "ERROR message must include either 'message' or 'error'",
+  });
 export type ErrorMessage = z.infer<typeof ErrorMessageSchema>;
+
+// Additional server message schemas used by current server implementation
+export const ConnectedMessageSchema = z.object({
+  type: z.literal("CONNECTED"),
+  message: z.string().optional(),
+});
+export type ConnectedMessage = z.infer<typeof ConnectedMessageSchema>;
+
+export const AuthenticatedMessageSchema = z.object({
+  type: z.literal("AUTHENTICATED"),
+  user: z
+    .object({
+      id: z.string(),
+      username: z.string().optional(),
+      displayName: z.string().optional(),
+    })
+    .optional(),
+});
+export type AuthenticatedMessage = z.infer<typeof AuthenticatedMessageSchema>;
+
+export const SessionJoinedMessageSchema = z.object({
+  type: z.literal("SESSION_JOINED"),
+  session: z.any(),
+});
+export type SessionJoinedMessage = z.infer<typeof SessionJoinedMessageSchema>;
 
 // Network sync messages
 export const NetEntitySchema = z.object({
@@ -142,6 +172,11 @@ export const AnyServerMessageSchema = z.union([
   GameStateMessageSchema,
   PlayerJoinedMessageSchema,
   PlayerLeftMessageSchema,
+  ConnectedMessageSchema,
+  AuthenticatedMessageSchema,
+  SessionJoinedMessageSchema,
+  // Permissive fallback to allow unknown-but-typed messages to pass through
+  z.object({ type: z.string() }).passthrough(),
 ]);
 export type AnyServerMessage = z.infer<typeof AnyServerMessageSchema>;
 
@@ -184,6 +219,24 @@ export const LeaveGameMessageSchema = z.object({
 });
 export type LeaveGameMessage = z.infer<typeof LeaveGameMessageSchema>;
 
+// Client messages used by current server implementation
+export const AuthenticateMessageSchema = z.object({
+  type: z.literal("AUTHENTICATE"),
+  token: z.string(),
+});
+export type AuthenticateMessage = z.infer<typeof AuthenticateMessageSchema>;
+
+export const JoinSessionMessageSchema = z.object({
+  type: z.literal("JOIN_SESSION"),
+  sessionId: z.string(),
+});
+export type JoinSessionMessage = z.infer<typeof JoinSessionMessageSchema>;
+
+export const LeaveSessionMessageSchema = z.object({
+  type: z.literal("LEAVE_SESSION"),
+});
+export type LeaveSessionMessage = z.infer<typeof LeaveSessionMessageSchema>;
+
 export const AnyClientMessageSchema = z.union([
   PingMessageSchema,
   EchoMessageSchema,
@@ -192,5 +245,8 @@ export const AnyClientMessageSchema = z.union([
   ChatMessageSchema,
   JoinGameMessageSchema,
   LeaveGameMessageSchema,
+  AuthenticateMessageSchema,
+  JoinSessionMessageSchema,
+  LeaveSessionMessageSchema,
 ]);
 export type AnyClientMessage = z.infer<typeof AnyClientMessageSchema>;

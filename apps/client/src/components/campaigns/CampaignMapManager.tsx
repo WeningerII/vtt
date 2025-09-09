@@ -5,26 +5,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { logger } from "@vtt/logging";
 import { toErrorObject } from "../../utils/error-utils";
 
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const PauseIcon = MockIcon;
-const PlayIcon = MockIcon;
-const PlusIcon = MockIcon;
-const SettingsIcon = MockIcon;
-const UsersIcon = MockIcon;
-
-// Using placeholder icons - replace with actual icon library
-const Plus = () => <span>+</span>;
-const Trash2 = () => <span>🗑</span>;
-const Settings = () => <span>⚙</span>;
-const Map = () => <span>🗺</span>;
-// const Upload = () => <span>⬆</span>; // Unused - commented out
-const Play = () => <span>▶</span>;
-const Pause = () => <span>⏸</span>;
-const Users = () => <span>👥</span>;
+import {
+  Map,
+  Plus,
+  Upload,
+  Grid,
+  Settings,
+  Eye,
+  Trash2,
+  Play,
+  Pause,
+  Users
+} from "lucide-react";
 const Grid3X3 = () => <span>⋮⋮⋮</span>;
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -492,7 +484,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
                           title="Duplicate scene"
                           className="p-1 hover:bg-neutral-100 rounded"
                         >
-                          <span className="h-4 w-4"><PlusIcon /></span>
+                          <Plus className="h-4 w-4" />
                         </Button>
                       ) : (
                         <Button
@@ -503,7 +495,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
                           title="Launch session"
                           className="p-1 hover:bg-neutral-100 rounded"
                         >
-                          <span className="h-3 w-3"><UsersIcon /></span>
+                          <Users className="h-4 w-4" />
                         </Button>
                       )}
                       
@@ -515,7 +507,7 @@ export function CampaignMapManager({ campaignId: _campaignId, isGM, onSceneSelec
                         title="Scene settings"
                         className="p-1 hover:bg-neutral-100 rounded"
                       >
-                        <span className="h-4 w-4"><SettingsIcon /></span>
+                        <Settings className="h-4 w-4" />
                       </Button>
                       
                       <Button

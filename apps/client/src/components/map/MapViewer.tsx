@@ -148,7 +148,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   onTokenMove,
 }) => {
   const { user } = useAuth();
-  const wsUrl = `ws://localhost:3001/campaigns/${campaignId}/scenes/${sceneId}`;
+  const wsUrl = `ws://localhost:8080/campaigns/${campaignId}/scenes/${sceneId}`;
 
   // WebSocket integration for real-time collaboration
   const { isConnected, send, connectedUsers, lastMessage } = useWebSocket({

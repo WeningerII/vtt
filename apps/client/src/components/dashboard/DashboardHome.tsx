@@ -18,78 +18,13 @@ import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { useAuth } from "../../providers/AuthProvider";
 import { formatDate, formatRelativeTime } from "../../lib/format";
-
-// Mock data - in real app, this would come from API
-const mockStats = {
-  totalCampaigns: 3,
-  activePlayers: 12,
-  hoursPlayed: 47,
-  nextSession: new Date("2024-01-15T19:00:00"),
-};
-
-const mockRecentCampaigns = [
-  {
-    id: "1",
-    name: "The Lost Mines of Phandelver",
-    system: "D&D 5e",
-    players: 4,
-    lastPlayed: new Date("2024-01-10T20:30:00"),
-    status: "active",
-    image: "/api/placeholder/campaign1.jpg",
-  },
-  {
-    id: "2",
-    name: "Curse of Strahd",
-    system: "D&D 5e",
-    players: 6,
-    lastPlayed: new Date("2024-01-08T19:00:00"),
-    status: "active",
-    image: "/api/placeholder/campaign2.jpg",
-  },
-  {
-    id: "3",
-    name: "Cyberpunk Red Campaign",
-    system: "Cyberpunk Red",
-    players: 3,
-    lastPlayed: new Date("2024-01-05T21:00:00"),
-    status: "paused",
-    image: "/api/placeholder/campaign3.jpg",
-  },
-];
-
-const mockRecentActivity = [
-  {
-    id: "1",
-    type: "session",
-    message: "Completed session in The Lost Mines of Phandelver",
-    time: new Date("2024-01-10T20:30:00"),
-    icon: Gamepad2,
-  },
-  {
-    id: "2",
-    type: "player",
-    message: "Alice joined Curse of Strahd campaign",
-    time: new Date("2024-01-09T14:15:00"),
-    icon: Users,
-  },
-  {
-    id: "3",
-    type: "campaign",
-    message: "Created new campaign: Cyberpunk Red Campaign",
-    time: new Date("2024-01-07T10:20:00"),
-    icon: Plus,
-  },
-  {
-    id: "4",
-    type: "achievement",
-    message: "Reached 50 hours of gameplay milestone",
-    time: new Date("2024-01-05T18:45:00"),
-    icon: Star,
-  },
-];
+import { useDashboardData } from "../../hooks/useDashboardData";
+import { useRouter } from "../Router";
 
 export function DashboardHome() {
   const { user } = useAuth();
+  const { navigate } = useRouter();
+  const { stats, recentCampaigns, recentActivity, isLoading, error } = useDashboardData();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -119,14 +54,48 @@ export function DashboardHome() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <div className="text-red-600 mb-4">
+            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-neutral-900 mb-2">Unable to load dashboard</h2>
+          <p className="text-neutral-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="primary">
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.displayName || 'Player'}! 🎲</h1>
         <p className="text-primary-100">
-          Ready to continue your adventures? Your next session is{" "}
-          {formatRelativeTime(mockStats.nextSession)}.
+          {stats.nextSession ? (
+            <>Ready to continue your adventures? Your next session is{" "}
+            {formatRelativeTime(stats.nextSession)}.</>
+          ) : (
+            "No upcoming sessions scheduled. Time to plan your next adventure!"
+          )}
         </p>
       </div>
 
@@ -137,7 +106,7 @@ export function DashboardHome() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-neutral-600">Campaigns</p>
-                <p className="text-2xl font-bold text-neutral-900">{mockStats.totalCampaigns}</p>
+                <p className="text-2xl font-bold text-neutral-900">{stats.totalCampaigns}</p>
               </div>
               <div className="h-12 w-12 bg-primary-100 rounded-lg flex items-center justify-center">
                 <Gamepad2 className="h-6 w-6 text-primary-600" />
@@ -155,7 +124,7 @@ export function DashboardHome() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-neutral-600">Active Players</p>
-                <p className="text-2xl font-bold text-neutral-900">{mockStats.activePlayers}</p>
+                <p className="text-2xl font-bold text-neutral-900">{stats.activePlayers}</p>
               </div>
               <div className="h-12 w-12 bg-success-100 rounded-lg flex items-center justify-center">
                 <Users className="h-6 w-6 text-success-600" />
@@ -173,7 +142,7 @@ export function DashboardHome() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-neutral-600">Hours Played</p>
-                <p className="text-2xl font-bold text-neutral-900">{mockStats.hoursPlayed}</p>
+                <p className="text-2xl font-bold text-neutral-900">{stats.hoursPlayed}</p>
               </div>
               <div className="h-12 w-12 bg-warning-100 rounded-lg flex items-center justify-center">
                 <Clock className="h-6 w-6 text-warning-600" />
@@ -192,7 +161,7 @@ export function DashboardHome() {
               <div>
                 <p className="text-sm font-medium text-neutral-600">Next Session</p>
                 <p className="text-lg font-semibold text-neutral-900">
-                  {formatDate(mockStats.nextSession, "MMM d, h:mm a")}
+                  {stats.nextSession ? formatDate(stats.nextSession, "MMM d, h:mm a") : "Not scheduled"}
                 </p>
               </div>
               <div className="h-12 w-12 bg-info-100 rounded-lg flex items-center justify-center">
@@ -218,7 +187,7 @@ export function DashboardHome() {
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {mockRecentCampaigns.map((campaign) => (
+              {recentCampaigns.length > 0 ? recentCampaigns.map((campaign) => (
                 <div
                   key={campaign.id}
                   className="flex items-center space-x-4 p-4 rounded-lg border border-neutral-200 hover:border-neutral-300 transition-colors cursor-pointer"
@@ -246,13 +215,32 @@ export function DashboardHome() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8">
+                  <Gamepad2 className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+                  <p className="text-neutral-600 mb-4">No campaigns yet</p>
+                  <Button 
+                    variant="primary" 
+                    size="sm"
+                    onClick={() => navigate('/campaigns/new')}
+                  >
+                    Create Your First Campaign
+                  </Button>
+                </div>
+              )}
 
+              {recentCampaigns.length > 0 && (
               <div className="pt-4 border-t">
-                <Button variant="secondary" fullWidth leftIcon={<Plus className="h-4 w-4" />}>
+                <Button 
+                  variant="secondary" 
+                  fullWidth 
+                  leftIcon={<Plus className="h-4 w-4" />}
+                  onClick={() => navigate('/campaigns/new')}
+                >
                   Create New Campaign
                 </Button>
               </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -264,7 +252,7 @@ export function DashboardHome() {
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {mockRecentActivity.map((activity) => {
+              {recentActivity.length > 0 ? recentActivity.map((activity) => {
                 const IconComponent = getActivityIcon(activity.type);
                 return (
                   <div key={activity.id} className="flex space-x-3">
@@ -279,13 +267,21 @@ export function DashboardHome() {
                     </div>
                   </div>
                 );
-              })}
+              }) : (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-neutral-300 mx-auto mb-3" />
+                  <p className="text-neutral-600">No recent activity</p>
+                  <p className="text-sm text-neutral-500 mt-1">Start a campaign to see activity here</p>
+                </div>
+              )}
 
+              {recentActivity.length > 0 && (
               <div className="pt-4 border-t">
                 <Button variant="link" size="sm" className="w-full">
                   View all activity
                 </Button>
               </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -300,7 +296,11 @@ export function DashboardHome() {
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">Start New Campaign</h3>
             <p className="text-sm text-neutral-600 mb-4">Create a new adventure for your players</p>
-            <Button variant="primary" fullWidth>
+            <Button 
+              variant="primary" 
+              fullWidth
+              onClick={() => navigate('/campaigns/new')}
+            >
               Get Started
             </Button>
           </CardContent>
@@ -313,7 +313,11 @@ export function DashboardHome() {
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">Invite Players</h3>
             <p className="text-sm text-neutral-600 mb-4">Grow your gaming community</p>
-            <Button variant="secondary" fullWidth>
+            <Button 
+              variant="secondary" 
+              fullWidth
+              onClick={() => navigate('/players/invite')}
+            >
               Send Invites
             </Button>
           </CardContent>
@@ -326,7 +330,11 @@ export function DashboardHome() {
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">Schedule Session</h3>
             <p className="text-sm text-neutral-600 mb-4">Coordinate your next game night</p>
-            <Button variant="secondary" fullWidth>
+            <Button 
+              variant="secondary" 
+              fullWidth
+              onClick={() => navigate('/sessions/schedule')}
+            >
               Schedule Now
             </Button>
           </CardContent>

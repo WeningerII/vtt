@@ -54,11 +54,27 @@ export default function App() {
 
     // Global error handlers
     const handleError = (event: ErrorEvent) => {
-      logger.error("Global error:", event.error);
+      // Never log empty objects - they crash React
+      const error = event.error;
+      if (error instanceof Error) {
+        logger.error("Global error:", error);
+      } else if (error && typeof error === 'object' && Object.keys(error).length > 0) {
+        logger.error("Global error:", { message: error.message || 'Unknown error', details: error });
+      } else {
+        logger.error("Global error:", { message: event.message || 'Unknown global error' });
+      }
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      logger.error("Unhandled promise rejection:", event.reason);
+      // Never log empty objects - they crash React
+      const reason = event.reason;
+      if (reason instanceof Error) {
+        logger.error("Unhandled promise rejection:", reason);
+      } else if (reason && typeof reason === 'object' && Object.keys(reason).length > 0) {
+        logger.error("Unhandled promise rejection:", { message: reason.message || 'Unknown rejection', details: reason });
+      } else {
+        logger.error("Unhandled promise rejection:", { message: String(reason) || 'Unknown promise rejection' });
+      }
     };
 
     window.addEventListener("error", handleError);

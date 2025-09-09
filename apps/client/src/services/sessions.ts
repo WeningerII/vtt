@@ -82,22 +82,31 @@ class SessionsService {
       // Ensure we always return an array
       return Array.isArray(sessions) ? sessions : [];
     } catch (error: any) {
-      logger.error("Failed to fetch sessions:", error);
+      // CRITICAL: Don't log the raw error object if it's empty - it crashes React
+      const errorToLog = error instanceof Error ? error : 
+                        error?.message ? { message: error.message } : 
+                        { message: 'Unknown error', raw: String(error) };
+      logger.error("Failed to fetch sessions:", errorToLog);
       
       // Check if this is an authentication error
-      if (error.response?.status === 401) {
+      if (error?.response?.status === 401) {
         logger.warn("Authentication required to fetch sessions");
         throw new Error("Please log in to view game sessions");
       }
       
-      // Check if this is a network error
-      if (!error.response) {
-        logger.warn("Network error fetching sessions - using fallback data");
-        return this.getFallbackSessions();
+      // Check if this is a network error  
+      if (error && !error.response && error.message) {
+        throw new Error(error.message || "Network error fetching sessions. Check server availability and network.");
       }
       
-      // For other errors, still throw to let the UI handle them
-      throw error;
+      // Ensure we always throw a proper Error object, never undefined or empty objects
+      if (error instanceof Error) {
+        throw error;
+      } else if (error?.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Failed to fetch sessions. Please try again.");
+      }
     }
   }
 
@@ -114,8 +123,9 @@ class SessionsService {
       return (sessionData && typeof sessionData === 'object' && 'id' in sessionData) 
         ? sessionData 
         : null;
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to fetch session ${sessionId}:`, error);
+      // Return null instead of throwing to avoid crashing the app
       return null;
     }
   }
@@ -155,7 +165,14 @@ class SessionsService {
         throw new Error(error.response.data?.error || "Invalid session data");
       }
       
-      throw error;
+      // Ensure proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else if (error?.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Operation failed");
+      }
     }
   }
 
@@ -190,7 +207,14 @@ class SessionsService {
         throw new Error("Session not found - it may have ended or been deleted");
       }
       
-      throw error;
+      // Ensure proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else if (error?.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Operation failed");
+      }
     }
   }
 
@@ -206,9 +230,16 @@ class SessionsService {
       if (apiResponse.success === false) {
         throw new Error(apiResponse.error || "Failed to leave session");
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to leave session ${sessionId}:`, error);
-      throw error;
+      // Ensure proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else if (error?.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Operation failed");
+      }
     }
   }
 
@@ -232,9 +263,16 @@ class SessionsService {
       }
 
       return updatedSession;
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to update session ${sessionId}:`, error);
-      throw error;
+      // Ensure proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else if (error?.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Operation failed");
+      }
     }
   }
 
@@ -250,110 +288,20 @@ class SessionsService {
       if (apiResponse.success === false) {
         throw new Error(apiResponse.error || "Failed to delete session");
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to delete session ${sessionId}:`, error);
-      throw error;
+      // Ensure proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else if (error?.message) {
+        throw new Error(error.message);
+      } else {
+        throw new Error("Operation failed");
+      }
     }
   }
 
-  /**
-   * Fallback mock data for development/testing
-   * This provides a graceful fallback when the API is not yet available
-   */
-  private getFallbackSessions(): GameSessionInfo[] {
-    return [
-      {
-        id: "session-1",
-        name: "Lost Mine of Phandelver",
-        description: "A classic D&D 5e adventure for new players. Join us for an epic journey through the forgotten mines!",
-        gamemaster: {
-          id: "gm-1",
-          username: "dungeonmaster",
-          displayName: "The Dungeon Master",
-        },
-        players: [
-          {
-            id: "player-1",
-            username: "aragorn_ranger",
-            displayName: "Aragorn",
-          },
-          {
-            id: "player-2", 
-            username: "legolas_archer",
-            displayName: "Legolas",
-          },
-        ],
-        maxPlayers: 6,
-        system: "D&D 5e",
-        status: "waiting",
-        settings: {
-          maxPlayers: 6,
-          isPrivate: false,
-          allowSpectators: true,
-        },
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        lastActivity: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-      },
-      {
-        id: "session-2",
-        name: "Curse of Strahd",
-        description: "A gothic horror campaign in the mysterious land of Barovia. Experienced players preferred.",
-        gamemaster: {
-          id: "gm-2",
-          username: "gothic_master",
-          displayName: "Master of Darkness",
-        },
-        players: [
-          {
-            id: "player-3",
-            username: "paladin_light",
-            displayName: "Sir Galahad",
-          },
-          {
-            id: "player-4",
-            username: "rogue_shadow",
-            displayName: "Shadowstep",
-          },
-          {
-            id: "player-5",
-            username: "wizard_arcane",
-            displayName: "Merlin",
-          },
-        ],
-        maxPlayers: 5,
-        system: "D&D 5e",
-        status: "active",
-        settings: {
-          maxPlayers: 5,
-          isPrivate: false,
-          allowSpectators: true,
-        },
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        lastActivity: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
-      },
-      {
-        id: "session-3",
-        name: "Cyberpunk 2077: Night City Chronicles",
-        description: "High-tech, low-life adventures in the dark future of Night City.",
-        gamemaster: {
-          id: "gm-3",
-          username: "cyber_runner",
-          displayName: "NetRunner",
-        },
-        players: [],
-        maxPlayers: 4,
-        system: "Cyberpunk Red",
-        status: "waiting",
-        settings: {
-          maxPlayers: 4,
-          isPrivate: true,
-          allowSpectators: false,
-        },
-        createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-        lastActivity: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1 hour ago
-      },
-    ];
-  }
+  // Removed fallback mock data - we should surface real errors, not hide them
 }
 
 // Export singleton instance

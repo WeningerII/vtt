@@ -21,7 +21,7 @@
     "isolatedModules": false,
     "incremental": true,
     "tsBuildInfoFile": "./content-5e-srd.tsbuildinfo",
-    "module": "CommonJS",
+    "module": "ESNext",
     "target": "ES2020"
   },
   "include": [

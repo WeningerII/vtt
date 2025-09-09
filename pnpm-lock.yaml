@@ -359,7 +359,7 @@ importers:
         specifier: ^14.0.0
         version: 14.1.3(i18next@23.16.8)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-router-dom:
-        specifier: ^6.20.0
+        specifier: ^6.30.1
         version: 6.30.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tailwind-merge:
         specifier: ^2.2.0
@@ -562,6 +562,9 @@ importers:
       ts-jest:
         specifier: ^29.4.1
         version: 29.4.1(@babel/core@7.28.3)(@jest/transform@30.1.2)(@jest/types@30.0.5)(babel-jest@30.1.2(@babel/core@7.28.3))(jest-util@30.0.5)(jest@29.7.0(@types/node@20.19.13))(typescript@5.9.2)
+      tsx:
+        specifier: ^4.20.4
+        version: 4.20.5
 
   packages/ai:
     dependencies:
@@ -1200,6 +1203,9 @@ importers:
       helmet:
         specifier: ^7.1.0
         version: 7.2.0
+      isomorphic-dompurify:
+        specifier: ^2.26.0
+        version: 2.26.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -1209,6 +1215,9 @@ importers:
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
+      validator:
+        specifier: ^13.15.15
+        version: 13.15.15
       zod:
         specifier: ^3.22.0
         version: 3.25.76
@@ -1222,6 +1231,9 @@ importers:
       '@types/uuid':
         specifier: ^9.0.7
         version: 9.0.8
+      '@types/validator':
+        specifier: ^13.15.3
+        version: 13.15.3
       typescript:
         specifier: ^5.3.0
         version: 5.9.2
@@ -4296,6 +4308,9 @@ packages:
   '@types/uuid@9.0.8':
     resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
 
+  '@types/validator@13.15.3':
+    resolution: {integrity: sha512-7bcUmDyS6PN3EuD9SlGGOxM77F8WLVsrwkxyWxKnxzmXoequ6c7741QBrANq6htVRGOITJ7z72mTP6Z4XyuG+Q==}
+
   '@types/webxr@0.5.23':
     resolution: {integrity: sha512-GPe4AsfOSpqWd3xA/0gwoKod13ChcfV67trvxaW2krUbgb9gxQjnCx8zGshzMl8LSHZlNH5gQ8LNScsDuc7nGQ==}
 
@@ -6715,6 +6730,10 @@ packages:
 
   ismobilejs@1.1.1:
     resolution: {integrity: sha512-VaFW53yt8QO61k2WJui0dHf4SlL8lxBofUuUmwBo0ljPk0Drz2TiuDW4jo3wDcv41qy/SxrJ+VAzJ/qYqsmzRw==}
+
+  isomorphic-dompurify@2.26.0:
+    resolution: {integrity: sha512-nZmoK4wKdzPs5USq4JHBiimjdKSVAOm2T1KyDoadtMPNXYHxiENd19ou4iU/V4juFM6LVgYQnpxCYmxqNP4Obw==}
+    engines: {node: '>=18'}
 
   isomorphic.js@0.2.5:
     resolution: {integrity: sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw==}
@@ -12954,7 +12973,7 @@ snapshots:
 
   '@types/accepts@1.3.7':
     dependencies:
-      '@types/node': 20.19.13
+      '@types/node': 24.3.1
 
   '@types/aria-query@5.0.4': {}
 
@@ -13041,7 +13060,7 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/express': 4.17.23
       '@types/keygrip': 1.0.6
-      '@types/node': 20.19.13
+      '@types/node': 24.3.1
 
   '@types/cors@2.8.19':
     dependencies:
@@ -13130,7 +13149,7 @@ snapshots:
 
   '@types/hapi__shot@4.1.6':
     dependencies:
-      '@types/node': 20.19.13
+      '@types/node': 24.3.1
 
   '@types/http-assert@1.5.6': {}
 
@@ -13377,6 +13396,8 @@ snapshots:
   '@types/uuid@10.0.0': {}
 
   '@types/uuid@9.0.8': {}
+
+  '@types/validator@13.15.3': {}
 
   '@types/webxr@0.5.23': {}
 
@@ -16295,6 +16316,16 @@ snapshots:
 
   ismobilejs@1.1.1: {}
 
+  isomorphic-dompurify@2.26.0:
+    dependencies:
+      dompurify: 3.2.6
+      jsdom: 26.1.0
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - supports-color
+      - utf-8-validate
+
   isomorphic.js@0.2.5: {}
 
   istanbul-lib-coverage@3.2.2: {}
@@ -18135,7 +18166,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.19.13
+      '@types/node': 24.3.1
       long: 5.3.2
 
   proxy-addr@2.0.7:

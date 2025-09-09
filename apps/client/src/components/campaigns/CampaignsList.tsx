@@ -3,27 +3,23 @@
  */
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
-
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Search = MockIcon;
-const Filter = MockIcon;
-const Grid3X3 = MockIcon;
-const List = MockIcon;
-const Plus = MockIcon;
-const Users = MockIcon;
-const Calendar = MockIcon;
-const Clock = MockIcon;
-const MoreHorizontal = MockIcon;
-const Play = MockIcon;
-const Pause = MockIcon;
-const Settings = MockIcon;
-const Archive = MockIcon;
-const Gamepad2 = MockIcon;
-const Loader2 = MockIcon;
+import {
+  Search,
+  Filter,
+  Grid3X3,
+  List,
+  Plus,
+  Users,
+  Calendar,
+  Clock,
+  MoreHorizontal,
+  Play,
+  Pause,
+  Settings,
+  Archive,
+  Gamepad2,
+  Loader2
+} from "lucide-react";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";

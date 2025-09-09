@@ -33,6 +33,7 @@ export function getCorsConfig(): CorsConfig {
         "X-Requested-With",
         "X-CSRF-Token",
         "X-Request-ID",
+        "X-Request-Time",
       ],
       exposedHeaders: [
         "X-Request-ID",
@@ -58,6 +59,7 @@ export function getCorsConfig(): CorsConfig {
       "X-Request-ID",
       "Accept",
       "Origin",
+      "X-Request-Time",
     ],
     exposedHeaders: [
       "X-Request-ID",

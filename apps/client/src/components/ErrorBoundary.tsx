@@ -36,10 +36,17 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null };
   }
 
-  public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("Uncaught error:", error, errorInfo);
+  public override componentDidCatch(error: Error | any, errorInfo: ErrorInfo): void {
+    // Ensure we have a proper error object
+    const properError = error instanceof Error 
+      ? error 
+      : new Error(typeof error === 'object' && error?.message 
+          ? error.message 
+          : 'An unexpected error occurred');
     
-    this.setState({ errorInfo });
+    console.error("Uncaught error:", properError, errorInfo);
+    
+    this.setState({ error: properError, errorInfo });
     
     // Call custom error handler if provided
     if (this.props.onError) {

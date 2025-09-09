@@ -28,8 +28,9 @@ export class VTTWebSocketServer {
 
   constructor(server: any, prisma: PrismaClient) {
     this.prisma = prisma;
+    // Don't pass server - we'll handle upgrade manually to avoid double handling
     this.wss = new WebSocketServer({ 
-      server,
+      noServer: true,
       path: '/ws'
     });
 
@@ -365,5 +366,12 @@ export class VTTWebSocketServer {
 
   public getTotalClients(): number {
     return this.clients.size;
+  }
+
+  // Expose WebSocketServer's handleUpgrade for manual upgrade handling
+  public handleUpgrade(request: any, socket: any, head: any) {
+    this.wss.handleUpgrade(request, socket, head, (ws) => {
+      this.wss.emit('connection', ws, request);
+    });
   }
 }

@@ -118,18 +118,18 @@ export function RegisterPage({ router }: RegisterPageProps) {
         </div>
 
         {/* Registration Form */}
-        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-6 shadow-lg">
+        <div className="bg-white/5 backdrop-blur-md rounded-xl border border-white/10 p-8 shadow-lg">
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4" role="form">
+          <form onSubmit={handleSubmit} className="space-y-6" role="form">
             {/* Email Field */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white mb-1">
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-white">
                 Email Address
               </label>
               <Input
@@ -141,14 +141,15 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 error={validationErrors.email}
                 leftIcon={<Mail className="h-4 w-4" />}
                 disabled={isLoading}
+                size="lg"
               />
             </div>
 
             {/* Username Field */}
-            <div>
+            <div className="space-y-2">
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-primary mb-1"
+                className="block text-sm font-medium text-white"
               >
                 Username
               </label>
@@ -161,17 +162,18 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 error={validationErrors.username}
                 leftIcon={<User className="h-4 w-4" />}
                 disabled={isLoading}
+                size="lg"
               />
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="text-xs text-gray-400 mt-2">
                 This will be your unique identifier in games
               </p>
             </div>
 
             {/* Display Name Field */}
-            <div>
+            <div className="space-y-2">
               <label
                 htmlFor="displayName"
-                className="block text-sm font-medium text-primary mb-1"
+                className="block text-sm font-medium text-white"
               >
                 Display Name
               </label>
@@ -183,17 +185,18 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 placeholder="How others will see you"
                 error={validationErrors.displayName}
                 disabled={isLoading}
+                size="lg"
               />
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="text-xs text-gray-400 mt-2">
                 This is the name shown to other players
               </p>
             </div>
 
             {/* Password Field */}
-            <div>
+            <div className="space-y-2">
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-primary mb-1"
+                className="block text-sm font-medium text-white"
               >
                 Password
               </label>
@@ -205,12 +208,13 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 placeholder="Create a strong password"
                 error={validationErrors.password}
                 disabled={isLoading}
+                size="lg"
                 rightIcon={
                   <button
                     type="button"
                     aria-label="Toggle password visibility"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="text-text-secondary hover:text-primary transition-colors"
+                    className="text-gray-400 hover:text-white transition-colors"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -219,10 +223,10 @@ export function RegisterPage({ router }: RegisterPageProps) {
             </div>
 
             {/* Confirm Password Field */}
-            <div>
+            <div className="space-y-2">
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-primary mb-1"
+                className="block text-sm font-medium text-white"
               >
                 Confirm Password
               </label>
@@ -234,12 +238,13 @@ export function RegisterPage({ router }: RegisterPageProps) {
                 placeholder="Confirm your password"
                 error={validationErrors.confirmPassword}
                 disabled={isLoading}
+                size="lg"
                 rightIcon={
                   <button
                     type="button"
                     aria-label="Toggle confirm password visibility"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="text-text-secondary hover:text-primary transition-colors"
+                    className="text-gray-400 hover:text-white transition-colors"
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -252,56 +257,65 @@ export function RegisterPage({ router }: RegisterPageProps) {
             </div>
 
             {/* Terms Checkbox */}
-            <div className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                id="acceptTerms"
-                checked={acceptTerms}
-                onChange={(e) => {
-                  setAcceptTerms(e.target.checked);
-                  if (validationErrors.terms) {
-                    setValidationErrors((prev) => ({ ...prev, terms: "" }));
-                  }
-                }}
-                className="mt-1 h-4 w-4 text-purple-500 focus:ring-purple-500 border-white/20 rounded"
-                disabled={isLoading}
-              />
-              <label htmlFor="acceptTerms" className="text-sm text-gray-300">
-                I agree to the{" "}
-                <a href="/terms" className="text-purple-400 hover:text-purple-300">
-                  Terms of Service
-                </a>{" "}
-                and{" "}
-                <a href="/privacy" className="text-purple-400 hover:text-purple-300">
-                  Privacy Policy
-                </a>
-              </label>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  id="acceptTerms"
+                  checked={acceptTerms}
+                  onChange={(e) => {
+                    setAcceptTerms(e.target.checked);
+                    if (validationErrors.terms) {
+                      setValidationErrors((prev) => ({ ...prev, terms: "" }));
+                    }
+                  }}
+                  className="mt-1 h-4 w-4 text-purple-500 focus:ring-purple-500 border-white/20 rounded bg-white/10 focus:bg-white/20"
+                  disabled={isLoading}
+                />
+                <label htmlFor="acceptTerms" className="text-sm text-gray-300 leading-relaxed">
+                  I agree to the{" "}
+                  <a href="/terms" className="text-purple-400 hover:text-purple-300 underline">
+                    Terms of Service
+                  </a>{" "}
+                  and{" "}
+                  <a href="/privacy" className="text-purple-400 hover:text-purple-300 underline">
+                    Privacy Policy
+                  </a>
+                </label>
+              </div>
+              {validationErrors.terms && (
+                <p className="text-red-400 text-sm mt-2">{validationErrors.terms}</p>
+              )}
             </div>
-            {validationErrors.terms && (
-              <p className="text-red-400 text-sm">{validationErrors.terms}</p>
-            )}
 
             {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Creating Account..." : "Create Account"}
-            </Button>
+            <div className="pt-6">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                fullWidth
+                size="lg"
+              >
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Button>
+            </div>
           </form>
 
           {/* Divider */}
-          <div className="my-6 flex items-center">
+          <div className="my-8 flex items-center">
             <div className="flex-1 border-t border-white/10"></div>
-            <span className="px-3 text-sm text-gray-300">Or continue with</span>
+            <span className="px-4 text-sm text-gray-300">Or continue with</span>
             <div className="flex-1 border-t border-white/10"></div>
           </div>
 
           {/* OAuth Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Button
               onClick={() => handleOAuthLogin("discord")}
               disabled={isLoading}
+              variant="secondary"
+              fullWidth
+              size="lg"
             >
               Continue with Discord
             </Button>
@@ -309,18 +323,21 @@ export function RegisterPage({ router }: RegisterPageProps) {
             <Button
               onClick={() => handleOAuthLogin("google")}
               disabled={isLoading}
+              variant="secondary"
+              fullWidth
+              size="lg"
             >
               Continue with Google
             </Button>
           </div>
 
           {/* Sign In Link */}
-          <div className="mt-6 text-center">
+          <div className="mt-8 text-center">
             <p className="text-sm text-gray-300">
               Already have an account?{" "}
               <button
                 onClick={() => router.navigate("/login")}
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                className="text-purple-400 hover:text-purple-300 font-medium transition-colors underline"
                 disabled={isLoading}
               >
                 Sign in

@@ -2,6 +2,7 @@
   "name": "@vtt/core-schemas",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "description": "Common schema definitions for network messages and persistence.",
   "main": "dist/index.js",
   "module": "dist/index.js",

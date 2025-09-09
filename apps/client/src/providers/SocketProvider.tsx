@@ -28,7 +28,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     // Initialize socket connection
-    const socketUrl = process.env.REACT_APP_SOCKET_URL || "http://localhost:3001";
+    const socketUrl = process.env.REACT_APP_SOCKET_URL || "http://localhost:8080";
     const newSocket = io(socketUrl, {
       transports: ["websocket"],
       autoConnect: true,

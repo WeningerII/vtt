@@ -4,7 +4,7 @@
 
 import { RigidBody, Vector2, RigidBodyConfig } from "./RigidBody";
 import { SpatialGrid } from "./SpatialGrid";
-import { EventEmitter } from "node:events";
+import { EventEmitter } from "events";
 
 export interface CollisionInfo {
   bodyA: RigidBody;

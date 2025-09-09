@@ -7,17 +7,17 @@ import { Input } from '../ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import { cn } from '../../lib/utils';
 
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const X = MockIcon;
-const Upload = MockIcon;
-const Users = MockIcon;
-const Globe = MockIcon;
-const Lock = MockIcon;
-const UserCheck = MockIcon;
+import {
+  X,
+  Gamepad2,
+  Globe,
+  Lock,
+  Users,
+  Settings,
+  Info,
+  UserCheck,
+  Upload
+} from "lucide-react";
 
 // Mock generateId function
 const generateId = () => `campaign_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

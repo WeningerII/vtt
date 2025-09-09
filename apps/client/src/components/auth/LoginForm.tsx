@@ -4,22 +4,8 @@
 import React, { useState } from "react";
 import { logger } from "@vtt/logging";
 import { toErrorObject } from "../../utils/error-utils";
-// Mock react-router-dom since module is not available
-const useNavigate = () => (path?: string) => console.log('Navigate to:', path);
-const useLocation = () => ({ pathname: '/', search: '', hash: '', state: null, key: 'mock' });
-// Mock lucide-react icons since module is not available
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-const Chrome = MockIcon;
-const Github = MockIcon;
-const User = MockIcon;
-const Lock = MockIcon;
-const Eye = MockIcon;
-const EyeOff = MockIcon;
-const Shield = MockIcon;
-const AlertCircle = MockIcon;
-const ArrowRight = MockIcon;
+import { useNavigate, useLocation } from 'react-router-dom';
+import { User, Lock, Eye, EyeOff, Shield, AlertCircle, ArrowRight, Chrome, Github } from 'lucide-react';
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card";

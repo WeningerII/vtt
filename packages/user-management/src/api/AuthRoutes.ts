@@ -1,12 +1,12 @@
 /**
  * Authentication API routes
  */
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, RequestHandler } from "express";
 import { logger } from "@vtt/logging";
 import { z } from "zod";
 import { UserManager } from "../UserManager";
 import { NotificationManager } from "../NotificationManager";
-import { rateLimit } from "express-rate-limit";
+import { rateLimit, RateLimitRequestHandler } from "express-rate-limit";
 
 // Validation schemas
 const registerSchema = z.object({
@@ -79,10 +79,10 @@ export class AuthRoutes {
 
   private setupRoutes(): void {
     // User registration
-    this.router.post("/register", registerLimiter, this.register.bind(this));
+    this.router.post("/register", registerLimiter as any, this.register.bind(this));
 
     // User login
-    this.router.post("/login", authLimiter, this.login.bind(this));
+    this.router.post("/login", authLimiter as any, this.login.bind(this));
 
     // User logout
     this.router.post("/logout", this.logout.bind(this));
@@ -100,7 +100,7 @@ export class AuthRoutes {
     this.router.post("/verify-email", this.verifyEmail.bind(this));
 
     // Resend email verification
-    this.router.post("/verify-email/resend", authLimiter, this.resendEmailVerification.bind(this));
+    this.router.post("/verify-email/resend", authLimiter as any, this.resendEmailVerification.bind(this));
 
     // Get current user
     this.router.get("/me", this.getCurrentUser.bind(this));

@@ -4,24 +4,20 @@
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
 import { toErrorObject } from "../../utils/error-utils";
-
-// Mock lucide-react icons
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const CreditCard = MockIcon;
-const Download = MockIcon;
-const Calendar = MockIcon;
-const TrendingUp = MockIcon;
-const AlertCircle = MockIcon;
-const CheckCircle = MockIcon;
-const Users = MockIcon;
-const HardDrive = MockIcon;
-const Clock = MockIcon;
-const Zap = MockIcon;
-const ArrowUpRight = MockIcon;
-const Settings = MockIcon;
+import {
+  CreditCard,
+  Download,
+  Calendar,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+  Users,
+  HardDrive,
+  Clock,
+  Zap,
+  ArrowUpRight,
+  Settings
+} from "lucide-react";
 import { Button } from "../ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { formatCurrency, formatDate, formatFileSize } from "../../lib/format";

@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { AuthManager } from '../auth/auth-manager';
 import { PrismaClient } from '@prisma/client';
+import passport from 'passport';
 
 const prisma = new PrismaClient();
 const authManager = new AuthManager(prisma, {
@@ -163,5 +164,59 @@ authRouter.post('/logout', async (req, res) => {
     res.status(500).json({ error: 'Logout failed' });
   }
 });
+
+// OAuth routes - Google
+authRouter.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+authRouter.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/login?error=google_auth_failed' }),
+  async (req, res) => {
+    try {
+      const user = req.user as any;
+      const tokens = await authManager.generateOAuthTokens(user);
+
+      res.cookie('sessionToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      const redirectUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      res.redirect(`${redirectUrl}/dashboard`);
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      res.redirect('/login?error=auth_callback_failed');
+    }
+  }
+);
+
+// OAuth routes - Discord  
+authRouter.get('/discord', passport.authenticate('discord', { scope: ['identify', 'email'] }));
+
+authRouter.get('/discord/callback',
+  passport.authenticate('discord', { failureRedirect: '/login?error=discord_auth_failed' }),
+  async (req, res) => {
+    try {
+      const user = req.user as any;
+      const tokens = await authManager.generateOAuthTokens(user);
+
+      res.cookie('sessionToken', tokens.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      const redirectUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+      res.redirect(`${redirectUrl}/dashboard`);
+    } catch (error) {
+      console.error('Discord OAuth callback error:', error);
+      res.redirect('/login?error=auth_callback_failed');
+    }
+  }
+);
 
 export { authManager };

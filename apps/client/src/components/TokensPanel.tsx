@@ -7,24 +7,7 @@ import { Token } from '../types/vtt';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 
-// Mock lucide-react icons since module is not available
-// import { Plus, Search, Settings, Trash2, Upload, Users, X } from "lucide-react";
-
-const MockIcon = ({ className }: { className?: string }) => (
-  <span className={className} style={{ display: 'inline-block', width: '1em', height: '1em' }}>🔷</span>
-);
-
-const Plus = MockIcon;
-const Search = MockIcon;
-const Settings = MockIcon;
-const Trash2 = MockIcon;
-const Upload = MockIcon;
-const Users = MockIcon;
-const X = MockIcon;
-const Eye = MockIcon;
-const EyeOff = MockIcon;
-const Lock = MockIcon;
-const Unlock = MockIcon;
+import { Plus, Search, Settings, Trash2, Upload, Users, X, Eye, EyeOff, Lock, Unlock } from "lucide-react";
 
 interface TokensPanelProps {
   tokens: Token[];

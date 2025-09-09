@@ -244,8 +244,37 @@ export class StructuredLogger {
   warn(msg: string, obj?: Record<string, any>) {
     this.logger.warn(obj, msg);
   }
-  error(msg: string, obj?: Record<string, any>) {
-    this.logger.error(obj, msg);
+  error(msg: string, obj?: any) {
+    // Ensure we don't log empty objects that can crash React
+    if (obj && typeof obj === 'object') {
+      // Convert error-like objects to proper format
+      if (obj instanceof Error) {
+        this.logger.error({
+          message: obj.message,
+          stack: obj.stack,
+          name: obj.name
+        }, msg);
+      } else if (obj.message || obj.stack || obj.name) {
+        // Error-like object
+        this.logger.error({
+          message: obj.message || 'Unknown error',
+          stack: obj.stack,
+          name: obj.name || 'Error'
+        }, msg);
+      } else if (Object.keys(obj).length === 0) {
+        // Empty object - convert to meaningful error
+        this.logger.error({ error: 'Empty error object' }, msg);
+      } else {
+        // Regular object
+        this.logger.error(obj, msg);
+      }
+    } else if (obj) {
+      // Primitive value
+      this.logger.error({ value: obj }, msg);
+    } else {
+      // No object
+      this.logger.error(msg);
+    }
   }
   fatal(msg: string, obj?: Record<string, any>) {
     this.logger.fatal(obj, msg);

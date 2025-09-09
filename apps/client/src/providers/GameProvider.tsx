@@ -107,7 +107,7 @@ interface GameProviderProps {
 
 export function GameProvider({ children }: GameProviderProps) {
   const { user, isAuthenticated } = useAuth();
-  const { send, subscribe, isConnected } = useWebSocket();
+  const { send, subscribe, isConnected, connect } = useWebSocket();
 
   const [state, setState] = useState<GameState>({
     session: null,
@@ -154,6 +154,7 @@ export function GameProvider({ children }: GameProviderProps) {
 
     const unsubscribers = [
       // Handle actual core schema messages
+      // Legacy/game-state style updates (kept for compatibility)
       subscribe("GAME_STATE", (message) => {
         logger.info("Received GAME_STATE:", message);
         // Convert GAME_STATE message to session format
@@ -218,6 +219,88 @@ export function GameProvider({ children }: GameProviderProps) {
         }
       }),
 
+      // Server-side session join confirmation
+      subscribe("SESSION_JOINED", async (message) => {
+        try {
+          const sessionId = message?.session?.id;
+          if (!sessionId) {return;}
+
+          // Prefer fetching full session details via HTTP API
+          const { sessionsService } = await import('../services/sessions');
+          const apiSession = await sessionsService.getSession(sessionId);
+
+          const fallbackName = message?.session?.name || `Game Session ${sessionId}`;
+          const nowIso = new Date().toISOString();
+
+          // Map API shape to in-memory GameSession shape
+          const sessionData: GameSession = apiSession
+            ? {
+                id: apiSession.id,
+                name: apiSession.name,
+                description: apiSession.description,
+                gamemaster: apiSession.gamemaster,
+                players: (apiSession.players || []).map((p, index) => ({
+                  id: p.id,
+                  userId: p.id || `unknown-${index}`,
+                  username: p.username,
+                  displayName: p.displayName,
+                  character: null,
+                  isConnected: false,
+                  permissions: {
+                    canMoveTokens: true,
+                    canEditCharacter: true,
+                    canRollDice: true,
+                    canUseChat: true,
+                  },
+                  joinedAt: nowIso,
+                })),
+                currentScene: undefined,
+                status: apiSession.status,
+                settings: {
+                  maxPlayers: apiSession.settings.maxPlayers,
+                  isPrivate: apiSession.settings.isPrivate,
+                  allowSpectators: apiSession.settings.allowSpectators,
+                  voiceChatEnabled: false,
+                },
+                createdAt: apiSession.createdAt,
+                lastActivity: apiSession.lastActivity,
+              }
+            : {
+                id: sessionId,
+                name: fallbackName,
+                description: "Active game session",
+                gamemaster: {
+                  id: user?.id || 'unknown',
+                  username: user?.username || 'gamemaster',
+                  displayName: user?.displayName || 'Game Master',
+                },
+                players: [],
+                currentScene: undefined,
+                status: (message?.session?.status?.toLowerCase?.() as any) || 'active',
+                settings: {
+                  maxPlayers: 6,
+                  isPrivate: false,
+                  allowSpectators: true,
+                  voiceChatEnabled: false,
+                },
+                createdAt: nowIso,
+                lastActivity: nowIso,
+              };
+
+          setState((prev) => ({
+            ...prev,
+            session: sessionData,
+            isGM: sessionData.gamemaster.id === user?.id,
+            isPlayer: true,
+            isSpectator: false,
+            connectionStatus: "connected",
+            isLoading: false,
+          }));
+        } catch (err) {
+          logger.error("Failed handling SESSION_JOINED:", err as any);
+        }
+      }),
+
       subscribe("PLAYER_JOINED", (message) => {
         setState((prev) => {
           if (!prev.session) {return prev;}
@@ -274,7 +357,8 @@ export function GameProvider({ children }: GameProviderProps) {
       }),
 
       subscribe("ERROR", (message) => {
-        setError(message.message || "An unknown game error occurred");
+        const msg = message?.error || message?.message || "An unknown game error occurred";
+        setError(msg);
       }),
     ];
 
@@ -294,37 +378,53 @@ export function GameProvider({ children }: GameProviderProps) {
       clearError();
 
       try {
-        // Use the actual core schema message format
-        send({
-          type: "JOIN_GAME",
-          gameId: sessionId,
-          userId: user.id,
-          displayName: user.displayName,
-        });
-        
-        logger.info("JOIN_GAME message sent via WebSocket");
-        
-        // WebSocket join is supplementary - the main join happens via HTTP API in Dashboard
-        // Set loading to false after a brief delay to allow WebSocket response
-        setTimeout(() => setLoading(false), 2000);
+        // Ensure the server authorizes the join via HTTP first (mirrors Dashboard flow)
+        try {
+          const { sessionsService } = await import('../services/sessions');
+          await sessionsService.joinSession(sessionId);
+          logger.info(`HTTP join authorized for session ${sessionId}`);
+        } catch (httpError: any) {
+          logger.error("HTTP join failed:", httpError);
+          // Provide clear UI feedback and abort WS join
+          const msg = httpError?.message || 'Failed to join session';
+          setError(msg);
+          setLoading(false);
+          return;
+        }
+
+        // Ensure connection
+        if (!isConnected) {
+          connect();
+        }
+
+        // Authenticate WebSocket connection with access token
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          send({ type: "AUTHENTICATE", token } as any);
+        }
+
+        // Request to join the session on the server
+        send({ type: "JOIN_SESSION", sessionId } as any);
+
+        logger.info("JOIN_SESSION message sent via WebSocket");
+
+        // Allow time for server to respond with SESSION_JOINED
+        setTimeout(() => setLoading(false), 1500);
       } catch (error) {
         logger.error("Error in joinSession:", error);
         setError("Failed to join session");
         setLoading(false);
       }
     },
-    [isAuthenticated, user, setLoading, clearError, setError, send],
+    [isAuthenticated, user, setLoading, clearError, setError, send, isConnected, connect],
   );
 
   const leaveSession = useCallback(async () => {
     if (!state.session || !user) {return;}
 
     try {
-      // Use the actual core schema message format
-      send({
-        type: "LEAVE_GAME",
-        gameId: state.session.id,
-      });
+      // Inform server we're leaving the session
+      send({ type: "LEAVE_SESSION" } as any);
 
       setState((prev) => ({
         ...prev,
@@ -422,11 +522,7 @@ export function GameProvider({ children }: GameProviderProps) {
         return;
       }
 
-      send({
-        ...message,
-        sessionId: state.session.id,
-        userId: user?.id,
-      });
+      send({ type: "GAME_MESSAGE", data: { ...message, sessionId: state.session.id, userId: user?.id } } as any);
     },
     [state.session, user?.id, send],
   );

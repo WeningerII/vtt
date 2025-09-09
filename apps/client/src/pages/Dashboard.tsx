@@ -67,7 +67,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ router }) => {
         
         logger.info(`Fetched ${sessionsList.length} sessions with filter: ${filter}`);
       } catch (error: any) {
-        logger.error("Failed to fetch sessions:", error);
+        // Don't log empty error objects - they crash React
+        const safeError = error instanceof Error ? error : 
+                         error?.message ? new Error(error.message) : 
+                         new Error('Failed to fetch sessions');
+        logger.error("Failed to fetch sessions:", safeError);
         
         // Provide specific error messages based on the error type
         if (error.message?.includes("log in")) {

@@ -58,17 +58,36 @@ class ApiClient {
 
         return config;
       },
-      (error) => Promise.reject(error),
+      (error) => {
+        // Ensure we never reject with empty objects
+        if (!error || (typeof error === 'object' && Object.keys(error).length === 0)) {
+          return Promise.reject(new Error('Request configuration failed'));
+        }
+        if (error instanceof Error) {
+          return Promise.reject(error);
+        }
+        return Promise.reject(new Error(error.message || 'Request failed'));
+      },
     );
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
+        // Ensure we always have a proper error object
+        if (!error) {
+          const unknownError = new Error("An unknown error occurred");
+          logger.error("Unknown error in API client", { type: 'unknown' });
+          return Promise.reject(unknownError);
+        }
+
         // Handle network errors
         if (!error.response) {
-          logger.error("Network error:", error.message);
-          return Promise.reject(new Error("Network error. Please check your connection."));
+          const networkError = new Error(error.message || "Network error. Please check your connection.");
+          // Never log the raw error if it might be empty
+          const errorInfo = error.message ? { message: error.message } : { type: 'network', code: error.code || 'UNKNOWN' };
+          logger.error("Network error:", errorInfo);
+          return Promise.reject(networkError);
         }
 
         // Handle specific HTTP status codes
@@ -91,22 +110,27 @@ class ApiClient {
                 window.location.href = "/auth/login";
               }
             }
-            break;
+            return Promise.reject(new Error(data?.error || "Authentication required"));
           case 403:
             // Forbidden - show permission error
             logger.error("Permission denied:", data?.error || "Access forbidden");
-            break;
+            return Promise.reject(new Error(data?.error || "Permission denied"));
           case 429:
             // Rate limited
             logger.error("Rate limit exceeded:", data?.error || "Too many requests");
-            break;
+            return Promise.reject(new Error(data?.error || "Rate limit exceeded. Please try again later."));
           case 500:
             // Server error
             logger.error("Server error:", data?.error || "Internal server error");
-            break;
+            return Promise.reject(new Error(data?.error || "Server error. Please try again later."));
+          default:
+            // Other errors
+            const errorMessage = data?.error || data?.message || `Request failed with status ${status}`;
+            return Promise.reject(new Error(errorMessage));
         }
 
-        return Promise.reject(error);
+        // This should never be reached, but just in case
+        return Promise.reject(new Error("An unexpected error occurred"));
       },
     );
   }

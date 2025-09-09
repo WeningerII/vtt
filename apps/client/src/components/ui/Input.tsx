@@ -90,7 +90,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
     const passwordToggleIcon = showPasswordToggle && type === "password" && (
       <button
         type="button"
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
+        className="text-neutral-400 hover:text-neutral-600 focus:outline-none pointer-events-auto"
         onClick={togglePassword}
         tabIndex={-1}
         aria-label={showPassword ? "Hide password" : "Show password"}
@@ -116,7 +116,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
         )}
 
         {/* Input container */}
-        <div className="relative">
+        <div className="relative overflow-hidden">
           {/* Left icon */}
           {leftIcon && (
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
@@ -140,10 +140,12 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
           />
 
           {/* Right icons container */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
             {validationIcon}
-            {!validationIcon && rightIcon && <span className="text-neutral-400">{rightIcon}</span>}
-            {passwordToggleIcon}
+            {!validationIcon && rightIcon && (
+              <span className="text-neutral-400 pointer-events-auto">{rightIcon}</span>
+            )}
+            {passwordToggleIcon && <span className="pointer-events-auto">{passwordToggleIcon}</span>}
           </div>
         </div>
 

@@ -67,46 +67,31 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
     }
   }, [socket]);
 
-  // Mock scene for development
+  // Load user's active scene from server
   useEffect(() => {
     if (user && !currentScene) {
-      // Create a mock scene for testing
-      const mockScene: Scene = {
-        id: "mock-scene-1",
-        name: t("joinTestScene"),
-        gridSettings: {
-          type: "square",
-          size: 70,
-          offsetX: 0,
-          offsetY: 0,
-        },
-        tokens: [
-          {
-            id: "token-1",
-            name: "Hero",
-            x: 350,
-            y: 350,
-            width: 1,
-            height: 1,
-            rotation: 0,
-            scale: 1,
-            color: 0x00ff00,
-          },
-          {
-            id: "token-2",
-            name: "Goblin",
-            x: 560,
-            y: 420,
-            width: 1,
-            height: 1,
-            rotation: 0,
-            scale: 1,
-            color: 0xff0000,
-          },
-        ],
+      const loadActiveScene = async () => {
+        try {
+          const response = await fetch(`${import.meta.env?.VITE_SERVER_URL || 'http://localhost:8080'}/api/scenes/active`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          });
+          
+          if (response.ok) {
+            const sceneData = await response.json();
+            setCurrentScene(sceneData.scene);
+            setIsGM(sceneData.isGameMaster || false);
+          } else {
+            // No active scene, user needs to join or create one
+            console.log('No active scene found for user');
+          }
+        } catch (error) {
+          console.error('Failed to load active scene:', error);
+        }
       };
-      setCurrentScene(mockScene);
-      setIsGM(true); // Mock GM status
+      
+      loadActiveScene();
     }
   }, [user, currentScene]);
 
