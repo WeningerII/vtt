@@ -12,9 +12,9 @@ spec:
       app.kubernetes.io/name: vtt-platform
       app.kubernetes.io/component: server
   endpoints:
-  - port: metrics
+  - port: http
     interval: 30s
-    path: /metrics
+    path: /api/v1/metrics/prometheus
     scrapeTimeout: 10s
   namespaceSelector:
     matchNames:

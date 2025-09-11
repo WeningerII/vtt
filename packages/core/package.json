@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
   "name": "@vtt/core",
   "version": "0.0.0",
   "private": true,
@@ -54,6 +55,10 @@
     "./memory": {
       "import": "./dist/MemoryOptimizer.js",
       "types": "./dist/MemoryOptimizer.d.ts"
+    },
+    "./src/EventBus": {
+      "import": "./dist/EventBus.js",
+      "types": "./dist/EventBus.d.ts"
     }
   },
   "files": [

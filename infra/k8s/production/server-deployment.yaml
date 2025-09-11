@@ -28,8 +28,8 @@ spec:
         version: blue
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
-        prometheus.io/path: "/metrics"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/api/v1/metrics/prometheus"
     spec:
       serviceAccountName: vtt-server
       securityContext:
@@ -44,14 +44,9 @@ spec:
         - containerPort: 3001
           name: http
           protocol: TCP
-        - containerPort: 9090
-          name: metrics
-          protocol: TCP
         env:
         - name: PORT
           value: "3001"
-        - name: METRICS_PORT
-          value: "9090"
         envFrom:
         - configMapRef:
             name: vtt-config
@@ -137,10 +132,6 @@ spec:
     targetPort: http
     protocol: TCP
     name: http
-  - port: 9090
-    targetPort: metrics
-    protocol: TCP
-    name: metrics
   selector:
     app.kubernetes.io/name: vtt-platform
     app.kubernetes.io/component: server
@@ -248,8 +239,8 @@ spec:
         version: green
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "9090"
-        prometheus.io/path: "/metrics"
+        prometheus.io/port: "3001"
+        prometheus.io/path: "/api/v1/metrics/prometheus"
     spec:
       serviceAccountName: vtt-server
       securityContext:
@@ -264,14 +255,9 @@ spec:
         - containerPort: 3001
           name: http
           protocol: TCP
-        - containerPort: 9090
-          name: metrics
-          protocol: TCP
         env:
         - name: PORT
           value: "3001"
-        - name: METRICS_PORT
-          value: "9090"
         envFrom:
         - configMapRef:
             name: vtt-config

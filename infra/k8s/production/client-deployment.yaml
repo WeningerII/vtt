@@ -37,12 +37,12 @@ spec:
         image: ghcr.io/weningerii/vtt-client:IMAGE_TAG
         imagePullPolicy: Always
         ports:
-        - containerPort: 3000
+        - containerPort: 8080
           name: http
           protocol: TCP
         env:
         - name: PORT
-          value: "3000"
+          value: "8080"
         envFrom:
         - configMapRef:
             name: vtt-config
@@ -237,12 +237,12 @@ spec:
         image: ghcr.io/weningerii/vtt-client:IMAGE_TAG
         imagePullPolicy: Always
         ports:
-        - containerPort: 3000
+        - containerPort: 8080
           name: http
           protocol: TCP
         env:
         - name: PORT
-          value: "3000"
+          value: "8080"
         envFrom:
         - configMapRef:
             name: vtt-config

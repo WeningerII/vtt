@@ -224,9 +224,21 @@ export class UnifiedEventBus {
    * Process individual event
    */
   private async processEvent(event: SystemEvent): Promise<void> {
-    const handlers = this.subscriptions.get(event.type) || [];
-    const globalHandlers = this.subscriptions.get("*") || [];
-    const allHandlers = [...handlers, ...globalHandlers].filter((h) => h.active);
+    // Resolve all potential handler keys for this event
+    const keys = this.getHandlerKeys(event);
+
+    // Gather active handlers while avoiding duplicate execution
+    const seen = new Set<string>();
+    const allHandlers: EventSubscription[] = [];
+    for (const key of keys) {
+      const list = this.subscriptions.get(key) || [];
+      for (const sub of list) {
+        if (sub.active && !seen.has(sub.id)) {
+          seen.add(sub.id);
+          allHandlers.push(sub);
+        }
+      }
+    }
 
     this.stats.eventsProcessed++;
 
@@ -345,6 +357,56 @@ export class UnifiedEventBus {
         logger.warn(`Event queue is large: ${this.eventQueue.length} events pending`);
       }
     }, 5000);
+  }
+
+  /**
+   * Compute all subscription keys that should handle the given event.
+   * Supports:
+   * - exact type (e.g., "combat_start")
+   * - camelCase alias (e.g., "combatStart")
+   * - namespaced exact (e.g., "game:combat_start")
+   * - namespaced camelCase (e.g., "game:combatStart")
+   * - namespaced wildcard (e.g., "game:*")
+   * - global wildcard ("*")
+   */
+  private getHandlerKeys(event: SystemEvent): string[] {
+    const keys: string[] = [];
+    const type = (event.type as string) || "";
+    const source = (event as any).source as string | undefined;
+
+    const camel = this.toCamelCase(type);
+
+    // Exact type
+    keys.push(type);
+
+    // CamelCase alias
+    if (camel && camel !== type) {
+      keys.push(camel);
+    }
+
+    // Namespaced variants
+    if (source) {
+      keys.push(`${source}:${type}`);
+      if (camel && camel !== type) {
+        keys.push(`${source}:${camel}`);
+      }
+
+      // Wildcard for source namespace
+      keys.push(`${source}:*`);
+    }
+
+    // Global wildcard
+    keys.push("*");
+
+    return keys;
+  }
+
+  /**
+   * Convert snake_case or kebab-case to camelCase
+   */
+  private toCamelCase(input: string): string {
+    if (!input) return input;
+    return input.replace(/[_-]([a-z])/g, (_m, g1) => g1.toUpperCase());
   }
 
   /**

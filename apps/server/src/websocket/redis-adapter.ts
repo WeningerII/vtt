@@ -45,9 +45,10 @@ export class RedisWebSocketAdapter extends EventEmitter {
       database: options.db || 0,
     };
     
-    // Only add password if it exists
-    if (options.password || process.env.REDIS_PASSWORD) {
-      redisConfig.password = options.password || process.env.REDIS_PASSWORD;
+    // Only add password if it exists (support both REDIS_PASSWORD and REDIS_AUTH_TOKEN)
+    const pwd = options.password || process.env.REDIS_PASSWORD || process.env.REDIS_AUTH_TOKEN;
+    if (pwd) {
+      redisConfig.password = pwd;
     }
 
     // Create Redis clients

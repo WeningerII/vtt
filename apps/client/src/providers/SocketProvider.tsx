@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { logger } from "@vtt/logging";
 
@@ -25,38 +25,94 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const cleanupRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    // Initialize socket connection
-    const socketUrl = process.env.REACT_APP_SOCKET_URL || "http://localhost:8080";
+    // Determine socket base URL with sensible defaults for dev and prod
+    const explicitWs = (import.meta as any).env?.VITE_WS_URL as string | undefined;
+    const explicitApi = (import.meta as any).env?.VITE_SERVER_URL as string | undefined;
+    let socketUrl: string;
+    if (explicitWs) {
+      socketUrl = explicitWs;
+    } else if (explicitApi) {
+      socketUrl = explicitApi;
+    } else if (typeof window !== "undefined") {
+      if (window.location.hostname === "localhost") {
+        socketUrl = "http://localhost:8080";
+      } else {
+        const protocol = window.location.protocol; // http: or https:
+        const host = window.location.host;
+        const apiHost = host.startsWith("api.") ? host : `api.${host}`;
+        socketUrl = `${protocol}//${apiHost}`;
+      }
+    } else {
+      socketUrl = "http://localhost:8080";
+    }
+
+    const token = (() => {
+      try {
+        return typeof window !== "undefined" ? localStorage.getItem("accessToken") || "" : "";
+      } catch {
+        return "";
+      }
+    })();
+
     const newSocket = io(socketUrl, {
+      path: "/socket.io",
       transports: ["websocket"],
       autoConnect: true,
+      withCredentials: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
+      ...(token ? { auth: { token } } : {}),
     });
 
-    newSocket.on("connect", () => {
-      logger.info("Socket connected");
+    const onConnect = () => {
+      logger.info("Socket connected", { url: socketUrl });
       setIsConnected(true);
-    });
-
-    newSocket.on("disconnect", () => {
-      logger.info("Socket disconnected");
+    };
+    const onDisconnect = (reason: string) => {
+      logger.warn("Socket disconnected", { reason });
       setIsConnected(false);
-    });
-
-    newSocket.on("authenticated", (data: { user: User }) => {
-      logger.info("User authenticated:", data.user);
+    };
+    const onConnectError = (error: any) => {
+      logger.error("Socket connect_error", error);
+    };
+    const onError = (error: any) => {
+      logger.error("Socket error", error);
+    };
+    const onAuthenticated = (data: { user: User }) => {
+      logger.info("User authenticated", { id: data.user.id, displayName: data.user.displayName });
       setUser(data.user);
-    });
+    };
 
-    newSocket.on("error", (error: any) => {
-      logger.error("Socket error:", error);
-    });
+    newSocket.on("connect", onConnect);
+    newSocket.on("disconnect", onDisconnect);
+    newSocket.on("connect_error", onConnectError);
+    newSocket.on("error", onError);
+    newSocket.on("authenticated", onAuthenticated);
+    // Manager-level reconnection diagnostics
+    newSocket.io.on("reconnect_attempt", (attempt: number) => logger.warn("Socket reconnect_attempt", { attempt }));
+    newSocket.io.on("reconnect", (attempt: number) => logger.info("Socket reconnect", { attempt }));
+    newSocket.io.on("reconnect_error", (err: any) => logger.error("Socket reconnect_error", err));
+    newSocket.io.on("reconnect_failed", () => logger.error("Socket reconnect_failed"));
 
     setSocket(newSocket);
 
-    return () => {
+    cleanupRef.current = () => {
+      newSocket.off("connect", onConnect);
+      newSocket.off("disconnect", onDisconnect);
+      newSocket.off("connect_error", onConnectError);
+      newSocket.off("error", onError);
+      newSocket.off("authenticated", onAuthenticated);
       newSocket.disconnect();
+    };
+
+    return () => {
+      cleanupRef.current?.();
     };
   }, []);
 

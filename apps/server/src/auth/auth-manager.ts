@@ -258,7 +258,7 @@ export class AuthManager {
 export function getAuthManager(): AuthManager {
   if (!authManagerInstance) {
     const config: AuthConfig = {
-      jwtSecret: process.env.JWT_SECRET || "dev-secret-change-in-production",
+      jwtSecret: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || process.env.JWT_REFRESH_SECRET || "dev-secret-change-in-production",
       jwtExpiration: "7d",
       refreshTokenExpiration: "30d",
       bcryptRounds: 12,

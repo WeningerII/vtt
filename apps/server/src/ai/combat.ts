@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { _globalEventBus as globalEventBus, _GameEvents as GameEvents, _AIEvents as AIEvents } from "@vtt/core/src/EventBus";
+import { globalEventBus, GameEvents, AIEvents } from "@vtt/core";
 
 // Logging utility
 const logger = {
@@ -87,12 +87,12 @@ export class CrucibleService {
 
   private registerEventHandlers(): void {
     // Listen for combat events from the event bus
-    globalEventBus.on('game:combatStarted', async (event) => {
+    globalEventBus.on('game:combatStart', async (event) => {
       logger.info('Combat started event received', event);
       await this.handleCombatStart(event);
     });
 
-    globalEventBus.on('game:combatEnded', async (event) => {
+    globalEventBus.on('game:combatEnd', async (event) => {
       logger.info('Combat ended event received', event);
       await this.handleCombatEnd(event);
     });
@@ -222,6 +222,14 @@ export class CrucibleService {
 
     this.activeSimulations.set(simulationId, simulation);
 
+    // Emit combat start event on the global event bus
+    await globalEventBus.emit(
+      GameEvents.combatStart(simulationId, {
+        participants: simulation.participants.map((p) => ({ id: p.id, name: p.name, type: p.type })),
+        battlefield,
+      }),
+    );
+
     // Initialize combat participants
     simulation.participants.forEach((p) => {
       const combatant = {
@@ -275,6 +283,17 @@ export class CrucibleService {
 
     // Run simulation
     await this.runCombatSimulation(simulation, battlefield, maxRounds);
+
+    // Emit combat end event on the global event bus
+    await globalEventBus.emit(
+      GameEvents.combatEnd({
+        simulationId,
+        winner: simulation.winner,
+        rounds: simulation.rounds,
+        casualties: simulation.casualties,
+        analysis: simulation.tacticalAnalysis,
+      }),
+    );
 
     return simulation;
   }
@@ -809,7 +828,8 @@ Format as JSON with detailed reasoning for each element.`;
   }
 
   private rollInitiative(character: any): number {
-    const dexMod = Math.floor((character.abilities?.dexterity || 10 - 10) / 2);
+    const dex = typeof character.abilities?.dexterity === "number" ? character.abilities.dexterity : 10;
+    const dexMod = Math.floor((dex - 10) / 2);
     return Math.floor(Math.random() * 20) + 1 + dexMod;
   }
 

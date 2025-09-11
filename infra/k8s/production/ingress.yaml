@@ -85,11 +85,10 @@ spec:
           app.kubernetes.io/name: vtt-platform
     ports:
     - protocol: TCP
-      port: 3000
+      port: 8080
     - protocol: TCP
       port: 3001
-    - protocol: TCP
-      port: 9090
+    # metrics over main HTTP port; 9090 not used by server anymore
   egress:
   - {} # Allow all outbound traffic for external services
 
@@ -109,7 +108,7 @@ spec:
   type: LoadBalancer
   ports:
   - port: 8080
-    targetPort: 8080
+    targetPort: http
     protocol: TCP
     name: websocket
   selector:

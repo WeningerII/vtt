@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
 import { toErrorObject } from "../utils/error-utils";
-import { io, Socket } from 'socket.io-client';
 import SceneCanvas from './SceneCanvas';
 import TokensPanel from './TokensPanel';
 import ChatPanel from './ChatPanel';
-import { useVTTLayout, useTouchGestures } from '../hooks/useVTTLayout';
 import './VTTApp.css';
 import { VTTHeader } from "./vtt/VTTHeader";
 import { LoadingScreen } from "./vtt/LoadingScreen";
 import { useVTTTranslation } from "../hooks/useTranslation";
 import { useSocket } from '../providers/SocketProvider';
-import { Scene, Campaign, ChatMessage, User } from '../types/vtt';
+import { Scene, Campaign, ChatMessage } from '../types/vtt';
 
 interface VTTAppProps {
   userId: string;
@@ -72,7 +70,7 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
     if (user && !currentScene) {
       const loadActiveScene = async () => {
         try {
-          const response = await fetch(`${import.meta.env?.VITE_SERVER_URL || 'http://localhost:8080'}/api/scenes/active`, {
+          const response = await fetch(`${import.meta.env?.VITE_SERVER_URL || 'http://localhost:8080'}/api/v1/scenes/active`, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
             },

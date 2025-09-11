@@ -14,6 +14,7 @@ import { authRouter } from "./routes/auth";
 import { sessionsRouter } from "./routes/sessions";
 import { tokensRouter } from "./routes/tokens";
 import { VTTWebSocketServer } from "./websocket/websocket-server";
+import { VTTSocketManager } from "./websocket/vttSocketManager";
 import { loggingMiddleware } from "./middleware/logging";
 import { errorMiddleware } from "./middleware/error";
 import { requestIdMiddleware } from "./middleware/requestId";
@@ -850,6 +851,8 @@ const server = createServer(app);
 
 // WebSocket setup with explicit upgrade handling
 const vttWebSocketServer = new VTTWebSocketServer(server, prisma);
+// Enable Socket.IO compatibility for existing client integrations
+const _vttSocketManager = new VTTSocketManager(server as any, prisma);
 
 // Handle WebSocket upgrade requests explicitly
 server.on('upgrade', (request, socket, head) => {
@@ -881,9 +884,9 @@ server.on('upgrade', (request, socket, head) => {
       // Let the WebSocketServer handle the upgrade
       vttWebSocketServer.handleUpgrade(request, socket, head);
     } else {
-      logger.warn('[ws:upgrade] rejecting non-ws path', { path: pathOnly });
-      // Reject non-WebSocket paths
-      socket.destroy();
+      // Do not handle other upgrade paths here (e.g., Socket.IO '/socket.io/')
+      // Allow other listeners (such as Socket.IO) to process this upgrade.
+      return;
     }
   } catch (e) {
     logger.warn('[ws:upgrade] parse error', { url: request.url, error: (e as Error)?.message });
@@ -891,9 +894,8 @@ server.on('upgrade', (request, socket, head) => {
     if ((request.url || '').startsWith('/ws')) {
       logger.info('[ws:upgrade] fallback accepting raw /ws', { url: request.url });
       vttWebSocketServer.handleUpgrade(request, socket, head);
-      return;
     }
-    socket.destroy();
+    return;
   }
 });
 

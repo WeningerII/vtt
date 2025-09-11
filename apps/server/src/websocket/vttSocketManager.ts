@@ -252,7 +252,8 @@ export class VTTSocketManager {
             },
           });
 
-          // this.emit('channelMessage', message, data as Record<string, any>);
+          // Broadcast to all users in the campaign room, including sender
+          this.broadcastToRoom(`campaign:${user.campaignId}`, "new_message", message);
         } catch (error) {
           logger.error("Send message error:", error as Error);
           socket.emit("error", { message: "Failed to send message" });

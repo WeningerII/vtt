@@ -6,27 +6,27 @@
   "endpoints": [
     {
       "name": "Health Check",
-      "url": "/api/health",
+      "url": "/api/v1/health",
       "critical": true
     },
     {
       "name": "Liveness",
-      "url": "/api/health/live",
+      "url": "/api/v1/health/live",
       "critical": true
     },
     {
       "name": "Readiness",
-      "url": "/api/health/ready",
+      "url": "/api/v1/health/ready",
       "critical": true
     },
     {
       "name": "Metrics",
-      "url": "/api/metrics",
+      "url": "/api/v1/metrics",
       "critical": false
     },
     {
       "name": "Prometheus Metrics",
-      "url": "/api/metrics/prometheus",
+      "url": "/api/v1/metrics/prometheus",
       "critical": false
     }
   ],
