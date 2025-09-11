@@ -25,6 +25,43 @@ export class CombatWebSocketManager {
   constructor(private actorService: ActorIntegrationService) {}
 
   /**
+   * Register a connection for a user without attaching message listeners.
+   * Useful when an upstream WebSocket server already handles message routing.
+   */
+  registerConnection(ws: WebSocket, userId: string): void {
+    if (!this.userSockets.has(userId)) {
+      this.userSockets.set(userId, []);
+    }
+    const arr = this.userSockets.get(userId)!;
+    if (!arr.includes(ws)) {
+      arr.push(ws);
+    }
+
+    // Ensure our cleanup runs when the socket closes
+    ws.on("close", () => {
+      this.handleDisconnection(ws, userId);
+    });
+  }
+
+  /**
+   * Allow external routers to forward a combat message to this manager
+   * without attaching our own 'message' handler.
+   */
+  async processMessage(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+    // Accept legacy alias message names and normalize
+    const aliasMap: Record<string, string> = {
+      COMBAT_SUBSCRIBE: "SUBSCRIBE_ENCOUNTER",
+      COMBAT_UNSUBSCRIBE: "UNSUBSCRIBE_ENCOUNTER",
+    };
+    const normalized: CombatWebSocketMessage = {
+      ...message,
+      type: aliasMap[message.type] || message.type,
+    };
+
+    await this.handleMessage(ws, userId, normalized);
+  }
+
+  /**
    * Handle new WebSocket connection
    */
   handleConnection(ws: WebSocket, userId: string): void {
@@ -137,6 +174,28 @@ export class CombatWebSocketManager {
       case "REMOVE_CONDITION":
         await this.handleRemoveCondition(ws, userId, message);
         break;
+
+      case "REQUEST_TACTICAL_DECISION": {
+        const { encounterId, actorId } = message.payload || {};
+        if (!encounterId || !actorId) {
+          this.sendError(ws, "Missing encounterId or actorId", message.requestId);
+          return;
+        }
+        try {
+          const decision = await this.actorService.getAIDecision(encounterId, actorId);
+          this.sendMessage(ws, {
+            type: "TACTICAL_DECISION",
+            payload: {
+              requestId: message.requestId,
+              ...decision,
+            },
+          });
+        } catch (error) {
+          logger.error("Tactical decision error:", error as Error);
+          this.sendError(ws, "Failed to generate tactical decision", message.requestId);
+        }
+        break;
+      }
 
       default:
         this.sendError(ws, `Unknown message type: ${message.type}`, message.requestId);

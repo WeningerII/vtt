@@ -1,17 +1,18 @@
-import React from 'react';
 /**
  * Input sanitization and validation utilities for the VTT application
  */
 
-import DOMPurify from "dompurify";
+import React from 'react';
+import DOMPurify from "isomorphic-dompurify";
+import { logger } from '../lib/logger';
 
 // Input validation patterns
 const VALIDATION_PATTERNS = {
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   username: /^[a-zA-Z0-9_-]{3,20}$/,
-  campaignName: /^[a-zA-Z0-9\s\-_']{1,50}$/,
-  characterName: /^[a-zA-Z0-9\s\-_']{1,30}$/,
-  diceExpression: /^[0-9d+\-*\/\s()khlr!<>=]+$/i,
+  campaignName: /^[a-zA-Z0-9\s_'-]{1,50}$/,
+  characterName: /^[a-zA-Z0-9\s_'-]{1,30}$/,
+  diceExpression: /^[0-9d+*/\s()khlr!<>=-]+$/i,
   hexColor: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
   url: /^https?:\/\/[^\s<>"']+$/,
   uuid: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -70,7 +71,8 @@ export function sanitizeText(input: string, maxLength: number = 1000): string {
   }
 
   // Remove null bytes and control characters
-  let sanitized = input.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+  // eslint-disable-next-line no-control-regex
+  let sanitized = input.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "");
 
   // Trim whitespace
   sanitized = sanitized.trim();
@@ -119,7 +121,7 @@ export function sanitizeUserContent(
 
   // Check for dangerous content first
   if (containsDangerousContent(input)) {
-    console.warn("Dangerous content detected and blocked:", input.substring(0, 100));
+    logger.warn("Dangerous content detected and blocked:", input.substring(0, 100));
     return "[Content blocked for security reasons]";
   }
 
@@ -153,7 +155,7 @@ export function sanitizeDiceExpression(input: string): string {
   }
 
   // Remove any non-dice characters
-  const sanitized = input.replace(/[^0-9d+\-*\/\s()khlr!<>=]/gi, "");
+  const sanitized = input.replace(/[^0-9d+*/\s()khlr!<>=-]/gi, "");
 
   // Validate the expression
   if (!validateInput(sanitized, "diceExpression")) {
@@ -177,8 +179,9 @@ export function sanitizeFileName(input: string): string {
     return "";
   }
 
-  // Remove dangerous characters
-  let sanitized = input.replace(/[<>:"/\\|?*\x00-\x1f]/g, "");
+  // Remove dangerous characters (use Unicode escapes for control chars)
+  // eslint-disable-next-line no-control-regex
+  let sanitized = input.replace(/[<>:"/\\|?*\u0000-\u001F]/g, "");
 
   // Remove leading/trailing dots and spaces
   sanitized = sanitized.replace(/^[\s.]+|[\s.]+$/g, "");
@@ -258,7 +261,7 @@ export class InputSanitizer {
         try {
           sanitized[key] = rule(value);
         } catch (error) {
-          console.warn(`Sanitization failed for field ${key}:`, error);
+          logger.warn(`Sanitization failed for field ${key}:`, error);
           sanitized[key] = "";
         }
       } else {
@@ -341,7 +344,7 @@ export function useSanitizedInput(
       try {
         setSanitizedValue(sanitizer(newValue));
       } catch (error) {
-        console.warn("Sanitization error:", error);
+        logger.warn("Sanitization error:", error);
         setSanitizedValue("");
       }
     },

@@ -7,7 +7,7 @@ import { MapService } from "../map/MapService";
 import { logger } from "@vtt/logging";
 import { GameEventBridge } from "../integration/GameEventBridge";
 import { PrismaClient } from "@prisma/client";
-import { UnifiedWebSocketManager } from "../websocket/UnifiedWebSocketManager";
+// WebSocket integration handled by VTTWebSocketServer
 
 export interface ContentInjectionRequest {
   sceneId: string;
@@ -38,7 +38,7 @@ export class ContentInjectionService {
     private mapService: MapService,
     private eventBridge: GameEventBridge,
     private prisma: PrismaClient,
-    private webSocketManager: UnifiedWebSocketManager,
+    private webSocketManager?: any, // Legacy stub
   ) {}
 
   /**

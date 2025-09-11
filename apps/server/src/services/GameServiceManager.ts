@@ -4,8 +4,9 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 import { logger } from "@vtt/logging";
-import { WebSocketManager } from "../websocket/WebSocketManager";
+// WebSocketManager removed - using VTTWebSocketServer directly
 import { MapService } from "../map/MapService";
 import { GameEventBridge } from "../integration/GameEventBridge";
 import { CrucibleService } from "../ai/combat";
@@ -20,7 +21,7 @@ export class GameServiceManager {
   private static instance: GameServiceManager;
 
   private prismaClient: PrismaClient;
-  private webSocketManager: WebSocketManager;
+  private webSocketManager: any; // Legacy - to be refactored
   private mapService: MapService;
   private gameEventBridge: GameEventBridge;
   private crucibleService: CrucibleService;
@@ -32,11 +33,9 @@ export class GameServiceManager {
   private initialized = false;
 
   private constructor() {
-    this.prismaClient = new PrismaClient();
-    // Create WebSocketServer instance for WebSocketManager
-    const { WebSocketServer } = require('ws');
-    const wss = new WebSocketServer({ port: 0 }); // Will be configured later
-    this.webSocketManager = new WebSocketManager(wss);
+    this.prismaClient = DatabaseManager.getInstance();
+    // WebSocketManager stub for legacy compatibility
+    this.webSocketManager = null;
     this.mapService = new MapService(this.prismaClient, this.webSocketManager as any);
     this.crucibleService = new CrucibleService(this.prismaClient);
 
@@ -153,7 +152,7 @@ export class GameServiceManager {
   /**
    * Get the WebSocket manager instance
    */
-  getWebSocketManager(): WebSocketManager {
+  getWebSocketManager(): any {
     return this.webSocketManager;
   }
 
@@ -228,8 +227,7 @@ export class GameServiceManager {
 
     try {
       await this.prismaClient.$disconnect();
-      // Note: WebSocketManager doesn't have close method
-      // WebSocket cleanup should be handled through the WebSocketManager's existing methods
+      // WebSocket cleanup handled by VTTWebSocketServer
 
       if (this.gameEventBridge) {
         await this.gameEventBridge.shutdown();

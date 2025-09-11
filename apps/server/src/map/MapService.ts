@@ -17,13 +17,13 @@ import {
   GridType,
   InitiativeEntry,
 } from "./types";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, GameSessionStatus } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { GameEventBridge } from "../integration/GameEventBridge";
 import { SpellEngine } from '@vtt/spell-engine';
 import { DiceEngine } from '@vtt/dice-engine';
 import { ConditionsEngine } from '@vtt/conditions-engine';
-import { WebSocketManager } from "../websocket/WebSocketManager";
+// WebSocketManager removed - using VTTWebSocketServer directly
 import { PhysicsWorld, RigidBody } from '@vtt/physics';
 
 export class MapService {
@@ -44,7 +44,7 @@ export class MapService {
 
   constructor(
     private prisma: PrismaClient,
-    private webSocketManager?: WebSocketManager,
+    private webSocketManager?: any, // Legacy stub
   ) {
     // Initialize physics world
     this.physicsWorld = new PhysicsWorld();
@@ -217,6 +217,7 @@ export class MapService {
       where: { id: sceneId },
       include: {
         campaign: true,
+        map: true,
       },
     });
 
@@ -225,11 +226,14 @@ export class MapService {
     // Get dimensions from map or use defaults
     let sceneWidth = 1920;
     let sceneHeight = 1080;
-
-    // Map relation not available in current schema
-    // Use default dimensions since map relation doesn't exist
-    sceneWidth = 1920;
-    sceneHeight = 1080;
+    if ((dbScene as any).map) {
+      // Prefer map dimensions when available
+      const m = (dbScene as any).map as { widthPx?: number; heightPx?: number };
+      if (typeof m.widthPx === 'number' && typeof m.heightPx === 'number') {
+        sceneWidth = m.widthPx;
+        sceneHeight = m.heightPx;
+      }
+    }
 
     // Build MapScene object
     const scene: MapScene = {
@@ -468,6 +472,24 @@ export class MapService {
       const alignedPosition = this.snapToGrid(tokenData.x, tokenData.y, scene.grid);
       const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
+      // Ensure there is an active GameSession for this campaign (Token requires gameSessionId)
+      let activeSession = await this.prisma.gameSession.findFirst({
+        where: { campaignId: scene.campaignId, status: GameSessionStatus.ACTIVE },
+      });
+      
+      if (!activeSession) {
+        // Auto-create a WAITING session to preserve token placement workflow
+        logger.info(`Auto-creating WAITING session for campaign ${scene.campaignId} to place token`);
+        activeSession = await this.prisma.gameSession.create({
+          data: {
+            name: `Token Placement Session ${new Date().toISOString()}`,
+            campaignId: scene.campaignId,
+            status: GameSessionStatus.WAITING,
+            currentSceneId: sceneId,
+          },
+        });
+      }
+
       const tokenId = uuidv4();
       const token = await this.prisma.token.create({
         data: {
@@ -479,7 +501,7 @@ export class MapService {
           rotation: 0,
           scale: 1,
           type: 'NPC', // Default type
-          gameSessionId: scene.campaignId, // Use campaignId as gameSessionId for now
+          gameSessionId: activeSession.id, // Link to the active session
           visibility: 'VISIBLE',
           characterId: tokenData.actorId,
           imageUrl: tokenData.assetId,
@@ -1851,8 +1873,8 @@ export class MapService {
 
       // Update size if changed
       if (size) {
-        if (size.width !== undefined) physicsBody.width = size.width;
-        if (size.height !== undefined) physicsBody.height = size.height;
+        if (size.width !== undefined) {physicsBody.width = size.width;}
+        if (size.height !== undefined) {physicsBody.height = size.height;}
       }
 
       return true;

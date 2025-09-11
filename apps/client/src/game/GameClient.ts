@@ -101,26 +101,32 @@ export class GameClient {
 
       case "SNAPSHOT":
         this.entities.clear();
-        for (const entity of message.entities) {
+        const snapshotEntities = (message as any).entities as Entity[];
+        for (const entity of snapshotEntities) {
           this.entities.set(entity.id, entity);
         }
-        this.handlers.onEntitiesSnapshot?.(message.entities);
+        this.handlers.onEntitiesSnapshot?.(snapshotEntities);
         break;
 
       case "DELTA":
+        const deltaMessage = message as any;
+        const createdEntities = deltaMessage.created as Entity[];
+        const updatedEntities = deltaMessage.updated as Entity[];
+        const removedIds = deltaMessage.removed as number[];
+        
         // Apply created entities
-        for (const entity of message.created) {
+        for (const entity of createdEntities) {
           this.entities.set(entity.id, entity);
         }
         // Apply updated entities
-        for (const entity of message.updated) {
+        for (const entity of updatedEntities) {
           this.entities.set(entity.id, entity);
         }
         // Remove deleted entities
-        for (const id of message.removed) {
+        for (const id of removedIds) {
           this.entities.delete(id);
         }
-        this.handlers.onEntitiesDelta?.(message.created, message.updated, message.removed);
+        this.handlers.onEntitiesDelta?.(createdEntities, updatedEntities, removedIds);
         break;
 
       case "DICE_ROLL_RESULT":
@@ -132,15 +138,18 @@ export class GameClient {
         break;
 
       case "PLAYER_JOINED":
-        this.handlers.onPlayerJoined?.(message.userId, message.displayName);
+        const joinedMessage = message as any;
+        this.handlers.onPlayerJoined?.(joinedMessage.userId as string, joinedMessage.displayName as string);
         break;
 
       case "PLAYER_LEFT":
-        this.handlers.onPlayerLeft?.(message.userId);
+        const leftMessage = message as any;
+        this.handlers.onPlayerLeft?.(leftMessage.userId as string);
         break;
 
       case "ERROR":
-        this.handlers.onError?.(message.code, message.message);
+        const errorMessage = message as any;
+        this.handlers.onError?.(errorMessage.code as string, errorMessage.message as string);
         break;
 
       case "HELLO":

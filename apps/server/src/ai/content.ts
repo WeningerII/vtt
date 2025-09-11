@@ -3,7 +3,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-// import { AnthropicProvider } from "@vtt/ai"; // Temporarily disabled due to build issues
+import { createAIServices } from "./service";
 
 export interface ContentGenerationRequest {
   type: "npc" | "location" | "quest" | "item" | "encounter";
@@ -32,17 +32,102 @@ export interface GeneratedContent {
 }
 
 export function createContentGenerationService(prisma: PrismaClient) {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  // let anthropicProvider: AnthropicProvider | null = null;
+  // Initialize AI services with router and provider management
+  const aiServices = createAIServices(prisma);
+  const aiRouter = aiServices.router;
 
-  // if (anthropicKey && anthropicKey.trim().length > 0) {
-  //   anthropicProvider = new AnthropicProvider({ apiKey: anthropicKey });
-  // }
+  const CONTENT_GENERATION_PROMPTS = {
+    npc: `Generate a detailed D&D 5e NPC with the following structure:
+- Name and race/species
+- Class/profession and background
+- Personality traits and mannerisms  
+- Physical description
+- Motivations and goals
+- Stat block (AC, HP, abilities)
+- Notable equipment or spells
+- Roleplay notes for DMs
+
+Create a memorable character that fits the context provided.`,
+
+    location: `Generate a detailed D&D 5e location with:
+- Name and type of location
+- Physical description and atmosphere
+- Notable features and landmarks
+- Potential encounters or hazards
+- Hidden secrets or special properties
+- Connections to other locations
+- Adventure hooks and plot potential
+- Environmental details
+
+Make it engaging and full of possibilities for exploration.`,
+
+    quest: `Generate a D&D 5e quest/adventure with:
+- Quest title and type (main/side quest)
+- Background and setup
+- Clear objectives and goals  
+- NPCs involved (quest giver, allies, antagonists)
+- Locations and scenes
+- Challenges and obstacles
+- Potential rewards (XP, gold, items, story)
+- Multiple solution paths
+- Scaling suggestions for different party levels
+
+Design a compelling adventure with meaningful choices.`,
+
+    item: `Generate a D&D 5e magic item with:
+- Item name and type
+- Rarity and attunement requirements
+- Physical description and appearance
+- Magical properties and mechanics
+- Activation method and limitations
+- History and lore
+- Suggested value and availability
+- Plot hooks and significance
+
+Create something unique that enhances gameplay.`
+  };
 
   async function generateContent(request: ContentGenerationRequest): Promise<GeneratedContent> {
     const startTime = Date.now();
     
     try {
+      // Check if AI router has available providers
+      const providers = aiServices.listProviders();
+      const hasAIProviders = providers.length > 0 && providers.some(p => p.name !== 'dummy');
+      
+      if (hasAIProviders) {
+        const prompt = CONTENT_GENERATION_PROMPTS[request.type] || "Generate appropriate game content.";
+        const contextInfo = buildContextPrompt(request);
+        
+        const response = await aiRouter.generateText({
+          prompt: `${prompt}\n\nGenerate content for: ${contextInfo}`,
+          maxTokens: 1500,
+          temperature: 0.7
+        });
+
+        // Log the generation for analytics
+        const job = await prisma.generationJob.create({
+          data: {
+            type: "TEXT_TO_IMAGE", // We'd need CONTENT_GENERATION type in schema
+            status: "SUCCEEDED",
+            input: { type: request.type, context: request.context } as any,
+            output: { content: response.text } as any,
+          },
+        });
+
+        return {
+          content: parseAIResponse(response.text, request.type),
+          metadata: {
+            provider: response.provider || "ai-router",
+            model: response.model || "unknown",
+            costUSD: response.costUSD || 0,
+            latencyMs: Date.now() - startTime,
+            generatedAt: new Date()
+          }
+        };
+      }
+      
+      // Fallback to rule-based generation
       const content = generateFallbackContent(request);
       
       return {
@@ -57,6 +142,34 @@ export function createContentGenerationService(prisma: PrismaClient) {
       };
     } catch (error: any) {
       throw new Error(`Content generation failed: ${error.message}`);
+    }
+  }
+
+  function buildContextPrompt(request: ContentGenerationRequest): string {
+    const { context } = request;
+    return `Context for ${request.type} generation:
+- Setting: ${context.setting || "Fantasy"}
+- Theme: ${context.theme || "Adventure"}
+- Difficulty: ${context.difficulty || "Medium"}
+- Player Level: ${context.playerLevel || "Unknown"}
+- Campaign ID: ${context.campaignId || "N/A"}
+${context.additionalContext ? `- Additional Context: ${context.additionalContext}` : ""}
+
+Generate appropriate content that fits this context and enhances the gaming experience.`;
+  }
+
+  function parseAIResponse(response: string, type: string): any {
+    try {
+      // Try to parse as JSON first
+      return JSON.parse(response);
+    } catch {
+      // If not JSON, return structured text response
+      return {
+        type,
+        description: response,
+        generated: true,
+        aiGenerated: true
+      };
     }
   }
 

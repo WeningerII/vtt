@@ -17,9 +17,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./styles/globals.css";
 import "./styles/theme.css";
 import "./styles/utilities.css";
-// import { I18nProvider } from "@vtt/i18n";
-// TODO: Implement i18n integration - using fallback provider for now
-const I18nProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+import { I18nProvider } from "@vtt/i18n";
 
 interface AppConfig {
   serverUrl: string;
@@ -39,7 +37,11 @@ export default function App() {
         // Load configuration from environment variables
         const appConfig: AppConfig = {
           serverUrl: (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:8080",
-          wsUrl: (import.meta as any).env?.VITE_WS_URL || "ws://localhost:8080/ws",
+          wsUrl: (import.meta as any).env?.VITE_WS_URL || (() => {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            return `${protocol}//${host}/ws`;
+          })(),
           version: (import.meta as any).env?.VITE_APP_VERSION || "1.0.0",
           environment: (import.meta as any).env?.MODE === "production" ? "production" : "development",
         };

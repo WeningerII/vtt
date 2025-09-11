@@ -84,9 +84,22 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
     setError(null);
 
     try {
-      // Determine WebSocket URL based on environment
+      // Determine WebSocket URL based on environment (Vite-compatible)
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = process.env.REACT_APP_WS_URL || window.location.host;
+      const configuredUrl = (import.meta as any).env?.VITE_WS_URL as string | undefined;
+      let host = window.location.host;
+      if (configuredUrl) {
+        try {
+          const u = new URL(configuredUrl);
+          host = u.host;
+        } catch {
+          // If VITE_WS_URL is provided as host:port without scheme
+          host = configuredUrl;
+        }
+      } else if (!/:(^|.*\D)8080$/.test(window.location.host)) {
+        // Default to backend port 8080 when running from Vite dev server (typically 5173)
+        host = `${window.location.hostname}:8080`;
+      }
       const wsUrl = `${protocol}//${host}/ws?sessionId=${sessionId}&userId=${userId}&campaignId=${campaignId}&isGM=${isGM}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;

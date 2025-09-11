@@ -12,6 +12,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth";
 import { sessionsRouter } from "./routes/sessions";
+import { tokensRouter } from "./routes/tokens";
 import { VTTWebSocketServer } from "./websocket/websocket-server";
 import { loggingMiddleware } from "./middleware/logging";
 import { errorMiddleware } from "./middleware/error";
@@ -20,16 +21,12 @@ import { securityHeadersMiddleware } from "./middleware/security";
 import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { corsMiddleware } from "./middleware/cors";
 import { csrfMiddleware, csrfTokenMiddleware } from "./middleware/csrf";
-import { requireAdmin, requirePermission, optionalAuth } from "./middleware/auth";
-import { getAuthenticatedUserId } from "./middleware/auth";
+import { requireAdmin, requirePermission, optionalAuth, getAuthenticatedUserId } from "./middleware/auth";
 import { getCorsConfig, isOriginAllowed } from "./config/cors";
 import { metricsMiddleware, addDatabaseHealthCheck, addAIServiceHealthCheck } from "./middleware/metrics";
 import session from "express-session";
 import {
   listProvidersHandler,
-  textToImageHandler,
-  depthHandler,
-  segmentationHandler,
 } from "./routes/ai";
 import { getUsersHandler, createUserHandler } from "./routes/users";
 import {
@@ -44,6 +41,8 @@ import {
   simulateCombatHandler,
   analyzeCombatHandler,
   getActiveSimulationsHandler,
+  getSimulationHandler,
+  getPositioningHandler,
   _handleCombatWebSocket as handleCombatWebSocket,
 } from "./routes/combat";
 import { healthHandler } from "./routes/health";
@@ -165,12 +164,12 @@ import {
   metricsHandler,
   prometheusMetricsHandler,
 } from "./routes/metrics";
-import { createUnifiedWebSocketManager } from "./websocket/UnifiedWebSocketManager";
+// UnifiedWebSocketManager removed - using VTTWebSocketServer directly
 import { DatabaseManager } from "./database/connection";
 import { initializeAuth } from "./auth";
 import { Router } from "./router/router";
 import type { Context } from "./router/types";
-import { AuthManager, AuthConfig } from "./auth/auth-manager";
+import { AuthConfig, getAuthManager } from "./auth/auth-manager";
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { Strategy as DiscordStrategy } from 'passport-discord';
@@ -185,7 +184,7 @@ const authConfig: AuthConfig = {
   refreshTokenExpiration: "7d",
   bcryptRounds: 12,
 };
-const authManager = new AuthManager(prisma, authConfig);
+const authManager = getAuthManager();
 
 // Initialize Passport OAuth strategies
 passport.use(new GoogleStrategy({
@@ -277,6 +276,7 @@ app.use(express.urlencoded({ extended: true }));
 // Add our new auth and session routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/sessions', sessionsRouter);
+app.use('/api/v1/tokens', tokensRouter);
 
 // Bridge: Delegate requests to our custom Router. If not handled, continue with Express.
 app.use(async (req, res, next) => {
@@ -301,61 +301,9 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Root route - serve a welcome page
-app.get('/', (req, res) => {
-  // Set CSP header to allow inline styles for the welcome page
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'"
-  );
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>VTT Server</title>
-      <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .endpoints { display: grid; gap: 10px; }
-        .endpoint { background: #f5f5f5; padding: 10px; border-radius: 5px; }
-        .method { font-weight: bold; color: #007acc; }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <h1>🎲 VTT Server</h1>
-        <p>Virtual Tabletop Server is running successfully!</p>
-        <p><strong>Status:</strong> Healthy | <strong>Port:</strong> ${PORT}</p>
-      </div>
-      
-      <h2>Available Endpoints</h2>
-      <div class="endpoints">
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/health</code> - Health check
-        </div>
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/api/v1/health</code> - Detailed health status
-        </div>
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/login</code> - Login page
-        </div>
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/docs</code> - API documentation
-        </div>
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/api/v1/games</code> - Game management
-        </div>
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/api/v1/characters</code> - Character management
-        </div>
-        <div class="endpoint">
-          <span class="method">GET</span> <code>/api/v1/campaigns</code> - Campaign management
-        </div>
-      </div>
-    </body>
-    </html>
-  `);
+// JSON 404 catch-all handler for unmatched routes
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found" });
 });
 
 // Session configuration
@@ -378,18 +326,17 @@ app.use(passport.session() as any);
 const router = new Router();
 
 // Middleware
-// Order matters: error wraps everything, then set request id so downstream can log it
-router.use(errorMiddleware);
+// Order matters: header-setting middlewares must run before route handlers
 router.use(requestIdMiddleware);
 router.use(corsMiddleware); // CORS must come early for preflight requests
+router.use(securityHeadersMiddleware); // Security headers before response
 router.use(csrfMiddleware); // CSRF protection after CORS
 router.use(csrfTokenMiddleware); // Add CSRF token to response headers
-router.use(securityHeadersMiddleware);
 router.use(rateLimitMiddleware);
 router.use(metricsMiddleware);
 // Populate ctx.req.user when a valid token is present so route handlers can access it
 router.use(optionalAuth);
-
+router.use(loggingMiddleware);
 // Session and passport middleware
 router.use(async (ctx, next) => {
   // Add session middleware to context
@@ -465,9 +412,6 @@ router.get("/", (ctx) => {
 });
 
 router.get("/api/v1/ai/providers", listProvidersHandler);
-router.post("/api/v1/ai/text-to-image", textToImageHandler);
-router.post("/api/v1/ai/depth", depthHandler);
-router.post("/api/v1/ai/segmentation", segmentationHandler);
 
 // Genesis AI Routes
 router.post("/api/v1/genesis/generate", generateCharacterHandler);
@@ -478,8 +422,8 @@ router.get("/api/v1/genesis/history", getGenerationHistoryHandler);
 // Combat AI Routes
 router.post("/api/v1/combat/tactical-decision", getTacticalDecisionHandler);
 router.post("/api/v1/combat/simulate", simulateCombatHandler);
-// router.get("/api/v1/combat/simulation/:simulationId", getSimulationHandler); // Handler not exported
-// router.post("/api/v1/combat/positioning", getPositioningHandler); // Handler not exported
+router.get("/api/v1/combat/simulation/:simulationId", getSimulationHandler);
+router.post("/api/v1/combat/positioning", getPositioningHandler);
 router.post("/api/v1/combat/analyze", analyzeCombatHandler);
 router.get("/api/v1/combat/simulations", getActiveSimulationsHandler);
 
@@ -810,6 +754,41 @@ router.get("/auth/me", async (ctx) => {
   }
 });
 
+// Add versioned API endpoint for client compatibility
+router.get("/api/v1/auth/me", async (ctx) => {
+  try {
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Not authenticated" }));
+      return;
+    }
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        user: {
+          id: (user as any).id,
+          username: (user as any).username,
+          email: (user as any).email,
+          avatar: (user as any).avatar,
+          createdAt: (user as any).createdAt,
+        }
+      }),
+    );
+  } catch (error) {
+    logger.error("Get user info error:", error as Error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(JSON.stringify({ error: "Failed to get user info" }));
+  }
+});
+
+
+router.post("/api/v1/auth/logout", async (ctx) => {
+  ctx.res.writeHead(200, { "Content-Type": "application/json" });
+  ctx.res.end(JSON.stringify({ success: true, message: "Logged out successfully" }));
+});
+
 // Health check endpoints for deployment pipeline
 router.get("/health", (ctx) => {
   ctx.res.writeHead(200, { "Content-Type": "application/json" });
@@ -865,6 +844,7 @@ router.get("/favicon-32x32.png", (ctx) => {
   ctx.res.end();
 });
 
+
 // HTTP server - use Express app
 const server = createServer(app);
 
@@ -879,17 +859,37 @@ server.on('upgrade', (request, socket, head) => {
     // Parse URL to extract pathname only (ignore query string)
     const parsed = new URL(reqUrl, `http://${host}`);
     const pathOnly = parsed.pathname;
+    const remote = (request.socket && (request.socket as any).remoteAddress) || 'unknown';
+    const origin = (request.headers.origin as string | undefined) || '';
+    const ua = (request.headers['user-agent'] as string | undefined) || '';
+    const upgradeHdr = (request.headers['upgrade'] as string | undefined) || '';
+    const connectionHdr = (request.headers['connection'] as string | undefined) || '';
+
+    logger.info('[ws:upgrade] request', {
+      url: reqUrl,
+      host,
+      path: pathOnly,
+      origin,
+      ua,
+      remote,
+      upgradeHdr,
+      connectionHdr,
+    });
 
     if (pathOnly === '/ws') {
+      logger.info('[ws:upgrade] accepting', { path: pathOnly });
       // Let the WebSocketServer handle the upgrade
       vttWebSocketServer.handleUpgrade(request, socket, head);
     } else {
+      logger.warn('[ws:upgrade] rejecting non-ws path', { path: pathOnly });
       // Reject non-WebSocket paths
       socket.destroy();
     }
-  } catch {
+  } catch (e) {
+    logger.warn('[ws:upgrade] parse error', { url: request.url, error: (e as Error)?.message });
     // Fallback: accept if the raw URL clearly targets /ws
     if ((request.url || '').startsWith('/ws')) {
+      logger.info('[ws:upgrade] fallback accepting raw /ws', { url: request.url });
       vttWebSocketServer.handleUpgrade(request, socket, head);
       return;
     }
@@ -920,21 +920,26 @@ process.on("SIGINT", () => void shutdown("SIGINT"));
 // Start server
 async function startServer() {
   try {
-    await DatabaseManager.connect();
-    
-    // Initialize health checks
+    // Attempt DB connection, but don't prevent server from starting if it fails
+    try {
+      await DatabaseManager.connect();
+    } catch (error) {
+      logger.error("[server] Database connection failed at startup - continuing in degraded mode", error as Error);
+    }
+
+    // Initialize health checks regardless of DB state
     addDatabaseHealthCheck(prisma);
     addAIServiceHealthCheck();
-    
+
     server.listen(PORT, () => {
       logger.info(`[Server] Listening on port`, { port: PORT });
-      console.log(
-        `[server] Database: ${DatabaseManager.getConnectionStatus() ? "connected" : "disconnected"}`,
+      logger.info(
+        `[Server] Database: ${DatabaseManager.getConnectionStatus() ? "connected" : "disconnected"}`,
       );
     });
   } catch (error) {
     logger.error("[server] Failed to start:", error as Error);
-    process.exit(1);
+    // Do not exit abruptly; allow external supervisor to handle restarts
   }
 }
 

@@ -139,13 +139,13 @@ export class LightingStore {
     const lights: Array<{ entityId: EntityId | null; lightId: string; light: LightSource }> = [];
 
     // Add global lights
-    for (const [lightId, light] of this.globalLighting.lightSources) {
+    for (const [lightId, light] of Array.from(this.globalLighting.lightSources)) {
       lights.push({ entityId: null, lightId, light });
     }
 
     // Add entity lights
-    for (const [entityId, lighting] of this.data) {
-      for (const [lightId, light] of lighting.lightSources) {
+    for (const [entityId, lighting] of Array.from(this.data)) {
+      for (const [lightId, light] of Array.from(lighting.lightSources)) {
         lights.push({ entityId, lightId, light });
       }
     }

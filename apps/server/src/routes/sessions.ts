@@ -1,29 +1,36 @@
 /**
  * Game Session API Routes
  */
-import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
-import { authManager } from './auth';
+import { Router, Request, Response, NextFunction } from 'express';
+import { DatabaseManager } from '../database/connection';
+import { getAuthManager, AuthUser } from '../auth/auth-manager';
 
-const prisma = new PrismaClient();
+const prisma = DatabaseManager.getInstance();
 export const sessionsRouter = Router();
 
+// Extended Request interface to include user
+interface AuthenticatedRequest extends Request {
+  user: AuthUser;
+}
+
 // Middleware to verify authentication
-const requireAuth = async (req: any, res: any, next: any) => {
+const requireAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
     if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+      res.status(401).json({ error: 'Authentication required' });
+      return;
     }
 
-    const user = await authManager.verifyAccessToken(token);
+    const user = await getAuthManager().verifyAccessToken(token);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid token' });
+      res.status(401).json({ error: 'Invalid token' });
+      return;
     }
 
-    req.user = user;
+    (req as AuthenticatedRequest).user = user;
     next();
   } catch (error) {
     res.status(401).json({ error: 'Authentication failed' });
@@ -48,25 +55,30 @@ sessionsRouter.get('/', async (req, res) => {
       }
     });
 
-    const formattedSessions = sessions.map(session => ({
-      id: session.id,
-      name: session.name,
-      description: `Campaign session - ${session.status}`,
-      gamemaster: {
-        id: (session.metadata as any)?.gamemasterId || 'unknown',
-        username: 'gamemaster',
-        displayName: 'Game Master'
-      },
-      players: [], // Will be populated from WebSocket connections
-      status: session.status.toLowerCase(),
-      settings: {
-        maxPlayers: (session.metadata as any)?.maxPlayers || 4,
-        isPrivate: (session.metadata as any)?.isPrivate || false,
-        allowSpectators: (session.metadata as any)?.allowSpectators || true
-      },
-      createdAt: session.createdAt.toISOString(),
-      lastActivity: session.updatedAt.toISOString()
-    }));
+    const formattedSessions = sessions.map(session => {
+      const metadata = session.metadata as any || {};
+      return {
+        id: session.id,
+        name: session.name,
+        description: metadata.description || `Campaign session - ${session.status}`,
+        gamemaster: {
+          id: metadata.gamemasterId || 'unknown',
+          username: 'gamemaster',
+          displayName: 'Game Master'
+        },
+        players: [], // Will be populated from WebSocket connections
+        maxPlayers: metadata.maxPlayers || 4,
+        system: metadata.system || 'D&D 5e',
+        status: session.status.toLowerCase(),
+        settings: {
+          maxPlayers: metadata.maxPlayers || 4,
+          isPrivate: metadata.isPrivate || false,
+          allowSpectators: metadata.allowSpectators !== false
+        },
+        createdAt: session.createdAt.toISOString(),
+        lastActivity: session.updatedAt.toISOString()
+      };
+    });
 
     res.json({
       success: true,
@@ -94,21 +106,24 @@ sessionsRouter.get('/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
+    const metadata = session.metadata as any || {};
     const formattedSession = {
       id: session.id,
       name: session.name,
-      description: `Campaign session - ${session.status}`,
+      description: metadata.description || `Campaign session - ${session.status}`,
       gamemaster: {
-        id: (session.metadata as any)?.gamemasterId || 'unknown',
+        id: metadata.gamemasterId || 'unknown',
         username: 'gamemaster',
         displayName: 'Game Master'
       },
       players: [],
+      maxPlayers: metadata.maxPlayers || 4,
+      system: metadata.system || 'D&D 5e',
       status: session.status.toLowerCase(),
       settings: {
-        maxPlayers: (session.metadata as any)?.maxPlayers || 4,
-        isPrivate: (session.metadata as any)?.isPrivate || false,
-        allowSpectators: (session.metadata as any)?.allowSpectators || true
+        maxPlayers: metadata.maxPlayers || 4,
+        isPrivate: metadata.isPrivate || false,
+        allowSpectators: metadata.allowSpectators !== false
       },
       createdAt: session.createdAt.toISOString(),
       lastActivity: session.updatedAt.toISOString(),
@@ -126,9 +141,9 @@ sessionsRouter.get('/:id', async (req, res) => {
 });
 
 // Create new session
-sessionsRouter.post('/', requireAuth, async (req: any, res) => {
+sessionsRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { name, description, campaignId, maxPlayers, isPrivate, allowSpectators } = req.body;
+    const { name, description, campaignId, maxPlayers, isPrivate, allowSpectators, system } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, error: 'Session name is required' });
@@ -187,6 +202,7 @@ sessionsRouter.post('/', requireAuth, async (req: any, res) => {
           maxPlayers: maxPlayers || 4,
           isPrivate: isPrivate || false,
           allowSpectators: allowSpectators !== false,
+          system: system || 'D&D 5e',
           gamemasterId: req.user.id
         }
       }
@@ -202,6 +218,8 @@ sessionsRouter.post('/', requireAuth, async (req: any, res) => {
         displayName: req.user.displayName
       },
       players: [],
+      maxPlayers: maxPlayers || 4,
+      system: system || 'D&D 5e',
       status: session.status.toLowerCase(),
       settings: {
         maxPlayers: maxPlayers || 4,
@@ -223,12 +241,17 @@ sessionsRouter.post('/', requireAuth, async (req: any, res) => {
 });
 
 // Join session
-sessionsRouter.post('/:id/join', requireAuth, async (req: any, res) => {
+sessionsRouter.post('/:id/join', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     
+    // Find session with campaign information
     const session = await prisma.gameSession.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        tokens: true
+      }
     });
 
     if (!session) {
@@ -239,15 +262,57 @@ sessionsRouter.post('/:id/join', requireAuth, async (req: any, res) => {
       return res.status(400).json({ success: false, error: 'Cannot join this session' });
     }
 
-    // In a real implementation, you'd track players in the database
-    // For now, we'll rely on WebSocket connections for player tracking
+    // Check if user is a member of the campaign
+    const campaignMember = await prisma.campaignMember.findUnique({
+      where: {
+        userId_campaignId: {
+          userId,
+          campaignId: session.campaignId
+        }
+      }
+    });
+
+    if (!campaignMember) {
+      return res.status(403).json({ success: false, error: 'You are not a member of this campaign' });
+    }
+
+    if (campaignMember.status !== 'active') {
+      return res.status(403).json({ success: false, error: 'Your campaign membership is not active' });
+    }
+
+    // Check session settings for max players
+    const metadata = session.metadata as any || {};
+    const maxPlayers = metadata.maxPlayers || 4;
     
+    // Count current active tokens (representing players in session)
+    const activePlayerTokens = session.tokens.filter(token => 
+      token.type === 'PC' && token.visibility === 'VISIBLE'
+    ).length;
+
+    if (activePlayerTokens >= maxPlayers && campaignMember.role !== 'gamemaster' && campaignMember.role !== 'co-gamemaster') {
+      return res.status(400).json({ success: false, error: 'Session is full' });
+    }
+
+    // Update session to set as ACTIVE if it was WAITING
+    if (session.status === 'WAITING') {
+      await prisma.gameSession.update({
+        where: { id },
+        data: { 
+          status: 'ACTIVE',
+          startedAt: new Date()
+        }
+      });
+    }
+
     res.json({ 
       success: true,
       data: {
-        message: 'Ready to join session',
+        message: 'Successfully joined session',
         sessionId: id,
-        websocketUrl: '/ws'
+        campaignId: session.campaignId,
+        role: campaignMember.role,
+        websocketUrl: '/ws',
+        sessionStatus: session.status === 'WAITING' ? 'ACTIVE' : session.status
       }
     });
   } catch (error) {
@@ -257,9 +322,10 @@ sessionsRouter.post('/:id/join', requireAuth, async (req: any, res) => {
 });
 
 // Delete session (GM only)
-sessionsRouter.delete('/:id', requireAuth, async (req: any, res) => {
+sessionsRouter.delete('/:id', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = req.user.id;
     
     const session = await prisma.gameSession.findUnique({
       where: { id }
@@ -269,11 +335,21 @@ sessionsRouter.delete('/:id', requireAuth, async (req: any, res) => {
       return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
-    // Check if user is the GM
-    if ((session.metadata as any)?.gamemasterId !== req.user.id) {
-      return res.status(403).json({ success: false, error: 'Only the game master can delete this session' });
+    // Check if user is a GM of the campaign (more robust than metadata check)
+    const campaignMember = await prisma.campaignMember.findUnique({
+      where: {
+        userId_campaignId: {
+          userId,
+          campaignId: session.campaignId
+        }
+      }
+    });
+
+    if (!campaignMember || (campaignMember.role !== 'gamemaster' && campaignMember.role !== 'co-gamemaster')) {
+      return res.status(403).json({ success: false, error: 'Only game masters can delete this session' });
     }
 
+    // Delete the session (this will cascade delete tokens due to onDelete: Cascade in schema)
     await prisma.gameSession.delete({
       where: { id }
     });

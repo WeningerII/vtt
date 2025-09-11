@@ -80,7 +80,7 @@ export class SpellcastingSystem {
 
   private breakExistingConcentration(casterId: EntityId): void {
     // Find and end any concentration spells by this caster
-    for (const [key, spell] of this.activeSpells.entries()) {
+    for (const [key, spell] of Array.from(this.activeSpells.entries())) {
       if (spell.casterId === casterId && spell.concentration) {
         this.endSpell(key);
       }
@@ -197,7 +197,7 @@ export class SpellcastingSystem {
 
   // Process end-of-turn effects for duration spells
   processTurnEnd(): void {
-    for (const [key, spell] of this.activeSpells.entries()) {
+    for (const [key, spell] of Array.from(this.activeSpells.entries())) {
       if (spell.duration !== undefined) {
         spell.duration--;
         if (spell.duration <= 0) {

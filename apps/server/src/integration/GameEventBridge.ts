@@ -4,7 +4,7 @@
 
 import { CrucibleService } from '../ai/combat';
 import { logger } from '@vtt/logging';
-import { WebSocketManager } from "../websocket/WebSocketManager";
+// WebSocketManager removed - using VTTWebSocketServer directly
 import { MapService } from "../map/MapService";
 import { PrismaClient } from "@prisma/client";
 import { EventEmitter } from "events";
@@ -64,7 +64,7 @@ export class GameEventBridge extends EventEmitter {
   constructor(
     private prisma: PrismaClient,
     private combatAI: CrucibleService,
-    private wsManager: WebSocketManager,
+    private wsManager: any, // Legacy stub - to be refactored
     private mapService: MapService,
   ) {
     super();
@@ -138,7 +138,7 @@ export class GameEventBridge extends EventEmitter {
               terrain: [],
               hazards: [],
               cover: [],
-              lighting: "normal",
+              lighting: "bright",
               weather: "clear",
             },
             resources: {

@@ -3,8 +3,7 @@
  * Provides comprehensive touch gesture recognition and handling
  */
 
-import { useCallback, useRef, useState, useEffect } from 'react';
-import type { TouchEvent as ReactTouchEvent } from 'react';
+import { useCallback, useRef, useState, useEffect, type TouchEvent as ReactTouchEvent } from 'react';
 
 export interface TouchPoint {
   x: number;

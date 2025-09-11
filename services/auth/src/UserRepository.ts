@@ -108,7 +108,7 @@ export class InMemoryUserRepository implements UserRepository {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.email === email) {
         const { passwordHash, passwordResetTokens, ...publicUser } = user;
         return { ...publicUser, passwordHash }; // Include passwordHash for auth
@@ -118,7 +118,7 @@ export class InMemoryUserRepository implements UserRepository {
   }
 
   async findByUsername(username: string): Promise<User | null> {
-    for (const user of this.users.values()) {
+    for (const user of Array.from(this.users.values())) {
       if (user.username === username) {
         const { passwordHash, passwordResetTokens, ...publicUser } = user;
         return publicUser;
@@ -225,7 +225,7 @@ export class InMemoryUserRepository implements UserRepository {
   }
 
   private async findRoleByName(name: string): Promise<Role | null> {
-    for (const role of this.roles.values()) {
+    for (const role of Array.from(this.roles.values())) {
       if (role.name === name) {
         return role;
       }

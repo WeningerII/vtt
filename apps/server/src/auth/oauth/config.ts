@@ -157,7 +157,7 @@ export class OAuthManager {
       `user_${profile.id.slice(0, 6)}`
     ).toLowerCase();
     const username =
-      baseUsername.replace(/[^a-z0-9_\-]/gi, "").slice(0, 20) || `user_${profile.id.slice(0, 6)}`;
+      baseUsername.replace(/[^a-z0-9_-]/gi, "").slice(0, 20) || `user_${profile.id.slice(0, 6)}`;
     const displayName = profile.displayName || baseUsername;
     // Strong password to satisfy complexity when enabled
     const password = `OAuth!${profile.provider}A1_${Math.random().toString(36).slice(2, 12)}_${Date.now()}`;

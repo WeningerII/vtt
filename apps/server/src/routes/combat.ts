@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { logger } from "@vtt/logging";
-import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 import { CrucibleService } from "../ai/combat";
 import { RouteHandler } from "../router/types";
 import { parseJsonBody } from "../utils/json";
@@ -71,12 +71,12 @@ function calculateThreatLevel(enemies: any[]): string {
 }
 
 // Lazy-load Prisma client to avoid initialization issues during module loading
-let prisma: PrismaClient | null = null;
+let prisma: any | null = null;
 let crucibleService: CrucibleService | null = null;
 
 function getServices() {
   if (!prisma) {
-    prisma = new PrismaClient();
+    prisma = DatabaseManager.getInstance();
     crucibleService = new CrucibleService(prisma);
   }
   return { prisma, crucibleService: crucibleService! };
@@ -477,5 +477,135 @@ export const _handleCombatWebSocket = async (ws: any, message: any, _userId: str
       break;
   }
 };
+
+/**
+ * GET /combat/simulation/:simulationId
+ * Get specific combat simulation details
+ */
+export const getSimulationHandler: RouteHandler = async (ctx) => {
+  try {
+    // Check authentication
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Authentication required" }));
+      return;
+    }
+
+    // Extract simulation ID from URL path
+    const pathParts = ctx.url.pathname.split('/');
+    const simulationId = pathParts[pathParts.length - 1];
+
+    if (!simulationId) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Simulation ID required" }));
+      return;
+    }
+
+    // Get simulation from CrucibleService
+    const { crucibleService } = getServices();
+    const simulation = await crucibleService!.getSimulation(simulationId);
+
+    if (!simulation) {
+      ctx.res.writeHead(404, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Simulation not found" }));
+      return;
+    }
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        success: true,
+        data: {
+          id: simulation.id,
+          winner: simulation.winner,
+          rounds: simulation.rounds,
+          casualties: simulation.casualties,
+          tacticalAnalysis: simulation.tacticalAnalysis,
+          isComplete: simulation.isComplete
+        },
+      }),
+    );
+  } catch (error: any) {
+    logger.error("Failed to get simulation:", error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        success: false,
+        error: "Failed to get simulation",
+        details: error.message,
+      }),
+    );
+  }
+};
+
+/**
+ * POST /combat/positioning
+ * Analyze optimal positioning for characters in combat
+ */
+export const getPositioningHandler: RouteHandler = async (ctx) => {
+  try {
+    // Check authentication
+    const user = (ctx.req as any).user;
+    if (!user) {
+      ctx.res.writeHead(401, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Authentication required" }));
+      return;
+    }
+
+    // Parse and validate request body
+    let body;
+    try {
+      body = await parseJsonBody(ctx.req);
+    } catch (_error) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Invalid JSON body" }));
+      return;
+    }
+
+    const validatedData = PositionAnalysisSchema.parse(body);
+
+    // Build positioning context for analysis
+    const positioningContext = {
+      character: validatedData.character,
+      currentPosition: validatedData.character.position,
+      battlefield: validatedData.battlefield,
+      allies: validatedData.allies,
+      enemies: validatedData.enemies,
+      movementSpeed: calculateMovementSpeed(validatedData.character),
+      threatLevel: calculateThreatLevel(validatedData.enemies), // Returns string: "low" | "moderate" | "high" | "extreme"
+    };
+
+    // Get positioning analysis from Crucible AI service
+    const { crucibleService } = getServices();
+    const positioningAnalysis = await crucibleService!.analyzePositioning(positioningContext);
+
+    ctx.res.writeHead(200, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        success: true,
+        data: {
+          currentPosition: validatedData.character.position,
+          recommendedPositions: positioningAnalysis.recommendedPositions || [],
+          reasoning: positioningAnalysis.currentPositionAnalysis?.risks?.join(", ") || "No specific positioning recommendations",
+          tacticalAdvantages: positioningAnalysis.currentPositionAnalysis?.benefits || [],
+          risks: positioningAnalysis.currentPositionAnalysis?.risks || [],
+          movementOptions: positioningAnalysis.movementOptions || [],
+        },
+      }),
+    );
+  } catch (error: any) {
+    logger.error("Positioning analysis failed:", error);
+    ctx.res.writeHead(500, { "Content-Type": "application/json" });
+    ctx.res.end(
+      JSON.stringify({
+        success: false,
+        error: "Failed to analyze positioning",
+        details: error.message,
+      }),
+    );
+  }
+};
+
 
 // Crucible service will be integrated when AI service is available

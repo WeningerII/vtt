@@ -1,7 +1,8 @@
-import React from 'react';
 /**
  * Content Security Policy (CSP) utilities and configuration for the VTT application
  */
+import { logger } from '../lib/logger';
+import React from 'react';
 
 // CSP directive configuration
 export interface CSPConfig {
@@ -275,12 +276,12 @@ export function handleCSPViolation(violation: CSPViolation): void {
 
   // Log to console in development
   if (process.env.NODE_ENV === "development") {
-    console.group("CSP Violation Details");
-    console.log("Blocked URI:", violation.blockedUri);
-    console.log("Violated Directive:", violation.violatedDirective);
-    console.log("Source File:", violation.sourceFile);
-    console.log("Line:", violation.lineNumber);
-    console.groupEnd();
+    logger.warn("CSP Violation Details", {
+      blockedUri: violation.blockedUri,
+      violatedDirective: violation.violatedDirective,
+      sourceFile: violation.sourceFile,
+      lineNumber: violation.lineNumber,
+    });
   }
 }
 

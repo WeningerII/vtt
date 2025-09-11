@@ -4,7 +4,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "../../providers/AuthProvider";
-import { useGame } from "../../providers/GameProvider";
+import { useGame, type Player } from "../../providers/GameProvider";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { Button } from "../ui/Button";
 import {
@@ -24,7 +24,6 @@ import {
   WifiOff,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import type { Player } from "../../providers/GameProvider";
 
 interface PlayerPanelProps {
   className?: string;

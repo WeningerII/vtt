@@ -132,7 +132,7 @@ export class ConditionsStore {
   }
 
   updateDurations(): void {
-    for (const [entity, conditions] of this.conditions) {
+    for (const [entity, conditions] of Array.from(this.conditions)) {
       for (let i = conditions.length - 1; i >= 0; i--) {
         const condition = conditions[i];
         if (condition && condition.duration > 0) {
@@ -242,7 +242,7 @@ export class ConditionsStore {
   }
 
   forEach(callback: (entity: number, conditions: Condition[]) => void): void {
-    for (const [entity, conditions] of this.conditions) {
+    for (const [entity, conditions] of Array.from(this.conditions)) {
       callback(entity, conditions);
     }
   }

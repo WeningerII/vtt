@@ -125,6 +125,7 @@ model Campaign {
   members       CampaignMember[]
   scenes        Scene[]
   settings      CampaignSettings?
+  characters    CampaignCharacter[]
 
   @@index([name]) // For campaign search
   @@index([createdAt]) // For pagination and sorting
@@ -190,11 +191,31 @@ model Character {
   cost       Float    @default(0)
   latencyMs  Int
   createdAt  DateTime @default(now())
+  
+  campaigns  CampaignCharacter[]
 
   @@index([name]) // For character search
   @@index([provider, model]) // For provider analytics
   @@index([createdAt]) // For pagination and sorting
   @@index([cost]) // For cost analytics
+}
+
+model CampaignCharacter {
+  id          String   @id @default(uuid())
+  campaignId  String
+  characterId String
+  addedBy     String   // User ID who added the character
+  role        String   @default("player") // "player", "npc", "enemy"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  @@unique([campaignId, characterId]) // Prevent duplicate character assignments
+  @@index([campaignId]) // For campaign character queries
+  @@index([characterId]) // For character campaign queries
+  @@index([addedBy]) // For user character queries
 }
 
 /// Monster statblocks and data for encounters
@@ -372,6 +393,9 @@ model EncounterToken {
 model CampaignSettings {
   id                String   @id @default(uuid())
   campaignId        String   @unique
+  description       String   @default("")
+  gameSystem        String   @default("dnd5e")
+  isActive          Boolean  @default(true)
   isPublic          Boolean  @default(false)
   allowSpectators   Boolean  @default(true)
   maxPlayers        Int      @default(6)
@@ -384,6 +408,7 @@ model CampaignSettings {
   campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   
   @@index([campaignId]) // For campaign settings lookup
+  @@index([isActive]) // For active campaign filtering
 }
 
 enum ConditionType {

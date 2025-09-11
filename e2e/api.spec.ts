@@ -37,7 +37,7 @@ test.describe("API Health Checks", () => {
 
 test.describe("AI Providers API", () => {
   test("list AI providers endpoint works", async ({ request }) => {
-    const response = await request.get("http://localhost:8080/ai/providers");
+    const response = await request.get("http://localhost:8080/api/v1/ai/providers");
     expect(response.status()).toBe(200);
 
     const providers = await response.json();

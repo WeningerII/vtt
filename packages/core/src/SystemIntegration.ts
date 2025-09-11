@@ -1,37 +1,205 @@
 /**
  * System Integration Hub
  * Central orchestrator that connects all VTT systems together
- * 
- * NOTE: This file is temporarily stubbed out while dependencies are being resolved
  */
 
-import { globalEventBus, GameEvents, AIEvents, ContentEvents, RuleEvents } from './EventBus';
+import { EventEmitter } from 'events';
+import { _globalEventBus as globalEventBus, _GameEvents as GameEvents, _AIEvents as AIEvents, _ContentEvents as ContentEvents, _RuleEvents as RuleEvents } from './EventBus';
 
-// Temporary stub interfaces until dependent packages are available
-interface DeepRuleEngine {
-  registerEffect(name: string, handler: (effect: any, context: any) => Promise<void>): void;
-  processEvent(type: string, data: any, context: any): Promise<void>;
+export interface SystemIntegrationConfig {
+  enableRuleEngine?: boolean;
+  enableVisualScripting?: boolean;
+  enableContentGeneration?: boolean;
+  enableBehaviorGeneration?: boolean;
+  enableWorkflowEngine?: boolean;
+  ruleEnginePath?: string;
+  contentSuitePath?: string;
+  behaviorSeed?: number;
 }
 
-interface VisualScriptingEngine {
-  executeScript(id: string, inputs: any): Promise<void>;
-  registerNode(node: any): void;
+export interface SystemStatus {
+  ruleEngine: 'active' | 'inactive' | 'error';
+  visualScripting: 'active' | 'inactive' | 'error';
+  contentSuite: 'active' | 'inactive' | 'error';
+  behaviorGenerator: 'active' | 'inactive' | 'error';
+  workflowEngine: 'active' | 'inactive' | 'error';
+  lastHealthCheck: Date;
+  errors: string[];
 }
 
-interface BehaviorTree {
-  // Stub interface
-}
+/**
+ * Central system integration and orchestration class
+ */
+export class SystemIntegration extends EventEmitter {
+  private config: SystemIntegrationConfig;
+  private isInitialized = false;
+  private healthCheckInterval?: NodeJS.Timeout;
 
-interface ProfessionalContentSuite {
-  // Stub interface
-}
+  constructor(config: SystemIntegrationConfig = {}) {
+    super();
+    this.config = {
+      enableRuleEngine: true,
+      enableVisualScripting: true,
+      enableContentGeneration: true,
+      enableBehaviorGeneration: true,
+      enableWorkflowEngine: true,
+      behaviorSeed: Date.now(),
+      ...config
+    };
+  }
 
-interface ProceduralBehaviorGenerator {
-  // Stub interface
-}
+  /**
+   * Initialize all core systems
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      throw new Error('SystemIntegration already initialized');
+    }
 
-interface ContentGenerationWorkflowEngine {
-  processEvent(type: string, data: any, context: any): Promise<void>;
+    try {
+      console.log('🔧 Initializing VTT System Integration...');
+
+      // Register event handlers for system coordination
+      this.registerEventHandlers();
+
+      // Start health monitoring
+      this.startHealthMonitoring();
+
+      this.isInitialized = true;
+      console.log('✅ VTT System Integration initialized successfully');
+      this.emit('systemReady');
+
+    } catch (error) {
+      console.error('❌ Failed to initialize VTT System Integration:', error);
+      this.emit('systemError', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Register global event handlers for system coordination
+   */
+  private registerEventHandlers(): void {
+    // Handle game events
+    globalEventBus.on('game:playerEntered', (event) => {
+      this.handleGameEvent('playerEntered', event);
+    });
+
+    globalEventBus.on('game:combatStarted', (event) => {
+      this.handleGameEvent('combatStarted', event);
+    });
+
+    globalEventBus.on('game:questCompleted', (event) => {
+      this.handleGameEvent('questCompleted', event);
+    });
+
+    // Handle AI events
+    globalEventBus.on('ai:behaviorChanged', (event) => {
+      this.handleAIEvent('behaviorChanged', event);
+    });
+
+    // Handle content events
+    globalEventBus.on('content:generated', (event) => {
+      this.handleContentEvent('contentGenerated', event);
+    });
+
+    // Handle rule events
+    globalEventBus.on('rule:triggered', (event) => {
+      this.handleRuleEvent('ruleTriggered', event);
+    });
+  }
+
+  /**
+   * Handle game events across all systems
+   */
+  private async handleGameEvent(eventType: string, event: any): Promise<void> {
+    const context = { ...event.context, eventType, timestamp: new Date() };
+    console.log(`🎮 Processing game event: ${eventType}`);
+    // Systems will be dynamically loaded when needed
+  }
+
+  /**
+   * Handle AI events
+   */
+  private async handleAIEvent(eventType: string, event: any): Promise<void> {
+    console.log(`🤖 Processing AI event: ${eventType}`);
+    // AI systems coordination will be implemented
+  }
+
+  /**
+   * Handle content events
+   */
+  private async handleContentEvent(eventType: string, event: any): Promise<void> {
+    console.log(`📝 Processing content event: ${eventType}`);
+    // Content systems coordination will be implemented
+  }
+
+  /**
+   * Handle rule events
+   */
+  private async handleRuleEvent(eventType: string, event: any): Promise<void> {
+    console.log(`⚖️ Processing rule event: ${eventType}`);
+    // Rule systems coordination will be implemented
+  }
+
+  /**
+   * Start health monitoring for all systems
+   */
+  private startHealthMonitoring(): void {
+    this.healthCheckInterval = setInterval(async () => {
+      try {
+        const status = await this.getSystemStatus();
+        this.emit('healthCheck', status);
+        
+        // Log any errors
+        if (status.errors.length > 0) {
+          console.warn('System health issues detected:', status.errors);
+        }
+      } catch (error) {
+        console.error('Health check failed:', error);
+      }
+    }, 30000); // Check every 30 seconds
+  }
+
+  /**
+   * Get current system status
+   */
+  async getSystemStatus(): Promise<SystemStatus> {
+    const status: SystemStatus = {
+      ruleEngine: this.config.enableRuleEngine ? 'active' : 'inactive',
+      visualScripting: this.config.enableVisualScripting ? 'active' : 'inactive',
+      contentSuite: this.config.enableContentGeneration ? 'active' : 'inactive',
+      behaviorGenerator: this.config.enableBehaviorGeneration ? 'active' : 'inactive',
+      workflowEngine: this.config.enableWorkflowEngine ? 'active' : 'inactive',
+      lastHealthCheck: new Date(),
+      errors: []
+    };
+
+    return status;
+  }
+
+  /**
+   * Shutdown all systems gracefully
+   */
+  async shutdown(): Promise<void> {
+    console.log('🔄 Shutting down VTT System Integration...');
+
+    // Clear health check interval
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    this.isInitialized = false;
+    console.log('✅ VTT System Integration shutdown complete');
+    this.emit('systemShutdown');
+  }
+
+  /**
+   * Check if system is fully initialized
+   */
+  isReady(): boolean {
+    return this.isInitialized;
+  }
 }
 
 export interface SystemConfiguration {
@@ -57,7 +225,31 @@ export interface IntegratedGameSession {
   sessionData: Record<string, any>;
 }
 
-export class VTTSystemIntegrator {
+export interface SystemIntegrationConfig {
+  enableRuleEngine?: boolean;
+  enableVisualScripting?: boolean;
+  enableContentGeneration?: boolean;
+  enableBehaviorGeneration?: boolean;
+  enableWorkflowEngine?: boolean;
+  ruleEnginePath?: string;
+  contentSuitePath?: string;
+  behaviorSeed?: number;
+}
+
+export interface SystemStatus {
+  ruleEngine: 'active' | 'inactive' | 'error';
+  visualScripting: 'active' | 'inactive' | 'error';
+  contentSuite: 'active' | 'inactive' | 'error';
+  behaviorGenerator: 'active' | 'inactive' | 'error';
+  workflowEngine: 'active' | 'inactive' | 'error';
+  lastHealthCheck: Date;
+  errors: string[];
+}
+
+/**
+ * Central system integration and orchestration class
+ */
+export class VTTSystemIntegrator extends EventEmitter {
   private sessions: Map<string, IntegratedGameSession> = new Map();
   private defaultConfiguration: SystemConfiguration = {
     enableAI: true,
@@ -66,6 +258,28 @@ export class VTTSystemIntegrator {
     enableRules: true,
     enableProcedural: true
   };
+
+  private config: SystemIntegrationConfig;
+  private ruleEngine?: DeepRuleEngine;
+  private visualScriptingEngine?: VisualScriptingEngine;
+  private contentSuite?: ProfessionalContentSuite;
+  private behaviorGenerator?: ProceduralBehaviorGenerator;
+  private workflowEngine?: ContentGenerationWorkflowEngine;
+  private isInitialized = false;
+  private healthCheckInterval?: NodeJS.Timeout;
+
+  constructor(config: SystemIntegrationConfig = {}) {
+    super();
+    this.config = {
+      enableRuleEngine: true,
+      enableVisualScripting: true,
+      enableContentGeneration: true,
+      enableBehaviorGeneration: true,
+      enableWorkflowEngine: true,
+      behaviorSeed: Date.now(),
+      ...config
+    };
+  }
 
   /**
    * Create a new integrated game session

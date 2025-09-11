@@ -41,8 +41,7 @@ const Book = () => <span>📚</span>;
 const Backpack = () => <span>🎒</span>;
 const FileText = () => <span>📄</span>;
 
-// Import additional types needed from core-schemas
-import { HitPoints, SavingThrow, Personality } from "@vtt/core-schemas";
+// Additional types already imported above with Character from @vtt/core-schemas
 
 // Use unified Character type from core-schemas with date string conversion
 interface LocalCharacter extends Omit<Character, 'createdAt' | 'updatedAt'> {

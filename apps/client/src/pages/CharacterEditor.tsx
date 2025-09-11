@@ -4,10 +4,9 @@
 
 import React, { useState } from "react";
 import { useRouter } from "../components/Router";
-import { CharacterSheet } from "../components/character/CharacterSheet";
+import { CharacterSheet, type Character } from "../components/character/CharacterSheet";
 import { Button } from "../components/ui/Button";
 import { ArrowLeft, Users, Plus } from "lucide-react";
-import type { Character } from "../components/character/CharacterSheet";
 
 export function CharacterEditor() {
   const { navigate, params } = useRouter();

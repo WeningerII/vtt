@@ -69,7 +69,7 @@ export const CommonSchemas = {
   filename: sanitizedString({ 
     min: 1, 
     max: 255, 
-    pattern: /^[a-zA-Z0-9\s\-_'.()\[\]]+\.[a-zA-Z0-9]+$/ 
+    pattern: /^[a-zA-Z0-9\s\-_'.()[\]]+\.[a-zA-Z0-9]+$/ 
   }),
 };
 

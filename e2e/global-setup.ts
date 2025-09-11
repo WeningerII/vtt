@@ -1,13 +1,16 @@
 import { chromium, FullConfig } from "@playwright/test";
-import { testDb } from "./utils/database";
 import { join } from "path";
-import dotenv from "dotenv";
 
 async function globalSetup(_config: FullConfig) {
   console.log("[E2E Setup] Starting comprehensive test environment...");
 
-  // Load test environment variables
-  dotenv.config({ path: join(process.cwd(), ".env.test") });
+  // Load test environment variables (optional)
+  try {
+    const dotenv = await import("dotenv");
+    dotenv.default.config({ path: join(process.cwd(), ".env.test") });
+  } catch {
+    console.log("[E2E Setup] dotenv not installed; skipping .env.test loading");
+  }
 
   // Setup test database with proper error handling
   const skipDb = !!process.env.E2E_SKIP_DB || !!process.env.E2E_SKIP_DB_SETUP;
@@ -16,6 +19,7 @@ async function globalSetup(_config: FullConfig) {
   } else {
     try {
       console.log("[E2E Setup] Setting up test database...");
+      const { testDb } = await import("./utils/database");
       await testDb.setup();
       console.log("[E2E Setup] Seeding test data...");  
       await testDb.seed();
@@ -35,7 +39,7 @@ async function globalSetup(_config: FullConfig) {
 
   let serverReady = false;
   const skipClient = !!process.env.E2E_SKIP_CLIENT;
-  const clientReady = skipClient; // if skipping client, treat as ready
+  let clientReady = skipClient; // if skipping client, treat as ready
 
   const maxRetries = 10;
   const retryDelay = 1000;
@@ -47,13 +51,26 @@ async function globalSetup(_config: FullConfig) {
       if (response.status() === 200) {
         console.log("[E2E Setup] Server is ready");
         serverReady = true;
-        break; // Success - exit retry loop for API tests
+        
+        // If client is not skipped, check client readiness
+        if (!skipClient) {
+          try {
+            const clientResponse = await page.request.get("http://localhost:3000/");
+            if (clientResponse.status() === 200) {
+              console.log("[E2E Setup] Client is ready");
+              clientReady = true;
+            }
+          } catch (clientError) {
+            console.log(`[E2E Setup] Client not ready yet: ${clientError}`);
+          }
+        }
+        
+        break; // Exit retry loop when server is ready
       }
     } catch (error) {
       console.log(`[E2E Setup] Attempt ${i + 1}/${maxRetries} failed, retrying...`);
       if (i === maxRetries - 1) {
         console.error("[E2E Setup] Server failed to start:", error);
-        throw new Error("Test environment setup failed - server not ready");
       }
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }

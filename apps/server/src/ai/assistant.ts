@@ -3,8 +3,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-// AI providers temporarily disabled - using fallback implementation
-// import { LegacyOpenAIProvider as OpenAIProvider, LegacyAnthropicProvider as AnthropicProvider } from "@vtt/ai";
+import { createAIServices } from "./service";
 
 export interface AssistantQuery {
   question: string;
@@ -31,68 +30,68 @@ export interface AssistantResponse {
 }
 
 export function createAssistantService(prisma: PrismaClient) {
-  const openaiKey = process.env.OPENAI_API_KEY;
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  // Initialize AI services with router and provider management
+  const aiServices = createAIServices(prisma);
+  const aiRouter = aiServices.router;
 
-  // AI providers disabled for build compatibility
-  const openaiProvider: any = null;
-  const anthropicProvider: any = null;
+  const D5E_SYSTEM_PROMPT = `You are an expert D&D 5th Edition rules assistant and game master. You have comprehensive knowledge of:
+- Player's Handbook, Dungeon Master's Guide, Monster Manual
+- All official D&D 5e rules, spells, classes, races, and mechanics
+- Combat mechanics, spell interactions, and edge cases
+- Character creation and advancement
+- Game balance and encounter design
 
-  // Providers would be initialized here when AI package is available
-  // if (openaiKey && openaiKey.trim().length > 0) {
-  //   openaiProvider = new OpenAIProvider({ apiKey: openaiKey });
-  // }
-  // if (anthropicKey && anthropicKey.trim().length > 0) {
-  //   anthropicProvider = new AnthropicProvider({ apiKey: anthropicKey });
-  // }
+Provide accurate, helpful answers with specific rule references when possible. If a rule is ambiguous or has multiple interpretations, explain the options. Always prioritize official rules over homebrew unless specifically asked about homebrew content.
+
+Format your responses clearly with:
+1. Direct answer to the question
+2. Relevant rule references (book and page if known)  
+3. Any important caveats or edge cases
+4. Practical gameplay advice when appropriate`;
 
   async function askQuestion(query: AssistantQuery): Promise<AssistantResponse> {
     const startTime = Date.now();
     
     try {
-      // Try AI providers first if available
-      if (anthropicProvider) {
-        const response = await anthropicProvider.complete({
-          messages: [
-            { role: 'system', content: 'You are a helpful D&D 5e assistant. Provide accurate rule information and game guidance.' },
-            { role: 'user', content: query.question }
-          ],
-          model: 'claude-3-haiku-20240307',
-          maxTokens: 500
-        });
-        
-        return {
-          answer: response.content,
-          sources: ["Anthropic Claude", "D&D 5e Knowledge Base"],
-          confidence: 0.9,
-          metadata: {
-            provider: "anthropic",
-            model: "claude-3-haiku",
-            costUSD: response.cost || 0,
-            latencyMs: Date.now() - startTime,
-            respondedAt: new Date()
-          }
-        };
-      }
+      // Check if AI router has available providers
+      const providers = aiServices.listProviders();
+      const hasAIProviders = providers.length > 0 && providers.some(p => p.name !== 'dummy');
       
-      if (openaiProvider) {
-        const response = await openaiProvider.complete({
-          messages: [
-            { role: 'system', content: 'You are a helpful D&D 5e assistant. Provide accurate rule information and game guidance.' },
-            { role: 'user', content: query.question }
-          ],
-          model: 'gpt-3.5-turbo',
-          maxTokens: 500
+      if (hasAIProviders) {
+        // Use AI router for text completion
+        const gameSystem = query.context?.gameSystem || "D&D 5e";
+        const contextualPrompt = `${query.question}
+
+Context:
+- Game System: ${gameSystem}
+- Player Level: ${query.context?.playerLevel || "Unknown"}
+- Character Class: ${query.context?.characterClass || "Unknown"}
+${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}`;
+
+        const response = await aiRouter.generateText({
+          prompt: `${D5E_SYSTEM_PROMPT}\n\nUser Query: ${contextualPrompt}`,
+          maxTokens: 1000,
+          temperature: 0.3
         });
         
+        // Log the query for analytics
+        const job = await prisma.generationJob.create({
+          data: {
+            type: "TEXT_TO_IMAGE", // We'd need RULE_QUERY type in schema
+            status: "SUCCEEDED",
+            input: { query: query.question, context: query.context } as any,
+            output: { answer: response.text } as any,
+          },
+        });
+
         return {
-          answer: response.content,
-          sources: ["OpenAI GPT-3.5", "D&D 5e Knowledge Base"],
+          answer: response.text,
+          sources: ["AI Assistant", "D&D 5e Knowledge Base"],
           confidence: 0.85,
           metadata: {
-            provider: "openai",
-            model: "gpt-3.5-turbo",
-            costUSD: response.cost || 0,
+            provider: response.provider || "ai-router",
+            model: response.model || "unknown",
+            costUSD: response.costUSD || 0,
             latencyMs: Date.now() - startTime,
             respondedAt: new Date()
           }

@@ -8,20 +8,20 @@ import { parseJsonBody } from "../utils/json";
 import { ActorIntegrationService } from "../services/ActorIntegrationService";
 import { CharacterService } from "../character/CharacterService";
 import { MonsterService } from "../services/MonsterService";
-import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 
 // Lazy-load services to avoid initialization issues during module loading
-let prisma: PrismaClient | null = null;
+let prisma: any | null = null;
 let characterService: CharacterService | null = null;
 let monsterService: MonsterService | null = null;
 let actorService: ActorIntegrationService | null = null;
 
 function getServices() {
   if (!prisma) {
-    prisma = new PrismaClient();
+    prisma = DatabaseManager.getInstance();
     characterService = new CharacterService();
     monsterService = new MonsterService(prisma);
-    actorService = new ActorIntegrationService();
+    actorService = new ActorIntegrationService(prisma);
   }
   return {
     prisma,

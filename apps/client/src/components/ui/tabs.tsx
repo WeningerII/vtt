@@ -147,7 +147,7 @@ const TabsContent = forwardRef<HTMLDivElement, TabsContentProps>(
     const { value: selectedValue } = useTabsContext();
     const isActive = selectedValue === value;
 
-    if (!isActive) return null;
+    if (!isActive) {return null;}
 
     return (
       <div

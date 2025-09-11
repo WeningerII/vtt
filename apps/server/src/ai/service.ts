@@ -1,116 +1,85 @@
 import { PrismaClient } from "@prisma/client";
 import { logger } from "@vtt/logging";
-// Temporarily disable AI imports due to build issues
-// import {
-//   AIContext,
-//   AIProvider,
-//   AIRegistry,
-//   AIRouter,
-//   DummyProvider,
-//   DepthRequest,
-//   SegmentationRequest,
-//   TextToImageRequest,
-// } from "@vtt/ai";
+// Restore AI imports now that build issues are resolved
+import {
+  AIContext,
+  AIProvider,
+  AIRegistry,
+  AIRouter,
+  DummyProvider,
+  DepthRequest,
+  SegmentationRequest,
+  TextToImageRequest,
+  CircuitBreakerProvider,
+} from "@vtt/ai";
 
-// Temporary implementations to allow build to pass
-class AIRegistry {
-  constructor() {}
-  register() {}
-  getProviders() { return []; }
-  list() { return []; }
-}
-
-class DummyProvider {
-  constructor(name?: any) {}
-  getName() { return 'dummy'; }
-  getCapabilities() { return []; }
-}
-
-class AIRouter {
-  constructor(registry?: any, prisma?: any) {}
-  route() { return null; }
-  textToImage(request?: any, context?: any) { 
-    return Promise.resolve({ 
-      success: false, 
-      error: 'AI services disabled', 
-      uri: '', 
-      width: 512, 
-      height: 512, 
-      mimeType: 'image/png',
-      provider: 'disabled',
-      model: 'none',
-      costUSD: 0,
-      latencyMs: 0,
-      image: { uri: '', width: 512, height: 512, mimeType: 'image/png' }
-    }); 
-  }
-  depth(request?: any, context?: any) { 
-    return Promise.resolve({ 
-      success: false, 
-      error: 'AI services disabled', 
-      uri: '', 
-      width: 512, 
-      height: 512, 
-      mimeType: 'image/png',
-      provider: 'disabled',
-      model: 'none',
-      costUSD: 0,
-      latencyMs: 0,
-      depth: { uri: '', width: 512, height: 512, mimeType: 'image/png' }
-    }); 
-  }
-  segmentation(request?: any, context?: any) { 
-    return Promise.resolve({ 
-      success: false, 
-      error: 'AI services disabled', 
-      labels: [], 
-      segments: [], 
-      width: 512, 
-      height: 512, 
-      mimeType: 'image/png',
-      provider: 'disabled',
-      model: 'none',
-      costUSD: 0,
-      latencyMs: 0,
-      mask: { uri: '', width: 512, height: 512, mimeType: 'image/png' },
-      classes: {}
-    }); 
-  }
-}
-
-type AIProvider = any;
-type DepthRequest = any;
-type SegmentationRequest = any;
-type TextToImageRequest = any;
-type AIContext = any;
-// Temporarily disable problematic AI provider imports
-// import {
-//   StabilityAIProvider,
-//   OpenAIProvider,
-//   HuggingFaceProvider,
-//   ReplicateProvider,
-//   createProviders,
-// } from "@vtt/ai/src/providers/RealProviders";
-// import { circuitBreakerRegistry, CircuitBreaker } from "@vtt/ai/src/circuit-breaker";
-// import { CircuitBreakerProvider } from "@vtt/ai/src/providers/CircuitBreakerProvider";
+// Import providers from specific paths 
+import {
+  OpenAIProvider,
+  AnthropicProvider,
+  StabilityAIProvider,
+  HuggingFaceProvider,
+  ReplicateProvider,
+  createProviders
+} from "@vtt/ai/src/providers/RealProviders";
 
 export type WithMapId<T> = T & { mapId?: string };
 
 export function createAIServices(prisma: PrismaClient) {
   const registry = new AIRegistry();
+  
   // Register built-in dummy provider for local/testing
   const dummyProvider = new DummyProvider() as unknown as AIProvider;
-  
-  // Temporarily disable real providers due to compilation issues
-  // Using only DummyProvider to get server running for campaign testing
-  logger.info('AI Service: Using DummyProvider only (real providers disabled for campaign testing)');
+  registry.register(dummyProvider);
+
+  // Initialize real providers based on environment configuration
+  const providerConfig = {
+    openai: process.env.OPENAI_API_KEY ? {
+      apiKey: process.env.OPENAI_API_KEY,
+      baseUrl: process.env.OPENAI_BASE_URL
+    } : undefined,
+    anthropic: process.env.ANTHROPIC_API_KEY ? {
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      baseUrl: process.env.ANTHROPIC_BASE_URL
+    } : undefined,
+    stability: process.env.STABILITY_API_KEY ? {
+      apiKey: process.env.STABILITY_API_KEY,
+      baseUrl: process.env.STABILITY_BASE_URL
+    } : undefined,
+    huggingface: process.env.HUGGINGFACE_API_KEY ? {
+      apiKey: process.env.HUGGINGFACE_API_KEY,
+      baseUrl: process.env.HUGGINGFACE_BASE_URL
+    } : undefined,
+    replicate: process.env.REPLICATE_API_KEY ? {
+      apiKey: process.env.REPLICATE_API_KEY
+    } : undefined
+  };
+
+  // Create and register real providers with circuit breaker protection
+  const realProviders = createProviders(providerConfig);
+  realProviders.forEach(provider => {
+    const protectedProvider = new CircuitBreakerProvider(provider, {
+      failureThreshold: 5,
+      resetTimeout: 60000,
+      monitoringPeriod: 300000,
+    });
+    registry.register(protectedProvider);
+  });
+
+  const availableProviders = registry.list().map(p => p.name);
+  logger.info(`AI Service: Initialized with providers: ${availableProviders.join(', ')}`);
 
   // Configure routing policy with preferred providers
   const routingPolicy = {
-    preferred: process.env.AI_PREFERRED_PROVIDERS?.split(",") || ["dummy"],
+    preferred: process.env.AI_PREFERRED_PROVIDERS?.split(",") || ["openai", "anthropic", "dummy"],
     forbid: process.env.AI_FORBIDDEN_PROVIDERS?.split(",") || [],
     weights: {
-      "dummy": 1.0,
+      "openai": 1.0,
+      "anthropic": 0.8,
+      "stability": 0.6,
+      "huggingface": 0.4,
+      "replicate": 0.3,
+      "dummy": 0.1,
     },
   };
 

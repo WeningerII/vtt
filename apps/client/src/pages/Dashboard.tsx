@@ -11,9 +11,7 @@ import { Button } from "../components/ui/Button";
 import { Skeleton } from "../components/ui/LoadingSpinner";
 import { WelcomeModal } from "../components/onboarding/WelcomeModal";
 import { CreateSessionModal } from "../components/sessions/CreateSessionModal";
-// import { useTranslation } from "@vtt/i18n";
-// TODO: Implement i18n integration - using fallback for now
-const useTranslation = () => ({ t: (key: string) => key });
+import { useTranslation } from "@vtt/i18n";
 import { Plus, Users, Play, Settings, Crown, Clock, Globe, Lock, Eye, Zap } from "lucide-react";
 import { sessionsService, GameSessionInfo } from "../services/sessions";
 

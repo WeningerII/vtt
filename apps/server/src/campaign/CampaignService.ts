@@ -4,10 +4,11 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { PrismaClient } from "@prisma/client";
-import { MapScene } from "../map/types.js";
+import { PrismaClient, GameSessionStatus } from "@prisma/client";
+import { MapScene } from "../map/types";
 import { MapService } from "../map/MapService";
 import { v4 as _uuidv4 } from "uuid";
+import { logger } from "@vtt/logging";
 
 // Custom Campaign interface that extends database model with computed fields
 export interface Campaign {
@@ -106,15 +107,22 @@ export class CampaignService {
   /**
    * Create a new campaign with database persistence
    */
-  async createCampaign(gameMasterId: string, request: CreateCampaignRequest): Promise<Campaign> {
+  async createCampaign(userId: string, request: CreateCampaignRequest): Promise<Campaign> {
     // Create campaign in database
     const dbCampaign = await this.prisma.campaign.create({
       data: {
         name: request.name,
         members: {
           create: {
-            userId: gameMasterId,
+            userId,
             role: "GM",
+          },
+        },
+        settings: {
+          create: {
+            description: request.description || "",
+            gameSystem: request.gameSystem || "dnd5e",
+            isActive: request.isActive !== undefined ? request.isActive : true,
           },
         },
       },
@@ -125,21 +133,13 @@ export class CampaignService {
           },
         },
         scenes: true,
+        settings: true,
       },
     });
 
-    const campaign = this.mapDbCampaignToCampaign({
-      ...dbCampaign,
-      members: dbCampaign.members || [],
-      scenes: dbCampaign.scenes || []
-    });
-
-    // Apply request data
-    campaign.description = request.description || "";
-    campaign.gameSystem = request.gameSystem || "dnd5e";
-    campaign.isActive = request.isActive !== false;
-
-    this.campaigns.set(dbCampaign.id, campaign);
+    // Convert to service model and cache
+    const campaign = this.mapDbCampaignToCampaign(dbCampaign);
+    this.campaigns.set(campaign.id, campaign);
     return campaign;
   }
 
@@ -161,13 +161,14 @@ export class CampaignService {
           },
         },
         scenes: true,
+        settings: true,
       },
     });
 
     if (!dbCampaign) {return null;}
 
-    const gameMaster = dbCampaign.members.find((m) => m.role === "GM");
-    const players = dbCampaign.members.map((m) => m.userId);
+    const gameMaster = dbCampaign.members?.find((m) => m.role === "GM");
+    const players = dbCampaign.members?.map((m) => m.userId) || [];
 
     const campaign = this.mapDbCampaignToCampaign({
       ...dbCampaign,
@@ -193,15 +194,23 @@ export class CampaignService {
       },
     });
 
+    // Resolve active scene from in-memory cache, falling back to database if needed
+    const dbActive = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { activeSceneId: true },
+    });
+    const resolvedActiveId: string | undefined =
+      (this.activeScenes.get(campaignId) ?? dbActive?.activeSceneId) ?? undefined;
+
     return {
       ...campaign,
       scenes: scenes.map((scene) => ({
         id: scene.id,
         name: scene.name,
         mapId: scene.mapId,
-        isActive: this.activeScenes.get(campaignId) === scene.id
+        isActive: resolvedActiveId === scene.id
       })),
-      activeSceneId: this.activeScenes.get(campaignId)
+      activeSceneId: resolvedActiveId
     };
   }
 
@@ -263,7 +272,7 @@ export class CampaignService {
       where: {
         members: {
           some: {
-            userId: userId
+            userId
           }
         }
       },
@@ -290,8 +299,8 @@ export class CampaignService {
       where: {
         members: {
           some: {
-            userId: userId,
-            role: "GM"
+            userId,
+            role: { in: ["GM", "gm"] }
           }
         }
       },
@@ -322,7 +331,7 @@ export class CampaignService {
       where: {
         campaignId,
         userId,
-        role: "GM"
+        role: { in: ["GM", "gm"] }
       }
     });
 
@@ -365,7 +374,7 @@ export class CampaignService {
       where: {
         campaignId,
         userId,
-        role: "GM"
+        role: { in: ["GM", "gm"] }
       }
     });
 
@@ -385,7 +394,7 @@ export class CampaignService {
       
       return true;
     } catch (error) {
-      console.error('Error deleting campaign:', error);
+      logger.error('Error deleting campaign:', error);
       return false;
     }
   }
@@ -444,8 +453,21 @@ export class CampaignService {
       return false;
     }
 
-    // Mark campaign as archived in memory (schema doesn't have status field)
+    // Update in database via CampaignSettings
+    await this.prisma.campaignSettings.upsert({
+      where: { campaignId },
+      update: { isActive: false, updatedAt: new Date() },
+      create: {
+        campaignId,
+        isActive: false,
+        description: campaign.description || "",
+        gameSystem: campaign.gameSystem || "dnd5e",
+      },
+    });
+
+    // Update in-memory state
     campaign.isActive = false;
+    campaign.updatedAt = new Date();
 
     return true;
   }
@@ -454,14 +476,27 @@ export class CampaignService {
    * Reactivate campaign
    */
   async reactivateCampaign(campaignId: string, userId: string): Promise<boolean> {
-    const campaign = this.campaigns.get(campaignId);
-
+    const campaign = await this.getCampaign(campaignId);
     if (!campaign || campaign.gameMasterId !== userId) {
-      return false;
+      return false; // Only GM can reactivate campaign
     }
 
+    // Update in database via CampaignSettings
+    await this.prisma.campaignSettings.upsert({
+      where: { campaignId },
+      update: { isActive: true, updatedAt: new Date() },
+      create: {
+        campaignId,
+        isActive: true,
+        description: campaign.description || "",
+        gameSystem: campaign.gameSystem || "dnd5e",
+      },
+    });
+
+    // Update in-memory state
     campaign.isActive = true;
     campaign.updatedAt = new Date();
+
     return true;
   }
 
@@ -487,28 +522,44 @@ export class CampaignService {
       throw new Error("Scene not found or does not belong to campaign");
     }
 
-    // End any existing session for this campaign
-    const existingSessionId = Array.from(this.activeSessions.entries()).find(
-      ([_, session]) => session.campaignId === campaignId,
-    )?.[0];
-    if (existingSessionId) {
-      await this.endSession(existingSessionId, gameMasterId);
+    // End any existing ACTIVE session for this campaign in the database
+    const existingActive = await this.prisma.gameSession.findFirst({
+      where: { campaignId, status: GameSessionStatus.ACTIVE },
+    });
+    if (existingActive) {
+      await this.prisma.gameSession.update({
+        where: { id: existingActive.id },
+        data: { status: GameSessionStatus.COMPLETED, endedAt: new Date() },
+      });
+      // Also clear from in-memory overlay if present
+      this.activeSessions.delete(existingActive.id);
     }
 
-    // Create new session
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Create new session in database
+    const dbSession = await this.prisma.gameSession.create({
+      data: {
+        name: `Session ${new Date().toISOString()}`,
+        campaignId,
+        status: GameSessionStatus.ACTIVE,
+        currentSceneId: sceneId,
+        startedAt: new Date(),
+      },
+    });
+
+    // Build in-memory session overlay (for connected users tracking)
     const session: GameSession = {
-      sessionId,
+      sessionId: dbSession.id,
       campaignId,
       sceneId,
       gameMasterId,
       connectedUsers: [gameMasterId],
       status: "active",
-      startedAt: new Date(),
+      startedAt: dbSession.startedAt || new Date(),
     };
 
-    this.activeSessions.set(sessionId, session);
-    this.activeScenes.set(campaignId, sceneId);
+    this.activeSessions.set(dbSession.id, session);
+    // Persist active scene association
+    await this.setActiveSceneInternal(campaignId, sceneId);
 
     return session;
   }
@@ -517,17 +568,29 @@ export class CampaignService {
    * End a game session
    */
   async endSession(sessionId: string, userId: string): Promise<boolean> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session) {return false;}
+    // Load session from DB to validate authority and update persistence
+    const dbSession = await this.prisma.gameSession.findUnique({ where: { id: sessionId } });
+    if (!dbSession) {return false;}
 
-    // Only GM can end session
-    if (session.gameMasterId !== userId) {
-      throw new Error("Unauthorized: Only session GM can end sessions");
+    // Verify user is GM for the campaign
+    const gmMembership = await this.prisma.campaignMember.findFirst({
+      where: { campaignId: dbSession.campaignId, userId, role: "GM" },
+    });
+    if (!gmMembership) {
+      throw new Error("Unauthorized: Only campaign GM can end sessions");
     }
 
-    session.status = "ended";
-    session.endedAt = new Date();
-    this.activeSessions.delete(sessionId);
+    await this.prisma.gameSession.update({
+      where: { id: sessionId },
+      data: { status: GameSessionStatus.COMPLETED, endedAt: new Date() },
+    });
+
+    const session = this.activeSessions.get(sessionId);
+    if (session) {
+      session.status = "ended";
+      session.endedAt = new Date();
+      this.activeSessions.delete(sessionId);
+    }
 
     return true;
   }
@@ -536,8 +599,28 @@ export class CampaignService {
    * Join a game session
    */
   async joinSession(sessionId: string, userId: string): Promise<boolean> {
-    const session = this.activeSessions.get(sessionId);
-    if (!session || session.status !== "active") {return false;}
+    let session = this.activeSessions.get(sessionId);
+    if (!session) {
+      // Try to hydrate from DB
+      const dbSession = await this.prisma.gameSession.findUnique({ where: { id: sessionId } });
+      if (!dbSession || dbSession.status !== GameSessionStatus.ACTIVE) {return false;}
+
+      const campaign = await this.getCampaign(dbSession.campaignId);
+      if (!campaign) {return false;}
+
+      session = {
+        sessionId: dbSession.id,
+        campaignId: dbSession.campaignId,
+        sceneId: dbSession.currentSceneId || "",
+        gameMasterId: campaign.gameMasterId,
+        connectedUsers: [],
+        status: "active",
+        startedAt: dbSession.startedAt || new Date(),
+      };
+      this.activeSessions.set(sessionId, session);
+    }
+
+    if (session.status !== "active") {return false;}
 
     // Verify user is member of campaign
     const campaign = await this.getCampaign(session.campaignId);
@@ -564,9 +647,17 @@ export class CampaignService {
     // Remove user from connected users
     session.connectedUsers = session.connectedUsers.filter((id) => id !== userId);
 
-    // If GM leaves, pause the session
+    // If GM leaves, pause the session (persist to DB too)
     if (userId === session.gameMasterId) {
       session.status = "paused";
+      try {
+        await this.prisma.gameSession.update({
+          where: { id: sessionId },
+          data: { status: GameSessionStatus.PAUSED },
+        });
+      } catch (error) {
+        logger.warn("Failed to persist paused status for session", error as Error);
+      }
     }
 
     return true;
@@ -576,11 +667,46 @@ export class CampaignService {
    * Get active session for campaign
    */
   getActiveSession(campaignId: string): GameSession | null {
-    return (
-      Array.from(this.activeSessions.values()).find(
-        (session) => session.campaignId === campaignId && session.status === "active",
-      ) || null
+    // Prefer in-memory active session if present
+    const mem = Array.from(this.activeSessions.values()).find(
+      (session) => session.campaignId === campaignId && session.status === "active",
     );
+    if (mem) {return mem;}
+
+    // Fallback to database lookup
+    // Note: This is a synchronous signature; callers should use an async variant if needed.
+    // For now, return null if not cached to avoid blocking.
+    return null;
+  }
+
+  /**
+   * Get active session for campaign (async, with DB fallback)
+   */
+  async getActiveSessionAsync(campaignId: string): Promise<GameSession | null> {
+    const mem = this.getActiveSession(campaignId);
+    if (mem) {return mem;}
+
+    const dbSession = await this.prisma.gameSession.findFirst({
+      where: { campaignId, status: GameSessionStatus.ACTIVE },
+    });
+    if (!dbSession) {return null;}
+
+    const campaign = await this.getCampaign(campaignId);
+    if (!campaign) {return null;}
+
+    const hydrated: GameSession = {
+      sessionId: dbSession.id,
+      campaignId: dbSession.campaignId,
+      sceneId: dbSession.currentSceneId || "",
+      gameMasterId: campaign.gameMasterId,
+      connectedUsers: [],
+      status: "active",
+      startedAt: dbSession.startedAt || new Date(),
+      endedAt: dbSession.endedAt || undefined,
+    };
+
+    this.activeSessions.set(dbSession.id, hydrated);
+    return hydrated;
   }
 
   /**
@@ -639,17 +765,25 @@ export class CampaignService {
       },
     });
 
-    return members.map(member => ({
-      id: member.id,
-      userId: member.userId,
-      email: member.user.email,
-      displayName: member.user.displayName,
-      role: member.role as 'player' | 'gm' | 'spectator',
-      status: member.status as 'active' | 'invited' | 'kicked' | 'banned',
-      joinedAt: member.joinedAt,
-      invitedAt: member.invitedAt || undefined,
-      invitedBy: member.invitedBy || undefined,
-    }));
+    return members.map(member => {
+      const roleLower = (member.role || '').toLowerCase();
+      const statusLower = (member.status || '').toLowerCase();
+      const normalizedRole: 'player' | 'gm' | 'spectator' =
+        roleLower === 'gm' ? 'gm' : (roleLower === 'player' ? 'player' : 'spectator');
+      const normalizedStatus: 'active' | 'invited' | 'kicked' | 'banned' =
+        (['active','invited','kicked','banned'].includes(statusLower) ? statusLower : 'active') as any;
+      return {
+        id: member.id,
+        userId: member.userId,
+        email: member.user.email,
+        displayName: member.user.displayName,
+        role: normalizedRole,
+        status: normalizedStatus,
+        joinedAt: member.joinedAt,
+        invitedAt: member.invitedAt || undefined,
+        invitedBy: member.invitedBy || undefined,
+      };
+    });
   }
 
   /**
@@ -910,7 +1044,7 @@ export class CampaignService {
   /**
    * Add character to campaign
    */
-  async addCharacterToCampaign(campaignId: string, userId: string, characterId: string): Promise<boolean> {
+  async addCharacterToCampaign(campaignId: string, userId: string, characterId: string, role: string = 'player'): Promise<boolean> {
     // Verify user is GM or player in campaign
     const campaign = await this.getCampaign(campaignId);
     if (!campaign) {
@@ -922,7 +1056,7 @@ export class CampaignService {
       throw new Error('Unauthorized: Only campaign members can add characters');
     }
 
-    // Check if character exists (Character model doesn't have userId field)
+    // Check if character exists
     const character = await this.prisma.character.findUnique({
       where: { id: characterId },
     });
@@ -931,14 +1065,35 @@ export class CampaignService {
       throw new Error('Character not found');
     }
 
-    // Since campaignCharacter table doesn't exist, manage in-memory
-    if (campaign.characters.includes(characterId)) {
+    // Check if character is already in campaign
+    const existingAssignment = await this.prisma.campaignCharacter.findUnique({
+      where: {
+        campaignId_characterId: {
+          campaignId,
+          characterId,
+        },
+      },
+    });
+
+    if (existingAssignment) {
       throw new Error('Character is already in this campaign');
     }
 
-    // Add character to campaign in-memory
-    campaign.characters.push(characterId);
-    campaign.updatedAt = new Date();
+    // Add character to campaign via join table
+    await this.prisma.campaignCharacter.create({
+      data: {
+        campaignId,
+        characterId,
+        addedBy: userId,
+        role,
+      },
+    });
+
+    // Update in-memory cache
+    if (campaign.characters && !campaign.characters.includes(characterId)) {
+      campaign.characters.push(characterId);
+      campaign.updatedAt = new Date();
+    }
 
     return true;
   }
@@ -953,25 +1108,33 @@ export class CampaignService {
       throw new Error('Campaign not found');
     }
 
-    // Check if character exists
-    const character = await this.prisma.character.findUnique({
-      where: { id: characterId },
-    });
-
     const isGM = campaign.gameMasterId === userId;
 
     if (!isGM) {
       throw new Error('Unauthorized: Only GM can remove characters');
     }
 
-    // Remove character from campaign in-memory
-    const characterIndex = campaign.characters.indexOf(characterId);
-    if (characterIndex === -1) {
-      return false;
+    // Remove character from campaign via join table
+    const assignment = await this.prisma.campaignCharacter.deleteMany({
+      where: {
+        campaignId,
+        characterId,
+      },
+    });
+
+    if (assignment.count === 0) {
+      return false; // Character wasn't in campaign
     }
-    
-    campaign.characters.splice(characterIndex, 1);
-    campaign.updatedAt = new Date();
+
+    // Update in-memory cache
+    if (campaign.characters) {
+      const characterIndex = campaign.characters.indexOf(characterId);
+      if (characterIndex !== -1) {
+        campaign.characters.splice(characterIndex, 1);
+        campaign.updatedAt = new Date();
+      }
+    }
+
     return true;
   }
 
@@ -988,22 +1151,23 @@ export class CampaignService {
    * Helper method to map database campaign to service interface
    */
   private mapDbCampaignToCampaign(dbCampaign: any): Campaign {
-    const gameMaster = dbCampaign.members?.find((m: any) => m.role === "GM");
+    const gameMaster = dbCampaign.members?.find((m: any) => (m.role || "").toLowerCase() === "gm");
     const players = dbCampaign.members?.map((m: any) => m.userId) || [];
+    const characters = dbCampaign.characters?.map((cc: any) => cc.characterId) || [];
 
     return {
       id: dbCampaign.id,
       name: dbCampaign.name,
-      description: "", // Default empty description (not stored in DB)
-      gameSystem: "dnd5e", // Default game system (not stored in DB)
+      description: dbCampaign.settings?.description || "",
+      gameSystem: dbCampaign.settings?.gameSystem || "dnd5e",
       gameMasterId: gameMaster?.userId || "",
       players,
-      characters: [], // Not stored in DB, managed in-memory
-      sessions: 0, // Not stored in DB, managed in-memory
-      totalHours: 0, // Not stored in DB, managed in-memory
-      isActive: true, // Default active (not stored in DB)
+      characters,
+      isActive: dbCampaign.settings?.isActive ?? true,
+      sessions: 0, // Computed field
+      totalHours: 0, // Computed field
       createdAt: dbCampaign.createdAt,
-      updatedAt: new Date(),
+      updatedAt: dbCampaign.updatedAt || dbCampaign.createdAt,
     };
   }
 }

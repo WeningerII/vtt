@@ -120,11 +120,11 @@ export class ConditionService {
 
   async updateCondition(id: string, request: UpdateConditionRequest) {
     const updateData: any = {};
-    if (request.name !== undefined) updateData.name = request.name;
-    if (request.type !== undefined) updateData.type = request.type;
-    if (request.description !== undefined) updateData.description = request.description;
-    if (request.duration !== undefined) updateData.duration = request.duration;
-    if (request.metadata !== undefined) updateData.metadata = request.metadata;
+    if (request.name !== undefined) {updateData.name = request.name;}
+    if (request.type !== undefined) {updateData.type = request.type;}
+    if (request.description !== undefined) {updateData.description = request.description;}
+    if (request.duration !== undefined) {updateData.duration = request.duration;}
+    if (request.metadata !== undefined) {updateData.metadata = request.metadata;}
     
     return await this.prisma.condition.update({
       where: { id },

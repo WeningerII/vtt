@@ -51,7 +51,7 @@ export class ActorService {
       this.prisma.token.findMany({
         where: {
           gameSession: {
-            campaignId: campaignId
+            campaignId
           },
           ...kind ? { type: kind as any } : {}
         },
@@ -62,7 +62,7 @@ export class ActorService {
       this.prisma.token.count({ 
         where: {
           gameSession: {
-            campaignId: campaignId
+            campaignId
           },
           ...kind ? { type: kind as any } : {}
         }

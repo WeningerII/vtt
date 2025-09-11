@@ -295,8 +295,9 @@ export function validateFileUpload(
     errors.push(`File extension .${extension} is not allowed`);
   }
 
-  // Check for suspicious file names
-  if (/[<>:"/\\|?*\x00-\x1f]/.test(file.name)) {
+  // Check for suspicious file names (use Unicode escapes for control chars)
+  // eslint-disable-next-line no-control-regex
+  if (/[<>:"/\\|?*\u0000-\u001F]/.test(file.name)) {
     errors.push("File name contains invalid characters");
   }
 

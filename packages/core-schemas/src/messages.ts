@@ -237,10 +237,48 @@ export const LeaveSessionMessageSchema = z.object({
 });
 export type LeaveSessionMessage = z.infer<typeof LeaveSessionMessageSchema>;
 
+// Add missing server message schemas that client expects
+export const CreateSessionMessageSchema = z.object({
+  type: z.literal("CREATE_SESSION"),
+  sessionData: z.object({
+    name: z.string(),
+    campaignId: z.string().optional(),
+  }),
+});
+export type CreateSessionMessage = z.infer<typeof CreateSessionMessageSchema>;
+
+export const GameMessageSchema = z.object({
+  type: z.literal("GAME_MESSAGE"),
+  payload: z.any(),
+});
+export type GameMessage = z.infer<typeof GameMessageSchema>;
+
+// Token movement using server format
+export const MoveTokenServerMessageSchema = z.object({
+  type: z.literal("MOVE_TOKEN"),
+  payload: z.object({
+    tokenId: z.string(),
+    x: z.number(),
+    y: z.number(),
+    rotation: z.number().optional(),
+  }).or(z.object({
+    id: z.string(),
+    x: z.number(),
+    y: z.number(),
+    rotation: z.number().optional(),
+    position: z.object({
+      x: z.number(),
+      y: z.number(),
+    }).optional(),
+  })),
+});
+export type MoveTokenServerMessage = z.infer<typeof MoveTokenServerMessageSchema>;
+
 export const AnyClientMessageSchema = z.union([
   PingMessageSchema,
   EchoMessageSchema,
   MoveTokenMessageSchema,
+  MoveTokenServerMessageSchema,
   RollDiceMessageSchema,
   ChatMessageSchema,
   JoinGameMessageSchema,
@@ -248,5 +286,9 @@ export const AnyClientMessageSchema = z.union([
   AuthenticateMessageSchema,
   JoinSessionMessageSchema,
   LeaveSessionMessageSchema,
+  CreateSessionMessageSchema,
+  GameMessageSchema,
+  // Permissive fallback for combat and other messages
+  z.object({ type: z.string() }).passthrough(),
 ]);
 export type AnyClientMessage = z.infer<typeof AnyClientMessageSchema>;

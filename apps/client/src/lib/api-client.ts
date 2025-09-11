@@ -123,14 +123,12 @@ class ApiClient {
             // Server error
             logger.error("Server error:", data?.error || "Internal server error");
             return Promise.reject(new Error(data?.error || "Server error. Please try again later."));
-          default:
+          default: {
             // Other errors
             const errorMessage = data?.error || data?.message || `Request failed with status ${status}`;
             return Promise.reject(new Error(errorMessage));
+          }
         }
-
-        // This should never be reached, but just in case
-        return Promise.reject(new Error("An unexpected error occurred"));
       },
     );
   }

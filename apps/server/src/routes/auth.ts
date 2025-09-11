@@ -2,17 +2,13 @@
  * Authentication Routes
  */
 import { Router } from 'express';
-import { AuthManager } from '../auth/auth-manager';
-import { PrismaClient } from '@prisma/client';
 import passport from 'passport';
+import { DatabaseManager } from '../database/connection';
+import { getAuthManager } from '../auth/auth-manager';
 
-const prisma = new PrismaClient();
-const authManager = new AuthManager(prisma, {
-  jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
-  jwtExpiration: '1h',
-  refreshTokenExpiration: '7d',
-  bcryptRounds: 12
-});
+// Ensure DatabaseManager is initialized and reuse shared AuthManager
+const prisma = DatabaseManager.getInstance();
+const authManager = getAuthManager();
 
 export const authRouter = Router();
 

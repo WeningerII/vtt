@@ -247,7 +247,7 @@ export class TokenService {
 
   async getTokenStats(gameSessionId: string, sceneId?: string) {
     const where: any = { gameSessionId };
-    if (sceneId) where.sceneId = sceneId;
+    if (sceneId) {where.sceneId = sceneId;}
 
     const [total, byType, byVisibility, visible] = await Promise.all([
       this.prisma.token.count({ where }),

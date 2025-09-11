@@ -78,7 +78,7 @@ export class WSClient {
       }
       const parsed = AnyServerMessageSchema.safeParse(msg);
       if (!parsed.success) {return;}
-      for (const cb of this.listeners) {cb(parsed.data);}
+      for (const cb of Array.from(this.listeners)) {cb(parsed.data);}
     });
 
     const onCloseOrError = (event?: CloseEvent | Event) => {
@@ -168,6 +168,6 @@ export class WSClient {
   private setState(s: WSState) {
     if (this.state === s) {return;}
     this.state = s;
-    for (const cb of this.stateListeners) {cb(s);}
+    for (const cb of Array.from(this.stateListeners)) {cb(s);}
   }
 }

@@ -6,9 +6,7 @@ import React, { useState } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
-// import { useTranslation } from "@vtt/i18n";
-// TODO: Implement i18n integration - using fallback for now
-const useTranslation = () => ({ t: (key: string) => key });
+import { useTranslation } from "@vtt/i18n";
 import { Eye, EyeOff, Github, Mail } from "lucide-react";
 
 interface LoginPageProps {

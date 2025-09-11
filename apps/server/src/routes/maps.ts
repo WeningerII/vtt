@@ -8,18 +8,18 @@ import { Buffer } from "node:buffer";
 
 import { MapService } from "../map/MapService";
 import { MapScene, GridEffect } from "../map/types";
-import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 import { promises as fs } from "fs";
 import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
 
 // Lazy-load services to avoid initialization issues during module loading
-let prisma: PrismaClient | null = null;
+let prisma: any | null = null;
 let mapService: MapService | null = null;
 
 function getServices() {
   if (!prisma) {
-    prisma = new PrismaClient();
+    prisma = DatabaseManager.getInstance();
     mapService = new MapService(prisma);
   }
   return { prisma, mapService: mapService! };

@@ -306,7 +306,7 @@ export class AILearningSystem {
     const stateKey = this.stateToKey(state);
     let maxValue = 0;
 
-    for (const [key, qValue] of this.qValues) {
+    for (const [key, qValue] of Array.from(this.qValues)) {
       if (key.startsWith(`${stateKey  }:`)) {
         maxValue = Math.max(maxValue, qValue.value);
       }

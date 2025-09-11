@@ -7,6 +7,7 @@ import swaggerJSDoc from 'swagger-jsdoc';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import yaml from 'js-yaml';
+import { logger } from '@vtt/logging';
 
 // Load the comprehensive OpenAPI specification
 const openApiSpecPath = join(__dirname, '../../../docs/api/openapi.yaml');
@@ -16,7 +17,7 @@ try {
   const yamlContent = readFileSync(openApiSpecPath, 'utf8');
   openApiSpec = yaml.load(yamlContent);
 } catch (error) {
-  console.warn('Could not load comprehensive OpenAPI spec, falling back to basic config');
+  logger.warn('Could not load comprehensive OpenAPI spec, falling back to basic config');
   openApiSpec = null;
 }
 

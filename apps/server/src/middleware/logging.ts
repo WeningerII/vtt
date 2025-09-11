@@ -10,18 +10,11 @@ export const loggingMiddleware: Middleware = async (ctx, next) => {
 
   logger.info(`[${new Date().toISOString()}] rid=${rid} ${method} ${path} - ${ip}`);
 
-  try {
-    await next();
-    const duration = Date.now() - start;
-    logger.info(
-      `[${new Date().toISOString()}] rid=${rid} ${method} ${path} - ${ctx.res.statusCode} (${duration}ms)`,
-    );
-  } catch (error) {
-    const duration = Date.now() - start;
-    logger.error(
-      `[${new Date().toISOString()}] rid=${rid} ${method} ${path} - ERROR (${duration}ms)`,
-      error as Error,
-    );
-    throw error;
-  }
+  await next();
+  
+  const duration = Date.now() - start;
+  const statusCode = ctx.res.statusCode || 'unknown';
+  logger.info(
+    `[${new Date().toISOString()}] rid=${rid} ${method} ${path} - ${statusCode} (${duration}ms)`,
+  );
 };

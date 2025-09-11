@@ -192,9 +192,9 @@ export const updateAppliedConditionHandler: RouteHandler = async (ctx) => {
     const data: any = {};
 
     // Only update provided fields
-    if (typeof body.duration === "number") data.duration = body.duration;
-    if (body.metadata !== undefined) data.metadata = body.metadata;
-    if (typeof body.isActive === "boolean") data.isActive = body.isActive;
+    if (typeof body.duration === "number") {data.duration = body.duration;}
+    if (body.metadata !== undefined) {data.metadata = body.metadata;}
+    if (typeof body.isActive === "boolean") {data.isActive = body.isActive;}
     if (body.expiresAt !== undefined) {
       data.expiresAt = body.expiresAt ? new Date(body.expiresAt) : null;
     }

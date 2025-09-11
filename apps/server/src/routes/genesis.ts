@@ -4,17 +4,17 @@
 
 import { z } from "zod";
 import { logger } from "@vtt/logging";
-import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 import { GenesisService } from "../ai/character";
 import { RouteHandler } from "../router/types";
 
 // Lazy-load Prisma client to avoid initialization issues during module loading
-let prisma: PrismaClient | null = null;
+let prisma: any | null = null;
 let genesisService: GenesisService | null = null;
 
 function getServices() {
   if (!prisma) {
-    prisma = new PrismaClient();
+    prisma = DatabaseManager.getInstance();
     genesisService = new GenesisService(prisma);
   }
   return { prisma, genesisService: genesisService! };

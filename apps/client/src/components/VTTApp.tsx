@@ -84,10 +84,10 @@ export const VTTApp: React.FC<VTTAppProps> = ({ userId, campaignId }) => {
             setIsGM(sceneData.isGameMaster || false);
           } else {
             // No active scene, user needs to join or create one
-            console.log('No active scene found for user');
+            logger.info('No active scene found for user');
           }
         } catch (error) {
-          console.error('Failed to load active scene:', error);
+          logger.error('Failed to load active scene:', toErrorObject(error));
         }
       };
       

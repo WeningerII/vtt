@@ -53,6 +53,8 @@ export function parseJsonBody<T = any>(
 }
 
 export function sendJson(res: any, data: any, status = 200): void {
-  res.writeHead(status, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(data));
+  if (!res.headersSent) {
+    res.writeHead(status, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(data));
+  }
 }

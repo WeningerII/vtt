@@ -4,7 +4,12 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage } from 'http';
 import { PrismaClient } from '@prisma/client';
-import { authManager } from '../routes/auth';
+import { getAuthManager } from '../auth/auth-manager';
+import { CombatWebSocketManager, CombatWebSocketMessage } from './combatEvents';
+import { ActorIntegrationService } from '../services/ActorIntegrationService';
+import { TokenService } from '../services/TokenService';
+import { CampaignService } from '../campaign/CampaignService';
+import { AnyClientMessageSchema, AnyServerMessageSchema } from '@vtt/core-schemas';
 
 interface WebSocketClient {
   ws: WebSocket;
@@ -13,28 +18,121 @@ interface WebSocketClient {
   isAuthenticated: boolean;
 }
 
-interface GameMessage {
+type GameMessage = {
   type: string;
+  payload?: any;
   sessionId?: string;
   userId?: string;
   [key: string]: any;
-}
+};
 
 export class VTTWebSocketServer {
   private wss: WebSocketServer;
   private clients = new Map<WebSocket, WebSocketClient>();
   private sessionClients = new Map<string, Set<WebSocket>>();
   private prisma: PrismaClient;
+  private combatManager: CombatWebSocketManager;
+  private tokenService: TokenService;
+  private campaignService: CampaignService;
 
   constructor(server: any, prisma: PrismaClient) {
     this.prisma = prisma;
+    this.tokenService = new TokenService(prisma);
+    this.campaignService = new CampaignService(prisma);
     // Don't pass server - we'll handle upgrade manually to avoid double handling
     this.wss = new WebSocketServer({ 
       noServer: true,
       path: '/ws'
     });
 
+    // Initialize combat manager with services
+    const actorService = new ActorIntegrationService();
+    this.combatManager = new CombatWebSocketManager(actorService);
+
     this.wss.on('connection', this.handleConnection.bind(this));
+  }
+
+  // Token movement with authorization checks
+  private async handleMoveToken(ws: WebSocket, message: GameMessage) {
+    const client = this.clients.get(ws);
+    if (!client || !client.isAuthenticated) {
+      this.sendError(ws, 'Authentication required');
+      return;
+    }
+
+    const payload = (message as any).payload ?? message;
+    const tokenId: string | undefined = payload.tokenId || payload.id;
+    const x: number | undefined = payload.x ?? payload.position?.x;
+    const y: number | undefined = payload.y ?? payload.position?.y;
+    const rotation: number | undefined = payload.rotation;
+
+    if (!tokenId || typeof x !== 'number' || typeof y !== 'number') {
+      this.sendError(ws, 'Invalid MOVE_TOKEN payload');
+      return;
+    }
+
+    try {
+      const token = await this.tokenService.getToken(tokenId);
+      if (!token) {
+        this.sendError(ws, 'Token not found');
+        return;
+      }
+
+      // Must be in the same session
+      if (client.sessionId && token.gameSessionId !== client.sessionId) {
+        this.sendError(ws, 'Token does not belong to your session');
+        return;
+      }
+
+      // Determine GM status
+      const isGM = await this.isUserGMForSession(client.userId!, token.gameSessionId);
+
+      // Determine ownership from token metadata if present
+      let isOwner = false;
+      const meta = (token.metadata as any) || {};
+      if (meta.ownerUserId && typeof meta.ownerUserId === 'string') {
+        isOwner = meta.ownerUserId === client.userId;
+      }
+
+      // Only GM or owner can move the token
+      if (!isGM && !isOwner) {
+        this.sendError(ws, 'Unauthorized to move this token');
+        return;
+      }
+
+      const updated = await this.tokenService.moveToken(tokenId, x, y, rotation);
+      if (!updated) {
+        this.sendError(ws, 'Failed to update token position');
+        return;
+      }
+
+      // Broadcast movement to session participants
+      const sessionId = client.sessionId || token.gameSessionId;
+      this.broadcastToSession(sessionId, {
+        type: 'TOKEN_MOVED',
+        tokenId,
+        x: updated.x,
+        y: updated.y,
+        rotation: updated.rotation,
+        movedBy: client.userId,
+      }, ws);
+    } catch (error) {
+      console.error('Move token error:', error);
+      this.sendError(ws, 'Failed to move token');
+    }
+  }
+
+  // Helper: GM authorization for a game session
+  private async isUserGMForSession(userId: string, gameSessionId: string): Promise<boolean> {
+    try {
+      const session = await this.prisma.gameSession.findUnique({ where: { id: gameSessionId } });
+      if (!session) { return false; }
+      const campaign = await this.campaignService.getCampaign(session.campaignId);
+      if (!campaign) { return false; }
+      return campaign.gameMasterId === userId;
+    } catch {
+      return false;
+    }
   }
 
   private async handleConnection(ws: WebSocket, request: IncomingMessage) {
@@ -48,8 +146,9 @@ export class VTTWebSocketServer {
 
     ws.on('message', async (data) => {
       try {
-        const message = JSON.parse(data.toString()) as GameMessage;
-        await this.handleMessage(ws, message);
+        const rawMessage = JSON.parse(data.toString());
+        // Use raw message directly since schemas have permissive fallback
+        await this.handleMessage(ws, rawMessage as GameMessage);
       } catch (error) {
         console.error('WebSocket message error:', error);
         this.sendError(ws, 'Invalid message format');
@@ -62,11 +161,10 @@ export class VTTWebSocketServer {
 
     ws.on('error', (error) => {
       console.error('WebSocket error:', error);
-      this.handleDisconnection(ws);
     });
 
-    // Send welcome message
-    this.send(ws, { type: 'CONNECTED', message: 'WebSocket connected' });
+    // Send initial connection message
+    this.send(ws, { type: 'CONNECTED', message: 'WebSocket connected successfully' });
   }
 
   private async handleMessage(ws: WebSocket, message: GameMessage) {
@@ -77,9 +175,11 @@ export class VTTWebSocketServer {
       case 'AUTHENTICATE':
         await this.handleAuthenticate(ws, message);
         break;
-      case 'PING':
-        this.send(ws, { type: 'PONG', timestamp: message.timestamp });
+      case 'PING': {
+        const t = (message as any).t ?? (message as any).timestamp ?? Date.now();
+        this.send(ws, { type: 'PONG', t });
         break;
+      }
       case 'JOIN_SESSION':
         await this.handleJoinSession(ws, message);
         break;
@@ -89,11 +189,19 @@ export class VTTWebSocketServer {
       case 'CREATE_SESSION':
         await this.handleCreateSession(ws, message);
         break;
+      case 'MOVE_TOKEN':
+        await this.handleMoveToken(ws, message);
+        break;
       case 'GAME_MESSAGE':
         await this.handleGameMessage(ws, message);
         break;
       default:
-        this.sendError(ws, `Unknown message type: ${message.type}`);
+        // Attempt to route combat-related messages
+        if (this.isCombatMessageType(message.type)) {
+          await this.routeCombatMessage(ws, client, message);
+        } else {
+          this.sendError(ws, `Unknown message type: ${message.type}`);
+        }
     }
   }
 
@@ -108,7 +216,7 @@ export class VTTWebSocketServer {
         return;
       }
 
-      const user = await authManager.verifyAccessToken(token);
+      const user = await getAuthManager().verifyAccessToken(token);
       if (!user) {
         this.sendError(ws, 'Invalid authentication token');
         return;
@@ -116,6 +224,13 @@ export class VTTWebSocketServer {
 
       client.userId = user.id;
       client.isAuthenticated = true;
+
+      // Register this authenticated connection with the combat manager
+      try {
+        this.combatManager.registerConnection(ws, user.id);
+      } catch (e) {
+        // Non-fatal: continue without blocking auth
+      }
 
       this.send(ws, {
         type: 'AUTHENTICATED',
@@ -232,20 +347,10 @@ export class VTTWebSocketServer {
       let actualCampaignId = sessionData.campaignId;
       if (sessionData.campaignId) {
         // Verify user has access to the campaign
-        const campaign = await this.prisma.campaign.findFirst({
-          where: {
-            id: sessionData.campaignId,
-            members: {
-              some: {
-                userId: client.userId,
-                status: 'active',
-                role: { in: ['gamemaster', 'co-gamemaster'] }
-              }
-            }
-          }
-        });
+        const campaign = await this.campaignService.getCampaign(sessionData.campaignId);
+        const isGM = campaign && campaign.gameMasterId === client.userId;
 
-        if (!campaign) {
+        if (!campaign || !isGM) {
           this.sendError(ws, 'Campaign not found or insufficient permissions');
           return;
         }
@@ -317,6 +422,44 @@ export class VTTWebSocketServer {
       sessionId: client.sessionId,
       data: message.data
     });
+  }
+
+  // Determine if a message is combat-related (supports legacy aliases)
+  private isCombatMessageType(type: string): boolean {
+    const combatTypes = new Set<string>([
+      'SUBSCRIBE_ENCOUNTER',
+      'UNSUBSCRIBE_ENCOUNTER',
+      'UPDATE_ACTOR_HEALTH',
+      'START_ENCOUNTER',
+      'END_ENCOUNTER',
+      'ADD_ACTOR',
+      'REMOVE_ACTOR',
+      'UPDATE_INITIATIVE',
+      'NEXT_TURN',
+      'APPLY_CONDITION',
+      'REMOVE_CONDITION',
+      'REQUEST_TACTICAL_DECISION',
+      // Legacy aliases
+      'COMBAT_SUBSCRIBE',
+      'COMBAT_UNSUBSCRIBE',
+    ]);
+    return combatTypes.has(type);
+  }
+
+  // Forward normalized combat messages to CombatWebSocketManager
+  private async routeCombatMessage(ws: WebSocket, client: WebSocketClient, message: GameMessage) {
+    if (!client.isAuthenticated || !client.userId) {
+      this.sendError(ws, 'Authentication required for combat actions');
+      return;
+    }
+
+    const combatMessage: CombatWebSocketMessage = {
+      type: message.type,
+      payload: (message as any).payload ?? message,
+      requestId: (message as any).requestId,
+    };
+
+    await this.combatManager.processMessage(ws, client.userId, combatMessage);
   }
 
   private handleDisconnection(ws: WebSocket) {

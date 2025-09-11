@@ -179,7 +179,7 @@ const Tooltip = memo<TooltipProps>(({
   // Clone children to add event handlers
   const childElement = React.Children.only(children) as React.ReactElement<any>;
   
-  return React.cloneElement(childElement, {
+  const childProps = {
     ref: triggerRef,
     onMouseEnter: (e: React.MouseEvent) => {
       childElement.props.onMouseEnter?.(e);
@@ -198,9 +198,13 @@ const Tooltip = memo<TooltipProps>(({
       handleBlur();
     },
     "aria-describedby": isVisible ? `tooltip-${Math.random().toString(36).slice(2, 9)}` : undefined
-  });
+  };
 
-  const tooltip = isVisible && content ? (
+  if (!isVisible || !content) {
+    return React.cloneElement(childElement, childProps);
+  }
+
+  const tooltip = (
     <div
       ref={tooltipRef}
       className={cn(tooltipVariants({ variant, size }), className)}
@@ -231,12 +235,12 @@ const Tooltip = memo<TooltipProps>(({
         />
       )}
     </div>
-  ) : null;
+  );
 
   return (
     <>
-      {childElement}
-      {tooltip && createPortal(tooltip, document.body)}
+      {React.cloneElement(childElement, childProps)}
+      {createPortal(tooltip, document.body)}
     </>
   );
 });

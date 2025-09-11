@@ -489,10 +489,8 @@ export function GameProvider({ children }: GameProviderProps) {
         if (isConnected) {
           // Send join message - GAME_STATE handler will update state when confirmed
           send({
-            type: "JOIN_GAME",
-            gameId: newSession.id,
-            userId: user.id,
-            displayName: user.displayName,
+            type: "JOIN_SESSION",
+            sessionId: newSession.id,
           });
         } else {
           // No WebSocket connection, update state immediately

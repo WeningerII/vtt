@@ -253,7 +253,7 @@ export const SpellsPanel = memo(({
 
   const spellsByLevel = spells.reduce(
     (acc, spell) => {
-      if (!acc[spell.level]) acc[spell.level] = [];
+      if (!acc[spell.level]) {acc[spell.level] = [];}
       acc[spell.level]!.push(spell);
       return acc;
     },

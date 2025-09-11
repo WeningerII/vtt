@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState, type ComponentType } from "react";
+import { logger } from "../lib/logger";
 
 // Core Web Vitals interfaces
 interface CoreWebVitals {
@@ -194,10 +195,10 @@ export function measureAsync<T>(operation: () => Promise<T>, operationName: stri
 
   return operation().finally(() => {
     const duration = performance.now() - startTime;
-    console.log(`${operationName} took ${duration.toFixed(2)}ms`);
+    logger.debug(`${operationName} took ${duration.toFixed(2)}ms`);
 
     if (duration > 1000) {
-      console.warn(`Slow async operation: ${operationName} took ${duration.toFixed(2)}ms`);
+      logger.warn(`Slow async operation: ${operationName} took ${duration.toFixed(2)}ms`);
     }
   });
 }
@@ -216,7 +217,7 @@ export function analyzeBundleSize() {
       return total + (resource.transferSize || 0);
     }, 0);
 
-    console.log("Bundle Analysis:", {
+    logger.debug("Bundle Analysis:", {
       totalJSSize: `${(totalJSSize / 1024).toFixed(2)} KB`,
       jsFiles: jsResources.length,
       loadTime: `${navigation.loadEventEnd - navigation.loadEventStart}ms`,

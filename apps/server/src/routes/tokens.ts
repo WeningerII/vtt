@@ -1,78 +1,76 @@
 /**
- * Token routes with service integration and error handling
+ * Token API Routes
  */
+import { Router, Request, Response, NextFunction } from 'express';
+import { DatabaseManager } from '../database/connection';
+import { getAuthManager, AuthUser } from '../auth/auth-manager';
+import { TokenService } from '../services/TokenService';
 
-import { RouteHandler } from "../router/types";
-import { TokenService } from "../services/TokenService";
-import {
-  handleRouteError,
-  validateRequired,
-  validateNumber,
-  validateString,
-  validateCoordinates,
-  NotFoundError,
-} from "../middleware/errorHandler";
+const prisma = DatabaseManager.getInstance();
+export const tokensRouter = Router();
 
-// GET /tokens - List tokens for a scene
-export const listTokensHandler: RouteHandler = async (ctx) => {
+// Extended Request interface to include user
+interface AuthenticatedRequest extends Request {
+  user: AuthUser;
+}
+
+// Middleware to verify authentication
+const requireAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const sceneId = ctx.url.searchParams.get("sceneId");
-    const actorId = ctx.url.searchParams.get("actorId") || undefined;
-    const disposition = ctx.url.searchParams.get("disposition") as
-      | "FRIENDLY"
-      | "NEUTRAL"
-      | "HOSTILE"
-      | "UNKNOWN"
-      | undefined;
-    const isVisible =
-      ctx.url.searchParams.get("isVisible") === "true"
-        ? true
-        : ctx.url.searchParams.get("isVisible") === "false"
-          ? false
-          : undefined;
-    const layer = ctx.url.searchParams.get("layer")
-      ? parseInt(ctx.url.searchParams.get("layer")!)
-      : undefined;
-    const limit = parseInt(ctx.url.searchParams.get("limit") || "100");
-    const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-    if (!sceneId) {
-      throw new NotFoundError("Scene", "missing sceneId parameter");
-    }
-
-    validateRequired([sceneId], ["sceneId"]);
-    if (actorId) {validateRequired([actorId], ["actorId"]);}
-    if (disposition)
-      // Skip disposition validation for now
-    if (layer !== undefined) {validateNumber(layer, "layer", { integer: true });}
-
-    const tokenService = new TokenService(ctx.prisma);
-    const result = await tokenService.searchTokens({
-      sceneId,
-      gameSessionId: 'default-session', // Required field
-      limit,
-      offset,
-    });
-
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify(result));
-  } catch (error: any) {
-    handleRouteError(ctx, error);
-  }
-};
-
-// GET /tokens/:tokenId - Get token by ID
-export const getTokenHandler: RouteHandler = async (ctx) => {
-  try {
-    const id = ctx.params?.tokenId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing tokenId" }));
+    if (!token) {
+      res.status(401).json({ error: 'Authentication required' });
       return;
     }
 
-    const token = await ctx.prisma.token.findUnique({
-      where: { id },
+    const user = await getAuthManager().verifyAccessToken(token);
+    if (!user) {
+      res.status(401).json({ error: 'Invalid token' });
+      return;
+    }
+
+    (req as AuthenticatedRequest).user = user;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Authentication failed' });
+  }
+};
+
+// GET /tokens - List tokens for a scene
+tokensRouter.get('/', async (req, res) => {
+  try {
+    const { sceneId, characterId, visibility, gameSessionId, limit = 100, offset = 0 } = req.query;
+
+    if (!gameSessionId) {
+      return res.status(400).json({ success: false, error: 'Missing gameSessionId parameter' });
+    }
+
+    const tokenService = new TokenService(prisma);
+    const result = await tokenService.searchTokens({
+      sceneId: sceneId as string,
+      gameSessionId: gameSessionId as string,
+      characterId: characterId as string,
+      visibility: visibility as "VISIBLE" | "HIDDEN" | "PARTIAL" | "REVEALED",
+      limit: parseInt(limit as string) || 100,
+      offset: parseInt(offset as string) || 0,
+    });
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('List tokens error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch tokens' });
+  }
+});
+
+// GET /tokens/:tokenId - Get token by ID
+tokensRouter.get('/:tokenId', async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+
+    const token = await prisma.token.findUnique({
+      where: { id: tokenId },
       include: {
         gameSession: true,
         encounterTokens: true,
@@ -80,280 +78,174 @@ export const getTokenHandler: RouteHandler = async (ctx) => {
     });
 
     if (!token) {
-      ctx.res.writeHead(404, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Token not found" }));
-      return;
+      return res.status(404).json({ success: false, error: 'Token not found' });
     }
 
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ token }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to get token" }));
+    res.json({ success: true, data: token });
+  } catch (error) {
+    console.error('Get token error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get token' });
   }
-};
+});
 
 // POST /tokens - Create a new token
-export const createTokenHandler: RouteHandler = async (ctx) => {
+tokensRouter.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    const { name, sceneId, x, y, type, visibility, characterId, gameSessionId, ...rest } = req.body;
 
-    if (!body?.name || !body?.sceneId || typeof body.x !== "number" || typeof body.y !== "number") {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing required fields: name, sceneId, x, y" }));
-      return;
+    if (!name || typeof x !== 'number' || typeof y !== 'number' || !gameSessionId) {
+      return res.status(400).json({ success: false, error: 'Missing required fields: name, gameSessionId, x, y' });
     }
 
-    // Validate disposition enum if provided
-    const validDispositions = ["FRIENDLY", "NEUTRAL", "HOSTILE", "UNKNOWN"];
-    if (body.disposition && !validDispositions.includes(body.disposition)) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(
-        JSON.stringify({
-          error: "Invalid disposition. Must be FRIENDLY, NEUTRAL, HOSTILE, or UNKNOWN",
-        }),
-      );
-      return;
-    }
-
-    // Validate actorId exists if provided
-    if (body.actorId) {
-      const actor = await ctx.prisma.token.findUnique({
-        where: { id: body.actorId },
+    // Validate visibility enum if provided
+    const validVisibilities = ['VISIBLE', 'HIDDEN', 'PARTIAL', 'REVEALED'];
+    if (visibility && !validVisibilities.includes(visibility)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid visibility. Must be VISIBLE, HIDDEN, PARTIAL, or REVEALED' 
       });
-      if (!actor) {
-        ctx.res.writeHead(400, { "Content-Type": "application/json" });
-        ctx.res.end(JSON.stringify({ error: "Actor not found" }));
-        return;
+    }
+
+    // Validate type enum if provided
+    const validTypes = ['PC', 'NPC', 'MONSTER', 'OBJECT', 'EFFECT'];
+    if (type && !validTypes.includes(type)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid type. Must be PC, NPC, MONSTER, OBJECT, or EFFECT' 
+      });
+    }
+
+    // Validate characterId exists if provided (fixed from actorId)
+    if (characterId) {
+      const character = await prisma.character.findUnique({
+        where: { id: characterId },
+      });
+      if (!character) {
+        return res.status(400).json({ success: false, error: 'Character not found' });
       }
     }
 
-    // Validate assetId exists if provided
-    if (body.assetId) {
-      const asset = await ctx.prisma.asset.findUnique({
-        where: { id: body.assetId },
-      });
-      if (!asset) {
-        ctx.res.writeHead(400, { "Content-Type": "application/json" });
-        ctx.res.end(JSON.stringify({ error: "Asset not found" }));
-        return;
-      }
+    // Validate that the game session exists
+    const gameSession = await prisma.gameSession.findUnique({
+      where: { id: gameSessionId }
+    });
+    if (!gameSession) {
+      return res.status(400).json({ success: false, error: 'Game session not found' });
     }
 
-    const tokenData: any = {
-      name: body.name,
-      sceneId: body.sceneId,
-      x: body.x,
-      y: body.y,
-      width: body.width || 1,
-      height: body.height || 1,
-      rotation: body.rotation || 0,
-      scale: body.scale || 1.0,
-      disposition: body.disposition || "NEUTRAL",
-      isVisible: body.isVisible !== false,
-      isLocked: body.isLocked === true,
-      layer: body.layer || 0,
-    };
-
-    if (body.actorId) {tokenData.actorId = body.actorId;}
-    if (body.assetId) {tokenData.assetId = body.assetId;}
-
-    const created = await ctx.prisma.token.create({
-      data: tokenData,
-      include: {
-        gameSession: true,
-      },
+    const tokenService = new TokenService(prisma);
+    const created = await tokenService.createToken({
+      name,
+      gameSessionId,
+      sceneId,
+      characterId,
+      x,
+      y,
+      type: type || 'OBJECT',
+      visibility: visibility || 'VISIBLE',
+      ...rest
     });
 
-    ctx.res.writeHead(201, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, token: created }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to create token" }));
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Create token error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create token' });
   }
-};
+});
 
-// POST /tokens/from-actor - Create token from actor
-export const createTokenFromActorHandler: RouteHandler = async (ctx) => {
+// POST /tokens/from-character - Create token from character
+tokensRouter.post('/from-character', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    const { characterId, sceneId, x, y, gameSessionId, name, ...options } = req.body;
 
-    if (
-      !body?.actorId ||
-      !body?.sceneId ||
-      typeof body.x !== "number" ||
-      typeof body.y !== "number"
-    ) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing required fields: actorId, sceneId, x, y" }));
-      return;
+    if (!characterId || !sceneId || typeof x !== 'number' || typeof y !== 'number' || !gameSessionId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields: characterId, sceneId, gameSessionId, x, y' 
+      });
     }
 
-    const actor = await ctx.prisma.token.findUnique({
-      where: { id: body.actorId },
-      include: {
-        gameSession: true,
-      },
+    // Validate character exists (fixed from querying token table)
+    const character = await prisma.character.findUnique({
+      where: { id: characterId },
     });
 
-    if (!actor) {
-      ctx.res.writeHead(404, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Actor not found" }));
-      return;
+    if (!character) {
+      return res.status(404).json({ success: false, error: 'Character not found' });
     }
 
-    // Use static token size since assetId property not available in Token model
-    let width = 1, height = 1;
-
-    // Determine disposition based on actor type
-    let disposition = "NEUTRAL";
-    if (actor.type === "PC") {disposition = "FRIENDLY";}
-    else if (actor.type === "NPC") {disposition = "HOSTILE";}
-
-    const tokenData = {
-      name: body.name || actor.name,
-      type: 'NPC' as const, 
-      gameSessionId: 'default-session', 
-      sceneId: body.sceneId,
-      x: body.x || 0,
-      y: body.y || 0,
-      rotation: body.rotation || 0,
-      scale: body.scale || 1,
-    };
-
-    const created = await ctx.prisma.token.create({
-      data: tokenData,
-      include: {
-        gameSession: true,
-      },
+    // Validate that the game session exists
+    const gameSession = await prisma.gameSession.findUnique({
+      where: { id: gameSessionId }
     });
+    if (!gameSession) {
+      return res.status(400).json({ success: false, error: 'Game session not found' });
+    }
 
-    ctx.res.writeHead(201, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, token: created }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to create token from actor" }));
+    const tokenService = new TokenService(prisma);
+    const created = await tokenService.createTokenFromCharacter(
+      characterId,
+      gameSessionId,
+      sceneId,
+      x,
+      y,
+      { name, ...options }
+    );
+
+    res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    console.error('Create token from character error:', error);
+    res.status(500).json({ success: false, error: 'Failed to create token from character' });
   }
-};
+});
 
 // PUT /tokens/:tokenId/move - Move token to new position
-export const moveTokenHandler: RouteHandler = async (ctx) => {
+tokensRouter.put('/:tokenId/move', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const id = ctx.params?.tokenId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing tokenId" }));
-      return;
+    const { tokenId } = req.params;
+    const { x, y, rotation } = req.body;
+
+    if (typeof x !== 'number' || typeof y !== 'number') {
+      return res.status(400).json({ success: false, error: 'Missing or invalid x, y coordinates' });
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const tokenService = new TokenService(prisma);
+    const updated = await tokenService.moveToken(tokenId, x, y, rotation);
 
-    if (typeof body.x !== "number" || typeof body.y !== "number") {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing or invalid x, y coordinates" }));
-      return;
-    }
-
-    const data: any = {
-      x: body.x,
-      y: body.y,
-    };
-
-    // Optional rotation update
-    if (typeof body.rotation === "number") {
-      data.rotation = body.rotation;
-    }
-
-    const updated = await ctx.prisma.token.update({
-      where: { id },
-      data,
-      include: {
-        gameSession: true,
-      },
-    });
-
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, token: updated }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to move token" }));
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Move token error:', error);
+    res.status(500).json({ success: false, error: 'Failed to move token' });
   }
-};
+});
 
 // PUT /tokens/:tokenId - Update token
-export const updateTokenHandler: RouteHandler = async (ctx) => {
+tokensRouter.put('/:tokenId', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const id = ctx.params?.tokenId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing tokenId" }));
-      return;
-    }
+    const { tokenId } = req.params;
+    
+    const tokenService = new TokenService(prisma);
+    const updated = await tokenService.updateToken(tokenId, req.body);
 
-    const body = await parseJsonBody(ctx.req);
-    const data: any = {};
-
-    // Only update provided fields
-    if (typeof body.name === "string") {data.name = body.name;}
-    if (typeof body.x === "number") {data.x = body.x;}
-    if (typeof body.y === "number") {data.y = body.y;}
-    if (typeof body.width === "number") {data.width = body.width;}
-    if (typeof body.height === "number") {data.height = body.height;}
-    if (typeof body.rotation === "number") {data.rotation = body.rotation;}
-    if (typeof body.scale === "number") {data.scale = body.scale;}
-    if (typeof body.disposition === "string") {data.disposition = body.disposition;}
-    if (typeof body.isVisible === "boolean") {data.isVisible = body.isVisible;}
-    if (typeof body.isLocked === "boolean") {data.isLocked = body.isLocked;}
-    if (typeof body.layer === "number") {data.layer = body.layer;}
-
-    const updated = await ctx.prisma.token.update({
-      where: { id },
-      data,
-      include: {
-        gameSession: true,
-      },
-    });
-
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true, token: updated }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to update token" }));
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Update token error:', error);
+    res.status(500).json({ success: false, error: 'Failed to update token' });
   }
-};
+});
 
 // DELETE /tokens/:tokenId - Delete token
-export const deleteTokenHandler: RouteHandler = async (ctx) => {
+tokensRouter.delete('/:tokenId', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const id = ctx.params?.tokenId || ctx.url.pathname.split("/")[2];
-    if (!id) {
-      ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Missing tokenId" }));
-      return;
-    }
+    const { tokenId } = req.params;
 
-    await ctx.prisma.token.delete({ where: { id } });
+    const tokenService = new TokenService(prisma);
+    await tokenService.deleteToken(tokenId);
 
-    ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to delete token" }));
+    res.json({ success: true, data: { message: 'Token deleted successfully' } });
+  } catch (error) {
+    console.error('Delete token error:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete token' });
   }
-};
+});
 
-// Helper: parse JSON
-async function parseJsonBody(req: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk: any) => (body += chunk.toString()));
-    req.on("end", () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (_err) {
-        reject(new Error("Invalid JSON"));
-      }
-    });
-    req.on("error", reject);
-  });
-}

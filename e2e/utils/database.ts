@@ -1,11 +1,10 @@
-import { PrismaClient } from "../../node_modules/.prisma/test-client";
 import { execSync } from "child_process";
 import { join } from "path";
 import { existsSync, unlinkSync } from "fs";
 
-export class TestDatabase {
+class TestDatabase {
   private static instance: TestDatabase;
-  private prisma: PrismaClient | null = null;
+  private prisma: any | null = null;
   private readonly testDbPath = join(process.cwd(), "test.db");
 
   static getInstance(): TestDatabase {
@@ -16,12 +15,29 @@ export class TestDatabase {
   }
 
   /**
+   * Ensure the Prisma test client exists and can be imported.
+   */
+  private ensureGeneratedClient() {
+    const clientEntry = join(process.cwd(), "node_modules", ".prisma", "test-client", "index.js");
+    if (!existsSync(clientEntry)) {
+      console.log("[Test DB] Generating Prisma test client...");
+      execSync("pnpm dlx prisma generate --schema apps/server/prisma/schema.test.prisma", {
+        stdio: "inherit",
+        cwd: process.cwd(),
+        env: { ...process.env, DATABASE_URL: "file:./test.db" },
+      });
+    }
+  }
+
+  /**
    * Ensure a PrismaClient is available for the current process.
    * This allows each Playwright worker to lazily initialize its own
    * client against the same SQLite test database file.
    */
-  private ensurePrisma(): PrismaClient {
+  private async ensurePrisma(): Promise<any> {
     if (!this.prisma) {
+      this.ensureGeneratedClient();
+      const { PrismaClient } = await import("../../node_modules/.prisma/test-client/index.js");
       this.prisma = new PrismaClient({
         datasources: {
           db: {
@@ -40,6 +56,9 @@ export class TestDatabase {
     // Remove existing test database
     await this.cleanup();
 
+    // Ensure client is generated before pushing schema
+    this.ensureGeneratedClient();
+
     // Push schema to test database using test schema
     execSync("pnpm dlx prisma db push --schema apps/server/prisma/schema.test.prisma", {
       stdio: "inherit",
@@ -48,7 +67,7 @@ export class TestDatabase {
     });
 
     // Initialize Prisma client with test database URL
-    this.ensurePrisma();
+    await this.ensurePrisma();
     await this.prisma!.$connect();
     console.log("[Test DB] Database setup complete");
   }
@@ -86,14 +105,17 @@ export class TestDatabase {
     console.log("[Test DB] Database reset complete");
   }
 
-  getClient(): PrismaClient {
+  async getClient(): Promise<any> {
     return this.ensurePrisma();
   }
 
   async seed(): Promise<void> {
-    this.ensurePrisma();
+    await this.ensurePrisma();
 
     console.log("[Test DB] Seeding test data...");
+
+    // Ensure clean state before seeding
+    await this.reset();
 
     // Create test users (using test schema fields)
     const gmUser = await this.prisma!.user.create({
@@ -112,11 +134,23 @@ export class TestDatabase {
       },
     });
 
-    // Create test game
+    // Create test scene first
+    const testScene = await this.prisma!.scene.create({
+      data: {
+        name: "Test Scene",
+        description: "A test scene for E2E testing",
+        ownerId: gmUser.id,
+        width: 1000,
+        height: 1000,
+        gridSize: 50,
+      },
+    });
+
+    // Create test game with valid scene reference
     const testGame = await this.prisma!.game.create({
       data: {
         name: "Test Game",
-        sceneId: "temp-scene-id", // Will be updated after scene creation
+        sceneId: testScene.id,
       },
     });
 
@@ -137,28 +171,12 @@ export class TestDatabase {
       },
     });
 
-    // Create test scene
-    const testScene = await this.prisma!.scene.create({
-      data: {
-        name: "Test Scene",
-        description: "A test scene for E2E testing",
-        ownerId: gmUser.id,
-        width: 1000,
-        height: 1000,
-        gridSize: 50,
-      },
-    });
-
-    // Update game with actual scene ID
-    await this.prisma!.game.update({
-      where: { id: testGame.id },
-      data: { sceneId: testScene.id },
-    });
-
     console.log("[Test DB] Test data seeded successfully");
   }
 }
 
 // Provide both canonical and underscored exports for compatibility
-export const testDb = TestDatabase.getInstance();
-export const _testDb = testDb;
+const testDb = TestDatabase.getInstance();
+const _testDb = testDb;
+
+export { TestDatabase, testDb, _testDb };

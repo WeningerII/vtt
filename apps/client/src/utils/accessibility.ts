@@ -27,7 +27,7 @@ export function generateAltText(
     case "icon":
       return context?.description || "Interface icon";
 
-    case "generated":
+    case "generated": {
       const indexText =
         context?.index && context?.total
           ? ` ${context.index} of ${context.total}`
@@ -36,6 +36,7 @@ export function generateAltText(
             : "";
       const nameText = context?.name ? ` for ${context.name}` : "";
       return `AI generated image${indexText}${nameText}`;
+    }
 
     default:
       return "Image";

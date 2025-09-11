@@ -1,6 +1,9 @@
-// Browser-safe logger shim for @vtt/logging
-// Provides a minimal API compatible with client usage
+/**
+ * Browser Logger - Simple logging shim for client-side applications
+ * Provides structured logging with context support
+ */
 
+/* eslint-disable no-console */
 export type LogMethod = (message: string, ...args: unknown[]) => void;
 
 export type BrowserLogger = {

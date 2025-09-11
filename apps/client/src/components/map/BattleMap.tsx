@@ -8,6 +8,7 @@ import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useGame } from "../../providers/GameProvider";
 import { useTouchGestures, type TouchPoint } from "../../hooks/useTouchGestures";
 import { SimpleErrorBoundary } from "../ui/SimpleErrorBoundary";
+import { logger } from "../../lib/logger";
 import {
   MousePointer,
   Move,
@@ -523,7 +524,7 @@ export const BattleMap = memo<BattleMapProps>(({ className, isGM = false }) => {
     
     onLongPress: useCallback((point: TouchPoint) => {
       // Long press for context menu (future enhancement)
-      console.log("Long press detected at", point);
+      logger.debug("Long press detected at", point);
     }, []),
   });
 

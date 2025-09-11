@@ -3,6 +3,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 import { logger } from "@vtt/logging";
 import { CharacterService } from "../character/CharacterService";
 import { MonsterService } from "./MonsterService";
@@ -80,11 +81,11 @@ export class ActorIntegrationService {
   private combatManagers: Map<string, CombatManager> = new Map();
   private eventListeners: Map<string, Array<(event: CombatManagerEvent) => void>> = new Map();
 
-  constructor() {
-    this.prisma = new PrismaClient();
+  constructor(prisma?: PrismaClient) {
+    this.prisma = prisma || DatabaseManager.getInstance();
     this.characterService = new CharacterService();
     this.monsterService = new MonsterService(this.prisma);
-    this.crucible = new CrucibleService();
+    this.crucible = new CrucibleService(this.prisma);
   }
 
   /**
@@ -1039,7 +1040,7 @@ export class ActorIntegrationService {
         terrain: [],
         hazards: [],
         cover: [],
-        lighting: "normal",
+        lighting: "bright",
         weather: "clear",
       },
       resources: {

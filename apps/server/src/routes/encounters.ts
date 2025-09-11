@@ -314,10 +314,10 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
     const { name, status, roundNumber, currentTurn } = body;
 
     const data: any = {};
-    if (name !== undefined) data.name = name;
-    if (status !== undefined) data.status = status;
-    if (roundNumber !== undefined) data.roundNumber = roundNumber;
-    if (currentTurn !== undefined) data.currentTurn = currentTurn;
+    if (name !== undefined) {data.name = name;}
+    if (status !== undefined) {data.status = status;}
+    if (roundNumber !== undefined) {data.roundNumber = roundNumber;}
+    if (currentTurn !== undefined) {data.currentTurn = currentTurn;}
 
     const encounter = await ctx.prisma.encounter.update({
       where: { id },

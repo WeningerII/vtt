@@ -194,7 +194,9 @@ export class MonsterAI extends AIEntity {
   private selectTargetByPriority(enemies: any[], priorities: string[]): any {
     for (const priority of priorities) {
       const target = this.findTargetByPriority(enemies, priority);
-      if (target) return target;
+      if (target) {
+      return target;
+    }
     }
     return enemies[0]; // Fallback
   }

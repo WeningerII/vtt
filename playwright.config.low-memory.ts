@@ -74,7 +74,7 @@ export default defineConfig({
         JWT_SECRET: "test-jwt-secret-key-for-e2e-testing",
         AI_ENABLE_AUTO_PROVIDERS: "false",
         AI_ENABLE_LOCAL_PROVIDER: "false",
-        E2E_SKIP_DB: process.env.E2E_SKIP_DB || "1",
+        E2E_SKIP_DB: process.env.E2E_SKIP_DB || "0",
         RATE_LIMIT_ENABLED: "false", // Disable to reduce overhead
         SECURITY_HEADERS_ENABLED: "false",
         TELEMETRY_DISABLED: "true",

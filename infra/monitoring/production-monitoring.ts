@@ -3,9 +3,10 @@
  * Comprehensive observability for VTT platform
  */
 
-import { createPrometheusRegistry, collectDefaultMetrics } from 'prom-client';
-import { WebhookClient } from 'discord.js';
-import nodemailer from 'nodemailer';
+import { register, collectDefaultMetrics, Histogram, Counter, Gauge } from 'prom-client';
+// Discord.js not available - using fetch for webhook instead
+// import { WebhookClient } from 'discord.js';
+import * as nodemailer from 'nodemailer';
 
 export interface AlertingConfig {
   discord?: {
@@ -66,66 +67,66 @@ export interface AlertRule {
 }
 
 class ProductionMonitor {
-  private registry = createPrometheusRegistry();
+  private registry = register;
   private alertingConfig: AlertingConfig;
   private alertRules: AlertRule[];
   private alertCooldowns = new Map<string, number>();
-  private discordClient?: WebhookClient;
+  // private discordClient?: WebhookClient;
   private emailTransporter?: nodemailer.Transporter;
 
   // Prometheus metrics
   private metrics = {
-    httpRequestDuration: new this.registry.Histogram({
+    httpRequestDuration: new Histogram({
       name: 'vtt_http_request_duration_seconds',
       help: 'HTTP request duration in seconds',
       labelNames: ['method', 'route', 'status_code'],
       buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
     }),
     
-    httpRequestsTotal: new this.registry.Counter({
+    httpRequestsTotal: new Counter({
       name: 'vtt_http_requests_total',
       help: 'Total number of HTTP requests',
       labelNames: ['method', 'route', 'status_code'],
     }),
     
-    websocketConnectionsTotal: new this.registry.Gauge({
+    websocketConnectionsTotal: new Gauge({
       name: 'vtt_websocket_connections_total',
       help: 'Current number of WebSocket connections',
     }),
     
-    activeGamesTotal: new this.registry.Gauge({
+    activeGamesTotal: new Gauge({
       name: 'vtt_active_games_total',
       help: 'Current number of active games',
     }),
     
-    activeUsersTotal: new this.registry.Gauge({
+    activeUsersTotal: new Gauge({
       name: 'vtt_active_users_total',
       help: 'Current number of active users',
     }),
     
-    databaseQueryDuration: new this.registry.Histogram({
+    databaseQueryDuration: new Histogram({
       name: 'vtt_database_query_duration_seconds',
       help: 'Database query duration in seconds',
       labelNames: ['operation', 'table'],
       buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
     }),
     
-    errorRate: new this.registry.Gauge({
+    errorRate: new Gauge({
       name: 'vtt_error_rate',
       help: 'Application error rate (errors per minute)',
     }),
     
-    systemCpuUsage: new this.registry.Gauge({
+    systemCpuUsage: new Gauge({
       name: 'vtt_system_cpu_usage_percent',
       help: 'System CPU usage percentage',
     }),
     
-    systemMemoryUsage: new this.registry.Gauge({
+    systemMemoryUsage: new Gauge({
       name: 'vtt_system_memory_usage_percent',
       help: 'System memory usage percentage',
     }),
     
-    systemDiskUsage: new this.registry.Gauge({
+    systemDiskUsage: new Gauge({
       name: 'vtt_system_disk_usage_percent',
       help: 'System disk usage percentage',
     }),
@@ -144,12 +145,13 @@ class ProductionMonitor {
   }
 
   private initializeAlerting(): void {
-    if (this.alertingConfig.discord?.webhookUrl) {
-      this.discordClient = new WebhookClient({ url: this.alertingConfig.discord.webhookUrl });
-    }
+    // Discord webhook will be handled via fetch instead
+    // if (this.alertingConfig.discord?.webhookUrl) {
+    //   this.discordClient = new WebhookClient({ url: this.alertingConfig.discord.webhookUrl });
+    // }
     
     if (this.alertingConfig.email) {
-      this.emailTransporter = nodemailer.createTransporter(this.alertingConfig.email.smtp);
+      this.emailTransporter = nodemailer.createTransport(this.alertingConfig.email.smtp);
     }
   }
 
@@ -389,22 +391,30 @@ class ProductionMonitor {
   }
 
   private async sendDiscordAlert(rule: AlertRule, message: string): Promise<void> {
-    if (!this.discordClient) {return;}
+    if (!this.alertingConfig.discord?.webhookUrl) {return;}
     
     const mentions = this.alertingConfig.discord?.mentionRoles?.map(role => `<@&${role}>`).join(' ') || '';
     
-    await this.discordClient.send({
-      content: mentions,
-      embeds: [{
-        title: `VTT Platform Alert: ${rule.name}`,
-        description: message,
-        color: rule.severity === 'critical' ? 0xFF0000 : rule.severity === 'warning' ? 0xFFA500 : 0x0099FF,
-        timestamp: new Date().toISOString(),
-        footer: {
-          text: 'VTT Production Monitor',
-        },
-      }],
+    const response = await fetch(this.alertingConfig.discord.webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: mentions,
+        embeds: [{
+          title: `VTT Platform Alert: ${rule.name}`,
+          description: message,
+          color: rule.severity === 'critical' ? 0xFF0000 : rule.severity === 'warning' ? 0xFFA500 : 0x0099FF,
+          timestamp: new Date().toISOString(),
+          footer: {
+            text: 'VTT Production Monitor',
+          },
+        }],
+      }),
     });
+    
+    if (!response.ok) {
+      throw new Error(`Discord webhook failed: ${response.statusText}`);
+    }
   }
 
   private async sendSlackAlert(rule: AlertRule, message: string): Promise<void> {

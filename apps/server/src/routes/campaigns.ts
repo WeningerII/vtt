@@ -12,18 +12,18 @@ import {
   UpdateCampaignRequest,
 } from "../campaign/CampaignService";
 import { MapService } from "../map/MapService";
-import { PrismaClient } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 import { requireAuth, getAuthenticatedUserId as getAuthUserId } from "../middleware/auth";
 import { RouteHandler, Context } from "../router/types";
 
 // Lazy-load services to avoid initialization issues during module loading
-let prisma: PrismaClient | null = null;
+let prisma: any | null = null;
 let mapService: MapService | null = null;
 let campaignService: CampaignService | null = null;
 
 function getServices() {
   if (!prisma) {
-    prisma = new PrismaClient();
+    prisma = DatabaseManager.getInstance();
     mapService = new MapService(prisma);
     campaignService = new CampaignService(prisma, mapService);
   }
@@ -771,7 +771,7 @@ export const getActiveSessionHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const session = await getCampaignService().getActiveSession(campaignId);
+    const session = await getCampaignService().getActiveSessionAsync(campaignId);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ session }));
