@@ -6,6 +6,133 @@
 @import './design-system.css';
 
 /* =============================================================================
+   ADAPTIVE LAYOUT SYSTEM
+   ============================================================================= */
+
+/* Base adaptive layout container */
+.adaptive-layout {
+  --nav-width-mobile: 60px;
+  --nav-width-tablet: 80px;
+  --nav-width-desktop: 80px;
+  
+  --sidebar-width-mobile: 280px;
+  --sidebar-width-tablet: 320px;
+  --sidebar-width-desktop: 400px;
+  
+  --toolbar-height: 60px;
+  --panel-gap: var(--space-3);
+}
+
+/* Layout Mode Specific Styles */
+
+/* Mobile Portrait */
+.layout-mobile-portrait {
+  grid-template-areas: 
+    "main"
+    "nav";
+  grid-template-rows: 1fr auto;
+  grid-template-columns: 1fr;
+}
+
+.layout-mobile-portrait .main-panel {
+  padding-bottom: calc(var(--toolbar-height) + var(--space-4));
+}
+
+/* Mobile Landscape */
+.layout-mobile-landscape {
+  grid-template-areas: 
+    "nav main sidebar"
+    "toolbar toolbar toolbar";
+  grid-template-rows: 1fr auto;
+  grid-template-columns: var(--nav-width-mobile) 1fr var(--sidebar-width-mobile);
+}
+
+/* Tablet Portrait */
+.layout-tablet-portrait {
+  grid-template-areas: 
+    "nav main sidebar"
+    "toolbar toolbar toolbar";
+  grid-template-rows: 1fr auto;
+  grid-template-columns: var(--nav-width-tablet) 1fr var(--sidebar-width-tablet);
+}
+
+/* Tablet Landscape - Optimized for landscape gaming */
+.layout-tablet-landscape {
+  grid-template-areas: "nav main sidebar";
+  grid-template-rows: 1fr;
+  grid-template-columns: var(--nav-width-tablet) 1fr var(--sidebar-width-tablet);
+}
+
+.layout-tablet-landscape .toolbar-panel {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-overlay);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-2xl);
+}
+
+/* Desktop */
+.layout-desktop {
+  grid-template-areas: "nav main sidebar";
+  grid-template-rows: 1fr;
+  grid-template-columns: var(--nav-width-desktop) 1fr var(--sidebar-width-desktop);
+}
+
+/* Panel Position Styles */
+.panel-position-left {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.panel-position-right {
+  border-left: 1px solid var(--border-subtle);
+}
+
+.panel-position-bottom {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.panel-position-floating {
+  position: fixed;
+  z-index: var(--z-modal);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
+  backdrop-filter: blur(12px);
+}
+
+/* Mobile Panel Enhancements */
+.mobile-panel {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.mobile-panel.panel-hidden {
+  transform: translateY(100%);
+  pointer-events: none;
+}
+
+/* Tablet Panel Enhancements */
+.tablet-panel {
+  background: var(--surface-elevated);
+}
+
+.tablet-panel.navigation-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-4) var(--space-2);
+  gap: var(--space-3);
+}
+
+.tablet-panel.sidebar-panel {
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+/* =============================================================================
    CONTAINER QUERIES FOR VTT PANELS
    ============================================================================= */
 
@@ -569,6 +696,93 @@
 }
 
 /* =============================================================================
+   ORIENTATION-SPECIFIC OPTIMIZATIONS
+   ============================================================================= */
+
+/* Landscape Mode Optimizations */
+@media (orientation: landscape) {
+  .layout-mobile-landscape .navigation-panel,
+  .layout-tablet-landscape .navigation-panel {
+    /* Compact vertical navigation for landscape */
+    width: var(--nav-width-mobile);
+    padding: var(--space-2);
+  }
+  
+  .layout-mobile-landscape .navigation-panel .nav-item,
+  .layout-tablet-landscape .navigation-panel .nav-item {
+    width: 44px;
+    height: 44px;
+    margin-bottom: var(--space-2);
+    border-radius: var(--radius-lg);
+  }
+  
+  .layout-tablet-landscape .sidebar-panel {
+    /* Wider sidebar in landscape for better content display */
+    min-width: 380px;
+  }
+  
+  .layout-tablet-landscape .main-panel {
+    /* Optimize main content area for landscape gaming */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+
+/* Portrait Mode Optimizations */
+@media (orientation: portrait) {
+  .layout-mobile-portrait .navigation-panel {
+    /* Bottom navigation bar for portrait */
+    height: var(--toolbar-height);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: var(--space-2) var(--space-4);
+  }
+  
+  .layout-tablet-portrait .sidebar-panel {
+    /* Collapsible sidebar in tablet portrait */
+    transition: width var(--duration-normal) var(--ease-out);
+  }
+  
+  .layout-tablet-portrait .sidebar-panel.collapsed {
+    width: 60px;
+    overflow: hidden;
+  }
+}
+
+/* Touch-Friendly Landscape Adaptations */
+@media (orientation: landscape) and (pointer: coarse) {
+  .layout-tablet-landscape .toolbar-panel {
+    /* Larger touch targets in landscape */
+    padding: var(--space-3);
+  }
+  
+  .layout-tablet-landscape .toolbar-panel .tool-button {
+    min-width: 50px;
+    min-height: 50px;
+    margin: var(--space-1);
+  }
+  
+  /* Game-specific landscape optimizations */
+  .layout-tablet-landscape .map-container {
+    /* Full utilization of landscape space for map */
+    height: 100%;
+    width: 100%;
+  }
+  
+  .layout-tablet-landscape .character-sheet {
+    /* Horizontal layout for character sheet in landscape */
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    height: 100%;
+    overflow-y: auto;
+  }
+}
+
+/* =============================================================================
    RESPONSIVE UTILITIES
    ============================================================================= */
 
@@ -577,13 +791,61 @@
 .tablet-only { display: none; }
 .desktop-only { display: none; }
 
-.vtt-layout-mobile .mobile-only { display: block; }
-.vtt-layout-tablet .tablet-only { display: block; }
-.vtt-layout-desktop .desktop-only { display: block; }
+/* Layout-based visibility */
+.layout-mobile-portrait .mobile-only,
+.layout-mobile-landscape .mobile-only { display: block; }
 
-.vtt-layout-mobile .tablet-up { display: none; }
-.vtt-layout-mobile .desktop-up { display: none; }
-.vtt-layout-tablet .desktop-up { display: none; }
+.layout-tablet-portrait .tablet-only,
+.layout-tablet-landscape .tablet-only { display: block; }
+
+.layout-desktop .desktop-only { display: block; }
+
+/* Hide elements based on layout */
+.layout-mobile-portrait .tablet-up,
+.layout-mobile-landscape .tablet-up { display: none; }
+
+.layout-mobile-portrait .desktop-up,
+.layout-mobile-landscape .desktop-up,
+.layout-tablet-portrait .desktop-up,
+.layout-tablet-landscape .desktop-up { display: none; }
+
+/* Orientation-based visibility */
+.orientation-landscape .landscape-only { display: block; }
+.orientation-portrait .portrait-only { display: block; }
+
+.orientation-landscape .portrait-only { display: none; }
+.orientation-portrait .landscape-only { display: none; }
+
+/* Gaming-specific responsive classes */
+.gaming-landscape-optimized {
+  /* Optimized for landscape gaming experience */
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.gaming-portrait-optimized {
+  /* Optimized for portrait mobile gaming */
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+@media (orientation: landscape) {
+  .gaming-landscape-optimized {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    height: 100vh;
+  }
+}
+
+@media (orientation: portrait) {
+  .gaming-portrait-optimized {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+}
 
 /* Responsive text sizes */
 .text-responsive {

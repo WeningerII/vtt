@@ -214,6 +214,35 @@
     --z-popover: 600;
     --z-tooltip: 700;
     --z-toast: 800;
+    
+    /* Legacy token aliases and compatibility layer (improves contrast app-wide) */
+    /* Background aliases used by globals.css and components */
+    --bg-primary: var(--surface-base);
+    --bg-secondary: var(--surface-elevated);
+    --bg-tertiary: var(--surface-subtle);
+    --bg-overlay: var(--surface-overlay);
+
+    /* Border aliases */
+    --border-primary: var(--border-default);
+    --border-secondary: var(--border-subtle);
+    --border-tertiary: var(--border-subtle);
+    --border-hover: hsl(var(--color-slate));
+
+    /* Accent aliases */
+    --accent-primary: hsl(var(--plasma-blue));
+    --accent-hover: hsl(var(--plasma-indigo));
+    --color-accent-primary: hsl(var(--plasma-blue));
+    --color-accent-secondary: hsl(var(--plasma-purple));
+
+    /* Additional tokens referenced by components */
+    --error: hsl(var(--color-error));
+    --text-inverse: hsl(var(--color-void));
+    --surface-hover: hsl(var(--color-charcoal) / 0.35);
+    --surface-accent: hsl(var(--plasma-blue) / 0.10);
+    --gradient-health: linear-gradient(135deg, hsl(var(--color-health)), hsl(var(--neon-red)));
+    --gradient-mana: linear-gradient(135deg, hsl(var(--color-mana)), hsl(var(--plasma-indigo)));
+    --gradient-neural: linear-gradient(135deg, hsl(var(--plasma-purple)), hsl(var(--plasma-blue)));
+    --focus-ring: 0 0 0 3px hsl(var(--plasma-blue) / 0.25);
   }
   
   /* Responsive Breakpoints */
@@ -567,6 +596,98 @@
     }
   }
   
+  /* Mobile Touch Optimizations */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .gaming-touch-target {
+    min-height: 48px;
+    min-width: 48px;
+    touch-action: manipulation;
+  }
+  
+  /* Enhanced mobile interactions */
+  .mobile-press-effect {
+    transform: translateZ(0);
+    transition: transform 150ms ease-out;
+  }
+  
+  .mobile-press-effect:active {
+    transform: scale(0.95) translateZ(0);
+  }
+
+  /* Mobile Navigation Components */
+  .panel-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    padding: var(--space-2) var(--space-1);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    backdrop-filter: blur(12px);
+    background: var(--bg-secondary)/95;
+  }
+  
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    transition: all var(--duration-fast) var(--ease-out);
+    min-height: 48px;
+    min-width: 48px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .mobile-nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+  
+  .mobile-nav-item:active {
+    transform: scale(0.95);
+    background: var(--bg-tertiary);
+  }
+  
+  .mobile-nav-item--active {
+    background: var(--accent-primary)/15;
+    color: var(--accent-primary);
+  }
+  
+  .mobile-nav-item--active:hover {
+    background: var(--accent-primary)/20;
+  }
+  
+  .mobile-nav-icon {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+  }
+  
+  .mobile-nav-label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    line-height: 1;
+  }
+
   /* Component Integration Helpers */
   .btn-primary {
     background: var(--gradient-plasma);

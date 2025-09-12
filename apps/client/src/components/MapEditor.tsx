@@ -6,6 +6,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { logger } from "@vtt/logging";
 import AccessibleButton from "./AccessibleButton";
 import AccessibleImage from "./AccessibleImage";
+import MobileMapToolbar from "./MobileMapToolbar";
+import { cn } from "../lib/utils";
 
 // Temporarily using any types until renderer package is available
 type Canvas2DRenderer = any;
@@ -43,6 +45,7 @@ interface MapEditorProps {
   readOnly?: boolean;
   initialLayers?: MapLayer[];
   initialTokens?: Token[];
+  isMobile?: boolean;
 }
 
 export const MapEditor: React.FC<MapEditorProps> = ({
@@ -51,6 +54,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   readOnly = false,
   initialLayers = [],
   initialTokens = [],
+  isMobile = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<Canvas2DRenderer | null>(null);
@@ -79,6 +83,8 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   });
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState<DrawingPath | null>(null);
+  const [history, setHistory] = useState<DrawingPath[][]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Initialize renderer
   useEffect(() => {
@@ -193,10 +199,53 @@ export const MapEditor: React.FC<MapEditorProps> = ({
     }
   };
 
+  // Undo functionality
+  const handleUndo = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setPaths(history[newIndex] || []);
+      
+      if (onMapChange) {
+        onMapChange(layers, history[newIndex] || []);
+      }
+    }
+  };
+
+  // Save functionality
+  const handleSave = () => {
+    // Add current state to history
+    const newHistory = [...history.slice(0, historyIndex + 1), paths];
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+    
+    logger.info('Map saved to history');
+  };
+
   return (
-    <div className="map-editor" role="application" aria-label="Interactive map editor">
-      {/* Toolbar */}
-      <div className="map-toolbar" role="toolbar" aria-label="Map editing tools">
+    <div className={cn(
+      "map-editor relative",
+      isMobile && "mobile-map-editor h-full overflow-hidden"
+    )} role="application" aria-label="Interactive map editor">
+      
+      {/* Mobile Toolbar */}
+      {isMobile ? (
+        <MobileMapToolbar
+          activeTool={activeTool}
+          brushSize={brushSize}
+          showGrid={showGrid}
+          readOnly={readOnly}
+          isGenerating={isGenerating}
+          onToolChange={handleToolChange}
+          onBrushSizeChange={setBrushSize}
+          onGridToggle={setShowGrid}
+          onUndo={historyIndex > 0 ? handleUndo : undefined}
+          onSave={handleSave}
+          onGenerateAI={generateMapWithAI}
+        />
+      ) : (
+        /* Desktop Toolbar */
+        <div className="map-toolbar" role="toolbar" aria-label="Map editing tools">
         <AccessibleButton
           onClick={() => handleToolChange("select")}
           disabled={readOnly}
@@ -254,7 +303,8 @@ export const MapEditor: React.FC<MapEditorProps> = ({
         </AccessibleButton>
       </div>
 
-      {/* AI Generation Panel */}
+      {/* AI Generation Panel - Desktop Only */}
+      {!isMobile && (
       <div className="ai-generation-panel">
         <div className="ai-prompt-input">
           <label htmlFor="ai-prompt">AI Map Generation:</label>
@@ -297,29 +347,85 @@ export const MapEditor: React.FC<MapEditorProps> = ({
           </div>
         )}
       </div>
+      )}
 
       {/* Canvas */}
-      <div className="map-canvas-container">
+      <div className={cn(
+        "map-canvas-container",
+        isMobile && [
+          "flex-1 relative overflow-hidden",
+          "touch-none" // Prevent default touch behaviors
+        ]
+      )}>
         <canvas
           ref={canvasRef}
-          width={800}
-          height={600}
-          className="map-canvas"
+          width={isMobile ? window.innerWidth : 800}
+          height={isMobile ? window.innerHeight - 200 : 600}
+          className={cn(
+            "map-canvas",
+            isMobile && "w-full h-full"
+          )}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={(e) => {
+            if (isMobile) {
+              e.preventDefault();
+              const touch = e.touches[0];
+              if (touch) {
+                const rect = canvasRef.current?.getBoundingClientRect();
+                if (rect) {
+                  const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                  });
+                  handleMouseDown(mouseEvent as any);
+                }
+              }
+            }
+          }}
+          onTouchMove={(e) => {
+            if (isMobile && isDrawing) {
+              e.preventDefault();
+              const touch = e.touches[0];
+              if (touch) {
+                const mouseEvent = new MouseEvent('mousemove', {
+                  clientX: touch.clientX,
+                  clientY: touch.clientY
+                });
+                handleMouseMove(mouseEvent as any);
+              }
+            }
+          }}
+          onTouchEnd={(e) => {
+            if (isMobile) {
+              e.preventDefault();
+              handleMouseUp();
+            }
+          }}
           role="img"
           aria-label="Interactive map canvas for drawing and token placement"
           tabIndex={0}
         />
       </div>
 
-      {/* Status */}
-      <div className="map-status" role="status" aria-live="polite">
-        Active Tool: {activeTool} | Brush Size: {brushSize}px | Grid: {showGrid ? "On" : "Off"} |
-        Layers: {layers.length} | Tokens: {tokens.length}
-      </div>
+      {/* Status - Desktop Only */}
+      {!isMobile && (
+        <div className="map-status" role="status" aria-live="polite">
+          Active Tool: {activeTool} | Brush Size: {brushSize}px | Grid: {showGrid ? "On" : "Off"} |
+          Layers: {layers.length} | Tokens: {tokens.length}
+        </div>
+      )}
+      
+      {/* Mobile Status - Floating */}
+      {isMobile && (
+        <div className="fixed top-4 left-4 right-4 z-30">
+          <div className="bg-surface-overlay/90 backdrop-blur-sm px-3 py-2 rounded-lg text-xs text-text-secondary text-center">
+            {activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} • {brushSize}px • {showGrid ? 'Grid On' : 'Grid Off'}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

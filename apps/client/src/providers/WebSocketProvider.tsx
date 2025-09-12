@@ -55,6 +55,8 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   const handlersRef = useRef<MessageHandler[]>([]);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptsRef = useRef<number>(0);
+  const reconnectInProgressRef = useRef<boolean>(false);
+  const lastReconnectAtRef = useRef<number>(0);
 
   const isConnected = state === "open";
 
@@ -82,15 +84,21 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
   }, []);
 
   const connect = useCallback(() => {
+    // Avoid redundant connects while an active or pending connection exists
     if (clientRef.current) {
+      const curState = clientRef.current.getState();
+      if (curState === "connecting" || curState === "open") {
+        return;
+      }
       clientRef.current.close();
     }
 
     const client = new WSClient(wsUrl, {
-      autoReconnect: true,
+      // Let the provider manage reconnection to avoid duplicate loops
+      autoReconnect: false,
       reconnectBaseMs: 1000,
       reconnectMaxMs: 30000,
-      pingIntervalMs: 15000
+      pingIntervalMs: 15000,
     });
     clientRef.current = client;
 
@@ -100,6 +108,9 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
       if (newState === "open") {
         logger.info("WebSocket connected");
         cancelReconnect();
+        reconnectInProgressRef.current = false;
+        reconnectAttemptsRef.current = 0;
+        lastReconnectAtRef.current = Date.now();
       } else if (newState === "disconnected") {
         logger.info("WebSocket disconnected");
 
@@ -156,6 +167,17 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
     setTimeout(connect, 100);
   }, [disconnect, connect]);
 
+  // Avoid rapid-fire reconnect loops when multiple callers detect failure
+  const RECONNECT_COOLDOWN_MS = 3000;
+  const maybeReconnect = useCallback(() => {
+    const now = Date.now();
+    if (reconnectInProgressRef.current) { return; }
+    if (now - lastReconnectAtRef.current < RECONNECT_COOLDOWN_MS) { return; }
+    reconnectInProgressRef.current = true;
+    lastReconnectAtRef.current = now;
+    reconnect();
+  }, [reconnect]);
+
   const send = useCallback(
     (message: AnyClientMessage) => {
       if (clientRef.current && isConnected) {
@@ -166,7 +188,7 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
           // Attempt to reconnect if send fails
           if (reconnectAttemptsRef.current < 5) {
             logger.info("Attempting to reconnect WebSocket after send failure");
-            reconnect();
+            maybeReconnect();
           }
         }
         return success;
@@ -180,7 +202,7 @@ export function WebSocketProvider({ children, wsUrl }: WebSocketProviderProps) {
         return false;
       }
     },
-    [isConnected, reconnect, connect],
+    [isConnected, maybeReconnect, connect],
   );
 
   const subscribe = useCallback((type: string, handler: (message: any) => void) => {

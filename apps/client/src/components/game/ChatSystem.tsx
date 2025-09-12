@@ -6,6 +6,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useWebSocket } from "../../providers/WebSocketProvider";
 import { useAuth } from "../../providers/AuthProvider";
 import { useGame } from "../../providers/GameProvider";
+import { logger } from "@vtt/logging";
 import { Button } from "../ui/Button";
 import { Send, Dice6, Users, Eye, Crown, Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -88,7 +89,9 @@ export const ChatSystem = React.memo(({
       if (isSoundEnabled && chatMessage.author.id !== user?.id) {
         const audio = new Audio("/sounds/message.mp3");
         audio.volume = 0.3;
-        audio.play().catch(() => {}); // Ignore errors
+        audio.play().catch((error) => {
+          logger.warn("Failed to play message notification sound:", error);
+        });
       }
 
       // Update unread count if chat is collapsed
@@ -123,7 +126,9 @@ export const ChatSystem = React.memo(({
       if (isSoundEnabled && rollMessage.author.id !== user?.id) {
         const audio = new Audio("/sounds/dice.mp3");
         audio.volume = 0.4;
-        audio.play().catch(() => {}); // Ignore errors
+        audio.play().catch((error) => {
+          logger.warn("Failed to play message notification sound:", error);
+        });
       }
 
       // Update unread count if chat is collapsed

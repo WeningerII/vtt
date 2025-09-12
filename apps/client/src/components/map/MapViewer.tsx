@@ -22,7 +22,7 @@ import {
 import { Button } from "../ui/Button";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../providers/AuthProvider";
-import { useWebSocket, VTTWebSocketMessage } from "../../hooks/useWebSocket";
+import { useWebSocket } from "../../providers/WebSocketProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 
 interface MapViewerProps {
@@ -151,13 +151,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   const wsUrl = `ws://localhost:8080/campaigns/${campaignId}/scenes/${sceneId}`;
 
   // WebSocket integration for real-time collaboration
-  const { isConnected, send, connectedUsers, lastMessage } = useWebSocket({
-    sessionId: sceneId,
-    userId: user?.id || '',
-    campaignId,
-    isGM,
-    autoConnect: !!user,
-  });
+  const { isConnected, send, subscribe } = useWebSocket();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -218,153 +212,96 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   }, [scene?.map]);
 
   // Handle WebSocket messages for real-time collaboration
-  const handleWebSocketMessage = useCallback((message: VTTWebSocketMessage) => {
-    switch (message.type) {
-      case "token_move":
-        {
-          const { tokenId, x, y } = message.payload;
-          setScene((prevScene) => {
-            if (!prevScene || !prevScene.tokens) {return prevScene;}
-            const updatedTokens = prevScene.tokens.map((token) =>
-              token.id === tokenId ? { ...token, x, y } : token,
-            );
-            return { ...prevScene, tokens: updatedTokens };
-          });
-        }
-        break;
+  const sendTokenAdd = (token: Token) => {
+    send({
+      type: "TOKEN_ADD",
+      payload: {
+        token,
+        sceneId,
+      },
+      timestamp: Date.now(),
+    });
+  };
 
-      case "token_add":
-        {
-          const { token } = message.payload;
-          setScene((prevScene) => {
-            if (!prevScene) {return prevScene;}
-            const currentTokens = prevScene.tokens || [];
-            return { ...prevScene, tokens: [...currentTokens, token] };
-          });
-        }
-        break;
+  const sendTokenMove = (tokenId: string, x: number, y: number) => {
+    send({
+      type: "TOKEN_MOVE",
+      payload: {
+        tokenId,
+        x,
+        y,
+        sceneId,
+      },
+      timestamp: Date.now(),
+    });
+  };
 
-      case "token_remove":
-        {
-          const { tokenId } = message.payload;
-          setScene((prevScene) => {
-            if (!prevScene || !prevScene.tokens) {return prevScene;}
-            const updatedTokens = prevScene.tokens.filter((token) => token.id !== tokenId);
-            return { ...prevScene, tokens: updatedTokens };
-          });
-        }
-        break;
+  const handleRemoteTokenMove = (payload: any) => {
+    const { tokenId, x, y } = payload;
+    setScene((prevScene) => {
+      if (!prevScene || !prevScene.tokens) return prevScene;
+      const updatedTokens = prevScene.tokens.map((token) =>
+        token.id === tokenId ? { ...token, x, y } : token,
+      );
+      return { ...prevScene, tokens: updatedTokens };
+    });
+  };
 
-      case "scene_update":
-        {
-          const { updates } = message.payload;
-          setScene((prevScene) => {
-            if (!prevScene) {return prevScene;}
-            return { ...prevScene, ...updates };
-          });
-        }
-        break;
+  const handleRemoteTokenAdd = (payload: any) => {
+    const { token } = payload;
+    setScene((prevScene) => {
+      if (!prevScene) return prevScene;
+      const currentTokens = prevScene.tokens || [];
+      return { ...prevScene, tokens: [...currentTokens, token] };
+    });
+  };
 
-      case "user_join":
-      case "user_leave":
-        // Connected users count is handled in useWebSocket hook
-        break;
+  const handleRemoteTokenRemove = (payload: any) => {
+    const { tokenId } = payload;
+    setScene((prevScene) => {
+      if (!prevScene || !prevScene.tokens) return prevScene;
+      const updatedTokens = prevScene.tokens.filter((token) => token.id !== tokenId);
+      return { ...prevScene, tokens: updatedTokens };
+    });
+  };
 
-      default:
-        logger.warn("Unhandled WebSocket message type:", message.type);
-    }
-  }, []);
+  const handleSceneUpdate = (payload: any) => {
+    const { updates } = payload;
+    setScene((prevScene) => {
+      if (!prevScene) return prevScene;
+      return { ...prevScene, ...updates };
+    });
+  };
 
   useEffect(() => {
-    if (!lastMessage) {return;}
-    handleWebSocketMessage(lastMessage);
+    const unsubscribeTokenMove = subscribe("token_move", (payload) => {
+      handleRemoteTokenMove(payload);
+    });
 
-    switch (lastMessage.type) {
-      case "token_move":
-        {
-          const { tokenId, x, y } = lastMessage.payload;
-          setScene((prevScene) => {
-            if (!prevScene || !prevScene.tokens) {return prevScene;}
-            const updatedTokens = prevScene.tokens.map((token) =>
-              token.id === tokenId ? { ...token, x, y } : token,
-            );
-            return { ...prevScene, tokens: updatedTokens };
-          });
-        }
-        break;
+    const unsubscribeTokenAdd = subscribe("token_add", (payload) => {
+      handleRemoteTokenAdd(payload);
+    });
 
-      case "token_add":
-        {
-          const { token } = lastMessage.payload;
-          setScene((prevScene) => {
-            if (!prevScene) {return prevScene;}
-            const currentTokens = prevScene.tokens || [];
-            return { ...prevScene, tokens: [...currentTokens, token] };
-          });
-        }
-        break;
+    const unsubscribeTokenRemove = subscribe("token_remove", (payload) => {
+      handleRemoteTokenRemove(payload);
+    });
 
-      case "token_remove":
-        {
-          const { _tokenId: removeId } = lastMessage.payload;
-          setScene((prevScene) => {
-            if (!prevScene || !prevScene.tokens) {return prevScene;}
-            return {
-              ...prevScene,
-              tokens: prevScene.tokens.filter((t) => t.id !== removeId),
-            };
-          });
-        }
-        break;
+    const unsubscribeSceneUpdate = subscribe("scene_update", (payload) => {
+      handleSceneUpdate(payload);
+    });
 
-      case "scene_update":
-        {
-          const { sceneData } = lastMessage.payload;
-          setScene((prevScene) => ({ ...prevScene, ...sceneData }));
-          // Handle spell effects and projectiles
-          if (lastMessage.payload.type === "spell_cast" && lastMessage.payload.visualEffects) {
-            const newEffects = lastMessage.payload.visualEffects.map((effect: any) => ({
-              ...effect,
-              startTime: Date.now(),
-            }));
-            setSpellEffects((prev) => [...prev, ...newEffects]);
-          }
-
-          // Handle spell projectiles
-          if (lastMessage.payload.type === "spell_projectile_start") {
-            const projectile: SpellProjectile = {
-              id: lastMessage.payload.projectileId,
-              spell: lastMessage.payload.spell,
-              startPosition: lastMessage.payload.startPosition,
-              targetPosition: lastMessage.payload.targetPosition,
-              currentPosition: { ...lastMessage.payload.startPosition },
-              speed: lastMessage.payload.speed || 300, // pixels per second
-              color: lastMessage.payload.color || "#FF4500",
-              size: lastMessage.payload.size || 8,
-              trail: [],
-              startTime: Date.now(),
-              duration: lastMessage.payload.duration || 2000,
-              active: true,
-            };
-            setSpellProjectiles((prev) => [...prev, projectile]);
-          }
-
-          if (lastMessage.payload.type === "spell_projectile_hit") {
-            setSpellProjectiles((prev) =>
-              prev.map((p) =>
-                p.id === lastMessage.payload.projectileId ? { ...p, active: false } : p,
-              ),
-            );
-          }
-        }
-        break;
-    }
-  }, [lastMessage, handleWebSocketMessage]);
+    return () => {
+      unsubscribeTokenMove();
+      unsubscribeTokenAdd();
+      unsubscribeTokenRemove();
+      unsubscribeSceneUpdate();
+    };
+  }, [subscribe]);
 
   // Convert screen coordinates to world coordinates
   const screenToWorld = useCallback(
     (screenX: number, screenY: number) => {
-      if (!containerRef.current) {return { x: 0, y: 0 };}
+      if (!containerRef.current) return { x: 0, y: 0 };
 
       const rect = containerRef.current.getBoundingClientRect();
       const x = (screenX - rect.left - pan.x) / zoom;
@@ -378,7 +315,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Convert world coordinates to grid coordinates
   const worldToGrid = useCallback(
     (worldX: number, worldY: number) => {
-      if (!scene) {return { gridX: 0, gridY: 0 };}
+      if (!scene) return { gridX: 0, gridY: 0 };
 
       const { grid } = scene;
       const adjustedX = worldX - grid.offsetX;
@@ -395,7 +332,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Snap coordinates to grid
   const snapToGrid = useCallback(
     (worldX: number, worldY: number) => {
-      if (!scene || scene.grid.type === "none") {return { x: worldX, y: worldY };}
+      if (!scene || scene.grid.type === "none") return { x: worldX, y: worldY };
 
       const { gridX, gridY } = worldToGrid(worldX, worldY);
       const { grid } = scene;
@@ -411,7 +348,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Render grid
   const renderGrid = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      if (!scene || !isGridVisible || scene.grid.type === "none") {return;}
+      if (!scene || !isGridVisible || scene.grid.type === "none") return;
 
       const { grid, width, height } = scene;
 
@@ -444,10 +381,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Render tokens
   const renderTokens = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      if (!scene?.tokens) {return;}
+      if (!scene?.tokens) return;
 
       scene.tokens.forEach((token) => {
-        if (!token.isVisible && !isGM) {return;}
+        if (!token.isVisible && !isGM) return;
 
         ctx.save();
 
@@ -474,8 +411,8 @@ export const MapViewer: React.FC<MapViewerProps> = ({
             const angle = (i * Math.PI) / 3;
             const px = token.x + (size / 2) * Math.cos(angle);
             const py = token.y + (size / 2) * Math.sin(angle);
-            if (i === 0) {ctx.moveTo(px, py);}
-            else {ctx.lineTo(px, py);}
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
           }
           ctx.closePath();
           ctx.fill();
@@ -514,7 +451,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
 
       spellEffects.forEach((effect) => {
         const elapsed = now - effect.startTime;
-        if (elapsed > effect.duration) {return;} // Effect expired
+        if (elapsed > effect.duration) return; // Effect expired
 
         const progress = elapsed / effect.duration;
         const alpha = effect.opacity || 1 - progress; // Fade out over time
@@ -659,10 +596,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
       const now = Date.now();
 
       spellProjectiles.forEach((projectile) => {
-        if (!projectile.active) {return;}
+        if (!projectile.active) return;
 
         const elapsed = now - projectile.startTime;
-        if (elapsed > projectile.duration) {return;}
+        if (elapsed > projectile.duration) return;
 
         // Calculate current position
         const progress = Math.min(elapsed / projectile.duration, 1);
@@ -744,7 +681,7 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Render spell template preview
   const renderSpellTemplate = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      if (!spellTemplate) {return;}
+      if (!spellTemplate) return;
 
       ctx.save();
       ctx.globalAlpha = spellTemplate.opacity;
@@ -806,10 +743,10 @@ export const MapViewer: React.FC<MapViewerProps> = ({
   // Main render function
   const render = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !scene) {return;}
+    if (!canvas || !scene) return;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) {return;}
+    if (!ctx) return;
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);

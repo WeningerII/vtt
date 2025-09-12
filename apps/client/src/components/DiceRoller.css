@@ -1,102 +1,110 @@
 .dice-roller {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
 }
 
 .roller-header {
-  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
-  color: white;
-  padding: 1rem;
+  background: linear-gradient(135deg, var(--accent-secondary), hsl(var(--accent-secondary) / 0.8));
+  color: var(--text-on-primary);
+  padding: var(--space-4);
 }
 
 .roller-header h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-semibold);
 }
 
 .roll-controls {
-  padding: 1rem;
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .expression-input {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .expression-input label {
-  font-weight: 500;
-  color: #333;
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
 }
 
 .dice-input {
-  padding: 0.5rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
+  padding: var(--space-2);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: border-color var(--duration-200);
 }
 
 .dice-input:focus {
   outline: none;
-  border-color: #6f42c1;
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 2px hsl(var(--accent-secondary) / 0.2);
 }
 
 .roll-modifiers {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 1rem;
+  gap: var(--space-4);
   align-items: center;
 }
 
 .modifier-input {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .modifier-input label {
-  font-weight: 500;
-  color: #333;
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .modifier-field {
   width: 80px;
-  padding: 0.5rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: var(--space-2);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   text-align: center;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--duration-200);
 }
 
 .modifier-field:focus {
   outline: none;
-  border-color: #6f42c1;
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 2px hsl(var(--accent-secondary) / 0.2);
 }
 
 .advantage-controls {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .advantage-btn,
 .disadvantage-btn {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 0.9rem;
+  transition: all var(--duration-200);
+  font-size: var(--font-size-sm);
   user-select: none;
 }
 
@@ -107,193 +115,201 @@
 
 .advantage-btn:hover,
 .disadvantage-btn:hover {
-  border-color: #6f42c1;
+  border-color: var(--accent-secondary);
+  background: var(--surface-hover);
 }
 
 .advantage-btn.active {
-  background: #28a745;
-  color: white;
-  border-color: #28a745;
+  background: hsl(var(--color-success));
+  color: var(--text-on-primary);
+  border-color: hsl(var(--color-success));
 }
 
 .disadvantage-btn.active {
-  background: #dc3545;
-  color: white;
-  border-color: #dc3545;
+  background: hsl(var(--color-danger));
+  color: var(--text-on-primary);
+  border-color: hsl(var(--color-danger));
 }
 
 .roll-type {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .roll-type label {
-  font-weight: 500;
-  color: #333;
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .type-select {
-  padding: 0.5rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  background: white;
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
+  padding: var(--space-2);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  transition: border-color var(--duration-200);
 }
 
 .type-select:focus {
   outline: none;
-  border-color: #6f42c1;
+  border-color: var(--accent-secondary);
+  box-shadow: 0 0 0 2px hsl(var(--accent-secondary) / 0.2);
 }
 
 .roll-btn {
-  background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-secondary), hsl(var(--accent-secondary) / 0.8));
+  color: var(--text-on-primary);
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-semibold);
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+  transition: all var(--duration-300);
+  box-shadow: var(--shadow-lg);
 }
 
 .roll-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
+  box-shadow: var(--shadow-xl);
+  background: linear-gradient(135deg, hsl(var(--accent-secondary) / 1.1), var(--accent-secondary));
 }
 
 .quick-rolls {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .quick-rolls label {
-  font-weight: 500;
-  color: #333;
+  font-weight: var(--font-medium);
+  color: var(--text-secondary);
 }
 
 .quick-roll-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .quick-roll-btn {
-  padding: 0.5rem 0.75rem;
-  background: #f8f9fa;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
+  transition: all var(--duration-200);
+  font-weight: var(--font-medium);
 }
 
 .quick-roll-btn:hover {
-  background: #6f42c1;
-  color: white;
-  border-color: #6f42c1;
+  background: var(--accent-secondary);
+  color: var(--text-on-primary);
+  border-color: var(--accent-secondary);
 }
 
 .recent-rolls {
-  border-top: 1px solid #e0e0e0;
-  background: #f8f9fa;
+  border-top: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
 }
 
 .recent-rolls h4 {
   margin: 0;
-  padding: 1rem 1rem 0.5rem 1rem;
-  color: #333;
-  font-size: 1.1rem;
+  padding: var(--space-4) var(--space-4) var(--space-2) var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-medium);
 }
 
 .rolls-list {
   max-height: 400px;
   overflow-y: auto;
-  padding: 0 1rem 1rem 1rem;
+  padding: 0 var(--space-4) var(--space-4) var(--space-4);
 }
 
 .no-rolls {
   text-align: center;
-  color: #666;
+  color: var(--text-tertiary);
   font-style: italic;
-  padding: 2rem;
+  padding: var(--space-8);
 }
 
 .roll-result {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: center;
-  transition: all 0.2s ease;
+  transition: all var(--duration-200);
 }
 
 .roll-result:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-primary);
 }
 
 .roll-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .roller-name {
-  font-weight: 600;
-  color: #333;
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
 }
 
 .roll-time {
-  color: #666;
-  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
 .roll-type-badge {
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  color: var(--text-on-primary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-medium);
   text-transform: uppercase;
+  background: var(--accent-primary);
 }
 
 .roll-details {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
 .roll-expression {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: #333;
+  font-family: var(--font-mono);
+  font-weight: var(--font-semibold);
+  color: var(--text-secondary);
 }
 
 .roll-breakdown {
-  color: #666;
-  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
 }
 
 .roll-advantage {
-  color: #6f42c1;
-  font-size: 0.85rem;
-  font-weight: 500;
+  color: var(--accent-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-medium);
 }
 
 .roll-total {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #6f42c1;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-bold);
+  color: var(--accent-secondary);
   text-align: center;
   min-width: 60px;
 }
@@ -301,7 +317,7 @@
 @media (max-width: 768px) {
   .roll-modifiers {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: var(--space-3);
   }
   
   .advantage-controls {
@@ -311,7 +327,7 @@
   .roll-type {
     flex-direction: column;
     align-items: stretch;
-    gap: 0.25rem;
+    gap: var(--space-1);
   }
   
   .quick-roll-buttons {
@@ -335,7 +351,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabIndex]:focus-visible {
-  outline: 2px solid #4A90E2;
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 

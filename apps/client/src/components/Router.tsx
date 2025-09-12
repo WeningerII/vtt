@@ -150,24 +150,51 @@ export function Router() {
         return <RegisterPage router={routerContext} />;
 
       case "/dashboard":
+        // Dashboard requires authentication
+        if (!isAuthenticated) {
+          navigate("/login", true);
+          return <LoginPage router={routerContext} />;
+        }
         return <Dashboard router={routerContext} />;
 
       case "/session/:id":
+        // Game sessions require authentication
+        if (!isAuthenticated) {
+          navigate("/login", true);
+          return <LoginPage router={routerContext} />;
+        }
         return <GameSession sessionId={params.id!} router={routerContext} />;
 
       case "/characters":
+        // Character editor requires authentication
+        if (!isAuthenticated) {
+          navigate("/register", true);
+          return <RegisterPage router={routerContext} />;
+        }
         return <CharacterEditor />;
 
       case "/characters/:id":
+        // Character editing requires authentication
+        if (!isAuthenticated) {
+          navigate("/register", true);
+          return <RegisterPage router={routerContext} />;
+        }
         return <CharacterEditor />;
 
       case "/campaigns":
+        // Campaign browser is public but some features require auth
         return <CampaignBrowser router={routerContext} />;
 
       case "/campaigns/:id":
+        // Individual campaigns are public but may redirect to login for participation
         return <CampaignBrowser campaignId={params.id!} router={routerContext} />;
 
       case "/settings":
+        // Settings require authentication
+        if (!isAuthenticated) {
+          navigate("/login", true);
+          return <LoginPage router={routerContext} />;
+        }
         return <Settings router={routerContext} />;
 
       case "/404":
@@ -177,11 +204,11 @@ export function Router() {
             <h1>404 - Page Not Found</h1>
             <p>The page you're looking for doesn't exist.</p>
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate(isAuthenticated ? "/dashboard" : "/")}
               className="btn btn-primary"
-              aria-label="Go to Dashboard"
+              aria-label="Go to Home"
             >
-              Go to Dashboard
+              Go to Home
             </button>
           </div>
         );

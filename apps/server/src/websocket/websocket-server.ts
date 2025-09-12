@@ -171,7 +171,10 @@ export class VTTWebSocketServer {
     const client = this.clients.get(ws);
     if (!client) {return;}
 
-    switch (message.type) {
+    // Normalize message types to handle both old and new formats
+    const messageType = message.type.toUpperCase().replace(/-/g, '_');
+
+    switch (messageType) {
       case 'AUTHENTICATE':
         await this.handleAuthenticate(ws, message);
         break;
@@ -181,25 +184,44 @@ export class VTTWebSocketServer {
         break;
       }
       case 'JOIN_SESSION':
+      case 'JOIN_GAME':
         await this.handleJoinSession(ws, message);
         break;
       case 'LEAVE_SESSION':
+      case 'LEAVE_GAME':
         await this.handleLeaveSession(ws, message);
         break;
       case 'CREATE_SESSION':
         await this.handleCreateSession(ws, message);
         break;
       case 'MOVE_TOKEN':
+      case 'TOKEN_MOVE':
         await this.handleMoveToken(ws, message);
         break;
+      case 'TOKEN_ADD':
+        await this.handleTokenAdd(ws, message);
+        break;
+      case 'TOKEN_REMOVE':
+        await this.handleTokenRemove(ws, message);
+        break;
+      case 'SCENE_UPDATE':
+        await this.handleSceneUpdate(ws, message);
+        break;
       case 'GAME_MESSAGE':
+      case 'CHAT_MESSAGE':
+      case 'CHAT_BROADCAST':
         await this.handleGameMessage(ws, message);
+        break;
+      case 'DICE_ROLL':
+      case 'DICE_ROLL_REQUEST':
+        await this.handleDiceRoll(ws, message);
         break;
       default:
         // Attempt to route combat-related messages
-        if (this.isCombatMessageType(message.type)) {
+        if (this.isCombatMessageType(messageType)) {
           await this.routeCombatMessage(ws, client, message);
         } else {
+          console.warn(`Unknown message type: ${message.type}`);
           this.sendError(ws, `Unknown message type: ${message.type}`);
         }
     }
@@ -408,6 +430,134 @@ export class VTTWebSocketServer {
     }
   }
 
+  private async handleTokenAdd(ws: WebSocket, message: GameMessage) {
+    const client = this.clients.get(ws);
+    if (!client || !client.isAuthenticated || !client.sessionId) {
+      this.sendError(ws, 'Authentication and session required');
+      return;
+    }
+
+    const payload = (message as any).payload ?? message;
+    const token = payload.token;
+    const sceneId = payload.sceneId;
+
+    if (!token || !sceneId) {
+      this.sendError(ws, 'Invalid TOKEN_ADD payload');
+      return;
+    }
+
+    // Broadcast to all clients in session
+    this.broadcastToSession(client.sessionId, {
+      type: 'token_add',
+      payload: {
+        token,
+        sceneId,
+        userId: client.userId
+      }
+    });
+  }
+
+  private async handleTokenRemove(ws: WebSocket, message: GameMessage) {
+    const client = this.clients.get(ws);
+    if (!client || !client.isAuthenticated || !client.sessionId) {
+      this.sendError(ws, 'Authentication and session required');
+      return;
+    }
+
+    const payload = (message as any).payload ?? message;
+    const tokenId = payload.tokenId;
+    const sceneId = payload.sceneId;
+
+    if (!tokenId || !sceneId) {
+      this.sendError(ws, 'Invalid TOKEN_REMOVE payload');
+      return;
+    }
+
+    // Broadcast to all clients in session
+    this.broadcastToSession(client.sessionId, {
+      type: 'token_remove',
+      payload: {
+        tokenId,
+        sceneId,
+        userId: client.userId
+      }
+    });
+  }
+
+  private async handleSceneUpdate(ws: WebSocket, message: GameMessage) {
+    const client = this.clients.get(ws);
+    if (!client || !client.isAuthenticated || !client.sessionId) {
+      this.sendError(ws, 'Authentication and session required');
+      return;
+    }
+
+    const payload = (message as any).payload ?? message;
+    const updates = payload.updates;
+    const sceneId = payload.sceneId;
+
+    if (!updates || !sceneId) {
+      this.sendError(ws, 'Invalid SCENE_UPDATE payload');
+      return;
+    }
+
+    // Broadcast to all clients in session
+    this.broadcastToSession(client.sessionId, {
+      type: 'scene_update',
+      payload: {
+        updates,
+        sceneId,
+        userId: client.userId
+      }
+    });
+  }
+
+  private async handleDiceRoll(ws: WebSocket, message: GameMessage) {
+    const client = this.clients.get(ws);
+    if (!client || !client.isAuthenticated || !client.sessionId) {
+      this.sendError(ws, 'Authentication and session required');
+      return;
+    }
+
+    const payload = (message as any).payload ?? message;
+    const dice = payload.dice || payload.diceString || 'd20';
+    const label = payload.label || payload.reason || 'Roll';
+    const modifier = payload.modifier || 0;
+
+    // Parse dice string (e.g., "2d6+3")
+    const diceRegex = /(\d+)?d(\d+)([+-]\d+)?/i;
+    const match = dice.match(diceRegex);
+    
+    if (!match) {
+      this.sendError(ws, 'Invalid dice format');
+      return;
+    }
+
+    const count = parseInt(match[1] || '1');
+    const sides = parseInt(match[2]);
+    const mod = parseInt(match[3] || '0') + modifier;
+
+    // Roll the dice
+    const rolls: number[] = [];
+    for (let i = 0; i < count; i++) {
+      rolls.push(Math.floor(Math.random() * sides) + 1);
+    }
+    const total = rolls.reduce((sum, roll) => sum + roll, 0) + mod;
+
+    // Broadcast result to all clients in session
+    this.broadcastToSession(client.sessionId, {
+      type: 'DICE_ROLL_RESULT',
+      rollId: `roll_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId: client.userId,
+      displayName: client.userId, // TODO: Get actual display name
+      dice,
+      label,
+      rolls,
+      modifier: mod,
+      total,
+      timestamp: Date.now()
+    });
+  }
+
   private async handleGameMessage(ws: WebSocket, message: GameMessage) {
     const client = this.clients.get(ws);
     if (!client || !client.sessionId) {
@@ -415,13 +565,34 @@ export class VTTWebSocketServer {
       return;
     }
 
-    // Broadcast game message to all clients in session
-    this.broadcastToSession(client.sessionId, {
-      type: 'GAME_EVENT',
-      userId: client.userId,
-      sessionId: client.sessionId,
-      data: message.data
-    });
+    // Handle chat messages
+    if (message.type.toUpperCase().includes('CHAT')) {
+      const payload = (message as any).payload ?? message;
+      const content = payload.content || payload.message || payload.text;
+      const channel = payload.channel || 'general';
+      
+      if (!content) {
+        this.sendError(ws, 'Chat message content required');
+        return;
+      }
+
+      this.broadcastToSession(client.sessionId, {
+        type: 'CHAT_BROADCAST',
+        userId: client.userId,
+        displayName: client.userId, // TODO: Get actual display name
+        content,
+        channel,
+        timestamp: Date.now()
+      });
+    } else {
+      // Generic game message broadcast
+      this.broadcastToSession(client.sessionId, {
+        type: 'GAME_EVENT',
+        userId: client.userId,
+        sessionId: client.sessionId,
+        data: message.data || (message as any).payload
+      });
+    }
   }
 
   // Determine if a message is combat-related (supports legacy aliases)

@@ -1,7 +1,7 @@
 /**
- * Modal Component - Standardized modal with consistent variants and accessibility
+ * Enhanced Gaming Modal Component - Gaming-optimized modal with VTT-specific features
  */
-import React, { useEffect, useRef, memo } from "react";
+import React, { useEffect, useRef, memo, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "../../lib/utils";
@@ -10,9 +10,9 @@ import { Button } from "./Button";
 
 const modalVariants = cva(
   [
-    "relative bg-white rounded-xl shadow-xl",
-    "transform transition-all duration-200 ease-out",
-    "max-h-[90vh] overflow-y-auto"
+    "relative bg-bg-secondary rounded-xl shadow-xl",
+    "transform transition-all duration-300 ease-out",
+    "max-h-[90vh] overflow-y-auto border border-border-primary"
   ],
   {
     variants: {
@@ -21,12 +21,18 @@ const modalVariants = cva(
         md: "max-w-lg w-full mx-4", 
         lg: "max-w-2xl w-full mx-4",
         xl: "max-w-4xl w-full mx-4",
-        full: "max-w-full w-full h-full m-0 rounded-none"
+        full: "max-w-full w-full h-full m-0 rounded-none",
+        "character-sheet": "max-w-3xl w-full mx-4 min-h-[600px]",
+        "dice-roller": "max-w-sm w-full mx-4 aspect-square"
       },
       variant: {
-        default: "border border-neutral-200",
-        elevated: "shadow-2xl border-0",
-        glass: "bg-white/80 backdrop-blur-lg border border-white/20"
+        default: "bg-bg-secondary border-border-primary",
+        elevated: "bg-bg-secondary shadow-2xl border-border-primary",
+        glass: "bg-bg-secondary/80 backdrop-blur-lg border-border-secondary",
+        gaming: "bg-gradient-to-br from-surface-elevated to-surface-secondary border-primary-500/30 shadow-[0_0_30px_rgba(var(--primary-500),0.3)]",
+        "dice-result": "bg-gradient-to-br from-emerald-900/20 to-emerald-800/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.4)]",
+        "character-modal": "bg-gradient-to-br from-purple-900/20 to-indigo-900/40 border-indigo-500/50 shadow-[0_0_25px_rgba(99,102,241,0.3)]",
+        "combat-modal": "bg-gradient-to-br from-red-900/20 to-orange-900/40 border-red-500/50 shadow-[0_0_25px_rgba(239,68,68,0.4)]"
       }
     },
     defaultVariants: {
@@ -44,9 +50,9 @@ const overlayVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-black/50",
-        dark: "bg-black/70", 
-        light: "bg-white/30"
+        default: "bg-bg-overlay",
+        dark: "bg-black/80", 
+        light: "bg-bg-overlay/60"
       }
     },
     defaultVariants: {
@@ -54,6 +60,20 @@ const overlayVariants = cva(
     }
   }
 );
+
+// Gaming-specific modal types
+export type GamingModalType = 'dice-roll' | 'character-sheet' | 'combat' | 'inventory' | 'spell-cast' | 'level-up';
+
+export interface GamingFeatures {
+  type?: GamingModalType;
+  playSound?: boolean;
+  hapticFeedback?: boolean;
+  showAnimation?: boolean;
+  keyboardShortcuts?: Record<string, () => void>;
+  autoFocus?: string;
+  persistPosition?: boolean;
+  gameContext?: Record<string, any>;
+}
 
 export interface ModalProps extends VariantProps<typeof modalVariants> {
   isOpen: boolean;
@@ -67,26 +87,83 @@ export interface ModalProps extends VariantProps<typeof modalVariants> {
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
   overlayVariant?: VariantProps<typeof overlayVariants>['variant'];
+  gaming?: GamingFeatures;
+  onOpen?: () => void;
+  zIndex?: number;
 }
 
-const Modal = memo<ModalProps>(({
-  isOpen,
-  onClose,
-  title,
-  description,
-  children,
-  size,
-  variant,
-  className,
-  overlayClassName,
-  showCloseButton = true,
-  closeOnOverlayClick = true,
-  closeOnEscape = true,
-  overlayVariant = "default"
-}) => {
+const Modal = memo<ModalProps>((props) => {
+  const {
+    isOpen,
+    onClose,
+    title,
+    description,
+    children,
+    size,
+    variant,
+    className,
+    overlayClassName,
+    showCloseButton = true,
+    closeOnOverlayClick = true,
+    closeOnEscape = true,
+    overlayVariant = "default",
+    gaming,
+    onOpen,
+    zIndex = 50
+  } = props;
   const modalRef = useRef<HTMLDivElement>(null);
   const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2, 9)}`).current;
   const descId = useRef(`modal-desc-${Math.random().toString(36).slice(2, 9)}`).current;
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // Gaming feedback system
+  const triggerGamingFeedback = useCallback(async (action: 'open' | 'close' | 'action') => {
+    if (!gaming) return;
+
+    if (gaming.hapticFeedback && 'vibrate' in navigator) {
+      const patterns = { open: [100, 50, 100], close: [50], action: [25, 25, 25] };
+      navigator.vibrate(patterns[action]);
+    }
+
+    if (gaming.playSound && gaming.type) {
+      const soundMap = {
+        'dice-roll': '/assets/audio/dice-roll.mp3',
+        'character-sheet': '/assets/audio/parchment.mp3',
+        'combat': '/assets/audio/sword-clash.mp3',
+        'inventory': '/assets/audio/bag-rustle.mp3',
+        'spell-cast': '/assets/audio/magic-cast.mp3',
+        'level-up': '/assets/audio/level-up.mp3'
+      };
+      const soundFile = soundMap[gaming.type];
+      if (soundFile) {
+        try {
+          const audio = new Audio(soundFile);
+          audio.volume = 0.3;
+          await audio.play();
+        } catch (error) {
+          // Silent fail
+        }
+      }
+    }
+  }, [gaming]);
+
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (closeOnEscape && e.key === "Escape") {
+      triggerGamingFeedback('close');
+      onClose();
+    }
+  }, [closeOnEscape, onClose, triggerGamingFeedback]);
+
+  const handleGamingKeyboard = useCallback((e: KeyboardEvent) => {
+    if (!gaming?.keyboardShortcuts) return;
+    const key = e.key.toLowerCase();
+    const shortcut = gaming.keyboardShortcuts[key];
+    if (shortcut) {
+      e.preventDefault();
+      shortcut();
+      triggerGamingFeedback('action');
+    }
+  }, [gaming, triggerGamingFeedback]);
 
   useEffect(() => {
     if (!isOpen) {return;}
@@ -94,13 +171,6 @@ const Modal = memo<ModalProps>(({
     // Focus management
     const previousActiveElement = document.activeElement as HTMLElement;
     modalRef.current?.focus();
-
-    // Escape key handler
-    const handleEscape = (e: KeyboardEvent) => {
-      if (closeOnEscape && e.key === "Escape") {
-        onClose();
-      }
-    };
 
     // Focus trap
     const handleTab = (e: KeyboardEvent) => {
@@ -132,15 +202,15 @@ const Modal = memo<ModalProps>(({
       document.body.style.overflow = "unset";
       previousActiveElement?.focus();
     };
-  }, [isOpen, closeOnEscape, onClose]);
+  }, [isOpen, handleEscape]);
 
   if (!isOpen) {return null;}
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
+  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
       onClose();
     }
-  };
+  }, [closeOnOverlayClick, onClose]);
 
   const modal = (
     <div
@@ -163,7 +233,7 @@ const Modal = memo<ModalProps>(({
               {title && (
                 <h2
                   id={titleId}
-                  className="text-xl font-semibold text-neutral-900 truncate"
+                  className="text-xl font-semibold text-text-primary truncate"
                 >
                   {title}
                 </h2>
@@ -171,7 +241,7 @@ const Modal = memo<ModalProps>(({
               {description && (
                 <p
                   id={descId}
-                  className="mt-1 text-sm text-neutral-600"
+                  className="mt-1 text-sm text-text-secondary"
                 >
                   {description}
                 </p>
@@ -209,7 +279,7 @@ Modal.displayName = "Modal";
 const ModalHeader = memo<React.HTMLAttributes<HTMLDivElement>>(
   ({ className, children, ...props }) => (
     <div 
-      className={cn("flex items-center justify-between pb-4 border-b border-neutral-200", className)}
+      className={cn("flex items-center justify-between pb-4 border-b border-border-secondary", className)}
       {...props}
     >
       {children}
@@ -230,7 +300,7 @@ ModalBody.displayName = "ModalBody";
 const ModalFooter = memo<React.HTMLAttributes<HTMLDivElement>>(
   ({ className, children, ...props }) => (
     <div 
-      className={cn("flex items-center justify-end gap-3 pt-4 border-t border-neutral-200", className)}
+      className={cn("flex items-center justify-end gap-3 pt-4 border-t border-border-secondary", className)}
       {...props}
     >
       {children}

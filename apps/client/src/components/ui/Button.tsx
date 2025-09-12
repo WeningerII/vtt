@@ -30,19 +30,17 @@ const playClickSound = (variant: string = 'plasma') => {
   
   // Different sounds for different variants
   const soundProfiles = {
-    plasma: { freq: 800, decay: 0.1, volume: 0.1 },
-    neural: { freq: 600, decay: 0.15, volume: 0.08 },
-    neon: { freq: 1200, decay: 0.08, volume: 0.12 },
-    ghost: { freq: 400, decay: 0.2, volume: 0.05 },
-    danger: { freq: 300, decay: 0.12, volume: 0.1 },
-    success: { freq: 1000, decay: 0.1, volume: 0.1 },
-    link: { freq: 500, decay: 0.15, volume: 0.06 },
     primary: { freq: 800, decay: 0.1, volume: 0.1 },
     secondary: { freq: 600, decay: 0.15, volume: 0.08 },
-    destructive: { freq: 300, decay: 0.12, volume: 0.1 }
+    accent: { freq: 1200, decay: 0.08, volume: 0.12 },
+    ghost: { freq: 400, decay: 0.2, volume: 0.05 },
+    destructive: { freq: 300, decay: 0.12, volume: 0.1 },
+    success: { freq: 1000, decay: 0.1, volume: 0.1 },
+    link: { freq: 500, decay: 0.15, volume: 0.06 },
+    outline: { freq: 600, decay: 0.15, volume: 0.08 }
   };
   
-  const profile = soundProfiles[variant as keyof typeof soundProfiles] || soundProfiles.plasma;
+  const profile = soundProfiles[variant as keyof typeof soundProfiles] || soundProfiles.primary;
   
   oscillator.frequency.setValueAtTime(profile.freq, ctx.currentTime);
   oscillator.frequency.exponentialRampToValueAtTime(profile.freq * 0.5, ctx.currentTime + profile.decay);
@@ -79,8 +77,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // Plasma - Primary CTA with glow effect
-        plasma: [
+        // Primary - Main action button with glow effect
+        primary: [
           "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600",
           "text-white shadow-lg shadow-purple-500/25",
           "hover:shadow-xl hover:shadow-purple-500/40 hover:-translate-y-0.5 hover:scale-[1.02]",
@@ -90,34 +88,34 @@ const buttonVariants = cva(
           "before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300",
         ],
 
-        // Neural - Secondary with glass effect
-        neural: [
-          "bg-white/5 backdrop-blur-md border border-white/10",
-          "text-white/90 shadow-sm",
-          "hover:bg-white/10 hover:border-white/20 hover:shadow-md hover:text-white",
-          "active:bg-white/15",
-          "focus-visible:ring-white/50",
+        // Secondary - Secondary action with glass effect
+        secondary: [
+          "bg-surface-overlay backdrop-blur-md border border-border-subtle",
+          "text-text-secondary shadow-sm",
+          "hover:bg-surface-hover hover:border-border-primary hover:shadow-md hover:text-text-primary",
+          "active:bg-surface-hover",
+          "focus-visible:ring-accent-primary/50",
         ],
 
-        // Neon - Accent with bright glow
-        neon: [
-          "bg-transparent border-2 border-cyan-400",
-          "text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.5)]",
-          "hover:bg-cyan-400/10 hover:text-cyan-300 hover:shadow-[0_0_30px_rgba(6,182,212,0.7)]",
+        // Accent - Bright accent with glow
+        accent: [
+          "bg-transparent border-2",
+          "text-cyan-400 shadow-[0_0_20px_hsl(var(--neon-cyan)/0.5)]",
+          "hover:bg-cyan-400/10 hover:text-cyan-300 hover:shadow-[0_0_30px_hsl(var(--neon-cyan)/0.7)]",
           "active:bg-cyan-400/20",
           "focus-visible:ring-cyan-400",
         ],
         
         // Ghost - Subtle interaction
         ghost: [
-          "bg-transparent text-gray-300",
-          "hover:bg-white/5 hover:text-white",
-          "active:bg-white/10",
-          "focus-visible:ring-gray-400",
+          "bg-transparent text-text-tertiary",
+          "hover:bg-surface-hover hover:text-text-secondary",
+          "active:bg-surface-hover",
+          "focus-visible:ring-border-primary",
         ],
         
-        // Danger - Destructive actions
-        danger: [
+        // Destructive - Destructive actions
+        destructive: [
           "bg-gradient-to-br from-red-600 to-rose-600",
           "text-white shadow-lg shadow-red-500/25",
           "hover:shadow-xl hover:shadow-red-500/40 hover:from-red-700 hover:to-rose-700",
@@ -139,35 +137,6 @@ const buttonVariants = cva(
           "bg-transparent text-violet-400 p-0",
           "hover:text-violet-300 underline-offset-4 hover:underline",
           "focus-visible:ring-violet-400",
-        ],
-        
-        // Primary - Main action button (alias for plasma)
-        primary: [
-          "bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600",
-          "text-white shadow-lg shadow-purple-500/25",
-          "hover:shadow-xl hover:shadow-purple-500/40 hover:-translate-y-0.5 hover:scale-[1.02]",
-          "active:translate-y-0 active:scale-[0.98]",
-          "focus-visible:ring-purple-500",
-          "before:absolute before:inset-0 before:bg-gradient-to-t before:from-white/0 before:to-white/20",
-          "before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300",
-        ],
-        
-        // Secondary - Secondary action button (alias for neural)
-        secondary: [
-          "bg-white/5 backdrop-blur-md border border-white/10",
-          "text-white/90 shadow-sm",
-          "hover:bg-white/10 hover:border-white/20 hover:shadow-md hover:text-white",
-          "active:bg-white/15",
-          "focus-visible:ring-white/50",
-        ],
-        
-        // Destructive - Destructive action button (alias for danger)
-        destructive: [
-          "bg-gradient-to-br from-red-600 to-rose-600",
-          "text-white shadow-lg shadow-red-500/25",
-          "hover:shadow-xl hover:shadow-red-500/40 hover:from-red-700 hover:to-rose-700",
-          "active:scale-[0.98]",
-          "focus-visible:ring-red-500",
         ],
 
         // Outline - Border-only variant
@@ -193,7 +162,7 @@ const buttonVariants = cva(
       },
     },
     defaultVariants: {
-      variant: 'plasma',
+      variant: 'primary',
       size: 'md',
       fullWidth: false,
     },
@@ -314,14 +283,14 @@ const Button = React.memo(forwardRef<HTMLButtonElement, ButtonProps>(
           // Dynamic ripple color based on variant
           const rippleColors = {
             plasma: 'bg-white/25',
-            neural: 'bg-gray-400/30',
+            neural: 'bg-text-tertiary/30',
             neon: 'bg-cyan-300/40',
-            ghost: 'bg-gray-400/20',
+            ghost: 'bg-text-tertiary/20',
             danger: 'bg-white/25',
             success: 'bg-white/25',
             link: 'bg-violet-400/20',
             primary: 'bg-white/25',
-            secondary: 'bg-gray-400/30',
+            secondary: 'bg-text-tertiary/30',
             destructive: 'bg-white/25',
           };
           
@@ -344,12 +313,12 @@ const Button = React.memo(forwardRef<HTMLButtonElement, ButtonProps>(
         })}
 
           {/* Enhanced shimmer effect for premium variants */}
-        {(variant === 'plasma' || variant === 'primary' || variant === 'success') && !disabled && (
+        {(variant === 'primary' || variant === 'success') && !disabled && (
           <span className="absolute inset-0 -top-1/2 h-[200%] w-[200%] animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 pointer-events-none" />
         )}
         
-        {/* Neon glow pulse effect */}
-        {variant === 'neon' && !disabled && (
+        {/* Accent glow pulse effect */}
+        {variant === 'accent' && !disabled && (
           <span className="absolute inset-0 rounded-lg animate-pulse bg-cyan-400/20 blur-md pointer-events-none" />
         )}
       </button>

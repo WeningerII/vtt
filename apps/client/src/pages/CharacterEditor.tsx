@@ -6,19 +6,25 @@ import React, { useState } from "react";
 import { useRouter } from "../components/Router";
 import { CharacterSheet, type Character } from "../components/character/CharacterSheet";
 import { Button } from "../components/ui/Button";
+import { useAuth } from "../providers/AuthProvider";
 import { ArrowLeft, Users, Plus } from "lucide-react";
 
 export function CharacterEditor() {
   const { navigate, params } = useRouter();
-  const characterId = params?.characterId;
+  const { isAuthenticated } = useAuth();
+  const characterId = params?.id;
   const [character, setCharacter] = useState<Character | null>(null);
 
   const handleCharacterUpdate = (_updatedCharacter: Character) => {
     setCharacter(character);
   };
 
-  const handleBackToDashboard = () => {
-    navigate("/dashboard");
+  const handleBackNavigation = () => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    } else {
+      navigate("/");
+    }
   };
 
   const handleViewInSession = () => {
@@ -36,10 +42,10 @@ export function CharacterEditor() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleBackToDashboard}
+                onClick={handleBackNavigation}
                 leftIcon={<ArrowLeft className="h-4 w-4" />}
               >
-                Back to Dashboard
+                {isAuthenticated ? "Back to Dashboard" : "Back to Home"}
               </Button>
               <div className="h-6 w-px bg-border-primary" />
               <h1 className="text-xl font-semibold text-text-primary">
@@ -50,14 +56,16 @@ export function CharacterEditor() {
             <div className="flex items-center gap-2">
               {character && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate("/characters")}
-                    leftIcon={<Users className="h-4 w-4" />}
-                  >
-                    My Characters
-                  </Button>
+                  {isAuthenticated && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate("/dashboard")}
+                      leftIcon={<Users className="h-4 w-4" />}
+                    >
+                      My Characters
+                    </Button>
+                  )}
                   <Button
                     variant="secondary"
                     size="sm"
@@ -75,23 +83,11 @@ export function CharacterEditor() {
 
       {/* Character Sheet */}
       <div className="max-w-7xl mx-auto p-4">
-        {characterId ? (
-          <CharacterSheet
-            characterId={characterId}
-            onCharacterUpdate={handleCharacterUpdate}
-            className="min-h-[calc(100vh-8rem)]"
-          />
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-text-secondary text-lg mb-2">No Character Selected</div>
-            <p className="text-text-tertiary text-sm mb-4">
-              Please select a character to edit or create a new character.
-            </p>
-            <Button variant="primary" onClick={() => navigate("/characters")}>
-              Browse Characters
-            </Button>
-          </div>
-        )}
+        <CharacterSheet
+          characterId={characterId || ""}
+          onCharacterUpdate={handleCharacterUpdate}
+          className="min-h-[calc(100vh-8rem)]"
+        />
       </div>
     </div>
   );

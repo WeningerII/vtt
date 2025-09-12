@@ -34,13 +34,25 @@ export default function App() {
     // Initialize application configuration
     const initializeApp = async () => {
       try {
+        // Disable legacy, component-scoped WebSocket hook to prevent duplicate connections
+        try {
+          (window as any).__VTT_DISABLE_LEGACY_WS = true;
+        } catch {}
+
         // Load configuration from environment variables
         const appConfig: AppConfig = {
           serverUrl: (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:8080",
-          wsUrl: (import.meta as any).env?.VITE_WS_URL || (() => {
+          wsUrl: (() => {
+            const configuredWsUrl = (import.meta as any).env?.VITE_WS_URL;
+            if (configuredWsUrl) {
+              console.log("Using configured WebSocket URL:", configuredWsUrl);
+              return configuredWsUrl;
+            }
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const host = window.location.host;
-            return `${protocol}//${host}/ws`;
+            const fallbackUrl = `${protocol}//${host}/ws`;
+            console.log("Using fallback WebSocket URL:", fallbackUrl);
+            return fallbackUrl;
           })(),
           version: (import.meta as any).env?.VITE_APP_VERSION || "1.0.0",
           environment: (import.meta as any).env?.MODE === "production" ? "production" : "development",

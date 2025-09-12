@@ -14,6 +14,8 @@ export interface ApiError {
   status?: number;
 }
 
+import { logger } from '@vtt/logging';
+
 /**
  * Base API request wrapper with error handling
  */
@@ -32,7 +34,10 @@ export async function apiRequest<T>(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json().catch((error) => {
+        logger.warn('Failed to parse error response:', error);
+        return {};
+      });
       return {
         success: false,
         error: errorData.message || `HTTP ${response.status}: ${response.statusText}`,

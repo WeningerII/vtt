@@ -102,6 +102,10 @@
 .text-primary { color: var(--text-primary); }
 .text-secondary { color: var(--text-secondary); }
 .text-muted { color: var(--text-muted); }
+/* Legacy alias classes used throughout components */
+.text-text-primary { color: var(--text-primary); }
+.text-text-secondary { color: var(--text-secondary); }
+.text-text-tertiary { color: var(--text-tertiary); }
 .text-white { color: white; }
 .text-black { color: black; }
 .text-error { color: var(--error); }
@@ -113,6 +117,10 @@
 .surface-base { background-color: var(--surface-base); }
 .surface-elevated { background-color: var(--surface-elevated); }
 .surface-primary { background-color: var(--surface-base); }
+/* Background token aliases */
+.bg-bg-primary { background-color: var(--bg-primary); }
+.bg-bg-secondary { background-color: var(--bg-secondary); }
+.bg-bg-tertiary { background-color: var(--bg-tertiary); }
 
 .bg-primary { background-color: var(--bg-primary); }
 .bg-white { background-color: white; }
@@ -131,6 +139,10 @@
 
 .border-subtle { border-color: var(--border-subtle); }
 .border-gray-700 { border-color: var(--border-subtle); }
+/* Border token aliases */
+.border-border-primary { border-color: var(--border-primary); }
+.border-border-secondary { border-color: var(--border-secondary); }
+.border-border-tertiary { border-color: var(--border-tertiary); }
 
 .rounded { border-radius: var(--radius-md); }
 .rounded-lg { border-radius: var(--radius-lg); }

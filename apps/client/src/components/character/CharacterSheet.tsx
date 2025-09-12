@@ -2,7 +2,7 @@
  * Character Sheet Component - Main character management interface
  */
 
-import React, { useState, useEffect, useMemo, useCallback, memo } from "react";
+import React, { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from "react";
 import { logger } from "@vtt/logging";
 import { 
   Download, 
@@ -27,13 +27,14 @@ import { LoadingSpinner } from "../ui/LoadingSpinner";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../providers/AuthProvider";
 import { Character, Ability, Skill, Equipment, Spell, Feature } from "@vtt/core-schemas";
-import { AbilityScores } from "./AbilityScores";
-import { SkillsPanel } from "./SkillsPanel";
-import { EquipmentPanel } from "./EquipmentPanel";
-import { SpellsPanel } from "./SpellsPanel";
-import { FeaturesPanel } from "./FeaturesPanel";
-import { useWebSocket } from "../../hooks/useWebSocket";
-import { NotesPanel } from "./NotesPanel";
+import { useWebSocket } from "../../providers/WebSocketProvider";
+// Lazy-load heavy panels to reduce initial work and heat on laptops
+const AbilityScores = lazy(() => import("./AbilityScores").then(m => ({ default: m.AbilityScores })));
+const SkillsPanel = lazy(() => import("./SkillsPanel").then(m => ({ default: m.SkillsPanel })));
+const EquipmentPanel = lazy(() => import("./EquipmentPanel").then(m => ({ default: m.EquipmentPanel })));
+const SpellsPanel = lazy(() => import("./SpellsPanel").then(m => ({ default: m.SpellsPanel })));
+const FeaturesPanel = lazy(() => import("./FeaturesPanel").then(m => ({ default: m.FeaturesPanel })));
+const NotesPanel = lazy(() => import("./NotesPanel").then(m => ({ default: m.NotesPanel })));
 
 // Additional icons not in lucide-react
 const Sword = () => <span>⚔️</span>;
@@ -350,7 +351,7 @@ export const CharacterSheet = memo(({
       )}
     >
       {/* Character Header */}
-      <div className="p-4 border-b border-border-primary">
+      <div className="p-4 border-b border-border-primary sticky top-0 z-20 bg-bg-secondary/80 backdrop-blur supports-[backdrop-filter]:bg-bg-secondary/60">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-accent-primary flex items-center justify-center text-white font-bold text-lg">
@@ -375,35 +376,19 @@ export const CharacterSheet = memo(({
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
             {hasUnsavedChanges && <span className="text-warning text-sm">Unsaved changes</span>}
 
-            <Button className="px-2 py-1 hover:bg-neutral-100 rounded" onClick={exportCharacter}>
-              <span className="h-4 w-4 mr-1 inline-block">
-                <Download />
-              </span>
+            <Button variant="ghost" size="sm" onClick={exportCharacter} leftIcon={<Download className="h-4 w-4" />}>
               Export
             </Button>
 
             {isEditing ? (
-              <Button
-                className="px-2 py-1 bg-primary-500 text-white hover:bg-primary-600 rounded"
-                onClick={saveCharacter}
-              >
-                <span className="h-4 w-4 mr-1 inline-block">
-                  <Save />
-                </span>
+              <Button variant="primary" size="sm" onClick={saveCharacter} leftIcon={<Save className="h-4 w-4" />}>
                 Save
               </Button>
             ) : (
-              <Button
-                className="px-2 py-1 border border-neutral-300 hover:bg-neutral-50 rounded"
-                onClick={() => setIsEditing(true)}
-              >
-                <span className="h-4 w-4 mr-1 inline-block">
-                  <Settings />
-                </span>
+              <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)} leftIcon={<Settings className="h-4 w-4" />}>
                 Edit
               </Button>
             )}
@@ -440,8 +425,18 @@ export const CharacterSheet = memo(({
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="flex-1 overflow-hidden">{renderTabContent()}</div>
+      {/* Tab Content - lazy load each panel for lower CPU/GPU usage */}
+      <div className="flex-1 overflow-hidden">
+        <Suspense
+          fallback={
+            <div className="p-6">
+              <LoadingSpinner size="sm" showLabel label="Loading section..." />
+            </div>
+          }
+        >
+          {renderTabContent()}
+        </Suspense>
+      </div>
     </div>
   );
 });

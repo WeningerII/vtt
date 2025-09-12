@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import { logger } from "@vtt/logging";
-import { useWebSocket } from "../../hooks/useWebSocket";
+import { useWebSocket } from "../../providers/WebSocketProvider";
 import { toErrorObject } from "../../utils/error-utils";
 import { 
   Sword, 
