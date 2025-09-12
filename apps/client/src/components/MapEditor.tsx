@@ -89,7 +89,9 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   // Initialize renderer
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) {return;}
+    if (!canvas) {
+      return;
+    }
 
     try {
       // Mock renderer initialization since @vtt/renderer is not available
@@ -117,7 +119,9 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   // Handle canvas drawing
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) {return;}
+    if (!canvas) {
+      return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -134,10 +138,14 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !currentPath) {return;}
+    if (!isDrawing || !currentPath) {
+      return;
+    }
 
     const canvas = canvasRef.current;
-    if (!canvas) {return;}
+    if (!canvas) {
+      return;
+    }
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -154,7 +162,9 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   };
 
   const handleMouseUp = () => {
-    if (!isDrawing || !currentPath) {return;}
+    if (!isDrawing || !currentPath) {
+      return;
+    }
 
     setIsDrawing(false);
     setPaths((prev) => [...prev, currentPath]);
@@ -177,7 +187,9 @@ export const MapEditor: React.FC<MapEditorProps> = ({
   };
 
   const generateMapWithAI = async () => {
-    if (!aiPrompt.trim()) {return;}
+    if (!aiPrompt.trim()) {
+      return;
+    }
 
     setIsGenerating(true);
     try {
@@ -205,7 +217,7 @@ export const MapEditor: React.FC<MapEditorProps> = ({
       const newIndex = historyIndex - 1;
       setHistoryIndex(newIndex);
       setPaths(history[newIndex] || []);
-      
+
       if (onMapChange) {
         onMapChange(layers, history[newIndex] || []);
       }
@@ -218,16 +230,16 @@ export const MapEditor: React.FC<MapEditorProps> = ({
     const newHistory = [...history.slice(0, historyIndex + 1), paths];
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
-    
-    logger.info('Map saved to history');
+
+    logger.info("Map saved to history");
   };
 
   return (
-    <div className={cn(
-      "map-editor relative",
-      isMobile && "mobile-map-editor h-full overflow-hidden"
-    )} role="application" aria-label="Interactive map editor">
-      
+    <div
+      className={cn("map-editor relative", isMobile && "mobile-map-editor h-full overflow-hidden")}
+      role="application"
+      aria-label="Interactive map editor"
+    >
       {/* Mobile Toolbar */}
       {isMobile ? (
         <MobileMapToolbar
@@ -246,125 +258,125 @@ export const MapEditor: React.FC<MapEditorProps> = ({
       ) : (
         /* Desktop Toolbar */
         <div className="map-toolbar" role="toolbar" aria-label="Map editing tools">
-        <AccessibleButton
-          onClick={() => handleToolChange("select")}
-          disabled={readOnly}
-          action="select"
-        >
-          Select
-        </AccessibleButton>
-
-        <AccessibleButton
-          onClick={() => handleToolChange("brush")}
-          disabled={readOnly}
-          action="draw"
-        >
-          Brush
-        </AccessibleButton>
-
-        <AccessibleButton
-          onClick={() => handleToolChange("eraser")}
-          disabled={readOnly}
-          action="erase"
-        >
-          Eraser
-        </AccessibleButton>
-
-        <AccessibleButton
-          onClick={() => handleToolChange("token")}
-          disabled={readOnly}
-          action="place"
-        >
-          Token
-        </AccessibleButton>
-
-        <div className="brush-size-control">
-          <label htmlFor="brush-size">Brush Size:</label>
-          <input
-            id="brush-size"
-            type="range"
-            min="1"
-            max="50"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            aria-label={`Brush size: ${brushSize} pixels`}
+          <AccessibleButton
+            onClick={() => handleToolChange("select")}
             disabled={readOnly}
-          />
-          <span aria-live="polite">{brushSize}px</span>
-        </div>
+            action="select"
+          >
+            Select
+          </AccessibleButton>
 
-        <AccessibleButton
-          onClick={() => setShowGrid(!showGrid)}
-          aria-label={showGrid ? "Hide grid" : "Show grid"}
-          aria-pressed={showGrid}
-          action="toggle"
-        >
-          {showGrid ? "Hide Grid" : "Show Grid"}
-        </AccessibleButton>
-      </div>
+          <AccessibleButton
+            onClick={() => handleToolChange("brush")}
+            disabled={readOnly}
+            action="draw"
+          >
+            Brush
+          </AccessibleButton>
+
+          <AccessibleButton
+            onClick={() => handleToolChange("eraser")}
+            disabled={readOnly}
+            action="erase"
+          >
+            Eraser
+          </AccessibleButton>
+
+          <AccessibleButton
+            onClick={() => handleToolChange("token")}
+            disabled={readOnly}
+            action="place"
+          >
+            Token
+          </AccessibleButton>
+
+          <div className="brush-size-control">
+            <label htmlFor="brush-size">Brush Size:</label>
+            <input
+              id="brush-size"
+              type="range"
+              min="1"
+              max="50"
+              value={brushSize}
+              onChange={(e) => setBrushSize(Number(e.target.value))}
+              aria-label={`Brush size: ${brushSize} pixels`}
+              disabled={readOnly}
+            />
+            <span aria-live="polite">{brushSize}px</span>
+          </div>
+
+          <AccessibleButton
+            onClick={() => setShowGrid(!showGrid)}
+            aria-label={showGrid ? "Hide grid" : "Show grid"}
+            aria-pressed={showGrid}
+            action="toggle"
+          >
+            {showGrid ? "Hide Grid" : "Show Grid"}
+          </AccessibleButton>
+        </div>
+      )}
 
       {/* AI Generation Panel - Desktop Only */}
       {!isMobile && (
-      <div className="ai-generation-panel">
-        <div className="ai-prompt-input">
-          <label htmlFor="ai-prompt">AI Map Generation:</label>
-          <input
-            id="ai-prompt"
-            type="text"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder="Describe the map you want to generate..."
-            aria-label="Enter description for AI map generation"
-            disabled={readOnly || isGenerating}
-          />
-          <AccessibleButton
-            onClick={generateMapWithAI}
-            loading={isGenerating}
-            disabled={readOnly || !aiPrompt.trim()}
-            action="generate"
-          >
-            {isGenerating ? "Generating..." : "Generate"}
-          </AccessibleButton>
-        </div>
-
-        {generatedImages.length > 0 && (
-          <div className="generated-images" role="region" aria-label="Generated map images">
-            {generatedImages.map((image, index) => (
-              <AccessibleImage
-                key={index}
-                src={image.uri}
-                type="generated"
-                context={{
-                  name: `Generated map ${index + 1}`,
-                  description: aiPrompt,
-                  index: index + 1,
-                }}
-                width={image.width}
-                height={image.height}
-                className="generated-map-preview"
-              />
-            ))}
+        <div className="ai-generation-panel">
+          <div className="ai-prompt-input">
+            <label htmlFor="ai-prompt">AI Map Generation:</label>
+            <input
+              id="ai-prompt"
+              type="text"
+              value={aiPrompt}
+              onChange={(e) => setAiPrompt(e.target.value)}
+              placeholder="Describe the map you want to generate..."
+              aria-label="Enter description for AI map generation"
+              disabled={readOnly || isGenerating}
+            />
+            <AccessibleButton
+              onClick={generateMapWithAI}
+              loading={isGenerating}
+              disabled={readOnly || !aiPrompt.trim()}
+              action="generate"
+            >
+              {isGenerating ? "Generating..." : "Generate"}
+            </AccessibleButton>
           </div>
-        )}
-      </div>
+
+          {generatedImages.length > 0 && (
+            <div className="generated-images" role="region" aria-label="Generated map images">
+              {generatedImages.map((image, index) => (
+                <AccessibleImage
+                  key={index}
+                  src={image.uri}
+                  type="generated"
+                  context={{
+                    name: `Generated map ${index + 1}`,
+                    description: aiPrompt,
+                    index: index + 1,
+                  }}
+                  width={image.width}
+                  height={image.height}
+                  className="generated-map-preview"
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Canvas */}
-      <div className={cn(
-        "map-canvas-container",
-        isMobile && [
-          "flex-1 relative overflow-hidden",
-          "touch-none" // Prevent default touch behaviors
-        ]
-      )}>
+      <div
+        className={cn(
+          "map-canvas-container",
+          isMobile && [
+            "flex-1 relative overflow-hidden",
+            "touch-none", // Prevent default touch behaviors
+          ],
+        )}
+      >
         <canvas
           ref={canvasRef}
           width={isMobile ? window.innerWidth : 800}
           height={isMobile ? window.innerHeight - 200 : 600}
-          className={cn(
-            "map-canvas",
-            isMobile && "w-full h-full"
-          )}
+          className={cn("map-canvas", isMobile && "w-full h-full")}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -376,9 +388,9 @@ export const MapEditor: React.FC<MapEditorProps> = ({
               if (touch) {
                 const rect = canvasRef.current?.getBoundingClientRect();
                 if (rect) {
-                  const mouseEvent = new MouseEvent('mousedown', {
+                  const mouseEvent = new MouseEvent("mousedown", {
                     clientX: touch.clientX,
-                    clientY: touch.clientY
+                    clientY: touch.clientY,
                   });
                   handleMouseDown(mouseEvent as any);
                 }
@@ -390,9 +402,9 @@ export const MapEditor: React.FC<MapEditorProps> = ({
               e.preventDefault();
               const touch = e.touches[0];
               if (touch) {
-                const mouseEvent = new MouseEvent('mousemove', {
+                const mouseEvent = new MouseEvent("mousemove", {
                   clientX: touch.clientX,
-                  clientY: touch.clientY
+                  clientY: touch.clientY,
                 });
                 handleMouseMove(mouseEvent as any);
               }
@@ -417,12 +429,13 @@ export const MapEditor: React.FC<MapEditorProps> = ({
           Layers: {layers.length} | Tokens: {tokens.length}
         </div>
       )}
-      
+
       {/* Mobile Status - Floating */}
       {isMobile && (
         <div className="fixed top-4 left-4 right-4 z-30">
           <div className="bg-surface-overlay/90 backdrop-blur-sm px-3 py-2 rounded-lg text-xs text-text-secondary text-center">
-            {activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} • {brushSize}px • {showGrid ? 'Grid On' : 'Grid Off'}
+            {activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} • {brushSize}px •{" "}
+            {showGrid ? "Grid On" : "Grid Off"}
           </div>
         </div>
       )}

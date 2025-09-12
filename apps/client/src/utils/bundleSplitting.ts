@@ -3,47 +3,50 @@
  * Optimizes initial load performance through intelligent code splitting
  */
 
-import { lazy, ComponentType } from 'react';
+import React, { lazy, ComponentType } from "react";
 
 // Lazy loading wrapper with error boundary and loading states
 export function createLazyComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
-  fallback?: ComponentType
-): T {
+  fallback?: ComponentType,
+): React.LazyExoticComponent<T> {
   return lazy(async () => {
     try {
       const module = await importFn();
       return module;
     } catch (error) {
-      console.error('Dynamic import failed:', error);
-      
+      console.error("Dynamic import failed:", error);
+
       // Return fallback component or error boundary
       if (fallback) {
-        return { default: fallback };
+        return { default: fallback as T };
       }
-      
+
       // Default error component
-      const ErrorComponent = () => (
-        <div className="p-4 text-center text-red-500">
-          <p>Failed to load component</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-2 px-4 py-2 bg-red-500 text-white rounded"
-            type="button"
-          >
-            Retry
-          </button>
-        </div>
-      );
-      
-      return { default: ErrorComponent as T };
+      const ErrorComponent = () =>
+        React.createElement(
+          "div",
+          { className: "p-4 text-center text-red-500" },
+          React.createElement("p", null, "Failed to load component"),
+          React.createElement(
+            "button",
+            {
+              onClick: () => window.location.reload(),
+              className: "mt-2 px-4 py-2 bg-red-500 text-white rounded",
+              type: "button",
+            },
+            "Retry",
+          ),
+        );
+
+      return { default: ErrorComponent as unknown as T };
     }
   });
 }
 
 // Preload critical components during idle time
 export function preloadComponent(importFn: () => Promise<any>): void {
-  if ('requestIdleCallback' in window) {
+  if ("requestIdleCallback" in window) {
     requestIdleCallback(() => {
       importFn().catch(() => {
         // Silent fail for preloading
@@ -64,67 +67,67 @@ export const ComponentBundles = {
   // Core components - Always loaded
   core: {
     // These should be in the main bundle
-    MobileNavigation: () => import('../components/MobileNavigation'),
-    AdaptiveLayout: () => import('../components/AdaptiveLayout'),
+    MobileNavigation: () => import("../components/MobileNavigation"),
+    AdaptiveLayout: () => import("../components/AdaptiveLayout"),
   },
 
   // Game components - Loaded on demand
   game: {
-    MapEditor: () => import('../components/MapEditor'),
-    MobileMapToolbar: () => import('../components/MobileMapToolbar'),
-    DiceRoller: () => import('../components/DiceRoller'),
-    CharacterSheet: () => import('../components/LazyCharacterSheet'),
+    MapEditor: () => import("../components/MapEditor"),
+    MobileMapToolbar: () => import("../components/MobileMapToolbar"),
+    DiceRoller: () => import("../components/DiceRoller"),
+    CharacterSheet: () => import("../components/LazyCharacterSheet"),
   },
 
   // UI components - Loaded when needed
   ui: {
-    Modal: () => import('../components/ui/Modal'),
-    Dialog: () => import('../components/ui/Dialog'),
-    Drawer: () => import('../components/ui/Drawer'),
-    Toast: () => import('../components/ui/Toast'),
+    // Note: Modal uses named exports, need to restructure for lazy loading
+    // Modal: () => import('../components/ui/Modal'),
+    // Dialog: () => import('../components/ui/Dialog'),
+    // Drawer: () => import('../components/ui/Drawer'),
+    // Toast: () => import('../components/ui/Toast'),
   },
 
   // Feature components - Lazy loaded
   features: {
-    AudioManager: () => import('../components/AudioManager'),
-    VideoChat: () => import('../components/VideoChat'),
-    FileUpload: () => import('../components/FileUpload'),
-    ImageEditor: () => import('../components/ImageEditor'),
+    // Note: These components need to be created
+    // AudioManager: () => import('../components/AudioManager'),
+    // VideoChat: () => import('../components/VideoChat'),
+    // FileUpload: () => import('../components/FileUpload'),
+    // ImageEditor: () => import('../components/ImageEditor'),
   },
 
   // Heavy components - Only load when absolutely needed
   heavy: {
-    AdvancedCharacterSheet: () => import('../components/character/AdvancedCharacterSheet'),
-    MapRenderer3D: () => import('../components/map/MapRenderer3D'),
-    VoiceChat: () => import('../components/VoiceChat'),
-    AIAssistant: () => import('../components/AIAssistant'),
-  }
+    // Use existing CharacterSheet for now
+    AdvancedCharacterSheet: () => import("../components/character/CharacterSheet"),
+    // Note: MapRenderer3D and VoiceChat need to be created
+    // MapRenderer3D: () => import('../components/map/MapRenderer3D'),
+    // VoiceChat: () => import('../components/VoiceChat'),
+    AIAssistant: () => import("../components/AIAssistant"),
+  },
+};
+
+// Create lazy components with type erasure to avoid naming conflicts
+type LazyComponentsType = {
+  MapEditor: React.LazyExoticComponent<ComponentType<any>>;
+  MobileMapToolbar: React.LazyExoticComponent<ComponentType<any>>;
+  DiceRoller: React.LazyExoticComponent<ComponentType<any>>;
+  CharacterSheet: React.LazyExoticComponent<ComponentType<any>>;
+  AdvancedCharacterSheet: React.LazyExoticComponent<ComponentType<any>>;
+  AIAssistant: React.LazyExoticComponent<ComponentType<any>>;
 };
 
 // Create lazy components with intelligent fallbacks
-export const LazyComponents = {
+export const LazyComponents: LazyComponentsType = {
   // Game components
   MapEditor: createLazyComponent(ComponentBundles.game.MapEditor),
   MobileMapToolbar: createLazyComponent(ComponentBundles.game.MobileMapToolbar),
   DiceRoller: createLazyComponent(ComponentBundles.game.DiceRoller),
   CharacterSheet: createLazyComponent(ComponentBundles.game.CharacterSheet),
 
-  // UI components
-  Modal: createLazyComponent(ComponentBundles.ui.Modal),
-  Dialog: createLazyComponent(ComponentBundles.ui.Dialog),
-  Drawer: createLazyComponent(ComponentBundles.ui.Drawer),
-  Toast: createLazyComponent(ComponentBundles.ui.Toast),
-
-  // Feature components
-  AudioManager: createLazyComponent(ComponentBundles.features.AudioManager),
-  VideoChat: createLazyComponent(ComponentBundles.features.VideoChat),
-  FileUpload: createLazyComponent(ComponentBundles.features.FileUpload),
-  ImageEditor: createLazyComponent(ComponentBundles.features.ImageEditor),
-
   // Heavy components
   AdvancedCharacterSheet: createLazyComponent(ComponentBundles.heavy.AdvancedCharacterSheet),
-  MapRenderer3D: createLazyComponent(ComponentBundles.heavy.MapRenderer3D),
-  VoiceChat: createLazyComponent(ComponentBundles.heavy.VoiceChat),
   AIAssistant: createLazyComponent(ComponentBundles.heavy.AIAssistant),
 };
 
@@ -137,9 +140,9 @@ export class ComponentPreloader {
     // Preload essential game components during idle time
     const essentialComponents = [
       ComponentBundles.game.DiceRoller,
-      ComponentBundles.ui.Modal,
-      ComponentBundles.ui.Toast
-    ];
+      // ComponentBundles.ui.Modal, // Commented out until proper default export
+      // ComponentBundles.ui.Toast // Commented out until component exists
+    ].filter(Boolean);
 
     essentialComponents.forEach((importFn, index) => {
       // Stagger preloading to avoid blocking
@@ -152,14 +155,17 @@ export class ComponentPreloader {
   static preloadFeatureComponents(): void {
     // Preload feature components based on user actions
     const featureComponents = [
-      ComponentBundles.features.AudioManager,
-      ComponentBundles.features.FileUpload
+      // ComponentBundles.features.AudioManager, // Commented out until component exists
+      // ComponentBundles.features.FileUpload // Commented out until component exists
     ];
 
     featureComponents.forEach((importFn, index) => {
-      setTimeout(() => {
-        preloadComponent(importFn);
-      }, (index + 1) * 1000);
+      setTimeout(
+        () => {
+          preloadComponent(importFn);
+        },
+        (index + 1) * 1000,
+      );
     });
   }
 
@@ -185,13 +191,15 @@ export class ComponentPreloader {
     }
   }
 
-  private static async loadBundleComponents(bundleName: keyof typeof ComponentBundles): Promise<void> {
+  private static async loadBundleComponents(
+    bundleName: keyof typeof ComponentBundles,
+  ): Promise<void> {
     const bundle = ComponentBundles[bundleName];
-    const loadPromises = Object.values(bundle).map(importFn => 
-      importFn().catch(error => {
+    const loadPromises = Object.values(bundle).map((importFn) =>
+      importFn().catch((error) => {
         console.warn(`Failed to preload component in ${bundleName}:`, error);
         return null;
-      })
+      }),
     );
 
     await Promise.all(loadPromises);
@@ -200,33 +208,34 @@ export class ComponentPreloader {
 
 // Route-based code splitting
 export const RouteComponents = {
-  // Main app routes
-  GameSession: createLazyComponent(() => import('../pages/GameSession')),
-  CharacterCreator: createLazyComponent(() => import('../pages/CharacterCreator')),
-  CampaignManager: createLazyComponent(() => import('../pages/CampaignManager')),
-  
+  // Note: Most page components need to be created with default exports
+  // GameSession: createLazyComponent(() => import('../pages/GameSession')),
+  // CharacterCreator: createLazyComponent(() => import('../pages/CharacterCreator')),
+  // CampaignManager: createLazyComponent(() => import('../pages/CampaignManager')),
   // Settings and admin routes
-  Settings: createLazyComponent(() => import('../pages/Settings')),
-  AdminPanel: createLazyComponent(() => import('../pages/AdminPanel')),
-  
+  // Settings: createLazyComponent(() => import('../pages/Settings')),
+  // AdminPanel: createLazyComponent(() => import('../pages/AdminPanel')),
   // Social features
-  Friends: createLazyComponent(() => import('../pages/Friends')),
-  Groups: createLazyComponent(() => import('../pages/Groups')),
+  // Friends: createLazyComponent(() => import('../pages/Friends')),
+  // Groups: createLazyComponent(() => import('../pages/Groups')),
 };
 
 // Performance monitoring for bundle loading
 export class BundlePerformance {
-  private static metrics = new Map<string, {
-    loadStart: number;
-    loadEnd?: number;
-    size?: number;
-    success: boolean;
-  }>();
+  private static metrics = new Map<
+    string,
+    {
+      loadStart: number;
+      loadEnd?: number;
+      size?: number;
+      success: boolean;
+    }
+  >();
 
   static startLoad(componentName: string): void {
     this.metrics.set(componentName, {
       loadStart: performance.now(),
-      success: false
+      success: false,
     });
   }
 
@@ -240,26 +249,25 @@ export class BundlePerformance {
 
   static getMetrics(): Record<string, any> {
     const result: Record<string, any> = {};
-    
+
     for (const [name, metric] of this.metrics) {
       result[name] = {
         ...metric,
-        loadTime: metric.loadEnd ? metric.loadEnd - metric.loadStart : null
+        loadTime: metric.loadEnd ? metric.loadEnd - metric.loadStart : null,
       };
     }
-    
+
     return result;
   }
 
   static reportSlowLoads(threshold: number = 1000): void {
-    const slowLoads = Array.from(this.metrics.entries())
-      .filter(([, metric]) => {
-        const loadTime = metric.loadEnd ? metric.loadEnd - metric.loadStart : 0;
-        return loadTime > threshold;
-      });
+    const slowLoads = Array.from(this.metrics.entries()).filter(([, metric]) => {
+      const loadTime = metric.loadEnd ? metric.loadEnd - metric.loadStart : 0;
+      return loadTime > threshold;
+    });
 
     if (slowLoads.length > 0) {
-      console.warn('Slow component loads detected:', slowLoads);
+      console.warn("Slow component loads detected:", slowLoads);
     }
   }
 }
@@ -268,12 +276,12 @@ export class BundlePerformance {
 export function initializeBundleOptimization(): void {
   // Start preloading critical components
   ComponentPreloader.preloadGameComponents();
-  
+
   // Preload features after initial render
   setTimeout(() => {
     ComponentPreloader.preloadFeatureComponents();
   }, 3000);
-  
+
   // Monitor bundle performance
   setTimeout(() => {
     BundlePerformance.reportSlowLoads();
@@ -285,5 +293,5 @@ export default {
   ComponentPreloader,
   BundlePerformance,
   RouteComponents,
-  initializeBundleOptimization
+  initializeBundleOptimization,
 };
