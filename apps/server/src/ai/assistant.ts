@@ -79,8 +79,8 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
           data: {
             type: "TEXT_TO_IMAGE", // We'd need RULE_QUERY type in schema
             status: "SUCCEEDED",
-            input: { query: query.question, context: query.context } as any,
-            output: { answer: response.text } as any,
+            input: { query: query.question, context: query.context } as any, // TODO: Define proper Prisma JsonValue type
+            output: { answer: response.text } as any, // TODO: Define proper Prisma JsonValue type
           },
         });
 
@@ -114,7 +114,8 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
         }
       };
     } catch (error: unknown) {
-      throw new Error(`Assistant query failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Assistant query failed: ${message}`);
     }
   }
 
@@ -150,19 +151,19 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
     return askQuestion(query);
   }
 
-  async function explainSpell(spellName: string, context?: unknown): Promise<AssistantResponse> {
+  async function explainSpell(spellName: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
     return askQuestion({ question: `Explain the spell: ${spellName}`, context });
   }
 
-  async function explainRule(ruleTopic: string, context?: unknown): Promise<AssistantResponse> {
+  async function explainRule(ruleTopic: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
     return askQuestion({ question: `Explain the rule: ${ruleTopic}`, context });
   }
 
-  async function suggestActions(situation: string, context?: unknown): Promise<AssistantResponse> {
+  async function suggestActions(situation: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
     return askQuestion({ question: `Suggest actions for: ${situation}`, context });
   }
 
-  async function generateRuling(scenario: string, context?: unknown): Promise<AssistantResponse> {
+  async function generateRuling(scenario: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
     return askQuestion({ question: `Generate a ruling for: ${scenario}`, context });
   }
 

@@ -13,6 +13,7 @@ vi.mock("@prisma/client");
 
 describe("ConditionService", () => {
   let service: ConditionService;
+  // TODO: Type mockPrisma as PrismaClient mock instead of any
   let mockPrisma: any;
 
   const mockConditionId = "condition-123";

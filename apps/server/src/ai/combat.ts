@@ -17,7 +17,7 @@ const logger = {
 interface CombatCharacter {
   id: string;
   name: string;
-  type?: string;
+  type: string;
   class?: string;
   hitPoints: number;
   maxHitPoints: number;
@@ -101,9 +101,26 @@ export interface TacticalDecision {
   tacticalValue: number;
 }
 
+interface SimulationParticipant {
+  id: string;
+  name: string;
+  type: string;
+  hitPoints: number;
+  maxHitPoints: number;
+  armorClass: number;
+  speed?: number;
+  proficiencyBonus?: number;
+  abilities?: Record<string, number>;
+  challengeRating?: number;
+  team?: string;
+  position?: { x: number; y: number };
+  attacks?: string[];
+  spells?: string[];
+}
+
 export interface CombatSimulation {
   id: string;
-  participants: unknown[];
+  participants: SimulationParticipant[];
   rounds: number;
   currentRound: number;
   winner: "party" | "enemies" | "draw" | null;
@@ -174,13 +191,19 @@ export class CrucibleService {
     // Route action based on type
     switch (action.type) {
       case 'attack':
-        await this.executeAttack(actor, action);
+        if (action.targetId) {
+          await this.executeAttack(actor, { targetId: action.targetId, weaponId: action.weaponId });
+        }
         break;
       case 'spell':
-        await this.executeSpell(actor, action);
+        if (action.spellId) {
+          await this.executeSpell(actor, { spellId: action.spellId, targetId: action.targetId });
+        }
         break;
       case 'move':
-        await this.executeMove(actor, action);
+        if (action.targetPosition) {
+          await this.executeMove(actor, { targetPosition: action.targetPosition });
+        }
         break;
       case 'dodge':
         await this.executeDodge(actor, action);
@@ -189,14 +212,16 @@ export class CrucibleService {
         await this.executeDash(actor, action);
         break;
       case 'help':
-        await this.executeHelp(actor, action);
+        if (action.targetId) {
+          await this.executeHelp(actor, { targetId: action.targetId });
+        }
         break;
       default:
         logger.warn(`Unknown action type: ${action.type}`);
     }
 
     // Emit game event for action execution
-    await globalEventBus.emit(GameEvents.damageDealt(action.actorId, action.targetId || 'unknown', 0, action.type));
+    await globalEventBus.emit(GameEvents.damageDealt(actorId, action.targetId || 'unknown', 0, action.type));
   }
 
   private async executeAttack(actor: CombatCharacter, action: { targetId: string; weaponId?: string }): Promise<void> {
@@ -205,7 +230,12 @@ export class CrucibleService {
 
     // Simple damage calculation
     const damage = Math.floor(Math.random() * 8) + 1; // 1d8
-    target.stats.hitPoints.current = Math.max(0, target.stats.hitPoints.current - damage);
+    if (target.stats) {
+      if (!target.stats?.hitPoints) return;
+      target.stats.hitPoints.current = Math.max(0, target.stats.hitPoints.current - damage);
+    } else {
+      target.hitPoints = Math.max(0, target.hitPoints - damage);
+    }
     
     logger.info(`${actor.name} attacks ${target.name} for ${damage} damage`);
   }
@@ -276,17 +306,35 @@ export class CrucibleService {
     // Emit combat start event on the global event bus
     await globalEventBus.emit(
       GameEvents.combatStart(simulationId, {
-        participants: simulation.participants.map((p) => ({ id: p.id, name: p.name, type: p.type })),
+        participants: simulation.participants.map((p) => ({ 
+          id: p.id,
+          name: p.name, 
+          type: p.type
+        })),
         battlefield,
       }),
     );
 
     // Initialize combat participants
     simulation.participants.forEach((p) => {
-      const combatant = {
+      const combatant: CombatCharacter = {
         id: p.id,
         name: p.name,
-        type: p.type || "npc",
+        type: p.type,
+        hitPoints: p.hitPoints,
+        maxHitPoints: p.maxHitPoints,
+        armorClass: p.armorClass,
+        position: { x: 0, y: 0 },
+        abilities: p.abilities || {
+          strength: 10,
+          dexterity: 10,
+          constitution: 10,
+          intelligence: 10,
+          wisdom: 10,
+          charisma: 10
+        },
+        conditions: [],
+        initiative: 0,
         stats: {
           hitPoints: {
             current: p.hitPoints,
@@ -311,21 +359,15 @@ export class CrucibleService {
           vulnerabilities: [],
           conditions: [],
         },
-        attacks: p.attacks || [],
-        spells: p.spells || [],
-        position: p.position || { x: 0, y: 0 },
-        initiative: this.rollInitiative(p),
-        isActive: false,
-        actionsUsed: 0,
-        bonusActionUsed: false,
-        reactionUsed: false,
-        movementUsed: 0,
+        challengeRating: p.challengeRating
       };
+      
       this.combatants.set(combatant.id, combatant);
     });
 
     // Sort by initiative for turn order
     const sortedCombatants = Array.from(this.combatants.values())
+      .filter((c) => c.stats?.hitPoints?.current && c.stats.hitPoints.current > 0)
       .sort((a, b) => b.initiative - a.initiative);
     
     if (sortedCombatants.length > 0) {
@@ -355,8 +397,8 @@ export class CrucibleService {
   async getBattlefieldRecommendations(
     character: any,
     battlefield: TacticalContext["battlefield"],
-    allies: unknown[],
-    enemies: unknown[],
+    allies: any[],
+    enemies: any[],
   ): Promise<
     Array<{
       position: { x: number; y: number };
@@ -403,7 +445,7 @@ Format as JSON array with position coordinates, reasoning, tactical value (1-10)
   /**
    * Analyze combat performance and provide insights
    */
-  async analyzeCombatPerformance(combatLog: unknown[]): Promise<{
+  async analyzeCombatPerformance(combatLog: any[]): Promise<{
     playerInsights: Record<
       string,
       {
@@ -511,7 +553,7 @@ Format as JSON with detailed reasoning for each element.`;
 
       // Get combat order
       const combatOrder = Array.from(this.combatants.values())
-        .filter((c) => c.stats.hitPoints.current > 0)
+        .filter((c) => c.stats?.hitPoints?.current && c.stats.hitPoints.current > 0)
         .sort((a, b) => b.initiative - a.initiative);
 
       // Process each combatant's turn
@@ -563,7 +605,7 @@ Format as JSON with detailed reasoning for each element.`;
               targetId: decision.target,
               attackId: decision.weapon || "basic-attack",
             };
-            await this.executeAction(attackAction);
+            await this.executeAction(participant.id, attackAction);
           }
           break;
 
@@ -575,7 +617,7 @@ Format as JSON with detailed reasoning for each element.`;
               targetId: decision.target,
               spellId: decision.spell,
             };
-            await this.executeAction(spellAction);
+            await this.executeAction(participant.id, spellAction);
           }
           break;
 
@@ -586,7 +628,7 @@ Format as JSON with detailed reasoning for each element.`;
               actorId: participant.id,
               targetPosition: decision.position,
             };
-            await this.executeAction(moveAction);
+            await this.executeAction(participant.id, moveAction);
           }
           break;
 
@@ -596,7 +638,7 @@ Format as JSON with detailed reasoning for each element.`;
               type: "dodge" as const,
               actorId: participant.id,
             };
-            await this.executeAction(dodgeAction);
+            await this.executeAction(participant.id, dodgeAction);
           }
           break;
 
@@ -606,7 +648,7 @@ Format as JSON with detailed reasoning for each element.`;
               type: "dash" as const,
               actorId: participant.id,
             };
-            await this.executeAction(dashAction);
+            await this.executeAction(participant.id, dashAction);
           }
           break;
 
@@ -617,7 +659,7 @@ Format as JSON with detailed reasoning for each element.`;
               actorId: participant.id,
               targetId: decision.target,
             };
-            await this.executeAction(helpAction);
+            await this.executeAction(participant.id, helpAction);
           }
           break;
       }
@@ -646,12 +688,12 @@ Format as JSON with detailed reasoning for each element.`;
     );
 
     return {
-      character: participant,
-      allies,
-      enemies,
+      character: participant as any, // TODO: Fix CombatCharacter vs SimulationParticipant type mismatch
+      allies: allies.filter((a: any) => a.id !== participant.id && a.hitPoints > 0) as CombatCharacter[], // TODO: Fix type mismatch
+      enemies: enemies.filter((e: any) => e.id !== participant.id && e.hitPoints > 0) as CombatCharacter[], // TODO: Fix type mismatch
       battlefield,
       resources: {
-        spellSlots: participant.spellSlots || {},
+        spellSlots: (participant as any).spellSlots || {}, // TODO: Add spellSlots to SimulationParticipant interface
         hitPoints: participant.hitPoints,
         actionEconomy: {
           action: true,
@@ -843,7 +885,7 @@ Format as JSON with detailed reasoning for each element.`;
     return decision;
   }
 
-  private calculateOptimalAOEPosition(enemies: unknown[]): { x: number; y: number } {
+  private calculateOptimalAOEPosition(enemies: any[]): { x: number; y: number } {
     if (!enemies.length) {return { x: 0, y: 0 };}
 
     // Calculate centroid of enemy positions
@@ -856,7 +898,7 @@ Format as JSON with detailed reasoning for each element.`;
     };
   }
 
-  private calculateApproachPosition(character: any, target: unknown): { x: number; y: number } {
+  private calculateApproachPosition(character: any, target: any): { x: number; y: number } {
     const charPos = character.position || { x: 0, y: 0 };
     const targetPos = target.position || { x: 0, y: 0 };
 
@@ -878,13 +920,13 @@ Format as JSON with detailed reasoning for each element.`;
     return `combat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private rollInitiative(character: unknown): number {
+  private rollInitiative(character: any): number {
     const dex = typeof character.abilities?.dexterity === "number" ? character.abilities.dexterity : 10;
     const dexMod = Math.floor((dex - 10) / 2);
     return Math.floor(Math.random() * 20) + 1 + dexMod;
   }
 
-  private assessThreat(enemy: any, character: unknown): "low" | "moderate" | "high" | "extreme" {
+  private assessThreat(enemy: any, character: any): "low" | "moderate" | "high" | "extreme" {
     const enemyCR = enemy.challengeRating || 1;
     const charLevel = character.level || 1;
 
@@ -894,7 +936,7 @@ Format as JSON with detailed reasoning for each element.`;
     return "low";
   }
 
-  private assessOverallThreat(character: any, enemies: unknown[]): TacticalContext["threatLevel"] {
+  private assessOverallThreat(character: any, enemies: any[]): TacticalContext["threatLevel"] {
     const totalCR = enemies.reduce((sum, e) => sum + (e.challengeRating || 1), 0);
     const charLevel = character.level || 1;
 
@@ -904,7 +946,7 @@ Format as JSON with detailed reasoning for each element.`;
     return "low";
   }
 
-  private determineObjectives(character: any, allies: unknown[], enemies: unknown[]): string[] {
+  private determineObjectives(character: any, allies: any[], enemies: any[]): string[] {
     const objectives = ["Survive the encounter"];
 
     if (character.class === "cleric" || character.class === "druid") {
@@ -926,15 +968,15 @@ Format as JSON with detailed reasoning for each element.`;
     return objectives;
   }
 
-  private findNearestEnemy(character: any, enemies: unknown[]): any | null {
+  private findNearestEnemy(character: any, enemies: any[]): any | null {
     if (!enemies.length) {return null;}
 
-    const livingEnemies = enemies.filter((e: unknown) => (e.hitPoints || e.health || 0) > 0);
+    const livingEnemies = enemies.filter((e: any) => (e.hitPoints || e.health || 0) > 0);
     if (!livingEnemies.length) {return null;}
 
     // Return the nearest enemy based on position
     const charPos = character.position || { x: 0, y: 0 };
-    return livingEnemies.reduce((nearest: any, enemy: unknown) => {
+    return livingEnemies.reduce((nearest: any, enemy: any) => {
       const enemyPos = enemy.position || { x: 0, y: 0 };
       const dist = this.calculateDistance(charPos, enemyPos);
       const nearestPos = nearest?.position || { x: 0, y: 0 };
@@ -1026,7 +1068,7 @@ Format as JSON with detailed reasoning for each element.`;
       if (typeof aiResponse === "string") {
         aiResponse = JSON.parse(aiResponse);
       }
-      return aiResponse.map((rec: unknown) => ({
+      return (aiResponse as any[]).map((rec: any) => ({
         position: rec.position || { x: 0, y: 0 },
         reasoning: rec.reasoning || "AI positioning recommendation",
         tacticalValue: Math.min(Math.max(rec.tacticalValue || 5, 1), 10),
@@ -1079,7 +1121,7 @@ Format as JSON with detailed reasoning for each element.`;
 
     // Position 3: Support position near allies
     if (allies.length > 0) {
-      const allyPos = allies[0].position || { x: 0, y: 0 };
+      const allyPos = (allies[0] as any).position || { x: 0, y: 0 };
       positions.push({
         position: { x: allyPos.x + 5, y: allyPos.y },
         reasoning: "Support position near allies",
@@ -1091,7 +1133,7 @@ Format as JSON with detailed reasoning for each element.`;
 
     // Position 4: Flanking position
     if (enemies.length > 0) {
-      const enemyPos = enemies[0].position || { x: 0, y: 0 };
+      const enemyPos = (enemies[0] as any).position || { x: 0, y: 0 };
       positions.push({
         position: { x: enemyPos.x + 10, y: enemyPos.y - 10 },
         reasoning: "Flanking position for tactical advantage",
@@ -1121,7 +1163,7 @@ Format as JSON with detailed reasoning for each element.`;
     const participants = new Set<string>();
 
     // Analyze combat log
-    combatLog.forEach((entry) => {
+    combatLog.forEach((entry: any) => {
       if (entry.actor) {participants.add(entry.actor);}
       if (entry.target) {participants.add(entry.target);}
     });
@@ -1255,14 +1297,14 @@ Format as JSON with detailed reasoning for each element.`;
     let value = 5; // Base value
     
     // Distance to allies (closer is generally better for support)
-    const allyDistances = allies.map(ally => {
+    const allyDistances = allies.map((ally: any) => {
       const allyPos = ally.position || { x: 0, y: 0 };
       return Math.sqrt(Math.pow(position.x - allyPos.x, 2) + Math.pow(position.y - allyPos.y, 2));
     });
     const avgAllyDistance = allyDistances.length > 0 ? allyDistances.reduce((a, b) => a + b, 0) / allyDistances.length : 0;
     
     // Distance to enemies (moderate distance often optimal)
-    const enemyDistances = enemies.map(enemy => {
+    const enemyDistances = enemies.map((enemy: any) => {
       const enemyPos = enemy.position || { x: 0, y: 0 };
       return Math.sqrt(Math.pow(position.x - enemyPos.x, 2) + Math.pow(position.y - enemyPos.y, 2));
     });
@@ -1279,7 +1321,7 @@ Format as JSON with detailed reasoning for each element.`;
     const risks: string[] = [];
     
     // Check if surrounded
-    const nearbyEnemies = enemies.filter(enemy => {
+    const nearbyEnemies = enemies.filter((enemy: any) => {
       const enemyPos = enemy.position || { x: 0, y: 0 };
       const distance = Math.sqrt(Math.pow(position.x - enemyPos.x, 2) + Math.pow(position.y - enemyPos.y, 2));
       return distance < 10;
@@ -1294,11 +1336,12 @@ Format as JSON with detailed reasoning for each element.`;
     }
     
     // Check battlefield hazards
-    if (battlefield?.hazards?.length > 0) {
+    const battlefieldAny = battlefield as any;
+    if (battlefieldAny?.hazards?.length > 0) {
       risks.push("Near battlefield hazards");
     }
     
-    if (battlefield?.lighting === "dark") {
+    if (battlefieldAny?.lighting === "dark") {
       risks.push("Poor visibility conditions");
     }
     
@@ -1309,7 +1352,7 @@ Format as JSON with detailed reasoning for each element.`;
     const benefits: string[] = [];
     
     // Check if near allies
-    const nearbyAllies = allies.filter(ally => {
+    const nearbyAllies = allies.filter((ally: any) => {
       const allyPos = ally.position || { x: 0, y: 0 };
       const distance = Math.sqrt(Math.pow(position.x - allyPos.x, 2) + Math.pow(position.y - allyPos.y, 2));
       return distance < 15;
@@ -1320,15 +1363,16 @@ Format as JSON with detailed reasoning for each element.`;
     }
     
     // Check for cover
-    if (battlefield?.cover?.length > 0) {
+    const battlefieldAny = battlefield as any;
+    if (battlefieldAny?.cover?.length > 0) {
       benefits.push("Has available cover");
     }
     
-    if (battlefield?.terrain?.includes("high_ground")) {
+    if (battlefieldAny?.terrain?.includes("high_ground")) {
       benefits.push("Elevated position advantage");
     }
     
-    if (battlefield?.lighting === "bright") {
+    if (battlefieldAny?.lighting === "bright") {
       benefits.push("Good visibility for targeting");
     }
     

@@ -14,6 +14,7 @@ import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
 
 // Lazy-load services to avoid initialization issues during module loading
+// TODO: Type prisma as PrismaClient instead of any
 let prisma: any | null = null;
 let mapService: MapService | null = null;
 

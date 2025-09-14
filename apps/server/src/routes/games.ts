@@ -344,7 +344,7 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// Helper function to parse JSON from request body
+// Helper function to parse JSON from request body - TODO: Use proper IncomingMessage type
 async function parseJsonBody(req: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";

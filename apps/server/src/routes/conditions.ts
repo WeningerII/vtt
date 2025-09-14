@@ -30,7 +30,7 @@ function getConditionService(): ConditionService {
 // GET /conditions - List all conditions
 export const listConditionsHandler: RouteHandler = async (ctx) => {
   try {
-    const type = ctx.url.searchParams.get("type") as any;
+    const type = ctx.url.searchParams.get("type") as any; // TODO: Use proper ConditionType enum
     const limit = Math.min(parseInt(ctx.url.searchParams.get("limit") || "50"), 200);
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
 

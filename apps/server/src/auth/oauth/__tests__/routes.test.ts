@@ -58,6 +58,7 @@ describe('OAuth Routes', () => {
       cookie: { secure: false }
     }));
 
+    // TODO: Properly type mock UserManager instead of using any
     mockUserManager = {
       findUserByEmail: jest.fn(),
       createUser: jest.fn(),

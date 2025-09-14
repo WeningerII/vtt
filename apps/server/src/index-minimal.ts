@@ -100,7 +100,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
 
   const ctx: Context = {
-    req: req as any,
+    req: req as Context['req'],
     res,
     url,
     prisma,

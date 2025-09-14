@@ -340,7 +340,7 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// Helper: parse JSON
+// Helper: parse JSON - TODO: Use proper IncomingMessage type
 async function parseRequestBody(req: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";

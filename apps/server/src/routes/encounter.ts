@@ -11,7 +11,7 @@ import { MonsterService } from "../services/MonsterService";
 import { DatabaseManager } from "../database/connection";
 
 // Lazy-load services to avoid initialization issues during module loading
-let prisma: any | null = null;
+let prisma: any | null = null; // TODO: Type as PrismaClient after DatabaseManager typing
 let characterService: CharacterService | null = null;
 let monsterService: MonsterService | null = null;
 let actorService: ActorIntegrationService | null = null;

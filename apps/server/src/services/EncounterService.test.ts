@@ -12,6 +12,7 @@ vi.mock("@prisma/client");
 
 describe("EncounterService", () => {
   let service: EncounterService;
+  // TODO: Type mockPrisma as PrismaClient mock instead of any
   let mockPrisma: any;
 
   const mockEncounterId = "encounter-123";

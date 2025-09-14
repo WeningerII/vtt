@@ -11,11 +11,11 @@ import { logger } from '@vtt/logging';
 
 // Load the comprehensive OpenAPI specification
 const openApiSpecPath = join(__dirname, '../../../docs/api/openapi.yaml');
-let openApiSpec: any;
+let openApiSpec: any = null; // TODO: Type the OpenAPI spec properly
 
 try {
   const yamlContent = readFileSync(openApiSpecPath, 'utf8');
-  openApiSpec = yaml.load(yamlContent);
+  openApiSpec = yaml.load(yamlContent) as any; // TODO: Use proper OpenAPI spec type
 } catch (error) {
   logger.warn('Could not load comprehensive OpenAPI spec, falling back to basic config');
   openApiSpec = null;
