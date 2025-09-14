@@ -6,6 +6,7 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "baseUrl": ".",
+    "rootDir": "../../",
     "types": ["node", "react", "react-dom", "jest"],
     "skipLibCheck": true,
     "paths": {
@@ -86,11 +87,15 @@
       "@vtt/i18n/*": ["../../packages/i18n/src/*"]
     }
   },
+  "references": [
+    { "path": "../../packages/i18n" }
+  ],
   "include": [
     "src/**/*", 
     "src/i18n/locales/en.json",
     "src/i18n/locales/es.json", 
     "src/i18n/locales/fr.json",
-    "src/i18n/locales/de.json"
+    "src/i18n/locales/de.json",
+    "../../packages/i18n/src/**/*"
   ]
 }

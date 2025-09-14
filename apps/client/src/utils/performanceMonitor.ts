@@ -34,7 +34,7 @@ class PerformanceMonitor {
    */
   private initializeObservers() {
     // Only initialize if PerformanceObserver is supported
-    if (typeof PerformanceObserver === 'undefined') return;
+    if (typeof PerformanceObserver === 'undefined') {return;}
 
     try {
       // Monitor paint and navigation timing
@@ -72,7 +72,7 @@ class PerformanceMonitor {
    * Record a performance metric
    */
   recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>) {
-    if (!this.isEnabled) return;
+    if (!this.isEnabled) {return;}
 
     const fullMetric: PerformanceMetric = {
       ...metric,

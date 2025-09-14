@@ -1,9 +1,9 @@
-[build]
+run [build]
   # Base directory for the build
   base = ""
   
-  # Build command for the client app
-  command = "cd apps/client && npm install --legacy-peer-deps && npm run build"
+  # Build command for the client app using pnpm
+  command = "corepack enable && pnpm install --frozen-lockfile && pnpm run build --filter=@vtt/client"
   
   # Publish directory - where Vite outputs the built client files
   publish = "apps/client/dist"
@@ -12,7 +12,7 @@
   # Node version for builds
   NODE_VERSION = "18"
   # Enable pnpm
-  NPM_FLAGS = "--version"
+  PNPM_VERSION = "9.12.2"
 
 [[redirects]]
   # SPA redirect for client-side routing

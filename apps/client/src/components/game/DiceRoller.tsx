@@ -42,7 +42,7 @@ const PRESET_ROLLS = [
   { label: "Ability Score", dice: "4d6", modifier: 0, dropLowest: true },
 ];
 
-export const DiceRoller = memo<DiceRollerProps>(function DiceRoller({ className, onRoll }) {
+export const DiceRoller = memo<DiceRollerProps>(({ className, onRoll }) => {
   const { startDiceRoll } = usePerformanceMonitor();
   
   // Mock session and user for standalone operation

@@ -198,7 +198,7 @@ export class AuthTestUtils {
    * Clean up user sessions
    */
   async cleanupUserSessions(userId: string): Promise<void> {
-    const prisma = testDb.getClient();
+    const prisma = await testDb.getClient();
     
     // Clean up any session-related data if schema supports it
     // This would depend on your actual auth implementation
@@ -221,7 +221,7 @@ export class AuthTestUtils {
   async mockAuthentication(page: Page, user: TestUser): Promise<void> {
     // Set authentication state in browser storage
     await page.addInitScript((_userData) => {
-      localStorage.setItem('vtt-auth-user', JSON.stringify(userData));
+      localStorage.setItem('vtt-auth-user', JSON.stringify(_userData));
       localStorage.setItem('vtt-auth-token', 'mock-token-for-testing');
     }, user);
   }
@@ -243,3 +243,5 @@ export class AuthTestUtils {
 }
 
 export const _authUtils = new AuthTestUtils();
+export const authUtils = _authUtils;
+export default _authUtils;

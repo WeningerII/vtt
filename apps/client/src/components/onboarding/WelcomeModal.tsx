@@ -316,7 +316,7 @@ export function WelcomeModal({ isOpen, onClose, onComplete }: WelcomeModalProps)
             )}
 
             <Button
-              variant="plasma"
+              variant="primary"
               size="sm"
               rightIcon={!isLastStep ? <ArrowRight className="h-4 w-4" /> : undefined}
               onClick={handleNext}

@@ -1,4 +1,5 @@
 import { FullConfig } from "@playwright/test";
+import { testDb } from "./utils/database";
 
 async function globalTeardown(_config: FullConfig) {
   console.log("[E2E Teardown] Cleaning up test environment...");
@@ -9,7 +10,6 @@ async function globalTeardown(_config: FullConfig) {
       console.log("[E2E Teardown] Skipping DB cleanup (E2E_SKIP_DB)");
     } else {
       // Cleanup test database
-      const { testDb } = await import("./utils/database");
       await testDb.cleanup();
     }
 

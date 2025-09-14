@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import { testDb } from "./database";
 
 export interface TestUser {
@@ -34,33 +33,37 @@ export interface TestActor {
 }
 
 export class TestDataFactory {
-  private get db(): PrismaClient {
-    return testDb.getClient();
+  private async getDb(): Promise<any> {
+    return await testDb.getClient();
   }
 
-  constructor() {
-    // Ensure database is initialized before factory operations
-    if (!testDb.getClient()) {
-      throw new Error('TestDatabase must be initialized before using TestDataFactory. Call testDb.setup() first.');
-    }
-  }
+  constructor() {}
 
-  async createUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
+  async createUser(overrides: Record<string, any> = {}): Promise<TestUser> {
+    const username = (overrides as any).username ?? `user-${Date.now()}`;
+    const email = (overrides as any).email ?? `user-${Date.now()}@test.com`;
+    const displayName = (overrides as any).displayName ?? username;
     const userData = {
-      email: `user-${Date.now()}@test.com`,
-      username: `user-${Date.now()}`,
+      email,
+      username,
+      displayName,
       passwordHash: "hashedpassword",
       ...overrides,
     };
 
-    const user = await this.db.user.create({
+    const db = await this.getDb();
+    const user = await db.user.create({
       data: userData,
     });
 
-    return user;
+    // Ensure TestUser shape for caller (include displayName for UI/auth mocks)
+    return {
+      ...user,
+      displayName: (overrides as any).displayName ?? user.username,
+    } as TestUser;
   }
 
-  async createGMUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
+  async createGMUser(overrides: Record<string, any> = {}): Promise<TestUser> {
     return this.createUser({
       email: `gm-${Date.now()}@test.com`,
       username: `gm-${Date.now()}`,
@@ -68,7 +71,7 @@ export class TestDataFactory {
     });
   }
 
-  async createPlayerUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
+  async createPlayerUser(overrides: Record<string, any> = {}): Promise<TestUser> {
     return this.createUser({
       email: `player-${Date.now()}@test.com`,
       username: `player-${Date.now()}`,
@@ -85,29 +88,42 @@ export class TestDataFactory {
       ...overrides,
     };
 
-    return this.db.map.create({
+    const db = await this.getDb();
+    return db.map.create({
       data: mapData,
     });
   }
 
   async createCampaign(overrides: Partial<TestCampaign> = {}): Promise<TestCampaign> {
-    const campaignData = {
-      name: "Test Campaign",
-      description: "A test campaign for e2e testing",
-      gameSystem: "dnd5e",
-      isActive: true,
-      ...overrides,
-    };
-
-    const campaign = await this.db.campaign.create({
-      data: campaignData,
+    const db = await this.getDb();
+    const name = overrides.name ?? "Test Campaign";
+    // Create campaign with settings that carry description/gameSystem/isActive
+    const created = await db.campaign.create({
+      data: {
+        name,
+        settings: {
+          create: {
+            description: (overrides as any).description ?? "A test campaign for e2e testing",
+            gameSystem: (overrides as any).gameSystem ?? "dnd5e",
+            isActive: (overrides as any).isActive ?? true,
+          },
+        },
+      },
     });
 
-    return campaign;
+    // Return a TestCampaign shape for tests
+    return {
+      id: created.id,
+      name,
+      description: (overrides as any).description ?? "A test campaign for e2e testing",
+      gameSystem: (overrides as any).gameSystem ?? "dnd5e",
+      isActive: (overrides as any).isActive ?? true,
+    } as TestCampaign;
   }
 
   async createCampaignMember(userId: string, campaignId: string, role: string = "player") {
-    return this.db.campaignMember.create({
+    const db = await this.getDb();
+    return db.campaignMember.create({
       data: {
         userId,
         campaignId,
@@ -123,13 +139,11 @@ export class TestDataFactory {
       name: "Test Scene",
       campaignId,
       mapId: map.id,
-      gridSettings: '{"size": 50, "type": "square"}',
-      lightingSettings: '{"globalLight": true}',
-      fogSettings: '{"enabled": false}',
       ...overrides,
     };
 
-    const scene = await this.db.scene.create({
+    const db = await this.getDb();
+    const scene = await db.scene.create({
       data: sceneData,
     });
 
@@ -139,90 +153,161 @@ export class TestDataFactory {
   async createActor(
     userId: string,
     campaignId: string,
-    overrides: Partial<TestActor> = {},
+    overrides: Record<string, any> = {},
   ): Promise<TestActor> {
-    const actorData = {
-      name: "Test Character",
-      kind: "PC" as const,
-      userId,
-      campaignId,
-      currentHp: 25,
-      maxHp: 25,
-      ac: 15,
-      initiative: 12,
-      ...overrides,
-    };
-
-    const actor = await this.db.actor.create({
-      data: actorData,
+    const db = await this.getDb();
+    const name = (overrides as any).name ?? "Test Character";
+    // Create Character and link to Campaign via CampaignCharacter
+    const character = await db.character.create({
+      data: {
+        name,
+        sheet: {},
+        prompt: "",
+        provider: "local",
+        model: "test",
+        latencyMs: 0,
+      },
     });
 
-    return actor;
+    await db.campaignCharacter.create({
+      data: {
+        campaignId,
+        characterId: character.id,
+        addedBy: userId,
+        role: (overrides as any).kind === "NPC" ? "npc" : "player",
+      },
+    });
+
+    // Return a TestActor-shaped object for compatibility
+    return {
+      id: character.id,
+      name,
+      kind: ((overrides as any).kind as any) ?? "PC",
+      userId,
+      campaignId,
+      currentHp: (overrides as any).currentHp ?? 25,
+      maxHp: (overrides as any).maxHp ?? 25,
+      ac: (overrides as any).ac ?? 15,
+      initiative: (overrides as any).initiative ?? 12,
+    } as TestActor;
   }
 
   async createToken(sceneId: string, actorId?: string, overrides: Partial<any> = {}) {
-    const tokenData = {
-      name: "Test Token",
-      sceneId,
-      actorId,
-      x: 100,
-      y: 100,
-      width: 1,
-      height: 1,
-      disposition: "FRIENDLY" as const,
-      isVisible: true,
-      ...overrides,
-    };
+    const db = await this.getDb();
 
-    return this.db.token.create({
-      data: tokenData,
+    // Ensure we have a session for this scene's campaign
+    const scene = await db.scene.findUnique({ where: { id: sceneId } });
+    if (!scene) { throw new Error(`Scene not found: ${sceneId}`); }
+
+    let session = await db.gameSession.findFirst({
+      where: { campaignId: scene.campaignId, status: { in: ["ACTIVE", "WAITING"] } },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!session) {
+      session = await db.gameSession.create({
+        data: {
+          name: `Session ${new Date().toISOString()}`,
+          campaignId: scene.campaignId,
+          status: "WAITING",
+          currentSceneId: sceneId,
+        },
+      });
+    }
+
+    const name = (overrides as any).name ?? "Test Token";
+    const x = (overrides as any).x ?? 100;
+    const y = (overrides as any).y ?? 100;
+    const width = (overrides as any).width ?? 1;
+    const height = (overrides as any).height ?? 1;
+    const disposition = (overrides as any).disposition ?? "FRIENDLY";
+    const isVisible = (overrides as any).isVisible ?? true;
+
+    return db.token.create({
+      data: {
+        name,
+        sceneId,
+        gameSessionId: session.id,
+        characterId: actorId,
+        x,
+        y,
+        type: actorId ? "PC" : "NPC",
+        visibility: isVisible ? "VISIBLE" : "HIDDEN",
+        metadata: {
+          width,
+          height,
+          disposition,
+        },
+      },
     });
   }
 
   async createEncounter(campaignId: string, overrides: Partial<any> = {}) {
-    const encounterData = {
-      name: "Test Encounter",
-      description: "A test encounter",
-      campaignId,
-      currentRound: 0,
-      currentTurn: 0,
-      isActive: false,
-      ...overrides,
-    };
+    const db = await this.getDb();
+    // Resolve or create a session to attach the encounter
+    let session = await db.gameSession.findFirst({
+      where: { campaignId, status: { in: ["ACTIVE", "WAITING"] } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!session) {
+      // Create a minimal session without scene if needed
+      session = await db.gameSession.create({
+        data: {
+          name: `Session ${new Date().toISOString()}`,
+          campaignId,
+          status: "WAITING",
+        },
+      });
+    }
 
-    return this.db.encounter.create({
-      data: encounterData,
+    return db.encounter.create({
+      data: {
+        name: (overrides as any).name ?? "Test Encounter",
+        gameSessionId: session.id,
+        sceneId: session.currentSceneId,
+        status: (overrides as any).isActive ? "ACTIVE" : "PLANNED",
+        initiativeOrder: null,
+      },
     });
   }
 
   async createEncounterParticipant(encounterId: string, actorId: string, initiative: number = 10) {
-    return this.db.encounterParticipant.create({
+    const db = await this.getDb();
+    // Find a token associated with the character (actorId)
+    const token = await db.token.findFirst({ where: { characterId: actorId } });
+    if (!token) { throw new Error(`No token found for character ${actorId}`); }
+
+    return db.encounterToken.create({
       data: {
         encounterId,
-        actorId,
+        tokenId: token.id,
         initiative,
+        turnOrder: null,
         isActive: true,
-        hasActed: false,
       },
     });
   }
 
   async createAsset(mapId?: string, overrides: Partial<any> = {}) {
-    const assetData = {
-      mapId,
-      kind: "ORIGINAL" as const,
-      uri: "test://asset.png",
-      mimeType: "image/png",
-      width: 256,
-      height: 256,
-      sizeBytes: 1024,
-      checksum: "test-checksum",
-      ...overrides,
-    };
+    const db = await this.getDb();
 
-    return this.db.asset.create({
-      data: assetData,
-    });
+    // Only allow fields that exist in the Prisma schema for Asset
+    const allowed = {
+      kind: (overrides as any).kind ?? "ORIGINAL",
+      uri: (overrides as any).uri ?? "test://asset.png",
+      mimeType: (overrides as any).mimeType ?? "image/png",
+      width: (overrides as any).width ?? 256,
+      height: (overrides as any).height ?? 256,
+      sizeBytes: (overrides as any).sizeBytes ?? 1024,
+      checksum: (overrides as any).checksum ?? "test-checksum",
+    } as any;
+
+    const data: any = { ...allowed };
+    if (mapId) {
+      data.map = { connect: { id: mapId } };
+    }
+
+    return db.asset.create({ data });
   }
 
   // Composite factory methods for common scenarios
@@ -242,6 +327,17 @@ export class TestDataFactory {
 
     // Create scene
     const scene = await this.createScene(campaign.id);
+
+    // Create a session linked to this campaign/scene
+    const db = await this.getDb();
+    const session = await db.gameSession.create({
+      data: {
+        name: `Session ${new Date().toISOString()}`,
+        campaignId: campaign.id,
+        status: "WAITING",
+        currentSceneId: scene.id,
+      },
+    });
 
     // Create actors
     const gmActor = await this.createActor(gm.id, campaign.id, {
@@ -302,6 +398,15 @@ export class TestDataFactory {
     await this.createCampaignMember(player.id, campaign.id, "player");
 
     const scene = await this.createScene(campaign.id);
+    const db = await this.getDb();
+    await db.gameSession.create({
+      data: {
+        name: `Session ${new Date().toISOString()}`,
+        campaignId: campaign.id,
+        status: "WAITING",
+        currentSceneId: scene.id,
+      },
+    });
     const actor = await this.createActor(player.id, campaign.id);
     const token = await this.createToken(scene.id, actor.id);
 
@@ -316,3 +421,5 @@ export class TestDataFactory {
 }
 
 export const _factory = new TestDataFactory();
+export const factory = _factory;
+export default _factory;

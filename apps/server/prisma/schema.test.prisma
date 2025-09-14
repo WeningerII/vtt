@@ -9,136 +9,449 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  username          String   @unique
-  passwordHash      String
-  emailVerified     Boolean  @default(false)
-  emailVerifiedAt   DateTime?
-  role              Role     @default(PLAYER)
-  isActive          Boolean  @default(true)
-  lastLoginAt       DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+// Mirror of production schema for E2E, targeting SQLite and test-client output
 
-  // Relations
-  sessions          Session[]
-  ownedScenes       Scene[]
-  gameParticipants  GameParticipant[]
-  assets            Asset[]
-  auditLogs         AuditLog[]
-
-  @@map("users")
+enum AssetKind {
+  ORIGINAL
+  DEPTH
+  MASK
+  TILE
+  THUMBNAIL
+  METADATA
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  userId       String
-  accessToken  String   @unique
-  refreshToken String   @unique
-  expiresAt    DateTime
-  isActive     Boolean  @default(true)
-  userAgent    String?
-  ipAddress    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+enum JobType {
+  TEXT_TO_IMAGE
+  DEPTH
+  SEGMENTATION
+}
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
 
-  @@map("sessions")
+enum TokenType {
+  PC
+  NPC
+  MONSTER
+  OBJECT
+  EFFECT
+}
+
+enum TokenVisibility {
+  VISIBLE
+  HIDDEN
+  PARTIAL
+  REVEALED
+}
+
+enum GameSessionStatus {
+  WAITING
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ABANDONED
+}
+
+enum EncounterStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+model Map {
+  id         String   @id @default(uuid())
+  name       String
+  widthPx    Int
+  heightPx   Int
+  gridSizePx Int      @default(70)
+  createdAt  DateTime @default(now())
+
+  scenes     Scene[]
+  assets     Asset[]
+  jobs       GenerationJob[]
+
+  @@index([name])
+  @@index([createdAt])
+  @@index([widthPx, heightPx])
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  username        String   @unique
+  displayName     String
+  passwordHash    String
+  avatar          String?
+  role            String   @default("player")
+  permissions     Json     @default("[]")
+  subscription    String   @default("free")
+  isEmailVerified Boolean  @default(false)
+  lastLogin       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  memberships     CampaignMember[]
+  messages        ChatMessage[]
+  refreshTokens   RefreshToken[]
+
+  @@index([email])
+  @@index([username])
+  @@index([displayName])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Campaign {
+  id            String   @id @default(uuid())
+  name          String
+  activeSceneId String?
+  createdAt     DateTime @default(now())
+  members       CampaignMember[]
+  scenes        Scene[]
+  settings      CampaignSettings?
+  characters    CampaignCharacter[]
+
+  @@index([name])
+  @@index([createdAt])
+  @@index([activeSceneId])
+}
+
+model CampaignMember {
+  id         String   @id @default(uuid())
+  role       String
+  status     String   @default("active")
+  userId     String
+  campaignId String
+  joinedAt   DateTime @default(now())
+  invitedAt  DateTime?
+  invitedBy  String?
+  user       User     @relation(fields: [userId], references: [id])
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+
+  @@unique([userId, campaignId])
+  @@index([userId])
+  @@index([campaignId])
+  @@index([role, campaignId])
+  @@index([status, campaignId])
 }
 
 model Scene {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  width       Int      @default(800)
-  height      Int      @default(600)
-  gridSize    Int      @default(50)
-  isActive    Boolean  @default(false)
-  ownerId     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  campaignId String
+  mapId      String?
+  createdAt  DateTime @default(now())
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+  map        Map?     @relation(fields: [mapId], references: [id])
 
-  owner       User              @relation(fields: [ownerId], references: [id])
-  games       Game[]
-  assets      Asset[]
-
-  @@map("scenes")
+  @@index([campaignId])
+  @@index([mapId])
+  @@index([campaignId, createdAt])
 }
 
-model Game {
-  id          String   @id @default(cuid())
-  name        String
-  sceneId     String
-  isActive    Boolean  @default(false)
-  maxPlayers  Int      @default(6)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model ChatMessage {
+  id         String   @id @default(uuid())
+  campaignId String
+  authorId   String
+  channel    String
+  text       String
+  timestamp  DateTime @default(now())
+  author     User     @relation(fields: [authorId], references: [id])
 
-  scene        Scene             @relation(fields: [sceneId], references: [id])
-  participants GameParticipant[]
-
-  @@map("games")
+  @@index([campaignId, timestamp])
+  @@index([authorId])
+  @@index([channel, campaignId])
+  @@index([timestamp])
 }
 
-model GameParticipant {
-  id       String @id @default(cuid())
-  gameId   String
-  userId   String
-  role     GameRole @default(PLAYER)
-  joinedAt DateTime @default(now())
+model Character {
+  id         String   @id @default(uuid())
+  name       String
+  sheet      Json
+  prompt     String
+  provider   String
+  model      String
+  cost       Float    @default(0)
+  latencyMs  Int
+  createdAt  DateTime @default(now())
+  
+  campaigns  CampaignCharacter[]
 
-  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([name])
+  @@index([provider, model])
+  @@index([createdAt])
+  @@index([cost])
+}
 
-  @@unique([gameId, userId])
-  @@map("game_participants")
+model CampaignCharacter {
+  id          String   @id @default(uuid())
+  campaignId  String
+  characterId String
+  addedBy     String
+  role        String   @default("player")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  @@unique([campaignId, characterId])
+  @@index([campaignId])
+  @@index([characterId])
+  @@index([addedBy])
+}
+
+model Monster {
+  id         String   @id @default(uuid())
+  stableId   String   @unique
+  name       String
+  statblock  Json
+  tags       Json     @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([name])
+  @@index([stableId])
+  @@index([createdAt])
 }
 
 model Asset {
-  id          String    @id @default(cuid())
-  filename    String
-  originalName String
-  mimeType    String
-  size        Int
-  url         String
-  thumbnailUrl String?
-  ownerId     String
-  sceneId     String?
-  isPublic    Boolean   @default(false)
-  uploadedAt  DateTime  @default(now())
+  id        String   @id @default(uuid())
+  mapId     String?
+  map       Map?     @relation(fields: [mapId], references: [id])
+  kind      AssetKind
+  uri       String
+  mimeType  String?
+  width     Int?
+  height    Int?
+  sizeBytes Int?
+  checksum  String?
+  createdAt DateTime @default(now())
 
-  owner User   @relation(fields: [ownerId], references: [id])
-  scene Scene? @relation(fields: [sceneId], references: [id])
-
-  @@map("assets")
+  @@index([mapId])
 }
 
-model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  action    String
-  resource  String
-  details   Json?
-  ipAddress String?
-  userAgent String?
-  timestamp DateTime @default(now())
+model GenerationJob {
+  id        String    @id @default(uuid())
+  type      JobType
+  status    JobStatus
+  input     Json
+  output    Json?
+  error     String?
+  mapId     String?
+  map       Map?      @relation(fields: [mapId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  calls     ProviderCall[]
 
-  user User? @relation(fields: [userId], references: [id])
-
-  @@map("audit_logs")
+  @@index([mapId])
+  @@index([status, type])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([status, updatedAt])
 }
 
-enum Role {
-  ADMIN
-  GM
-  PLAYER
+model ProviderCall {
+  id        String        @id @default(uuid())
+  jobId     String
+  job       GenerationJob @relation(fields: [jobId], references: [id])
+  provider  String
+  model     String?
+  costUSD   Float         @default(0)
+  latencyMs Int?
+  success   Boolean       @default(true)
+  error     String?
+  createdAt DateTime      @default(now())
+
+  @@index([jobId])
+  @@index([provider, model])
+  @@index([success, provider])
+  @@index([createdAt])
+  @@index([costUSD])
 }
 
-enum GameRole {
-  GM
-  PLAYER
-  OBSERVER
+model Token {
+  id              String          @id @default(uuid())
+  name            String
+  type            TokenType
+  visibility      TokenVisibility @default(VISIBLE)
+  gameSessionId   String
+  sceneId         String?
+  characterId     String?
+  x               Float           @default(0)
+  y               Float           @default(0)
+  z               Float           @default(0)
+  rotation        Float           @default(0)
+  scale           Float           @default(1)
+  health          Int?
+  maxHealth       Int?
+  initiative      Int?
+  speed           Int             @default(30)
+  imageUrl        String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  gameSession     GameSession     @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  encounterTokens EncounterToken[]
+
+  @@index([gameSessionId])
+  @@index([sceneId])
+  @@index([type])
+  @@index([visibility])
+  @@index([gameSessionId, sceneId])
+  @@index([x, y])
+}
+
+model GameSession {
+  id              String            @id @default(uuid())
+  name            String
+  campaignId      String
+  status          GameSessionStatus @default(WAITING)
+  currentSceneId  String?
+  currentTurn     Int               @default(0)
+  roundNumber     Int               @default(1)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  tokens          Token[]
+  encounters      Encounter[]
+  
+  @@index([campaignId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([startedAt])
+  @@index([campaignId, status])
+}
+
+model Encounter {
+  id              String            @id @default(uuid())
+  name            String
+  gameSessionId   String
+  sceneId         String?
+  status          EncounterStatus   @default(PLANNED)
+  initiativeOrder Json?
+  currentTurn     Int               @default(0)
+  roundNumber     Int               @default(1)
+  startedAt       DateTime?
+  endedAt         DateTime?
+  metadata        Json?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  gameSession     GameSession       @relation(fields: [gameSessionId], references: [id], onDelete: Cascade)
+  encounterTokens EncounterToken[]
+  
+  @@index([gameSessionId])
+  @@index([status])
+  @@index([sceneId])
+  @@index([gameSessionId, status])
+  @@index([startedAt])
+}
+
+model EncounterToken {
+  id          String    @id @default(uuid())
+  encounterId String
+  tokenId     String
+  initiative  Int?
+  turnOrder   Int?
+  isActive    Boolean   @default(true)
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  
+  encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
+  token       Token     @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  
+  @@unique([encounterId, tokenId])
+  @@index([encounterId])
+  @@index([tokenId])
+  @@index([initiative])
+  @@index([isActive])
+}
+
+model CampaignSettings {
+  id                String   @id @default(uuid())
+  campaignId        String   @unique
+  description       String   @default("")
+  gameSystem        String   @default("dnd5e")
+  isActive          Boolean  @default(true)
+  isPublic          Boolean  @default(false)
+  allowSpectators   Boolean  @default(true)
+  maxPlayers        Int      @default(6)
+  autoAcceptInvites Boolean  @default(false)
+  requireApproval   Boolean  @default(true)
+  sessionTimeout    Int      @default(240)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  campaign          Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  
+  @@index([campaignId])
+  @@index([isActive])
+}
+
+enum ConditionType {
+  BUFF
+  DEBUFF
+  NEUTRAL
+}
+
+model Condition {
+  id              String        @id @default(uuid())
+  name            String
+  type            ConditionType
+  description     String        @default("")
+  duration        Int?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  appliedConditions AppliedCondition[]
+  
+  @@index([name])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model AppliedCondition {
+  id            String    @id @default(uuid())
+  conditionId   String
+  targetId      String
+  targetType    String
+  duration      Int?
+  metadata      Json?
+  appliedBy     String?
+  appliedAt     DateTime  @default(now())
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  
+  condition     Condition @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  
+  @@index([targetId, targetType])
+  @@index([conditionId])
+  @@index([isActive])
+  @@index([expiresAt])
+  @@index([appliedAt])
 }

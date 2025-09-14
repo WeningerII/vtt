@@ -55,6 +55,11 @@ const inputVariants = cva(
           "border-amber-500/50 bg-gradient-to-r from-amber-900/20 to-yellow-800/20",
           "focus-visible:border-amber-400 focus-visible:ring-amber-400/25",
           "hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
+        ],
+        modifier: [
+          "border-slate-500/50 bg-gradient-to-r from-slate-900/20 to-gray-800/20",
+          "focus-visible:border-slate-400 focus-visible:ring-slate-400/25",
+          "hover:shadow-[0_0_20px_rgba(100,116,139,0.3)]"
         ]
       },
       size: {
@@ -98,7 +103,7 @@ export interface GamingFeatures {
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size">,
-    VariantProps<typeof inputVariants> {
+    Omit<VariantProps<typeof inputVariants>, "gaming"> {
   label?: string;
   description?: string;
   error?: string | undefined;
@@ -142,7 +147,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
 
     // Gaming feedback system
     const triggerGamingFeedback = useCallback(async (action: 'focus' | 'change' | 'action' | 'step') => {
-      if (!gaming) return;
+      if (!gaming) {return;}
 
       // Haptic feedback
       if (gaming.hapticFeedback && 'vibrate' in navigator) {
@@ -187,7 +192,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
 
     // Gaming-specific icon mapping
     const getGamingIcon = () => {
-      if (!gaming?.type) return null;
+      if (!gaming?.type) {return null;}
       const iconMap = {
         dice: <Dices className="h-4 w-4" />,
         damage: <Sword className="h-4 w-4" />,
@@ -202,7 +207,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
     // Step value handlers for gaming inputs
     const handleStepUp = useCallback(() => {
       const input = inputRef.current;
-      if (!input) return;
+      if (!input) {return;}
       
       const currentValue = parseFloat(input.value) || 0;
       const step = parseFloat(input.step) || 1;
@@ -216,7 +221,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
 
     const handleStepDown = useCallback(() => {
       const input = inputRef.current;
-      if (!input) return;
+      if (!input) {return;}
       
       const currentValue = parseFloat(input.value) || 0;
       const step = parseFloat(input.step) || 1;
@@ -230,7 +235,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
 
     // Long press handlers for gaming actions
     const handleLongPressStart = useCallback((action: string, value: any) => {
-      if (!gaming?.longPressActions) return;
+      if (!gaming?.longPressActions) {return;}
       
       const timer = setTimeout(() => {
         triggerGamingFeedback('action');
@@ -428,7 +433,7 @@ const Input = React.memo(forwardRef<HTMLInputElement, InputProps>(
 Input.displayName = "Input";
 
 // Gaming-specific input variants for common VTT use cases
-export const DiceInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps, 'gaming'>>(
+const DiceInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps, 'gaming'>>(
   (props, ref) => (
     <Input
       {...props}
@@ -452,7 +457,7 @@ export const DiceInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps
 ));
 DiceInput.displayName = "DiceInput";
 
-export const StatInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps, 'gaming'> & { statName?: string }>(
+const StatInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps, 'gaming'> & { statName?: string }>(
   ({ statName, ...props }, ref) => (
     <Input
       {...props}
@@ -477,7 +482,7 @@ export const StatInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps
 ));
 StatInput.displayName = "StatInput";
 
-export const DamageInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps, 'gaming'>>(
+const DamageInput = React.memo(forwardRef<HTMLInputElement, Omit<InputProps, 'gaming'>>(
   (props, ref) => (
     <Input
       {...props}

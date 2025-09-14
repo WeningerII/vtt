@@ -261,13 +261,19 @@ class SoundManager {
     Object.values(theme.sounds).forEach((soundPath) => {
       if (Array.isArray(soundPath)) {
         soundPath.forEach((path) => {
+          // Normalize to Promise<void> to satisfy typing
           promises.push(
-            this.loadAudio(path).catch(() => {}), // Ignore errors during preload
+            this.loadAudio(path)
+              .then(() => void 0)
+              .catch(() => void 0),
           );
         });
       } else {
+        // Normalize to Promise<void> to satisfy typing
         promises.push(
-          this.loadAudio(soundPath).catch(() => {}), // Ignore errors during preload
+          this.loadAudio(soundPath)
+            .then(() => void 0)
+            .catch(() => void 0),
         );
       }
     });
@@ -281,20 +287,14 @@ class SoundManager {
     // Stop any existing sound of this type
     this.stopSound(event);
 
-    let soundPath = theme.sounds[event];
-
-    // Handle custom sounds override
-    if (this.settings.customSounds?.[event]) {
-      soundPath = this.settings.customSounds[event]!;
-    }
-
-    // Handle array of sounds (random selection)
-    if (Array.isArray(soundPath)) {
-      soundPath = soundPath[Math.floor(Math.random() * soundPath.length)];
-    }
+    // Resolve sound path (custom override takes precedence)
+    const resolved = this.settings.customSounds?.[event] ?? theme.sounds[event];
+    const selectedPath = Array.isArray(resolved)
+      ? resolved[Math.floor(Math.random() * resolved.length)]!
+      : resolved;
 
     try {
-      const audio = await this.loadAudio(soundPath);
+      const audio = await this.loadAudio(selectedPath);
       const volume = customVolume ?? this.calculateVolume("effects");
 
       audio.volume = Math.max(0, Math.min(1, volume));
@@ -401,7 +401,7 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
     return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
   });
 
-  const soundManagerRef = useRef<SoundManager>();
+  const soundManagerRef = useRef<SoundManager | null>(null);
 
   // Initialize sound manager
   useEffect(() => {
@@ -475,7 +475,11 @@ export function SoundProvider({ children }: { children: React.ReactNode }) {
   );
 
   const getCurrentTheme = useCallback((): SoundTheme => {
-    return SOUND_THEMES[settings.currentTheme] || SOUND_THEMES.fantasy;
+    const candidate = SOUND_THEMES[settings.currentTheme];
+    if (candidate !== undefined) {
+      return candidate;
+    }
+    return SOUND_THEMES["fantasy"] as SoundTheme;
   }, [settings.currentTheme]);
 
   const isPlaying = useCallback((event: SoundEvent): boolean => {

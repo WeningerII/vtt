@@ -16,11 +16,11 @@ interface MobileNavigationProps {
   showSwipeIndicators?: boolean;
 }
 
-export const MobileNavigation = memo<MobileNavigationProps>(function MobileNavigation({ 
+export const MobileNavigation = memo<MobileNavigationProps>(({ 
   className = '',
   enableGestures = true,
   showSwipeIndicators = true 
-}) {
+}) => {
   const { 
     layoutState, 
     togglePanel, 

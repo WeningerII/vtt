@@ -99,7 +99,7 @@ interface MobileCardProps extends VariantProps<typeof cardVariants> {
   onFavoriteToggle?: () => void;
 }
 
-export const MobileOptimizedCard = memo<MobileCardProps>(function MobileOptimizedCard({
+export const MobileOptimizedCard = memo<MobileCardProps>(({
   children,
   className,
   variant,
@@ -124,7 +124,7 @@ export const MobileOptimizedCard = memo<MobileCardProps>(function MobileOptimize
   favorite = false,
   onFavoriteToggle,
   ...props
-}) {
+}) => {
   const [isPressed, setIsPressed] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [touchStart, setTouchStart] = useState({ x: 0, y: 0, time: 0 });
@@ -132,7 +132,7 @@ export const MobileOptimizedCard = memo<MobileCardProps>(function MobileOptimize
   // Touch event handlers for mobile interactions
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
-    if (!touch) return;
+    if (!touch) {return;}
     
     setTouchStart({
       x: touch.clientX,
@@ -144,7 +144,7 @@ export const MobileOptimizedCard = memo<MobileCardProps>(function MobileOptimize
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
-    if (!touch) return;
+    if (!touch) {return;}
     
     const deltaX = touch.clientX - touchStart.x;
     const deltaY = Math.abs(touch.clientY - touchStart.y);
@@ -158,7 +158,7 @@ export const MobileOptimizedCard = memo<MobileCardProps>(function MobileOptimize
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     const touchTime = Date.now() - touchStart.time;
     const touch = e.changedTouches[0];
-    if (!touch) return;
+    if (!touch) {return;}
     
     const deltaX = touch.clientX - touchStart.x;
     const deltaY = Math.abs(touch.clientY - touchStart.y);
@@ -203,7 +203,7 @@ export const MobileOptimizedCard = memo<MobileCardProps>(function MobileOptimize
 
   // Rarity-based styling
   const getRarityStyles = () => {
-    if (!rarity) return '';
+    if (!rarity) {return '';}
     
     const rarityStyles = {
       common: 'border-gray-400/30',

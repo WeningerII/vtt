@@ -96,7 +96,7 @@ const layoutConfigs: LayoutConfig[] = [
 ];
 
 export const useAdaptiveLayout = () => {
-  const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(layoutConfigs[0]);
+  const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(() => layoutConfigs[0]!);
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
 
   const updateLayout = useCallback(() => {
@@ -106,12 +106,12 @@ export const useAdaptiveLayout = () => {
     
     setOrientation(currentOrientation);
 
-    const matchingLayout = layoutConfigs.find(config => {
+    const matchingLayout: LayoutConfig | undefined = layoutConfigs.find(config => {
       const { minWidth, maxWidth, orientation: requiredOrientation } = config.breakpoint;
       const widthMatches = width >= minWidth && width <= maxWidth;
       const orientationMatches = !requiredOrientation || requiredOrientation === currentOrientation;
       return widthMatches && orientationMatches;
-    }) || layoutConfigs[0]; // Default fallback
+    }) ?? layoutConfigs[0]!; // Default fallback
 
     if (matchingLayout.mode !== currentLayout.mode) {
       setCurrentLayout(matchingLayout);
@@ -147,11 +147,11 @@ export const useAdaptiveLayout = () => {
   };
 };
 
-export const AdaptiveLayout = memo<AdaptiveLayoutProps>(function AdaptiveLayout({
+export const AdaptiveLayout = memo<AdaptiveLayoutProps>(({
   children,
   className,
   onLayoutChange
-}) {
+}) => {
   const { layout, orientation } = useAdaptiveLayout();
 
   useEffect(() => {
@@ -186,11 +186,11 @@ interface AdaptivePanelProps {
   className?: string;
 }
 
-export const AdaptivePanel = memo<AdaptivePanelProps>(function AdaptivePanel({
+export const AdaptivePanel = memo<AdaptivePanelProps>(({
   children,
   panelType,
   className
-}) {
+}) => {
   const { layout, isMobile, isTablet } = useAdaptiveLayout();
   const config = layout.panelConfig[panelType as keyof typeof layout.panelConfig];
 
@@ -233,11 +233,11 @@ export const ResponsiveContainer = memo<{
   children: React.ReactNode;
   className?: string;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
-}>(function ResponsiveContainer({
+}>(({
   children,
   className,
   maxWidth = 'full'
-}) {
+}) => {
   const { isMobile, isTablet } = useAdaptiveLayout();
   
   const maxWidthClasses = {

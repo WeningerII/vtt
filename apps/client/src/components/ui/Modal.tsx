@@ -118,7 +118,7 @@ const Modal = memo<ModalProps>((props) => {
 
   // Gaming feedback system
   const triggerGamingFeedback = useCallback(async (action: 'open' | 'close' | 'action') => {
-    if (!gaming) return;
+    if (!gaming) {return;}
 
     if (gaming.hapticFeedback && 'vibrate' in navigator) {
       const patterns = { open: [100, 50, 100], close: [50], action: [25, 25, 25] };
@@ -155,7 +155,7 @@ const Modal = memo<ModalProps>((props) => {
   }, [closeOnEscape, onClose, triggerGamingFeedback]);
 
   const handleGamingKeyboard = useCallback((e: KeyboardEvent) => {
-    if (!gaming?.keyboardShortcuts) return;
+    if (!gaming?.keyboardShortcuts) {return;}
     const key = e.key.toLowerCase();
     const shortcut = gaming.keyboardShortcuts[key];
     if (shortcut) {

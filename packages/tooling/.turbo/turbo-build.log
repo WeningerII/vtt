@@ -1,0 +1,4 @@
+
+> @vtt/tooling@0.0.0 build /home/weningerii/vtt/packages/tooling
+> tsc -b
+

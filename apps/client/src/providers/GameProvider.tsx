@@ -389,34 +389,88 @@ export function GameProvider({ children }: GameProviderProps) {
           const msg = httpError?.message || 'Failed to join session';
           setError(msg);
           setLoading(false);
-          return;
+          return; // CRITICAL: Stop here if HTTP authorization fails
         }
 
-        // Ensure connection
+        // Ensure connection before proceeding
         if (!isConnected) {
           connect();
+          // Wait for connection to establish
+          await new Promise<void>((resolve) => {
+            let timeoutId: ReturnType<typeof setTimeout>;
+            const checkConnection = setInterval(() => {
+              if (isConnected) {
+                clearInterval(checkConnection);
+                clearTimeout(timeoutId);
+                resolve();
+              }
+            }, 100);
+            // Timeout after 5 seconds
+            timeoutId = setTimeout(() => {
+              clearInterval(checkConnection);
+              resolve();
+            }, 5000);
+          });
+        }
+
+        if (!isConnected) {
+          setError("Unable to establish WebSocket connection");
+          setLoading(false);
+          return;
         }
 
         // Authenticate WebSocket connection with access token
         const token = localStorage.getItem('accessToken');
         if (token) {
           send({ type: "AUTHENTICATE", token } as any);
+          // Wait for authentication confirmation
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
+
+        // Setup error handler for WebSocket join failures
+        let joinSuccessful = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        
+        const errorHandler = subscribe("ERROR", (message) => {
+          const errorMsg = message?.error || message?.message || "WebSocket join failed";
+          logger.error("WebSocket join error:", errorMsg);
+          setError(errorMsg);
+          setLoading(false);
+          joinSuccessful = true; // Prevent timeout from firing
+          if (timeoutId) {clearTimeout(timeoutId);}
+          errorHandler(); // Unsubscribe
+        });
+
+        // Setup success handler
+        const successHandler = subscribe("SESSION_JOINED", (message) => {
+          joinSuccessful = true;
+          if (timeoutId) {clearTimeout(timeoutId);}
+          successHandler(); // Unsubscribe
+          errorHandler(); // Clean up error handler
+        });
 
         // Request to join the session on the server
         send({ type: "JOIN_SESSION", sessionId } as any);
-
         logger.info("JOIN_SESSION message sent via WebSocket");
 
-        // Allow time for server to respond with SESSION_JOINED
-        setTimeout(() => setLoading(false), 1500);
+        // Wait for response with timeout
+        timeoutId = setTimeout(() => {
+          if (!joinSuccessful) {
+            setError("Session join timed out - please try again");
+            setLoading(false);
+            successHandler(); // Clean up handlers
+            errorHandler();
+          }
+          timeoutId = null;
+        }, 3000);
+
       } catch (error) {
         logger.error("Error in joinSession:", error);
         setError("Failed to join session");
         setLoading(false);
       }
     },
-    [isAuthenticated, user, setLoading, clearError, setError, send, isConnected, connect],
+    [isAuthenticated, user, setLoading, clearError, setError, send, isConnected, connect, subscribe],
   );
 
   const leaveSession = useCallback(async () => {

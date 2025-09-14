@@ -30,17 +30,22 @@ export function useLoadingState(
 ): UseLoadingStateReturn {
   const [state, setState] = useState<LoadingState>({
     isLoading: false,
-    loadingMessage: initialMessage,
+    ...(initialMessage !== undefined ? { loadingMessage: initialMessage } : {}),
     error: null,
   });
 
   const setLoading = useCallback((loading: boolean, message?: string) => {
-    setState(prev => ({
-      ...prev,
-      isLoading: loading,
-      loadingMessage: message || prev.loadingMessage,
-      error: loading ? null : prev.error, // Clear error when starting new load
-    }));
+    setState(prev => {
+      const next: LoadingState = {
+        ...prev,
+        isLoading: loading,
+        error: loading ? null : (prev.error ?? null), // Clear error when starting new load
+      };
+      if (message !== undefined) {
+        next.loadingMessage = message;
+      }
+      return next;
+    });
   }, []);
 
   const setError = useCallback((error: string | Error | null) => {
@@ -76,7 +81,7 @@ export function useLoadingState(
   const reset = useCallback(() => {
     setState({
       isLoading: false,
-      loadingMessage: initialMessage,
+      ...(initialMessage !== undefined ? { loadingMessage: initialMessage } : {}),
       error: null,
     });
   }, [initialMessage]);

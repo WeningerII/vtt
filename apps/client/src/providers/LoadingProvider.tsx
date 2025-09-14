@@ -28,17 +28,21 @@ interface LoadingProviderProps {
 export function LoadingProvider({ children }: LoadingProviderProps) {
   const [globalLoading, setGlobalLoadingState] = useState<LoadingState>({
     isLoading: false,
-    loadingMessage: undefined,
     error: null,
   });
 
   const setGlobalLoading = useCallback((loading: boolean, message?: string) => {
-    setGlobalLoadingState(prev => ({
-      ...prev,
-      isLoading: loading,
-      loadingMessage: message || prev.loadingMessage,
-      error: loading ? null : prev.error, // Clear error when starting new load
-    }));
+    setGlobalLoadingState(prev => {
+      const next: LoadingState = {
+        ...prev,
+        isLoading: loading,
+        error: loading ? null : (prev.error ?? null), // Clear error when starting new load
+      };
+      if (message !== undefined) {
+        next.loadingMessage = message;
+      }
+      return next;
+    });
   }, []);
 
   const setGlobalError = useCallback((error: string | Error | null) => {

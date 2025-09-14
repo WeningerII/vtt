@@ -56,7 +56,7 @@ interface BottomSheetProps extends VariantProps<typeof sheetVariants> {
   initialSnap?: number;
 }
 
-export const MobileBottomSheet = memo<BottomSheetProps>(function MobileBottomSheet({
+export const MobileBottomSheet = memo<BottomSheetProps>(({
   isOpen,
   onClose,
   children,
@@ -71,7 +71,7 @@ export const MobileBottomSheet = memo<BottomSheetProps>(function MobileBottomShe
   snapPoints = [25, 50, 80],
   onSnapChange,
   initialSnap = 1
-}) {
+}) => {
   const [currentSnap, setCurrentSnap] = useState(initialSnap);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -89,9 +89,10 @@ export const MobileBottomSheet = memo<BottomSheetProps>(function MobileBottomShe
 
   // Handle drag start
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!dragToClose) return;
+    if (!dragToClose) {return;}
     
-    const touch = e.touches[0];
+    const touch = e.touches?.[0];
+    if (!touch) {return;}
     setStartY(touch.clientY);
     setCurrentY(touch.clientY);
     setIsDragging(true);
@@ -99,10 +100,11 @@ export const MobileBottomSheet = memo<BottomSheetProps>(function MobileBottomShe
 
   // Handle drag move
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging || !dragToClose) return;
+    if (!isDragging || !dragToClose) {return;}
     
     e.preventDefault();
-    const touch = e.touches[0];
+    const touch = e.touches?.[0];
+    if (!touch) {return;}
     const deltaY = touch.clientY - startY;
     
     setCurrentY(touch.clientY);
@@ -117,7 +119,7 @@ export const MobileBottomSheet = memo<BottomSheetProps>(function MobileBottomShe
 
   // Handle drag end
   const handleTouchEnd = useCallback(() => {
-    if (!isDragging || !dragToClose) return;
+    if (!isDragging || !dragToClose) {return;}
     
     setIsDragging(false);
     
@@ -177,7 +179,7 @@ export const MobileBottomSheet = memo<BottomSheetProps>(function MobileBottomShe
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {return null;}
 
   const sheet = (
     <>
@@ -269,11 +271,11 @@ interface DiceRollSheetProps {
   onRoll: (dice: string) => void;
 }
 
-export const DiceRollSheet = memo<DiceRollSheetProps>(function DiceRollSheet({
+export const DiceRollSheet = memo<DiceRollSheetProps>(({
   isOpen,
   onClose,
   onRoll
-}) {
+}) => {
   const diceTypes = [
     { label: 'd4', value: '1d4' },
     { label: 'd6', value: '1d6' },
@@ -337,11 +339,11 @@ interface QuickActionsSheetProps {
   }>;
 }
 
-export const QuickActionsSheet = memo<QuickActionsSheetProps>(function QuickActionsSheet({
+export const QuickActionsSheet = memo<QuickActionsSheetProps>(({
   isOpen,
   onClose,
   actions
-}) {
+}) => {
   return (
     <MobileBottomSheet
       isOpen={isOpen}

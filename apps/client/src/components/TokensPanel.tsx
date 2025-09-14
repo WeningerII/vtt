@@ -61,6 +61,7 @@ export const TokensPanel: React.FC<TokensPanelProps> = ({
           {isGM && (
             <Button
               onClick={onTokenAdd}
+              data-testid="add-token-tool"
             >
               <Plus className="w-4 h-4" />
               Add Token
@@ -78,6 +79,7 @@ export const TokensPanel: React.FC<TokensPanelProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
+            data-testid="search-input"
           />
         </div>
         {isGM && (
@@ -88,6 +90,15 @@ export const TokensPanel: React.FC<TokensPanelProps> = ({
               {showHidden ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
               {showHidden ? 'Hide Hidden' : 'Show Hidden'}
             </Button>
+            {/* Bulk Selection Indicator */}
+            {filteredTokens.filter(t => selectedTokenId === t.id).length > 1 && (
+              <div 
+                className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30"
+                data-testid="bulk-selection"
+              >
+                {filteredTokens.filter(t => selectedTokenId === t.id).length} selected
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -112,6 +123,7 @@ export const TokensPanel: React.FC<TokensPanelProps> = ({
                   ${token.visible === false ? 'opacity-60' : ''}
                 `}
                 onClick={() => onTokenSelect?.(token)}
+                data-testid="token"
               >
                 {/* Token Color/Avatar */}
                 <div
@@ -131,6 +143,14 @@ export const TokensPanel: React.FC<TokensPanelProps> = ({
                     )}
                   </div>
                 </div>
+
+                {/* Token Selection Indicator */}
+                {selectedTokenId === token.id && (
+                  <div 
+                    className="w-3 h-3 bg-yellow-400 rounded-full border border-yellow-300"
+                    data-testid="token-selected"
+                  />
+                )}
 
                 {/* Token Actions (GM Only) */}
                 {isGM && (
@@ -167,6 +187,7 @@ export const TokensPanel: React.FC<TokensPanelProps> = ({
                         onTokenDelete?.(token.id);
                       }}
                       className="p-1 text-red-400 hover:text-red-300"
+                      data-testid="delete-token"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>

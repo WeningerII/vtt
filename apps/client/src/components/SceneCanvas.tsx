@@ -162,6 +162,7 @@ export const SceneCanvas: React.FC<SceneCanvasProps> = ({
           border: "1px solid #ccc",
           cursor: isDragging ? "grabbing" : "grab",
         }}
+        data-testid="scene-canvas"
       />
     </div>
   );

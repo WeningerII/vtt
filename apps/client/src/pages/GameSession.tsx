@@ -147,7 +147,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
   };
 
   return (
-    <div className="h-screen bg-primary flex flex-col overflow-hidden">
+    <div className="h-screen bg-primary flex flex-col overflow-hidden" data-testid="desktop-layout">
       {/* Header */}
       <header className="bg-bg-secondary border-b border-border-primary px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
@@ -196,7 +196,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         {!sidebarCollapsed && (
-          <aside className="w-80 bg-bg-secondary border-r border-border-primary flex flex-col">
+          <aside className="w-80 bg-bg-secondary border-r border-border-primary flex flex-col" data-testid="game-sidebar">
             {/* Panel Tabs */}
             <div className="border-b border-border-primary">
               <div className="flex">
@@ -229,7 +229,7 @@ export function GameSession({ sessionId, router }: GameSessionProps) {
         )}
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden" data-testid="game-main-content">
           {/* Main Content Area - Map/Tactical View */}
           <div className="flex-1 bg-primary relative">
             {activePanel === "map" ? (

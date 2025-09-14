@@ -43,14 +43,14 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
   }, [togglePanel]);
   
   const getNextPanel = useCallback(() => {
-    if (!activePanel) return panelOrder[0];
+    if (!activePanel) {return panelOrder[0];}
     const currentIndex = panelOrder.indexOf(activePanel);
     const nextIndex = (currentIndex + 1) % panelOrder.length;
     return panelOrder[nextIndex];
   }, [activePanel]);
   
   const getPreviousPanel = useCallback(() => {
-    if (!activePanel) return panelOrder[panelOrder.length - 1];
+    if (!activePanel) {return panelOrder[panelOrder.length - 1];}
     const currentIndex = panelOrder.indexOf(activePanel);
     const prevIndex = currentIndex === 0 ? panelOrder.length - 1 : currentIndex - 1;
     return panelOrder[prevIndex];
@@ -70,7 +70,7 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
 
   // Haptic feedback helpers
   const triggerHaptic = useCallback((intensity: 'light' | 'medium' | 'heavy' = 'medium') => {
-    if (!enableHaptics || !navigator.vibrate) return;
+    if (!enableHaptics || !navigator.vibrate) {return;}
     
     const patterns = {
       light: [10],
@@ -83,7 +83,7 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
 
   // Audio feedback helpers
   const triggerSwipeSound = useCallback((direction: string) => {
-    if (!enableSounds) return;
+    if (!enableSounds) {return;}
     
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -139,7 +139,7 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
   // Handle gesture move
   const handleGestureMove = useCallback((clientX: number, clientY: number) => {
     setGestureState(prev => {
-      if (!prev.isActive) return prev;
+      if (!prev.isActive) {return prev;}
       
       const deltaX = clientX - prev.startX;
       const deltaY = clientY - prev.startY;
@@ -175,7 +175,7 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
   // Handle gesture end
   const handleGestureEnd = useCallback(() => {
     setGestureState(prev => {
-      if (!prev.isActive) return prev;
+      if (!prev.isActive) {return prev;}
       
       const { deltaX, deltaY, velocity, direction } = prev;
       const absDeltaX = Math.abs(deltaX);
@@ -270,7 +270,7 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
   // Attach event listeners
   useEffect(() => {
     const element = gestureRef.current;
-    if (!element) return;
+    if (!element) {return;}
 
     // Touch events
     element.addEventListener('touchstart', touchHandlers.onTouchStart, { passive: false });
@@ -305,7 +305,7 @@ export function useGestureNavigation(options: UseGestureNavigationOptions = {}) 
   const getGestureProgress = useCallback(() => {
     const { deltaX, deltaY, direction } = gestureState;
     
-    if (!direction) return 0;
+    if (!direction) {return 0;}
     
     const delta = direction === 'left' || direction === 'right' ? Math.abs(deltaX) : Math.abs(deltaY);
     return Math.min(delta / threshold, 1);

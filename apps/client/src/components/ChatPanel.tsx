@@ -150,7 +150,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
         ) : (
           messages.map(message => (
-            <div key={message.id} className={getMessageClass(message)}>
+            <div key={message.id} className={getMessageClass(message)} data-testid="chat-message">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -253,6 +253,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             }
             className="flex-1"
             disabled={messageType === 'whisper' && !whisperTarget}
+            data-testid="chat-input"
           />
           <Button
             onClick={handleSendMessage}

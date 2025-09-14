@@ -200,7 +200,7 @@ class AccessibilityTester {
     const rgb1 = this.parseColor(color1);
     const rgb2 = this.parseColor(color2);
     
-    if (!rgb1 || !rgb2) return 21; // Assume good contrast if we can't parse
+    if (!rgb1 || !rgb2) {return 21;} // Assume good contrast if we can't parse
     
     const l1 = this.relativeLuminance(rgb1);
     const l2 = this.relativeLuminance(rgb2);

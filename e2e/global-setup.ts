@@ -1,4 +1,5 @@
 import { chromium, FullConfig } from "@playwright/test";
+import { testDb } from "./utils/database";
 import { join } from "path";
 
 async function globalSetup(_config: FullConfig) {
@@ -19,7 +20,6 @@ async function globalSetup(_config: FullConfig) {
   } else {
     try {
       console.log("[E2E Setup] Setting up test database...");
-      const { testDb } = await import("./utils/database");
       await testDb.setup();
       console.log("[E2E Setup] Seeding test data...");  
       await testDb.seed();

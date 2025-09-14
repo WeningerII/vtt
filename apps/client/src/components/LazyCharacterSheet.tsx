@@ -13,6 +13,7 @@ import React, {
   useMemo 
 } from 'react';
 import { cn } from '../lib/utils';
+import type { CharacterInfoData } from './character/CharacterInfo';
 
 // Lazy load character sheet sections
 const CharacterInfo = lazy(() => import('./character/CharacterInfo'));
@@ -42,9 +43,9 @@ interface LazyCharacterSheetProps {
 }
 
 // Loading skeleton component
-const CharacterSectionSkeleton = memo<{ height?: string }>(function CharacterSectionSkeleton({ 
+const CharacterSectionSkeleton = memo<{ height?: string }>(({ 
   height = "h-32" 
-}) {
+}) => {
   return (
     <div className={cn("animate-pulse bg-surface-elevated rounded-lg p-4", height)}>
       <div className="space-y-3">
@@ -62,10 +63,12 @@ const useIntersectionObserver = (options: IntersectionObserverInit = {}) => {
   const [element, setElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (!element) return;
+    if (!element) {return;}
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
+      (entries: IntersectionObserverEntry[]) => {
+        const entry = entries[0];
+        if (!entry) {return;}
         setIsVisible(entry.isIntersecting);
       },
       {
@@ -88,12 +91,12 @@ const LazySection = memo<{
   fallback?: React.ReactNode;
   className?: string;
   minHeight?: string;
-}>(function LazySection({ 
+}>(({ 
   children, 
   fallback = <CharacterSectionSkeleton />, 
   className,
   minHeight = "min-h-32"
-}) {
+}) => {
   const { isVisible, setElement } = useIntersectionObserver({
     threshold: 0.1,
     rootMargin: '100px'
@@ -116,12 +119,12 @@ const LazySection = memo<{
 });
 
 // Performance optimized character sheet with lazy loading
-export const LazyCharacterSheet = memo<LazyCharacterSheetProps>(function LazyCharacterSheet({
+export const LazyCharacterSheet = memo<LazyCharacterSheetProps>(({ 
   character,
   isActive,
   onUpdate,
   className
-}) {
+}) => {
   const [activeTab, setActiveTab] = useState<string>('info');
   const [loadedSections, setLoadedSections] = useState<Set<string>>(new Set(['info']));
 
@@ -139,46 +142,60 @@ export const LazyCharacterSheet = memo<LazyCharacterSheetProps>(function LazyCha
   }, []);
 
   // Memoized character sections data
-  const characterSections = useMemo(() => ({
-    info: {
-      id: 'info',
-      label: 'Character',
-      icon: '👤',
-      data: {
-        name: character.name,
-        level: character.level,
-        class: character.class,
-        race: character.race,
-        portrait: character.portrait
-      }
-    },
-    stats: {
-      id: 'stats',
-      label: 'Stats',
-      icon: '📊',
-      data: character.stats
-    },
-    spells: {
-      id: 'spells',
-      label: 'Spells',
-      icon: '✨',
-      data: character.spells,
-      count: character.spells?.length || 0
-    },
-    inventory: {
-      id: 'inventory',
-      label: 'Inventory',
-      icon: '🎒',
-      data: character.inventory,
-      count: character.inventory?.length || 0
-    },
-    notes: {
-      id: 'notes',
-      label: 'Notes',
-      icon: '📝',
-      data: character.notes
+  type Section = {
+    id: 'info' | 'stats' | 'spells' | 'inventory' | 'notes';
+    label: string;
+    icon: string;
+    data: any;
+    count?: number;
+  };
+
+  const characterSections: Record<Section['id'], Section> = useMemo(() => {
+    const infoData: CharacterInfoData = {
+      name: character.name,
+      level: character.level,
+      class: character.class,
+      race: character.race,
+    };
+    if (character.portrait !== undefined) {
+      infoData.portrait = character.portrait;
     }
-  }), [character]);
+
+    return {
+      info: {
+        id: 'info',
+        label: 'Character',
+        icon: '👤',
+        data: infoData,
+      },
+      stats: {
+        id: 'stats',
+        label: 'Stats',
+        icon: '📊',
+        data: character.stats,
+      },
+      spells: {
+        id: 'spells',
+        label: 'Spells',
+        icon: '✨',
+        data: character.spells,
+        count: character.spells?.length || 0,
+      },
+      inventory: {
+        id: 'inventory',
+        label: 'Inventory',
+        icon: '🎒',
+        data: character.inventory,
+        count: character.inventory?.length || 0,
+      },
+      notes: {
+        id: 'notes',
+        label: 'Notes',
+        icon: '📝',
+        data: character.notes,
+      },
+    };
+  }, [character]);
 
   const tabs = Object.values(characterSections);
 

@@ -43,7 +43,7 @@ interface MobileMapToolbarProps {
   className?: string;
 }
 
-export const MobileMapToolbar = memo<MobileMapToolbarProps>(function MobileMapToolbar({
+export const MobileMapToolbar = memo<MobileMapToolbarProps>(({
   activeTool,
   brushSize,
   showGrid,
@@ -56,14 +56,14 @@ export const MobileMapToolbar = memo<MobileMapToolbarProps>(function MobileMapTo
   onSave,
   onGenerateAI,
   className
-}) {
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activePanel, setActivePanel] = useState<'tools' | 'settings' | 'colors' | null>('tools');
   const [selectedColor, setSelectedColor] = useState('#000000');
 
   // Auto-collapse after inactivity
   useEffect(() => {
-    if (!isExpanded) return;
+    if (!isExpanded) {return;}
 
     const timer = setTimeout(() => {
       setIsExpanded(false);
@@ -92,8 +92,8 @@ export const MobileMapToolbar = memo<MobileMapToolbarProps>(function MobileMapTo
   }, [onToolChange, triggerHaptic, isExpanded]);
 
   const handleBrushSizeChange = useCallback((value: number[]) => {
-    onBrushSizeChange?.(value[0]);
-  }, [onBrushSizeChange]);
+    onBrushSizeChange?.(value?.[0] ?? brushSize);
+  }, [onBrushSizeChange, brushSize]);
 
   const handleExpansionToggle = useCallback(() => {
     setIsExpanded(prev => {
@@ -317,7 +317,7 @@ export const MobileMapToolbar = memo<MobileMapToolbarProps>(function MobileMapTo
                 </div>
                 <Switch
                   checked={showGrid}
-                  onCheckedChange={onGridToggle}
+                  onCheckedChange={(checked) => onGridToggle?.(checked)}
                   size="md"
                 />
               </div>

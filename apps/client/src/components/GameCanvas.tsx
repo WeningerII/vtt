@@ -825,6 +825,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = memo(({ width, height, game
         width={width}
         height={height}
         className="border border-gray-300 cursor-crosshair"
+        data-testid="scene-canvas"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

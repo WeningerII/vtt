@@ -18,7 +18,7 @@ export function PerformancePanel({ isVisible, onToggle }: PerformancePanelProps)
   const [health, setHealth] = useState(getHealthStatus());
 
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible) {return;}
 
     const interval = setInterval(() => {
       setStats(getStats());

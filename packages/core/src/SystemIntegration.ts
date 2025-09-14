@@ -5,6 +5,14 @@
 
 import { EventEmitter } from 'events';
 import { _globalEventBus as globalEventBus, _GameEvents as GameEvents, _AIEvents as AIEvents, _ContentEvents as ContentEvents, _RuleEvents as RuleEvents } from './EventBus';
+import { 
+  DeepRuleEngine, 
+  VisualScriptingEngine, 
+  ProfessionalContentSuite, 
+  ProceduralBehaviorGenerator, 
+  ContentGenerationWorkflowEngine,
+  allGameNodes
+} from './stubs';
 
 export interface SystemIntegrationConfig {
   enableRuleEngine?: boolean;
@@ -452,7 +460,7 @@ export class VTTSystemIntegrator extends EventEmitter {
       if (entityId && context.session) {
         const session = this.sessions.get(context.session);
         if (session) {
-          session.activeEntities.set(entityId + '_behavior', behavior);
+          session.activeEntities.set(`${entityId  }_behavior`, behavior);
         }
       }
       
@@ -479,7 +487,7 @@ export class VTTSystemIntegrator extends EventEmitter {
       ruleEngine.registerEffect(`generate${contentType.charAt(0).toUpperCase() + contentType.slice(1)}`, 
         async (effect, context) => {
           const options = effect.parameters || {};
-          let result = null;
+          let result: any = null;
           
           switch (contentType) {
             case 'dungeon':
@@ -505,7 +513,7 @@ export class VTTSystemIntegrator extends EventEmitter {
               break;
           }
           
-          if (result) {
+          if (result && result.id) {
             await globalEventBus.emit(ContentEvents.contentGenerated(contentType, result.id, result));
           }
         }

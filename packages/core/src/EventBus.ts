@@ -405,7 +405,7 @@ export class UnifiedEventBus {
    * Convert snake_case or kebab-case to camelCase
    */
   private toCamelCase(input: string): string {
-    if (!input) return input;
+    if (!input) {return input;}
     return input.replace(/[_-]([a-z])/g, (_m, g1) => g1.toUpperCase());
   }
 

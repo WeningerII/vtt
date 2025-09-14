@@ -150,7 +150,7 @@ export class CrucibleService {
 
   private async executeAttack(actor: any, action: any): Promise<void> {
     const target = this.combatants.get(action.targetId);
-    if (!target) return;
+    if (!target) {return;}
 
     // Simple damage calculation
     const damage = Math.floor(Math.random() * 8) + 1; // 1d8
@@ -181,7 +181,7 @@ export class CrucibleService {
 
   private async executeHelp(actor: any, action: any): Promise<void> {
     const target = this.combatants.get(action.targetId);
-    if (!target) return;
+    if (!target) {return;}
     
     logger.info(`${actor.name} helps ${target.name}`);
   }
@@ -464,10 +464,10 @@ Format as JSON with detailed reasoning for each element.`;
         .sort((a, b) => b.initiative - a.initiative);
 
       // Process each combatant's turn
-      if (combatOrder.length === 0) continue;
+      if (combatOrder.length === 0) {continue;}
 
       for (const participant of combatOrder) {
-        if (this.isCombatEnded(simulation)) break;
+        if (this.isCombatEnded(simulation)) {break;}
 
         // Build tactical context
         const context = this.buildTacticalContext(participant, simulation, battlefield);
@@ -793,7 +793,7 @@ Format as JSON with detailed reasoning for each element.`;
   }
 
   private calculateOptimalAOEPosition(enemies: any[]): { x: number; y: number } {
-    if (!enemies.length) return { x: 0, y: 0 };
+    if (!enemies.length) {return { x: 0, y: 0 };}
 
     // Calculate centroid of enemy positions
     const sumX = enemies.reduce((sum, e) => sum + (e.position?.x || 0), 0);
@@ -813,7 +813,7 @@ Format as JSON with detailed reasoning for each element.`;
     const optimalRange = character.prefersMelee ? 5 : 30;
     const distance = this.calculateDistance(charPos, targetPos);
 
-    if (distance <= optimalRange) return charPos;
+    if (distance <= optimalRange) {return charPos;}
 
     const ratio = optimalRange / distance;
     return {
@@ -837,9 +837,9 @@ Format as JSON with detailed reasoning for each element.`;
     const enemyCR = enemy.challengeRating || 1;
     const charLevel = character.level || 1;
 
-    if (enemyCR >= charLevel * 2) return "extreme";
-    if (enemyCR >= charLevel) return "high";
-    if (enemyCR >= charLevel * 0.5) return "moderate";
+    if (enemyCR >= charLevel * 2) {return "extreme";}
+    if (enemyCR >= charLevel) {return "high";}
+    if (enemyCR >= charLevel * 0.5) {return "moderate";}
     return "low";
   }
 
@@ -847,9 +847,9 @@ Format as JSON with detailed reasoning for each element.`;
     const totalCR = enemies.reduce((sum, e) => sum + (e.challengeRating || 1), 0);
     const charLevel = character.level || 1;
 
-    if (totalCR >= charLevel * 3) return "extreme";
-    if (totalCR >= charLevel * 2) return "high";
-    if (totalCR >= charLevel) return "moderate";
+    if (totalCR >= charLevel * 3) {return "extreme";}
+    if (totalCR >= charLevel * 2) {return "high";}
+    if (totalCR >= charLevel) {return "moderate";}
     return "low";
   }
 
@@ -876,10 +876,10 @@ Format as JSON with detailed reasoning for each element.`;
   }
 
   private findNearestEnemy(character: any, enemies: any[]): any | null {
-    if (!enemies.length) return null;
+    if (!enemies.length) {return null;}
 
     const livingEnemies = enemies.filter((e: any) => (e.hitPoints || e.health || 0) > 0);
-    if (!livingEnemies.length) return null;
+    if (!livingEnemies.length) {return null;}
 
     // Return the nearest enemy based on position
     const charPos = character.position || { x: 0, y: 0 };
@@ -1071,8 +1071,8 @@ Format as JSON with detailed reasoning for each element.`;
 
     // Analyze combat log
     combatLog.forEach((entry) => {
-      if (entry.actor) participants.add(entry.actor);
-      if (entry.target) participants.add(entry.target);
+      if (entry.actor) {participants.add(entry.actor);}
+      if (entry.target) {participants.add(entry.target);}
     });
 
     participants.forEach((participant) => {
@@ -1218,8 +1218,8 @@ Format as JSON with detailed reasoning for each element.`;
     const avgEnemyDistance = enemyDistances.length > 0 ? enemyDistances.reduce((a, b) => a + b, 0) / enemyDistances.length : 0;
     
     // Adjust value based on positioning
-    if (avgAllyDistance < 15) value += 1; // Close to allies
-    if (avgEnemyDistance > 10 && avgEnemyDistance < 30) value += 1; // Good range from enemies
+    if (avgAllyDistance < 15) {value += 1;} // Close to allies
+    if (avgEnemyDistance > 10 && avgEnemyDistance < 30) {value += 1;} // Good range from enemies
     
     return Math.min(Math.max(value, 1), 10);
   }

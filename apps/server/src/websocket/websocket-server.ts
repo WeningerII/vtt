@@ -9,6 +9,7 @@ import { CombatWebSocketManager, CombatWebSocketMessage } from './combatEvents';
 import { ActorIntegrationService } from '../services/ActorIntegrationService';
 import { TokenService } from '../services/TokenService';
 import { CampaignService } from '../campaign/CampaignService';
+import { getAuthorizationService } from '../services/AuthorizationService';
 import { AnyClientMessageSchema, AnyServerMessageSchema } from '@vtt/core-schemas';
 
 interface WebSocketClient {
@@ -50,6 +51,9 @@ export class VTTWebSocketServer {
     this.combatManager = new CombatWebSocketManager(actorService);
 
     this.wss.on('connection', this.handleConnection.bind(this));
+    
+    // Start periodic session validation
+    this.startSessionValidation();
   }
 
   // Token movement with authorization checks
@@ -72,6 +76,16 @@ export class VTTWebSocketServer {
     }
 
     try {
+      // Use unified authorization service for consistent permission checking
+      const authService = getAuthorizationService(this.prisma);
+      const authResult = await authService.canManipulateToken(client.userId!, tokenId, 'move');
+
+      if (!authResult.authorized) {
+        this.sendError(ws, authResult.reason || 'Unauthorized to move this token');
+        console.warn(`Unauthorized token move attempt: User ${client.userId} tried to move token ${tokenId} - ${authResult.reason}`);
+        return;
+      }
+
       const token = await this.tokenService.getToken(tokenId);
       if (!token) {
         this.sendError(ws, 'Token not found');
@@ -81,22 +95,6 @@ export class VTTWebSocketServer {
       // Must be in the same session
       if (client.sessionId && token.gameSessionId !== client.sessionId) {
         this.sendError(ws, 'Token does not belong to your session');
-        return;
-      }
-
-      // Determine GM status
-      const isGM = await this.isUserGMForSession(client.userId!, token.gameSessionId);
-
-      // Determine ownership from token metadata if present
-      let isOwner = false;
-      const meta = (token.metadata as any) || {};
-      if (meta.ownerUserId && typeof meta.ownerUserId === 'string') {
-        isOwner = meta.ownerUserId === client.userId;
-      }
-
-      // Only GM or owner can move the token
-      if (!isGM && !isOwner) {
-        this.sendError(ws, 'Unauthorized to move this token');
         return;
       }
 
@@ -299,6 +297,42 @@ export class VTTWebSocketServer {
         return;
       }
 
+      // Check session status
+      if (session.status !== 'WAITING' && session.status !== 'ACTIVE') {
+        this.sendError(ws, 'Cannot join this session');
+        return;
+      }
+
+      // Use unified authorization service for consistent permission checking
+      const authService = getAuthorizationService(this.prisma);
+      const authResult = await authService.canJoinSession(client.userId!, sessionId);
+
+      // Log authorization attempt
+      authService.logAuthorizationEvent({
+        userId: client.userId!,
+        sessionId,
+        campaignId: session.campaignId,
+        action: 'join_session',
+        resource: 'game_session',
+        resourceId: sessionId
+      }, authResult);
+
+      if (!authResult.authorized) {
+        this.sendError(ws, authResult.reason || 'Access denied');
+        return;
+      }
+
+      // Check session capacity for non-GM users
+      const metadata = session.metadata as any || {};
+      const maxPlayers = metadata.maxPlayers || 4;
+      const currentPlayerCount = this.sessionClients.get(sessionId)?.size || 0;
+      const isGM = ['gamemaster', 'co-gamemaster', 'admin'].includes(authResult.member?.role?.toLowerCase() || '');
+
+      if (currentPlayerCount >= maxPlayers && !isGM) {
+        this.sendError(ws, 'Session is full');
+        return;
+      }
+
       // Add client to session
       client.sessionId = sessionId;
       if (!this.sessionClients.has(sessionId)) {
@@ -365,17 +399,21 @@ export class VTTWebSocketServer {
         return;
       }
 
+      // Use unified authorization service for session creation
+      const authService = getAuthorizationService(this.prisma);
+      const authResult = await authService.canCreateSession(client.userId!, sessionData.campaignId);
+
+      if (!authResult.authorized) {
+        this.sendError(ws, authResult.reason || 'Cannot create session');
+        console.warn(`Unauthorized session creation attempt: User ${client.userId} tried to create session in campaign ${sessionData.campaignId} - ${authResult.reason}`);
+        return;
+      }
+
       // Validate or create campaign
       let actualCampaignId = sessionData.campaignId;
       if (sessionData.campaignId) {
-        // Verify user has access to the campaign
-        const campaign = await this.campaignService.getCampaign(sessionData.campaignId);
-        const isGM = campaign && campaign.gameMasterId === client.userId;
-
-        if (!campaign || !isGM) {
-          this.sendError(ws, 'Campaign not found or insufficient permissions');
-          return;
-        }
+        // Authorization service already validated access
+        actualCampaignId = sessionData.campaignId;
       } else {
         // Create a new campaign for this session
         const newCampaign = await this.prisma.campaign.create({
@@ -446,15 +484,40 @@ export class VTTWebSocketServer {
       return;
     }
 
-    // Broadcast to all clients in session
-    this.broadcastToSession(client.sessionId, {
-      type: 'token_add',
-      payload: {
-        token,
-        sceneId,
-        userId: client.userId
+    try {
+      // Check if user has permission to add tokens to this session
+      const session = await this.prisma.gameSession.findUnique({
+        where: { id: client.sessionId }
+      });
+
+      if (!session) {
+        this.sendError(ws, 'Session not found');
+        return;
       }
-    });
+
+      const authService = getAuthorizationService(this.prisma);
+      const userRole = await authService.getUserCampaignRole(client.userId!, session.campaignId);
+
+      // Only GMs and Co-GMs can add tokens
+      if (!['gamemaster', 'co-gamemaster', 'admin'].includes(userRole?.toLowerCase() || '')) {
+        this.sendError(ws, 'Insufficient permissions to add tokens');
+        console.warn(`Unauthorized token add attempt: User ${client.userId} tried to add token in session ${client.sessionId}`);
+        return;
+      }
+
+      // Broadcast to all clients in session
+      this.broadcastToSession(client.sessionId, {
+        type: 'token_add',
+        payload: {
+          token,
+          sceneId,
+          userId: client.userId
+        }
+      });
+    } catch (error) {
+      console.error('Token add error:', error);
+      this.sendError(ws, 'Failed to add token');
+    }
   }
 
   private async handleTokenRemove(ws: WebSocket, message: GameMessage) {
@@ -473,15 +536,30 @@ export class VTTWebSocketServer {
       return;
     }
 
-    // Broadcast to all clients in session
-    this.broadcastToSession(client.sessionId, {
-      type: 'token_remove',
-      payload: {
-        tokenId,
-        sceneId,
-        userId: client.userId
+    try {
+      // Use unified authorization service for token deletion
+      const authService = getAuthorizationService(this.prisma);
+      const authResult = await authService.canManipulateToken(client.userId!, tokenId, 'delete');
+
+      if (!authResult.authorized) {
+        this.sendError(ws, authResult.reason || 'Unauthorized to remove this token');
+        console.warn(`Unauthorized token remove attempt: User ${client.userId} tried to remove token ${tokenId} - ${authResult.reason}`);
+        return;
       }
-    });
+
+      // Broadcast to all clients in session
+      this.broadcastToSession(client.sessionId, {
+        type: 'token_remove',
+        payload: {
+          tokenId,
+          sceneId,
+          userId: client.userId
+        }
+      });
+    } catch (error) {
+      console.error('Token remove error:', error);
+      this.sendError(ws, 'Failed to remove token');
+    }
   }
 
   private async handleSceneUpdate(ws: WebSocket, message: GameMessage) {
@@ -641,6 +719,9 @@ export class VTTWebSocketServer {
     if (client.sessionId) {
       this.sessionClients.get(client.sessionId)?.delete(ws);
       
+      // Validate session state after disconnection
+      this.validateSessionState(client.sessionId);
+      
       // Notify other clients
       this.broadcastToSession(client.sessionId, {
         type: 'PLAYER_DISCONNECTED',
@@ -650,7 +731,85 @@ export class VTTWebSocketServer {
     }
 
     this.clients.delete(ws);
-    console.log('WebSocket client disconnected');
+    console.log(`WebSocket client disconnected: User ${client.userId || 'unknown'}`);
+  }
+
+  /**
+   * Validate session state and clean up orphaned sessions
+   */
+  private async validateSessionState(sessionId: string): Promise<void> {
+    try {
+      const sessionClients = this.sessionClients.get(sessionId);
+      
+      // If no clients remain, mark session as inactive after a grace period
+      if (!sessionClients || sessionClients.size === 0) {
+        setTimeout(async () => {
+          const stillEmpty = !this.sessionClients.get(sessionId) || this.sessionClients.get(sessionId)!.size === 0;
+          
+          if (stillEmpty) {
+            // Update session status to paused if all players disconnected
+            await this.prisma.gameSession.update({
+              where: { id: sessionId },
+              data: { 
+                status: 'PAUSED',
+                updatedAt: new Date()
+              }
+            }).catch(error => {
+              console.error(`Failed to update session ${sessionId} status:`, error);
+            });
+            
+            // Clean up session tracking
+            this.sessionClients.delete(sessionId);
+            console.log(`Session ${sessionId} marked as paused due to no active connections`);
+          }
+        }, 30000); // 30 second grace period
+      }
+    } catch (error) {
+      console.error('Error validating session state:', error);
+    }
+  }
+
+  /**
+   * Periodic validation of all active sessions
+   */
+  private startSessionValidation(): void {
+    setInterval(async () => {
+      try {
+        for (const [sessionId, clients] of this.sessionClients.entries()) {
+          // Remove dead connections
+          const activeClients = new Set<WebSocket>();
+          
+          for (const ws of clients) {
+            if (ws.readyState === WebSocket.OPEN) {
+              activeClients.add(ws);
+            }
+          }
+          
+          if (activeClients.size !== clients.size) {
+            this.sessionClients.set(sessionId, activeClients);
+            console.log(`Cleaned up ${clients.size - activeClients.size} dead connections from session ${sessionId}`);
+          }
+          
+          // Validate against database state
+          const session = await this.prisma.gameSession.findUnique({
+            where: { id: sessionId },
+            select: { status: true, campaignId: true }
+          });
+          
+          if (!session || session.status === 'COMPLETED' || session.status === 'ABANDONED') {
+            // Session ended, disconnect all clients
+            for (const ws of activeClients) {
+              this.sendError(ws, 'Session has ended');
+              ws.close();
+            }
+            this.sessionClients.delete(sessionId);
+            console.log(`Cleaned up ended session ${sessionId}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error during session validation:', error);
+      }
+    }, 60000); // Run every minute
   }
 
   private send(ws: WebSocket, message: any) {

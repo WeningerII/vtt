@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import { join } from "path";
 import { existsSync, unlinkSync } from "fs";
 
-class TestDatabase {
+export class TestDatabase {
   private static instance: TestDatabase;
   private prisma: any | null = null;
   private readonly testDbPath = join(process.cwd(), "test.db");
@@ -89,17 +89,30 @@ class TestDatabase {
   }
 
   async reset(): Promise<void> {
-    this.ensurePrisma();
+    await this.ensurePrisma();
 
     console.log("[Test DB] Resetting database state...");
 
-    // Delete all data in reverse dependency order (using test schema models)
-    await this.prisma!.auditLog.deleteMany();
-    await this.prisma!.asset.deleteMany();
-    await this.prisma!.gameParticipant.deleteMany();
-    await this.prisma!.game.deleteMany();
+    // Delete all data in reverse dependency order (production-mirrored test schema)
+    await this.prisma!.encounterToken.deleteMany();
+    await this.prisma!.encounter.deleteMany();
+    await this.prisma!.token.deleteMany();
+    await this.prisma!.gameSession.deleteMany();
+    await this.prisma!.campaignCharacter.deleteMany();
+    await this.prisma!.character.deleteMany();
+    await this.prisma!.chatMessage.deleteMany();
+    await this.prisma!.campaignSettings.deleteMany();
+    await this.prisma!.campaignMember.deleteMany();
     await this.prisma!.scene.deleteMany();
-    await this.prisma!.session.deleteMany();
+    await this.prisma!.campaign.deleteMany();
+    await this.prisma!.refreshToken.deleteMany();
+    await this.prisma!.providerCall.deleteMany();
+    await this.prisma!.generationJob.deleteMany();
+    await this.prisma!.asset.deleteMany();
+    await this.prisma!.appliedCondition.deleteMany();
+    await this.prisma!.condition.deleteMany();
+    await this.prisma!.monster.deleteMany();
+    await this.prisma!.map.deleteMany();
     await this.prisma!.user.deleteMany();
 
     console.log("[Test DB] Database reset complete");
@@ -117,12 +130,14 @@ class TestDatabase {
     // Ensure clean state before seeding
     await this.reset();
 
-    // Create test users (using test schema fields)
+    // Create minimal seed data consistent with production-mirrored schema
     const gmUser = await this.prisma!.user.create({
       data: {
         email: "gm@test.com",
         username: "testgm",
+        displayName: "Test GM",
         passwordHash: "hashedpassword",
+        role: "GM",
       },
     });
 
@@ -130,44 +145,49 @@ class TestDatabase {
       data: {
         email: "player@test.com",
         username: "testplayer",
+        displayName: "Test Player",
         passwordHash: "hashedpassword",
+        role: "player",
       },
     });
 
-    // Create test scene first
-    const testScene = await this.prisma!.scene.create({
+    const campaign = await this.prisma!.campaign.create({
       data: {
-        name: "Test Scene",
-        description: "A test scene for E2E testing",
-        ownerId: gmUser.id,
-        width: 1000,
-        height: 1000,
-        gridSize: 50,
+        name: "Seed Campaign",
+        members: {
+          create: [
+            { userId: gmUser.id, role: "GM", status: "active" },
+            { userId: playerUser.id, role: "player", status: "active" },
+          ],
+        },
+        settings: {
+          create: {
+            description: "Seed campaign settings",
+            gameSystem: "dnd5e",
+            isActive: true,
+          },
+        },
       },
     });
 
-    // Create test game with valid scene reference
-    const testGame = await this.prisma!.game.create({
+    const scene = await this.prisma!.scene.create({
       data: {
-        name: "Test Game",
-        sceneId: testScene.id,
+        name: "Seed Scene",
+        campaignId: campaign.id,
       },
     });
 
-    // Add users as game participants
-    await this.prisma!.gameParticipant.create({
-      data: {
-        gameId: testGame.id,
-        userId: gmUser.id,
-        role: "GM",
-      },
+    await this.prisma!.campaign.update({
+      where: { id: campaign.id },
+      data: { activeSceneId: scene.id },
     });
 
-    await this.prisma!.gameParticipant.create({
+    await this.prisma!.gameSession.create({
       data: {
-        gameId: testGame.id,
-        userId: playerUser.id,
-        role: "PLAYER",
+        name: "Seed Session",
+        campaignId: campaign.id,
+        status: "WAITING",
+        currentSceneId: scene.id,
       },
     });
 
@@ -176,7 +196,6 @@ class TestDatabase {
 }
 
 // Provide both canonical and underscored exports for compatibility
-const testDb = TestDatabase.getInstance();
-const _testDb = testDb;
-
-export { TestDatabase, testDb, _testDb };
+export const testDb = TestDatabase.getInstance();
+export const _testDb = testDb;
+export default testDb;
