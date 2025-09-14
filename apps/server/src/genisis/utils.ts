@@ -20,7 +20,7 @@ export function buildUserPrompt(concept: string, name?: string) {
   return base;
 }
 
-export function safeJsonExtract<T = any>(raw: string): T {
+export function safeJsonExtract<T = unknown>(raw: string): T {
   const trimmed = raw.trim();
   // Strip markdown code fences if present
   const fence = /^```[a-zA-Z]*\n([\s\S]*?)\n```$/m;

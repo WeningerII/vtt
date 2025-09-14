@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { factory } from "./utils/factories";
-import type { TestUser } from "./utils/factories";
+import { factory, type TestUser } from "./utils/factories";
 import { authUtils } from "./utils/auth";
 import { testDb } from "./utils/database";
 

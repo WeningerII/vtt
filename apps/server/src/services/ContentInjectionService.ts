@@ -22,7 +22,7 @@ export interface InjectedContent {
   id: string;
   sceneId: string;
   contentType: string;
-  data: any;
+  data: Record<string, unknown>;
   position?: { x: number; y: number };
   injectedAt: number;
   expiresAt?: number;
@@ -159,7 +159,7 @@ export class ContentInjectionService {
   /**
    * Generate a random encounter
    */
-  private generateEncounter(params: any): any {
+  private generateEncounter(params: unknown): any {
     const encounterTypes = ["combat", "puzzle", "social", "exploration"];
     const difficulties = ["easy", "medium", "hard", "deadly"];
 
@@ -177,7 +177,7 @@ export class ContentInjectionService {
   /**
    * Generate an NPC
    */
-  private generateNPC(params: any): any {
+  private generateNPC(params: unknown): any {
     const names = ["Aldric", "Brenna", "Cedric", "Dara", "Elara", "Finn"];
     const roles = ["merchant", "guard", "scholar", "noble", "commoner"];
 
@@ -195,7 +195,7 @@ export class ContentInjectionService {
   /**
    * Generate treasure
    */
-  private generateTreasure(params: any): any {
+  private generateTreasure(params: unknown): any {
     const treasureTypes = ["gold", "gems", "magic_item", "artifact"];
 
     return {
@@ -211,7 +211,7 @@ export class ContentInjectionService {
   /**
    * Generate a hazard
    */
-  private generateHazard(params: any): any {
+  private generateHazard(params: unknown): any {
     const hazardTypes = ["trap", "environmental", "magical", "structural"];
 
     return {
@@ -228,7 +228,7 @@ export class ContentInjectionService {
   /**
    * Generate a room
    */
-  private generateRoom(params: any): any {
+  private generateRoom(params: unknown): any {
     const roomTypes = ["chamber", "corridor", "vault", "shrine", "library"];
 
     return {
@@ -244,7 +244,7 @@ export class ContentInjectionService {
   /**
    * Generate creatures for encounters
    */
-  private generateCreatures(partyLevel: number): any[] {
+  private generateCreatures(partyLevel: number): unknown[] {
     const creatures = ["goblin", "orc", "skeleton", "wolf", "bear"];
     const count = Math.floor(Math.random() * 4) + 1;
 

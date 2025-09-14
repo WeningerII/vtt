@@ -171,7 +171,7 @@ export class AuthManager {
     });
   }
 
-  async generateOAuthTokens(oauthUser: any): Promise<AuthTokens> {
+  async generateOAuthTokens(oauthUser: unknown): Promise<AuthTokens> {
     // Find or create user from OAuth data
     let user = await this.prisma.user.findUnique({
       where: { email: oauthUser.email }
@@ -236,7 +236,7 @@ export class AuthManager {
     return { accessToken, refreshToken };
   }
 
-  private formatUser(user: any): AuthUser {
+  private formatUser(user: unknown): AuthUser {
     return {
       id: user.id,
       email: user.email,

@@ -31,7 +31,7 @@ export interface GenerationStep {
   status: "pending" | "processing" | "completed" | "error";
   result?: any;
   reasoning?: string;
-  alternatives?: any[];
+  alternatives?: unknown[];
   confidence?: number;
 }
 
@@ -147,7 +147,7 @@ export class GenesisService {
       const character = await this.createFinalCharacter(generation, userId);
       generation.character = character;
       generation.isComplete = true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       generation.error = error.message;
       throw error;
     }
@@ -624,7 +624,7 @@ Format as JSON with detailed analysis.`;
       generation.metadata.provider = "fallback";
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(`Character generation failed: ${error.message}`);
     }
   }
@@ -828,7 +828,7 @@ Format as JSON with detailed analysis.`;
     return features[background] || "Background Feature";
   }
 
-  private async logGenerationJob(generation: CharacterGeneration, character: any): Promise<void> {
+  private async logGenerationJob(generation: CharacterGeneration, character: unknown): Promise<void> {
     await this.prisma.generationJob.create({
       data: {
         type: "CHARACTER_GENERATION" as any,

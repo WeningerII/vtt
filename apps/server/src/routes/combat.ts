@@ -10,7 +10,7 @@ import { RouteHandler } from "../router/types";
 import { parseJsonBody } from "../utils/json";
 
 // Helper functions for combat calculations
-function extractSpellSlots(character: any): Record<string, number> {
+function extractSpellSlots(character: unknown): Record<string, number> {
   if (character.spellSlots) {
     return character.spellSlots;
   }
@@ -34,7 +34,7 @@ function extractSpellSlots(character: any): Record<string, number> {
   return spellSlots;
 }
 
-function calculateMovementSpeed(character: any): number {
+function calculateMovementSpeed(character: unknown): number {
   // Base movement speed
   let speed = 30;
 
@@ -54,7 +54,7 @@ function calculateMovementSpeed(character: any): number {
   return speed;
 }
 
-function calculateThreatLevel(enemies: any[]): string {
+function calculateThreatLevel(enemies: unknown[]): string {
   if (!enemies || enemies.length === 0) {return "low";}
 
   // Calculate total challenge rating
@@ -215,7 +215,7 @@ export const getTacticalDecisionHandler: RouteHandler = async (ctx) => {
         data: decision,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Tactical decision failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -283,7 +283,7 @@ export const simulateCombatHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Combat simulation failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -341,7 +341,7 @@ export const analyzeCombatHandler: RouteHandler = async (ctx) => {
         data: analysis,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Combat analysis failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -386,7 +386,7 @@ export const getActiveSimulationsHandler: RouteHandler = async (ctx) => {
         })),
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to get active simulations:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -402,7 +402,7 @@ export const getActiveSimulationsHandler: RouteHandler = async (ctx) => {
 /**
  * WebSocket events for real-time combat updates
  */
-export const _handleCombatWebSocket = async (ws: any, message: any, _userId: string) => {
+export const _handleCombatWebSocket = async (ws: any, message: Record<string, unknown>, _userId: string) => {
   switch (message.type) {
     case "COMBAT_SUBSCRIBE":
       {
@@ -526,7 +526,7 @@ export const getSimulationHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to get simulation:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -594,7 +594,7 @@ export const getPositioningHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Positioning analysis failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(

@@ -10,8 +10,8 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  enum?: any[];
-  custom?: (value: any) => string | null;
+  enum?: unknown[];
+  custom?: (value: unknown) => string | null;
 }
 
 export interface ValidationSchema {
@@ -26,7 +26,7 @@ export interface ValidationResult {
 /**
  * Validate request body against schema
  */
-export function validateRequest(data: any, schema: ValidationSchema): ValidationResult {
+export function validateRequest(data: Record<string, unknown>, schema: ValidationSchema): ValidationResult {
   const errors: Record<string, string> = {};
 
   for (const [field, rules] of Object.entries(schema)) {

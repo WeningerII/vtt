@@ -520,7 +520,7 @@ export const addLightSourceHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, lightSource }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to add light source:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to add light source" }));
@@ -722,7 +722,7 @@ export const addTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ token }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -771,7 +771,7 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -814,7 +814,7 @@ export const updateTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -855,7 +855,7 @@ export const removeTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({

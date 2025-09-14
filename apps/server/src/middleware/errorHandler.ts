@@ -60,7 +60,7 @@ export class BusinessLogicError extends Error implements VTTError {
   }
 }
 
-export function handleRouteError(ctx: Context, error: any): void {
+export function handleRouteError(ctx: Context, error: unknown): void {
   logger.error(`[${ctx.requestId}] Route error:`, error as any);
 
   let statusCode = 500;
@@ -123,7 +123,7 @@ export function handleRouteError(ctx: Context, error: any): void {
   ctx.res.end(JSON.stringify(response));
 }
 
-export function validateRequired(data: any, fields: string[]): void {
+export function validateRequired(data: Record<string, unknown>, fields: string[]): void {
   const missing = fields.filter((field) => {
     const value = data[field];
     return value === undefined || value === null || value === "";
@@ -283,7 +283,7 @@ export function validateUUID(value: any, fieldName: string): void {
   }
 }
 
-export function validateCoordinates(x: any, y: any): void {
+export function validateCoordinates(x: any, y: unknown): void {
   validateNumber(x, "x");
   validateNumber(y, "y");
 

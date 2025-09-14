@@ -67,7 +67,7 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ items, total, limit, offset }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to list encounters" }));
   }
@@ -138,7 +138,7 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ encounter }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to get encounter" }));
   }
@@ -193,7 +193,7 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to create encounter" }));
   }
@@ -294,7 +294,7 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, participant }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to add participant" }));
   }
@@ -313,7 +313,7 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
     const body = await parseRequestBody(ctx.req);
     const { name, status, roundNumber, currentTurn } = body;
 
-    const data: any = {};
+    const data: Record<string, unknown> = {};
     if (name !== undefined) {data.name = name;}
     if (status !== undefined) {data.status = status;}
     if (roundNumber !== undefined) {data.roundNumber = roundNumber;}
@@ -334,17 +334,17 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to update encounter" }));
   }
 };
 
 // Helper: parse JSON
-async function parseRequestBody(req: any): Promise<any> {
+async function parseRequestBody(req: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", (chunk: any) => (body += chunk.toString()));
+    req.on("data", (chunk: unknown) => (body += chunk.toString()));
     req.on("end", () => {
       try {
         resolve(body ? JSON.parse(body) : {});

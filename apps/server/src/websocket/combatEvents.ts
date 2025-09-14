@@ -8,7 +8,7 @@ import { ActorIntegrationService } from "../services/ActorIntegrationService";
 
 export interface CombatWebSocketMessage {
   type: string;
-  payload: any;
+  payload: Record<string, unknown>;
   requestId?: string;
 }
 

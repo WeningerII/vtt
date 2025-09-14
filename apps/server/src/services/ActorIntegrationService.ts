@@ -915,7 +915,7 @@ export class ActorIntegrationService {
   /**
    * Generate monster actions from statblock
    */
-  private generateMonsterActions(statblock: any): CombatActor["actions"] {
+  private generateMonsterActions(statblock: unknown): CombatActor["actions"] {
     const actions: CombatActor["actions"] = [];
 
     // Add default actions
@@ -1134,7 +1134,7 @@ export class ActorIntegrationService {
     };
   }
 
-  private async getTokenDexModifier(token: any): Promise<number> {
+  private async getTokenDexModifier(token: unknown): Promise<number> {
     if (token.characterId) {
       const character = await this.characterService.getCharacter(token.characterId);
       return character?.abilities.DEX?.modifier || 0;
@@ -1393,7 +1393,7 @@ export class ActorIntegrationService {
   /**
    * Parse hit points from various formats
    */
-  private parseHitPoints(hp: any): number {
+  private parseHitPoints(hp: unknown): number {
     if (typeof hp === "number") {return hp;}
     if (typeof hp === "string") {
       const match = hp.match(/(\d+)/);

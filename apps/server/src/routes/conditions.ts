@@ -42,7 +42,7 @@ export const listConditionsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(result));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to list conditions" }));
   }
@@ -68,7 +68,7 @@ export const getConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ condition }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to get condition" }));
   }
@@ -105,7 +105,7 @@ export const createConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, condition: created }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to create condition" }));
   }
@@ -150,7 +150,7 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, appliedCondition: applied }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to apply condition" }));
   }
@@ -172,7 +172,7 @@ export const listAppliedConditionsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ items: conditions, total: conditions.length }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to list applied conditions" }));
   }
@@ -189,7 +189,7 @@ export const updateAppliedConditionHandler: RouteHandler = async (ctx) => {
     }
 
     const body = await parseJsonBody(ctx.req);
-    const data: any = {};
+    const data: Record<string, unknown> = {};
 
     // Only update provided fields
     if (typeof body.duration === "number") {data.duration = body.duration;}
@@ -203,7 +203,7 @@ export const updateAppliedConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, appliedCondition: updated }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to update applied condition" }));
   }
@@ -229,7 +229,7 @@ export const removeAppliedConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to remove applied condition" }));
   }
@@ -251,7 +251,7 @@ export const updateConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, condition: updated }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to update condition" }));
   }
@@ -277,7 +277,7 @@ export const deleteConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to delete condition" }));
   }
@@ -290,7 +290,7 @@ export const getConditionStatsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(stats));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to get condition stats" }));
   }
@@ -303,7 +303,7 @@ export const cleanupExpiredConditionsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, expiredCount: expired.length, expired }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to cleanup expired conditions" }));
   }

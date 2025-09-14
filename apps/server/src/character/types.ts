@@ -25,7 +25,7 @@ export interface Equipment {
   weight?: number;
   value?: number;
   equipped?: boolean;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 export interface Spell {

@@ -237,8 +237,8 @@ export class GameSession {
   getNetworkDelta(): {
     seq: number;
     baseSeq: number;
-    created: any[];
-    updated: any[];
+    created: unknown[];
+    updated: unknown[];
     removed: number[];
   } {
     return this.netSync.update(this.world);

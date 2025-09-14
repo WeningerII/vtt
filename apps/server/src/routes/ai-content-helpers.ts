@@ -104,11 +104,11 @@ async function enhanceTextContent(
 }
 
 // Helper function to parse JSON from request body
-async function parseJsonBody(req: any): Promise<any> {
+async function parseJsonBody(req: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";
 
-    req.on("data", (chunk: any) => {
+    req.on("data", (chunk: unknown) => {
       body += chunk.toString();
     });
 

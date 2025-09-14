@@ -52,7 +52,7 @@ export const createCharacterHandler: RouteHandler = async (ctx) => {
         character,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -85,7 +85,7 @@ export const getCharacterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ character }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -115,7 +115,7 @@ export const getUserCharactersHandler: RouteHandler = async (ctx) => {
         count: characters.length,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -172,7 +172,7 @@ export const updateCharacterHandler: RouteHandler = async (ctx) => {
         character,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -211,7 +211,7 @@ export const deleteCharacterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -235,7 +235,7 @@ export const getCharacterTemplatesHandler: RouteHandler = async (ctx) => {
         count: templates.length,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -300,7 +300,7 @@ export const levelUpCharacterHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -379,7 +379,7 @@ export const characterRestHandler: RouteHandler = async (ctx) => {
         restType,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({

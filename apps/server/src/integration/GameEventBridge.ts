@@ -19,7 +19,7 @@ interface RuleContext {
 
 interface RuleExecutionResult {
   success: boolean;
-  effects: any[];
+  effects: unknown[];
 }
 
 class DeepRuleEngine {
@@ -33,17 +33,17 @@ class DeepRuleEngine {
 }
 
 class ContentGenerationWorkflowEngine {
-  constructor(ruleEngine: any, prisma: any, aiServices: any) {}
+  constructor(ruleEngine: any, prisma: any, aiServices: unknown) {}
   
   async initialize(): Promise<void> {
     logger.info('ContentGenerationWorkflowEngine initialized');
   }
   
-  setAIServices(services: any): void {}
+  setAIServices(services: unknown): void {}
   
   async processEvent(type: string, data: Record<string, any>, context?: RuleContext): Promise<void> {}
   
-  generateContent(type: string, context: any): any {
+  generateContent(type: string, context: unknown): any {
     return { generated: true, type, context };
   }
 }
@@ -87,7 +87,7 @@ export class GameEventBridge extends EventEmitter {
     }
   }
 
-  setAIServices(services: any): void {
+  setAIServices(services: unknown): void {
     this.aiServices = services;
     this.contentEngine.setAIServices(services);
   }
@@ -126,14 +126,14 @@ export class GameEventBridge extends EventEmitter {
   private async handleCombatAI(event: GameEvent, context: RuleContext): Promise<void> {
     try {
       const participants = event.data.participants || [];
-      const activeParticipants = participants.filter((p: any) => p.active);
+      const activeParticipants = participants.filter((p: unknown) => p.active);
       
       for (const participant of activeParticipants) {
         if (participant.type === "npc" || participant.type === "monster") {
           const decision = await this.combatAI.makeTacticalDecision({
             character: participant,
-            allies: activeParticipants.filter((p: any) => p.faction === participant.faction),
-            enemies: activeParticipants.filter((p: any) => p.faction !== participant.faction),
+            allies: activeParticipants.filter((p: unknown) => p.faction === participant.faction),
+            enemies: activeParticipants.filter((p: unknown) => p.faction !== participant.faction),
             battlefield: {
               terrain: [],
               hazards: [],
@@ -170,7 +170,7 @@ export class GameEventBridge extends EventEmitter {
     }
   }
 
-  async handleWebSocketMessage(sessionId: string, message: any, userId: string): Promise<void> {
+  async handleWebSocketMessage(sessionId: string, message: Record<string, unknown>, userId: string): Promise<void> {
     try {
       const gameEventTypes = ["token_move", "token_add", "combat_update", "spell_cast"];
       

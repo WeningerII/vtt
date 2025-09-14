@@ -330,7 +330,7 @@ export class VTTSocketManager {
     });
   }
 
-  private broadcastToRoom(room: string, event: string, data: any, excludeSocketId?: string) {
+  private broadcastToRoom(room: string, event: string, data: Record<string, unknown>, excludeSocketId?: string) {
     if (excludeSocketId) {
       this.io.to(room).except(excludeSocketId).emit(event, data);
     } else {

@@ -181,7 +181,7 @@ export class MapService {
         lineOfSight: false,
         sightRadius: 30,
       },
-      tokens: [].map((token: any) => ({
+      tokens: [].map((token: unknown) => ({
         x: token.x,
         y: token.y,
         rotation: token.rotation,
@@ -313,7 +313,7 @@ export class MapService {
           zIndex: 100,
         },
       ],
-      tokens: [].map((token: any) => ({
+      tokens: [].map((token: unknown) => ({
         x: token.x,
         y: token.y,
         rotation: token.rotation,
@@ -365,7 +365,7 @@ export class MapService {
   /**
    * Add fog area
    */
-  async addFogArea(_sceneId: string, _fogArea: any): Promise<any | null> {
+  async addFogArea(_sceneId: string, _fogArea: unknown): Promise<any | null> {
     // Simplified implementation
     return null;
   }
@@ -736,7 +736,7 @@ export class MapService {
    */
   private setupPhysicsIntegration(): void {
     // Set up physics world event listeners
-    this.physicsWorld.on('collision', (data: any) => {
+    this.physicsWorld.on('collision', (data: unknown) => {
       this.handleTokenCollision(data);
     });
 
@@ -913,7 +913,7 @@ export class MapService {
   /**
    * Get active spell effects for scene
    */
-  private getActiveSpellEffects(sceneId: string): any[] {
+  private getActiveSpellEffects(sceneId: string): unknown[] {
     return Array.from(this.activeSpellEffects.values()).filter(
       (effect) => effect.sceneId === sceneId,
     );
@@ -922,7 +922,7 @@ export class MapService {
   /**
    * Get spell projectiles for scene
    */
-  private getSpellProjectiles(sceneId: string): any[] {
+  private getSpellProjectiles(sceneId: string): unknown[] {
     return Array.from(this.spellProjectiles.values()).filter(
       (projectile) => projectile.sceneId === sceneId,
     );
@@ -931,7 +931,7 @@ export class MapService {
   /**
    * Handle spell projectile hit events
    */
-  private handleSpellProjectileHit(data: any): void {
+  private handleSpellProjectileHit(data: unknown): void {
     // Process projectile impact
     if (data.sceneId && data.targetId) {
       this.emitMapUpdate(data.sceneId, {
@@ -947,7 +947,7 @@ export class MapService {
   /**
    * Handle spell effect expiration
    */
-  private handleSpellEffectExpired(data: any): void {
+  private handleSpellEffectExpired(data: unknown): void {
     // Clean up expired spell effects
     if (data.effectId) {
       this.activeSpellEffects.delete(data.effectId);
@@ -965,7 +965,7 @@ export class MapService {
   /**
    * Handle token collision events
    */
-  private handleTokenCollision(data: any): void {
+  private handleTokenCollision(data: unknown): void {
     // Process token collisions
     if (data.sceneId && data.tokenAId && data.tokenBId) {
       this.emitMapUpdate(data.sceneId, {
@@ -981,7 +981,7 @@ export class MapService {
   /**
    * Emit map update event for real-time synchronization
    */
-  private emitMapUpdate(sceneId: string, data: any): void {
+  private emitMapUpdate(sceneId: string, data: unknown): void {
     // Broadcast to all connected clients in the scene
     if (this.webSocketManager) {
       try {
@@ -1367,7 +1367,7 @@ export class MapService {
     position?: { x: number; y: number },
   ): Promise<{
     success: boolean;
-    effects: any[];
+    effects: unknown[];
     details: any;
   }> {
     try {
@@ -1380,7 +1380,7 @@ export class MapService {
       }
 
       // Use actual SpellEngine for spell casting
-      const effects: any[] = [];
+      const effects: unknown[] = [];
 
       // Get spell data (in a real implementation, this would come from a spell database)
       const spell = this.getSpellData(spellId);
@@ -1545,8 +1545,8 @@ export class MapService {
     spellId: string,
     targetId?: string,
     position?: { x: number; y: number },
-  ): any[] {
-    const effects: any[] = [];
+  ): unknown[] {
+    const effects: unknown[] = [];
 
     switch (spellId) {
       case "fireball":
@@ -1606,10 +1606,10 @@ export class MapService {
   /**
    * Add encounter to scene
    */
-  async addEncounter(sceneId: string, encounterData: any): Promise<any> {
+  async addEncounter(sceneId: string, encounterData: unknown): Promise<any> {
     try {
       // Add encounter tokens to scene
-      const addedTokens: any[] = [];
+      const addedTokens: unknown[] = [];
 
       if (encounterData.monsters) {
         for (const monster of encounterData.monsters) {
@@ -1638,7 +1638,7 @@ export class MapService {
   /**
    * Add NPC to scene
    */
-  async addNPC(sceneId: string, npcData: any): Promise<any> {
+  async addNPC(sceneId: string, npcData: unknown): Promise<any> {
     try {
       const tokenId = await this.addToken(sceneId, {
         name: npcData.name,
@@ -1659,7 +1659,7 @@ export class MapService {
   /**
    * Add treasure to scene
    */
-  async addTreasure(sceneId: string, treasureData: any): Promise<any> {
+  async addTreasure(sceneId: string, treasureData: unknown): Promise<any> {
     try {
       const tokenId = await this.addToken(sceneId, {
         name: treasureData.name || "Treasure",
@@ -1680,7 +1680,7 @@ export class MapService {
   /**
    * Add hazard to scene
    */
-  async addHazard(sceneId: string, hazardData: any): Promise<any> {
+  async addHazard(sceneId: string, hazardData: unknown): Promise<any> {
     try {
       const effect = {
         id: uuidv4(),
@@ -2253,12 +2253,12 @@ export class MapService {
   /**
    * Initialize physics integration
    */
-  initializePhysicsIntegration(visualEffectsBridge?: any): void {
+  initializePhysicsIntegration(visualEffectsBridge?: unknown): void {
     this.visualEffectsBridge = visualEffectsBridge;
     this.startSpellPhysicsLoop();
 
     // Setup physics event handlers
-    this.physicsWorld.on("collision", (bodyA: any, bodyB: any, collision: any) => {
+    this.physicsWorld.on("collision", (bodyA: any, bodyB: any, collision: unknown) => {
       this.handlePhysicsCollision(bodyA, bodyB, collision);
     });
 
@@ -2268,7 +2268,7 @@ export class MapService {
   /**
    * Handle physics collision events
    */
-  private async handlePhysicsCollision(bodyA: any, bodyB: any, collision: any): Promise<void> {
+  private async handlePhysicsCollision(bodyA: any, bodyB: any, collision: unknown): Promise<void> {
     try {
       // Determine collision types
       const typeA = bodyA.userData?.type;

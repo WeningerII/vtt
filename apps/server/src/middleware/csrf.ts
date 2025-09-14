@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import type { Context, Next } from "../router/types";
+import { Request, Response } from 'express';
 
 const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER = "x-csrf-token";
@@ -78,7 +79,7 @@ function getCookie(cookieHeader: string | undefined, name: string): string | nul
  * Helper function to set cookie
  */
 function setCookie(
-  res: any,
+  res: Response,
   name: string,
   value: string,
   options: {

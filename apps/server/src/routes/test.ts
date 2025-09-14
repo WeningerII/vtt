@@ -1,7 +1,7 @@
 import { Router } from "../router/router";
 
 // Simple test route to verify WebSocket integration
-export function setupTestRoutes(router: Router, wsManager?: any) {
+export function setupTestRoutes(router: Router, wsManager?: unknown) {
   router.get("/api/test/websocket-status", (ctx) => {
     const stats = {
       totalClients: wsManager?.getClientCount() || 0,

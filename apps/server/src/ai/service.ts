@@ -141,7 +141,7 @@ export function createAIServices(prisma: PrismaClient) {
       });
 
       return { job: updated, callId: call.id, asset };
-    } catch (err: any) {
+    } catch (err: unknown) {
       await prisma.providerCall.create({
         data: {
           jobId: job.id,
@@ -210,7 +210,7 @@ export function createAIServices(prisma: PrismaClient) {
         },
       });
       return { job: updated, callId: call.id, asset };
-    } catch (err: any) {
+    } catch (err: unknown) {
       await prisma.providerCall.create({
         data: {
           jobId: job.id,
@@ -280,7 +280,7 @@ export function createAIServices(prisma: PrismaClient) {
         },
       });
       return { job: updated, callId: call.id, asset };
-    } catch (err: any) {
+    } catch (err: unknown) {
       await prisma.providerCall.create({
         data: {
           jobId: job.id,

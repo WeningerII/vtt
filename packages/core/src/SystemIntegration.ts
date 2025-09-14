@@ -233,27 +233,6 @@ export interface IntegratedGameSession {
   sessionData: Record<string, any>;
 }
 
-export interface SystemIntegrationConfig {
-  enableRuleEngine?: boolean;
-  enableVisualScripting?: boolean;
-  enableContentGeneration?: boolean;
-  enableBehaviorGeneration?: boolean;
-  enableWorkflowEngine?: boolean;
-  ruleEnginePath?: string;
-  contentSuitePath?: string;
-  behaviorSeed?: number;
-}
-
-export interface SystemStatus {
-  ruleEngine: 'active' | 'inactive' | 'error';
-  visualScripting: 'active' | 'inactive' | 'error';
-  contentSuite: 'active' | 'inactive' | 'error';
-  behaviorGenerator: 'active' | 'inactive' | 'error';
-  workflowEngine: 'active' | 'inactive' | 'error';
-  lastHealthCheck: Date;
-  errors: string[];
-}
-
 /**
  * Central system integration and orchestration class
  */
@@ -771,7 +750,7 @@ export class VTTSystemIntegrator extends EventEmitter {
     const { systems } = session;
 
     switch (operation) {
-      case 'generateDungeonWithEncounters':
+      case 'generateDungeonWithEncounters': {
         // Generate dungeon with automatic encounter population
         const dungeon = await systems.contentSuite.generateDungeon(parameters.dungeonOptions);
         
@@ -788,8 +767,9 @@ export class VTTSystemIntegrator extends EventEmitter {
         }
         
         return dungeon;
+      }
 
-      case 'createSmartNPC':
+      case 'createSmartNPC': {
         // Generate NPC with AI behavior and potential quests
         const npc = await systems.contentSuite.generateNPC(parameters.npcOptions);
         
@@ -813,8 +793,9 @@ export class VTTSystemIntegrator extends EventEmitter {
         }
         
         return npc;
+      }
 
-      case 'triggerEventChain':
+      case 'triggerEventChain': {
         // Trigger a complex event chain across all systems
         const eventData = parameters.eventData;
         
@@ -830,6 +811,7 @@ export class VTTSystemIntegrator extends EventEmitter {
         await systems.workflowEngine.processEvent(parameters.eventType, eventData, parameters.context);
         
         return { success: true, message: 'Event chain triggered successfully' };
+      }
 
       default:
         throw new Error(`Unknown cross-system operation: ${operation}`);

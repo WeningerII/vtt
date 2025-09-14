@@ -1150,10 +1150,10 @@ export class CampaignService {
   /**
    * Helper method to map database campaign to service interface
    */
-  private mapDbCampaignToCampaign(dbCampaign: any): Campaign {
-    const gameMaster = dbCampaign.members?.find((m: any) => (m.role || "").toLowerCase() === "gm");
-    const players = dbCampaign.members?.map((m: any) => m.userId) || [];
-    const characters = dbCampaign.characters?.map((cc: any) => cc.characterId) || [];
+  private mapDbCampaignToCampaign(dbCampaign: unknown): Campaign {
+    const gameMaster = dbCampaign.members?.find((m: unknown) => (m.role || "").toLowerCase() === "gm");
+    const players = dbCampaign.members?.map((m: unknown) => m.userId) || [];
+    const characters = dbCampaign.characters?.map((cc: unknown) => cc.characterId) || [];
 
     return {
       id: dbCampaign.id,

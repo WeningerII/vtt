@@ -161,7 +161,7 @@ export class TokenService {
   }
 
   async updateToken(id: string, request: UpdateTokenRequest) {
-    const data: any = {};
+    const data: Record<string, unknown> = {};
     if (request.name !== undefined) {data.name = request.name;}
     if (request.x !== undefined) {data.x = request.x;}
     if (request.y !== undefined) {data.y = request.y;}
@@ -188,7 +188,7 @@ export class TokenService {
   }
 
   async moveToken(id: string, x: number, y: number, rotation?: number) {
-    const data: any = { x, y };
+    const data: Record<string, unknown> = { x, y };
     if (rotation !== undefined) {data.rotation = rotation;}
 
     return this.updateToken(id, data);
@@ -241,7 +241,7 @@ export class TokenService {
   }
 
   // Lock functionality not in schema - could be added to metadata if needed
-  async setTokenMetadata(id: string, metadata: any) {
+  async setTokenMetadata(id: string, metadata: unknown) {
     return this.updateToken(id, { metadata });
   }
 

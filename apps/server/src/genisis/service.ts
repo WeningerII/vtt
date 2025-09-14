@@ -33,11 +33,11 @@ export async function generateCharacter(input: GenerateInput) {
     const bestProvider = aiProviderRegistry.getBestProvider("text_generation");
     const providerName = bestProvider?.name || "unknown";
 
-    const db = prisma as any; // prisma generate may be required before Character type exists
+    const db = prisma as any; // TODO: Define proper Character type after prisma generate
     const character = await db.character.create({
       data: {
         name: finalSheet.name ?? "Unnamed",
-        sheet: finalSheet as any,
+        sheet: finalSheet as any, // TODO: Use proper Prisma JsonValue type
         prompt: user,
         provider: providerName,
         model: response.model,

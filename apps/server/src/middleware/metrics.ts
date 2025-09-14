@@ -264,7 +264,7 @@ healthChecker.addCheck('uptime', async () => {
 });
 
 // Business logic health checks can be added by other modules
-export function addDatabaseHealthCheck(prisma: any): void {
+export function addDatabaseHealthCheck(prisma: unknown): void {
   healthChecker.addCheck('database', async () => {
     try {
       await prisma.$queryRaw`SELECT 1`;

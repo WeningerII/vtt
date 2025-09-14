@@ -21,10 +21,10 @@ interface WebSocketClient {
 
 type GameMessage = {
   type: string;
-  payload?: any;
+  payload?: any; // TODO: Type specific message payloads
   sessionId?: string;
   userId?: string;
-  [key: string]: any;
+  [key: string]: any; // TODO: Type specific message properties
 };
 
 export class VTTWebSocketServer {
@@ -812,7 +812,7 @@ export class VTTWebSocketServer {
     }, 60000); // Run every minute
   }
 
-  private send(ws: WebSocket, message: any) {
+  private send(ws: WebSocket, message: unknown) {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(message));
     }
@@ -822,7 +822,7 @@ export class VTTWebSocketServer {
     this.send(ws, { type: 'ERROR', error });
   }
 
-  private broadcastToSession(sessionId: string, message: any, exclude?: WebSocket) {
+  private broadcastToSession(sessionId: string, message: Record<string, unknown>, exclude?: WebSocket) {
     const clients = this.sessionClients.get(sessionId);
     if (!clients) {return;}
 
@@ -842,7 +842,7 @@ export class VTTWebSocketServer {
   }
 
   // Expose WebSocketServer's handleUpgrade for manual upgrade handling
-  public handleUpgrade(request: any, socket: any, head: any) {
+  public handleUpgrade(request: any, socket: any, head: Buffer) {
     this.wss.handleUpgrade(request, socket, head, (ws) => {
       this.wss.emit('connection', ws, request);
     });

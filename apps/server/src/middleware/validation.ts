@@ -228,7 +228,7 @@ export const validateRequest = (schemas: {
 /**
  * Parse and validate JSON body with security checks
  */
-async function parseJsonBody(req: any): Promise<any> {
+async function parseJsonBody(req: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = '';
     let size = 0;
@@ -277,7 +277,7 @@ async function parseJsonBody(req: any): Promise<any> {
 /**
  * Check for prototype pollution attempts
  */
-function hasProtoProperty(obj: any): boolean {
+function hasProtoProperty(obj: unknown): boolean {
   if (typeof obj !== 'object' || obj === null) {return false;}
   
   const dangerousKeys = ['__proto__', 'constructor', 'prototype'];

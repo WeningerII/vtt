@@ -140,7 +140,7 @@ Create something unique that enhances gameplay.`
           generatedAt: new Date()
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(`Content generation failed: ${error.message}`);
     }
   }
@@ -190,7 +190,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     }
   }
 
-  function generateNPCContent(context: any): any {
+  function generateNPCContent(context: unknown): any {
     const names = ["Gareth", "Luna", "Thorin", "Zara", "Kael", "Vera"];
     const classes = ["Merchant", "Guard", "Scholar", "Innkeeper", "Blacksmith"];
     const personalities = ["Friendly", "Gruff", "Mysterious", "Cheerful", "Suspicious"];
@@ -206,7 +206,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  function generateLocationContent(context: any): any {
+  function generateLocationContent(context: unknown): any {
     const locations = ["Ancient Ruins", "Hidden Grove", "Abandoned Tower", "Crystal Cave", "Misty Swamp"];
     const features = ["Strange markings", "Magical aura", "Hidden passages", "Dangerous wildlife", "Valuable resources"];
     
@@ -220,7 +220,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  function generateQuestContent(context: any): any {
+  function generateQuestContent(context: unknown): any {
     const questTypes = ["Rescue", "Retrieve", "Investigate", "Escort", "Eliminate"];
     const objectives = ["Find the missing person", "Recover the stolen artifact", "Uncover the mystery", "Protect the caravan", "Defeat the threat"];
     
@@ -238,7 +238,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  function generateItemContent(context: any): any {
+  function generateItemContent(context: unknown): any {
     const itemTypes = ["Weapon", "Armor", "Potion", "Scroll", "Trinket"];
     const rarities = ["Common", "Uncommon", "Rare"];
     const properties = ["Magical", "Masterwork", "Ancient", "Blessed", "Enchanted"];
@@ -253,19 +253,19 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  async function generateNPC(context: any) {
+  async function generateNPC(context: unknown) {
     return generateContent({ type: "npc", context });
   }
 
-  async function generateLocation(context: any) {
+  async function generateLocation(context: unknown) {
     return generateContent({ type: "location", context });
   }
 
-  async function generateQuest(context: any) {
+  async function generateQuest(context: unknown) {
     return generateContent({ type: "quest", context });
   }
 
-  async function generateItem(context: any) {
+  async function generateItem(context: unknown) {
     return generateContent({ type: "item", context });
   }
 

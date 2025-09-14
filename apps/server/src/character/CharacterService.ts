@@ -480,7 +480,7 @@ export class CharacterService {
     }
   }
 
-  private getStartingEquipment(characterClass: string, _background: string): any[] {
+  private getStartingEquipment(characterClass: string, _background: string): unknown[] {
     const equipment = [
       { id: uuidv4(), name: "Explorer's Pack", type: "misc", quantity: 1, weight: 59 },
       { id: uuidv4(), name: "Clothes, Common", type: "misc", quantity: 1, weight: 3 },
@@ -536,8 +536,8 @@ export class CharacterService {
     return equipment;
   }
 
-  private getClassFeatures(characterClass: string, level: number): any[] {
-    const features: any[] = [];
+  private getClassFeatures(characterClass: string, level: number): unknown[] {
+    const features: Response[] = [];
 
     // Level 1 features for each class
     switch (characterClass.toLowerCase()) {

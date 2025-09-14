@@ -1,5 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import { Buffer } from "node:buffer";
+import { Request, Response } from 'express';
 
 /**
  * Represents an HTTP error.
@@ -52,7 +53,7 @@ export function parseJsonBody<T = any>(
   });
 }
 
-export function sendJson(res: any, data: any, status = 200): void {
+export function sendJson(res: Response, data: Record<string, unknown>, status = 200): void {
   if (!res.headersSent) {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(data));

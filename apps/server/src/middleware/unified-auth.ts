@@ -113,7 +113,7 @@ export const optionalUnifiedAuth: RouteHandler = async (ctx) => {
  * 2. sessionToken cookie
  * 3. access_token query parameter (for WebSocket upgrades)
  */
-function extractAuthToken(req: any): { value: string; source: string } | null {
+function extractAuthToken(req: unknown): { value: string; source: string } | null {
   // Check Authorization header first (most secure)
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
@@ -150,7 +150,7 @@ function extractAuthToken(req: any): { value: string; source: string } | null {
 /**
  * Get client IP address with proxy support
  */
-function getClientIP(req: any): string {
+function getClientIP(req: unknown): string {
   return (
     req.headers["x-forwarded-for"]?.split(",")[0] ||
     req.headers["x-real-ip"] ||
@@ -179,7 +179,7 @@ function parseCookies(cookieStr: string): Record<string, string> {
 /**
  * Send standardized unauthorized response
  */
-function respondUnauthorized(res: any, message: string): void {
+function respondUnauthorized(res: Response, message: string): void {
   res.writeHead(401, {
     "Content-Type": "application/json",
     "WWW-Authenticate": 'Bearer realm="VTT API"',
@@ -196,14 +196,14 @@ function respondUnauthorized(res: any, message: string): void {
 /**
  * Helper to get authenticated user from context
  */
-export function getAuthenticatedUser(ctx: any): any | null {
+export function getAuthenticatedUser(ctx: unknown): any | null {
   return ctx.req?.user || null;
 }
 
 /**
  * Helper to get authenticated user ID from context
  */
-export function getAuthenticatedUserId(ctx: any): string {
+export function getAuthenticatedUserId(ctx: unknown): string {
   const user = getAuthenticatedUser(ctx);
   if (!user?.id) {
     throw new Error("Authentication required - no authenticated user found");

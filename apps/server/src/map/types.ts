@@ -194,7 +194,7 @@ export interface MapUpdateEvent {
     | "effect_add"
     | "effect_remove";
   sceneId: string;
-  data: any;
+  data: Record<string, unknown>;
   timestamp: number;
   userId: string;
 }

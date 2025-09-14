@@ -59,7 +59,7 @@ export class OAuthManager {
             callbackURL: this.config.discord.callbackURL,
             scope: this.config.discord.scope,
           },
-          async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+          async (accessToken: string, refreshToken: string, profile: any, done: unknown) => {
             try {
               const oauthProfile: OAuthProfile = {
                 id: profile.id,
@@ -95,7 +95,7 @@ export class OAuthManager {
             callbackURL: this.config.google.callbackURL,
             scope: this.config.google.scope,
           },
-          async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+          async (accessToken: string, refreshToken: string, profile: any, done: unknown) => {
             try {
               const oauthProfile: OAuthProfile = {
                 id: profile.id,
@@ -123,7 +123,7 @@ export class OAuthManager {
       done(null, user.id);
     });
 
-    passport.deserializeUser(async (id: string, done: any) => {
+    passport.deserializeUser(async (id: string, done: unknown) => {
       try {
         const user = await this.authManager.findUserById(id);
         done(null, user);

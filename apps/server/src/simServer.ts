@@ -51,7 +51,7 @@ function tick(dt: number) {
   const now = Date.now();
   for (const c of clients) {
     if (c.ws.readyState !== c.ws.OPEN) {continue;}
-    const visible: any[] = [];
+    const visible: unknown[] = [];
     let sent = 0;
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i];

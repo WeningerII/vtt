@@ -38,7 +38,7 @@ export const createGameHandler: RouteHandler = async (ctx) => {
         game: game.getGameState(),
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(error.message.includes("already exists") ? 409 : 500, {
       "Content-Type": "application/json",
     });
@@ -118,7 +118,7 @@ export const joinGameHandler: RouteHandler = async (ctx) => {
         player: game.getPlayer(body.userId),
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -161,7 +161,7 @@ export const leaveGameHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -229,7 +229,7 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
         tokenId: tokenId.toString(),
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -280,7 +280,7 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -334,7 +334,7 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
         result,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -345,11 +345,11 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
 };
 
 // Helper function to parse JSON from request body
-async function parseJsonBody(req: any): Promise<any> {
+async function parseJsonBody(req: unknown): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";
 
-    req.on("data", (chunk: any) => {
+    req.on("data", (chunk: unknown) => {
       body += chunk.toString();
     });
 

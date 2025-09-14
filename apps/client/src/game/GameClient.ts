@@ -99,7 +99,7 @@ export class GameClient {
         this.handlers.onGameStateUpdate?.(this.gameState);
         break;
 
-      case "SNAPSHOT":
+      case "SNAPSHOT": {
         this.entities.clear();
         const snapshotEntities = (message as any).entities as Entity[];
         for (const entity of snapshotEntities) {
@@ -107,8 +107,9 @@ export class GameClient {
         }
         this.handlers.onEntitiesSnapshot?.(snapshotEntities);
         break;
+      }
 
-      case "DELTA":
+      case "DELTA": {
         const deltaMessage = message as any;
         const createdEntities = deltaMessage.created as Entity[];
         const updatedEntities = deltaMessage.updated as Entity[];
@@ -128,6 +129,7 @@ export class GameClient {
         }
         this.handlers.onEntitiesDelta?.(createdEntities, updatedEntities, removedIds);
         break;
+      }
 
       case "DICE_ROLL_RESULT":
         this.handlers.onDiceRoll?.(message as DiceRollResult);
@@ -137,20 +139,23 @@ export class GameClient {
         this.handlers.onChatMessage?.(message as ChatMessage);
         break;
 
-      case "PLAYER_JOINED":
+      case "PLAYER_JOINED": {
         const joinedMessage = message as any;
         this.handlers.onPlayerJoined?.(joinedMessage.userId as string, joinedMessage.displayName as string);
         break;
+      }
 
-      case "PLAYER_LEFT":
+      case "PLAYER_LEFT": {
         const leftMessage = message as any;
         this.handlers.onPlayerLeft?.(leftMessage.userId as string);
         break;
+      }
 
-      case "ERROR":
+      case "ERROR": {
         const errorMessage = message as any;
         this.handlers.onError?.(errorMessage.code as string, errorMessage.message as string);
         break;
+      }
 
       case "HELLO":
       case "PONG":

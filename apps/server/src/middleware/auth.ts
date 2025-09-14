@@ -136,7 +136,7 @@ export const optionalAuth: Middleware = async (ctx, next) => {
 /**
  * Helper function to get authenticated user ID from context
  */
-export function getAuthenticatedUserId(ctx: any): string {
+export function getAuthenticatedUserId(ctx: unknown): string {
   const user = ctx.req.user;
   if (!user) {
     throw new Error("Authentication required - no authenticated user found");
@@ -147,7 +147,7 @@ export function getAuthenticatedUserId(ctx: any): string {
 /**
  * Helper function to get authenticated user from context (optional)
  */
-export function getAuthenticatedUser(ctx: any): any | null {
+export function getAuthenticatedUser(ctx: unknown): any | null {
   return ctx.req.user || null;
 }
 

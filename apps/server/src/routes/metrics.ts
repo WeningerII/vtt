@@ -22,7 +22,7 @@ export const healthCheckHandler: RouteHandler = async (ctx) => {
       "Cache-Control": "no-cache"
     });
     ctx.res.end(JSON.stringify(health, null, 2));
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -59,7 +59,7 @@ export const readinessProbeHandler: RouteHandler = async (ctx) => {
       health: health.status,
       timestamp: new Date().toISOString()
     }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(503, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({
       status: "not_ready",
@@ -81,7 +81,7 @@ export const metricsHandler: RouteHandler = async (ctx) => {
       "Cache-Control": "no-cache, no-store, must-revalidate"
     });
     ctx.res.end(JSON.stringify(metrics, null, 2));
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -99,7 +99,7 @@ export const prometheusMetricsHandler: RouteHandler = async (ctx) => {
       "Cache-Control": "no-cache"
     });
     ctx.res.end(prometheusFormat);
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -107,7 +107,7 @@ export const prometheusMetricsHandler: RouteHandler = async (ctx) => {
 /**
  * Convert metrics to Prometheus format
  */
-function convertToPrometheusFormat(metrics: any): string {
+function convertToPrometheusFormat(metrics: unknown): string {
   const lines: string[] = [];
   const timestamp = Date.now();
 

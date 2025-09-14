@@ -185,7 +185,7 @@ export function createOAuthRoutes(userManager: UserManager): Router {
 
   // Logout route
   router.post("/auth/logout", (req, res) => {
-    req.logout((err: any) => {
+    req.logout((err: unknown) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }

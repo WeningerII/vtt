@@ -114,7 +114,7 @@ export class AuthorizationService {
       }
 
       // Check token ownership for players
-      const tokenMetadata = (token.metadata as any) || {};
+      const tokenMetadata = (token.metadata as Record<string, unknown>) || {};
       const isOwner = tokenMetadata.ownerUserId === userId;
 
       if (!isOwner && action !== 'move') {

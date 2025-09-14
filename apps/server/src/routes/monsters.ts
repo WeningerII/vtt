@@ -23,7 +23,7 @@ export const seedSRDMonstersHandler: RouteHandler = async (ctx) => {
       message: `Successfully seeded SRD monsters`,
       ...result 
     }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -40,7 +40,7 @@ export const listMonstersHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(result));
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -61,7 +61,7 @@ export const getMonsterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(monster));
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -90,11 +90,11 @@ export const createMonsterHandler: RouteHandler = async (ctx) => {
 
         ctx.res.writeHead(201, { "Content-Type": "application/json" });
         ctx.res.end(JSON.stringify(monster));
-      } catch (error: any) {
+      } catch (error: unknown) {
         handleRouteError(ctx, error);
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -124,11 +124,11 @@ export const updateMonsterHandler: RouteHandler = async (ctx) => {
 
         ctx.res.writeHead(200, { "Content-Type": "application/json" });
         ctx.res.end(JSON.stringify(monster));
-      } catch (error: any) {
+      } catch (error: unknown) {
         handleRouteError(ctx, error);
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -145,7 +145,7 @@ export const deleteMonsterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(204);
     ctx.res.end();
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };
@@ -157,7 +157,7 @@ export const getMonsterStatsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(stats));
-  } catch (error: any) {
+  } catch (error: unknown) {
     handleRouteError(ctx, error);
   }
 };

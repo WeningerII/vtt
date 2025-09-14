@@ -113,7 +113,7 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
           respondedAt: new Date()
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(`Assistant query failed: ${error.message}`);
     }
   }
@@ -150,19 +150,19 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
     return askQuestion(query);
   }
 
-  async function explainSpell(spellName: string, context?: any): Promise<AssistantResponse> {
+  async function explainSpell(spellName: string, context?: unknown): Promise<AssistantResponse> {
     return askQuestion({ question: `Explain the spell: ${spellName}`, context });
   }
 
-  async function explainRule(ruleTopic: string, context?: any): Promise<AssistantResponse> {
+  async function explainRule(ruleTopic: string, context?: unknown): Promise<AssistantResponse> {
     return askQuestion({ question: `Explain the rule: ${ruleTopic}`, context });
   }
 
-  async function suggestActions(situation: string, context?: any): Promise<AssistantResponse> {
+  async function suggestActions(situation: string, context?: unknown): Promise<AssistantResponse> {
     return askQuestion({ question: `Suggest actions for: ${situation}`, context });
   }
 
-  async function generateRuling(scenario: string, context?: any): Promise<AssistantResponse> {
+  async function generateRuling(scenario: string, context?: unknown): Promise<AssistantResponse> {
     return askQuestion({ question: `Generate a ruling for: ${scenario}`, context });
   }
 

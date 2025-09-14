@@ -155,7 +155,7 @@ export class ActorService {
   }
 
   async updateActor(id: string, request: UpdateActorRequest) {
-    const data: any = {};
+    const data: Record<string, unknown> = {};
     if (request.name !== undefined) {data.name = request.name;}
     if (request.currentHp !== undefined) {data.health = request.currentHp;}
     if (request.maxHp !== undefined) {data.maxHealth = request.maxHp;}
@@ -243,7 +243,7 @@ export class ActorService {
     return {
       total,
       active: activeCount,
-      byKind: byKind.reduce((acc: Record<string, number>, group: any) => {
+      byKind: byKind.reduce((acc: Record<string, number>, group: unknown) => {
         acc[group.type] = group._count;
         return acc;
       }, {} as Record<string, number>),

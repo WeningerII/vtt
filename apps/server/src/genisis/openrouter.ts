@@ -2,6 +2,16 @@ import type { ProviderResponse } from "./types";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+interface OpenRouterResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+  model?: string;
+  usage?: unknown;
+}
+
 export async function callOpenRouter(opts: {
   system: string;
   user: string;
@@ -39,7 +49,7 @@ export async function callOpenRouter(opts: {
     throw new Error(`OpenRouter error ${res.status}: ${text}`);
   }
 
-  const json: any = await res.json();
+  const json = await res.json() as OpenRouterResponse;
   const latency = Date.now() - started;
   const content = json?.choices?.[0]?.message?.content ?? "";
   const model = json?.model ?? body.model;

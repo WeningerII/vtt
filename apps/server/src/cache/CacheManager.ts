@@ -283,7 +283,7 @@ export class CacheManager {
     return this.queryCache.get(cacheKey);
   }
 
-  setMonsterList(query: string, monsters: any[], tags?: string[], limit?: number, offset?: number, ttl?: number) {
+  setMonsterList(query: string, monsters: unknown[], tags?: string[], limit?: number, offset?: number, ttl?: number) {
     const cacheKey = `monsters:${query || ''}:${tags?.join(',') || ''}:${limit}:${offset}`;
     this.queryCache.set(cacheKey, monsters, ttl);
   }
@@ -307,7 +307,7 @@ export class CacheManager {
     return this.characterCache.get(`user_characters:${userId}`);
   }
 
-  setUserCharacters(userId: string, characters: any[], ttl?: number) {
+  setUserCharacters(userId: string, characters: unknown[], ttl?: number) {
     this.characterCache.set(`user_characters:${userId}`, characters, ttl);
   }
 

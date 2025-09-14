@@ -15,7 +15,7 @@ interface Condition {
   type: ConditionType;
   description: string;
   duration: number | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,7 +26,7 @@ interface AppliedCondition {
   targetId: string;
   targetType: string;
   duration: number | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
   appliedBy: string | null;
   appliedAt: Date;
   expiresAt: Date | null;
@@ -197,7 +197,7 @@ export class ConditionService {
     });
   }
 
-  async updateAppliedCondition(id: string, updates: any) {
+  async updateAppliedCondition(id: string, updates: unknown) {
     return await this.prisma.appliedCondition.update({
       where: { id },
       data: updates,

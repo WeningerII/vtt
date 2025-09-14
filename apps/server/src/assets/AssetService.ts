@@ -238,7 +238,7 @@ export class AssetService {
   /**
    * Create token from image asset
    */
-  async createToken(assetId: string, userId: string, tokenData: any): Promise<Token | null> {
+  async createToken(assetId: string, userId: string, tokenData: unknown): Promise<Token | null> {
     const asset = this.assets.get(assetId);
 
     if (!asset || asset.type !== "image") {
@@ -269,7 +269,7 @@ export class AssetService {
   /**
    * Create map from image asset
    */
-  async createMap(assetId: string, userId: string, mapData: any): Promise<GameMap | null> {
+  async createMap(assetId: string, userId: string, mapData: unknown): Promise<GameMap | null> {
     const asset = this.assets.get(assetId);
 
     if (!asset || asset.type !== "image") {

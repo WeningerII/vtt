@@ -17,7 +17,7 @@ export const queryRulesHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -33,7 +33,7 @@ export const explainSpellHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.explainSpell(data.spellName, data.context);
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -49,7 +49,7 @@ export const explainRuleHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.explainRule(data.ruleTopic, data.context);
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -65,7 +65,7 @@ export const suggestActionsHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.suggestActions(data.situation, data.context);
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -81,7 +81,7 @@ export const generateRulingHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.generateRuling(data.scenario, data.context);
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };

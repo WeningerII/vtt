@@ -8,20 +8,66 @@ import { globalEventBus, GameEvents, AIEvents } from "@vtt/core";
 
 // Logging utility
 const logger = {
-  info: (msg: string, ...args: any[]) => console.log(`[COMBAT] ${msg}`, ...args),
-  warn: (msg: string, ...args: any[]) => console.warn(`[COMBAT] ${msg}`, ...args),
-  error: (msg: string, ...args: any[]) => console.error(`[COMBAT] ${msg}`, ...args),
-  debug: (msg: string, ...args: any[]) => console.debug(`[COMBAT] ${msg}`, ...args),
+  info: (msg: string, ...args: unknown[]) => console.log(`[COMBAT] ${msg}`, ...args),
+  warn: (msg: string, ...args: unknown[]) => console.warn(`[COMBAT] ${msg}`, ...args),
+  error: (msg: string, ...args: unknown[]) => console.error(`[COMBAT] ${msg}`, ...args),
+  debug: (msg: string, ...args: unknown[]) => console.debug(`[COMBAT] ${msg}`, ...args),
 };
 
+interface CombatCharacter {
+  id: string;
+  name: string;
+  type?: string;
+  class?: string;
+  hitPoints: number;
+  maxHitPoints: number;
+  armorClass: number;
+  position: { x: number; y: number };
+  abilities: Record<string, number>;
+  conditions: string[];
+  initiative: number;
+  stats?: {
+    hitPoints: { current: number; max: number; temporary: number };
+    armorClass: number;
+    speed: number;
+    proficiencyBonus: number;
+    abilities: Record<string, number>;
+    savingThrows: Record<string, number>;
+    skills: Record<string, number>;
+    resistances: string[];
+    immunities: string[];
+    vulnerabilities: string[];
+    conditions: string[];
+  };
+  mainWeapon?: string;
+  rangedWeapon?: string;
+  challengeRating?: number;
+}
+
+interface BattlefieldHazard {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  radius: number;
+  damage?: string;
+  effect?: string;
+}
+
+interface CoverObject {
+  id: string;
+  type: "full" | "half" | "three-quarters";
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+}
+
 export interface TacticalContext {
-  character: any;
-  allies: any[];
-  enemies: any[];
+  character: CombatCharacter;
+  allies: CombatCharacter[];
+  enemies: CombatCharacter[];
   battlefield: {
     terrain: string[];
-    hazards: any[];
-    cover: any[];
+    hazards: BattlefieldHazard[];
+    cover: CoverObject[];
     lighting: "bright" | "dim" | "dark";
     weather?: string;
   };
@@ -57,7 +103,7 @@ export interface TacticalDecision {
 
 export interface CombatSimulation {
   id: string;
-  participants: any[];
+  participants: unknown[];
   rounds: number;
   currentRound: number;
   winner: "party" | "enemies" | "draw" | null;
@@ -77,7 +123,7 @@ export interface CombatSimulation {
 export class CrucibleService {
   private prisma: PrismaClient;
   private activeSimulations = new Map<string, CombatSimulation>();
-  private combatants = new Map<string, any>();
+  private combatants = new Map<string, CombatCharacter>();
   private currentCombatant: string | null = null;
 
   constructor(prisma: PrismaClient) {
@@ -98,12 +144,12 @@ export class CrucibleService {
     });
   }
 
-  private async handleCombatStart(event: any): Promise<void> {
+  private async handleCombatStart(event: unknown): Promise<void> {
     // Emit AI event for combat analysis
     await globalEventBus.emit(AIEvents.behaviorChanged('combat_ai', 'inactive', 'analyzing'));
   }
 
-  private async handleCombatEnd(event: any): Promise<void> {
+  private async handleCombatEnd(event: unknown): Promise<void> {
     // Emit AI event for combat completion
     await globalEventBus.emit(AIEvents.behaviorChanged('combat_ai', 'analyzing', 'inactive'));
   }
@@ -111,16 +157,21 @@ export class CrucibleService {
   /**
    * Execute a combat action
    */
-  private async executeAction(action: any): Promise<void> {
-    logger.debug(`Executing action: ${action.type} by ${action.actorId}`);
-    
-    // Find the actor
-    const actor = this.combatants.get(action.actorId);
-    if (!actor) {
-      logger.warn(`Actor ${action.actorId} not found`);
-      return;
+  private async executeAction(
+    actorId: string,
+    action: {
+      type: string;
+      targetId?: string;
+      targetPosition?: { x: number; y: number };
+      spellId?: string;
+      weaponId?: string;
+      [key: string]: unknown;
     }
+  ): Promise<void> {
+    const actor = this.combatants.get(actorId);
+    if (!actor) {return;}
 
+    // Route action based on type
     switch (action.type) {
       case 'attack':
         await this.executeAttack(actor, action);
@@ -148,7 +199,7 @@ export class CrucibleService {
     await globalEventBus.emit(GameEvents.damageDealt(action.actorId, action.targetId || 'unknown', 0, action.type));
   }
 
-  private async executeAttack(actor: any, action: any): Promise<void> {
+  private async executeAttack(actor: CombatCharacter, action: { targetId: string; weaponId?: string }): Promise<void> {
     const target = this.combatants.get(action.targetId);
     if (!target) {return;}
 
@@ -159,27 +210,27 @@ export class CrucibleService {
     logger.info(`${actor.name} attacks ${target.name} for ${damage} damage`);
   }
 
-  private async executeSpell(actor: any, action: any): Promise<void> {
+  private async executeSpell(actor: CombatCharacter, action: { spellId: string; targetId?: string }): Promise<void> {
     // Spell execution logic
     logger.info(`${actor.name} casts ${action.spellId}`);
   }
 
-  private async executeMove(actor: any, action: any): Promise<void> {
+  private async executeMove(actor: CombatCharacter, action: { targetPosition: { x: number; y: number } }): Promise<void> {
     actor.position = action.targetPosition;
     logger.info(`${actor.name} moves to ${action.targetPosition.x}, ${action.targetPosition.y}`);
   }
 
-  private async executeDodge(actor: any, action: any): Promise<void> {
+  private async executeDodge(actor: CombatCharacter, action: unknown): Promise<void> {
     // Add dodge condition
     logger.info(`${actor.name} dodges`);
   }
 
-  private async executeDash(actor: any, action: any): Promise<void> {
+  private async executeDash(actor: CombatCharacter, action: unknown): Promise<void> {
     // Double movement speed
     logger.info(`${actor.name} dashes`);
   }
 
-  private async executeHelp(actor: any, action: any): Promise<void> {
+  private async executeHelp(actor: CombatCharacter, action: { targetId: string }): Promise<void> {
     const target = this.combatants.get(action.targetId);
     if (!target) {return;}
     
@@ -198,8 +249,8 @@ export class CrucibleService {
    * Simulate complete combat encounter
    */
   async simulateCombat(
-    party: any[],
-    enemies: any[],
+    party: CombatCharacter[],
+    enemies: CombatCharacter[],
     battlefield: TacticalContext["battlefield"],
     maxRounds: number = 20,
   ): Promise<CombatSimulation> {
@@ -304,8 +355,8 @@ export class CrucibleService {
   async getBattlefieldRecommendations(
     character: any,
     battlefield: TacticalContext["battlefield"],
-    allies: any[],
-    enemies: any[],
+    allies: unknown[],
+    enemies: unknown[],
   ): Promise<
     Array<{
       position: { x: number; y: number };
@@ -352,7 +403,7 @@ Format as JSON array with position coordinates, reasoning, tactical value (1-10)
   /**
    * Analyze combat performance and provide insights
    */
-  async analyzeCombatPerformance(combatLog: any[]): Promise<{
+  async analyzeCombatPerformance(combatLog: unknown[]): Promise<{
     playerInsights: Record<
       string,
       {
@@ -792,7 +843,7 @@ Format as JSON with detailed reasoning for each element.`;
     return decision;
   }
 
-  private calculateOptimalAOEPosition(enemies: any[]): { x: number; y: number } {
+  private calculateOptimalAOEPosition(enemies: unknown[]): { x: number; y: number } {
     if (!enemies.length) {return { x: 0, y: 0 };}
 
     // Calculate centroid of enemy positions
@@ -805,7 +856,7 @@ Format as JSON with detailed reasoning for each element.`;
     };
   }
 
-  private calculateApproachPosition(character: any, target: any): { x: number; y: number } {
+  private calculateApproachPosition(character: any, target: unknown): { x: number; y: number } {
     const charPos = character.position || { x: 0, y: 0 };
     const targetPos = target.position || { x: 0, y: 0 };
 
@@ -827,13 +878,13 @@ Format as JSON with detailed reasoning for each element.`;
     return `combat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private rollInitiative(character: any): number {
+  private rollInitiative(character: unknown): number {
     const dex = typeof character.abilities?.dexterity === "number" ? character.abilities.dexterity : 10;
     const dexMod = Math.floor((dex - 10) / 2);
     return Math.floor(Math.random() * 20) + 1 + dexMod;
   }
 
-  private assessThreat(enemy: any, character: any): "low" | "moderate" | "high" | "extreme" {
+  private assessThreat(enemy: any, character: unknown): "low" | "moderate" | "high" | "extreme" {
     const enemyCR = enemy.challengeRating || 1;
     const charLevel = character.level || 1;
 
@@ -843,7 +894,7 @@ Format as JSON with detailed reasoning for each element.`;
     return "low";
   }
 
-  private assessOverallThreat(character: any, enemies: any[]): TacticalContext["threatLevel"] {
+  private assessOverallThreat(character: any, enemies: unknown[]): TacticalContext["threatLevel"] {
     const totalCR = enemies.reduce((sum, e) => sum + (e.challengeRating || 1), 0);
     const charLevel = character.level || 1;
 
@@ -853,7 +904,7 @@ Format as JSON with detailed reasoning for each element.`;
     return "low";
   }
 
-  private determineObjectives(character: any, allies: any[], enemies: any[]): string[] {
+  private determineObjectives(character: any, allies: unknown[], enemies: unknown[]): string[] {
     const objectives = ["Survive the encounter"];
 
     if (character.class === "cleric" || character.class === "druid") {
@@ -875,15 +926,15 @@ Format as JSON with detailed reasoning for each element.`;
     return objectives;
   }
 
-  private findNearestEnemy(character: any, enemies: any[]): any | null {
+  private findNearestEnemy(character: any, enemies: unknown[]): any | null {
     if (!enemies.length) {return null;}
 
-    const livingEnemies = enemies.filter((e: any) => (e.hitPoints || e.health || 0) > 0);
+    const livingEnemies = enemies.filter((e: unknown) => (e.hitPoints || e.health || 0) > 0);
     if (!livingEnemies.length) {return null;}
 
     // Return the nearest enemy based on position
     const charPos = character.position || { x: 0, y: 0 };
-    return livingEnemies.reduce((nearest: any, enemy: any) => {
+    return livingEnemies.reduce((nearest: any, enemy: unknown) => {
       const enemyPos = enemy.position || { x: 0, y: 0 };
       const dist = this.calculateDistance(charPos, enemyPos);
       const nearestPos = nearest?.position || { x: 0, y: 0 };
@@ -964,7 +1015,7 @@ Format as JSON with detailed reasoning for each element.`;
     ];
   }
 
-  private parsePositioningRecommendations(aiResponse: any): Array<{
+  private parsePositioningRecommendations(aiResponse: unknown): Array<{
     position: { x: number; y: number };
     reasoning: string;
     tacticalValue: number;
@@ -975,7 +1026,7 @@ Format as JSON with detailed reasoning for each element.`;
       if (typeof aiResponse === "string") {
         aiResponse = JSON.parse(aiResponse);
       }
-      return aiResponse.map((rec: any) => ({
+      return aiResponse.map((rec: unknown) => ({
         position: rec.position || { x: 0, y: 0 },
         reasoning: rec.reasoning || "AI positioning recommendation",
         tacticalValue: Math.min(Math.max(rec.tacticalValue || 5, 1), 10),
@@ -990,8 +1041,8 @@ Format as JSON with detailed reasoning for each element.`;
 
   private generateBasicPositions(
     character: any,
-    allies: any[],
-    enemies: any[],
+    allies: unknown[],
+    enemies: unknown[],
   ): Array<{
     position: { x: number; y: number };
     reasoning: string;
@@ -1053,7 +1104,7 @@ Format as JSON with detailed reasoning for each element.`;
     return positions;
   }
 
-  private parseCombatAnalysis(aiResponse: any): any {
+  private parseCombatAnalysis(aiResponse: unknown): any {
     try {
       if (typeof aiResponse === "string") {
         aiResponse = JSON.parse(aiResponse);
@@ -1065,7 +1116,7 @@ Format as JSON with detailed reasoning for each element.`;
     }
   }
 
-  private generateBasicAnalysis(combatLog: any[]): any {
+  private generateBasicAnalysis(combatLog: unknown[]): any {
     const playerInsights: Record<string, any> = {};
     const participants = new Set<string>();
 
@@ -1114,8 +1165,8 @@ Format as JSON with detailed reasoning for each element.`;
     character: any;
     currentPosition: { x: number; y: number };
     battlefield: any;
-    allies: any[];
-    enemies: any[];
+    allies: unknown[];
+    enemies: unknown[];
     movementSpeed: number;
     threatLevel: string;
   }): Promise<{
@@ -1199,7 +1250,7 @@ Format as JSON with detailed reasoning for each element.`;
     }
   }
 
-  private calculatePositionValue(position: { x: number; y: number }, allies: any[], enemies: any[]): number {
+  private calculatePositionValue(position: { x: number; y: number }, allies: unknown[], enemies: unknown[]): number {
     // Basic tactical value calculation
     let value = 5; // Base value
     
@@ -1224,7 +1275,7 @@ Format as JSON with detailed reasoning for each element.`;
     return Math.min(Math.max(value, 1), 10);
   }
 
-  private identifyPositionRisks(position: { x: number; y: number }, enemies: any[], battlefield: any): string[] {
+  private identifyPositionRisks(position: { x: number; y: number }, enemies: unknown[], battlefield: unknown): string[] {
     const risks: string[] = [];
     
     // Check if surrounded
@@ -1254,7 +1305,7 @@ Format as JSON with detailed reasoning for each element.`;
     return risks;
   }
 
-  private identifyPositionBenefits(position: { x: number; y: number }, allies: any[], battlefield: any): string[] {
+  private identifyPositionBenefits(position: { x: number; y: number }, allies: unknown[], battlefield: unknown): string[] {
     const benefits: string[] = [];
     
     // Check if near allies

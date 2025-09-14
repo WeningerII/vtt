@@ -70,7 +70,7 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
         asset,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -103,7 +103,7 @@ export const getAssetHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ asset }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -141,7 +141,7 @@ export const downloadAssetHandler: RouteHandler = async (ctx) => {
       "Content-Disposition": `inline; filename="${asset.originalFilename}"`,
     });
     ctx.res.end(fileBuffer);
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -177,7 +177,7 @@ export const searchAssetsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(results));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -227,7 +227,7 @@ export const updateAssetHandler: RouteHandler = async (ctx) => {
         asset,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -262,7 +262,7 @@ export const deleteAssetHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -311,7 +311,7 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
         token,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -361,7 +361,7 @@ export const createMapHandler: RouteHandler = async (ctx) => {
         map,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -380,7 +380,7 @@ export const getAssetStatsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ stats }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -406,7 +406,7 @@ export const getUserLibrariesHandler: RouteHandler = async (ctx) => {
         count: libraries.length,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -445,7 +445,7 @@ export const createLibraryHandler: RouteHandler = async (ctx) => {
         library,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({

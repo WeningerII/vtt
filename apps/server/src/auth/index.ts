@@ -53,6 +53,7 @@ export function initializeAuth() {
   const oauthConfig = createOAuthConfig();
   const oauthManager = new OAuthManager(authManager, oauthConfig);
   // Temporarily pass authManager as UserManager - needs proper UserManager implementation
+  // TODO: Implement proper UserManager interface
   const oauthRoutes = createOAuthRoutes(authManager as any);
 
   return {

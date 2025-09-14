@@ -714,7 +714,7 @@ router.get("/api/v1/auth/google/callback", async (ctx) => {
 });
 
 router.post("/auth/logout", async (ctx) => {
-  (ctx.req as any).logout((err: any) => {
+  (ctx.req as any).logout((err: unknown) => {
     if (err) {
       ctx.res.writeHead(500, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Logout failed" }));

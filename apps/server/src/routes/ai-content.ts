@@ -42,7 +42,7 @@ export const generateNPCHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 150 },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -81,7 +81,7 @@ export const generateQuestHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 300 },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -120,7 +120,7 @@ export const generateLocationHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 400 },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -155,7 +155,7 @@ export const generateItemsHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 100 * count },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -192,7 +192,7 @@ export const generateEncounterHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 200 },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -233,7 +233,7 @@ export const generateCampaignHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 500 },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -273,7 +273,7 @@ export const enhanceTextHandler: RouteHandler = async (ctx) => {
         usage: { tokens: enhanced.tokens },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
@@ -414,7 +414,7 @@ async function generateItemsContent(
 ): Promise<any[]> {
   await new Promise((resolve) => setTimeout(resolve, 800));
 
-  const items: any[] = [];
+  const items: unknown[] = [];
   for (let i = 0; i < count; i++) {
     items.push({
       id: `item_${Date.now()}_${i}`,

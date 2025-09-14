@@ -197,7 +197,7 @@ export class RedisWebSocketAdapter extends EventEmitter {
   }
 
   // Message Broadcasting
-  async broadcastToGame(gameId: string, message: any, excludeClientId?: string): Promise<void> {
+  async broadcastToGame(gameId: string, message: Record<string, unknown>, excludeClientId?: string): Promise<void> {
     const payload = {
       type: 'game_broadcast',
       gameId,
@@ -209,7 +209,7 @@ export class RedisWebSocketAdapter extends EventEmitter {
     await this.pub.publish(`${this.keyPrefix}broadcast`, JSON.stringify(payload));
   }
 
-  async broadcastToUser(userId: string, message: any): Promise<void> {
+  async broadcastToUser(userId: string, message: unknown): Promise<void> {
     const payload = {
       type: 'user_broadcast',
       userId,
@@ -220,7 +220,7 @@ export class RedisWebSocketAdapter extends EventEmitter {
     await this.pub.publish(`${this.keyPrefix}broadcast`, JSON.stringify(payload));
   }
 
-  async sendToClient(clientId: string, message: any): Promise<void> {
+  async sendToClient(clientId: string, message: unknown): Promise<void> {
     const session = await this.getSession(clientId);
     
     if (session) {

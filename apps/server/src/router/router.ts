@@ -34,7 +34,7 @@ export class Router {
       const params = this.matchPath(r.path, ctx.url.pathname);
       if (params) {
         // attach params for handlers/middleware
-        (ctx as any).params = params;
+        (ctx as Context & { params: Record<string, string> }).params = params;
         await this.executeMiddlewares(ctx, async () => {
           await r.handler(ctx);
         });

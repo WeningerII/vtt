@@ -15,7 +15,7 @@ export const generateNPCHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -32,7 +32,7 @@ export const generateLocationHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -51,7 +51,7 @@ export const generateQuestHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -69,7 +69,7 @@ export const generateItemHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -89,7 +89,7 @@ export const generateEncounterHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };
@@ -107,7 +107,7 @@ export const generateCampaignContentHandler: RouteHandler = async (ctx) => {
   try {
     const result = await contentService.generateCampaignContent(campaignId, contentType);
     sendJson(ctx.res, result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     sendJson(ctx.res, { error: error.message }, 500);
   }
 };

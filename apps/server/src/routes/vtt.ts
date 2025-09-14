@@ -42,7 +42,7 @@ export async function createSceneHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: unknown) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
@@ -87,7 +87,7 @@ export async function updateSceneHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: unknown) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
@@ -123,7 +123,7 @@ export async function createTokenHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: unknown) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);
@@ -189,7 +189,7 @@ export async function updateTokenHandler(ctx: Context) {
   }
 
   let body = "";
-  ctx.req.on("data", (chunk: any) => (body += chunk));
+  ctx.req.on("data", (chunk: unknown) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body);

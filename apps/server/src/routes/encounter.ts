@@ -51,7 +51,7 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(encounter));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to create encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to create encounter" }));
@@ -84,7 +84,7 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to get encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to get encounter" }));
@@ -112,7 +112,7 @@ export const startEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to start encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to start encounter" }));
@@ -140,7 +140,7 @@ export const endEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to end encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to end encounter" }));
@@ -170,7 +170,7 @@ export const updateTokenHealthHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to update token health:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to update token health" }));
@@ -211,7 +211,7 @@ export const addCharacterToEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, actor: { ...actor, tokenId } }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to add character to encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to add character to encounter" }));
@@ -252,7 +252,7 @@ export const addMonsterToEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, actor: { ...actor, tokenId } }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to add monster to encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to add monster to encounter" }));
@@ -282,7 +282,7 @@ export const executeActionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, result }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to execute action:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to execute action" }));
@@ -310,7 +310,7 @@ export const getAIDecisionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, decision }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to get AI decision:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to get AI decision" }));
@@ -370,7 +370,7 @@ export const addActorHandler: RouteHandler = async (ctx) => {
       ctx.res.writeHead(201, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify(actor));
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to add actor to encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to add actor to encounter" }));
@@ -425,7 +425,7 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(updatedEncounter));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to update encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to update encounter" }));
@@ -458,7 +458,7 @@ export const deleteEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(204);
     ctx.res.end();
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to delete encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to delete encounter" }));
@@ -485,7 +485,7 @@ export const nextTurnHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, ...result }));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to advance turn:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: error.message || "Failed to advance turn" }));

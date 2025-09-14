@@ -21,7 +21,7 @@ function getServices() {
 }
 
 // Validation helpers
-const validateCharacterConcept = (body: any) => {
+const validateCharacterConcept = (body: unknown) => {
   const schema = z.object({
     prompt: z.string().min(10).max(1000),
     preferences: z
@@ -36,7 +36,7 @@ const validateCharacterConcept = (body: any) => {
   return schema.parse(body);
 };
 
-const validateRetryStep = (body: any) => {
+const validateRetryStep = (body: unknown) => {
   const schema = z.object({
     stepName: z.enum([
       "concept",
@@ -101,7 +101,7 @@ export const generateCharacterHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Genesis generation failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -160,7 +160,7 @@ export const getGenerationStatusHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to get generation status:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -219,7 +219,7 @@ export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
         message: `Retrying step: ${stepName}`,
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to retry generation step:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -271,7 +271,7 @@ export const getGenerationHistoryHandler: RouteHandler = async (ctx) => {
         })),
       }),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error("Failed to get generation history:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -287,7 +287,7 @@ export const getGenerationHistoryHandler: RouteHandler = async (ctx) => {
 /**
  * WebSocket events for real-time generation updates
  */
-export const _handleGenesisWebSocket = (ws: any, message: any, _userId: string) => {
+export const _handleGenesisWebSocket = (ws: any, message: Record<string, unknown>, _userId: string) => {
   switch (message.type) {
     case "GENESIS_SUBSCRIBE":
       {
