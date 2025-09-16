@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Actor routes with service integration and error handling
  */
 
@@ -41,7 +42,7 @@ export const listActorsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(result));
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -65,7 +66,7 @@ export const getActorHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(actor));
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -110,11 +111,11 @@ export const createActorHandler: RouteHandler = async (ctx) => {
 
         ctx.res.writeHead(201, { "Content-Type": "application/json" });
         ctx.res.end(JSON.stringify(actor));
-      } catch (error: unknown) {
+      } catch (error) {
         handleRouteError(ctx, error);
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -143,11 +144,11 @@ export const createActorFromMonsterHandler: RouteHandler = async (ctx) => {
 
         ctx.res.writeHead(201, { "Content-Type": "application/json" });
         ctx.res.end(JSON.stringify(actor));
-      } catch (error: unknown) {
+      } catch (error) {
         handleRouteError(ctx, error);
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -189,11 +190,11 @@ export const updateActorHandler: RouteHandler = async (ctx) => {
 
         ctx.res.writeHead(200, { "Content-Type": "application/json" });
         ctx.res.end(JSON.stringify(actor));
-      } catch (error: unknown) {
+      } catch (error) {
         handleRouteError(ctx, error);
       }
     });
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -213,7 +214,7 @@ export const deleteActorHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(204);
     ctx.res.end();
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };

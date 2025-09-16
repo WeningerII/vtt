@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Asset management routes
  */
 
@@ -70,11 +71,11 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
         asset,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to upload asset",
+        error: getErrorMessage(error) || "Failed to upload asset",
       }),
     );
   }
@@ -103,11 +104,11 @@ export const getAssetHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ asset }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get asset",
+        error: getErrorMessage(error) || "Failed to get asset",
       }),
     );
   }
@@ -141,11 +142,11 @@ export const downloadAssetHandler: RouteHandler = async (ctx) => {
       "Content-Disposition": `inline; filename="${asset.originalFilename}"`,
     });
     ctx.res.end(fileBuffer);
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to download asset",
+        error: getErrorMessage(error) || "Failed to download asset",
       }),
     );
   }
@@ -177,11 +178,11 @@ export const searchAssetsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(results));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to search assets",
+        error: getErrorMessage(error) || "Failed to search assets",
       }),
     );
   }
@@ -227,11 +228,11 @@ export const updateAssetHandler: RouteHandler = async (ctx) => {
         asset,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to update asset",
+        error: getErrorMessage(error) || "Failed to update asset",
       }),
     );
   }
@@ -262,11 +263,11 @@ export const deleteAssetHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to delete asset",
+        error: getErrorMessage(error) || "Failed to delete asset",
       }),
     );
   }
@@ -311,11 +312,11 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
         token,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create token",
+        error: getErrorMessage(error) || "Failed to create token",
       }),
     );
   }
@@ -361,11 +362,11 @@ export const createMapHandler: RouteHandler = async (ctx) => {
         map,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create map",
+        error: getErrorMessage(error) || "Failed to create map",
       }),
     );
   }
@@ -380,11 +381,11 @@ export const getAssetStatsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ stats }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get asset stats",
+        error: getErrorMessage(error) || "Failed to get asset stats",
       }),
     );
   }
@@ -406,11 +407,11 @@ export const getUserLibrariesHandler: RouteHandler = async (ctx) => {
         count: libraries.length,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get libraries",
+        error: getErrorMessage(error) || "Failed to get libraries",
       }),
     );
   }
@@ -445,11 +446,11 @@ export const createLibraryHandler: RouteHandler = async (ctx) => {
         library,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create library",
+        error: getErrorMessage(error) || "Failed to create library",
       }),
     );
   }

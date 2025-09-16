@@ -31,8 +31,13 @@
   },
   "dependencies": {
     "@vtt/logging": "workspace:*",
-    "@vtt/core-ecs": "workspace:*",
-    "@vtt/performance": "workspace:*"
+    "@vtt/core-ecs": "workspace:*"
+  },
+  "peerDependencies": {
+    "@vtt/performance": "*"
+  },
+  "peerDependenciesMeta": {
+    "@vtt/performance": { "optional": true }
   },
   "scripts": {
     "build": "tsc -b",

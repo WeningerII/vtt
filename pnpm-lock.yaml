@@ -322,6 +322,9 @@ importers:
       '@vtt/core-schemas':
         specifier: workspace:*
         version: link:../../packages/core-schemas
+      '@vtt/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

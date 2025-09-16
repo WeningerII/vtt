@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Campaign routes with comprehensive REST API
  * Provides full CRUD operations and campaign management
  */
@@ -73,11 +74,11 @@ export const createCampaignHandler: RouteHandler = async (ctx) => {
         campaign,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create campaign",
+        error: getErrorMessage(error) || "Failed to create campaign",
       }),
     );
   }
@@ -106,11 +107,11 @@ export const getCampaignHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ campaign }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get campaign",
+        error: getErrorMessage(error) || "Failed to get campaign",
       }),
     );
   }
@@ -135,11 +136,11 @@ export const getUserCampaignsHandler: RouteHandler = async (ctx) => {
         count: campaigns.length,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get campaigns",
+        error: getErrorMessage(error) || "Failed to get campaigns",
       }),
     );
   }
@@ -185,11 +186,11 @@ export const updateCampaignHandler: RouteHandler = async (ctx) => {
         campaign,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to update campaign",
+        error: getErrorMessage(error) || "Failed to update campaign",
       }),
     );
   }
@@ -220,11 +221,11 @@ export const deleteCampaignHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to delete campaign",
+        error: getErrorMessage(error) || "Failed to delete campaign",
       }),
     );
   }
@@ -247,11 +248,11 @@ export const getCampaignPlayersHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ players }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get campaign players",
+        error: getErrorMessage(error) || "Failed to get campaign players",
       }),
     );
   }
@@ -304,11 +305,11 @@ export const addPlayerHandler: RouteHandler = async (ctx) => {
       ctx.res.end(JSON.stringify({ error: "Missing email or playerId" }));
       return;
     }
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to add player",
+        error: getErrorMessage(error) || "Failed to add player",
       }),
     );
   }
@@ -345,11 +346,11 @@ export const updatePlayerHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to update player",
+        error: getErrorMessage(error) || "Failed to update player",
       }),
     );
   }
@@ -382,11 +383,11 @@ export const removePlayerHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to remove player",
+        error: getErrorMessage(error) || "Failed to remove player",
       }),
     );
   }
@@ -426,11 +427,11 @@ export const addCharacterToCampaignHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to add character",
+        error: getErrorMessage(error) || "Failed to add character",
       }),
     );
   }
@@ -463,11 +464,11 @@ export const removeCharacterFromCampaignHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to remove character",
+        error: getErrorMessage(error) || "Failed to remove character",
       }),
     );
   }
@@ -499,11 +500,11 @@ export const archiveCampaignHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to archive campaign",
+        error: getErrorMessage(error) || "Failed to archive campaign",
       }),
     );
   }
@@ -532,11 +533,11 @@ export const getCampaignStatsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ stats }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get campaign stats",
+        error: getErrorMessage(error) || "Failed to get campaign stats",
       }),
     );
   }
@@ -591,11 +592,11 @@ export const getCampaignScenesHandler: RouteHandler = async (ctx) => {
         activeSceneId: campaignWithScenes.activeSceneId,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get campaign scenes",
+        error: getErrorMessage(error) || "Failed to get campaign scenes",
       }),
     );
   }
@@ -632,11 +633,11 @@ export const createCampaignSceneHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ scene }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create scene",
+        error: getErrorMessage(error) || "Failed to create scene",
       }),
     );
   }
@@ -674,11 +675,11 @@ export const setActiveCampaignSceneHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to set active scene",
+        error: getErrorMessage(error) || "Failed to set active scene",
       }),
     );
   }
@@ -710,11 +711,11 @@ export const startSessionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ session }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to start session",
+        error: getErrorMessage(error) || "Failed to start session",
       }),
     );
   }
@@ -748,11 +749,11 @@ export const endSessionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to end session",
+        error: getErrorMessage(error) || "Failed to end session",
       }),
     );
   }
@@ -775,11 +776,11 @@ export const getActiveSessionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ session }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get active session",
+        error: getErrorMessage(error) || "Failed to get active session",
       }),
     );
   }
@@ -802,11 +803,11 @@ export const getCampaignSettingsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ settings }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get campaign settings",
+        error: getErrorMessage(error) || "Failed to get campaign settings",
       }),
     );
   }
@@ -845,11 +846,11 @@ export const updateCampaignSettingsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to update campaign settings",
+        error: getErrorMessage(error) || "Failed to update campaign settings",
       }),
     );
   }

@@ -21,6 +21,10 @@ services:
     restart: unless-stopped
     networks:
       - monitoring
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 0.5
 
   alertmanager:
     image: prom/alertmanager:latest
@@ -37,6 +41,10 @@ services:
     restart: unless-stopped
     networks:
       - monitoring
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 128m
+    cpus: 0.25
 
   grafana:
     image: grafana/grafana:latest
@@ -49,12 +57,16 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-changeme123}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     restart: unless-stopped
     networks:
       - monitoring
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.5
 
   node-exporter:
     image: prom/node-exporter:latest

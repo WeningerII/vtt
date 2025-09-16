@@ -1,4 +1,5 @@
 // Helper functions for AI content generation
+import { getErrorMessage } from "../utils/errors";
 
 async function generateEncounterContent(
   _prompt: string,

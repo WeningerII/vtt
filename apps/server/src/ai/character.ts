@@ -4,6 +4,8 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { AIProvider } from "./types";
+import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 import { CharacterService } from "../character/CharacterService";
 
@@ -95,7 +97,7 @@ export class GenesisService {
 
     // Start async generation process
     this.processGeneration(generation, userId).catch((error) => {
-      generation.error = error.message;
+      generation.error = getErrorMessage(error) || "Generation failed";
       generation.steps.forEach((step) => {
         if (step.status === "processing") {step.status = "error";}
       });
@@ -148,7 +150,7 @@ export class GenesisService {
       generation.character = character;
       generation.isComplete = true;
     } catch (error: unknown) {
-      generation.error = error.message;
+      generation.error = getErrorMessage(error);
       throw error;
     }
   }
@@ -625,7 +627,8 @@ Format as JSON with detailed analysis.`;
 
       return result;
     } catch (error: unknown) {
-      throw new Error(`Character generation failed: ${error.message}`);
+      logger.error("Character generation failed:", error);
+      throw new Error(`Character generation failed: ${getErrorMessage(error)}`);
     }
   }
 

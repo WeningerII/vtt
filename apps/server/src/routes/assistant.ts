@@ -1,6 +1,7 @@
 import { RouteHandler } from "../router/types";
 import { parseJsonBody, sendJson } from "../utils/json";
 import { createAssistantService } from "../ai/assistant";
+import { getErrorMessage } from "../utils/errors";
 
 export const queryRulesHandler: RouteHandler = async (ctx) => {
   const data = await parseJsonBody(ctx.req);
@@ -17,8 +18,8 @@ export const queryRulesHandler: RouteHandler = async (ctx) => {
     });
 
     sendJson(ctx.res, result);
-  } catch (error: unknown) {
-    sendJson(ctx.res, { error: error.message }, 500);
+  } catch (error) {
+    sendJson(ctx.res, { error: getErrorMessage(error) }, 500);
   }
 };
 
@@ -33,8 +34,8 @@ export const explainSpellHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.explainSpell(data.spellName, data.context);
     sendJson(ctx.res, result);
-  } catch (error: unknown) {
-    sendJson(ctx.res, { error: error.message }, 500);
+  } catch (error) {
+    sendJson(ctx.res, { error: getErrorMessage(error) }, 500);
   }
 };
 
@@ -49,8 +50,8 @@ export const explainRuleHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.explainRule(data.ruleTopic, data.context);
     sendJson(ctx.res, result);
-  } catch (error: unknown) {
-    sendJson(ctx.res, { error: error.message }, 500);
+  } catch (error) {
+    sendJson(ctx.res, { error: getErrorMessage(error) }, 500);
   }
 };
 
@@ -65,8 +66,8 @@ export const suggestActionsHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.suggestActions(data.situation, data.context);
     sendJson(ctx.res, result);
-  } catch (error: unknown) {
-    sendJson(ctx.res, { error: error.message }, 500);
+  } catch (error) {
+    sendJson(ctx.res, { error: getErrorMessage(error) }, 500);
   }
 };
 
@@ -81,7 +82,7 @@ export const generateRulingHandler: RouteHandler = async (ctx) => {
   try {
     const result = await assistantService.generateRuling(data.scenario, data.context);
     sendJson(ctx.res, result);
-  } catch (error: unknown) {
-    sendJson(ctx.res, { error: error.message }, 500);
+  } catch (error) {
+    sendJson(ctx.res, { error: getErrorMessage(error) }, 500);
   }
 };

@@ -4,9 +4,10 @@
 
 import { z } from "zod";
 import { logger } from "@vtt/logging";
+import { GenesisService } from "../genisis/GenesisService";
 import { DatabaseManager } from "../database/connection";
-import { GenesisService } from "../ai/character";
-import { RouteHandler } from "../router/types";
+import type { RouteHandler } from "../router/types";
+import { getErrorMessage } from "../utils/errors";
 
 // Lazy-load Prisma client to avoid initialization issues during module loading
 let prisma: any | null = null;
@@ -101,14 +102,13 @@ export const generateCharacterHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Genesis generation failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        success: false,
         error: "Failed to start character generation",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -160,14 +160,13 @@ export const getGenerationStatusHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Failed to get generation status:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        success: false,
         error: "Failed to get generation status",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -219,14 +218,13 @@ export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
         message: `Retrying step: ${stepName}`,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Failed to retry generation step:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        success: false,
         error: "Failed to retry generation step",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -271,14 +269,13 @@ export const getGenerationHistoryHandler: RouteHandler = async (ctx) => {
         })),
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Failed to get generation history:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        success: false,
         error: "Failed to get generation history",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -291,7 +288,7 @@ export const _handleGenesisWebSocket = (ws: any, message: Record<string, unknown
   switch (message.type) {
     case "GENESIS_SUBSCRIBE":
       {
-        const { generationId } = message.payload;
+        const { generationId } = message.payload as any;
 
         // Subscribe to generation updates
         ws.generationSubscription = generationId;

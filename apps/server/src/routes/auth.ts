@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Authentication Routes
  */
 import { Router } from 'express';
@@ -50,7 +51,7 @@ authRouter.post('/register', async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     res.status(400).json({ 
-      error: error instanceof Error ? error.message : 'Registration failed' 
+      error: error instanceof Error ? getErrorMessage(error) : 'Registration failed' 
     });
   }
 });
@@ -84,7 +85,7 @@ authRouter.post('/login', async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(401).json({ 
-      error: error instanceof Error ? error.message : 'Login failed' 
+      error: error instanceof Error ? getErrorMessage(error) : 'Login failed' 
     });
   }
 });
@@ -136,7 +137,7 @@ authRouter.post('/refresh', async (req, res) => {
   } catch (error) {
     console.error('Token refresh error:', error);
     res.status(401).json({ 
-      error: error instanceof Error ? error.message : 'Token refresh failed' 
+      error: error instanceof Error ? getErrorMessage(error) : 'Token refresh failed' 
     });
   }
 });

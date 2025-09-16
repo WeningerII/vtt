@@ -1,6 +1,5 @@
-import type { IncomingMessage } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { Buffer } from "node:buffer";
-import { Request, Response } from 'express';
 
 /**
  * Represents an HTTP error.
@@ -15,8 +14,8 @@ export class HttpError extends Error {
   }
 }
 
-export function parseJsonBody<T = any>(
-  req: IncomingMessage,
+export async function parseJsonBody<T = any>(
+  req: IncomingMessage | any,
   opts?: { limitBytes?: number },
 ): Promise<T> {
   const envLimit = Number(process.env.JSON_LIMIT_BYTES ?? "");
@@ -26,17 +25,13 @@ export function parseJsonBody<T = any>(
     let body = "";
     let size = 0;
 
-    req.on("data", (chunk: Buffer | string) => {
-      const len = typeof chunk === "string" ? Buffer.byteLength(chunk) : chunk.length;
-      size += len;
+    req.on("data", (chunk: any) => {
+      const chunkStr = chunk.toString();
+      size += Buffer.byteLength(chunkStr);
       if (size > limit) {
-        // terminate early to avoid memory pressure
-        try {
-          req.destroy();
-        } catch {}
         return reject(new HttpError(413, "Payload too large"));
       }
-      body += chunk as any;
+      body += chunkStr;
     });
 
     req.on("end", () => {
@@ -53,9 +48,12 @@ export function parseJsonBody<T = any>(
   });
 }
 
-export function sendJson(res: Response, data: Record<string, unknown>, status = 200): void {
-  if (!res.headersSent) {
-    res.writeHead(status, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(data));
+// Minimal response interface compatible with Node's ServerResponse and Express Response
+type ResLike = Pick<ServerResponse, "writeHead" | "end"> & { headersSent?: boolean };
+
+export function sendJson(res: ResLike, data: unknown, status = 200): void {
+  if (!(res as any).headersSent) {
+    (res as any).writeHead(status, { "Content-Type": "application/json" });
+    (res as any).end(JSON.stringify(data));
   }
 }

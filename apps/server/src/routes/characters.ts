@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Character management routes
  */
 
@@ -52,11 +53,11 @@ export const createCharacterHandler: RouteHandler = async (ctx) => {
         character,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create character",
+        error: getErrorMessage(error) || "Failed to create character",
       }),
     );
   }
@@ -85,11 +86,11 @@ export const getCharacterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ character }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get character",
+        error: getErrorMessage(error) || "Failed to get character",
       }),
     );
   }
@@ -115,11 +116,11 @@ export const getUserCharactersHandler: RouteHandler = async (ctx) => {
         count: characters.length,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get characters",
+        error: getErrorMessage(error) || "Failed to get characters",
       }),
     );
   }
@@ -172,11 +173,11 @@ export const updateCharacterHandler: RouteHandler = async (ctx) => {
         character,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to update character",
+        error: getErrorMessage(error) || "Failed to update character",
       }),
     );
   }
@@ -211,11 +212,11 @@ export const deleteCharacterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to delete character",
+        error: getErrorMessage(error) || "Failed to delete character",
       }),
     );
   }
@@ -235,11 +236,11 @@ export const getCharacterTemplatesHandler: RouteHandler = async (ctx) => {
         count: templates.length,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to get templates",
+        error: getErrorMessage(error) || "Failed to get templates",
       }),
     );
   }
@@ -300,11 +301,11 @@ export const levelUpCharacterHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to level up character",
+        error: getErrorMessage(error) || "Failed to level up character",
       }),
     );
   }
@@ -379,11 +380,11 @@ export const characterRestHandler: RouteHandler = async (ctx) => {
         restType,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to process rest",
+        error: getErrorMessage(error) || "Failed to process rest",
       }),
     );
   }

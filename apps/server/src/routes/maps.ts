@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Map and grid system routes for tactical combat
  */
 
@@ -521,7 +522,7 @@ export const addLightSourceHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, lightSource }));
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Failed to add light source:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to add light source" }));
@@ -723,11 +724,11 @@ export const addTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ token }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to add token",
+        error: getErrorMessage(error) || "Failed to add token",
       }),
     );
   }
@@ -772,11 +773,11 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to move token",
+        error: getErrorMessage(error) || "Failed to move token",
       }),
     );
   }
@@ -815,11 +816,11 @@ export const updateTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to update token",
+        error: getErrorMessage(error) || "Failed to update token",
       }),
     );
   }
@@ -856,11 +857,11 @@ export const removeTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to remove token",
+        error: getErrorMessage(error) || "Failed to remove token",
       }),
     );
   }

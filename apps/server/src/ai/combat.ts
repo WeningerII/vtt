@@ -231,7 +231,9 @@ export class CrucibleService {
     // Simple damage calculation
     const damage = Math.floor(Math.random() * 8) + 1; // 1d8
     if (target.stats) {
-      if (!target.stats?.hitPoints) return;
+      if (!target.stats?.hitPoints) {
+        return;
+      }
       target.stats.hitPoints.current = Math.max(0, target.stats.hitPoints.current - damage);
     } else {
       target.hitPoints = Math.max(0, target.hitPoints - damage);

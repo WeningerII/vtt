@@ -234,19 +234,19 @@ export class ActorService {
       this.prisma.token.count({ where: { gameSession: { campaignId } } }),
       this.prisma.token.groupBy({
         by: ["type"],
-        _count: true,
+        _count: { _all: true },
         where: { gameSession: { campaignId } },
       }),
       this.prisma.token.count({ where: { gameSession: { campaignId } } }),
     ]);
 
-    return {
-      total,
-      active: activeCount,
-      byKind: byKind.reduce((acc: Record<string, number>, group: unknown) => {
-        acc[group.type] = group._count;
-        return acc;
-      }, {} as Record<string, number>),
-    };
+    const byKindMap = (byKind as Array<any>).reduce((acc: Record<string, number>, group: any) => {
+      const key = String(group?.type ?? "UNKNOWN");
+      const count = typeof group?._count === "number" ? group._count : (group?._count?._all ?? 0);
+      acc[key] = count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return { total, active: activeCount, byKind: byKindMap };
   }
 }

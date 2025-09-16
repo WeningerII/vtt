@@ -16,8 +16,12 @@ RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
 WORKDIR /app
 COPY --from=pruner /repo/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /repo/out/json/ ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 COPY --from=pruner /repo/out/full/ ./
+## Ensure base tsconfig is present for packages that extend it
+COPY --from=pruner /repo/tsconfig.base.json ./tsconfig.base.json
+## Ensure i18n package tsconfig exists (Vite resolves it during build)
+COPY --from=pruner /repo/packages/i18n/tsconfig.json ./packages/i18n/tsconfig.json
 RUN pnpm dlx turbo run build --filter=@vtt/client...
 
 # 3) Runtime image using nginx

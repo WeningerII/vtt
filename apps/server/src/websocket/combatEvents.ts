@@ -176,7 +176,8 @@ export class CombatWebSocketManager {
         break;
 
       case "REQUEST_TACTICAL_DECISION": {
-        const { encounterId, actorId } = message.payload || {};
+        const encounterId = this.getString(message.payload, "encounterId");
+        const actorId = this.getString(message.payload, "actorId");
         if (!encounterId || !actorId) {
           this.sendError(ws, "Missing encounterId or actorId", message.requestId);
           return;
@@ -210,7 +211,7 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
 
     if (!encounterId) {
       this.sendError(ws, "Missing encounterId", message.requestId);
@@ -253,7 +254,12 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+
+    if (!encounterId) {
+      this.sendError(ws, "Missing encounterId", message.requestId);
+      return;
+    }
 
     const subscriptions = this.subscriptions.get(encounterId);
     if (subscriptions) {
@@ -281,7 +287,14 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorId, health } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+    const actorId = this.getString(message.payload, "actorId");
+    const health = this.getHealth(message.payload);
+
+    if (!encounterId || !actorId || !health) {
+      this.sendError(ws, "Missing or invalid encounterId, actorId, or health", message.requestId);
+      return;
+    }
 
     try {
       await this.actorService.updateActorHealth(encounterId, actorId, health);
@@ -311,7 +324,12 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+
+    if (!encounterId) {
+      this.sendError(ws, "Missing encounterId", message.requestId);
+      return;
+    }
 
     try {
       await this.actorService.startEncounter(encounterId);
@@ -337,7 +355,15 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorType, actorId, instanceName } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+    const actorType = this.getString(message.payload, "actorType");
+    const actorId = this.getString(message.payload, "actorId");
+    const instanceName = this.getString(message.payload, "instanceName") || undefined;
+
+    if (!encounterId || !actorType || !actorId) {
+      this.sendError(ws, "Missing required fields for ADD_ACTOR", message.requestId);
+      return;
+    }
 
     try {
       let actor;
@@ -372,7 +398,13 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorId } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+    const actorId = this.getString(message.payload, "actorId");
+
+    if (!encounterId || !actorId) {
+      this.sendError(ws, "Missing encounterId or actorId", message.requestId);
+      return;
+    }
 
     try {
       // Remove token from encounter
@@ -397,7 +429,14 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorId, initiative } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+    const actorId = this.getString(message.payload, "actorId");
+    const initiative = this.getNumber(message.payload, "initiative");
+
+    if (!encounterId || !actorId || typeof initiative !== "number") {
+      this.sendError(ws, "Missing or invalid encounterId, actorId, or initiative", message.requestId);
+      return;
+    }
 
     try {
       // Update token initiative through CombatManager if active
@@ -429,7 +468,12 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+
+    if (!encounterId) {
+      this.sendError(ws, "Missing encounterId", message.requestId);
+      return;
+    }
 
     try {
       // Advance to next turn via CombatManager integration
@@ -459,7 +503,14 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorId, condition } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+    const actorId = this.getString(message.payload, "actorId");
+    const condition = this.getCondition(message.payload);
+
+    if (!encounterId || !actorId || !condition) {
+      this.sendError(ws, "Missing or invalid encounterId, actorId, or condition", message.requestId);
+      return;
+    }
 
     try {
       // Apply condition via CombatManager if combat is active
@@ -484,16 +535,23 @@ export class CombatWebSocketManager {
     userId: string,
     message: CombatWebSocketMessage,
   ): Promise<void> {
-    const { encounterId, actorId, condition } = message.payload;
+    const encounterId = this.getString(message.payload, "encounterId");
+    const actorId = this.getString(message.payload, "actorId");
+    const conditionName = this.getConditionName(message.payload);
+
+    if (!encounterId || !actorId || !conditionName) {
+      this.sendError(ws, "Missing or invalid encounterId, actorId, or condition", message.requestId);
+      return;
+    }
 
     try {
       // Remove condition via CombatManager if combat is active
-      await this.actorService.removeCondition(encounterId, actorId, condition.name || condition);
+      await this.actorService.removeCondition(encounterId, actorId, conditionName);
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
         type: "CONDITION_REMOVED",
-        payload: { actorId, condition, removedBy: userId },
+        payload: { actorId, condition: conditionName, removedBy: userId },
       });
     } catch (error) {
       logger.error("Remove condition error:", error as Error);
@@ -533,6 +591,55 @@ export class CombatWebSocketManager {
       payload: { error },
       requestId: requestId || "",
     });
+  }
+
+  // Payload helpers for runtime validation and type narrowing
+  private getString(obj: Record<string, unknown>, key: string): string | null {
+    const val = obj?.[key];
+    return typeof val === "string" ? val : null;
+  }
+
+  private getNumber(obj: Record<string, unknown>, key: string): number | null {
+    const val = obj?.[key];
+    return typeof val === "number" ? val : null;
+  }
+
+  private getHealth(
+    obj: Record<string, unknown>,
+  ): { current: number; max?: number; temporary?: number } | null {
+    const val = obj?.["health"] as unknown;
+    if (val && typeof val === "object") {
+      const h = val as Record<string, unknown>;
+      const current = typeof h.current === "number" ? h.current : null;
+      if (current === null) { return null; }
+      const max = typeof h.max === "number" ? h.max : undefined;
+      const temporary = typeof h.temporary === "number" ? h.temporary : undefined;
+      return { current, max, temporary };
+    }
+    return null;
+  }
+
+  private getCondition(
+    obj: Record<string, unknown>,
+  ): { name: string; duration?: number } | null {
+    const val = obj?.["condition"] as unknown;
+    if (val && typeof val === "object") {
+      const c = val as Record<string, unknown>;
+      const name = typeof c.name === "string" ? c.name : null;
+      if (!name) { return null; }
+      const duration = typeof c.duration === "number" ? c.duration : undefined;
+      return { name, duration };
+    }
+    return null;
+  }
+
+  private getConditionName(obj: Record<string, unknown>): string | null {
+    const val = obj?.["condition"] as unknown;
+    if (typeof val === "string") { return val; }
+    if (val && typeof val === "object" && typeof (val as any).name === "string") {
+      return (val as any).name as string;
+    }
+    return null;
   }
 
   /**

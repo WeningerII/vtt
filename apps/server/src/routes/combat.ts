@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Crucible Combat AI API Routes
  */
 
@@ -215,14 +216,14 @@ export const getTacticalDecisionHandler: RouteHandler = async (ctx) => {
         data: decision,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Tactical decision failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: false,
         error: "Failed to generate tactical decision",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -283,14 +284,14 @@ export const simulateCombatHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Combat simulation failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: false,
         error: "Failed to simulate combat",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -341,14 +342,14 @@ export const analyzeCombatHandler: RouteHandler = async (ctx) => {
         data: analysis,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Combat analysis failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: false,
         error: "Failed to analyze combat",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -386,14 +387,14 @@ export const getActiveSimulationsHandler: RouteHandler = async (ctx) => {
         })),
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Failed to get active simulations:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: false,
         error: "Failed to get simulations",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -526,14 +527,14 @@ export const getSimulationHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Failed to get simulation:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: false,
         error: "Failed to get simulation",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }
@@ -594,14 +595,14 @@ export const getPositioningHandler: RouteHandler = async (ctx) => {
         },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     logger.error("Positioning analysis failed:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: false,
         error: "Failed to analyze positioning",
-        details: error.message,
+        details: getErrorMessage(error),
       }),
     );
   }

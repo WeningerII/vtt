@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Encounter routes (CRUD + combat flow)
  */
 
@@ -67,9 +68,9 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ items, total, limit, offset }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to list encounters" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to list encounters" }));
   }
 };
 
@@ -138,9 +139,9 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ encounter }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to get encounter" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to get encounter" }));
   }
 };
 
@@ -193,9 +194,9 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to create encounter" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to create encounter" }));
   }
 };
 
@@ -294,9 +295,9 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, participant }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to add participant" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to add participant" }));
   }
 };
 
@@ -334,9 +335,9 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, encounter }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to update encounter" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to update encounter" }));
   }
 };
 

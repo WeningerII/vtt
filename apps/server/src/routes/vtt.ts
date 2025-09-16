@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 import { Context } from "../router/types";
 

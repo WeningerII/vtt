@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Condition routes (CRUD + application management)
  */
 
@@ -42,9 +43,9 @@ export const listConditionsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(result));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to list conditions" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to list conditions" }));
   }
 };
 
@@ -68,9 +69,9 @@ export const getConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ condition }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to get condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to get condition" }));
   }
 };
 
@@ -105,9 +106,9 @@ export const createConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, condition: created }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to create condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to create condition" }));
   }
 };
 
@@ -150,9 +151,9 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, appliedCondition: applied }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to apply condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to apply condition" }));
   }
 };
 
@@ -172,9 +173,9 @@ export const listAppliedConditionsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ items: conditions, total: conditions.length }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to list applied conditions" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to list applied conditions" }));
   }
 };
 
@@ -203,9 +204,9 @@ export const updateAppliedConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, appliedCondition: updated }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to update applied condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to update applied condition" }));
   }
 };
 
@@ -229,9 +230,9 @@ export const removeAppliedConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to remove applied condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to remove applied condition" }));
   }
 };
 
@@ -251,9 +252,9 @@ export const updateConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, condition: updated }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to update condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to update condition" }));
   }
 };
 
@@ -277,9 +278,9 @@ export const deleteConditionHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to delete condition" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to delete condition" }));
   }
 };
 
@@ -290,9 +291,9 @@ export const getConditionStatsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(stats));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to get condition stats" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to get condition stats" }));
   }
 };
 
@@ -303,8 +304,8 @@ export const cleanupExpiredConditionsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, expiredCount: expired.length, expired }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: error.message || "Failed to cleanup expired conditions" }));
+    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to cleanup expired conditions" }));
   }
 };

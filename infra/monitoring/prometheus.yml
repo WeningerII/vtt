@@ -28,7 +28,7 @@ scrape_configs:
   # VTT Client metrics (if available)
   - job_name: 'vtt-client'
     static_configs:
-      - targets: ['client:80']
+      - targets: ['client:8080']
     metrics_path: '/metrics'
     scrape_interval: 60s
     scrape_timeout: 10s

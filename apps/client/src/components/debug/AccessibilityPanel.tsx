@@ -6,6 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import { Eye, Shield, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { useAccessibilityTester, gamingAccessibilityTester } from '../../utils/accessibilityTester';
+import { logger } from '@vtt/logging';
 
 interface AccessibilityPanelProps {
   isVisible: boolean;
@@ -25,7 +26,7 @@ export function AccessibilityPanel({ isVisible, onToggle }: AccessibilityPanelPr
       setLastReport(report);
       setQuickStatus(quickCheck());
     } catch (error) {
-      console.error('Accessibility test failed:', error);
+      logger.error('Accessibility test failed:', error as any);
     } finally {
       setIsRunning(false);
     }
@@ -153,8 +154,8 @@ export function AccessibilityPanel({ isVisible, onToggle }: AccessibilityPanelPr
           onClick={() => {
             const diceIssues = gamingAccessibilityTester.checkDiceRollerA11y();
             const charIssues = gamingAccessibilityTester.checkCharacterSheetA11y();
-            console.log('Dice accessibility:', diceIssues);
-            console.log('Character sheet accessibility:', charIssues);
+            logger.info('Dice accessibility:', diceIssues);
+            logger.info('Character sheet accessibility:', charIssues);
           }}
           className="w-full bg-bg-tertiary hover:bg-bg-quaternary text-text-primary px-3 py-1 rounded text-xs transition-colors"
         >

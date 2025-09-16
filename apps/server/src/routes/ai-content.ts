@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * AI Content Generation routes for VTT platform
  */
 
@@ -42,11 +43,11 @@ export const generateNPCHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 150 },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to generate NPC",
+        error: getErrorMessage(error) || "Failed to generate NPC",
       }),
     );
   }
@@ -81,11 +82,11 @@ export const generateQuestHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 300 },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to generate quest",
+        error: getErrorMessage(error) || "Failed to generate quest",
       }),
     );
   }
@@ -120,11 +121,11 @@ export const generateLocationHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 400 },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to generate location",
+        error: getErrorMessage(error) || "Failed to generate location",
       }),
     );
   }
@@ -155,11 +156,11 @@ export const generateItemsHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 100 * count },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to generate items",
+        error: getErrorMessage(error) || "Failed to generate items",
       }),
     );
   }
@@ -192,11 +193,11 @@ export const generateEncounterHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 200 },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to generate encounter",
+        error: getErrorMessage(error) || "Failed to generate encounter",
       }),
     );
   }
@@ -233,11 +234,11 @@ export const generateCampaignHandler: RouteHandler = async (ctx) => {
         usage: { tokens: 500 },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to generate campaign",
+        error: getErrorMessage(error) || "Failed to generate campaign",
       }),
     );
   }
@@ -273,11 +274,11 @@ export const enhanceTextHandler: RouteHandler = async (ctx) => {
         usage: { tokens: enhanced.tokens },
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to enhance text",
+        error: getErrorMessage(error) || "Failed to enhance text",
       }),
     );
   }

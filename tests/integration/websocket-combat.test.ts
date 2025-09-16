@@ -1,5 +1,4 @@
 import { WebSocket } from 'ws';
-import { WebSocketServer } from 'ws';
 import { VTTWebSocketServer } from '../../apps/server/src/websocket/websocket-server';
 import { PrismaClient } from '@prisma/client';
 import { authManager } from '../../apps/server/src/routes/auth';

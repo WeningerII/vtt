@@ -3,7 +3,7 @@
  * Provides consistent loading patterns across all components
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, createContext, useContext } from 'react';
 
 export interface LoadingState {
   isLoading: boolean;
@@ -138,8 +138,6 @@ export interface LoadingContextValue {
   setGlobalLoading: (loading: boolean, message?: string) => void;
   setGlobalError: (error: string | Error | null) => void;
 }
-
-import { createContext, useContext } from 'react';
 
 export const LoadingContext = createContext<LoadingContextValue | null>(null);
 

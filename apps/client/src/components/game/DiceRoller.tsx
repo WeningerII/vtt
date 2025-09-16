@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { cn } from "../../lib/utils";
 import { usePerformanceMonitor } from "../../utils/performanceMonitor";
+import { logger } from "@vtt/logging";
 
 interface DiceRoll {
   id: string;
@@ -51,7 +52,7 @@ export const DiceRoller = memo<DiceRollerProps>(({ className, onRoll }) => {
   
   // Mock WebSocket send function
   const send = (data: any) => {
-    console.log('Dice roll data:', data);
+    logger.info('Dice roll data:', data);
   };
 
   const [diceCount, setDiceCount] = useState(1);
@@ -147,7 +148,7 @@ export const DiceRoller = memo<DiceRollerProps>(({ className, onRoll }) => {
       onRoll?.(roll);
       endDiceRoll();
     } catch (error) {
-      console.error("Failed to execute roll:", error);
+      logger.error("Failed to execute roll:", error as any);
       endDiceRoll();
     }
   }, [session, user, startDiceRoll, diceCount, diceSides, modifier, advantage, isPublic, onRoll]);
@@ -163,7 +164,7 @@ export const DiceRoller = memo<DiceRollerProps>(({ className, onRoll }) => {
       executeRoll(customDice.trim(), 0, isPublic);
       setCustomDice("");
     } catch (error) {
-      console.error("Invalid dice notation:", error);
+      logger.error("Invalid dice notation:", error as any);
     }
   }, [customDice, executeRoll, isPublic]);
 

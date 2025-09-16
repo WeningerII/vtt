@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Metrics and health check API endpoints
  */
 
@@ -22,7 +23,7 @@ export const healthCheckHandler: RouteHandler = async (ctx) => {
       "Cache-Control": "no-cache"
     });
     ctx.res.end(JSON.stringify(health, null, 2));
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -59,11 +60,11 @@ export const readinessProbeHandler: RouteHandler = async (ctx) => {
       health: health.status,
       timestamp: new Date().toISOString()
     }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(503, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({
       status: "not_ready",
-      error: error.message,
+      error: getErrorMessage(error),
       timestamp: new Date().toISOString()
     }));
   }
@@ -81,7 +82,7 @@ export const metricsHandler: RouteHandler = async (ctx) => {
       "Cache-Control": "no-cache, no-store, must-revalidate"
     });
     ctx.res.end(JSON.stringify(metrics, null, 2));
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };
@@ -99,7 +100,7 @@ export const prometheusMetricsHandler: RouteHandler = async (ctx) => {
       "Cache-Control": "no-cache"
     });
     ctx.res.end(prometheusFormat);
-  } catch (error: unknown) {
+  } catch (error) {
     handleRouteError(ctx, error);
   }
 };

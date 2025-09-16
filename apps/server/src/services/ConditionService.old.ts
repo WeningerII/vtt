@@ -3,7 +3,7 @@
  * Provides full CRUD operations and condition tracking for VTT entities
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 // Define types matching the Prisma schema
 type ConditionType = 'BUFF' | 'DEBUFF' | 'NEUTRAL';
@@ -14,7 +14,7 @@ interface Condition {
   type: ConditionType;
   description: string;
   duration: number | null;
-  metadata: Record<string, unknown>;
+  metadata: Prisma.JsonValue | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,7 +25,7 @@ interface AppliedCondition {
   targetId: string;
   targetType: string;
   duration: number | null;
-  metadata: Record<string, unknown>;
+  metadata: Prisma.JsonValue | null;
   appliedBy: string | null;
   appliedAt: Date;
   expiresAt: Date | null;
@@ -198,7 +198,7 @@ export class ConditionService {
     });
   }
 
-  async updateAppliedCondition(id: string, updates: unknown) {
+  async updateAppliedCondition(id: string, updates: any) {
     return await this.prisma.appliedCondition.update({
       where: { id },
       data: updates,

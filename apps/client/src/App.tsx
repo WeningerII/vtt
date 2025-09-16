@@ -45,13 +45,13 @@ export default function App() {
           wsUrl: (() => {
             const configuredWsUrl = (import.meta as any).env?.VITE_WS_URL;
             if (configuredWsUrl) {
-              console.log("Using configured WebSocket URL:", configuredWsUrl);
+              logger.info("Using configured WebSocket URL:", configuredWsUrl);
               return configuredWsUrl;
             }
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const host = window.location.host;
             const fallbackUrl = `${protocol}//${host}/ws`;
-            console.log("Using fallback WebSocket URL:", fallbackUrl);
+            logger.info("Using fallback WebSocket URL:", fallbackUrl);
             return fallbackUrl;
           })(),
           version: (import.meta as any).env?.VITE_APP_VERSION || "1.0.0",

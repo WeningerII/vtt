@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Tests for API Route Handlers
  */
 import { describe, it, expect, jest, beforeEach } from "@jest/globals";
@@ -182,7 +183,7 @@ describe("API Route Handlers", () => {
     it("should format error responses", async () => {
       const errorFormatter = jest.fn().mockImplementation((error) => ({
         success: false,
-        error: error.message,
+        error: getErrorMessage(error),
         code: error.code || "INTERNAL_ERROR",
       }));
 

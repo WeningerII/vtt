@@ -915,7 +915,7 @@ export class ActorIntegrationService {
   /**
    * Generate monster actions from statblock
    */
-  private generateMonsterActions(statblock: unknown): CombatActor["actions"] {
+  private generateMonsterActions(statblock: Record<string, any>): CombatActor["actions"] {
     const actions: CombatActor["actions"] = [];
 
     // Add default actions
@@ -935,7 +935,7 @@ export class ActorIntegrationService {
     );
 
     // Add specific actions from statblock
-    if (statblock.actions) {
+    if (statblock && Array.isArray(statblock.actions)) {
       for (const action of statblock.actions) {
         actions.push({
           id: `action_${action.name.toLowerCase().replace(/\s+/g, "")}`,
@@ -1025,17 +1025,32 @@ export class ActorIntegrationService {
       throw new Error("Actor not found or is a player character");
     }
 
-    // Build tactical context
+    // Build tactical context (map to minimal CombatCharacter shape)
+    const toCombatCharacter = (a: CombatActor) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      class: undefined,
+      hitPoints: a.hitPoints.current,
+      maxHitPoints: a.hitPoints.max,
+      armorClass: a.armorClass || 10,
+      position: { x: 0, y: 0 },
+      abilities: {
+        strength: a.abilities?.STR?.value ?? 10,
+        dexterity: a.abilities?.DEX?.value ?? 10,
+        constitution: a.abilities?.CON?.value ?? 10,
+        intelligence: a.abilities?.INT?.value ?? 10,
+        wisdom: a.abilities?.WIS?.value ?? 10,
+        charisma: a.abilities?.CHA?.value ?? 10,
+      } as Record<string, number>,
+      conditions: (a.conditions?.map(c => (typeof c === 'string' ? c : String((c as any)?.type || ''))) || []) as string[],
+      initiative: a.initiative ?? 0,
+    });
+
     const context: TacticalContext = {
-      character: {
-        id: actor.id,
-        name: actor.name,
-        maxHitPoints: actor.hitPoints.max,
-        spells: [], // Would need to extract from actions
-        weapons: [], // Would need to extract from actions
-      },
-      allies: encounter.actors.filter(a => !a.isPlayer && a.id !== actorId),
-      enemies: encounter.actors.filter(a => a.isPlayer),
+      character: toCombatCharacter(actor) as any,
+      allies: encounter.actors.filter(a => !a.isPlayer && a.id !== actorId).map(toCombatCharacter) as any,
+      enemies: encounter.actors.filter(a => a.isPlayer).map(toCombatCharacter) as any,
       battlefield: {
         terrain: [],
         hazards: [],
@@ -1055,7 +1070,7 @@ export class ActorIntegrationService {
       },
       objectives: ["defeat enemies"],
       threatLevel: this.assessThreatLevel(encounter.actors, actor),
-    };
+    } as unknown as TacticalContext;
 
     const decision = await this.crucible.makeTacticalDecision(context);
     
@@ -1135,11 +1150,19 @@ export class ActorIntegrationService {
   }
 
   private async getTokenDexModifier(token: unknown): Promise<number> {
-    if (token.characterId) {
-      const character = await this.characterService.getCharacter(token.characterId);
-      return character?.abilities.DEX?.modifier || 0;
-    } else if (token.metadata?.abilities?.DEX) {
-      return token.metadata.abilities.DEX.modifier || 0;
+    if (token && typeof token === "object") {
+      const t = token as Record<string, any>;
+      if (typeof t.characterId === "string") {
+        const character = await this.characterService.getCharacter(t.characterId);
+        return character?.abilities?.DEX?.modifier || 0;
+      }
+      const meta = t.metadata;
+      if (meta && typeof meta === "object") {
+        const dex = (meta as any)?.abilities?.DEX;
+        if (dex && typeof dex.modifier === "number") {
+          return dex.modifier;
+        }
+      }
     }
     return 0;
   }
@@ -1399,8 +1422,11 @@ export class ActorIntegrationService {
       const match = hp.match(/(\d+)/);
       return match ? parseInt(match[1]) : 10;
     }
-    if (hp?.value) {return hp.value;}
-    if (hp?.average) {return hp.average;}
+    if (hp && typeof hp === "object") {
+      const obj = hp as Record<string, any>;
+      if (typeof obj.value === "number") { return obj.value; }
+      if (typeof obj.average === "number") { return obj.average; }
+    }
     return 10;
   }
 }

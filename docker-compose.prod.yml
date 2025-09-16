@@ -11,7 +11,6 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/server/prisma/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "${DATABASE_PORT:-5432}:5432"
     healthcheck:
@@ -72,10 +71,10 @@ services:
     ports:
       - "${SERVER_PORT:-8080}:8080"
     volumes:
-      - uploads:/app/uploads
-      - logs:/app/logs
+      - uploads:/srv/uploads
+      - logs:/srv/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -84,14 +83,9 @@ services:
       - vtt-network
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
+    mem_limit: 1g
+    cpus: 1.0
+    mem_reservation: 512m
 
   # VTT Client Application  
   client:
@@ -106,9 +100,9 @@ services:
       - VITE_WS_URL=wss://api.yourdomain.com
       - VITE_SENTRY_DSN=${CLIENT_SENTRY_DSN}
     ports:
-      - "${CLIENT_PORT:-3000}:80"
+      - "${CLIENT_PORT:-3000}:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health.html"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -116,11 +110,8 @@ services:
       - vtt-network
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.5'
+    mem_limit: 256m
+    cpus: 0.5
 
   # Reverse Proxy & SSL Termination
   nginx:
@@ -134,18 +125,14 @@ services:
       - "443:443"
     volumes:
       - ./infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
-      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certs:/etc/nginx/certs:ro
       - nginx_logs:/var/log/nginx
     networks:
       - vtt-network
     security_opt:
       - no-new-privileges:true
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.25'
+    mem_limit: 128m
+    cpus: 0.25
 
   # Monitoring & Observability
   prometheus:
@@ -177,10 +164,55 @@ services:
       - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN:-localhost}
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./infra/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./infra/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     ports:
       - "3001:3000"
+    networks:
+      - vtt-network
+    security_opt:
+      - no-new-privileges:true
+
+  # PostgreSQL Exporter
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${DATABASE_USER:-vtt_user}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME:-vtt_prod}?sslmode=disable
+    ports:
+      - "9187:9187"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vtt-network
+    security_opt:
+      - no-new-privileges:true
+
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    restart: unless-stopped
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    networks:
+      - vtt-network
+    security_opt:
+      - no-new-privileges:true
+
+  # Nginx Exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    restart: unless-stopped
+    command:
+      - -nginx.scrape-uri=http://nginx:8080/nginx_status
+    ports:
+      - "9113:9113"
+    depends_on:
+      - nginx
     networks:
       - vtt-network
     security_opt:

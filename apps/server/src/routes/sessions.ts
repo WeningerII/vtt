@@ -1,4 +1,5 @@
 /**
+import { getErrorMessage } from "../utils/errors";
  * Game Session API Routes
  */
 import { Router, Request, Response, NextFunction } from 'express';

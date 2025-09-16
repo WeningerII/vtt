@@ -159,7 +159,7 @@ export class ContentInjectionService {
   /**
    * Generate a random encounter
    */
-  private generateEncounter(params: unknown): any {
+  private generateEncounter(params: Record<string, any>): any {
     const encounterTypes = ["combat", "puzzle", "social", "exploration"];
     const difficulties = ["easy", "medium", "hard", "deadly"];
 
@@ -177,7 +177,7 @@ export class ContentInjectionService {
   /**
    * Generate an NPC
    */
-  private generateNPC(params: unknown): any {
+  private generateNPC(params: Record<string, any>): any {
     const names = ["Aldric", "Brenna", "Cedric", "Dara", "Elara", "Finn"];
     const roles = ["merchant", "guard", "scholar", "noble", "commoner"];
 
@@ -195,7 +195,7 @@ export class ContentInjectionService {
   /**
    * Generate treasure
    */
-  private generateTreasure(params: unknown): any {
+  private generateTreasure(params: Record<string, any>): any {
     const treasureTypes = ["gold", "gems", "magic_item", "artifact"];
 
     return {
@@ -211,7 +211,7 @@ export class ContentInjectionService {
   /**
    * Generate a hazard
    */
-  private generateHazard(params: unknown): any {
+  private generateHazard(params: Record<string, any>): any {
     const hazardTypes = ["trap", "environmental", "magical", "structural"];
 
     return {
@@ -228,7 +228,7 @@ export class ContentInjectionService {
   /**
    * Generate a room
    */
-  private generateRoom(params: unknown): any {
+  private generateRoom(params: Record<string, any>): any {
     const roomTypes = ["chamber", "corridor", "vault", "shrine", "library"];
 
     return {

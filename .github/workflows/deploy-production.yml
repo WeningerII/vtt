@@ -47,7 +47,7 @@ jobs:
     needs: [security-scan]
     strategy:
       matrix:
-        app: [client, server, bots, editor]
+        app: [client, server]
     
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +92,7 @@ jobs:
     
     strategy:
       matrix:
-        app: [client, server, bots, editor]
+        app: [client, server]
     
     steps:
       - uses: actions/checkout@v4
@@ -229,7 +229,6 @@ jobs:
           # Wait for rollout
           kubectl rollout status deployment/vtt-client -n vtt-staging
           kubectl rollout status deployment/vtt-server -n vtt-staging
-          kubectl rollout status deployment/vtt-bots -n vtt-staging
       
       - name: Run smoke tests
         run: |
@@ -282,6 +281,31 @@ jobs:
           
           # Update image tags in k8s manifests
           sed -i "s|IMAGE_TAG|${{ github.sha }}|g" infra/k8s/production/*.yaml
+
+          # Replace AWS account and certificate placeholders if provided
+          if [ -n "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
+            sed -i "s|ACCOUNT_ID|${{ secrets.AWS_ACCOUNT_ID }}|g" infra/k8s/production/ingress.yaml
+            sed -i "s|ACCOUNT_ID|${{ secrets.AWS_ACCOUNT_ID }}|g" infra/k8s/production/server-deployment.yaml
+          fi
+          if [ -n "${{ secrets.ACM_CERTIFICATE_ID }}" ]; then
+            sed -i "s|CERT_ID|${{ secrets.ACM_CERTIFICATE_ID }}|g" infra/k8s/production/ingress.yaml
+          fi
+          if [ -n "${{ secrets.WAF_WEB_ACL_ID }}" ]; then
+            sed -i "s|WAF_ID|${{ secrets.WAF_WEB_ACL_ID }}|g" infra/k8s/production/ingress.yaml
+          fi
+
+          # Replace domains if repository variables are set
+          if [ -n "${{ vars.PROD_CLIENT_DOMAIN }}" ]; then
+            sed -i "s|vtt.platform.com|${{ vars.PROD_CLIENT_DOMAIN }}|g" infra/k8s/production/ingress.yaml
+            CLIENT_DOMAIN="${{ vars.PROD_CLIENT_DOMAIN }}"
+            sed -i "s|https://vtt.platform.com|https://${CLIENT_DOMAIN}|g" infra/k8s/production/configmap.yaml
+          fi
+          if [ -n "${{ vars.PROD_API_DOMAIN }}" ]; then
+            sed -i "s|api.vtt.platform.com|${{ vars.PROD_API_DOMAIN }}|g" infra/k8s/production/ingress.yaml
+            API_DOMAIN="${{ vars.PROD_API_DOMAIN }}"
+            sed -i "s|https://api.vtt.platform.com|https://${API_DOMAIN}|g" infra/k8s/production/configmap.yaml
+            sed -i "s|wss://api.vtt.platform.com|wss://${API_DOMAIN}|g" infra/k8s/production/configmap.yaml
+          fi
           
           # Apply all manifests (both colors)
           kubectl apply -f infra/k8s/production/

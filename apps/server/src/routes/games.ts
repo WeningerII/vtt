@@ -4,6 +4,8 @@
 
 import { RouteHandler } from "../router/types";
 import { GameManager } from "../game/GameManager";
+import { parseJsonBody, sendJson } from "../utils/json";
+import { getErrorMessage } from "../utils/errors";
 import { GameConfig } from "../game/GameSession";
 
 // Global game manager instance
@@ -38,13 +40,14 @@ export const createGameHandler: RouteHandler = async (ctx) => {
         game: game.getGameState(),
       }),
     );
-  } catch (error: unknown) {
-    ctx.res.writeHead(error.message.includes("already exists") ? 409 : 500, {
+  } catch (error) {
+    const message = getErrorMessage(error);
+    ctx.res.writeHead(message.includes("already exists") ? 409 : 500, {
       "Content-Type": "application/json",
     });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create game",
+        error: message || "Failed to create game",
       }),
     );
   }
@@ -118,11 +121,11 @@ export const joinGameHandler: RouteHandler = async (ctx) => {
         player: game.getPlayer(body.userId),
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to join game",
+        error: getErrorMessage(error) || "Failed to join game",
       }),
     );
   }
@@ -161,11 +164,11 @@ export const leaveGameHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to leave game",
+        error: getErrorMessage(error) || "Failed to leave game",
       }),
     );
   }
@@ -229,11 +232,11 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
         tokenId: tokenId.toString(),
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to create token",
+        error: getErrorMessage(error) || "Failed to create token",
       }),
     );
   }
@@ -280,11 +283,11 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true }));
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to move token",
+        error: getErrorMessage(error) || "Failed to move token",
       }),
     );
   }
@@ -334,36 +337,15 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
         result,
       }),
     );
-  } catch (error: unknown) {
+  } catch (error) {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
-        error: error.message || "Failed to roll dice",
+        error: getErrorMessage(error) || "Failed to roll dice",
       }),
     );
   }
 };
-
-// Helper function to parse JSON from request body - TODO: Use proper IncomingMessage type
-async function parseJsonBody(req: unknown): Promise<any> {
-  return new Promise((resolve, reject) => {
-    let body = "";
-
-    req.on("data", (chunk: unknown) => {
-      body += chunk.toString();
-    });
-
-    req.on("end", () => {
-      try {
-        resolve(JSON.parse(body));
-      } catch (_error) {
-        reject(new Error("Invalid JSON"));
-      }
-    });
-
-    req.on("error", reject);
-  });
-}
 
 // Export game manager for use in WebSocket handlers
 export { gameManager };

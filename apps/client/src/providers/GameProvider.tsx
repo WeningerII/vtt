@@ -397,7 +397,12 @@ export function GameProvider({ children }: GameProviderProps) {
           connect();
           // Wait for connection to establish
           await new Promise<void>((resolve) => {
-            let timeoutId: ReturnType<typeof setTimeout>;
+            // Timeout after 5 seconds to avoid hanging
+            const timeoutId = setTimeout(() => {
+              clearInterval(checkConnection);
+              resolve();
+            }, 5000);
+
             const checkConnection = setInterval(() => {
               if (isConnected) {
                 clearInterval(checkConnection);
@@ -405,11 +410,6 @@ export function GameProvider({ children }: GameProviderProps) {
                 resolve();
               }
             }, 100);
-            // Timeout after 5 seconds
-            timeoutId = setTimeout(() => {
-              clearInterval(checkConnection);
-              resolve();
-            }, 5000);
           });
         }
 

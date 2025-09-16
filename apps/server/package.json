@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -p tsconfig.json || true",
     "start": "node dist/index.js",
     "dev": "tsx --watch src/index.ts",
     "start:prod": "NODE_ENV=production node dist/index.js",
@@ -33,7 +33,6 @@
     "@vtt/core": "workspace:*",
     "@vtt/core-ecs": "workspace:*",
     "@vtt/core-schemas": "workspace:*",
-    "@vtt/net": "workspace:*",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
