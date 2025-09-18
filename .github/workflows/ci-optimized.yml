@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-  # Disable remote-only mode by default - will be enabled per job if secrets exist
+  # Turbo environment - only set if secrets exist to avoid linter warnings
+  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+  TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
   TURBO_REMOTE_ONLY: false
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
       e2e: ${{ steps.filter.outputs.e2e }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           list-files: shell
