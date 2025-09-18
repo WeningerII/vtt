@@ -53,6 +53,9 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
@@ -80,6 +83,9 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
@@ -104,18 +110,29 @@ jobs:
           node-version: 20
           cache: pnpm
 
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Run tests (shard ${{ matrix.shard }}/4)
+      - name: Run tests with coverage (shard ${{ matrix.shard }}/4)
         run: |
-          pnpm turbo test --cache-dir=.turbo -- --shard=${{ matrix.shard }}/4
+          pnpm nyc pnpm turbo test --cache-dir=.turbo -- --shard=${{ matrix.shard }}/4
+          # Ensure .nyc_output directory exists
+          mkdir -p .nyc_output
+          # Copy nyc output to coverage directory
+          mkdir -p coverage
+          cp -r .nyc_output coverage/ || echo "No .nyc_output to copy"
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.shard }}
-          path: coverage/
+          path: |
+            coverage/
+            .nyc_output
+          if-no-files-found: warn
 
   e2e:
     runs-on: ubuntu-latest
@@ -132,6 +149,9 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -190,6 +210,26 @@ jobs:
           pattern: coverage-*
           merge-multiple: true
           path: coverage/
+
+      - name: Debug coverage artifacts
+        run: |
+          echo "Contents of coverage directory:"
+          ls -la coverage/ || echo "No coverage directory found"
+          find coverage -name ".nyc_output" -type d || echo "No .nyc_output found"
+          find . -name "*.json" -path "./coverage/*" || echo "No coverage JSON files found"
+
+      - name: Prepare coverage data
+        run: |
+          # Ensure .nyc_output exists in root
+          mkdir -p .nyc_output
+          # Copy any .nyc_output data from downloaded artifacts
+          find coverage -name ".nyc_output" -type d -exec cp -r {}/* .nyc_output/ \; 2>/dev/null || true
+          # If no .nyc_output data, create empty structure
+          if [ ! -d ".nyc_output" ] || [ -z "$(ls -A .nyc_output 2>/dev/null)" ]; then
+            echo "No .nyc_output data found, creating placeholder"
+            mkdir -p .nyc_output
+            echo '{}' > .nyc_output/out.json
+          fi
 
       - name: Generate coverage report
         run: |

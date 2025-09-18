@@ -138,6 +138,7 @@
     "husky": "^9.1.7",
     "jest-serializer-path": "^0.1.15",
     "lint-staged": "^15.5.2",
+    "nyc": "^17.1.0",
     "prettier": "^3.6.2",
     "prisma": "^6.14.0",
     "puppeteer": "^24.18.0",
