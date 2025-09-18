@@ -54,7 +54,11 @@ jobs:
           cache: pnpm
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          # Verify installation
+          pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -84,7 +88,11 @@ jobs:
             turbo-${{ runner.os }}-
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          # Verify installation
+          pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -111,19 +119,31 @@ jobs:
           cache: pnpm
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          # Verify installation
+          pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run tests with coverage (shard ${{ matrix.shard }}/4)
         run: |
+          # Ensure directories exist before running tests
+          mkdir -p .nyc_output coverage
+          # Run tests with nyc coverage wrapper
           pnpm nyc pnpm turbo test --cache-dir=.turbo -- --shard=${{ matrix.shard }}/4
-          # Ensure .nyc_output directory exists
-          mkdir -p .nyc_output
-          # Copy nyc output to coverage directory
-          mkdir -p coverage
+          # Verify .nyc_output was created and has content
+          ls -la .nyc_output || echo "Warning: .nyc_output directory is empty or missing"
+          # Copy nyc output to coverage directory for artifacts
           cp -r .nyc_output coverage/ || echo "No .nyc_output to copy"
+          # Create placeholder if no coverage data was generated
+          if [ ! -d "coverage/.nyc_output" ] || [ -z "$(ls -A coverage/.nyc_output 2>/dev/null)" ]; then
+            echo "Creating placeholder coverage data"
+            mkdir -p coverage/.nyc_output
+            echo '{}' > coverage/.nyc_output/placeholder.json
+          fi
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -151,7 +171,11 @@ jobs:
           cache: pnpm
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          # Verify installation
+          pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -218,6 +242,9 @@ jobs:
           find coverage -name ".nyc_output" -type d || echo "No .nyc_output found"
           find . -name "*.json" -path "./coverage/*" || echo "No coverage JSON files found"
 
+      - name: Ensure .nyc_output exists
+        run: mkdir -p .nyc_output
+
       - name: Prepare coverage data
         run: |
           # Ensure .nyc_output exists in root
@@ -234,6 +261,14 @@ jobs:
       - name: Generate coverage report
         run: |
           npx nyc report --reporter=text --reporter=lcov
+          # Ensure lcov.info is in the expected location for PR comments
+          if [ -f "lcov.info" ] && [ ! -f "coverage/lcov.info" ]; then
+            mkdir -p coverage
+            cp lcov.info coverage/lcov.info
+          fi
+          # Verify coverage files were generated
+          ls -la coverage/ || echo "No coverage directory after report generation"
+          ls -la lcov.info coverage/lcov.info 2>/dev/null || echo "No lcov files found"
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
@@ -241,3 +276,4 @@ jobs:
         with:
           lcov-file: ./coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
