@@ -16,7 +16,8 @@ concurrency:
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-  TURBO_REMOTE_ONLY: ${{ secrets.TURBO_TOKEN != '' && 'true' || 'false' }}
+  # Disable remote-only mode by default - will be enabled per job if secrets exist
+  TURBO_REMOTE_ONLY: false
 
 jobs:
   changes:
@@ -31,6 +32,7 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter
         with:
+          list-files: shell
           filters: |
             packages:
               - 'packages/**'
