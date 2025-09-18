@@ -38,9 +38,11 @@ RUN node -e "const fs=require('fs'); const p='packages/ai/package.json'; if (fs.
 RUN pnpm install --no-frozen-lockfile
 # Copy pruned sources
 COPY --from=pruner /repo/out/full/ ./
-# Ensure base tsconfig exists for project references
+# Ensure base tsconfig exists for project references (copy from original repo, not pruned)
 COPY --from=pruner /repo/tsconfig.base.json ./tsconfig.base.json
-# Ensure package tsconfig files exist (needed for TypeScript compilation even when using stubs)
+# Create package directories if they don't exist and copy tsconfig files
+# These are needed for TypeScript compilation even when using stubs
+RUN mkdir -p packages/logging packages/monitoring packages/core-ecs
 COPY --from=pruner /repo/packages/logging/tsconfig.json ./packages/logging/tsconfig.json
 COPY --from=pruner /repo/packages/monitoring/tsconfig.json ./packages/monitoring/tsconfig.json
 COPY --from=pruner /repo/packages/core-ecs/tsconfig.json ./packages/core-ecs/tsconfig.json
