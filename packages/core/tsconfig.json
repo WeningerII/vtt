@@ -9,16 +9,7 @@
     "tsBuildInfoFile": "./core.tsbuildinfo",
     "composite": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ],
-  "references": [
-    {
-      "path": "../monitoring"
-    }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"],
+  "references": [{ "path": "../logging" }]
 }
