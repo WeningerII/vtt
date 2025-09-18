@@ -40,6 +40,10 @@ RUN pnpm install --no-frozen-lockfile
 COPY --from=pruner /repo/out/full/ ./
 # Ensure base tsconfig exists for project references
 COPY --from=pruner /repo/tsconfig.base.json ./tsconfig.base.json
+# Ensure package tsconfig files exist (needed for TypeScript compilation even when using stubs)
+COPY --from=pruner /repo/packages/logging/tsconfig.json ./packages/logging/tsconfig.json
+COPY --from=pruner /repo/packages/monitoring/tsconfig.json ./packages/monitoring/tsconfig.json
+COPY --from=pruner /repo/packages/core-ecs/tsconfig.json ./packages/core-ecs/tsconfig.json
 # Generate Prisma client for server schema using workspace Prisma CLI
 RUN pnpm --filter @vtt/server exec prisma generate --schema prisma/schema.prisma
 # Build only the server package (emit even if type errors per tsconfig)
