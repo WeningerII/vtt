@@ -12,6 +12,7 @@ RUN pnpm dlx turbo prune --scope=@vtt/client --docker
 FROM node:22-alpine@sha256:6e80991f69cc7722c561e5d14d5e72ab47c0d6b6cfb3ae50fb9cf9a7b30fdf97 AS builder
 ENV NODE_ENV=development
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN apk add --no-cache --update nasm yasm build-base
 RUN corepack enable && corepack prepare pnpm@9.12.2 --activate
 WORKDIR /app
 COPY --from=pruner /repo/out/pnpm-lock.yaml ./pnpm-lock.yaml

@@ -56,7 +56,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential nasm yasm
           # Verify installation
           pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
@@ -90,7 +90,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential nasm yasm
           # Verify installation
           pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
@@ -121,7 +121,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential nasm yasm
           # Verify installation
           pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
@@ -173,7 +173,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential
+          sudo apt-get install -y libpng-dev libpng16-16 libpng-tools build-essential nasm yasm
           # Verify installation
           pkg-config --exists libpng || echo "Warning: libpng not found via pkg-config"
 
