@@ -8,12 +8,11 @@
     "composite": true,
     "types": [],
     "skipLibCheck": true,
-    "module": "ESNext",
+    "module": "NodeNext",
     "target": "ES2020",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "declarationMap": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
