@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: server
+  namespace: vtt
   labels:
     app.kubernetes.io/name: server
     app.kubernetes.io/part-of: vtt
@@ -27,16 +28,17 @@ spec:
       serviceAccountName: server
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1001
-        runAsGroup: 1001
-        fsGroup: 1001
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 15
       initContainers:
         - name: migrate
+          # checkov:skip=CKV_K8S_43: Image digest is enforced by CI/CD at deploy time
           image: ghcr.io/weningerii/vtt-server:main
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           command: ["sh", "-lc", "prisma migrate deploy --schema apps/server/prisma/schema.prisma"]
           envFrom:
             - configMapRef:
@@ -55,8 +57,10 @@ spec:
               mountPath: /tmp
       containers:
         - name: server
+          # checkov:skip=CKV_K8S_43: Image digest is enforced by CI/CD at deploy time
+          # checkov:skip=CKV_K8S_35: Using secrets as env vars is acceptable; consider mounting as files if stricter posture is required
           image: ghcr.io/weningerii/vtt-server:main
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080

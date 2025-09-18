@@ -1,15 +1,19 @@
-name: E2E Nightly Tests
+# checkov:skip=CKV_GHA_7: workflow_dispatch inputs are required for manual test control
+name: E2E Tests (Nightly)
+
+permissions:
+  contents: read
 
 on:
   schedule:
     # Run nightly at 2 AM UTC
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       test_suite:
-        description: 'Test suite to run'
+        description: "Test suite to run"
         required: false
-        default: 'all'
+        default: "all"
         type: choice
         options:
           - all
@@ -17,9 +21,9 @@ on:
           - stress
           - compatibility
       browser:
-        description: 'Browser to test'
+        description: "Browser to test"
         required: false
-        default: 'all'
+        default: "all"
         type: choice
         options:
           - all
@@ -30,11 +34,6 @@ on:
 concurrency:
   group: e2e-nightly-${{ github.ref }}
   cancel-in-progress: true
-
-permissions:
-  contents: read
-  actions: read
-  checks: write
 
 jobs:
   comprehensive-e2e:
@@ -48,7 +47,8 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
-        test-suite: [user-journeys, websocket-integration, collaboration, performance, error-handling]
+        test-suite:
+          [user-journeys, websocket-integration, collaboration, performance, error-handling]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -96,14 +96,14 @@ jobs:
               exit 0
             fi
           fi
-          
+
           if [ "${{ github.event.inputs.browser }}" != "" ] && [ "${{ github.event.inputs.browser }}" != "all" ]; then
             if [ "${{ matrix.browser }}" != "${{ github.event.inputs.browser }}" ]; then
               echo "Skipping ${{ matrix.browser }} - only running ${{ github.event.inputs.browser }}"
               exit 0
             fi
           fi
-          
+
           pnpm exec playwright test e2e/${{ matrix.test-suite }}.spec.ts --project=${{ matrix.browser }} --reporter=html,json
         env:
           PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.test-suite }}-${{ matrix.browser }}
@@ -341,22 +341,22 @@ jobs:
           echo "**Run Date:** $(date)" >> test-summary.md
           echo "**Commit:** ${{ github.sha }}" >> test-summary.md
           echo "" >> test-summary.md
-          
+
           echo "## Test Results" >> test-summary.md
           echo "" >> test-summary.md
-          
+
           # Count artifacts to determine test completion
           total_artifacts=$(find artifacts -name "*.json" | wc -l)
           echo "**Total test runs:** $total_artifacts" >> test-summary.md
           echo "" >> test-summary.md
-          
+
           # Check for failures
           if find artifacts -name "*failures*" | grep -q .; then
             echo "⚠️ **Some tests failed** - Check individual test artifacts for details" >> test-summary.md
           else
             echo "✅ **All tests passed**" >> test-summary.md
           fi
-          
+
           echo "" >> test-summary.md
           echo "## Artifacts Generated" >> test-summary.md
           echo "" >> test-summary.md
@@ -378,7 +378,7 @@ jobs:
           script: |
             const fs = require('fs');
             const summary = fs.readFileSync('test-summary.md', 'utf8');
-            
+
             github.rest.repos.createCommitComment({
               owner: context.repo.owner,
               repo: context.repo.repo,

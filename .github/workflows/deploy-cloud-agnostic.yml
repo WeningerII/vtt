@@ -1,37 +1,41 @@
+# checkov:skip=CKV_GHA_7: workflow_dispatch inputs are required for manual deployment control
 name: Deploy Cloud-Agnostic Infrastructure
+
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
     inputs:
       cloud_provider:
-        description: 'Cloud provider (aws, gcp, azure)'
+        description: "Cloud provider (aws, gcp, azure)"
         required: true
-        default: 'aws'
+        default: "aws"
         type: choice
         options:
           - aws
           - gcp
           - azure
       environment:
-        description: 'Environment to deploy'
+        description: "Environment to deploy"
         required: true
-        default: 'staging'
+        default: "staging"
         type: choice
         options:
           - dev
           - staging
           - production
       region:
-        description: 'Cloud region'
+        description: "Cloud region"
         required: true
-        default: 'us-east-1'
+        default: "us-east-1"
         type: string
   push:
     branches: [main]
     paths:
-      - 'infra/terraform/**'
-      - 'infra/k8s/**'
-      - '.github/workflows/deploy-cloud-agnostic.yml'
+      - "infra/terraform/**"
+      - "infra/k8s/**"
+      - ".github/workflows/deploy-cloud-agnostic.yml"
 
 env:
   TERRAFORM_VERSION: 1.6.0
@@ -58,11 +62,11 @@ jobs:
           CLOUD_PROVIDER="${{ github.event.inputs.cloud_provider || 'aws' }}"
           ENVIRONMENT="${{ github.event.inputs.environment || 'staging' }}"
           REGION="${{ github.event.inputs.region || 'us-east-1' }}"
-          
+
           # Detect if infrastructure changes require deployment
           DEPLOY_INFRA="false"
           DEPLOY_K8S="false"
-          
+
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             DEPLOY_INFRA="true"
             DEPLOY_K8S="true"
@@ -77,7 +81,7 @@ jobs:
               DEPLOY_K8S="true"
             fi
           fi
-          
+
           echo "cloud_provider=$CLOUD_PROVIDER" >> $GITHUB_OUTPUT
           echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
           echo "region=$REGION" >> $GITHUB_OUTPUT
@@ -303,13 +307,13 @@ jobs:
           export VTT_DOMAIN_NAME="${{ secrets.DOMAIN_NAME }}"
           export VTT_SERVER_IMAGE="vtt/server"
           export VTT_IMAGE_TAG="${{ github.sha }}"
-          
+
           # Apply base manifests
           envsubst < infra/k8s/cloud-agnostic/configmap.yaml | kubectl apply -f -
           envsubst < infra/k8s/cloud-agnostic/secret.template.yaml | kubectl apply -f -
           envsubst < infra/k8s/cloud-agnostic/server-deployment.yaml | kubectl apply -f -
           envsubst < infra/k8s/cloud-agnostic/ingress.yaml | kubectl apply -f -
-          
+
           # Wait for deployment to be ready
           kubectl rollout status deployment/vtt-server --timeout=300s
 

@@ -1,4 +1,8 @@
-name: Deploy K8s (manual)
+# checkov:skip=CKV_GHA_7: workflow_dispatch inputs are required for manual deployment control
+name: Deploy to Kubernetes
+
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
@@ -15,9 +19,6 @@ on:
         description: "Kustomize path"
         required: true
         default: infra/k8s/base
-
-permissions:
-  contents: read
 
 jobs:
   deploy:
@@ -47,16 +48,16 @@ jobs:
           set -euo pipefail
           OWNER="${{ github.event.inputs.registryOwner }}"; if [ -z "$OWNER" ]; then OWNER="$OWNER_FALLBACK"; fi
           TAG="${{ github.event.inputs.imageTag }}"
-          
+
           # Create temporary kustomization with image overrides
           TMPDIR=$(mktemp -d)
           cp -r "${{ github.event.inputs.kustomizePath }}"/* "$TMPDIR/"
-          
+
           # Update image tags in kustomization
           sed -i "s|ghcr.io/weningerii/vtt-server:main|ghcr.io/$OWNER/vtt-server:$TAG|g" "$TMPDIR/kustomization.yaml"
           sed -i "s|ghcr.io/weningerii/vtt-client:main|ghcr.io/$OWNER/vtt-client:$TAG|g" "$TMPDIR/kustomization.yaml"
           sed -i "s/newTag: main/newTag: $TAG/g" "$TMPDIR/kustomization.yaml"
-          
+
           kubectl apply -k "$TMPDIR"
 
       - name: Wait for rollout

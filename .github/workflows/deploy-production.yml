@@ -1,4 +1,8 @@
+# checkov:skip=CKV_GHA_7: workflow_dispatch inputs are required for manual deployment control
 name: Deploy to Production
+
+permissions:
+  contents: read
 
 on:
   push:
@@ -6,16 +10,16 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to deploy to'
+        description: "Environment to deploy to"
         required: true
-        default: 'production'
+        default: "production"
         type: choice
         options:
           - production
           - staging
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: "18"
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
@@ -26,19 +30,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
+          scan-type: "fs"
           ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      
+          format: "sarif"
+          output: "trivy-results.sarif"
+
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: "trivy-results.sarif"
 
   # Build and Test
   build-and-test:
@@ -48,33 +52,33 @@ jobs:
     strategy:
       matrix:
         app: [client, server]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      
+          cache: "pnpm"
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
-      
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Lint
         run: pnpm run lint:${{ matrix.app }}
-      
+
       - name: Type check
         run: pnpm run type-check:${{ matrix.app }}
-      
+
       - name: Run tests
         run: pnpm run test:${{ matrix.app }} --coverage
-      
+
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -89,24 +93,24 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     strategy:
       matrix:
         app: [client, server]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Log in to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -118,7 +122,7 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
             type=raw,value=${{ github.sha }}
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -136,41 +140,41 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     needs: [build-images]
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      
+          cache: "pnpm"
+
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
-      
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      
+
       - name: Start test environment
         run: docker-compose -f docker-compose.test.yml up -d
         env:
           CLIENT_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:${{ github.sha }}
           SERVER_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:${{ github.sha }}
-      
+
       - name: Wait for services
         run: |
           timeout 300 bash -c 'until curl -f http://localhost:3000/health; do sleep 5; done'
           timeout 300 bash -c 'until curl -f http://localhost:3001/api/v1/health; do sleep 5; done'
-      
+
       - name: Run E2E tests
         run: pnpm run test:e2e
         env:
           BASE_URL: http://localhost:3000
           API_URL: http://localhost:3001
-      
+
       - name: Upload E2E test results
         uses: actions/upload-artifact@v3
         if: always()
@@ -185,15 +189,15 @@ jobs:
     needs: [e2e-tests]
     if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
     # environment: staging  # Uncomment when staging environment is configured in repo settings
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-      
+
       - name: Configure AWS credentials
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -204,7 +208,7 @@ jobs:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      
+
       - name: Deploy infrastructure
         env:
           TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
@@ -215,21 +219,21 @@ jobs:
           terraform workspace select staging || terraform workspace new staging
           terraform plan -var-file="staging.tfvars" -out=tfplan
           terraform apply -auto-approve tfplan
-      
+
       - name: Deploy to Kubernetes
         run: |
           aws eks update-kubeconfig --region us-east-1 --name vtt-staging
-          
+
           # Update image tags in k8s manifests
           sed -i "s|IMAGE_TAG|${{ github.sha }}|g" infra/k8s/staging/*.yaml
-          
+
           # Apply manifests
           kubectl apply -f infra/k8s/staging/
-          
+
           # Wait for rollout
           kubectl rollout status deployment/vtt-client -n vtt-staging
           kubectl rollout status deployment/vtt-server -n vtt-staging
-      
+
       - name: Run smoke tests
         run: |
           STAGING_CLIENT=$(kubectl get ingress vtt-staging -n vtt-staging -o jsonpath='{.spec.rules[0].host}')
@@ -244,15 +248,15 @@ jobs:
     needs: [deploy-staging]
     if: github.ref == 'refs/heads/main' && github.event.inputs.environment != 'staging'
     # environment: production  # Uncomment when production environment is configured in repo settings
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
-      
+
       - name: Configure AWS credentials
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -263,7 +267,7 @@ jobs:
           aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      
+
       - name: Deploy infrastructure
         env:
           TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
@@ -274,11 +278,11 @@ jobs:
           terraform workspace select production || terraform workspace new production
           terraform plan -var-file="production.tfvars" -out=tfplan
           terraform apply -auto-approve tfplan
-      
+
       - name: Deploy to Kubernetes (Blue-Green)
         run: |
           aws eks update-kubeconfig --region us-east-1 --name vtt-production
-          
+
           # Update image tags in k8s manifests
           sed -i "s|IMAGE_TAG|${{ github.sha }}|g" infra/k8s/production/*.yaml
 
@@ -306,14 +310,14 @@ jobs:
             sed -i "s|https://api.vtt.platform.com|https://${API_DOMAIN}|g" infra/k8s/production/configmap.yaml
             sed -i "s|wss://api.vtt.platform.com|wss://${API_DOMAIN}|g" infra/k8s/production/configmap.yaml
           fi
-          
+
           # Apply all manifests (both colors)
           kubectl apply -f infra/k8s/production/
-          
+
           # Wait for green deployments to be ready
           kubectl rollout status deployment/vtt-client-green -n vtt-production
           kubectl rollout status deployment/vtt-server-green -n vtt-production
-          
+
           # Run health checks directly against a green server pod
           GREEN_POD=$(kubectl get pod -n vtt-production -l app.kubernetes.io/name=vtt-platform,app.kubernetes.io/component=server,version=green -o jsonpath='{.items[0].metadata.name}')
           kubectl port-forward pod/$GREEN_POD -n vtt-production 3001:3001 &
@@ -321,19 +325,19 @@ jobs:
           sleep 5
           curl -f http://localhost:3001/api/v1/health
           kill $PF_PID || true
-          
+
           # Switch traffic to green by patching Service selectors (client, server, websocket)
           kubectl patch service vtt-client -n vtt-production -p '{"spec":{"selector":{"app.kubernetes.io/name":"vtt-platform","app.kubernetes.io/component":"client","version":"green"}}}'
           kubectl patch service vtt-server -n vtt-production -p '{"spec":{"selector":{"app.kubernetes.io/name":"vtt-platform","app.kubernetes.io/component":"server","version":"green"}}}'
           kubectl patch service vtt-websocket -n vtt-production -p '{"spec":{"selector":{"app.kubernetes.io/name":"vtt-platform","app.kubernetes.io/component":"server","version":"green"}}}'
-          
+
           # Verify production endpoints
           sleep 20
           PROD_CLIENT=$(kubectl get ingress vtt-production -n vtt-production -o jsonpath='{.spec.rules[0].host}')
           PROD_API=$(kubectl get ingress vtt-production -n vtt-production -o jsonpath='{.spec.rules[1].host}')
           curl -f https://$PROD_CLIENT/health
           curl -f https://$PROD_API/api/v1/health
-          
+
           # Scale down blue and suspend blue HPAs (minReplicas=0) to avoid scale-ups
           kubectl scale deployment/vtt-client-blue -n vtt-production --replicas=0
           kubectl scale deployment/vtt-server-blue -n vtt-production --replicas=0
@@ -346,7 +350,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [deploy-production]
     if: always() && needs.deploy-production.result == 'success'
-    
+
     steps:
       - name: Notify Slack
         env:
@@ -355,8 +359,8 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: success
-          channel: '#deployments'
-      
+          channel: "#deployments"
+
       # Removed 'Update deployment status' step due to non-deployment events in this workflow
 
   # Rollback capability
@@ -364,26 +368,26 @@ jobs:
     name: Rollback Deployment
     runs-on: ubuntu-latest
     if: failure() && github.ref == 'refs/heads/main'
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      
+
       - name: Rollback production deployment
         run: |
           aws eks update-kubeconfig --region us-east-1 --name vtt-production
-          
+
           # Switch service selectors back to blue
           kubectl patch service vtt-client -n vtt-production -p '{"spec":{"selector":{"app.kubernetes.io/name":"vtt-platform","app.kubernetes.io/component":"client","version":"blue"}}}'
           kubectl patch service vtt-server -n vtt-production -p '{"spec":{"selector":{"app.kubernetes.io/name":"vtt-platform","app.kubernetes.io/component":"server","version":"blue"}}}'
           kubectl patch service vtt-websocket -n vtt-production -p '{"spec":{"selector":{"app.kubernetes.io/name":"vtt-platform","app.kubernetes.io/component":"server","version":"blue"}}}'
-          
+
           # Restore blue capacity and reduce green
           kubectl patch hpa vtt-client-hpa -n vtt-production --type merge -p '{"spec":{"minReplicas":3}}'
           kubectl patch hpa vtt-server-hpa -n vtt-production --type merge -p '{"spec":{"minReplicas":3}}'
@@ -391,18 +395,18 @@ jobs:
           kubectl scale deployment/vtt-server-blue -n vtt-production --replicas=3
           kubectl scale deployment/vtt-client-green -n vtt-production --replicas=0
           kubectl scale deployment/vtt-server-green -n vtt-production --replicas=0
-          
+
           # Wait for rollback to complete
           kubectl rollout status deployment/vtt-client-blue -n vtt-production
           kubectl rollout status deployment/vtt-server-blue -n vtt-production
-          
+
           echo "🔄 Rollback completed to blue version"
-      
+
       - name: Notify rollback
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         if: ${{ env.SLACK_WEBHOOK != '' }}
         uses: 8398a7/action-slack@v3
         with:
-          status: 'warning'
-          channel: '#deployments'
+          status: "warning"
+          channel: "#deployments"

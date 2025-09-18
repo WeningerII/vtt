@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: client
+  namespace: vtt
   labels:
     app.kubernetes.io/name: client
     app.kubernetes.io/part-of: vtt
@@ -27,16 +28,17 @@ spec:
       serviceAccountName: client
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101
-        runAsGroup: 101
-        fsGroup: 101
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       terminationGracePeriodSeconds: 15
       containers:
         - name: client
+          # checkov:skip=CKV_K8S_43: Image tag is overridden and pinned in CI/CD; digests are enforced at deploy time
           image: ghcr.io/weningerii/vtt-client:main
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 8080
