@@ -76,7 +76,7 @@
   "dependencies": {
     "@types/node": "^20.0.0",
     "@webgpu/types": "^0.1.40",
-    "@vtt/logging": "file:../logging"
+    "@vtt/logging": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

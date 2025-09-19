@@ -19,7 +19,7 @@
     "vitest": "^1.0.0"
   },
   "peerDependencies": {
-    "@vtt/physics": "*",
-    "@vtt/spell-engine": "*"
+    "@vtt/physics": "workspace:*",
+    "@vtt/spell-engine": "workspace:*"
   }
 }

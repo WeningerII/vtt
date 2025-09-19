@@ -26,17 +26,27 @@
     "vitest": "^1.0.0"
   },
   "peerDependencies": {
-    "@vtt/core-ecs": "*",
-    "@vtt/renderer": "*",
-    "@vtt/net": "*",
-    "@vtt/physics": "*",
-    "@vtt/monitoring": "*"
+    "@vtt/core-ecs": "workspace:*",
+    "@vtt/renderer": "workspace:*",
+    "@vtt/net": "workspace:*",
+    "@vtt/physics": "workspace:*",
+    "@vtt/monitoring": "workspace:*"
   },
   "peerDependenciesMeta": {
-    "@vtt/core-ecs": { "optional": true },
-    "@vtt/renderer": { "optional": true },
-    "@vtt/net": { "optional": true },
-    "@vtt/physics": { "optional": true },
-    "@vtt/monitoring": { "optional": true }
+    "@vtt/core-ecs": {
+      "optional": true
+    },
+    "@vtt/renderer": {
+      "optional": true
+    },
+    "@vtt/net": {
+      "optional": true
+    },
+    "@vtt/physics": {
+      "optional": true
+    },
+    "@vtt/monitoring": {
+      "optional": true
+    }
   }
 }

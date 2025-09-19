@@ -1,0 +1,25 @@
+{
+  "name": "@vtt/monster-ai",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI behavior system for monsters and NPCs",
+  "type": "module",
+  "main": "dist/src/index.js",
+  "module": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@vtt/ai": "workspace:*",
+    "@vtt/logging": "workspace:*"
+  }
+}

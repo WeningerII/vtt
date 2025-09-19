@@ -40,12 +40,31 @@ RUN pnpm install --no-frozen-lockfile
 COPY --from=pruner /repo/out/full/ ./
 # Ensure base tsconfig exists for project references (copy from original repo, not pruned)
 COPY --from=pruner /repo/tsconfig.base.json ./tsconfig.base.json
-# Create package directories if they don't exist and copy tsconfig files
+# Create package directories and ensure tsconfig files exist for all referenced packages
 # These are needed for TypeScript compilation even when using stubs
-RUN mkdir -p packages/logging packages/monitoring packages/core-ecs
-COPY --from=pruner /repo/packages/logging/tsconfig.json ./packages/logging/tsconfig.json
-COPY --from=pruner /repo/packages/monitoring/tsconfig.json ./packages/monitoring/tsconfig.json
-COPY --from=pruner /repo/packages/core-ecs/tsconfig.json ./packages/core-ecs/tsconfig.json
+RUN mkdir -p packages/logging packages/monitoring packages/core-ecs packages/ai packages/performance packages/ui packages/i18n packages/core
+# Copy or create tsconfig files for all packages that might be referenced during compilation
+RUN set -e; \
+    # Function to create a standard tsconfig.json template \
+    create_tsconfig() { \
+        local pkg_name="$1"; \
+        local has_refs="$2"; \
+        printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./%s.tsbuildinfo",\n    "types": ["node"]\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]%s\n}' "$pkg_name" "$has_refs"; \
+    }; \
+    # Copy or create tsconfig files for key packages \
+    for pkg in logging monitoring core-ecs ai performance ui i18n core; do \
+        if [ -f "/repo/packages/$pkg/tsconfig.json" ]; then \
+            cp "/repo/packages/$pkg/tsconfig.json" "./packages/$pkg/tsconfig.json"; \
+        else \
+            case "$pkg" in \
+                monitoring) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }]' > "./packages/$pkg/tsconfig.json" ;; \
+                ai) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }, { "path": "../core-ecs" }]' > "./packages/$pkg/tsconfig.json" ;; \
+                ui) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./ui.tsbuildinfo",\n    "types": []\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
+                i18n) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./i18n.tsbuildinfo"\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
+                *) create_tsconfig "$pkg" "" > "./packages/$pkg/tsconfig.json" ;; \
+            esac; \
+        fi; \
+    done
 # Generate Prisma client for server schema using workspace Prisma CLI
 RUN pnpm --filter @vtt/server exec prisma generate --schema prisma/schema.prisma
 # Build only the server package (emit even if type errors per tsconfig)
