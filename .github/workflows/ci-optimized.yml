@@ -65,9 +65,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: Parallel lint and typecheck
+      - name: Lint (parallel with typecheck dependencies)
         run: |
-          pnpm turbo lint typecheck --parallel --cache-dir=.turbo
+          pnpm turbo lint --cache-dir=.turbo
+
+      - name: Typecheck (with dependencies built)
+        run: |
+          # Typecheck has dependsOn: ["^build"] in turbo.json, so this will build dependencies first
+          pnpm turbo typecheck --cache-dir=.turbo
 
   build:
     runs-on: ubuntu-latest

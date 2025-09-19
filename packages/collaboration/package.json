@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "socket.io-client": "^4.7.2"
+    "socket.io-client": "^4.7.2",
+    "@vtt/logging": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

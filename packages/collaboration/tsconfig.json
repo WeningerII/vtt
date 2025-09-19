@@ -8,19 +8,10 @@
     "composite": true,
     "incremental": true,
     "skipLibCheck": true,
-    "types": [],
+    "types": ["node"],
     "tsBuildInfoFile": "./collaboration.tsbuildinfo"
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
-  "references": [
-    { "path": "../logging" }
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"],
+  "references": [{ "path": "../logging" }]
 }
