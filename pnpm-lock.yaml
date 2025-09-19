@@ -578,7 +578,7 @@ importers:
         specifier: workspace:*
         version: link:../logging
       '@vtt/performance':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../performance
 
   packages/audio:
@@ -690,6 +690,9 @@ importers:
 
   packages/collaboration:
     dependencies:
+      '@vtt/logging':
+        specifier: workspace:*
+        version: link:../logging
       socket.io-client:
         specifier: ^4.7.2
         version: 4.8.1
@@ -826,6 +829,15 @@ importers:
         specifier: workspace:*
         version: link:../core-schemas
 
+  packages/content-creation:
+    dependencies:
+      '@vtt/core-ecs':
+        specifier: workspace:*
+        version: link:../core-ecs
+      '@vtt/logging':
+        specifier: workspace:*
+        version: link:../logging
+
   packages/content-management:
     dependencies:
       jszip:
@@ -863,7 +875,7 @@ importers:
         specifier: ^20.0.0
         version: 20.19.13
       '@vtt/logging':
-        specifier: file:../logging
+        specifier: workspace:*
         version: link:../logging
       '@webgpu/types':
         specifier: ^0.1.40
@@ -1059,6 +1071,15 @@ importers:
         specifier: ^5.0.0
         version: 5.9.2
 
+  packages/monster-ai:
+    dependencies:
+      '@vtt/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@vtt/logging':
+        specifier: workspace:*
+        version: link:../logging
+
   packages/net: {}
 
   packages/pathfinding-wasm: {}
@@ -1072,19 +1093,19 @@ importers:
         specifier: ^20.0.0
         version: 20.19.13
       '@vtt/core-ecs':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../core-ecs
       '@vtt/monitoring':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../monitoring
       '@vtt/net':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../net
       '@vtt/physics':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../physics
       '@vtt/renderer':
-        specifier: '*'
+        specifier: workspace:*
         version: link:../renderer
       benchmark:
         specifier: ^2.1.4

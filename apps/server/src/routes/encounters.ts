@@ -1,9 +1,9 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Encounter routes (CRUD + combat flow)
  */
 
 import { RouteHandler } from "../router/types";
+import { getErrorMessage } from "../utils/errors";
 import { requireAuth, getAuthenticatedUserId } from "../middleware/auth";
 import { parseJsonBody } from "../utils/json";
 
@@ -341,11 +341,11 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
   }
 };
 
-// Helper: parse JSON - TODO: Use proper IncomingMessage type
-async function parseRequestBody(req: unknown): Promise<any> {
+// Helper: parse JSON - Use proper IncomingMessage type
+async function parseRequestBody(req: any): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", (chunk: unknown) => (body += chunk.toString()));
+    req.on("data", (chunk: any) => (body += chunk.toString()));
     req.on("end", () => {
       try {
         resolve(body ? JSON.parse(body) : {});

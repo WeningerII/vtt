@@ -1,9 +1,9 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Condition routes (CRUD + application management)
  */
 
 import { RouteHandler } from "../router/types";
+import { getErrorMessage } from "../utils/errors";
 import { ConditionService } from "../services/ConditionService";
 import { parseJsonBody } from "../utils/json";
 import { PrismaClient } from "@prisma/client";
