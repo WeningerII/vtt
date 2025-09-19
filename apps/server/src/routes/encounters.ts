@@ -12,7 +12,7 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
     const userId = getAuthenticatedUserId(ctx);
-    
+
     const gameSessionId = ctx.url.searchParams.get("gameSessionId");
     const limit = Math.min(parseInt(ctx.url.searchParams.get("limit") || "50"), 200);
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
@@ -27,8 +27,8 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
     const userTokenCount = await ctx.prisma.token.count({
       where: {
         gameSessionId,
-        type: 'PC'
-      }
+        type: "PC",
+      },
     });
 
     if (userTokenCount === 0) {
@@ -55,8 +55,8 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
                   type: true,
                   initiative: true,
                   health: true,
-                  maxHealth: true
-                }
+                  maxHealth: true,
+                },
               },
             },
             orderBy: { initiative: "desc" },
@@ -79,7 +79,7 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
     const userId = getAuthenticatedUserId(ctx);
-    
+
     const id = ctx.params?.id;
     if (!id) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -101,8 +101,8 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
                 health: true,
                 maxHealth: true,
                 x: true,
-                y: true
-              }
+                y: true,
+              },
             },
           },
           orderBy: { initiative: "desc" },
@@ -111,9 +111,9 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
           select: {
             id: true,
             name: true,
-            campaignId: true
-          }
-        }
+            campaignId: true,
+          },
+        },
       },
     });
 
@@ -127,8 +127,8 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
     const userTokenCount = await ctx.prisma.token.count({
       where: {
         gameSessionId: encounter.gameSession.id,
-        type: 'PC'
-      }
+        type: "PC",
+      },
     });
 
     if (userTokenCount === 0) {
@@ -150,8 +150,8 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
     const userId = getAuthenticatedUserId(ctx);
-    
-    const body = await parseRequestBody(ctx.req);
+
+    const body = await parseJsonBody(ctx.req);
     const { name, gameSessionId, description } = body;
 
     if (!name || !gameSessionId) {
@@ -164,8 +164,8 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
     const userTokenCount = await ctx.prisma.token.count({
       where: {
         gameSessionId,
-        type: 'PC'
-      }
+        type: "PC",
+      },
     });
 
     if (userTokenCount === 0) {
@@ -180,7 +180,7 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
         gameSessionId,
         roundNumber: 1,
         currentTurn: 0,
-        status: 'PLANNED',
+        status: "PLANNED",
       },
       include: {
         encounterTokens: {
@@ -205,7 +205,7 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
     const userId = getAuthenticatedUserId(ctx);
-    
+
     const encounterId = ctx.params?.id;
     if (!encounterId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -213,7 +213,7 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseRequestBody(ctx.req);
+    const body = await parseJsonBody(ctx.req);
     const { tokenId, initiative } = body;
 
     if (!tokenId || initiative === undefined) {
@@ -231,21 +231,21 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
             select: {
               id: true,
               name: true,
-              campaignId: true
-            }
-          }
-        }
+              campaignId: true,
+            },
+          },
+        },
       }),
       ctx.prisma.token.findUnique({
         where: { id: tokenId },
-        select: { id: true, type: true, metadata: true }
+        select: { id: true, type: true, metadata: true },
       }),
       ctx.prisma.token.count({
         where: {
           gameSessionId: { in: [] }, // Will be updated below
-          type: 'PC'
-        }
-      })
+          type: "PC",
+        },
+      }),
     ]);
 
     if (!encounter || !token) {
@@ -258,8 +258,8 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
     const accessCount = await ctx.prisma.token.count({
       where: {
         gameSessionId: encounter.gameSessionId,
-        type: 'PC'
-      }
+        type: "PC",
+      },
     });
 
     if (accessCount === 0) {
@@ -311,14 +311,22 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseRequestBody(ctx.req);
+    const body = await parseJsonBody(ctx.req);
     const { name, status, roundNumber, currentTurn } = body;
 
     const data: Record<string, unknown> = {};
-    if (name !== undefined) {data.name = name;}
-    if (status !== undefined) {data.status = status;}
-    if (roundNumber !== undefined) {data.roundNumber = roundNumber;}
-    if (currentTurn !== undefined) {data.currentTurn = currentTurn;}
+    if (name !== undefined) {
+      data.name = name;
+    }
+    if (status !== undefined) {
+      data.status = status;
+    }
+    if (roundNumber !== undefined) {
+      data.roundNumber = roundNumber;
+    }
+    if (currentTurn !== undefined) {
+      data.currentTurn = currentTurn;
+    }
 
     const encounter = await ctx.prisma.encounter.update({
       where: { id },
@@ -340,19 +348,3 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
     ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to update encounter" }));
   }
 };
-
-// Helper: parse JSON - Use proper IncomingMessage type
-async function parseRequestBody(req: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk: any) => (body += chunk.toString()));
-    req.on("end", () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch {
-        reject(new Error("Invalid JSON"));
-      }
-    });
-    req.on("error", reject);
-  });
-}
