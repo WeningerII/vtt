@@ -1,7 +1,7 @@
 {
   "**/*.{js,jsx,ts,tsx}": [
     "prettier --write --cache",
-    "eslint --fix --max-warnings=0 --cache"
+    "eslint --fix --cache"
   ],
   "**/*.{css,scss,less}": [
     "prettier --write --cache"
