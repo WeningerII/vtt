@@ -47,12 +47,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9.12.2
       - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
       - run: pnpm install --frozen-lockfile
       - name: Check license compliance
         run: node scripts/license-check.js
@@ -62,12 +62,12 @@ jobs:
     needs: [security, license-compliance]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+      - uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9.12.2
       - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - run: pnpm run lint

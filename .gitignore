@@ -35,6 +35,7 @@ fix-*.js
 test-results/
 playwright-report/
 coverage/
+.nyc_output/
 reports/
 
 # Temporary files
