@@ -18,6 +18,10 @@ export async function parseJsonBody<T = any>(
   req: IncomingMessage | any,
   opts?: { limitBytes?: number },
 ): Promise<T> {
+  // If Express (or another middleware) already parsed the body, reuse it.
+  if (req && typeof req === "object" && "body" in req && req.body !== undefined) {
+    return req.body as T;
+  }
   const envLimit = Number(process.env.JSON_LIMIT_BYTES ?? "");
   const defaultLimit = Number.isFinite(envLimit) && envLimit > 0 ? envLimit : 1_000_000; // 1MB default
   const limit = opts?.limitBytes ?? defaultLimit;
@@ -35,7 +39,9 @@ export async function parseJsonBody<T = any>(
     });
 
     req.on("end", () => {
-      if (!body) {return resolve({} as T);}
+      if (!body) {
+        return resolve({} as T);
+      }
       try {
         const data = JSON.parse(body);
         resolve(data);

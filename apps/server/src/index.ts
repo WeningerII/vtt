@@ -1,8 +1,8 @@
 // Load environment variables
-import dotenv from 'dotenv';
-import path from 'path';
+import dotenv from "dotenv";
+import path from "path";
 
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 import { logger } from "@vtt/logging";
 import { createServer } from "http";
@@ -22,13 +22,22 @@ import { securityHeadersMiddleware } from "./middleware/security";
 import { rateLimitMiddleware } from "./middleware/rateLimit";
 import { corsMiddleware } from "./middleware/cors";
 import { csrfMiddleware, csrfTokenMiddleware } from "./middleware/csrf";
-import { requireAdmin, requirePermission, optionalAuth, getAuthenticatedUserId } from "./middleware/auth";
-import { getCorsConfig, isOriginAllowed } from "./config/cors";
-import { metricsMiddleware, addDatabaseHealthCheck, addAIServiceHealthCheck } from "./middleware/metrics";
-import session from "express-session";
 import {
-  listProvidersHandler,
-} from "./routes/ai";
+  requireAdmin,
+  requirePermission,
+  optionalAuth,
+  getAuthenticatedUserId,
+} from "./middleware/auth";
+import { getCorsConfig, isOriginAllowed } from "./config/cors";
+import {
+  metricsMiddleware,
+  addDatabaseHealthCheck,
+  addAIServiceHealthCheck,
+} from "./middleware/metrics";
+import { validateExpressRequest, GameSchemas, CommonSchemas } from "./middleware/validation";
+import { z } from "zod";
+import session from "express-session";
+import { listProvidersHandler } from "./routes/ai";
 import { getUsersHandler, createUserHandler } from "./routes/users";
 import {
   generateCharacterHandler,
@@ -171,9 +180,9 @@ import { initializeAuth } from "./auth";
 import { Router } from "./router/router";
 import type { Context } from "./router/types";
 import { AuthConfig, getAuthManager } from "./auth/auth-manager";
-import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as DiscordStrategy } from 'passport-discord';
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as DiscordStrategy } from "passport-discord";
 
 // Use DatabaseManager singleton for consistent database connection
 const prisma = DatabaseManager.getInstance();
@@ -188,43 +197,55 @@ const authConfig: AuthConfig = {
 const authManager = getAuthManager();
 
 // Initialize Passport OAuth strategies
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID || 'dummy-google-client-id',
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-google-client-secret',
-  callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:8080/api/v1/auth/google/callback'
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    // For now, create a simple user object - you can enhance this later
-    const user = {
-      id: profile.id,
-      email: profile.emails?.[0]?.value,
-      displayName: profile.displayName,
-      provider: 'google'
-    };
-    return done(null, user);
-  } catch (error) {
-    return done(error, false);
-  }
-}));
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID || "dummy-google-client-id",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "dummy-google-client-secret",
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL || "http://localhost:8080/api/v1/auth/google/callback",
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        // For now, create a simple user object - you can enhance this later
+        const user = {
+          id: profile.id,
+          email: profile.emails?.[0]?.value,
+          displayName: profile.displayName,
+          provider: "google",
+        };
+        return done(null, user);
+      } catch (error) {
+        return done(error, false);
+      }
+    },
+  ),
+);
 
-passport.use(new DiscordStrategy({
-  clientID: process.env.DISCORD_CLIENT_ID || '123456789012345678',
-  clientSecret: process.env.DISCORD_CLIENT_SECRET || 'dummy-discord-client-secret',
-  callbackURL: process.env.DISCORD_CALLBACK_URL || 'http://localhost:8080/api/v1/auth/discord/callback',
-  scope: ['identify', 'email']
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    const user = {
-      id: profile.id,
-      email: profile.email,
-      displayName: profile.global_name || profile.username,
-      provider: 'discord'
-    };
-    return done(null, user);
-  } catch (error) {
-    return done(error, false);
-  }
-}));
+passport.use(
+  new DiscordStrategy(
+    {
+      clientID: process.env.DISCORD_CLIENT_ID || "123456789012345678",
+      clientSecret: process.env.DISCORD_CLIENT_SECRET || "dummy-discord-client-secret",
+      callbackURL:
+        process.env.DISCORD_CALLBACK_URL || "http://localhost:8080/api/v1/auth/discord/callback",
+      scope: ["identify", "email"],
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const user = {
+          id: profile.id,
+          email: profile.email,
+          displayName: profile.global_name || profile.username,
+          provider: "discord",
+        };
+        return done(null, user);
+      } catch (error) {
+        return done(error, false);
+      }
+    },
+  ),
+);
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
@@ -238,6 +259,23 @@ const PORT = Number(process.env.PORT ?? 8080);
 
 // Create Express app for easier middleware handling
 const app = express();
+
+// Lightweight size guard for uploads (rejects early before hitting body parsers)
+function enforceContentLength(maxBytes: number) {
+  return (req: any, res: any, next: any) => {
+    const cl = req.headers["content-length"];
+    if (cl && Number(cl) > maxBytes) {
+      return res.status(413).json({
+        error: {
+          code: "PAYLOAD_TOO_LARGE",
+          message: "Payload too large",
+          limitBytes: maxBytes,
+        },
+      });
+    }
+    next();
+  };
+}
 
 // Add CORS middleware BEFORE other middleware (Express variant using shared config)
 app.use((req, res, next) => {
@@ -270,30 +308,196 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 // Add our new auth and session routes
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/sessions', sessionsRouter);
-app.use('/api/v1/tokens', tokensRouter);
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/sessions", sessionsRouter);
+app.use("/api/v1/tokens", tokensRouter);
+
+// Request validation for key endpoints (runs before custom Router bridge)
+app.post("/api/v1/characters", validateExpressRequest({ body: GameSchemas.characterCreate }));
+
+app.post("/api/v1/campaigns", validateExpressRequest({ body: GameSchemas.campaignCreate }));
+
+app.get("/api/v1/monsters", validateExpressRequest({ query: GameSchemas.monsterQuery }));
+
+app.post(
+  "/api/v1/combat/tactical-decision",
+  validateExpressRequest({ body: GameSchemas.tacticalDecision }),
+);
+
+// Additional lightweight validations
+app.get("/api/v1/characters", validateExpressRequest({ query: CommonSchemas.pagination }));
+
+app.get("/api/v1/campaigns", validateExpressRequest({ query: CommonSchemas.pagination }));
+
+// Param validation for monster resource by id
+const idParamSchema = z.object({ id: CommonSchemas.uuid });
+app.get("/api/v1/monsters/:id", validateExpressRequest({ params: idParamSchema }));
+app.put("/api/v1/monsters/:id", validateExpressRequest({ params: idParamSchema }));
+app.delete("/api/v1/monsters/:id", validateExpressRequest({ params: idParamSchema }));
+
+// File upload endpoints must be multipart/form-data
+const multipartHeaderSchema = z
+  .object({
+    "content-type": z
+      .string()
+      .regex(/^multipart\/form-data/i, "Content-Type must be multipart/form-data"),
+  })
+  .passthrough();
+app.post(
+  "/api/v1/assets/upload",
+  enforceContentLength(50 * 1024 * 1024), // 50MB
+  validateExpressRequest({ headers: multipartHeaderSchema }),
+);
+app.post(
+  "/api/v1/maps/upload",
+  enforceContentLength(50 * 1024 * 1024), // 50MB
+  validateExpressRequest({ headers: multipartHeaderSchema }),
+);
+
+// Assets: validate search, library creation, and updates
+app.get(
+  "/api/v1/assets",
+  validateExpressRequest({
+    query: z
+      .object({
+        name: z.string().min(1).max(255).optional(),
+        type: z.enum(["image", "audio", "map", "token", "texture", "model", "document"]).optional(),
+        isPublic: z
+          .preprocess((v) => (typeof v === "string" ? v.toLowerCase() === "true" : v), z.boolean())
+          .optional(),
+        userId: CommonSchemas.uuid.optional(),
+        campaignId: CommonSchemas.uuid.optional(),
+        tags: z
+          .preprocess((v) => {
+            if (v === undefined) {
+              return undefined;
+            }
+            if (Array.isArray(v)) {
+              return v;
+            }
+            if (typeof v === "string") {
+              return v
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean);
+            }
+            return v;
+          }, z.array(CommonSchemas.name))
+          .optional(),
+      })
+      .merge(CommonSchemas.pagination),
+  }),
+);
+
+app.get("/api/v1/assets/libraries", validateExpressRequest({ query: CommonSchemas.pagination }));
+
+app.post(
+  "/api/v1/assets/libraries",
+  validateExpressRequest({
+    body: z.object({
+      name: CommonSchemas.name,
+      description: CommonSchemas.description.optional(),
+      isPublic: z.coerce.boolean().optional(),
+    }),
+  }),
+);
+
+app.put(
+  "/api/v1/assets/*",
+  validateExpressRequest({
+    body: z.object({
+      name: CommonSchemas.name.optional(),
+      description: CommonSchemas.description.optional(),
+      isPublic: z.coerce.boolean().optional(),
+      tags: z
+        .preprocess(
+          (v) => (v === undefined ? undefined : Array.isArray(v) ? v : [v]),
+          z.array(CommonSchemas.name),
+        )
+        .optional(),
+      metadata: z.record(z.any()).optional(),
+    }),
+  }),
+);
+
+// Assets: token and map creation validations (pre-router)
+const assetIdParamSchema = z.object({ assetId: z.string().min(1) });
+
+const createAssetTokenBodySchema = z.object({
+  gridSize: z.coerce.number().int().min(1).max(10).optional(),
+  isPC: z.coerce.boolean().optional(),
+  category: z
+    .enum([
+      "humanoid",
+      "beast",
+      "undead",
+      "construct",
+      "elemental",
+      "fey",
+      "fiend",
+      "celestial",
+      "dragon",
+      "giant",
+      "monstrosity",
+      "ooze",
+      "plant",
+      "aberration",
+      "other",
+    ])
+    .optional(),
+  stats: z
+    .object({
+      ac: z.coerce.number().int().min(0).max(50).optional(),
+      hp: z.coerce.number().int().min(0).max(10000).optional(),
+      speed: z.coerce.number().int().min(0).max(500).optional(),
+      cr: z.string().max(10).optional(),
+    })
+    .optional(),
+});
+
+const createAssetMapBodySchema = z.object({
+  gridType: z.enum(["square", "hex", "none"]).optional(),
+  gridSize: z.coerce.number().int().min(1).max(1000).optional(),
+  gridOffsetX: z.coerce.number().int().min(-10000).max(10000).optional(),
+  gridOffsetY: z.coerce.number().int().min(-10000).max(10000).optional(),
+  scenes: z.any().optional(),
+});
+
+app.post(
+  "/api/v1/assets/:assetId/create-token",
+  validateExpressRequest({ params: assetIdParamSchema, body: createAssetTokenBodySchema }),
+);
+app.post(
+  "/api/v1/assets/:assetId/create-map",
+  validateExpressRequest({ params: assetIdParamSchema, body: createAssetMapBodySchema }),
+);
 
 // Bridge: Delegate requests to our custom Router. If not handled, continue with Express.
 app.use(async (req, res, next) => {
   try {
-    const url = new URL(req.originalUrl || req.url || '/', `http://${req.headers.host || 'localhost'}`);
+    const url = new URL(
+      req.originalUrl || req.url || "/",
+      `http://${req.headers.host || "localhost"}`,
+    );
     const ctx: Context = {
       req: req as any,
       res: res as any,
       prisma,
       url,
       requestId:
-        (req.headers["x-request-id"] as string) || `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        (req.headers["x-request-id"] as string) ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     };
 
     const handled = await router.handle(ctx);
-    if (!handled) {return next();}
+    if (!handled) {
+      return next();
+    }
   } catch (error) {
     logger.error("[server] Router bridge error:", error as Error);
     if (!res.headersSent) {
@@ -774,7 +978,7 @@ router.get("/api/v1/auth/me", async (ctx) => {
           email: (user as any).email,
           avatar: (user as any).avatar,
           createdAt: (user as any).createdAt,
-        }
+        },
       }),
     );
   } catch (error) {
@@ -783,7 +987,6 @@ router.get("/api/v1/auth/me", async (ctx) => {
     ctx.res.end(JSON.stringify({ error: "Failed to get user info" }));
   }
 });
-
 
 router.post("/api/v1/auth/logout", async (ctx) => {
   ctx.res.writeHead(200, { "Content-Type": "application/json" });
@@ -845,7 +1048,6 @@ router.get("/favicon-32x32.png", (ctx) => {
   ctx.res.end();
 });
 
-
 // HTTP server - use Express app
 const server = createServer(app);
 
@@ -855,20 +1057,20 @@ const vttWebSocketServer = new VTTWebSocketServer(server, prisma);
 const _vttSocketManager = new VTTSocketManager(server as any, prisma);
 
 // Handle WebSocket upgrade requests explicitly
-server.on('upgrade', (request, socket, head) => {
+server.on("upgrade", (request, socket, head) => {
   try {
-    const reqUrl = request.url || '/';
+    const reqUrl = request.url || "/";
     const host = request.headers.host || `localhost:${PORT}`;
     // Parse URL to extract pathname only (ignore query string)
     const parsed = new URL(reqUrl, `http://${host}`);
     const pathOnly = parsed.pathname;
-    const remote = (request.socket && (request.socket as any).remoteAddress) || 'unknown';
-    const origin = (request.headers.origin as string | undefined) || '';
-    const ua = (request.headers['user-agent'] as string | undefined) || '';
-    const upgradeHdr = (request.headers['upgrade'] as string | undefined) || '';
-    const connectionHdr = (request.headers['connection'] as string | undefined) || '';
+    const remote = (request.socket && (request.socket as any).remoteAddress) || "unknown";
+    const origin = (request.headers.origin as string | undefined) || "";
+    const ua = (request.headers["user-agent"] as string | undefined) || "";
+    const upgradeHdr = (request.headers["upgrade"] as string | undefined) || "";
+    const connectionHdr = (request.headers["connection"] as string | undefined) || "";
 
-    logger.info('[ws:upgrade] request', {
+    logger.info("[ws:upgrade] request", {
       url: reqUrl,
       host,
       path: pathOnly,
@@ -879,8 +1081,8 @@ server.on('upgrade', (request, socket, head) => {
       connectionHdr,
     });
 
-    if (pathOnly === '/ws') {
-      logger.info('[ws:upgrade] accepting', { path: pathOnly });
+    if (pathOnly === "/ws") {
+      logger.info("[ws:upgrade] accepting", { path: pathOnly });
       // Let the WebSocketServer handle the upgrade
       vttWebSocketServer.handleUpgrade(request, socket, head);
     } else {
@@ -889,10 +1091,10 @@ server.on('upgrade', (request, socket, head) => {
       return;
     }
   } catch (e) {
-    logger.warn('[ws:upgrade] parse error', { url: request.url, error: (e as Error)?.message });
+    logger.warn("[ws:upgrade] parse error", { url: request.url, error: (e as Error)?.message });
     // Fallback: accept if the raw URL clearly targets /ws
-    if ((request.url || '').startsWith('/ws')) {
-      logger.info('[ws:upgrade] fallback accepting raw /ws', { url: request.url });
+    if ((request.url || "").startsWith("/ws")) {
+      logger.info("[ws:upgrade] fallback accepting raw /ws", { url: request.url });
       vttWebSocketServer.handleUpgrade(request, socket, head);
     }
     return;
@@ -926,7 +1128,10 @@ async function startServer() {
     try {
       await DatabaseManager.connect();
     } catch (error) {
-      logger.error("[server] Database connection failed at startup - continuing in degraded mode", error as Error);
+      logger.error(
+        "[server] Database connection failed at startup - continuing in degraded mode",
+        error as Error,
+      );
     }
 
     // Initialize health checks regardless of DB state

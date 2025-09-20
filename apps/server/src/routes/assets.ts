@@ -7,7 +7,9 @@ import type { RouteHandler } from "../router/types";
 import type { IncomingMessage } from "http";
 import { Buffer } from "buffer";
 import * as fs from "fs";
+import path from "path";
 import { parseJsonBody } from "../utils/json";
+import { getErrorMessage } from "../utils/errors";
 import { AssetUploadRequest, AssetUpdateRequest, AssetSearchQuery } from "../assets/types";
 import { AssetService } from "../assets/AssetService";
 import { getAuthenticatedUserId } from "../middleware/auth";
@@ -34,6 +36,41 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
     if (!file) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "No file uploaded" }));
+      return;
+    }
+
+    // Enforce basic file constraints (size, type)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const fileSize = (file as any).size ?? fs.statSync(file.filepath).size;
+    if (fileSize > maxSize) {
+      ctx.res.writeHead(413, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Uploaded file too large", limitBytes: maxSize }));
+      return;
+    }
+
+    const allowedMimeTypes = new Set<string>([
+      "image/png",
+      "image/jpeg",
+      "image/webp",
+      "image/gif",
+      "audio/mpeg",
+      "audio/ogg",
+      "audio/wav",
+    ]);
+    if (!file.mimetype || !allowedMimeTypes.has(file.mimetype)) {
+      ctx.res.writeHead(415, { "Content-Type": "application/json" });
+      ctx.res.end(
+        JSON.stringify({ error: "Unsupported media type", mimeType: file.mimetype || null }),
+      );
+      return;
+    }
+
+    const allowedExt = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp3", ".ogg", ".wav"]);
+    const original = file.originalFilename || "";
+    const ext = original ? path.extname(original).toLowerCase() : "";
+    if (ext && !allowedExt.has(ext)) {
+      ctx.res.writeHead(415, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Unsupported file extension", ext }));
       return;
     }
 

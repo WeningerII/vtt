@@ -5,14 +5,16 @@ import { getErrorMessage } from "../utils/errors";
 
 import { RouteHandler } from "../router/types";
 import { logger } from "@vtt/logging";
+import { getErrorMessage } from "../utils/errors";
 import { Buffer } from "node:buffer";
 
 import { MapService } from "../map/MapService";
 import { MapScene, GridEffect } from "../map/types";
 import { DatabaseManager } from "../database/connection";
 import { promises as fs } from "fs";
-import { join } from "path";
+import { join, extname } from "path";
 import { v4 as uuidv4 } from "uuid";
+import formidable from "formidable";
 
 // Lazy-load services to avoid initialization issues during module loading
 // TODO: Type prisma as PrismaClient instead of any
@@ -56,7 +58,7 @@ export const createSceneHandler: RouteHandler = async (ctx) => {
       sceneData.width,
       sceneData.height,
       sceneData.campaignId,
-      sceneData.mapId
+      sceneData.mapId,
     );
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
@@ -227,7 +229,14 @@ export const calculateDistanceHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const distance = mapServiceInstance.calculateDistance(x1, y1, x2, y2, scene.grid, units || "grid");
+    const distance = mapServiceInstance.calculateDistance(
+      x1,
+      y1,
+      x2,
+      y2,
+      scene.grid,
+      units || "grid",
+    );
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ distance, units: units || "grid" }));
@@ -277,13 +286,7 @@ export const getMovementPathHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const path = mapService.getMovementPath(
-      startX,
-      startY,
-      endX,
-      endY,
-      obstacles || []
-    );
+    const path = mapService.getMovementPath(startX, startY, endX, endY, obstacles || []);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ path }));
@@ -326,13 +329,7 @@ export const lineOfSightHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const result = mapService.calculateLineOfSight(
-      fromX,
-      fromY,
-      toX,
-      toY,
-      obstacles || []
-    );
+    const result = mapService.calculateLineOfSight(fromX, fromY, toX, toY, obstacles || []);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ lineOfSight: result }));
@@ -880,15 +877,46 @@ export const uploadMapHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    // Simple file upload handling
+    // Enforce size limits
+    const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB
+    const cl = Number(ctx.req.headers["content-length"] || 0);
+    if (Number.isFinite(cl) && cl > MAX_UPLOAD_BYTES) {
+      ctx.res.writeHead(413, { "Content-Type": "application/json" });
+      ctx.res.end(
+        JSON.stringify({ error: "Uploaded file too large", limitBytes: MAX_UPLOAD_BYTES }),
+      );
+      return;
+    }
+
+    // Stream and guard size while reading
     const chunks: Buffer[] = [];
+    let total = 0;
+    let aborted = false;
 
     ctx.req.on("data", (_chunk: Buffer) => {
+      if (aborted) {
+        return;
+      }
+      total += _chunk.length;
+      if (total > MAX_UPLOAD_BYTES) {
+        aborted = true;
+        try {
+          (ctx.req as any).destroy?.();
+        } catch {}
+        ctx.res.writeHead(413, { "Content-Type": "application/json" });
+        ctx.res.end(
+          JSON.stringify({ error: "Uploaded file too large", limitBytes: MAX_UPLOAD_BYTES }),
+        );
+        return;
+      }
       chunks.push(_chunk);
     });
 
     ctx.req.on("end", async () => {
       try {
+        if (aborted) {
+          return;
+        }
         const buffer = Buffer.concat(chunks);
 
         // Generate unique filename and save

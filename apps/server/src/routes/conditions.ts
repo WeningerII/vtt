@@ -4,7 +4,7 @@
 
 import { RouteHandler } from "../router/types";
 import { getErrorMessage } from "../utils/errors";
-import { ConditionService } from "../services/ConditionService";
+import { ConditionService, ConditionType } from "../services/ConditionService";
 import { parseJsonBody } from "../utils/json";
 import { PrismaClient } from "@prisma/client";
 
@@ -28,15 +28,34 @@ function getConditionService(): ConditionService {
   return conditionService;
 }
 
+/**
+ * Validates and converts a string to ConditionType enum
+ * @param type - The string to validate
+ * @returns ConditionType if valid, undefined if null/empty, throws error if invalid
+ */
+function validateConditionType(type: string | null): ConditionType | undefined {
+  if (!type) {
+    return undefined;
+  }
+
+  const validTypes: ConditionType[] = ["BUFF", "DEBUFF", "NEUTRAL"];
+  if (validTypes.includes(type as ConditionType)) {
+    return type as ConditionType;
+  }
+
+  throw new Error(`Invalid condition type: ${type}. Must be one of: ${validTypes.join(", ")}`);
+}
+
 // GET /conditions - List all conditions
 export const listConditionsHandler: RouteHandler = async (ctx) => {
   try {
-    const type = ctx.url.searchParams.get("type") as string | null; // TODO: Use proper ConditionType enum
+    const typeParam = ctx.url.searchParams.get("type");
+    const validatedType = validateConditionType(typeParam);
     const limit = Math.min(parseInt(ctx.url.searchParams.get("limit") || "50"), 200);
     const offset = parseInt(ctx.url.searchParams.get("offset") || "0");
 
     const result = await getConditionService().searchConditions({
-      type,
+      type: validatedType,
       limit,
       offset,
     });
@@ -44,8 +63,15 @@ export const listConditionsHandler: RouteHandler = async (ctx) => {
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify(result));
   } catch (error) {
-    ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to list conditions" }));
+    // Check if it's a validation error (invalid condition type)
+    const errorMessage = getErrorMessage(error) || "Failed to list conditions";
+    if (errorMessage.includes("Invalid condition type")) {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: errorMessage }));
+    } else {
+      ctx.res.writeHead(500, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: errorMessage }));
+    }
   }
 };
 
