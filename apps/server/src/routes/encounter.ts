@@ -3,6 +3,7 @@
  */
 
 import { RouteHandler } from "../router/types";
+import type { PrismaClient } from "@prisma/client";
 import { logger } from "@vtt/logging";
 import { parseJsonBody } from "../utils/json";
 import { ActorIntegrationService } from "../services/ActorIntegrationService";
@@ -11,8 +12,49 @@ import { MonsterService } from "../services/MonsterService";
 import { DatabaseManager } from "../database/connection";
 import { getErrorMessage } from "../utils/errors";
 
+interface CreateEncounterBody {
+  name?: string;
+  campaignId?: string;
+  characterIds?: string[];
+  monsters?: Array<{ monsterId: string; instanceName?: string }>;
+}
+
+interface UpdateTokenHealthBody {
+  current?: number;
+  max?: number;
+  temporary?: number;
+}
+
+interface AddTokenBody {
+  characterId?: string;
+  monsterId?: string;
+  gameSessionId?: string;
+  instanceName?: string;
+}
+
+interface ExecuteActionBody {
+  actorId?: string;
+  actionId?: string;
+  targetId?: string;
+}
+
+interface AddActorBody {
+  type?: "character" | "monster";
+  characterId?: string;
+  monsterId?: string;
+  name?: string;
+  initiative?: number;
+}
+
+interface UpdateEncounterBody {
+  name?: string;
+  status?: "active" | "inactive" | "completed";
+  currentTurn?: number;
+  round?: number;
+}
+
 // Lazy-load services to avoid initialization issues during module loading
-let prisma: any | null = null; // TODO: Type as PrismaClient after DatabaseManager typing
+let prisma: PrismaClient | null = null;
 let characterService: CharacterService | null = null;
 let monsterService: MonsterService | null = null;
 let actorService: ActorIntegrationService | null = null;
@@ -38,8 +80,10 @@ function getServices() {
  */
 export const createEncounterHandler: RouteHandler = async (ctx) => {
   try {
-    const body = await parseJsonBody(ctx.req);
-    const { name, campaignId, characterIds = [], monsters = [] } = body;
+    const body = await parseJsonBody<CreateEncounterBody>(ctx.req);
+    const characterIds = Array.isArray(body.characterIds) ? body.characterIds : [];
+    const monsters = Array.isArray(body.monsters) ? body.monsters : [];
+    const { name, campaignId } = body;
 
     if (!name || !campaignId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -157,12 +201,12 @@ export const updateTokenHealthHandler: RouteHandler = async (ctx) => {
     const pathParts = ctx.url.pathname.split("/");
     const tokenId = pathParts[pathParts.length - 2]; // /encounters/:id/tokens/:tokenId/health
 
-    const body = await parseJsonBody(ctx.req);
-    const { current, max, temporary = 0 } = body;
+    const body = await parseJsonBody<UpdateTokenHealthBody>(ctx.req);
+    const { current } = body;
 
-    if (typeof current !== "number" || typeof max !== "number") {
+    if (typeof current !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Current and max health values required" }));
+      ctx.res.end(JSON.stringify({ error: "Current health value required" }));
       return;
     }
 
@@ -174,7 +218,9 @@ export const updateTokenHealthHandler: RouteHandler = async (ctx) => {
   } catch (error) {
     logger.error("Failed to update token health:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to update token health" }));
+    ctx.res.end(
+      JSON.stringify({ error: getErrorMessage(error) || "Failed to update token health" }),
+    );
   }
 };
 
@@ -187,7 +233,7 @@ export const addCharacterToEncounterHandler: RouteHandler = async (ctx) => {
     const pathParts = ctx.url.pathname.split("/");
     const encounterId = pathParts[2]; // /encounters/:id/tokens/character
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<AddTokenBody>(ctx.req);
     const { characterId, gameSessionId } = body;
 
     if (!characterId || !gameSessionId) {
@@ -215,7 +261,9 @@ export const addCharacterToEncounterHandler: RouteHandler = async (ctx) => {
   } catch (error) {
     logger.error("Failed to add character to encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to add character to encounter" }));
+    ctx.res.end(
+      JSON.stringify({ error: getErrorMessage(error) || "Failed to add character to encounter" }),
+    );
   }
 };
 
@@ -228,7 +276,7 @@ export const addMonsterToEncounterHandler: RouteHandler = async (ctx) => {
     const pathParts = ctx.url.pathname.split("/");
     const encounterId = pathParts[2]; // /encounters/:id/tokens/monster
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<AddTokenBody>(ctx.req);
     const { monsterId, instanceName, gameSessionId } = body;
 
     if (!monsterId || !gameSessionId) {
@@ -256,7 +304,9 @@ export const addMonsterToEncounterHandler: RouteHandler = async (ctx) => {
   } catch (error) {
     logger.error("Failed to add monster to encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to add monster to encounter" }));
+    ctx.res.end(
+      JSON.stringify({ error: getErrorMessage(error) || "Failed to add monster to encounter" }),
+    );
   }
 };
 
@@ -269,7 +319,7 @@ export const executeActionHandler: RouteHandler = async (ctx) => {
     const pathParts = ctx.url.pathname.split("/");
     const encounterId = pathParts[2]; // /encounters/:id/actions
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<ExecuteActionBody>(ctx.req);
     const { actorId, actionId, targetId } = body;
 
     if (!actorId || !actionId) {
@@ -333,7 +383,7 @@ export const addActorHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<AddActorBody>(ctx.req);
     const { type, characterId, monsterId, name, initiative } = body;
 
     if (!type || !["character", "monster"].includes(type)) {
@@ -356,8 +406,12 @@ export const addActorHandler: RouteHandler = async (ctx) => {
         ctx.res.end(JSON.stringify({ error: "Character ID is required for character actors" }));
         return;
       }
-      
-      const actor = await actorService.addCharacterToEncounter(encounterId, characterId, initiative);
+
+      const actor = await actorService.addCharacterToEncounter(
+        encounterId,
+        characterId,
+        initiative,
+      );
       ctx.res.writeHead(201, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify(actor));
     } else if (type === "monster") {
@@ -366,15 +420,22 @@ export const addActorHandler: RouteHandler = async (ctx) => {
         ctx.res.end(JSON.stringify({ error: "Monster ID is required for monster actors" }));
         return;
       }
-      
-      const actor = await actorService.addMonsterToEncounter(encounterId, monsterId, name || "Monster", initiative);
+
+      const actor = await actorService.addMonsterToEncounter(
+        encounterId,
+        monsterId,
+        name || "Monster",
+        initiative,
+      );
       ctx.res.writeHead(201, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify(actor));
     }
   } catch (error) {
     logger.error("Failed to add actor to encounter:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ error: getErrorMessage(error) || "Failed to add actor to encounter" }));
+    ctx.res.end(
+      JSON.stringify({ error: getErrorMessage(error) || "Failed to add actor to encounter" }),
+    );
   }
 };
 
@@ -393,7 +454,7 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<UpdateEncounterBody>(ctx.req);
     const { name, status, currentTurn, round } = body;
 
     // Validate status if provided
@@ -415,7 +476,7 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
       name,
       status,
       currentTurn,
-      round
+      round,
     });
 
     if (!updatedEncounter) {

@@ -1,10 +1,9 @@
 /**
  * Authentication Manager - Core auth functionality
  */
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-import type { User as PrismaUser } from '@prisma/client';
+import { compare, hash } from 'bcrypt';
+import { sign, verify, type SignOptions } from 'jsonwebtoken';
+import { PrismaClient, type User as PrismaUser } from '@prisma/client';
 import { DatabaseManager } from '../database/connection';
 
 export interface AuthConfig {
@@ -12,9 +11,9 @@ export interface AuthConfig {
   jwtExpiration: string;
   refreshTokenExpiration: string;
   bcryptRounds: number;
-  rateLimits?: any;
-  security?: any;
-  oauth?: any;
+  rateLimits?: Record<string, unknown>;
+  security?: Record<string, unknown>;
+  oauth?: Record<string, unknown>;
 }
 
 // Singleton instance
@@ -82,7 +81,7 @@ export class AuthManager {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(data.password, this.config.bcryptRounds);
+    const passwordHash = await hash(data.password, this.config.bcryptRounds);
 
     // Create user
     const user = await this.prisma.user.create({
@@ -116,7 +115,7 @@ export class AuthManager {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(data.password, user.passwordHash);
+    const isValidPassword = await compare(data.password, user.passwordHash);
     if (!isValidPassword) {
       throw new Error('Invalid email or password');
     }
@@ -164,9 +163,16 @@ export class AuthManager {
     return user ? this.formatUser(user) : null;
   }
 
+  async findUserByEmail(email: string): Promise<AuthUser | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+    return user ? this.formatUser(user) : null;
+  }
+
   async verifyAccessToken(token: string): Promise<AuthUser | null> {
     try {
-      const payload = jwt.verify(token, this.config.jwtSecret) as { userId: string };
+      const payload = verify(token, this.config.jwtSecret) as { userId: string };
       return this.getUserById(payload.userId);
     } catch {
       return null;
@@ -216,17 +222,17 @@ export class AuthManager {
 
   private async generateTokens(userId: string): Promise<AuthTokens> {
     // Generate access token
-    const accessToken = jwt.sign(
+    const accessToken = sign(
       { userId },
       this.config.jwtSecret,
-      { expiresIn: this.config.jwtExpiration } as jwt.SignOptions
+      { expiresIn: this.config.jwtExpiration } as SignOptions
     );
 
     // Generate refresh token
-    const refreshToken = jwt.sign(
+    const refreshToken = sign(
       { userId, type: 'refresh' },
       this.config.jwtSecret,
-      { expiresIn: this.config.refreshTokenExpiration } as jwt.SignOptions
+      { expiresIn: this.config.refreshTokenExpiration } as SignOptions
     );
 
     // Store refresh token in database

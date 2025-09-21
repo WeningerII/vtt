@@ -5,6 +5,7 @@
 import { AuthManager, AuthConfig } from "@vtt/auth";
 import { OAuthManager, createOAuthConfig } from "./oauth/config";
 import { createOAuthRoutes } from "./oauth/routes";
+import type { UserManager } from "@vtt/user-management";
 
 // Create auth configuration
 export function createAuthConfig(): AuthConfig {
@@ -54,7 +55,7 @@ export function initializeAuth() {
   const oauthManager = new OAuthManager(authManager, oauthConfig);
   // Temporarily pass authManager as UserManager - needs proper UserManager implementation
   // TODO: Implement proper UserManager interface
-  const oauthRoutes = createOAuthRoutes(authManager as any);
+  const oauthRoutes = createOAuthRoutes(authManager as unknown as UserManager);
 
   return {
     authManager,

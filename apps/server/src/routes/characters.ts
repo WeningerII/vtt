@@ -7,8 +7,20 @@ import { CharacterService } from "../character/CharacterService";
 import { parseJsonBody } from "../utils/json";
 import { extractUserIdFromToken } from "../utils/auth";
 import { CreateCharacterRequest, UpdateCharacterRequest } from "../character/types";
-import { validateRequest, GameSchemas, CommonSchemas } from "../middleware/validation";
 import { getErrorMessage } from "../utils/errors";
+
+type CreateCharacterBody = Partial<CreateCharacterRequest> & { userId?: string };
+type UpdateCharacterBody = Partial<UpdateCharacterRequest> & { userId?: string };
+interface LevelUpBody {
+  userId?: string;
+  hpIncrease?: number;
+}
+
+interface RestBody {
+  userId?: string;
+  restType?: "short" | "long";
+  hitDiceSpent?: number;
+}
 
 // Global character service instance
 const characterService = new CharacterService();
@@ -18,13 +30,12 @@ const characterService = new CharacterService();
  */
 export const createCharacterHandler: RouteHandler = async (ctx) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<CreateCharacterBody>(ctx.req);
 
     // Extract userId from authenticated session
     const authHeader = ctx.req.headers["authorization"];
-    const userId = authHeader
-      ? await extractUserIdFromToken(authHeader)
-      : body.userId || "temp-user-id";
+    const tokenUserId = authHeader ? await extractUserIdFromToken(authHeader) : null;
+    const userId = tokenUserId ?? body.userId ?? "temp-user-id";
 
     if (!body.name || !body.race || !body.class) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -139,13 +150,12 @@ export const updateCharacterHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<UpdateCharacterBody>(ctx.req);
 
     // Extract userId from authenticated session
     const authHeader = ctx.req.headers["authorization"];
-    const userId = authHeader
-      ? await extractUserIdFromToken(authHeader)
-      : body.userId || "temp-user-id";
+    const tokenUserId = authHeader ? await extractUserIdFromToken(authHeader) : null;
+    const userId = tokenUserId ?? body.userId ?? "temp-user-id";
 
     const update: UpdateCharacterRequest = {
       name: body.name,
@@ -259,13 +269,12 @@ export const levelUpCharacterHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<LevelUpBody>(ctx.req);
 
     // Extract userId from authenticated session
     const authHeader = ctx.req.headers["authorization"];
-    const userId = authHeader
-      ? await extractUserIdFromToken(authHeader)
-      : body.userId || "temp-user-id";
+    const tokenUserId = authHeader ? await extractUserIdFromToken(authHeader) : null;
+    const userId = tokenUserId ?? body.userId ?? "temp-user-id";
 
     const character = await characterService.getCharacter(characterId);
 
@@ -324,13 +333,12 @@ export const characterRestHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<RestBody>(ctx.req);
 
     // Extract userId from authenticated session
     const authHeader = ctx.req.headers["authorization"];
-    const userId = authHeader
-      ? await extractUserIdFromToken(authHeader)
-      : body.userId || "temp-user-id";
+    const tokenUserId = authHeader ? await extractUserIdFromToken(authHeader) : null;
+    const userId = tokenUserId ?? body.userId ?? "temp-user-id";
     const restType = body.restType || "short"; // 'short' or 'long'
 
     const character = await characterService.getCharacter(characterId);
@@ -389,7 +397,6 @@ export const characterRestHandler: RouteHandler = async (ctx) => {
     );
   }
 };
-
 
 // Export character service for use elsewhere
 export { characterService };

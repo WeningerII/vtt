@@ -1,10 +1,34 @@
 import { RouteHandler } from "../router/types";
 import { parseJsonBody, sendJson } from "../utils/json";
-import { createAssistantService } from "../ai/assistant";
+import { createAssistantService, type AssistantQuery } from "../ai/assistant";
 import { getErrorMessage } from "../utils/errors";
 
+interface AssistantContextBody {
+  context?: AssistantQuery["context"];
+}
+
+interface QueryRulesBody extends AssistantContextBody {
+  question?: string;
+}
+
+interface ExplainSpellBody extends AssistantContextBody {
+  spellName?: string;
+}
+
+interface ExplainRuleBody extends AssistantContextBody {
+  ruleTopic?: string;
+}
+
+interface SuggestActionsBody extends AssistantContextBody {
+  situation?: string;
+}
+
+interface GenerateRulingBody extends AssistantContextBody {
+  scenario?: string;
+}
+
 export const queryRulesHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<QueryRulesBody>(ctx.req);
   const assistantService = createAssistantService(ctx.prisma);
 
   if (!data.question) {
@@ -24,7 +48,7 @@ export const queryRulesHandler: RouteHandler = async (ctx) => {
 };
 
 export const explainSpellHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<ExplainSpellBody>(ctx.req);
   const assistantService = createAssistantService(ctx.prisma);
 
   if (!data.spellName) {
@@ -40,7 +64,7 @@ export const explainSpellHandler: RouteHandler = async (ctx) => {
 };
 
 export const explainRuleHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<ExplainRuleBody>(ctx.req);
   const assistantService = createAssistantService(ctx.prisma);
 
   if (!data.ruleTopic) {
@@ -56,7 +80,7 @@ export const explainRuleHandler: RouteHandler = async (ctx) => {
 };
 
 export const suggestActionsHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<SuggestActionsBody>(ctx.req);
   const assistantService = createAssistantService(ctx.prisma);
 
   if (!data.situation) {
@@ -72,7 +96,7 @@ export const suggestActionsHandler: RouteHandler = async (ctx) => {
 };
 
 export const generateRulingHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<GenerateRulingBody>(ctx.req);
   const assistantService = createAssistantService(ctx.prisma);
 
   if (!data.scenario) {

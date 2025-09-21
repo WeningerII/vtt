@@ -4,14 +4,32 @@
 
 import { RouteHandler } from "../router/types";
 import { getErrorMessage } from "../utils/errors";
-import { requireAuth, getAuthenticatedUserId } from "../middleware/auth";
+import { getAuthenticatedUserId } from "../middleware/auth";
 import { parseJsonBody } from "../utils/json";
+
+interface EncountersCreateBody {
+  name?: string;
+  gameSessionId?: string;
+  description?: string;
+}
+
+interface AddParticipantBody {
+  tokenId?: string;
+  initiative?: number;
+}
+
+interface EncountersUpdateBody {
+  name?: string;
+  status?: string;
+  roundNumber?: number;
+  currentTurn?: number;
+}
 
 // GET /encounters - List encounters for a campaign
 export const listEncountersHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
-    const userId = getAuthenticatedUserId(ctx);
+    getAuthenticatedUserId(ctx);
 
     const gameSessionId = ctx.url.searchParams.get("gameSessionId");
     const limit = Math.min(parseInt(ctx.url.searchParams.get("limit") || "50"), 200);
@@ -78,7 +96,7 @@ export const listEncountersHandler: RouteHandler = async (ctx) => {
 export const getEncounterHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
-    const userId = getAuthenticatedUserId(ctx);
+    getAuthenticatedUserId(ctx);
 
     const id = ctx.params?.id;
     if (!id) {
@@ -149,10 +167,10 @@ export const getEncounterHandler: RouteHandler = async (ctx) => {
 export const createEncounterHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
-    const userId = getAuthenticatedUserId(ctx);
+    getAuthenticatedUserId(ctx);
 
-    const body = await parseJsonBody(ctx.req);
-    const { name, gameSessionId, description } = body;
+    const body = await parseJsonBody<EncountersCreateBody>(ctx.req);
+    const { name, gameSessionId } = body;
 
     if (!name || !gameSessionId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -204,7 +222,7 @@ export const createEncounterHandler: RouteHandler = async (ctx) => {
 export const addParticipantHandler: RouteHandler = async (ctx) => {
   try {
     // Require authentication
-    const userId = getAuthenticatedUserId(ctx);
+    getAuthenticatedUserId(ctx);
 
     const encounterId = ctx.params?.id;
     if (!encounterId) {
@@ -213,7 +231,7 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<AddParticipantBody>(ctx.req);
     const { tokenId, initiative } = body;
 
     if (!tokenId || initiative === undefined) {
@@ -223,7 +241,7 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
     }
 
     // Verify user has access to this encounter and the token
-    const [encounter, token, userTokenCount] = await Promise.all([
+    const [encounter, token] = await Promise.all([
       ctx.prisma.encounter.findUnique({
         where: { id: encounterId },
         include: {
@@ -239,12 +257,6 @@ export const addParticipantHandler: RouteHandler = async (ctx) => {
       ctx.prisma.token.findUnique({
         where: { id: tokenId },
         select: { id: true, type: true, metadata: true },
-      }),
-      ctx.prisma.token.count({
-        where: {
-          gameSessionId: { in: [] }, // Will be updated below
-          type: "PC",
-        },
       }),
     ]);
 
@@ -311,7 +323,7 @@ export const updateEncounterHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<EncountersUpdateBody>(ctx.req);
     const { name, status, roundNumber, currentTurn } = body;
 
     const data: Record<string, unknown> = {};

@@ -4,9 +4,44 @@
 
 import { RouteHandler } from "../router/types";
 import { GameManager } from "../game/GameManager";
-import { parseJsonBody, sendJson } from "../utils/json";
+import { parseJsonBody } from "../utils/json";
 import { getErrorMessage } from "../utils/errors";
 import { GameConfig } from "../game/GameSession";
+
+interface CreateGameBody {
+  gameId?: string;
+  mapId?: string;
+  maxPlayers?: number;
+  tickRate?: number;
+}
+
+interface JoinGameBody {
+  userId?: string;
+  displayName?: string;
+}
+
+interface LeaveGameBody {
+  userId?: string;
+}
+
+interface TokenCreateBody {
+  x?: number;
+  y?: number;
+  ownerId?: string;
+}
+
+interface TokenMoveBody {
+  x?: number;
+  y?: number;
+  animate?: boolean;
+}
+
+interface RollDiceBody {
+  dice?: string;
+  userId?: string;
+  label?: string;
+  isPrivate?: boolean;
+}
 
 // Global game manager instance
 const gameManager = new GameManager();
@@ -16,7 +51,7 @@ const gameManager = new GameManager();
  */
 export const createGameHandler: RouteHandler = async (ctx) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<CreateGameBody>(ctx.req);
 
     if (!body.gameId || typeof body.gameId !== "string") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -96,7 +131,7 @@ export const joinGameHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<JoinGameBody>(ctx.req);
 
     if (!body.userId || !body.displayName) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -144,7 +179,7 @@ export const leaveGameHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<LeaveGameBody>(ctx.req);
 
     if (!body.userId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -207,7 +242,7 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<TokenCreateBody>(ctx.req);
 
     if (typeof body.x !== "number" || typeof body.y !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -257,7 +292,7 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<TokenMoveBody>(ctx.req);
 
     if (typeof body.x !== "number" || typeof body.y !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -306,7 +341,7 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<RollDiceBody>(ctx.req);
 
     if (!body.dice || !body.userId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -322,13 +357,15 @@ export const rollDiceHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const result = game.rollDice(body.dice, body.userId, body.label);
+    const player = game.getPlayer(body.userId);
 
-    if (!result) {
+    if (!player) {
       ctx.res.writeHead(403, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Player not found in game" }));
       return;
     }
+
+    const result = game.rollDice(body.dice, body.label, body.isPrivate === true);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(

@@ -1,11 +1,8 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Asset management routes
  */
 
 import type { RouteHandler } from "../router/types";
-import type { IncomingMessage } from "http";
-import { Buffer } from "buffer";
 import * as fs from "fs";
 import path from "path";
 import { parseJsonBody } from "../utils/json";
@@ -13,7 +10,36 @@ import { getErrorMessage } from "../utils/errors";
 import { AssetUploadRequest, AssetUpdateRequest, AssetSearchQuery } from "../assets/types";
 import { AssetService } from "../assets/AssetService";
 import { getAuthenticatedUserId } from "../middleware/auth";
-import formidable from "formidable";
+import formidable, { type File as FormidableFile } from "formidable";
+
+interface AssetUpdateBody {
+  name?: string;
+  description?: string;
+  isPublic?: boolean;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+}
+
+interface TokenCreateBody {
+  gridSize?: number;
+  isPC?: boolean;
+  category?: string;
+  stats?: Record<string, unknown>;
+}
+
+interface MapCreateBody {
+  gridType?: string;
+  gridSize?: number;
+  gridOffsetX?: number;
+  gridOffsetY?: number;
+  scenes?: unknown;
+}
+
+interface LibraryCreateBody {
+  name?: string;
+  description?: string;
+  isPublic?: boolean;
+}
 
 // Initialize real AssetService
 const assetService = new AssetService(process.env.UPLOAD_PATH || "./uploads");
@@ -32,7 +58,8 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
 
     const [fields, files] = await form.parse(ctx.req);
 
-    const file = Array.isArray(files.file) ? files.file[0] : files.file;
+    const uploaded = files.file;
+    const file: FormidableFile | undefined = Array.isArray(uploaded) ? uploaded[0] : uploaded;
     if (!file) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "No file uploaded" }));
@@ -41,7 +68,7 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
 
     // Enforce basic file constraints (size, type)
     const maxSize = 50 * 1024 * 1024; // 50MB
-    const fileSize = (file as any).size ?? fs.statSync(file.filepath).size;
+    const fileSize = file.size ?? fs.statSync(file.filepath).size;
     if (fileSize > maxSize) {
       ctx.res.writeHead(413, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Uploaded file too large", limitBytes: maxSize }));
@@ -74,7 +101,10 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const name = Array.isArray(fields.name) ? fields.name[0] : fields.name;
+    const getFieldValue = (value: string | string[] | undefined): string | undefined =>
+      Array.isArray(value) ? value[0] : value;
+
+    const name = getFieldValue(fields.name as string | string[] | undefined);
     if (!name) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
       ctx.res.end(JSON.stringify({ error: "Missing asset name" }));
@@ -83,11 +113,19 @@ export const uploadAssetHandler: RouteHandler = async (ctx) => {
 
     const request: AssetUploadRequest = {
       name,
-      type: (Array.isArray(fields.type) ? fields.type[0] : fields.type) as any,
-      description: Array.isArray(fields.description) ? fields.description[0] : fields.description,
-      campaignId: Array.isArray(fields.campaignId) ? fields.campaignId[0] : fields.campaignId,
-      isPublic: (Array.isArray(fields.isPublic) ? fields.isPublic[0] : fields.isPublic) === "true",
-      tags: fields.tags ? (Array.isArray(fields.tags) ? fields.tags : [fields.tags]) : [],
+      type: getFieldValue(
+        fields.type as string | string[] | undefined,
+      ) as AssetUploadRequest["type"],
+      description: getFieldValue(fields.description as string | string[] | undefined),
+      campaignId: getFieldValue(fields.campaignId as string | string[] | undefined),
+      isPublic: getFieldValue(fields.isPublic as string | string[] | undefined) === "true",
+      tags: (() => {
+        const tagsField = fields.tags as string | string[] | undefined;
+        if (!tagsField) {
+          return [] as string[];
+        }
+        return Array.isArray(tagsField) ? tagsField : [tagsField];
+      })(),
     };
 
     // Read file buffer
@@ -196,7 +234,9 @@ export const searchAssetsHandler: RouteHandler = async (ctx) => {
   try {
     const query: AssetSearchQuery = {
       ...(ctx.url.searchParams.get("name") && { name: ctx.url.searchParams.get("name")! }),
-      ...(ctx.url.searchParams.get("type") && { type: ctx.url.searchParams.get("type") as any }),
+      ...(ctx.url.searchParams.get("type") && {
+        type: ctx.url.searchParams.get("type") as AssetSearchQuery["type"],
+      }),
       ...(ctx.url.searchParams.get("userId") && { userId: ctx.url.searchParams.get("userId")! }),
       ...(ctx.url.searchParams.get("campaignId") && {
         campaignId: ctx.url.searchParams.get("campaignId")!,
@@ -238,7 +278,7 @@ export const updateAssetHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<AssetUpdateBody>(ctx.req);
 
     const userId = getAuthenticatedUserId(ctx);
 
@@ -323,7 +363,7 @@ export const createTokenHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<TokenCreateBody>(ctx.req);
 
     const userId = getAuthenticatedUserId(ctx);
 
@@ -372,7 +412,7 @@ export const createMapHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<MapCreateBody>(ctx.req);
 
     const userId = getAuthenticatedUserId(ctx);
 
@@ -459,7 +499,7 @@ export const getUserLibrariesHandler: RouteHandler = async (ctx) => {
  */
 export const createLibraryHandler: RouteHandler = async (ctx) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<LibraryCreateBody>(ctx.req);
 
     const userId = getAuthenticatedUserId(ctx);
 

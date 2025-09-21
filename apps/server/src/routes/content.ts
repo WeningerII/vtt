@@ -3,16 +3,37 @@ import { getErrorMessage } from "../utils/errors";
 import { parseJsonBody, sendJson } from "../utils/json";
 import { createContentGenerationService } from "../ai/content";
 
+interface BaseContentBody {
+  setting?: string;
+  theme?: string;
+  playerLevel?: number;
+  additionalContext?: string;
+  difficulty?: string;
+  partySize?: number;
+  environment?: string;
+}
+
+interface CampaignContentBody {
+  campaignId?: string;
+  contentType?: string;
+}
+
 export const generateNPCHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<BaseContentBody>(ctx.req);
   const contentService = createContentGenerationService(ctx.prisma);
 
   try {
+    const setting = typeof data.setting === "string" ? data.setting : "fantasy";
+    const theme = typeof data.theme === "string" ? data.theme : "neutral";
+    const playerLevel = typeof data.playerLevel === "number" ? data.playerLevel : 5;
+    const additionalContext =
+      typeof data.additionalContext === "string" ? data.additionalContext : undefined;
+
     const result = await contentService.generateNPC({
-      setting: data.setting || "fantasy",
-      theme: data.theme || "neutral",
-      playerLevel: data.playerLevel || 5,
-      additionalContext: data.additionalContext,
+      setting,
+      theme,
+      playerLevel,
+      additionalContext,
     });
 
     sendJson(ctx.res, result);
@@ -22,14 +43,19 @@ export const generateNPCHandler: RouteHandler = async (ctx) => {
 };
 
 export const generateLocationHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<BaseContentBody>(ctx.req);
   const contentService = createContentGenerationService(ctx.prisma);
 
   try {
+    const setting = typeof data.setting === "string" ? data.setting : "fantasy";
+    const theme = typeof data.theme === "string" ? data.theme : "neutral";
+    const additionalContext =
+      typeof data.additionalContext === "string" ? data.additionalContext : undefined;
+
     const result = await contentService.generateLocation({
-      setting: data.setting || "fantasy",
-      theme: data.theme || "neutral",
-      additionalContext: data.additionalContext,
+      setting,
+      theme,
+      additionalContext,
     });
 
     sendJson(ctx.res, result);
@@ -39,16 +65,23 @@ export const generateLocationHandler: RouteHandler = async (ctx) => {
 };
 
 export const generateQuestHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<BaseContentBody>(ctx.req);
   const contentService = createContentGenerationService(ctx.prisma);
 
   try {
+    const setting = typeof data.setting === "string" ? data.setting : "fantasy";
+    const theme = typeof data.theme === "string" ? data.theme : "adventure";
+    const difficulty = typeof data.difficulty === "string" ? data.difficulty : "medium";
+    const playerLevel = typeof data.playerLevel === "number" ? data.playerLevel : 5;
+    const additionalContext =
+      typeof data.additionalContext === "string" ? data.additionalContext : undefined;
+
     const result = await contentService.generateQuest({
-      setting: data.setting || "fantasy",
-      theme: data.theme || "adventure",
-      difficulty: data.difficulty || "medium",
-      playerLevel: data.playerLevel || 5,
-      additionalContext: data.additionalContext,
+      setting,
+      theme,
+      difficulty,
+      playerLevel,
+      additionalContext,
     });
 
     sendJson(ctx.res, result);
@@ -58,15 +91,21 @@ export const generateQuestHandler: RouteHandler = async (ctx) => {
 };
 
 export const generateItemHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<BaseContentBody>(ctx.req);
   const contentService = createContentGenerationService(ctx.prisma);
 
   try {
+    const setting = typeof data.setting === "string" ? data.setting : "fantasy";
+    const theme = typeof data.theme === "string" ? data.theme : "neutral";
+    const playerLevel = typeof data.playerLevel === "number" ? data.playerLevel : 5;
+    const additionalContext =
+      typeof data.additionalContext === "string" ? data.additionalContext : undefined;
+
     const result = await contentService.generateItem({
-      setting: data.setting || "fantasy",
-      theme: data.theme || "neutral",
-      playerLevel: data.playerLevel || 5,
-      additionalContext: data.additionalContext,
+      setting,
+      theme,
+      playerLevel,
+      additionalContext,
     });
 
     sendJson(ctx.res, result);
@@ -76,17 +115,24 @@ export const generateItemHandler: RouteHandler = async (ctx) => {
 };
 
 export const generateEncounterHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
+  const data = await parseJsonBody<BaseContentBody>(ctx.req);
   const contentService = createContentGenerationService(ctx.prisma);
 
   try {
+    const playerLevel = typeof data.playerLevel === "number" ? data.playerLevel : 5;
+    const partySize = typeof data.partySize === "number" ? data.partySize : 4;
+    const setting = typeof data.setting === "string" ? data.setting : "fantasy";
+    const difficulty = typeof data.difficulty === "string" ? data.difficulty : "medium";
+    const theme = typeof data.theme === "string" ? data.theme : undefined;
+    const environment = typeof data.environment === "string" ? data.environment : undefined;
+
     const result = await contentService.generateEncounter({
-      playerLevel: data.playerLevel || 5,
-      partySize: data.partySize || 4,
-      setting: data.setting || "fantasy",
-      difficulty: data.difficulty || "medium",
-      theme: data.theme,
-      environment: data.environment,
+      playerLevel,
+      partySize,
+      setting,
+      difficulty,
+      theme,
+      environment,
     });
 
     sendJson(ctx.res, result);
@@ -96,8 +142,9 @@ export const generateEncounterHandler: RouteHandler = async (ctx) => {
 };
 
 export const generateCampaignContentHandler: RouteHandler = async (ctx) => {
-  const data = await parseJsonBody(ctx.req);
-  const { campaignId, contentType } = data;
+  const data = await parseJsonBody<CampaignContentBody>(ctx.req);
+  const campaignId = typeof data.campaignId === "string" ? data.campaignId : undefined;
+  const contentType = typeof data.contentType === "string" ? data.contentType : undefined;
 
   if (!campaignId || !contentType) {
     return sendJson(ctx.res, { error: "campaignId and contentType are required" }, 400);

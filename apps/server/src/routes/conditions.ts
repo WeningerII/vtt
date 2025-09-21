@@ -4,8 +4,30 @@
 
 import { RouteHandler } from "../router/types";
 import { getErrorMessage } from "../utils/errors";
-import { ConditionService, ConditionType } from "../services/ConditionService";
+import {
+  ConditionService,
+  ConditionType,
+  type CreateConditionRequest,
+  type UpdateConditionRequest,
+  type ApplyConditionRequest,
+} from "../services/ConditionService";
 import { parseJsonBody } from "../utils/json";
+
+type CreateConditionBody = Partial<CreateConditionRequest>;
+
+interface ApplyConditionBody extends Partial<ApplyConditionRequest> {
+  targetId?: string;
+  targetType?: string;
+}
+
+interface UpdateAppliedConditionBody {
+  duration?: number;
+  metadata?: unknown;
+  isActive?: boolean;
+  expiresAt?: string | null;
+}
+
+type UpdateConditionBody = UpdateConditionRequest;
 import { PrismaClient } from "@prisma/client";
 
 // Lazy-load services to avoid initialization issues during module loading
@@ -104,7 +126,7 @@ export const getConditionHandler: RouteHandler = async (ctx) => {
 // POST /conditions - Create a new condition
 export const createConditionHandler: RouteHandler = async (ctx) => {
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<CreateConditionBody>(ctx.req);
 
     if (!body?.name || !body?.type) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -122,7 +144,7 @@ export const createConditionHandler: RouteHandler = async (ctx) => {
 
     const created = await getConditionService().createCondition({
       name: body.name,
-      type: body.type,
+      type: body.type as ConditionType,
       description: body.description,
       duration: body.duration,
       metadata: body.metadata,
@@ -146,7 +168,7 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<ApplyConditionBody>(ctx.req);
 
     if (!body.targetId || !body.targetType) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -166,12 +188,18 @@ export const applyConditionHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const applied = await getConditionService().applyCondition(body.targetId, body.targetType, {
+    const applyRequest: ApplyConditionRequest = {
       conditionId,
       duration: body.duration,
       metadata: body.metadata,
       appliedBy: body.appliedBy,
-    });
+    };
+
+    const applied = await getConditionService().applyCondition(
+      body.targetId,
+      body.targetType,
+      applyRequest,
+    );
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success: true, appliedCondition: applied }));
@@ -218,7 +246,7 @@ export const updateAppliedConditionHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<UpdateAppliedConditionBody>(ctx.req);
     const data: Record<string, unknown> = {};
 
     // Only update provided fields
@@ -285,7 +313,7 @@ export const updateConditionHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<UpdateConditionBody>(ctx.req);
 
     const updated = await getConditionService().updateCondition(id, body);
 

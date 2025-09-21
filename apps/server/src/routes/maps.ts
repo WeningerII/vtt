@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Map and grid system routes for tactical combat
  */
 
@@ -7,18 +6,17 @@ import { RouteHandler } from "../router/types";
 import { logger } from "@vtt/logging";
 import { getErrorMessage } from "../utils/errors";
 import { Buffer } from "node:buffer";
+import type { PrismaClient } from "@prisma/client";
 
 import { MapService } from "../map/MapService";
-import { MapScene, GridEffect } from "../map/types";
+import { GridEffect, TokenPosition } from "../map/types";
 import { DatabaseManager } from "../database/connection";
 import { promises as fs } from "fs";
-import { join, extname } from "path";
+import { join } from "path";
 import { v4 as uuidv4 } from "uuid";
-import formidable from "formidable";
 
 // Lazy-load services to avoid initialization issues during module loading
-// TODO: Type prisma as PrismaClient instead of any
-let prisma: any | null = null;
+let prisma: PrismaClient | null = null;
 let mapService: MapService | null = null;
 
 function getServices() {
@@ -40,16 +38,109 @@ function getMapService(): MapService {
 // Import shared JSON parsing utility
 import { parseJsonBody } from "../utils/json";
 
+interface CreateSceneBody {
+  name?: string;
+  width?: number;
+  height?: number;
+  campaignId?: string;
+  mapId?: string;
+}
+
+type UpdateSceneBody = Record<string, unknown>;
+
+interface CoordinateConversionBody {
+  x?: number;
+  y?: number;
+  from?: string;
+  to?: string;
+}
+
+interface DistanceBody {
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+  units?: string;
+}
+
+interface Obstacle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface MovementPathBody {
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
+  obstacles?: Obstacle[];
+}
+
+interface LineOfSightBody {
+  fromX?: number;
+  fromY?: number;
+  toX?: number;
+  toY?: number;
+  obstacles?: Obstacle[];
+}
+
+interface CombatantBody {
+  tokenId?: string;
+  name?: string;
+  initiative?: number;
+}
+
+interface LightSourceBody {
+  sceneId?: string;
+  x?: number;
+  y?: number;
+  radius?: number;
+  color?: string;
+  intensity?: number;
+}
+
+interface FogAreaBody {
+  x?: number;
+  y?: number;
+  radius?: number;
+  [key: string]: unknown;
+}
+
+interface MeasurementBody {
+  type?: string;
+  points?: unknown[];
+  ownerId?: string;
+}
+
+interface TokenMoveBody {
+  x?: number;
+  y?: number;
+  animate?: boolean;
+}
+
+type AddTokenPayload = Partial<Omit<TokenPosition, "id">> & {
+  name?: string;
+  x?: number;
+  y?: number;
+  actorId?: string;
+  assetId?: string;
+  disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
+};
+
+type TokenUpdateBody = Partial<Omit<TokenPosition, "id">>;
+
 /**
  * POST /maps/scenes - Create new scene
  */
 export const createSceneHandler: RouteHandler = async (ctx) => {
   try {
-    const sceneData = await parseJsonBody(ctx.req);
+    const sceneData = await parseJsonBody<CreateSceneBody>(ctx.req);
 
-    if (!sceneData.name || !sceneData.width || !sceneData.height) {
+    if (!sceneData.name || !sceneData.width || !sceneData.height || !sceneData.campaignId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
-      ctx.res.end(JSON.stringify({ error: "Name, width, and height are required" }));
+      ctx.res.end(JSON.stringify({ error: "Name, width, height, and campaignId are required" }));
       return;
     }
 
@@ -112,7 +203,7 @@ export const updateSceneHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const updates = await parseJsonBody(ctx.req);
+    const updates = await parseJsonBody<UpdateSceneBody>(ctx.req);
 
     if (!sceneId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -165,7 +256,7 @@ export const getScenesHandler: RouteHandler = async (ctx) => {
 export const convertCoordinatesHandler: RouteHandler = async (ctx) => {
   try {
     const sceneId = ctx.url.pathname.split("/")[3];
-    const { x, y, from, to } = await parseJsonBody(ctx.req);
+    const { x, y, from, to } = await parseJsonBody<CoordinateConversionBody>(ctx.req);
 
     if (!sceneId || x === undefined || y === undefined || !from || !to) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -207,7 +298,7 @@ export const convertCoordinatesHandler: RouteHandler = async (ctx) => {
 export const calculateDistanceHandler: RouteHandler = async (ctx) => {
   try {
     const sceneId = ctx.url.pathname.split("/")[3];
-    const { x1, y1, x2, y2, units } = await parseJsonBody(ctx.req);
+    const { x1, y1, x2, y2, units } = await parseJsonBody<DistanceBody>(ctx.req);
 
     if (!sceneId || x1 === undefined || y1 === undefined || x2 === undefined || y2 === undefined) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -229,17 +320,27 @@ export const calculateDistanceHandler: RouteHandler = async (ctx) => {
       return;
     }
 
+    const allowedUnits: Array<"grid" | "feet" | "meters" | "pixels"> = [
+      "grid",
+      "feet",
+      "meters",
+      "pixels",
+    ];
+    const normalizedUnits = allowedUnits.includes(units as (typeof allowedUnits)[number])
+      ? (units as (typeof allowedUnits)[number])
+      : "grid";
+
     const distance = mapServiceInstance.calculateDistance(
       x1,
       y1,
       x2,
       y2,
       scene.grid,
-      units || "grid",
+      normalizedUnits,
     );
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
-    ctx.res.end(JSON.stringify({ distance, units: units || "grid" }));
+    ctx.res.end(JSON.stringify({ distance, units: normalizedUnits }));
   } catch (error) {
     logger.error("Error calculating distance:", error);
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
@@ -259,13 +360,9 @@ export const getMovementPathHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const { startX, startY, endX, endY, obstacles } = (await parseJsonBody(ctx.req)) as {
-      startX: number;
-      startY: number;
-      endX: number;
-      endY: number;
-      obstacles?: Array<{ x: number; y: number; width: number; height: number }>;
-    };
+    const { startX, startY, endX, endY, obstacles } = await parseJsonBody<MovementPathBody>(
+      ctx.req,
+    );
 
     if (
       !sceneId ||
@@ -286,7 +383,11 @@ export const getMovementPathHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const path = mapService.getMovementPath(startX, startY, endX, endY, obstacles || []);
+    const normalizedObstacles: Obstacle[] = Array.isArray(obstacles)
+      ? (obstacles as Obstacle[])
+      : [];
+
+    const path = mapService.getMovementPath(startX, startY, endX, endY, normalizedObstacles);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ path }));
@@ -309,13 +410,7 @@ export const lineOfSightHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const { fromX, fromY, toX, toY, obstacles } = (await parseJsonBody(ctx.req)) as {
-      fromX: number;
-      fromY: number;
-      toX: number;
-      toY: number;
-      obstacles?: Array<{ x: number; y: number; width: number; height: number }>;
-    };
+    const { fromX, fromY, toX, toY, obstacles } = await parseJsonBody<LineOfSightBody>(ctx.req);
 
     if (
       !sceneId ||
@@ -329,7 +424,11 @@ export const lineOfSightHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const result = mapService.calculateLineOfSight(fromX, fromY, toX, toY, obstacles || []);
+    const normalizedObstacles: Obstacle[] = Array.isArray(obstacles)
+      ? (obstacles as Obstacle[])
+      : [];
+
+    const result = mapService.calculateLineOfSight(fromX, fromY, toX, toY, normalizedObstacles);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ lineOfSight: result }));
@@ -352,11 +451,7 @@ export const addCombatantHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const { tokenId, name, initiative } = (await parseJsonBody(ctx.req)) as {
-      tokenId: string;
-      name: string;
-      initiative: number;
-    };
+    const { tokenId, name, initiative } = await parseJsonBody<CombatantBody>(ctx.req);
 
     if (!sceneId || !tokenId || !name || initiative === undefined) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -465,7 +560,7 @@ export const addGridEffectHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const effectData = await parseJsonBody(ctx.req);
+    const effectData = await parseJsonBody<Omit<GridEffect, "id">>(ctx.req);
 
     if (!sceneId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -498,7 +593,7 @@ export const addLightSourceHandler: RouteHandler = async (ctx) => {
       return;
     }
 
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<LightSourceBody>(ctx.req);
     const { sceneId, x, y, radius, color, intensity } = body;
 
     if (!sceneId || typeof x !== "number" || typeof y !== "number") {
@@ -547,7 +642,7 @@ export const removeLightSourceHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(success ? 200 : 404, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success }));
-  } catch (_error) {
+  } catch {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to remove light source" }));
   }
@@ -562,7 +657,7 @@ export const addFogAreaHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const fogData = await parseJsonBody(ctx.req);
+    const fogData = await parseJsonBody<FogAreaBody>(ctx.req);
 
     if (!sceneId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -574,7 +669,7 @@ export const addFogAreaHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(success ? 201 : 404, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success }));
-  } catch (_error) {
+  } catch {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to add fog area" }));
   }
@@ -589,7 +684,7 @@ export const revealFogAreaHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const fogData = await parseJsonBody(ctx.req);
+    const fogData = await parseJsonBody<FogAreaBody>(ctx.req);
 
     if (!sceneId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -606,7 +701,7 @@ export const revealFogAreaHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(success ? 200 : 404, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success }));
-  } catch (_error) {
+  } catch {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to reveal fog area" }));
   }
@@ -621,7 +716,7 @@ export const createMeasurementHandler: RouteHandler = async (ctx) => {
     }
 
     const sceneId = ctx.url.pathname.split("/")[3];
-    const measurementData = await parseJsonBody(ctx.req);
+    const measurementData = await parseJsonBody<MeasurementBody>(ctx.req);
 
     if (!sceneId) {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -629,16 +724,26 @@ export const createMeasurementHandler: RouteHandler = async (ctx) => {
       return;
     }
 
+    const measurementType: "distance" | "area" =
+      measurementData.type === "area" ? "area" : "distance";
+    const points: Array<{ x: number; y: number }> = Array.isArray(measurementData.points)
+      ? (measurementData.points as Array<{ x?: number; y?: number }>).flatMap((point) =>
+          typeof point?.x === "number" && typeof point?.y === "number"
+            ? [{ x: point.x, y: point.y }]
+            : [],
+        )
+      : [];
+
     const measurement = await mapService.createMeasurement(
       sceneId,
-      measurementData.type || "distance",
-      measurementData.points || [],
-      measurementData.ownerId || "system",
+      measurementType,
+      points,
+      typeof measurementData.ownerId === "string" ? measurementData.ownerId : "system",
     );
 
     ctx.res.writeHead(measurement ? 201 : 404, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ measurement }));
-  } catch (_error) {
+  } catch {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to create measurement" }));
   }
@@ -664,7 +769,7 @@ export const getMeasurementsHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ measurements }));
-  } catch (_error) {
+  } catch {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to get measurements" }));
   }
@@ -690,7 +795,7 @@ export const initializeCombatHandler: RouteHandler = async (ctx) => {
 
     ctx.res.writeHead(success ? 201 : 404, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ success }));
-  } catch (_error) {
+  } catch {
     ctx.res.writeHead(500, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ error: "Failed to initialize combat" }));
   }
@@ -715,9 +820,24 @@ export const addTokenHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<AddTokenPayload>(ctx.req);
 
-    const token = await mapService.addToken(sceneId, body);
+    if (!body.name || typeof body.x !== "number" || typeof body.y !== "number") {
+      ctx.res.writeHead(400, { "Content-Type": "application/json" });
+      ctx.res.end(JSON.stringify({ error: "Missing required fields: name, x, y" }));
+      return;
+    }
+
+    const token = await mapService.addToken(sceneId, {
+      name: body.name,
+      x: body.x,
+      y: body.y,
+      width: typeof body.width === "number" ? body.width : undefined,
+      height: typeof body.height === "number" ? body.height : undefined,
+      disposition: body.disposition,
+      actorId: body.actorId,
+      assetId: body.assetId,
+    });
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(JSON.stringify({ token }));
@@ -752,7 +872,7 @@ export const moveTokenHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<TokenMoveBody>(ctx.req);
 
     if (typeof body.x !== "number" || typeof body.y !== "number") {
       ctx.res.writeHead(400, { "Content-Type": "application/json" });
@@ -801,7 +921,7 @@ export const updateTokenHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const body = await parseJsonBody(ctx.req);
+    const body = await parseJsonBody<TokenUpdateBody>(ctx.req);
 
     const success = await mapService.updateToken(sceneId, tokenId, body);
 
@@ -900,9 +1020,13 @@ export const uploadMapHandler: RouteHandler = async (ctx) => {
       total += _chunk.length;
       if (total > MAX_UPLOAD_BYTES) {
         aborted = true;
-        try {
-          (ctx.req as any).destroy?.();
-        } catch {}
+        if (typeof ctx.req.destroy === "function") {
+          try {
+            ctx.req.destroy();
+          } catch {
+            // Ignore destroy errors during abort
+          }
+        }
         ctx.res.writeHead(413, { "Content-Type": "application/json" });
         ctx.res.end(
           JSON.stringify({ error: "Uploaded file too large", limitBytes: MAX_UPLOAD_BYTES }),
@@ -996,7 +1120,7 @@ export const updateSceneSettingsHandler: RouteHandler = async (ctx) => {
   }
 
   try {
-    const settings = await parseJsonBody(ctx.req);
+    const settings = await parseJsonBody<UpdateSceneBody>(ctx.req);
 
     // Use the MapService updateScene method
     const success = await mapService.updateScene(sceneId, settings);

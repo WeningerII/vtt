@@ -2,11 +2,11 @@
  * OAuth Configuration and Strategies
  */
 
-import passport from "passport";
-import type { DoneCallback } from "passport";
+import passport, { type DoneCallback } from "passport";
 import { logger } from "@vtt/logging";
-import { Strategy as DiscordStrategy } from "passport-discord";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as DiscordStrategy, type Profile as DiscordProfile } from "passport-discord";
+import { Strategy as GoogleStrategy, type Profile as GoogleProfile } from "passport-google-oauth20";
+import type { VerifyCallback } from "passport-oauth2";
 import { AuthManager } from "@vtt/auth";
 
 // Note: This server uses the in-memory AuthManager for OAuth user handling during tests.
@@ -49,6 +49,60 @@ export class OAuthManager {
   }
 
   private initializeStrategies(): void {
+    const mapDiscordProfile = (
+      profile: DiscordProfile,
+      accessToken: string,
+      refreshToken: string,
+    ): OAuthProfile => {
+      const { id, email, username, global_name, avatar } = profile;
+      if (!id || !email || !username) {
+        throw new Error("Invalid Discord profile data");
+      }
+      return {
+        id,
+        provider: "discord",
+        email,
+        username,
+        displayName: global_name || username,
+        avatar: avatar ? `https://cdn.discordapp.com/avatars/${id}/${avatar}.png` : undefined,
+        accessToken,
+        refreshToken,
+      };
+    };
+
+    const mapGoogleProfile = (
+      profile: GoogleProfile,
+      accessToken: string,
+      refreshToken: string,
+    ): OAuthProfile => {
+      const email = profile.emails?.[0]?.value;
+      if (!profile.id || !profile.displayName || !email) {
+        throw new Error("Invalid Google profile data");
+      }
+      return {
+        id: profile.id,
+        provider: "google",
+        email,
+        username: profile.displayName.replace(/\s+/g, "").toLowerCase(),
+        displayName: profile.displayName,
+        avatar: profile.photos?.[0]?.value,
+        accessToken,
+        refreshToken,
+      };
+    };
+
+    const passportDone = (done: VerifyCallback, error: unknown, user?: unknown) => {
+      if (error) {
+        done(error as Error);
+      } else {
+        const normalizedUser =
+          user && typeof (user as { id?: unknown }).id === "string"
+            ? (user as { id: string })
+            : false;
+        done(null, normalizedUser);
+      }
+    };
+
     // Discord OAuth Strategy - only initialize if credentials are provided
     if (this.config.discord.clientId && this.config.discord.clientSecret) {
       passport.use(
@@ -60,25 +114,18 @@ export class OAuthManager {
             callbackURL: this.config.discord.callbackURL,
             scope: this.config.discord.scope,
           },
-          async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
+          async (
+            accessToken: string,
+            refreshToken: string,
+            profile: DiscordProfile,
+            done: VerifyCallback,
+          ): Promise<void> => {
             try {
-              const oauthProfile: OAuthProfile = {
-                id: profile.id,
-                provider: "discord",
-                email: profile.email,
-                username: profile.username,
-                displayName: profile.global_name || profile.username,
-                avatar: profile.avatar
-                  ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
-                  : undefined,
-                accessToken,
-                refreshToken,
-              };
-
+              const oauthProfile = mapDiscordProfile(profile, accessToken, refreshToken);
               const user = await this.handleOAuthLogin(oauthProfile);
-              return done(null, user);
+              passportDone(done, null, user);
             } catch (error) {
-              return done(error, null);
+              passportDone(done, error);
             }
           },
         ),
@@ -96,23 +143,18 @@ export class OAuthManager {
             callbackURL: this.config.google.callbackURL,
             scope: this.config.google.scope,
           },
-          async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
+          async (
+            accessToken: string,
+            refreshToken: string,
+            profile: GoogleProfile,
+            done: VerifyCallback,
+          ): Promise<void> => {
             try {
-              const oauthProfile: OAuthProfile = {
-                id: profile.id,
-                provider: "google",
-                email: profile.emails?.[0]?.value || "",
-                username: profile.displayName.replace(/\s+/g, "").toLowerCase(),
-                displayName: profile.displayName,
-                avatar: profile.photos?.[0]?.value,
-                accessToken,
-                refreshToken,
-              };
-
+              const oauthProfile = mapGoogleProfile(profile, accessToken, refreshToken);
               const user = await this.handleOAuthLogin(oauthProfile);
-              return done(null, user);
+              passportDone(done, null, user);
             } catch (error) {
-              return done(error, null);
+              passportDone(done, error);
             }
           },
         ),
@@ -120,8 +162,12 @@ export class OAuthManager {
     }
 
     // Serialize/deserialize user for session
-    passport.serializeUser((user: any, done: DoneCallback) => {
-      done(null, user.id);
+    passport.serializeUser((user: unknown, done: DoneCallback) => {
+      if (user && typeof (user as { id?: unknown }).id === "string") {
+        done(null, (user as { id: string }).id);
+      } else {
+        done(new Error("Invalid user object"));
+      }
     });
 
     passport.deserializeUser(async (id: string, done: DoneCallback) => {
@@ -129,12 +175,12 @@ export class OAuthManager {
         const user = await this.authManager.findUserById(id);
         done(null, user);
       } catch (error) {
-        done(error, null);
+        done(error as Error, null);
       }
     });
   }
 
-  private async handleOAuthLogin(oauthProfile: OAuthProfile): Promise<any> {
+  private async handleOAuthLogin(oauthProfile: OAuthProfile): Promise<unknown> {
     try {
       // Check if user exists by email (AuthManager currently uses mock DB)
       const existing = await this.authManager.findUserByEmail(oauthProfile.email);
@@ -145,12 +191,12 @@ export class OAuthManager {
       // Create/register a new user via AuthManager
       return await this.createOAuthUser(oauthProfile);
     } catch (error) {
-      logger.error("OAuth login handling error:", error as any);
+      logger.error("OAuth login handling error:", error);
       throw error;
     }
   }
 
-  private async createOAuthUser(profile: OAuthProfile): Promise<any> {
+  private async createOAuthUser(profile: OAuthProfile): Promise<unknown> {
     // Create new user via AuthManager.register (stores user in mock DB for tests)
     const baseUsername = (
       profile.username ||
@@ -162,7 +208,6 @@ export class OAuthManager {
     const displayName = profile.displayName || baseUsername;
     // Strong password to satisfy complexity when enabled
     const password = `OAuth!${profile.provider}A1_${Math.random().toString(36).slice(2, 12)}_${Date.now()}`;
-
     const user = await this.authManager.register({
       email: profile.email,
       username,

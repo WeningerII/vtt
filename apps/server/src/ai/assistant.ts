@@ -2,8 +2,9 @@
  * AI Assistant service for natural language rule queries and game assistance
  */
 
-import { PrismaClient } from "@prisma/client";
+import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
 import { createAIServices } from "./service";
+import { getErrorMessage } from "../utils/errors";
 
 export interface AssistantQuery {
   question: string;
@@ -51,12 +52,11 @@ Format your responses clearly with:
 
   async function askQuestion(query: AssistantQuery): Promise<AssistantResponse> {
     const startTime = Date.now();
-    
     try {
       // Check if AI router has available providers
       const providers = aiServices.listProviders();
-      const hasAIProviders = providers.length > 0 && providers.some(p => p.name !== 'dummy');
-      
+      const hasAIProviders = providers.length > 0 && providers.some((p) => p.name !== "dummy");
+
       if (hasAIProviders) {
         // Use AI router for text completion
         const gameSystem = query.context?.gameSystem || "D&D 5e";
@@ -71,16 +71,22 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
         const response = await aiRouter.generateText({
           prompt: `${D5E_SYSTEM_PROMPT}\n\nUser Query: ${contextualPrompt}`,
           maxTokens: 1000,
-          temperature: 0.3
+          temperature: 0.3,
         });
-        
-        // Log the query for analytics
-        const job = await prisma.generationJob.create({
+
+        const inputData = JSON.parse(
+          JSON.stringify({ query: query.question, context: query.context }),
+        ) as Prisma.InputJsonValue;
+        const outputData = JSON.parse(
+          JSON.stringify({ answer: response.text }),
+        ) as Prisma.InputJsonValue;
+
+        await prisma.generationJob.create({
           data: {
-            type: "TEXT_TO_IMAGE", // We'd need RULE_QUERY type in schema
-            status: "SUCCEEDED",
-            input: { query: query.question, context: query.context } as any, // TODO: Define proper Prisma JsonValue type
-            output: { answer: response.text } as any, // TODO: Define proper Prisma JsonValue type
+            type: JobType.TEXT_TO_IMAGE,
+            status: JobStatus.SUCCEEDED,
+            input: inputData,
+            output: outputData,
           },
         });
 
@@ -93,14 +99,14 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
             model: response.model || "unknown",
             costUSD: response.costUSD || 0,
             latencyMs: Date.now() - startTime,
-            respondedAt: new Date()
-          }
+            respondedAt: new Date(),
+          },
         };
       }
-      
+
       // Fallback to rule-based if no AI providers
       const answer = generateRuleBasedAnswer(query);
-      
+
       return {
         answer,
         sources: ["D&D 5e SRD", "VTT Rule Database"],
@@ -110,39 +116,38 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
           model: "rule-based",
           costUSD: 0,
           latencyMs: Date.now() - startTime,
-          respondedAt: new Date()
-        }
+          respondedAt: new Date(),
+        },
       };
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Assistant query failed: ${message}`);
+      throw new Error(`Assistant query failed: ${getErrorMessage(error)}`);
     }
   }
 
   function generateRuleBasedAnswer(query: AssistantQuery): string {
     const question = query.question.toLowerCase();
-    
+
     // Basic rule matching for common D&D questions
-    if (question.includes('spell') || question.includes('magic')) {
+    if (question.includes("spell") || question.includes("magic")) {
       return "Spells in D&D 5e require spell slots and follow specific casting rules. Check the spell description for components, range, and duration.";
     }
-    
-    if (question.includes('attack') || question.includes('combat')) {
+
+    if (question.includes("attack") || question.includes("combat")) {
       return "Combat in D&D 5e uses a turn-based system. Roll 1d20 + ability modifier + proficiency bonus for attack rolls.";
     }
-    
-    if (question.includes('advantage') || question.includes('disadvantage')) {
+
+    if (question.includes("advantage") || question.includes("disadvantage")) {
       return "Advantage means roll 2d20 and take the higher result. Disadvantage means roll 2d20 and take the lower result.";
     }
-    
-    if (question.includes('saving throw') || question.includes('save')) {
+
+    if (question.includes("saving throw") || question.includes("save")) {
       return "Saving throws use 1d20 + ability modifier + proficiency bonus (if proficient). The DC is set by the spell or effect.";
     }
-    
-    if (question.includes('skill check') || question.includes('ability check')) {
+
+    if (question.includes("skill check") || question.includes("ability check")) {
       return "Ability checks use 1d20 + ability modifier + proficiency bonus (if proficient in the skill).";
     }
-    
+
     // Default response
     return `I can help with D&D 5e rules and mechanics. Your question about "${query.question}" requires more specific rule lookup. Consider checking the Player's Handbook or asking your DM.`;
   }
@@ -151,23 +156,35 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
     return askQuestion(query);
   }
 
-  async function explainSpell(spellName: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
+  async function explainSpell(
+    spellName: string,
+    context?: AssistantQuery["context"],
+  ): Promise<AssistantResponse> {
     return askQuestion({ question: `Explain the spell: ${spellName}`, context });
   }
 
-  async function explainRule(ruleTopic: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
+  async function explainRule(
+    ruleTopic: string,
+    context?: AssistantQuery["context"],
+  ): Promise<AssistantResponse> {
     return askQuestion({ question: `Explain the rule: ${ruleTopic}`, context });
   }
 
-  async function suggestActions(situation: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
+  async function suggestActions(
+    situation: string,
+    context?: AssistantQuery["context"],
+  ): Promise<AssistantResponse> {
     return askQuestion({ question: `Suggest actions for: ${situation}`, context });
   }
 
-  async function generateRuling(scenario: string, context?: AssistantQuery['context']): Promise<AssistantResponse> {
+  async function generateRuling(
+    scenario: string,
+    context?: AssistantQuery["context"],
+  ): Promise<AssistantResponse> {
     return askQuestion({ question: `Generate a ruling for: ${scenario}`, context });
   }
 
-  async function getQueryHistory(filters?: { campaignId?: string; limit?: number }) {
+  async function getQueryHistory(_filters?: { campaignId?: string; limit?: number }) {
     // Basic implementation - in production this would query the database
     return [];
   }
