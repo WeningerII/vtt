@@ -1,0 +1,51 @@
+name: "Install pnpm dependencies"
+description: "Install project dependencies with pnpm and optional caching controls"
+author: "VTT DevOps"
+inputs:
+  frozen-lockfile:
+    description: "Run install with --frozen-lockfile"
+    required: false
+    default: "true"
+  prefer-offline:
+    description: "Prefer cached packages (--prefer-offline)"
+    required: false
+    default: "false"
+  filter:
+    description: "Optional pnpm --filter argument"
+    required: false
+    default: ""
+  extra-args:
+    description: "Additional arguments to append to pnpm install"
+    required: false
+    default: ""
+  working-directory:
+    description: "Directory to run pnpm install in"
+    required: false
+    default: "."
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ inputs['working-directory'] }}
+      run: |
+        set -euo pipefail
+        ARGS=()
+        if [ "${{ inputs['frozen-lockfile'] }}" = 'true' ]; then
+          ARGS+=("--frozen-lockfile")
+        fi
+        if [ "${{ inputs['prefer-offline'] }}" = 'true' ]; then
+          ARGS+=("--prefer-offline")
+        fi
+        if [ -n "${{ inputs.filter }}" ]; then
+          ARGS+=("--filter" "${{ inputs.filter }}")
+        fi
+        if [ -n "${{ inputs['extra-args'] }}" ]; then
+          # shellcheck disable=SC2086
+          ARGS+=( ${{ inputs['extra-args'] }} )
+        fi
+        if [ ${#ARGS[@]} -eq 0 ]; then
+          pnpm install
+        else
+          pnpm install "${ARGS[@]}"
+        fi

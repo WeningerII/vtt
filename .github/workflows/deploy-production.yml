@@ -60,36 +60,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y nasm yasm build-essential
+          pnpm-version: "9.12.2"
+          install-system-packages: "nasm yasm build-essential"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
+
+      - name: Generate Prisma client
+        run: pnpm db:gen
 
       - name: Lint
-        run: pnpm run lint:${{ matrix.app }}
+        run: pnpm turbo lint --filter @vtt/${{ matrix.app }}
 
       - name: Type check
-        run: pnpm run type-check:${{ matrix.app }}
+        run: pnpm --filter @vtt/${{ matrix.app }} --if-present run typecheck
 
       - name: Run tests
-        run: pnpm run test:${{ matrix.app }} --coverage
+        run: pnpm --filter @vtt/${{ matrix.app }} --if-present run test -- --coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage/apps/${{ matrix.app }}/lcov.info
+          file: apps/${{ matrix.app }}/coverage/lcov.info
           flags: ${{ matrix.app }}
 
   # Build Docker Images
@@ -107,6 +106,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -151,22 +153,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.12.2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y nasm yasm build-essential
+          pnpm-version: "9.12.2"
+          install-system-packages: "nasm yasm build-essential"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
 
       - name: Start test environment
         run: docker-compose -f docker-compose.test.yml up -d

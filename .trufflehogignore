@@ -1,0 +1,41 @@
+# TruffleHog Ignore File
+# This file contains paths and patterns to ignore during TruffleHog scans
+# to reduce noise from false positives while maintaining security coverage
+
+# Package manager cache files containing npm registry metadata and git hashes
+**/.pnpm-cache/
+**/node_modules/
+**/.npm/
+**/.yarn/
+
+# Development environment templates with placeholder values
+.env.example
+.env.production.example
+.env.test
+.env.local.example
+
+# Infrastructure templates with placeholder credentials
+infra/k8s/base/sealed-secrets.yaml
+infra/k8s/base/secret.template.yaml
+infra/k8s/cloud-agnostic/secret.template.yaml
+
+# Build artifacts and compiled code
+**/dist/
+**/build/
+**/.next/
+**/.turbo/
+
+# Documentation and example files
+docs/examples/
+**/README.md
+**/*.example.*
+
+# Test fixtures and mock data
+**/test-fixtures/
+**/mocks/
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+
+# AWS CLI examples (contains example credentials)
+aws/dist/awscli/examples/

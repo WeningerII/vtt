@@ -66,6 +66,9 @@ jobs:
   security-scan:
     runs-on: ubuntu-latest
     needs: [pre-deployment-checks]
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -87,14 +90,16 @@ jobs:
     if: needs.pre-deployment-checks.outputs.environment == 'production' && !inputs.skip_tests
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: 20
-          cache: pnpm
+          node-version: "20"
+          pnpm-version: "9.12.2"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
 
       - name: Start test environment
         run: |
@@ -252,6 +257,9 @@ jobs:
       name: production
     steps:
       - name: Configure kubectl
+        if: env.KUBE_CONFIG_PRODUCTION != ''
+        env:
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
         uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
@@ -277,9 +285,12 @@ jobs:
     if: always() && (success() || contains(needs.*.result, 'success'))
     steps:
       - name: Update deployment tracking
+        if: env.DEPLOYMENT_TRACKING_URL != ''
+        env:
+          DEPLOYMENT_TRACKING_URL: ${{ secrets.DEPLOYMENT_TRACKING_URL }}
         run: |
           # checkov:skip=CKV_GHA_3: Webhook URL is from secrets, not hardcoded
-          curl -X POST "${{ secrets.DEPLOYMENT_TRACKING_URL }}" \
+          curl -X POST "$DEPLOYMENT_TRACKING_URL" \
             -H "Content-Type: application/json" \
             -d '{
               "version": "${{ needs.pre-deployment-checks.outputs.version }}",

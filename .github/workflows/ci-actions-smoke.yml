@@ -1,0 +1,27 @@
+name: CI Actions Smoke Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-composite-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: "20"
+          pnpm-version: "9.12.2"
+          install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
+
+      - name: Install dependencies (dry run)
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
+
+      - name: Print pnpm store path
+        run: pnpm store path

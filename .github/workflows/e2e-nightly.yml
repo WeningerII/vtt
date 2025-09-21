@@ -53,17 +53,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: pnpm
-          check-latest: true
+          node-version: "20"
+          pnpm-version: "9.12.2"
+          install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -75,7 +70,10 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
@@ -144,20 +142,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: pnpm
-          check-latest: true
+          node-version: "20"
+          pnpm-version: "9.12.2"
+          install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -217,20 +213,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: pnpm
-          check-latest: true
+          node-version: "20"
+          pnpm-version: "9.12.2"
+          install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
@@ -282,20 +276,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Node and pnpm
+        uses: ./.github/actions/setup-node-pnpm
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.x
-          cache: pnpm
-          check-latest: true
+          node-version: "20"
+          pnpm-version: "9.12.2"
+          install-system-packages: ${{ matrix.os == 'ubuntu-latest' && 'libpng-dev libpng16-16 libpng-tools build-essential nasm yasm' || '' }}
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        uses: ./.github/actions/install-deps
+        with:
+          frozen-lockfile: "true"
+          prefer-offline: "false"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
