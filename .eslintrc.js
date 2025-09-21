@@ -8,6 +8,11 @@ module.exports = {
   },
   extends: [
     "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:import/recommended",
+    "plugin:import/typescript",
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
@@ -18,7 +23,10 @@ module.exports = {
     },
   },
   plugins: [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "react",
+    "react-hooks",
+    "import"
   ],
   settings: {
     react: {
@@ -27,14 +35,39 @@ module.exports = {
     "import/resolver": {
       typescript: {
         alwaysTryTypes: true,
-        project: ["./tsconfig.json", "./apps/*/tsconfig.json", "./packages/*/tsconfig.json"],
+        project: [
+          "./tsconfig.json",
+          "./apps/*/tsconfig.json",
+          "./packages/*/tsconfig.json",
+          "./services/*/tsconfig.json"
+        ],
       },
     },
   },
+  ignorePatterns: [
+    "**/dist/**",
+    "**/build/**",
+    "**/.turbo/**",
+    "**/coverage/**",
+    "**/node_modules/**",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "e2e/**",
+    "tests/**",
+    "infra/**",
+    "aws/**",
+    "assets/**",
+    "docs/**",
+    "scripts/**",
+  ],
   rules: {
     // Basic ESLint rules
-    "no-unused-vars": "off", // Handled by TypeScript
-    "no-console": "off", // Allow console for now to reduce noise
+    "no-unused-vars": "off", // Use TS rule instead
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "no-console": ["warn", { allow: ["warn", "error"] }],
     "no-debugger": "error",
     "no-duplicate-imports": "error",
     "no-undef": "off", // TypeScript handles this

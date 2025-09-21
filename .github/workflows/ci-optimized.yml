@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: CI (Optimized)
 
 permissions:
@@ -14,19 +15,17 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Turbo environment - only set if secrets exist to avoid linter warnings
-  TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
-  TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
+  # Turbo environment - conditionally set based on secrets availability
   TURBO_REMOTE_ONLY: false
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      packages: ${{ steps.filter.outputs.packages }}
-      apps: ${{ steps.filter.outputs.apps }}
-      services: ${{ steps.filter.outputs.services }}
-      e2e: ${{ steps.filter.outputs.e2e }}
+      packages: ${{ steps.filter.outputs.packages || 'false' }}
+      apps: ${{ steps.filter.outputs.apps || 'false' }}
+      services: ${{ steps.filter.outputs.services || 'false' }}
+      e2e: ${{ steps.filter.outputs.e2e || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -68,10 +67,16 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Lint (parallel with typecheck dependencies)
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
         run: |
           pnpm turbo lint --cache-dir=.turbo
 
       - name: Typecheck (with dependencies built)
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
         run: |
           # Typecheck has dependsOn: ["^build"] in turbo.json, so this will build dependencies first
           pnpm turbo typecheck --cache-dir=.turbo
@@ -112,6 +117,9 @@ jobs:
         run: pnpm db:gen
 
       - name: Build with turbo
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
         run: pnpm turbo build --cache-dir=.turbo
 
   test:
@@ -142,6 +150,9 @@ jobs:
         run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Run tests with coverage (shard ${{ matrix.shard }}/4)
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
         run: |
           # Ensure directories exist before running tests
           mkdir -p .nyc_output coverage

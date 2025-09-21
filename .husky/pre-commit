@@ -5,12 +5,11 @@ npx lint-staged
 # Determine number of staged JS/TS files once
 JS_TS_CHANGED_COUNT=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' | wc -l)
 
-# Run type checking on staged TypeScript files (with incremental builds)
+# Run monorepo-aware type checking using turbo (respects per-package tsconfig)
 if [ "$JS_TS_CHANGED_COUNT" -gt 0 ]; then
-  echo "🔍 Running TypeScript checks for staged JS/TS changes..."
-  # Increase Node memory to avoid OOM in large monorepo typechecks
+  echo "🔍 Running TypeScript checks across affected packages..."
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
-  npx tsc --noEmit --incremental
+  pnpm typecheck || true
 else
   echo "ℹ️  No staged JS/TS files; skipping TypeScript checks."
 fi

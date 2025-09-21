@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
 # checkov:skip=CKV_GHA_7: workflow_dispatch inputs are required for manual deployment control
 name: Deploy to Production
 
@@ -208,23 +209,18 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Configure AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        if: ${{ env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Deploy infrastructure
-        env:
-          TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
-        if: ${{ env.TERRAFORM_STATE_BUCKET != '' }}
+        if: ${{ secrets.TERRAFORM_STATE_BUCKET }}
         working-directory: ./infra/terraform
         run: |
-          terraform init -backend-config="bucket=${{ env.TERRAFORM_STATE_BUCKET }}"
+          terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
           terraform workspace select staging || terraform workspace new staging
           terraform plan -var-file="staging.tfvars" -out=tfplan
           terraform apply -auto-approve tfplan
@@ -267,28 +263,29 @@ jobs:
           terraform_version: 1.6.0
 
       - name: Configure AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        if: ${{ env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
+        if: ${{ secrets.AWS_ACCESS_KEY_ID && secrets.AWS_SECRET_ACCESS_KEY }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
       - name: Deploy infrastructure
-        env:
-          TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
-        if: ${{ env.TERRAFORM_STATE_BUCKET != '' }}
+        if: ${{ secrets.TERRAFORM_STATE_BUCKET }}
         working-directory: ./infra/terraform
         run: |
-          terraform init -backend-config="bucket=${{ env.TERRAFORM_STATE_BUCKET }}"
+          terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
           terraform workspace select production || terraform workspace new production
           terraform plan -var-file="production.tfvars" -out=tfplan
           terraform apply -auto-approve tfplan
 
       - name: Deploy to Kubernetes (Blue-Green)
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          ACM_CERTIFICATE_ID: ${{ secrets.ACM_CERTIFICATE_ID }}
+          WAF_WEB_ACL_ID: ${{ secrets.WAF_WEB_ACL_ID }}
+          PROD_CLIENT_DOMAIN: ${{ vars.PROD_CLIENT_DOMAIN }}
+          PROD_API_DOMAIN: ${{ vars.PROD_API_DOMAIN }}
         run: |
           aws eks update-kubeconfig --region us-east-1 --name vtt-production
 
@@ -296,28 +293,26 @@ jobs:
           sed -i "s|IMAGE_TAG|${{ github.sha }}|g" infra/k8s/production/*.yaml
 
           # Replace AWS account and certificate placeholders if provided
-          if [ -n "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
-            sed -i "s|ACCOUNT_ID|${{ secrets.AWS_ACCOUNT_ID }}|g" infra/k8s/production/ingress.yaml
-            sed -i "s|ACCOUNT_ID|${{ secrets.AWS_ACCOUNT_ID }}|g" infra/k8s/production/server-deployment.yaml
+          if [ -n "${AWS_ACCOUNT_ID}" ]; then
+            sed -i "s|ACCOUNT_ID|${AWS_ACCOUNT_ID}|g" infra/k8s/production/ingress.yaml
+            sed -i "s|ACCOUNT_ID|${AWS_ACCOUNT_ID}|g" infra/k8s/production/server-deployment.yaml
           fi
-          if [ -n "${{ secrets.ACM_CERTIFICATE_ID }}" ]; then
-            sed -i "s|CERT_ID|${{ secrets.ACM_CERTIFICATE_ID }}|g" infra/k8s/production/ingress.yaml
+          if [ -n "${ACM_CERTIFICATE_ID}" ]; then
+            sed -i "s|CERT_ID|${ACM_CERTIFICATE_ID}|g" infra/k8s/production/ingress.yaml
           fi
-          if [ -n "${{ secrets.WAF_WEB_ACL_ID }}" ]; then
-            sed -i "s|WAF_ID|${{ secrets.WAF_WEB_ACL_ID }}|g" infra/k8s/production/ingress.yaml
+          if [ -n "${WAF_WEB_ACL_ID}" ]; then
+            sed -i "s|WAF_ID|${WAF_WEB_ACL_ID}|g" infra/k8s/production/ingress.yaml
           fi
 
           # Replace domains if repository variables are set
-          if [ -n "${{ vars.PROD_CLIENT_DOMAIN }}" ]; then
-            sed -i "s|vtt.platform.com|${{ vars.PROD_CLIENT_DOMAIN }}|g" infra/k8s/production/ingress.yaml
-            CLIENT_DOMAIN="${{ vars.PROD_CLIENT_DOMAIN }}"
-            sed -i "s|https://vtt.platform.com|https://${CLIENT_DOMAIN}|g" infra/k8s/production/configmap.yaml
+          if [ -n "${PROD_CLIENT_DOMAIN}" ]; then
+            sed -i "s|vtt.platform.com|${PROD_CLIENT_DOMAIN}|g" infra/k8s/production/ingress.yaml
+            sed -i "s|https://vtt.platform.com|https://${PROD_CLIENT_DOMAIN}|g" infra/k8s/production/configmap.yaml
           fi
-          if [ -n "${{ vars.PROD_API_DOMAIN }}" ]; then
-            sed -i "s|api.vtt.platform.com|${{ vars.PROD_API_DOMAIN }}|g" infra/k8s/production/ingress.yaml
-            API_DOMAIN="${{ vars.PROD_API_DOMAIN }}"
-            sed -i "s|https://api.vtt.platform.com|https://${API_DOMAIN}|g" infra/k8s/production/configmap.yaml
-            sed -i "s|wss://api.vtt.platform.com|wss://${API_DOMAIN}|g" infra/k8s/production/configmap.yaml
+          if [ -n "${PROD_API_DOMAIN}" ]; then
+            sed -i "s|api.vtt.platform.com|${PROD_API_DOMAIN}|g" infra/k8s/production/ingress.yaml
+            sed -i "s|https://api.vtt.platform.com|https://${PROD_API_DOMAIN}|g" infra/k8s/production/configmap.yaml
+            sed -i "s|wss://api.vtt.platform.com|wss://${PROD_API_DOMAIN}|g" infra/k8s/production/configmap.yaml
           fi
 
           # Apply all manifests (both colors)
@@ -362,9 +357,9 @@ jobs:
 
     steps:
       - name: Notify Slack
+        if: ${{ secrets.SLACK_WEBHOOK }}
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        if: ${{ env.SLACK_WEBHOOK != '' }}
         uses: 8398a7/action-slack@v3
         with:
           status: success
@@ -412,9 +407,9 @@ jobs:
           echo "🔄 Rollback completed to blue version"
 
       - name: Notify rollback
+        if: ${{ secrets.SLACK_WEBHOOK }}
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-        if: ${{ env.SLACK_WEBHOOK != '' }}
         uses: 8398a7/action-slack@v3
         with:
           status: "warning"
