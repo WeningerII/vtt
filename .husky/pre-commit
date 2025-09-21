@@ -9,7 +9,13 @@ JS_TS_CHANGED_COUNT=$(git diff --cached --name-only --diff-filter=ACM | grep -E 
 if [ "$JS_TS_CHANGED_COUNT" -gt 0 ]; then
   echo "🔍 Running TypeScript checks across affected packages..."
   export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
-  pnpm typecheck || true
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm typecheck || true
+  elif npx --no-install turbo --version >/dev/null 2>&1; then
+    npx --no-install turbo run typecheck || true
+  else
+    echo "ℹ️  pnpm/turbo unavailable in environment; skipping automated typecheck."
+  fi
 else
   echo "ℹ️  No staged JS/TS files; skipping TypeScript checks."
 fi

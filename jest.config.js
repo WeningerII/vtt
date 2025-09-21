@@ -32,8 +32,8 @@ module.exports = {
     "^.+\\.(ts|tsx)$": "ts-jest",
   },
 
-  // Module name mapping for path aliases
-  moduleNameMapping: {
+// Module name mapping for path aliases
+  moduleNameMapper: {
     "^@vtt/(.*)$": "<rootDir>/packages/$1/src",
     "^@apps/(.*)$": "<rootDir>/apps/$1/src",
     "^@services/(.*)$": "<rootDir>/services/$1/src",
@@ -120,29 +120,34 @@ module.exports = {
   globalSetup: "<rootDir>/jest.global-setup.js",
   globalTeardown: "<rootDir>/jest.global-teardown.js",
 
-  // Test reporter configuration
-  reporters: [
-    "default",
-    [
-      "jest-junit",
-      {
+  // Test reporter configuration (conditional to avoid optional dependency errors)
+  reporters: (() => {
+    const optionalReporter = (pkg, options) => {
+      try {
+        require.resolve(pkg);
+        return [pkg, options];
+      } catch (_error) {
+        return null;
+      }
+    };
+
+    return [
+      "default",
+      optionalReporter("jest-junit", {
         outputDirectory: "<rootDir>/test-results",
         outputName: "results.xml",
         classNameTemplate: "{classname}",
         titleTemplate: "{title}",
         ancestorSeparator: " › ",
         usePathForSuiteName: true,
-      },
-    ],
-    [
-      "jest-html-reporters",
-      {
+      }),
+      optionalReporter("jest-html-reporters", {
         publicPath: "<rootDir>/test-results",
         filename: "report.html",
         expand: true,
-      },
-    ],
-  ],
+      }),
+    ].filter(Boolean);
+  })(),
 
   // Mock configuration
   modulePathIgnorePatterns: ["<rootDir>/dist/", "<rootDir>/build/"],
