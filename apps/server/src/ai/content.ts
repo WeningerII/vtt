@@ -2,7 +2,7 @@
  * AI-driven content generation service integrating Anthropic's generateGameContent
  */
 
-import { PrismaClient } from "@prisma/client";
+import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
 import { createAIServices } from "./service";
 import { getErrorMessage } from "../utils/errors";
 
@@ -19,12 +19,12 @@ export interface ContentGenerationRequest {
     campaignId?: string;
     challengeRating?: number;
     timestamp?: string;
-    [key: string]: any; // Allow additional properties for extensibility
+    [key: string]: unknown; // Allow additional properties for extensibility
   };
 }
 
 export interface GeneratedContent {
-  content: any;
+  content: unknown;
   metadata: {
     provider: string;
     model: string;
@@ -87,34 +87,45 @@ Design a compelling adventure with meaningful choices.`,
 - Suggested value and availability
 - Plot hooks and significance
 
-Create something unique that enhances gameplay.`
+Create something unique that enhances gameplay.`,
   };
+
+  const VALID_CONTENT_TYPES = ["npc", "location", "quest", "item", "encounter"] as const;
+  type ContentType = (typeof VALID_CONTENT_TYPES)[number];
 
   async function generateContent(request: ContentGenerationRequest): Promise<GeneratedContent> {
     const startTime = Date.now();
-    
+
     try {
       // Check if AI router has available providers
       const providers = aiServices.listProviders();
-      const hasAIProviders = providers.length > 0 && providers.some(p => p.name !== 'dummy');
-      
+      const hasAIProviders = providers.length > 0 && providers.some((p) => p.name !== "dummy");
+
       if (hasAIProviders) {
-        const prompt = CONTENT_GENERATION_PROMPTS[request.type] || "Generate appropriate game content.";
+        const prompt =
+          CONTENT_GENERATION_PROMPTS[request.type] || "Generate appropriate game content.";
         const contextInfo = buildContextPrompt(request);
-        
+
         const response = await aiRouter.generateText({
           prompt: `${prompt}\n\nGenerate content for: ${contextInfo}`,
           maxTokens: 1500,
-          temperature: 0.7
+          temperature: 0.7,
         });
 
         // Log the generation for analytics
-        const job = await prisma.generationJob.create({
+        const inputData = JSON.parse(
+          JSON.stringify({ type: request.type, context: request.context }),
+        ) as Prisma.InputJsonValue;
+        const outputData = JSON.parse(
+          JSON.stringify({ content: response.text }),
+        ) as Prisma.InputJsonValue;
+
+        await prisma.generationJob.create({
           data: {
-            type: "TEXT_TO_IMAGE", // We'd need CONTENT_GENERATION type in schema
-            status: "SUCCEEDED",
-            input: { type: request.type, context: request.context } as any,
-            output: { content: response.text } as any,
+            type: JobType.TEXT_TO_IMAGE,
+            status: JobStatus.SUCCEEDED,
+            input: inputData,
+            output: outputData,
           },
         });
 
@@ -125,14 +136,14 @@ Create something unique that enhances gameplay.`
             model: response.model || "unknown",
             costUSD: response.costUSD || 0,
             latencyMs: Date.now() - startTime,
-            generatedAt: new Date()
-          }
+            generatedAt: new Date(),
+          },
         };
       }
-      
+
       // Fallback to rule-based generation
       const content = generateFallbackContent(request);
-      
+
       return {
         content,
         metadata: {
@@ -140,8 +151,8 @@ Create something unique that enhances gameplay.`
           model: "rule-based",
           costUSD: 0,
           latencyMs: Date.now() - startTime,
-          generatedAt: new Date()
-        }
+          generatedAt: new Date(),
+        },
       };
     } catch (error: unknown) {
       throw new Error(`Content generation failed: ${getErrorMessage(error)}`);
@@ -161,22 +172,22 @@ ${context.additionalContext ? `- Additional Context: ${context.additionalContext
 Generate appropriate content that fits this context and enhances the gaming experience.`;
   }
 
-  function parseAIResponse(response: string, type: string): any {
+  function parseAIResponse(response: string, type: string): unknown {
     try {
       // Try to parse as JSON first
-      return JSON.parse(response);
+      return JSON.parse(response) as unknown;
     } catch {
       // If not JSON, return structured text response
       return {
         type,
         description: response,
         generated: true,
-        aiGenerated: true
+        aiGenerated: true,
       };
     }
   }
 
-  function generateFallbackContent(request: ContentGenerationRequest): any {
+  function generateFallbackContent(request: ContentGenerationRequest): Record<string, unknown> {
     const { type, context } = request;
 
     switch (type) {
@@ -193,11 +204,11 @@ Generate appropriate content that fits this context and enhances the gaming expe
     }
   }
 
-  function generateNPCContent(context: ContentContext): any {
+  function generateNPCContent(_context: ContentContext): Record<string, unknown> {
     const names = ["Gareth", "Luna", "Thorin", "Zara", "Kael", "Vera"];
     const classes = ["Merchant", "Guard", "Scholar", "Innkeeper", "Blacksmith"];
     const personalities = ["Friendly", "Gruff", "Mysterious", "Cheerful", "Suspicious"];
-    
+
     return {
       name: names[Math.floor(Math.random() * names.length)],
       class: classes[Math.floor(Math.random() * classes.length)],
@@ -205,28 +216,46 @@ Generate appropriate content that fits this context and enhances the gaming expe
       description: "A notable figure in the local area with their own motivations and connections.",
       level: Math.floor(Math.random() * 10) + 1,
       hitPoints: 25 + Math.floor(Math.random() * 50),
-      armorClass: 12 + Math.floor(Math.random() * 6)
+      armorClass: 12 + Math.floor(Math.random() * 6),
     };
   }
 
-  function generateLocationContent(context: ContentContext): any {
-    const locations = ["Ancient Ruins", "Hidden Grove", "Abandoned Tower", "Crystal Cave", "Misty Swamp"];
-    const features = ["Strange markings", "Magical aura", "Hidden passages", "Dangerous wildlife", "Valuable resources"];
-    
+  function generateLocationContent(context: ContentContext): Record<string, unknown> {
+    const locations = [
+      "Ancient Ruins",
+      "Hidden Grove",
+      "Abandoned Tower",
+      "Crystal Cave",
+      "Misty Swamp",
+    ];
+    const features = [
+      "Strange markings",
+      "Magical aura",
+      "Hidden passages",
+      "Dangerous wildlife",
+      "Valuable resources",
+    ];
+
     return {
       name: locations[Math.floor(Math.random() * locations.length)],
       description: "An intriguing location that holds secrets and opportunities for adventure.",
       features: [features[Math.floor(Math.random() * features.length)]],
       difficulty: context.difficulty || "moderate",
       encounters: ["Wildlife", "Environmental hazards"],
-      treasures: ["Minor magical item", "Gold coins"]
+      treasures: ["Minor magical item", "Gold coins"],
     };
   }
 
-  function generateQuestContent(context: ContentContext): any {
+  function generateQuestContent(context: ContentContext): Record<string, unknown> {
     const questTypes = ["Rescue", "Retrieve", "Investigate", "Escort", "Eliminate"];
-    const objectives = ["Find the missing person", "Recover the stolen artifact", "Uncover the mystery", "Protect the caravan", "Defeat the threat"];
-    
+    const objectives = [
+      "Find the missing person",
+      "Recover the stolen artifact",
+      "Uncover the mystery",
+      "Protect the caravan",
+      "Defeat the threat",
+    ];
+
     return {
       title: `${questTypes[Math.floor(Math.random() * questTypes.length)]} Mission`,
       description: "An important task that requires skilled adventurers to complete.",
@@ -235,24 +264,24 @@ Generate appropriate content that fits this context and enhances the gaming expe
       reward: {
         gold: 100 + Math.floor(Math.random() * 400),
         experience: 200 + Math.floor(Math.random() * 800),
-        items: ["Potion of Healing"]
+        items: ["Potion of Healing"],
       },
-      timeLimit: "7 days"
+      timeLimit: "7 days",
     };
   }
 
-  function generateItemContent(context: ContentContext): any {
+  function generateItemContent(_context: ContentContext): Record<string, unknown> {
     const itemTypes = ["Weapon", "Armor", "Potion", "Scroll", "Trinket"];
     const rarities = ["Common", "Uncommon", "Rare"];
     const properties = ["Magical", "Masterwork", "Ancient", "Blessed", "Enchanted"];
-    
+
     return {
       name: `${properties[Math.floor(Math.random() * properties.length)]} ${itemTypes[Math.floor(Math.random() * itemTypes.length)]}`,
       type: itemTypes[Math.floor(Math.random() * itemTypes.length)],
       rarity: rarities[Math.floor(Math.random() * rarities.length)],
       description: "A useful item that could aid adventurers in their quests.",
       value: 50 + Math.floor(Math.random() * 450),
-      properties: ["Durable", "Well-crafted"]
+      properties: ["Durable", "Well-crafted"],
     };
   }
 
@@ -272,7 +301,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     return generateContent({ type: "item", context });
   }
 
-  async function listGenerationHistory(filters?: {
+  async function listGenerationHistory(_filters?: {
     type?: ContentGenerationRequest["type"];
     campaignId?: string;
     limit?: number;
@@ -294,55 +323,66 @@ Generate appropriate content that fits this context and enhances the gaming expe
       type: "encounter",
       context: {
         ...context,
-        challengeRating: calculateChallengeRating(context.playerLevel, context.partySize, context.difficulty)
-      }
+        challengeRating: calculateChallengeRating(
+          context.playerLevel,
+          context.partySize,
+          context.difficulty,
+        ),
+      },
     });
-    
+
     return {
       ...encounterContent,
       enemies: [
         {
           name: "Goblin Warrior",
           quantity: Math.max(1, Math.floor(context.partySize * 0.75)),
-          cr: "1/4"
-        }
+          cr: "1/4",
+        },
       ],
       environment: context.environment || "dungeon",
       difficulty: context.difficulty,
       rewards: {
         xp: 100 * context.partySize,
-        gold: 50 * context.partySize
-      }
+        gold: 50 * context.partySize,
+      },
     };
   }
 
+  function isValidContentType(value: string): value is ContentType {
+    return (VALID_CONTENT_TYPES as readonly string[]).includes(value);
+  }
+
   async function generateCampaignContent(campaignId: string, contentType: string) {
-    // Generate content specific to a campaign
-    const validTypes = ["quest", "npc", "location", "item", "encounter"];
-    
-    if (!validTypes.includes(contentType)) {
-      throw new Error(`Invalid content type: ${contentType}. Must be one of: ${validTypes.join(", ")}`);
+    if (!isValidContentType(contentType)) {
+      throw new Error(
+        `Invalid content type: ${contentType}. Must be one of: ${VALID_CONTENT_TYPES.join(", ")}`,
+      );
     }
-    
+
     return generateContent({
-      type: contentType as any,
+      type: contentType,
       context: {
         campaignId,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     });
   }
 
-  function calculateChallengeRating(playerLevel: number, partySize: number, difficulty: string): number {
+  function calculateChallengeRating(
+    playerLevel: number,
+    partySize: number,
+    difficulty: string,
+  ): number {
     const baseRating = playerLevel;
     const partyModifier = Math.log2(partySize);
     const difficultyModifiers: Record<string, number> = {
       easy: -2,
       medium: 0,
       hard: 2,
-      deadly: 4
+      deadly: 4,
     };
-    
+
     return Math.max(0.25, baseRating + partyModifier + (difficultyModifiers[difficulty] || 0));
   }
 

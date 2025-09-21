@@ -3,11 +3,11 @@
  * Handles intelligent character creation from natural language prompts
  */
 
-import { PrismaClient } from "@prisma/client";
-import type { AIProvider } from "@vtt/ai";
+import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
 import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 import { CharacterService } from "../character/CharacterService";
+import type { Character } from "../character/types";
 
 export interface CharacterConcept {
   prompt: string;
@@ -17,6 +17,31 @@ export interface CharacterConcept {
     complexity?: "simple" | "moderate" | "complex";
     playstyle?: "combat" | "roleplay" | "exploration" | "balanced";
   };
+}
+
+type CharacterStepResult = Record<string, unknown>;
+
+interface RaceChoiceResult {
+  selectedRace: string | null;
+  abilityScoreImprovements?: Record<string, number>;
+  traits?: string[];
+}
+
+interface ClassChoiceResult {
+  selectedClass: string | null;
+  startingLevel?: number;
+}
+
+interface BackgroundChoiceResult {
+  selectedBackground: string | null;
+}
+
+interface AbilityScoreResult {
+  finalScores: Record<string, number>;
+}
+
+interface PersonalityResult {
+  name?: string;
 }
 
 export interface GenerationStep {
@@ -31,10 +56,11 @@ export interface GenerationStep {
     | "personality"
     | "optimization";
   status: "pending" | "processing" | "completed" | "error";
-  result?: any;
+  result?: CharacterStepResult;
   reasoning?: string;
   alternatives?: unknown[];
   confidence?: number;
+  error?: string;
 }
 
 export interface CharacterGeneration {
@@ -42,7 +68,7 @@ export interface CharacterGeneration {
   concept: CharacterConcept;
   steps: GenerationStep[];
   currentStep: string;
-  character?: any;
+  character?: Character;
   isComplete: boolean;
   error?: string;
   metadata: {
@@ -99,7 +125,9 @@ export class GenesisService {
     this.processGeneration(generation, userId).catch((error) => {
       generation.error = getErrorMessage(error) || "Generation failed";
       generation.steps.forEach((step) => {
-        if (step.status === "processing") {step.status = "error";}
+        if (step.status === "processing") {
+          step.status = "error";
+        }
       });
     });
 
@@ -427,7 +455,7 @@ Format as JSON with detailed equipment list and reasoning.`;
     const step = this.getStep(generation, "spells");
     step.status = "processing";
 
-    const classChoice = this.getStep(generation, "class").result;
+    const classChoice = this.getStepResult<ClassChoiceResult>(generation, "class");
     const abilities = this.getStep(generation, "abilities").result;
 
     // Check if character is a spellcaster
@@ -442,9 +470,8 @@ Format as JSON with detailed equipment list and reasoning.`;
       "ranger",
       "artificer",
     ];
-    const isSpellcaster = spellcastingClasses.some((cls) =>
-      classChoice.selectedClass?.toLowerCase().includes(cls),
-    );
+    const selectedClassName = classChoice?.selectedClass?.toLowerCase() ?? "";
+    const isSpellcaster = spellcastingClasses.some((cls) => selectedClassName.includes(cls));
 
     if (!isSpellcaster) {
       step.result = { spells: [], cantrips: [], message: "Non-spellcasting class" };
@@ -583,44 +610,48 @@ Format as JSON with detailed analysis.`;
   private async createFinalCharacter(
     generation: CharacterGeneration,
     userId: string,
-  ): Promise<any> {
-    // Extract all the generated data
-    const raceResult = this.getStep(generation, "race").result;
-    const classResult = this.getStep(generation, "class").result;
-    const backgroundResult = this.getStep(generation, "background").result;
-    const abilitiesResult = this.getStep(generation, "abilities").result;
-    const _equipmentResult = this.getStep(generation, "equipment").result;
-    const _spellsResult = this.getStep(generation, "spells").result;
-    const personalityResult = this.getStep(generation, "personality").result;
+  ): Promise<Character> {
+    const raceResult = this.getStepResult<RaceChoiceResult>(generation, "race");
+    const classResult = this.getStepResult<ClassChoiceResult>(generation, "class");
+    const backgroundResult = this.getStepResult<BackgroundChoiceResult>(generation, "background");
+    const abilitiesResult = this.getStepResult<AbilityScoreResult>(generation, "abilities");
+    const personalityResult = this.getStepResult<PersonalityResult>(generation, "personality");
 
-    // Create character using existing CharacterService
+    const selectedRace = raceResult?.selectedRace ?? "Human";
+    const selectedClass = classResult?.selectedClass ?? "Fighter";
+    const selectedBackground = backgroundResult?.selectedBackground ?? "Folk Hero";
+    const startingLevel = classResult?.startingLevel ?? 1;
+    const abilityScores = abilitiesResult?.finalScores ?? this.generateAbilityScores().finalScores;
+    const characterName = personalityResult?.name ?? this.generateCharacterName();
+
     const characterRequest = {
-      name: personalityResult.name || this.generateCharacterName(),
-      race: raceResult.selectedRace,
-      class: classResult.selectedClass,
-      background: backgroundResult.selectedBackground,
-      level: classResult.startingLevel || 1,
-      abilities: abilitiesResult.finalScores,
-      // Add other fields as needed
+      name: characterName,
+      race: selectedRace,
+      class: selectedClass,
+      background: selectedBackground,
+      level: startingLevel,
+      abilities: abilityScores,
     };
 
     const character = await this.characterService.createCharacter(userId, characterRequest);
 
-    // Log generation job
     await this.logGenerationJob(generation, character);
 
     return character;
   }
 
-  private async callAI(prompt: string, generation: CharacterGeneration): Promise<any> {
+  private async callAI(
+    prompt: string,
+    generation: CharacterGeneration,
+  ): Promise<CharacterStepResult> {
     const startTime = Date.now();
 
     try {
       // Fallback implementation using rule-based generation
       logger.info(`Generating character step with prompt: ${prompt.substring(0, 100)}...`);
-      
+
       const result = this.generateFallbackResponse(prompt, generation);
-      
+
       const latency = Date.now() - startTime;
       generation.metadata.totalLatencyMs += latency;
       generation.metadata.provider = "fallback";
@@ -632,10 +663,13 @@ Format as JSON with detailed analysis.`;
     }
   }
 
-  private generateFallbackResponse(prompt: string, generation: CharacterGeneration): any {
+  private generateFallbackResponse(
+    prompt: string,
+    generation: CharacterGeneration,
+  ): CharacterStepResult {
     // Extract step type from current step
     const currentStep = generation.currentStep;
-    
+
     switch (currentStep) {
       case "concept":
         return this.generateConceptAnalysis(generation.concept);
@@ -660,7 +694,7 @@ Format as JSON with detailed analysis.`;
     }
   }
 
-  private generateConceptAnalysis(concept: CharacterConcept): any {
+  private generateConceptAnalysis(concept: CharacterConcept): CharacterStepResult {
     return {
       archetype: "Adventurer",
       suggestedRaces: ["Human", "Elf", "Dwarf"],
@@ -670,141 +704,144 @@ Format as JSON with detailed analysis.`;
       combatFocus: 0.6,
       roleplayFocus: 0.4,
       powerLevel: concept.preferences?.powerLevel || "standard",
-      complexity: concept.preferences?.complexity || "moderate"
+      complexity: concept.preferences?.complexity || "moderate",
     };
   }
 
-  private generateRaceChoice(concept: CharacterConcept): any {
+  private generateRaceChoice(_concept: CharacterConcept): CharacterStepResult {
     const races = ["Human", "Elf", "Dwarf", "Halfling", "Dragonborn"];
     const selectedRace = races[Math.floor(Math.random() * races.length)];
-    
+
     return {
       selectedRace,
       subrace: selectedRace === "Elf" ? "High Elf" : null,
       reasoning: `${selectedRace} fits the character concept well`,
       abilityScoreImprovements: this.getRacialBonuses(selectedRace || "Human"),
-      traits: this.getRacialTraits(selectedRace || "Human")
+      traits: this.getRacialTraits(selectedRace || "Human"),
     };
   }
 
-  private generateClassChoice(concept: CharacterConcept): any {
+  private generateClassChoice(_concept: CharacterConcept): CharacterStepResult {
     const classes = ["Fighter", "Rogue", "Wizard", "Cleric", "Ranger"];
     const selectedClass = classes[Math.floor(Math.random() * classes.length)];
-    
+
     return {
       selectedClass,
       reasoning: `${selectedClass} aligns with the character concept`,
       suggestedSubclass: this.getSubclass(selectedClass || "Fighter"),
       startingLevel: 1,
-      keyAbilities: this.getClassAbilities(selectedClass || "Fighter")
+      keyAbilities: this.getClassAbilities(selectedClass || "Fighter"),
     };
   }
 
-  private generateBackgroundChoice(concept: CharacterConcept): any {
+  private generateBackgroundChoice(_concept: CharacterConcept): CharacterStepResult {
     const backgrounds = ["Folk Hero", "Soldier", "Sage", "Criminal", "Acolyte"];
     const selectedBackground = backgrounds[Math.floor(Math.random() * backgrounds.length)];
-    
+
     return {
       selectedBackground,
       reasoning: `${selectedBackground} provides good story hooks`,
       skillProficiencies: this.getBackgroundSkills(selectedBackground || "Folk Hero"),
-      feature: this.getBackgroundFeature(selectedBackground || "Folk Hero")
+      feature: this.getBackgroundFeature(selectedBackground || "Folk Hero"),
     };
   }
 
-  private generateAbilityScores(): any {
+  private generateAbilityScores(): CharacterStepResult & AbilityScoreResult {
     return {
       baseScores: { STR: 14, DEX: 13, CON: 15, INT: 12, WIS: 10, CHA: 8 },
       finalScores: { STR: 15, DEX: 13, CON: 16, INT: 12, WIS: 10, CHA: 8 },
       modifiers: { STR: 2, DEX: 1, CON: 3, INT: 1, WIS: 0, CHA: -1 },
       pointsSpent: 27,
-      reasoning: "Balanced build focusing on combat effectiveness"
+      reasoning: "Balanced build focusing on combat effectiveness",
     };
   }
 
-  private generateEquipment(): any {
+  private generateEquipment(): CharacterStepResult {
     return {
       weapons: [{ name: "Longsword", damage: "1d8+2", type: "martial" }],
       armor: { name: "Chain Mail", ac: 16, type: "heavy" },
       tools: ["Thieves' Tools"],
       gear: ["Backpack", "Bedroll", "Rations", "Rope"],
-      currency: { gold: 150 }
+      currency: { gold: 150 },
     };
   }
 
-  private generateSpells(): any {
+  private generateSpells(): CharacterStepResult {
     return {
       cantrips: ["Light", "Mage Hand"],
       spells: ["Magic Missile", "Shield"],
       spellAttackBonus: 5,
       spellSaveDC: 13,
-      spellSlots: { "1st": 2 }
+      spellSlots: { "1st": 2 },
     };
   }
 
-  private generatePersonality(concept: CharacterConcept): any {
+  private generatePersonality(_concept: CharacterConcept): CharacterStepResult {
     return {
       name: this.generateCharacterName(),
-      personalityTraits: ["I am driven by a need to prove myself", "I have a quick wit and ready smile"],
+      personalityTraits: [
+        "I am driven by a need to prove myself",
+        "I have a quick wit and ready smile",
+      ],
       ideals: ["Freedom: Everyone deserves to live as they choose"],
       bonds: ["My family means everything to me"],
       flaws: ["I have trouble trusting authority figures"],
       physicalDescription: "A sturdy figure with weathered hands and bright eyes",
-      backstory: `A character shaped by their experiences, seeking adventure and purpose.`
+      backstory: `A character shaped by their experiences, seeking adventure and purpose.`,
     };
   }
 
-  private generateOptimization(): any {
+  private generateOptimization(): CharacterStepResult {
     return {
       validationResults: { valid: true, errors: [] },
       optimizationScore: 7,
       improvements: ["Consider taking the Great Weapon Master feat at level 4"],
       alternativeBuilds: ["More defensive build with higher Constitution"],
       advancementPath: ["Level 2: Action Surge", "Level 3: Fighter Archetype"],
-      finalAssessment: "Well-balanced character suitable for most campaigns"
+      finalAssessment: "Well-balanced character suitable for most campaigns",
     };
   }
 
   private getRacialBonuses(race: string): Record<string, number> {
     const bonuses: Record<string, Record<string, number>> = {
-      "Human": { STR: 1, DEX: 1, CON: 1, INT: 1, WIS: 1, CHA: 1 },
-      "Elf": { DEX: 2 },
-      "Dwarf": { CON: 2 },
-      "Halfling": { DEX: 2 },
-      "Dragonborn": { STR: 2, CHA: 1 }
+      Human: { STR: 1, DEX: 1, CON: 1, INT: 1, WIS: 1, CHA: 1 },
+      Elf: { DEX: 2 },
+      Dwarf: { CON: 2 },
+      Halfling: { DEX: 2 },
+      Dragonborn: { STR: 2, CHA: 1 },
     };
     return bonuses[race] || {};
   }
 
   private getRacialTraits(race: string): string[] {
     const traits: Record<string, string[]> = {
-      "Human": ["Extra skill", "Extra feat"],
-      "Elf": ["Darkvision", "Keen Senses", "Fey Ancestry"],
-      "Dwarf": ["Darkvision", "Dwarven Resilience", "Stonecunning"],
-      "Halfling": ["Lucky", "Brave", "Halfling Nimbleness"],
-      "Dragonborn": ["Draconic Ancestry", "Breath Weapon", "Damage Resistance"]
+      Human: ["Extra skill", "Extra feat"],
+      Elf: ["Darkvision", "Keen Senses", "Fey Ancestry"],
+      Dwarf: ["Darkvision", "Dwarven Resilience", "Stonecunning"],
+      Halfling: ["Lucky", "Brave", "Halfling Nimbleness"],
+      Dragonborn: ["Draconic Ancestry", "Breath Weapon", "Damage Resistance"],
     };
     return traits[race] || [];
   }
 
   private getSubclass(className: string): string {
     const subclasses: Record<string, string> = {
-      "Fighter": "Champion",
-      "Rogue": "Thief",
-      "Wizard": "School of Evocation",
-      "Cleric": "Life Domain",
-      "Ranger": "Hunter"
+      Fighter: "Champion",
+      Rogue: "Thief",
+      Wizard: "School of Evocation",
+      Cleric: "Life Domain",
+      Ranger: "Hunter",
     };
     return subclasses[className] || "Basic";
   }
 
   private getClassAbilities(className: string): string[] {
     const abilities: Record<string, string[]> = {
-      "Fighter": ["Fighting Style", "Second Wind"],
-      "Rogue": ["Expertise", "Sneak Attack", "Thieves' Cant"],
-      "Wizard": ["Spellcasting", "Arcane Recovery"],
-      "Cleric": ["Spellcasting", "Divine Domain"],
-      "Ranger": ["Favored Enemy", "Natural Explorer"]
+      Fighter: ["Fighting Style", "Second Wind"],
+      Rogue: ["Expertise", "Sneak Attack", "Thieves' Cant"],
+      Wizard: ["Spellcasting", "Arcane Recovery"],
+      Cleric: ["Spellcasting", "Divine Domain"],
+      Ranger: ["Favored Enemy", "Natural Explorer"],
     };
     return abilities[className] || [];
   }
@@ -812,10 +849,10 @@ Format as JSON with detailed analysis.`;
   private getBackgroundSkills(background: string): string[] {
     const skills: Record<string, string[]> = {
       "Folk Hero": ["Animal Handling", "Survival"],
-      "Soldier": ["Athletics", "Intimidation"],
-      "Sage": ["Arcana", "History"],
-      "Criminal": ["Deception", "Stealth"],
-      "Acolyte": ["Insight", "Religion"]
+      Soldier: ["Athletics", "Intimidation"],
+      Sage: ["Arcana", "History"],
+      Criminal: ["Deception", "Stealth"],
+      Acolyte: ["Insight", "Religion"],
     };
     return skills[background] || [];
   }
@@ -823,29 +860,44 @@ Format as JSON with detailed analysis.`;
   private getBackgroundFeature(background: string): string {
     const features: Record<string, string> = {
       "Folk Hero": "Rustic Hospitality",
-      "Soldier": "Military Rank",
-      "Sage": "Researcher",
-      "Criminal": "Criminal Contact",
-      "Acolyte": "Shelter of the Faithful"
+      Soldier: "Military Rank",
+      Sage: "Researcher",
+      Criminal: "Criminal Contact",
+      Acolyte: "Shelter of the Faithful",
     };
     return features[background] || "Background Feature";
   }
 
-  private async logGenerationJob(generation: CharacterGeneration, character: unknown): Promise<void> {
+  private async logGenerationJob(
+    generation: CharacterGeneration,
+    character: Character,
+  ): Promise<void> {
+    const inputData = generation.concept as unknown as Prisma.InputJsonValue;
+    const outputData = JSON.parse(JSON.stringify(character)) as Prisma.InputJsonValue;
+
     await this.prisma.generationJob.create({
       data: {
-        type: "CHARACTER_GENERATION" as any,
-        status: "SUCCEEDED",
-        input: generation.concept as any,
-        output: character as any,
+        type: JobType.TEXT_TO_IMAGE,
+        status: JobStatus.SUCCEEDED,
+        input: inputData,
+        output: outputData,
       },
     });
   }
 
   private getStep(generation: CharacterGeneration, stepName: string): GenerationStep {
     const step = generation.steps.find((s) => s.step === stepName);
-    if (!step) {throw new Error(`Step not found: ${stepName}`);}
+    if (!step) {
+      throw new Error(`Step not found: ${stepName}`);
+    }
     return step;
+  }
+
+  private getStepResult<T>(
+    generation: CharacterGeneration,
+    stepName: GenerationStep["step"],
+  ): T | undefined {
+    return this.getStep(generation, stepName).result as T | undefined;
   }
 
   private updateCurrentStep(generation: CharacterGeneration, nextStep: string): void {
@@ -881,11 +933,13 @@ Format as JSON with detailed analysis.`;
   // Public methods for external access
   async retryStep(generationId: string, stepName: string): Promise<void> {
     const generation = this.activeGenerations.get(generationId);
-    if (!generation) {throw new Error("Generation not found");}
+    if (!generation) {
+      throw new Error("Generation not found");
+    }
 
     const step = this.getStep(generation, stepName);
     step.status = "processing";
-    delete (step as any).error;
+    delete step.error;
 
     // Re-run the specific step
     switch (stepName) {
