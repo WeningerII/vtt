@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from "@prisma/client";
-import { AIProvider } from "./types";
+import type { AIProvider } from "@vtt/ai";
 import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 import { CharacterService } from "../character/CharacterService";

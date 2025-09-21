@@ -22,6 +22,22 @@ interface RuleExecutionResult {
   effects: unknown[];
 }
 
+interface CombatParticipant {
+  id: string;
+  type: string;
+  faction?: string;
+  active?: boolean;
+  hitPoints?: number;
+  speed?: number;
+  [key: string]: unknown;
+}
+
+function isCombatParticipant(value: unknown): value is CombatParticipant {
+  if (!value || typeof value !== "object") {return false;}
+  const record = value as Record<string, unknown>;
+  return typeof record.id === "string" && typeof record.type === "string";
+}
+
 class DeepRuleEngine {
   async initialize(): Promise<void> {
     logger.info('DeepRuleEngine initialized');
@@ -54,6 +70,7 @@ export interface GameEvent {
   sceneId: string;
   userId: string;
   timestamp: number;
+  source?: string;
 }
 
 export class GameEventBridge extends EventEmitter {
@@ -125,15 +142,16 @@ export class GameEventBridge extends EventEmitter {
 
   private async handleCombatAI(event: GameEvent, context: RuleContext): Promise<void> {
     try {
-      const participants = event.data.participants || [];
-      const activeParticipants = participants.filter((p: unknown) => p.active);
+      const rawParticipants = Array.isArray(event.data.participants) ? event.data.participants : [];
+      const participants = rawParticipants.filter(isCombatParticipant);
+      const activeParticipants = participants.filter((participant) => participant.active !== false);
       
       for (const participant of activeParticipants) {
         if (participant.type === "npc" || participant.type === "monster") {
           const decision = await this.combatAI.makeTacticalDecision({
-            character: participant,
-            allies: activeParticipants.filter((p: unknown) => p.faction === participant.faction),
-            enemies: activeParticipants.filter((p: unknown) => p.faction !== participant.faction),
+            character: participant as any,
+            allies: activeParticipants.filter((other) => other.faction === participant.faction) as any,
+            enemies: activeParticipants.filter((other) => other.faction !== participant.faction) as any,
             battlefield: {
               terrain: [],
               hazards: [],
@@ -143,12 +161,12 @@ export class GameEventBridge extends EventEmitter {
             },
             resources: {
               spellSlots: {},
-              hitPoints: participant.hitPoints || 100,
+              hitPoints: typeof participant.hitPoints === "number" ? participant.hitPoints : 100,
               actionEconomy: {
                 action: true,
                 bonusAction: true,
                 reaction: true,
-                movement: participant.speed || 30,
+                movement: typeof participant.speed === "number" ? participant.speed : 30,
               },
             },
             objectives: ["Defeat enemies"],
@@ -172,12 +190,16 @@ export class GameEventBridge extends EventEmitter {
 
   async handleWebSocketMessage(sessionId: string, message: Record<string, unknown>, userId: string): Promise<void> {
     try {
-      const gameEventTypes = ["token_move", "token_add", "combat_update", "spell_cast"];
-      
-      if (gameEventTypes.includes(message.type)) {
+      const gameEventTypes = ["token_move", "token_add", "combat_update", "spell_cast"] as const;
+      const type = typeof message.type === "string" ? message.type : undefined;
+
+      if (type && gameEventTypes.includes(type as (typeof gameEventTypes)[number])) {
+        const payload = (message.payload && typeof message.payload === "object"
+          ? (message.payload as Record<string, any>)
+          : {}) ?? {};
         await this.processGameEvent({
-          type: message.type,
-          data: (message.payload || {}) as Record<string, any>,
+          type,
+          data: payload,
           sceneId: sessionId,
           userId,
           timestamp: Date.now(),

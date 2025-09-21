@@ -4,6 +4,7 @@
 
 import { Context } from "../router/types";
 import { logger } from "@vtt/logging";
+import { getErrorMessage, getErrorStack } from "../utils/errors";
 
 export interface VTTError extends Error {
   statusCode?: number;
@@ -61,12 +62,17 @@ export class BusinessLogicError extends Error implements VTTError {
 }
 
 export function handleRouteError(ctx: Context, error: unknown): void {
-  logger.error(`[${ctx.requestId}] Route error:`, error as any);
+  logger.error(`[${ctx.requestId}] Route error:`, error);
 
   let statusCode = 500;
   let code = "INTERNAL_ERROR";
   let message = "Internal server error";
   let details: any = undefined;
+  const errorRecord = typeof error === "object" && error !== null ? (error as Record<string, unknown>) : {};
+  const errorCode = typeof errorRecord.code === "string" ? errorRecord.code : undefined;
+  const meta = typeof errorRecord.meta === "object" && errorRecord.meta !== null
+    ? (errorRecord.meta as Record<string, unknown>)
+    : undefined;
 
   if (error instanceof ValidationError) {
     statusCode = error.statusCode;
@@ -87,24 +93,24 @@ export function handleRouteError(ctx: Context, error: unknown): void {
     code = error.code;
     message = error.message;
     details = error.details;
-  } else if (error.code === "P2002") {
+  } else if (errorCode === "P2002") {
     // Prisma unique constraint violation
     statusCode = 409;
     code = "DUPLICATE_ENTRY";
     message = "Resource already exists";
-    details = { constraint: error.meta?.target };
-  } else if (error.code === "P2025") {
+    details = { constraint: meta?.target };
+  } else if (errorCode === "P2025") {
     // Prisma record not found
     statusCode = 404;
     code = "NOT_FOUND";
     message = "Resource not found";
-  } else if (error.code === "P2003") {
+  } else if (errorCode === "P2003") {
     // Prisma foreign key constraint violation
     statusCode = 400;
     code = "INVALID_REFERENCE";
     message = "Referenced resource does not exist";
-    details = { field: error.meta?.field_name };
-  } else if (error.message?.includes("Invalid JSON")) {
+    details = { field: meta?.field_name };
+  } else if (getErrorMessage(error).includes("Invalid JSON")) {
     statusCode = 400;
     code = "INVALID_JSON";
     message = "Invalid JSON in request body";
@@ -115,7 +121,7 @@ export function handleRouteError(ctx: Context, error: unknown): void {
       code,
       message,
       ...(details && { details }),
-      ...(process.env.NODE_ENV !== "production" && { stack: error.stack }),
+      ...(process.env.NODE_ENV !== "production" && { stack: getErrorStack(error) }),
     },
   };
 

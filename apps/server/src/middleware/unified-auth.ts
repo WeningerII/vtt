@@ -3,10 +3,11 @@
  * Consolidates cookie-based and token-based authentication patterns
  */
 
-import { RouteHandler } from "../router/types";
+import { RouteHandler, Context, AuthenticatedRequest } from "../router/types";
 import { logger } from "@vtt/logging";
 import { AuthManager } from "@vtt/auth";
 import { _serverConfig } from "../config/environment";
+import type { ServerResponse } from "http";
 
 // Singleton auth manager with proper configuration
 let authManagerInstance: AuthManager | null = null;
@@ -113,7 +114,7 @@ export const optionalUnifiedAuth: RouteHandler = async (ctx) => {
  * 2. sessionToken cookie
  * 3. access_token query parameter (for WebSocket upgrades)
  */
-function extractAuthToken(req: unknown): { value: string; source: string } | null {
+function extractAuthToken(req: AuthenticatedRequest): { value: string; source: string } | null {
   // Check Authorization header first (most secure)
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith("Bearer ")) {
@@ -134,7 +135,7 @@ function extractAuthToken(req: unknown): { value: string; source: string } | nul
 
   // Check query parameters (for WebSocket connections)
   if (req.url) {
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
     const queryToken = url.searchParams.get("access_token");
     if (queryToken) {
       return {
@@ -150,12 +151,21 @@ function extractAuthToken(req: unknown): { value: string; source: string } | nul
 /**
  * Get client IP address with proxy support
  */
-function getClientIP(req: unknown): string {
+function getClientIP(req: AuthenticatedRequest): string {
+  const forwarded = req.headers["x-forwarded-for"];
+  const forwardedIp = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  if (forwardedIp) {
+    return forwardedIp.split(",")[0];
+  }
+
+  const realIp = req.headers["x-real-ip"];
+  if (typeof realIp === "string" && realIp.length > 0) {
+    return realIp;
+  }
+
   return (
-    req.headers["x-forwarded-for"]?.split(",")[0] ||
-    req.headers["x-real-ip"] ||
-    req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
+    req.connection?.remoteAddress ||
     "unknown"
   );
 }
@@ -179,7 +189,7 @@ function parseCookies(cookieStr: string): Record<string, string> {
 /**
  * Send standardized unauthorized response
  */
-function respondUnauthorized(res: Response, message: string): void {
+function respondUnauthorized(res: ServerResponse, message: string): void {
   res.writeHead(401, {
     "Content-Type": "application/json",
     "WWW-Authenticate": 'Bearer realm="VTT API"',
@@ -196,14 +206,14 @@ function respondUnauthorized(res: Response, message: string): void {
 /**
  * Helper to get authenticated user from context
  */
-export function getAuthenticatedUser(ctx: unknown): any | null {
-  return ctx.req?.user || null;
+export function getAuthenticatedUser(ctx: Context): Context["req"]["user"] | null {
+  return ctx.req.user || null;
 }
 
 /**
  * Helper to get authenticated user ID from context
  */
-export function getAuthenticatedUserId(ctx: unknown): string {
+export function getAuthenticatedUserId(ctx: Context): string {
   const user = getAuthenticatedUser(ctx);
   if (!user?.id) {
     throw new Error("Authentication required - no authenticated user found");
@@ -214,9 +224,9 @@ export function getAuthenticatedUserId(ctx: unknown): string {
 /**
  * Check if user has specific permission
  */
-export function hasPermission(ctx: any, permission: string): boolean {
+export function hasPermission(ctx: Context, permission: string): boolean {
   const user = getAuthenticatedUser(ctx);
-  return user?.role === "admin" || user?.permissions?.includes(permission) || false;
+  return user?.role === "admin" || user?.permissions?.includes(permission as any) || false;
 }
 
 /**

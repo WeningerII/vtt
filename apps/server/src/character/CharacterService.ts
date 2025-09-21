@@ -9,6 +9,8 @@ import {
   CharacterTemplate,
   Ability,
   Skill,
+  ClassFeature,
+  Equipment,
 } from "./types";
 import { v4 as uuidv4 } from "uuid";
 
@@ -480,8 +482,8 @@ export class CharacterService {
     }
   }
 
-  private getStartingEquipment(characterClass: string, _background: string): unknown[] {
-    const equipment = [
+  private getStartingEquipment(characterClass: string, _background: string): Equipment[] {
+    const equipment: Equipment[] = [
       { id: uuidv4(), name: "Explorer's Pack", type: "misc", quantity: 1, weight: 59 },
       { id: uuidv4(), name: "Clothes, Common", type: "misc", quantity: 1, weight: 3 },
     ];
@@ -497,7 +499,7 @@ export class CharacterService {
             quantity: 1,
             weight: 3,
             equipped: true,
-          } as any,
+          },
           {
             id: uuidv4(),
             name: "Shield",
@@ -505,18 +507,21 @@ export class CharacterService {
             quantity: 1,
             weight: 6,
             equipped: true,
-          } as any,
+          },
         );
         break;
       case "wizard":
-        equipment.push({ id: uuidv4(), name: "Spellbook", type: "misc", quantity: 1, weight: 3 }, {
-          id: uuidv4(),
-          name: "Quarterstaff",
-          type: "weapon",
-          quantity: 1,
-          weight: 4,
-          equipped: true,
-        } as any);
+        equipment.push(
+          { id: uuidv4(), name: "Spellbook", type: "misc", quantity: 1, weight: 3 },
+          {
+            id: uuidv4(),
+            name: "Quarterstaff",
+            type: "weapon",
+            quantity: 1,
+            weight: 4,
+            equipped: true,
+          },
+        );
         break;
       case "rogue":
         equipment.push(
@@ -527,7 +532,7 @@ export class CharacterService {
             quantity: 1,
             weight: 2,
             equipped: true,
-          } as any,
+          },
           { id: uuidv4(), name: "Thieves' Tools", type: "tool", quantity: 1, weight: 1 },
         );
         break;
@@ -536,8 +541,8 @@ export class CharacterService {
     return equipment;
   }
 
-  private getClassFeatures(characterClass: string, level: number): unknown[] {
-    const features: Response[] = [];
+  private getClassFeatures(characterClass: string, level: number): ClassFeature[] {
+    const features: ClassFeature[] = [];
 
     // Level 1 features for each class
     switch (characterClass.toLowerCase()) {

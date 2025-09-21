@@ -4,6 +4,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import type { User as PrismaUser } from '@prisma/client';
 import { DatabaseManager } from '../database/connection';
 
 export interface AuthConfig {
@@ -47,6 +48,13 @@ export interface AuthUser {
   subscription: string;
   isEmailVerified: boolean;
   lastLogin: string;
+}
+
+interface OAuthProfile {
+  email: string;
+  username?: string;
+  displayName?: string;
+  avatar?: string;
 }
 
 export class AuthManager {
@@ -171,7 +179,7 @@ export class AuthManager {
     });
   }
 
-  async generateOAuthTokens(oauthUser: unknown): Promise<AuthTokens> {
+  async generateOAuthTokens(oauthUser: OAuthProfile): Promise<AuthTokens> {
     // Find or create user from OAuth data
     let user = await this.prisma.user.findUnique({
       where: { email: oauthUser.email }
@@ -236,18 +244,22 @@ export class AuthManager {
     return { accessToken, refreshToken };
   }
 
-  private formatUser(user: unknown): AuthUser {
+  private formatUser(user: PrismaUser): AuthUser {
+    const permissions = Array.isArray(user.permissions)
+      ? (user.permissions as unknown[]).filter((value): value is string => typeof value === 'string')
+      : [];
+
     return {
       id: user.id,
       email: user.email,
       username: user.username,
       displayName: user.displayName,
-      avatar: user.avatar,
-      role: user.role,
-      permissions: Array.isArray(user.permissions) ? user.permissions : [],
-      subscription: user.subscription,
-      isEmailVerified: user.isEmailVerified,
-      lastLogin: user.lastLogin?.toISOString() || new Date().toISOString()
+      avatar: user.avatar ?? undefined,
+      role: user.role ?? 'user',
+      permissions,
+      subscription: user.subscription ?? 'free',
+      isEmailVerified: Boolean(user.isEmailVerified),
+      lastLogin: (user.lastLogin ?? new Date()).toISOString()
     };
   }
 }

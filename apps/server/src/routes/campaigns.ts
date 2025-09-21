@@ -1,11 +1,12 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Campaign routes with comprehensive REST API
  * Provides full CRUD operations and campaign management
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { IncomingMessage } from "http";
+import { getErrorMessage } from "../utils/errors";
 // Router import removed as it's not used in this file 
 import {
   CampaignService,
@@ -544,11 +545,11 @@ export const getCampaignStatsHandler: RouteHandler = async (ctx) => {
 };
 
 // Helper function to parse JSON from request body
-async function parseJsonBody(req: unknown): Promise<any> {
+async function parseJsonBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";
 
-    req.on("data", (chunk: unknown) => {
+    req.on("data", (chunk: Buffer) => {
       body += chunk.toString();
     });
 

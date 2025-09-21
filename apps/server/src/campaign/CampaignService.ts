@@ -90,6 +90,23 @@ export interface CampaignSettings {
   updatedAt: Date;
 }
 
+type CampaignRecord = {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt?: Date | null;
+  settings?: {
+    description?: string | null;
+    gameSystem?: string | null;
+    isActive?: boolean | null;
+  } | null;
+  members?: Array<{
+    userId: string;
+    role?: string | null;
+  }> | null;
+  characters?: Array<{ characterId: string }> | null;
+};
+
 export class CampaignService {
   private campaigns = new Map<string, Campaign>();
 
@@ -138,7 +155,7 @@ export class CampaignService {
     });
 
     // Convert to service model and cache
-    const campaign = this.mapDbCampaignToCampaign(dbCampaign);
+    const campaign = this.mapDbCampaignToCampaign(dbCampaign as CampaignRecord);
     this.campaigns.set(campaign.id, campaign);
     return campaign;
   }
@@ -173,8 +190,9 @@ export class CampaignService {
     const campaign = this.mapDbCampaignToCampaign({
       ...dbCampaign,
       members: dbCampaign.members || [],
-      scenes: dbCampaign.scenes || []
-    });
+      characters: (dbCampaign as any).characters || [],
+      settings: dbCampaign.settings,
+    } as CampaignRecord);
 
     this.campaigns.set(campaignId, campaign);
     return campaign;
@@ -287,7 +305,7 @@ export class CampaignService {
     });
 
     // Convert to service interface
-    return dbCampaigns.map(dbCampaign => this.mapDbCampaignToCampaign(dbCampaign));
+    return dbCampaigns.map(dbCampaign => this.mapDbCampaignToCampaign(dbCampaign as CampaignRecord));
   }
 
   /**
@@ -315,7 +333,7 @@ export class CampaignService {
     });
 
     // Convert to service interface
-    return dbCampaigns.map(dbCampaign => this.mapDbCampaignToCampaign(dbCampaign));
+    return dbCampaigns.map(dbCampaign => this.mapDbCampaignToCampaign(dbCampaign as CampaignRecord));
   }
 
   /**
@@ -1150,24 +1168,25 @@ export class CampaignService {
   /**
    * Helper method to map database campaign to service interface
    */
-  private mapDbCampaignToCampaign(dbCampaign: unknown): Campaign {
-    const gameMaster = dbCampaign.members?.find((m: unknown) => (m.role || "").toLowerCase() === "gm");
-    const players = dbCampaign.members?.map((m: unknown) => m.userId) || [];
-    const characters = dbCampaign.characters?.map((cc: unknown) => cc.characterId) || [];
+  private mapDbCampaignToCampaign(dbCampaign: CampaignRecord): Campaign {
+    const members = dbCampaign.members ?? [];
+    const gameMaster = members.find((member) => (member.role ?? "").toLowerCase() === "gm");
+    const characters = (dbCampaign.characters ?? []).map((character) => character.characterId);
+    const settings = dbCampaign.settings ?? {};
 
     return {
       id: dbCampaign.id,
       name: dbCampaign.name,
-      description: dbCampaign.settings?.description || "",
-      gameSystem: dbCampaign.settings?.gameSystem || "dnd5e",
-      gameMasterId: gameMaster?.userId || "",
-      players,
+      description: settings.description ?? "",
+      gameSystem: settings.gameSystem ?? "dnd5e",
+      gameMasterId: gameMaster?.userId ?? "",
+      players: members.map((member) => member.userId),
       characters,
-      isActive: dbCampaign.settings?.isActive ?? true,
-      sessions: 0, // Computed field
-      totalHours: 0, // Computed field
+      isActive: settings.isActive ?? true,
+      sessions: 0,
+      totalHours: 0,
       createdAt: dbCampaign.createdAt,
-      updatedAt: dbCampaign.updatedAt || dbCampaign.createdAt,
+      updatedAt: dbCampaign.updatedAt ?? dbCampaign.createdAt,
     };
   }
 }

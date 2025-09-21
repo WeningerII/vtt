@@ -4,6 +4,9 @@
 
 import { PrismaClient } from "@prisma/client";
 import { createAIServices } from "./service";
+import { getErrorMessage } from "../utils/errors";
+
+type ContentContext = ContentGenerationRequest["context"];
 
 export interface ContentGenerationRequest {
   type: "npc" | "location" | "quest" | "item" | "encounter";
@@ -141,7 +144,7 @@ Create something unique that enhances gameplay.`
         }
       };
     } catch (error: unknown) {
-      throw new Error(`Content generation failed: ${error.message}`);
+      throw new Error(`Content generation failed: ${getErrorMessage(error)}`);
     }
   }
 
@@ -175,7 +178,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
 
   function generateFallbackContent(request: ContentGenerationRequest): any {
     const { type, context } = request;
-    
+
     switch (type) {
       case "npc":
         return generateNPCContent(context);
@@ -190,7 +193,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     }
   }
 
-  function generateNPCContent(context: unknown): any {
+  function generateNPCContent(context: ContentContext): any {
     const names = ["Gareth", "Luna", "Thorin", "Zara", "Kael", "Vera"];
     const classes = ["Merchant", "Guard", "Scholar", "Innkeeper", "Blacksmith"];
     const personalities = ["Friendly", "Gruff", "Mysterious", "Cheerful", "Suspicious"];
@@ -206,7 +209,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  function generateLocationContent(context: unknown): any {
+  function generateLocationContent(context: ContentContext): any {
     const locations = ["Ancient Ruins", "Hidden Grove", "Abandoned Tower", "Crystal Cave", "Misty Swamp"];
     const features = ["Strange markings", "Magical aura", "Hidden passages", "Dangerous wildlife", "Valuable resources"];
     
@@ -220,7 +223,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  function generateQuestContent(context: unknown): any {
+  function generateQuestContent(context: ContentContext): any {
     const questTypes = ["Rescue", "Retrieve", "Investigate", "Escort", "Eliminate"];
     const objectives = ["Find the missing person", "Recover the stolen artifact", "Uncover the mystery", "Protect the caravan", "Defeat the threat"];
     
@@ -238,7 +241,7 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  function generateItemContent(context: unknown): any {
+  function generateItemContent(context: ContentContext): any {
     const itemTypes = ["Weapon", "Armor", "Potion", "Scroll", "Trinket"];
     const rarities = ["Common", "Uncommon", "Rare"];
     const properties = ["Magical", "Masterwork", "Ancient", "Blessed", "Enchanted"];
@@ -253,19 +256,19 @@ Generate appropriate content that fits this context and enhances the gaming expe
     };
   }
 
-  async function generateNPC(context: unknown) {
+  async function generateNPC(context: ContentContext) {
     return generateContent({ type: "npc", context });
   }
 
-  async function generateLocation(context: unknown) {
+  async function generateLocation(context: ContentContext) {
     return generateContent({ type: "location", context });
   }
 
-  async function generateQuest(context: unknown) {
+  async function generateQuest(context: ContentContext) {
     return generateContent({ type: "quest", context });
   }
 
-  async function generateItem(context: unknown) {
+  async function generateItem(context: ContentContext) {
     return generateContent({ type: "item", context });
   }
 

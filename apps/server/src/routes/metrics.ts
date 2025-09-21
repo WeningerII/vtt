@@ -1,11 +1,11 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Metrics and health check API endpoints
  */
 
 import { RouteHandler } from "../router/types";
 import { metricsCollector, healthChecker } from "../middleware/metrics";
 import { handleRouteError } from "../middleware/errorHandler";
+import { getErrorMessage } from "../utils/errors";
 
 /**
  * GET /api/health - Basic health check endpoint
@@ -93,7 +93,7 @@ export const metricsHandler: RouteHandler = async (ctx) => {
 export const prometheusMetricsHandler: RouteHandler = async (ctx) => {
   try {
     const metrics = metricsCollector.getMetrics();
-    const prometheusFormat = convertToPrometheusFormat(metrics);
+    const prometheusFormat = convertToPrometheusFormat(metrics as Record<string, any>);
     
     ctx.res.writeHead(200, { 
       "Content-Type": "text/plain; charset=utf-8",
@@ -108,7 +108,7 @@ export const prometheusMetricsHandler: RouteHandler = async (ctx) => {
 /**
  * Convert metrics to Prometheus format
  */
-function convertToPrometheusFormat(metrics: unknown): string {
+function convertToPrometheusFormat(metrics: Record<string, any>): string {
   const lines: string[] = [];
   const timestamp = Date.now();
 

@@ -1,11 +1,11 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Authentication Routes
  */
 import { Router } from 'express';
 import passport from 'passport';
 import { DatabaseManager } from '../database/connection';
 import { getAuthManager } from '../auth/auth-manager';
+import { getErrorMessage } from "../utils/errors";
 
 // Ensure DatabaseManager is initialized and reuse shared AuthManager
 const prisma = DatabaseManager.getInstance();

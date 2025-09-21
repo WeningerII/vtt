@@ -2,7 +2,7 @@
  * Authentication middleware for API routes
  */
 
-import { RouteHandler, Middleware } from "../router/types";
+import { RouteHandler, Middleware, Context } from "../router/types";
 import { logger } from "@vtt/logging";
 import { getAuthManager } from "../auth/auth-manager";
 
@@ -136,7 +136,7 @@ export const optionalAuth: Middleware = async (ctx, next) => {
 /**
  * Helper function to get authenticated user ID from context
  */
-export function getAuthenticatedUserId(ctx: unknown): string {
+export function getAuthenticatedUserId(ctx: Context): string {
   const user = ctx.req.user;
   if (!user) {
     throw new Error("Authentication required - no authenticated user found");
@@ -147,7 +147,7 @@ export function getAuthenticatedUserId(ctx: unknown): string {
 /**
  * Helper function to get authenticated user from context (optional)
  */
-export function getAuthenticatedUser(ctx: unknown): any | null {
+export function getAuthenticatedUser(ctx: Context): Context["req"]["user"] | null {
   return ctx.req.user || null;
 }
 

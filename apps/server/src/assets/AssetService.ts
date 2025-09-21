@@ -11,6 +11,8 @@ import {
   Token,
   GameMap,
   AssetLibrary,
+  LightSource,
+  FogArea,
 } from "./types";
 import type { Buffer } from "node:buffer";
 
@@ -29,6 +31,23 @@ export class AssetService {
   private assets = new Map<string, Asset>();
   private libraries = new Map<string, AssetLibrary>();
   private uploadPath: string;
+  private static readonly TOKEN_CATEGORIES: Token["tokenData"]["category"][] = [
+    "humanoid",
+    "beast",
+    "undead",
+    "construct",
+    "elemental",
+    "fey",
+    "fiend",
+    "celestial",
+    "dragon",
+    "giant",
+    "monstrosity",
+    "ooze",
+    "plant",
+    "aberration",
+    "other",
+  ];
 
   constructor(uploadPath: string = "./uploads") {
     this.uploadPath = uploadPath;
@@ -252,12 +271,7 @@ export class AssetService {
       id: tokenId,
       type: "token",
       name: `${asset.name} (Token)`,
-      tokenData: {
-        gridSize: tokenData.gridSize || 1,
-        isPC: tokenData.isPC || false,
-        category: tokenData.category || "other",
-        stats: tokenData.stats,
-      },
+      tokenData: this.normalizeTokenData(tokenData),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -283,35 +297,144 @@ export class AssetService {
       id: mapId,
       type: "map",
       name: `${asset.name} (Map)`,
-      mapData: {
-        gridType: mapData.gridType || "square",
-        gridSize: mapData.gridSize || 50,
-        gridOffsetX: mapData.gridOffsetX || 0,
-        gridOffsetY: mapData.gridOffsetY || 0,
-        scenes: mapData.scenes || [
-          {
-            id: uuidv4(),
-            name: "Default Scene",
-            backgroundAssetId: assetId,
-            overlayAssetIds: [],
-            lighting: {
-              ambientLight: 0.3,
-              lightSources: [],
-            },
-            fog: {
-              enabled: false,
-              exploredAreas: [],
-              hiddenAreas: [],
-            },
-          },
-        ],
-      },
+      mapData: this.normalizeMapData(mapData, assetId),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     this.assets.set(mapId, map);
     return map;
+  }
+
+  private toRecord(value: unknown): Record<string, unknown> {
+    return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  }
+
+  private toNumber(value: unknown): number | undefined {
+    return typeof value === "number" ? value : undefined;
+  }
+
+  private normalizeTokenData(input: unknown): Token["tokenData"] {
+    const data = this.toRecord(input);
+    const statsRecord = this.toRecord(data.stats);
+
+    const rawCategory = typeof data.category === "string" ? data.category : "other";
+    const category = AssetService.TOKEN_CATEGORIES.includes(rawCategory as Token["tokenData"]["category"])
+      ? (rawCategory as Token["tokenData"]["category"])
+      : "other";
+
+    const statsCandidate: Token["tokenData"]["stats"] = {
+      ac: this.toNumber(statsRecord.ac),
+      hp: this.toNumber(statsRecord.hp),
+      speed: this.toNumber(statsRecord.speed),
+      cr: typeof statsRecord.cr === "string" ? statsRecord.cr : undefined,
+    };
+
+    const hasStats = Object.values(statsCandidate ?? {}).some((value) => value !== undefined);
+
+    return {
+      gridSize: this.toNumber(data.gridSize) ?? 1,
+      isPC: typeof data.isPC === "boolean" ? data.isPC : false,
+      category,
+      ...(hasStats ? { stats: statsCandidate } : {}),
+    };
+  }
+
+  private normalizeMapData(input: unknown, assetId: string): GameMap["mapData"] {
+    const data = this.toRecord(input);
+    const scenesInput = Array.isArray(data.scenes) ? data.scenes : [];
+    const scenes = scenesInput
+      .map((scene) => this.normalizeScene(scene, assetId))
+      .filter((scene): scene is GameMap["mapData"]["scenes"][number] => Boolean(scene));
+
+    const gridType = typeof data.gridType === "string" && ["square", "hex", "none"].includes(data.gridType)
+      ? (data.gridType as GameMap["mapData"]["gridType"])
+      : "square";
+
+    return {
+      gridType,
+      gridSize: this.toNumber(data.gridSize) ?? 50,
+      gridOffsetX: this.toNumber(data.gridOffsetX) ?? 0,
+      gridOffsetY: this.toNumber(data.gridOffsetY) ?? 0,
+      scenes: scenes.length > 0 ? scenes : [this.createDefaultScene(assetId)],
+    };
+  }
+
+  private normalizeScene(scene: unknown, assetId: string): GameMap["mapData"]["scenes"][number] {
+    const record = this.toRecord(scene);
+    const lightingRecord = this.toRecord(record.lighting);
+    const fogRecord = this.toRecord(record.fog);
+
+    return {
+      id: typeof record.id === "string" ? record.id : uuidv4(),
+      name: typeof record.name === "string" ? record.name : "Scene",
+      description: typeof record.description === "string" ? record.description : undefined,
+      backgroundAssetId: typeof record.backgroundAssetId === "string" ? record.backgroundAssetId : assetId,
+      overlayAssetIds: Array.isArray(record.overlayAssetIds)
+        ? record.overlayAssetIds.filter((value): value is string => typeof value === "string")
+        : [],
+      lighting: {
+        ambientLight: this.toNumber(lightingRecord.ambientLight) ?? 0.3,
+        lightSources: Array.isArray(lightingRecord.lightSources)
+          ? lightingRecord.lightSources.filter((value): value is LightSource => this.isLightSource(value))
+          : [],
+      },
+      fog: {
+        enabled: typeof fogRecord.enabled === "boolean" ? fogRecord.enabled : false,
+        exploredAreas: Array.isArray(fogRecord.exploredAreas)
+          ? fogRecord.exploredAreas.filter((value): value is FogArea => this.isFogArea(value))
+          : [],
+        hiddenAreas: Array.isArray(fogRecord.hiddenAreas)
+          ? fogRecord.hiddenAreas.filter((value): value is FogArea => this.isFogArea(value))
+          : [],
+      },
+    };
+  }
+
+  private createDefaultScene(assetId: string): GameMap["mapData"]["scenes"][number] {
+    return {
+      id: uuidv4(),
+      name: "Default Scene",
+      backgroundAssetId: assetId,
+      overlayAssetIds: [],
+      lighting: {
+        ambientLight: 0.3,
+        lightSources: [],
+      },
+      fog: {
+        enabled: false,
+        exploredAreas: [],
+        hiddenAreas: [],
+      },
+    };
+  }
+
+  private isLightSource(value: unknown): value is LightSource {
+    const record = this.toRecord(value);
+    return (
+      typeof record.id === "string" &&
+      typeof record.x === "number" &&
+      typeof record.y === "number" &&
+      typeof record.radius === "number" &&
+      typeof record.intensity === "number" &&
+      typeof record.color === "string"
+    );
+  }
+
+  private isFogArea(value: unknown): value is FogArea {
+    const record = this.toRecord(value);
+    if (typeof record.id !== "string" || typeof record.type !== "string") {
+      return false;
+    }
+
+    if (!Array.isArray(record.points)) {
+      return false;
+    }
+
+    return record.points.every((point) => {
+      const pointRecord = this.toRecord(point);
+      return typeof pointRecord.x === "number" && typeof pointRecord.y === "number";
+    });
   }
 
   /**

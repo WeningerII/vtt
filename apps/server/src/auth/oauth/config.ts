@@ -3,6 +3,7 @@
  */
 
 import passport from "passport";
+import type { DoneCallback } from "passport";
 import { logger } from "@vtt/logging";
 import { Strategy as DiscordStrategy } from "passport-discord";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
@@ -59,7 +60,7 @@ export class OAuthManager {
             callbackURL: this.config.discord.callbackURL,
             scope: this.config.discord.scope,
           },
-          async (accessToken: string, refreshToken: string, profile: any, done: unknown) => {
+          async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
             try {
               const oauthProfile: OAuthProfile = {
                 id: profile.id,
@@ -95,7 +96,7 @@ export class OAuthManager {
             callbackURL: this.config.google.callbackURL,
             scope: this.config.google.scope,
           },
-          async (accessToken: string, refreshToken: string, profile: any, done: unknown) => {
+          async (accessToken: string, refreshToken: string, profile: any, done: (error: any, user?: any) => void) => {
             try {
               const oauthProfile: OAuthProfile = {
                 id: profile.id,
@@ -119,11 +120,11 @@ export class OAuthManager {
     }
 
     // Serialize/deserialize user for session
-    passport.serializeUser((user: any, done) => {
+    passport.serializeUser((user: any, done: DoneCallback) => {
       done(null, user.id);
     });
 
-    passport.deserializeUser(async (id: string, done: unknown) => {
+    passport.deserializeUser(async (id: string, done: DoneCallback) => {
       try {
         const user = await this.authManager.findUserById(id);
         done(null, user);

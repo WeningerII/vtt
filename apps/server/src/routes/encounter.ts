@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Encounter management REST API routes for Combat Tracker integration
  */
 
@@ -10,6 +9,7 @@ import { ActorIntegrationService } from "../services/ActorIntegrationService";
 import { CharacterService } from "../character/CharacterService";
 import { MonsterService } from "../services/MonsterService";
 import { DatabaseManager } from "../database/connection";
+import { getErrorMessage } from "../utils/errors";
 
 // Lazy-load services to avoid initialization issues during module loading
 let prisma: any | null = null; // TODO: Type as PrismaClient after DatabaseManager typing

@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Character management routes
  */
 
@@ -9,6 +8,7 @@ import { parseJsonBody } from "../utils/json";
 import { extractUserIdFromToken } from "../utils/auth";
 import { CreateCharacterRequest, UpdateCharacterRequest } from "../character/types";
 import { validateRequest, GameSchemas, CommonSchemas } from "../middleware/validation";
+import { getErrorMessage } from "../utils/errors";
 
 // Global character service instance
 const characterService = new CharacterService();

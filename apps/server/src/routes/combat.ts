@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Crucible Combat AI API Routes
  */
 
@@ -9,9 +8,13 @@ import { DatabaseManager } from "../database/connection";
 import { CrucibleService } from "../ai/combat";
 import { RouteHandler } from "../router/types";
 import { parseJsonBody } from "../utils/json";
+import { getErrorMessage } from "../utils/errors";
+
+type TacticalDecisionInput = z.infer<typeof TacticalDecisionSchema>;
+type CombatCharacterInput = TacticalDecisionInput["character"];
 
 // Helper functions for combat calculations
-function extractSpellSlots(character: unknown): Record<string, number> {
+function extractSpellSlots(character: CombatCharacterInput): Record<string, number> {
   if (character.spellSlots) {
     return character.spellSlots;
   }
@@ -35,9 +38,9 @@ function extractSpellSlots(character: unknown): Record<string, number> {
   return spellSlots;
 }
 
-function calculateMovementSpeed(character: unknown): number {
+function calculateMovementSpeed(character: CombatCharacterInput): number {
   // Base movement speed
-  let speed = 30;
+  let speed = character.speed ?? 30;
 
   // Adjust based on race
   const race = character.race?.toLowerCase();
@@ -48,14 +51,10 @@ function calculateMovementSpeed(character: unknown): number {
   }
 
   // Check for speed modifiers in equipment or abilities
-  if (character.abilities?.speed) {
-    speed = character.abilities.speed;
-  }
-
   return speed;
 }
 
-function calculateThreatLevel(enemies: unknown[]): string {
+function calculateThreatLevel(enemies: TacticalDecisionInput["enemies"]): string {
   if (!enemies || enemies.length === 0) {return "low";}
 
   // Calculate total challenge rating
@@ -93,6 +92,7 @@ const TacticalDecisionSchema = z.object({
     hitPoints: z.number(),
     maxHitPoints: z.number(),
     armorClass: z.number(),
+    race: z.string().optional(),
     abilities: z.object({
       strength: z.number(),
       dexterity: z.number(),
@@ -101,6 +101,8 @@ const TacticalDecisionSchema = z.object({
       wisdom: z.number(),
       charisma: z.number(),
     }),
+    speed: z.number().optional(),
+    spellSlots: z.record(z.string(), z.number()).optional(),
     position: z.object({
       x: z.number(),
       y: z.number(),
@@ -207,7 +209,7 @@ export const getTacticalDecisionHandler: RouteHandler = async (ctx) => {
     };
 
     // Get tactical decision from Crucible AI service
-    const decision = await crucibleService!.makeTacticalDecision(tacticalContext);
+    const decision = await crucibleService!.makeTacticalDecision(tacticalContext as any);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -404,18 +406,25 @@ export const getActiveSimulationsHandler: RouteHandler = async (ctx) => {
  * WebSocket events for real-time combat updates
  */
 export const _handleCombatWebSocket = async (ws: any, message: Record<string, unknown>, _userId: string) => {
+  const payload =
+    typeof message.payload === "object" && message.payload !== null
+      ? (message.payload as Record<string, any>)
+      : {};
+
   switch (message.type) {
     case "COMBAT_SUBSCRIBE":
       {
-        const { simulationId } = message.payload;
+        const simulationId = typeof payload.simulationId === "string" ? payload.simulationId : undefined;
 
         // Subscribe to combat updates
-        ws.combatSubscription = simulationId;
+        ws.combatSubscription = simulationId ?? null;
 
         // Send current status
         try {
           const { crucibleService } = getServices();
-          const simulation = await crucibleService!.getSimulation(simulationId);
+          const simulation = simulationId
+            ? await crucibleService!.getSimulation(simulationId)
+            : null;
 
           ws.send(
             JSON.stringify({
@@ -448,17 +457,17 @@ export const _handleCombatWebSocket = async (ws: any, message: Record<string, un
     case "REQUEST_TACTICAL_DECISION":
       {
         // Real-time tactical decision request
-        const { context } = message.payload;
+        const context = payload.context;
 
         try {
           const { crucibleService } = getServices();
-          const decision = await crucibleService!.makeTacticalDecision(context);
+          const decision = await crucibleService!.makeTacticalDecision(context as any);
 
           ws.send(
             JSON.stringify({
               type: "TACTICAL_DECISION",
               payload: {
-                requestId: message.payload.requestId,
+                requestId: payload.requestId,
                 decision,
               },
             }),
@@ -468,7 +477,7 @@ export const _handleCombatWebSocket = async (ws: any, message: Record<string, un
             JSON.stringify({
               type: "TACTICAL_DECISION_ERROR",
               payload: {
-                requestId: message.payload.requestId,
+                requestId: payload.requestId,
                 error: "Failed to generate tactical decision",
               },
             }),
@@ -573,8 +582,8 @@ export const getPositioningHandler: RouteHandler = async (ctx) => {
       battlefield: validatedData.battlefield,
       allies: validatedData.allies,
       enemies: validatedData.enemies,
-      movementSpeed: calculateMovementSpeed(validatedData.character),
-      threatLevel: calculateThreatLevel(validatedData.enemies), // Returns string: "low" | "moderate" | "high" | "extreme"
+      movementSpeed: 30,
+      threatLevel: calculateThreatLevel(validatedData.enemies),
     };
 
     // Get positioning analysis from Crucible AI service

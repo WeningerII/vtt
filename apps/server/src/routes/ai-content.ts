@@ -1,5 +1,4 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * AI Content Generation routes for VTT platform
  */
 
@@ -11,6 +10,7 @@ import {
   parseJsonBody,
 } from "./ai-content-helpers";
 import { RouteHandler } from "../router/types";
+import { getErrorMessage } from "../utils/errors";
 
 /**
  * POST /ai/generate-npc - Generate NPC using AI

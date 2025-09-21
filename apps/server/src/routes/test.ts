@@ -1,10 +1,15 @@
 import { Router } from "../router/router";
 
+interface WebSocketManager {
+  getClientCount(): number;
+  broadcast(message: { type: string; payload: unknown }): void;
+}
+
 // Simple test route to verify WebSocket integration
-export function setupTestRoutes(router: Router, wsManager?: unknown) {
+export function setupTestRoutes(router: Router, wsManager?: WebSocketManager) {
   router.get("/api/test/websocket-status", (ctx) => {
     const stats = {
-      totalClients: wsManager?.getClientCount() || 0,
+      totalClients: wsManager ? wsManager.getClientCount() : 0,
       serverTime: new Date().toISOString(),
       status: "connected",
     };
@@ -24,7 +29,7 @@ export function setupTestRoutes(router: Router, wsManager?: unknown) {
 
       const { message, type } = JSON.parse(body);
 
-      wsManager.broadcast({
+      wsManager?.broadcast({
         type: type || "ECHO",
         payload: message,
       });

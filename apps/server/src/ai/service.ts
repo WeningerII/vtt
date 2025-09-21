@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 // Restore AI imports now that build issues are resolved
 import {
@@ -142,6 +143,7 @@ export function createAIServices(prisma: PrismaClient) {
 
       return { job: updated, callId: call.id, asset };
     } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err);
       await prisma.providerCall.create({
         data: {
           jobId: job.id,
@@ -150,12 +152,12 @@ export function createAIServices(prisma: PrismaClient) {
           costUSD: 0,
           latencyMs: Date.now() - started,
           success: false,
-          error: String(err?.message ?? err),
+          error: errorMessage,
         },
       });
       await prisma.generationJob.update({
         where: { id: job.id },
-        data: { status: "FAILED", error: String(err?.message ?? err) },
+        data: { status: "FAILED", error: errorMessage },
       });
       throw err;
     }
@@ -211,6 +213,7 @@ export function createAIServices(prisma: PrismaClient) {
       });
       return { job: updated, callId: call.id, asset };
     } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err);
       await prisma.providerCall.create({
         data: {
           jobId: job.id,
@@ -219,12 +222,12 @@ export function createAIServices(prisma: PrismaClient) {
           costUSD: 0,
           latencyMs: Date.now() - started,
           success: false,
-          error: String(err?.message ?? err),
+          error: errorMessage,
         },
       });
       await prisma.generationJob.update({
         where: { id: job.id },
-        data: { status: "FAILED", error: String(err?.message ?? err) },
+        data: { status: "FAILED", error: errorMessage },
       });
       throw err;
     }
@@ -281,6 +284,7 @@ export function createAIServices(prisma: PrismaClient) {
       });
       return { job: updated, callId: call.id, asset };
     } catch (err: unknown) {
+      const errorMessage = getErrorMessage(err);
       await prisma.providerCall.create({
         data: {
           jobId: job.id,
@@ -289,12 +293,12 @@ export function createAIServices(prisma: PrismaClient) {
           costUSD: 0,
           latencyMs: Date.now() - started,
           success: false,
-          error: String(err?.message ?? err),
+          error: errorMessage,
         },
       });
       await prisma.generationJob.update({
         where: { id: job.id },
-        data: { status: "FAILED", error: String(err?.message ?? err) },
+        data: { status: "FAILED", error: errorMessage },
       });
       throw err;
     }

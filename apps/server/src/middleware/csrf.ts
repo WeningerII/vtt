@@ -1,6 +1,6 @@
 import crypto from "crypto";
+import type { ServerResponse } from "http";
 import type { Context, Next } from "../router/types";
-import { Request, Response } from 'express';
 
 const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER = "x-csrf-token";
@@ -79,7 +79,7 @@ function getCookie(cookieHeader: string | undefined, name: string): string | nul
  * Helper function to set cookie
  */
 function setCookie(
-  res: Response,
+  res: ServerResponse,
   name: string,
   value: string,
   options: {
@@ -98,8 +98,12 @@ function setCookie(
   if (options.path) {parts.push(`Path=${options.path}`);}
   if (options.maxAge) {parts.push(`Max-Age=${options.maxAge}`);}
 
-  const existingCookies = res.getHeader("Set-Cookie") || [];
-  const cookies = Array.isArray(existingCookies) ? existingCookies : [existingCookies];
+  const existing = res.getHeader("Set-Cookie");
+  const cookies = Array.isArray(existing)
+    ? existing.map(String)
+    : existing
+    ? [String(existing)]
+    : [];
   cookies.push(parts.join("; "));
 
   res.setHeader("Set-Cookie", cookies);

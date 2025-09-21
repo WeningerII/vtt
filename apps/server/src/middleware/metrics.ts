@@ -5,6 +5,7 @@
 
 import { Context, Middleware } from "../router/types";
 import { logger } from "@vtt/logging";
+import type { PrismaClient } from "@prisma/client";
 
 interface MetricData {
   count: number;
@@ -264,7 +265,7 @@ healthChecker.addCheck('uptime', async () => {
 });
 
 // Business logic health checks can be added by other modules
-export function addDatabaseHealthCheck(prisma: unknown): void {
+export function addDatabaseHealthCheck(prisma: PrismaClient): void {
   healthChecker.addCheck('database', async () => {
     try {
       await prisma.$queryRaw`SELECT 1`;
