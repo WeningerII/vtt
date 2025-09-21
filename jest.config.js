@@ -3,6 +3,14 @@
  * Unified testing configuration for all packages
  */
 
+const tsJestTransform = [
+  "ts-jest",
+  {
+    tsconfig: "<rootDir>/tsconfig.base.json",
+    isolatedModules: true,
+  },
+];
+
 module.exports = {
   // Test environment
   testEnvironment: "node",
@@ -27,12 +35,12 @@ module.exports = {
   // File extensions to consider
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
 
-  // Transform files with TypeScript
+  // Transform TypeScript sources with ts-jest so Jest understands TS syntax
   transform: {
-    "^.+\\.(ts|tsx)$": "ts-jest",
+    "^.+\\.(ts|tsx)$": tsJestTransform,
   },
 
-// Module name mapping for path aliases
+  // Module name mapping for path aliases
   moduleNameMapper: {
     "^@vtt/(.*)$": "<rootDir>/packages/$1/src",
     "^@apps/(.*)$": "<rootDir>/apps/$1/src",
@@ -94,6 +102,9 @@ module.exports = {
         "<rootDir>/packages/**/*.spec.ts"
       ],
       testEnvironment: "node",
+      transform: {
+        "^.+\\.(ts|tsx)$": tsJestTransform,
+      },
     },
     {
       displayName: "integration",
@@ -104,6 +115,9 @@ module.exports = {
       ],
       testEnvironment: "node",
       testTimeout: 60000,
+      transform: {
+        "^.+\\.(ts|tsx)$": tsJestTransform,
+      },
     },
     {
       displayName: "services",
@@ -113,6 +127,9 @@ module.exports = {
       ],
       testEnvironment: "node",
       testTimeout: 45000,
+      transform: {
+        "^.+\\.(ts|tsx)$": tsJestTransform,
+      },
     },
   ],
 
@@ -170,11 +187,4 @@ module.exports = {
   cache: true,
   cacheDirectory: "<rootDir>/.jest-cache",
 
-  // TypeScript configuration
-  globals: {
-    "ts-jest": {
-      tsconfig: "<rootDir>/tsconfig.base.json",
-      isolatedModules: true,
-    },
-  },
 };
