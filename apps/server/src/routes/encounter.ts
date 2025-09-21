@@ -59,18 +59,31 @@ let characterService: CharacterService | null = null;
 let monsterService: MonsterService | null = null;
 let actorService: ActorIntegrationService | null = null;
 
-function getServices() {
-  if (!prisma) {
-    prisma = DatabaseManager.getInstance();
+type EncounterServices = {
+  prisma: PrismaClient;
+  characterService: CharacterService;
+  monsterService: MonsterService;
+  actorService: ActorIntegrationService;
+};
+
+function getServices(): EncounterServices {
+  if (!prisma || !characterService || !monsterService || !actorService) {
+    const prismaInstance = DatabaseManager.getInstance() as PrismaClient;
+    prisma = prismaInstance;
     characterService = new CharacterService();
-    monsterService = new MonsterService(prisma);
-    actorService = new ActorIntegrationService(prisma);
+    monsterService = new MonsterService(prismaInstance);
+    actorService = new ActorIntegrationService(prismaInstance);
   }
+
+  if (!prisma || !characterService || !monsterService || !actorService) {
+    throw new Error("Failed to initialize encounter services");
+  }
+
   return {
     prisma,
-    characterService: characterService!,
-    monsterService: monsterService!,
-    actorService: actorService!,
+    characterService,
+    monsterService,
+    actorService,
   };
 }
 

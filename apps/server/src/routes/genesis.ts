@@ -4,10 +4,13 @@
 
 import { z } from "zod";
 import { logger } from "@vtt/logging";
+import type { PrismaClient } from "@prisma/client";
 import type { WebSocket } from "ws";
 import type { RouteHandler } from "../router/types";
 import { getErrorMessage } from "../utils/errors";
 import { parseJsonBody } from "../utils/json";
+import { DatabaseManager } from "../database/connection";
+import { GenesisService, type CharacterGeneration, type GenerationStep } from "../ai/character";
 
 interface RequestUser {
   id: string;
@@ -24,25 +27,6 @@ const getRequestUser = (req: unknown): RequestUser | null => {
   return { id: maybeUser.id };
 };
 
-interface GenesisGeneration {
-  id: string;
-  currentStep: string;
-  isComplete: boolean;
-  steps: unknown[];
-  concept?: string;
-  character: {
-    id: string;
-    name: string;
-    race: string;
-    class: string;
-  } | null;
-  error?: unknown;
-  metadata: {
-    generatedAt?: string;
-    [key: string]: unknown;
-  };
-}
-
 type GenesisSocketMessage = {
   type: "GENESIS_SUBSCRIBE" | "GENESIS_UNSUBSCRIBE";
   payload?: Record<string, unknown>;
@@ -51,6 +35,36 @@ type GenesisSocketMessage = {
 type GenesisWebSocket = WebSocket & {
   generationSubscription?: string | null;
 };
+
+const prisma = DatabaseManager.getInstance() as PrismaClient;
+const genesisService = new GenesisService(prisma);
+
+const stepNames = [
+  "concept",
+  "race",
+  "class",
+  "background",
+  "abilities",
+  "equipment",
+  "spells",
+  "personality",
+  "optimization",
+] as const satisfies [GenerationStep["step"], ...GenerationStep["step"][]];
+
+const serializeGeneration = (generation: CharacterGeneration) => ({
+  id: generation.id,
+  concept: generation.concept,
+  currentStep: generation.currentStep,
+  isComplete: generation.isComplete,
+  steps: generation.steps,
+  character: generation.character ?? null,
+  error: generation.error ?? null,
+  metadata: {
+    ...generation.metadata,
+    generatedAt: generation.metadata.generatedAt.toISOString(),
+  },
+  status: generation.isComplete ? "completed" : generation.error ? "error" : "processing",
+});
 
 // Validation helpers
 const validateCharacterConcept = (body: unknown) => {
@@ -70,17 +84,7 @@ const validateCharacterConcept = (body: unknown) => {
 
 const validateRetryStep = (body: unknown) => {
   const schema = z.object({
-    stepName: z.enum([
-      "concept",
-      "race",
-      "class",
-      "background",
-      "abilities",
-      "equipment",
-      "spells",
-      "personality",
-      "optimization",
-    ]),
+    stepName: z.enum(stepNames),
   });
   return schema.parse(body);
 };
@@ -112,33 +116,13 @@ export const generateCharacterHandler: RouteHandler = async (ctx) => {
     const conceptRequest = validateCharacterConcept(body);
     const userId = user.id;
 
-    // TODO: Fix GenesisService integration
-    // const generation = await generateCharacter({ concept: prompt, ...preferences });
-    const generation: GenesisGeneration = {
-      id: "temp",
-      currentStep: "concept",
-      steps: [],
-      isComplete: false,
-      character: null,
-      error: undefined,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        prompt: conceptRequest.prompt,
-        preferences: conceptRequest.preferences ?? null,
-        requestedBy: userId,
-      },
-    };
+    const generation = await genesisService.startGeneration(conceptRequest, userId);
 
     ctx.res.writeHead(201, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: true,
-        data: {
-          generationId: generation.id,
-          status: "started",
-          currentStep: generation.currentStep,
-          steps: generation.steps,
-        },
+        data: serializeGeneration(generation),
       }),
     );
   } catch (error) {
@@ -171,10 +155,9 @@ export const getGenerationStatusHandler: RouteHandler = async (ctx) => {
     const pathParts = ctx.url.pathname.split("/");
     const generationId = pathParts[pathParts.length - 1];
 
-    // TODO: Fix GenesisService integration
-    const generation: GenesisGeneration | null = null; // genesisService.getGeneration(generationId);
+    const generation = genesisService.getGeneration(generationId);
     if (!generation) {
-      logger.warn({ generationId }, "Genesis generation not found");
+      logger.warn("Genesis generation not found", { generationId });
       ctx.res.writeHead(404, { "Content-Type": "application/json" });
       ctx.res.end(
         JSON.stringify({
@@ -189,15 +172,7 @@ export const getGenerationStatusHandler: RouteHandler = async (ctx) => {
     ctx.res.end(
       JSON.stringify({
         success: true,
-        data: {
-          id: generation.id,
-          currentStep: generation.currentStep,
-          isComplete: generation.isComplete,
-          steps: generation.steps,
-          character: generation.character,
-          error: generation.error,
-          metadata: generation.metadata,
-        },
+        data: serializeGeneration(generation),
       }),
     );
   } catch (error) {
@@ -242,8 +217,8 @@ export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
 
     const { stepName } = validateRetryStep(body);
 
-    // TODO: Fix GenesisService integration
-    // await genesisService.retryStep(generationId, stepName);
+    await genesisService.retryStep(generationId, stepName);
+    const updatedGeneration = genesisService.getGeneration(generationId);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(
@@ -251,6 +226,7 @@ export const retryGenerationStepHandler: RouteHandler = async (ctx) => {
         success: true,
         message: `Retrying step: ${stepName}`,
         generationId,
+        data: updatedGeneration ? serializeGeneration(updatedGeneration) : null,
       }),
     );
   } catch (error) {
@@ -280,30 +256,14 @@ export const getGenerationHistoryHandler: RouteHandler = async (ctx) => {
     }
 
     const userId = user.id;
-    logger.debug({ userId }, "Fetching genesis generation history");
-    // TODO: Fix GenesisService integration
-    const history: GenesisGeneration[] = []; // await genesisService.getGenerationHistory(userId);
+    logger.debug("Fetching genesis generation history", { userId });
+    const history = await genesisService.getGenerationHistory(userId);
 
     ctx.res.writeHead(200, { "Content-Type": "application/json" });
     ctx.res.end(
       JSON.stringify({
         success: true,
-        data: history.map((gen) => ({
-          id: gen.id,
-          concept: gen.concept,
-          isComplete: gen.isComplete,
-          currentStep: gen.currentStep,
-          generatedAt: gen.metadata.generatedAt,
-          character: gen.character
-            ? {
-                id: gen.character.id,
-                name: gen.character.name,
-                race: gen.character.race,
-                class: gen.character.class,
-              }
-            : null,
-          requestedBy: gen.metadata.requestedBy ?? null,
-        })),
+        data: history.map((generation) => serializeGeneration(generation)),
       }),
     );
   } catch (error) {
@@ -340,21 +300,20 @@ export const _handleGenesisWebSocket = (
         ws.generationSubscription = generationId;
 
         // Send current status
-        // TODO: Fix GenesisService integration
-        const generation: GenesisGeneration | null = null; // genesisService.getGeneration(generationId);
-        if (generation) {
+        try {
+          const generation = genesisService.getGeneration(generationId);
+          if (!generation) {
+            break;
+          }
+
           ws.send(
             JSON.stringify({
               type: "GENESIS_UPDATE",
-              payload: {
-                generationId,
-                currentStep: generation.currentStep,
-                steps: generation.steps,
-                isComplete: generation.isComplete,
-                error: generation.error,
-              },
+              payload: serializeGeneration(generation),
             }),
           );
+        } catch (error) {
+          logger.error("Failed to fetch genesis generation for websocket", error);
         }
       }
       break;

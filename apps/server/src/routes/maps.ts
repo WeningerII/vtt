@@ -19,20 +19,27 @@ import { v4 as uuidv4 } from "uuid";
 let prisma: PrismaClient | null = null;
 let mapService: MapService | null = null;
 
-function getServices() {
-  if (!prisma) {
-    prisma = DatabaseManager.getInstance();
-    mapService = new MapService(prisma);
+type MapServices = {
+  prisma: PrismaClient;
+  mapService: MapService;
+};
+
+function getServices(): MapServices {
+  if (!prisma || !mapService) {
+    const prismaInstance = DatabaseManager.getInstance() as PrismaClient;
+    prisma = prismaInstance;
+    mapService = new MapService(prismaInstance);
   }
-  return { prisma, mapService: mapService! };
+
+  if (!prisma || !mapService) {
+    throw new Error("Failed to initialize map services");
+  }
+
+  return { prisma, mapService };
 }
 
 function getMapService(): MapService {
-  const { mapService } = getServices();
-  if (!mapService) {
-    throw new Error("MapService not initialized");
-  }
-  return mapService;
+  return getServices().mapService;
 }
 
 // Import shared JSON parsing utility
