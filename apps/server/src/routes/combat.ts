@@ -5,13 +5,14 @@
 import { z } from "zod";
 import { logger } from "@vtt/logging";
 import { DatabaseManager } from "../database/connection";
-import { CrucibleService } from "../ai/combat";
+import { CrucibleService, type CombatCharacter, type TacticalContext } from "../ai/combat";
 import { RouteHandler } from "../router/types";
 import { parseJsonBody } from "../utils/json";
 import { getErrorMessage } from "../utils/errors";
 
 type TacticalDecisionInput = z.infer<typeof TacticalDecisionSchema>;
 type CombatCharacterInput = TacticalDecisionInput["character"];
+type ThreatLevel = TacticalContext["threatLevel"];
 
 // Helper functions for combat calculations
 function extractSpellSlots(character: CombatCharacterInput): Record<string, number> {
@@ -28,11 +29,21 @@ function extractSpellSlots(character: CombatCharacterInput): Record<string, numb
 
   if (spellcaster) {
     // Basic spell slot calculation
-    if (level >= 1) {spellSlots["1"] = Math.min(4, 1 + Math.floor(level / 2));}
-    if (level >= 3) {spellSlots["2"] = Math.min(3, Math.floor((level - 2) / 2));}
-    if (level >= 5) {spellSlots["3"] = Math.min(3, Math.floor((level - 4) / 3));}
-    if (level >= 7) {spellSlots["4"] = Math.min(3, Math.floor((level - 6) / 4));}
-    if (level >= 9) {spellSlots["5"] = Math.min(2, Math.floor((level - 8) / 5));}
+    if (level >= 1) {
+      spellSlots["1"] = Math.min(4, 1 + Math.floor(level / 2));
+    }
+    if (level >= 3) {
+      spellSlots["2"] = Math.min(3, Math.floor((level - 2) / 2));
+    }
+    if (level >= 5) {
+      spellSlots["3"] = Math.min(3, Math.floor((level - 4) / 3));
+    }
+    if (level >= 7) {
+      spellSlots["4"] = Math.min(3, Math.floor((level - 6) / 4));
+    }
+    if (level >= 9) {
+      spellSlots["5"] = Math.min(2, Math.floor((level - 8) / 5));
+    }
   }
 
   return spellSlots;
@@ -54,8 +65,10 @@ function calculateMovementSpeed(character: CombatCharacterInput): number {
   return speed;
 }
 
-function calculateThreatLevel(enemies: TacticalDecisionInput["enemies"]): string {
-  if (!enemies || enemies.length === 0) {return "low";}
+function calculateThreatLevel(enemies: TacticalDecisionInput["enemies"]): ThreatLevel {
+  if (!enemies || enemies.length === 0) {
+    return "low";
+  }
 
   // Calculate total challenge rating
   const totalCR = enemies.reduce((sum, enemy) => {
@@ -64,10 +77,40 @@ function calculateThreatLevel(enemies: TacticalDecisionInput["enemies"]): string
   }, 0);
 
   // Determine threat level based on total CR
-  if (totalCR < 2) {return "low";}
-  if (totalCR < 5) {return "moderate";}
-  if (totalCR < 10) {return "high";}
+  if (totalCR < 2) {
+    return "low";
+  }
+  if (totalCR < 5) {
+    return "moderate";
+  }
+  if (totalCR < 10) {
+    return "high";
+  }
   return "extreme";
+}
+
+function toCombatCharacter(entity: any, team: "party" | "enemies"): CombatCharacter {
+  const defaultPosition = entity.position ?? { x: 0, y: 0 };
+  const abilities = entity.abilities ?? {};
+  const stats = entity.stats ?? {};
+
+  return {
+    id: entity.id ?? `${team}-${entity.name ?? "combatant"}`,
+    name: entity.name ?? "Unknown",
+    type: entity.type ?? entity.class ?? team,
+    class: entity.class,
+    team,
+    hitPoints: entity.hitPoints ?? stats.hitPoints?.current ?? 0,
+    maxHitPoints: entity.maxHitPoints ?? stats.hitPoints?.max ?? entity.hitPoints ?? 0,
+    armorClass: entity.armorClass ?? stats.armorClass ?? 10,
+    position: defaultPosition,
+    abilities,
+    conditions: entity.conditions ?? [],
+    initiative: entity.initiative ?? 0,
+    spellSlots: entity.spellSlots ?? {},
+    speed: entity.speed ?? stats.speed ?? 30,
+    stats: entity.stats ?? undefined,
+  };
 }
 
 // Lazy-load Prisma client to avoid initialization issues during module loading
@@ -405,7 +448,11 @@ export const getActiveSimulationsHandler: RouteHandler = async (ctx) => {
 /**
  * WebSocket events for real-time combat updates
  */
-export const _handleCombatWebSocket = async (ws: any, message: Record<string, unknown>, _userId: string) => {
+export const _handleCombatWebSocket = async (
+  ws: any,
+  message: Record<string, unknown>,
+  _userId: string,
+) => {
   const payload =
     typeof message.payload === "object" && message.payload !== null
       ? (message.payload as Record<string, any>)
@@ -414,7 +461,8 @@ export const _handleCombatWebSocket = async (ws: any, message: Record<string, un
   switch (message.type) {
     case "COMBAT_SUBSCRIBE":
       {
-        const simulationId = typeof payload.simulationId === "string" ? payload.simulationId : undefined;
+        const simulationId =
+          typeof payload.simulationId === "string" ? payload.simulationId : undefined;
 
         // Subscribe to combat updates
         ws.combatSubscription = simulationId ?? null;
@@ -503,7 +551,7 @@ export const getSimulationHandler: RouteHandler = async (ctx) => {
     }
 
     // Extract simulation ID from URL path
-    const pathParts = ctx.url.pathname.split('/');
+    const pathParts = ctx.url.pathname.split("/");
     const simulationId = pathParts[pathParts.length - 1];
 
     if (!simulationId) {
@@ -532,7 +580,7 @@ export const getSimulationHandler: RouteHandler = async (ctx) => {
           rounds: simulation.rounds,
           casualties: simulation.casualties,
           tacticalAnalysis: simulation.tacticalAnalysis,
-          isComplete: simulation.isComplete
+          isComplete: simulation.isComplete,
         },
       }),
     );
@@ -576,13 +624,19 @@ export const getPositioningHandler: RouteHandler = async (ctx) => {
     const validatedData = PositionAnalysisSchema.parse(body);
 
     // Build positioning context for analysis
+    const character = toCombatCharacter(validatedData.character, "party");
+    const allies = (validatedData.allies || []).map((ally) => toCombatCharacter(ally, "party"));
+    const enemies = (validatedData.enemies || []).map((enemy) =>
+      toCombatCharacter(enemy, "enemies"),
+    );
+
     const positioningContext = {
-      character: validatedData.character,
-      currentPosition: validatedData.character.position,
+      character,
+      currentPosition: character.position,
       battlefield: validatedData.battlefield,
-      allies: validatedData.allies,
-      enemies: validatedData.enemies,
-      movementSpeed: 30,
+      allies,
+      enemies,
+      movementSpeed: character.speed ?? 30,
       threatLevel: calculateThreatLevel(validatedData.enemies),
     };
 
@@ -595,9 +649,11 @@ export const getPositioningHandler: RouteHandler = async (ctx) => {
       JSON.stringify({
         success: true,
         data: {
-          currentPosition: validatedData.character.position,
+          currentPosition: character.position,
           recommendedPositions: positioningAnalysis.recommendedPositions || [],
-          reasoning: positioningAnalysis.currentPositionAnalysis?.risks?.join(", ") || "No specific positioning recommendations",
+          reasoning:
+            positioningAnalysis.currentPositionAnalysis?.risks?.join(", ") ||
+            "No specific positioning recommendations",
           tacticalAdvantages: positioningAnalysis.currentPositionAnalysis?.benefits || [],
           risks: positioningAnalysis.currentPositionAnalysis?.risks || [],
           movementOptions: positioningAnalysis.movementOptions || [],
@@ -616,6 +672,5 @@ export const getPositioningHandler: RouteHandler = async (ctx) => {
     );
   }
 };
-
 
 // Crucible service will be integrated when AI service is available
