@@ -1054,7 +1054,7 @@ const server = createServer(app);
 // WebSocket setup with explicit upgrade handling
 const vttWebSocketServer = new VTTWebSocketServer(server, prisma);
 // Enable Socket.IO compatibility for existing client integrations
-const _vttSocketManager = new VTTSocketManager(server as any, prisma);
+const _vttSocketManager = new VTTSocketManager(server, prisma);
 
 // Handle WebSocket upgrade requests explicitly
 server.on("upgrade", (request, socket, head) => {

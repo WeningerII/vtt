@@ -47,7 +47,11 @@ export class CombatWebSocketManager {
    * Allow external routers to forward a combat message to this manager
    * without attaching our own 'message' handler.
    */
-  async processMessage(ws: WebSocket, userId: string, message: CombatWebSocketMessage): Promise<void> {
+  async processMessage(
+    ws: WebSocket,
+    userId: string,
+    message: CombatWebSocketMessage,
+  ): Promise<void> {
     // Accept legacy alias message names and normalize
     const aliasMap: Record<string, string> = {
       COMBAT_SUBSCRIBE: "SUBSCRIBE_ENCOUNTER",
@@ -434,7 +438,11 @@ export class CombatWebSocketManager {
     const initiative = this.getNumber(message.payload, "initiative");
 
     if (!encounterId || !actorId || typeof initiative !== "number") {
-      this.sendError(ws, "Missing or invalid encounterId, actorId, or initiative", message.requestId);
+      this.sendError(
+        ws,
+        "Missing or invalid encounterId, actorId, or initiative",
+        message.requestId,
+      );
       return;
     }
 
@@ -443,7 +451,9 @@ export class CombatWebSocketManager {
       const encounter = await this.actorService.getEncounter(encounterId);
       if (encounter?.isActive) {
         // If combat is active, the CombatManager should handle this
-        logger.info(`Initiative update for active combat ${encounterId} - this should be handled by CombatManager`);
+        logger.info(
+          `Initiative update for active combat ${encounterId} - this should be handled by CombatManager`,
+        );
       } else {
         // Update database directly for planning phase
         await this.actorService.updateTokenInitiative(encounterId, actorId, initiative);
@@ -482,11 +492,11 @@ export class CombatWebSocketManager {
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
         type: "TURN_ADVANCED",
-        payload: { 
+        payload: {
           currentTurn: turnData?.currentTurn,
           currentRound: turnData?.currentRound,
           currentCombatant: turnData?.currentCombatant,
-          advancedBy: userId 
+          advancedBy: userId,
         },
       });
     } catch (error) {
@@ -508,13 +518,23 @@ export class CombatWebSocketManager {
     const condition = this.getCondition(message.payload);
 
     if (!encounterId || !actorId || !condition) {
-      this.sendError(ws, "Missing or invalid encounterId, actorId, or condition", message.requestId);
+      this.sendError(
+        ws,
+        "Missing or invalid encounterId, actorId, or condition",
+        message.requestId,
+      );
       return;
     }
 
     try {
       // Apply condition via CombatManager if combat is active
-      await this.actorService.applyCondition(encounterId, actorId, condition.name, condition.duration, `Applied by ${userId}`);
+      await this.actorService.applyCondition(
+        encounterId,
+        actorId,
+        condition.name,
+        condition.duration,
+        `Applied by ${userId}`,
+      );
 
       // Broadcast to all subscribers
       this.broadcastToEncounter(encounterId, {
@@ -540,7 +560,11 @@ export class CombatWebSocketManager {
     const conditionName = this.getConditionName(message.payload);
 
     if (!encounterId || !actorId || !conditionName) {
-      this.sendError(ws, "Missing or invalid encounterId, actorId, or condition", message.requestId);
+      this.sendError(
+        ws,
+        "Missing or invalid encounterId, actorId, or condition",
+        message.requestId,
+      );
       return;
     }
 
@@ -564,7 +588,9 @@ export class CombatWebSocketManager {
    */
   private broadcastToEncounter(encounterId: string, message: CombatWebSocketMessage): void {
     const subscriptions = this.subscriptions.get(encounterId);
-    if (!subscriptions) {return;}
+    if (!subscriptions) {
+      return;
+    }
 
     subscriptions.forEach((subscription) => {
       if (subscription.ws.readyState === WebSocket.OPEN) {
@@ -608,26 +634,26 @@ export class CombatWebSocketManager {
     obj: Record<string, unknown>,
   ): { current: number; max?: number; temporary?: number } | null {
     const val = obj?.["health"] as unknown;
-    if (val && typeof val === "object") {
-      const h = val as Record<string, unknown>;
-      const current = typeof h.current === "number" ? h.current : null;
-      if (current === null) { return null; }
-      const max = typeof h.max === "number" ? h.max : undefined;
-      const temporary = typeof h.temporary === "number" ? h.temporary : undefined;
+    if (this.isRecord(val)) {
+      const current = typeof val.current === "number" ? val.current : null;
+      if (current === null) {
+        return null;
+      }
+      const max = typeof val.max === "number" ? val.max : undefined;
+      const temporary = typeof val.temporary === "number" ? val.temporary : undefined;
       return { current, max, temporary };
     }
     return null;
   }
 
-  private getCondition(
-    obj: Record<string, unknown>,
-  ): { name: string; duration?: number } | null {
+  private getCondition(obj: Record<string, unknown>): { name: string; duration?: number } | null {
     const val = obj?.["condition"] as unknown;
-    if (val && typeof val === "object") {
-      const c = val as Record<string, unknown>;
-      const name = typeof c.name === "string" ? c.name : null;
-      if (!name) { return null; }
-      const duration = typeof c.duration === "number" ? c.duration : undefined;
+    if (this.isRecord(val)) {
+      const name = typeof val.name === "string" ? val.name : null;
+      if (!name) {
+        return null;
+      }
+      const duration = typeof val.duration === "number" ? val.duration : undefined;
       return { name, duration };
     }
     return null;
@@ -635,9 +661,11 @@ export class CombatWebSocketManager {
 
   private getConditionName(obj: Record<string, unknown>): string | null {
     const val = obj?.["condition"] as unknown;
-    if (typeof val === "string") { return val; }
-    if (val && typeof val === "object" && typeof (val as any).name === "string") {
-      return (val as any).name as string;
+    if (typeof val === "string") {
+      return val;
+    }
+    if (this.isRecord(val) && typeof val.name === "string") {
+      return val.name;
     }
     return null;
   }
@@ -660,5 +688,9 @@ export class CombatWebSocketManager {
       totalSubscriptions,
       connectedUsers: this.userSockets.size,
     };
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === "object" && !Array.isArray(value);
   }
 }

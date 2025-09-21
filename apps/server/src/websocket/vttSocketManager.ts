@@ -1,7 +1,7 @@
 import { Server as SocketIOServer } from "socket.io";
 import { logger } from "@vtt/logging";
 import { Server as HTTPServer } from "http";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 export interface VTTUser {
   id: string;
@@ -18,12 +18,18 @@ export interface TokenUpdate {
   scale?: number;
 }
 
+interface AuthenticatePayload {
+  userId: string;
+  campaignId?: string;
+  displayName?: string;
+}
+
 export interface SceneUpdate {
   id: string;
   name?: string;
-  gridSettings?: any;
-  lightingSettings?: any;
-  fogSettings?: any;
+  gridSettings?: Record<string, unknown>;
+  lightingSettings?: Record<string, unknown>;
+  fogSettings?: Record<string, unknown>;
 }
 
 export class VTTSocketManager {
@@ -51,7 +57,7 @@ export class VTTSocketManager {
       logger.info(`Client connected: ${socket.id}`);
 
       // User authentication and joining
-      socket.on("authenticate", async (data: { userId: string; campaignId?: string }) => {
+      socket.on("authenticate", async (data: AuthenticatePayload) => {
         try {
           const user = await this.prisma.user.findUnique({
             where: { id: data.userId },
@@ -69,8 +75,8 @@ export class VTTSocketManager {
 
           const vttUser: VTTUser = {
             id: data.userId,
-            displayName: (data as any).displayName || "Unknown",
-            campaignId: data.campaignId || "",
+            displayName: data.displayName ?? user.displayName,
+            campaignId: data.campaignId,
           };
 
           this.connectedUsers.set(socket.id, vttUser);
@@ -104,7 +110,7 @@ export class VTTSocketManager {
 
         try {
           const scene = await this.prisma.scene.findUnique({
-            where: { id: data.sceneId }
+            where: { id: data.sceneId },
           });
 
           if (!scene || scene.campaignId !== user.campaignId) {
@@ -209,19 +215,28 @@ export class VTTSocketManager {
             return;
           }
 
-          const updateData: any = { updatedAt: new Date() };
-          if (data.name) {updateData.name = data.name;}
-          if (data.gridSettings) {updateData.gridSettings = data.gridSettings;}
-          if (data.lightingSettings) {updateData.lightingSettings = data.lightingSettings;}
-          if (data.fogSettings) {updateData.fogSettings = data.fogSettings;}
+          const updates: Prisma.SceneUpdateInput = {};
+          if (typeof data.name === "string") {
+            updates.name = data.name;
+          }
 
-          const updatedScene = await this.prisma.scene.update({
-            where: { id: data.id },
-            data: updateData,
-          });
+          let updatedScene = scene;
+          if (Object.keys(updates).length > 0) {
+            updatedScene = await this.prisma.scene.update({
+              where: { id: data.id },
+              data: updates,
+            });
+          }
+
+          const sceneForBroadcast: Record<string, unknown> = {
+            ...updatedScene,
+            ...(data.gridSettings ? { gridSettings: data.gridSettings } : {}),
+            ...(data.lightingSettings ? { lightingSettings: data.lightingSettings } : {}),
+            ...(data.fogSettings ? { fogSettings: data.fogSettings } : {}),
+          };
 
           this.broadcastToRoom(`scene:${data.id}`, "scene_updated", {
-            scene: updatedScene,
+            scene: sceneForBroadcast,
             updatedBy: user.id,
           });
         } catch (error) {
@@ -272,7 +287,7 @@ export class VTTSocketManager {
           const encounter = await this.prisma.encounter.update({
             where: { id: data.encounterId },
             data: {
-              status: 'ACTIVE',
+              status: "ACTIVE",
               roundNumber: 1,
               currentTurn: 0,
               startedAt: new Date(),
@@ -330,7 +345,12 @@ export class VTTSocketManager {
     });
   }
 
-  private broadcastToRoom(room: string, event: string, data: Record<string, unknown>, excludeSocketId?: string) {
+  private broadcastToRoom(
+    room: string,
+    event: string,
+    data: Record<string, unknown>,
+    excludeSocketId?: string,
+  ) {
     if (excludeSocketId) {
       this.io.to(room).except(excludeSocketId).emit(event, data);
     } else {

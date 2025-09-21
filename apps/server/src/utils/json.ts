@@ -14,8 +14,10 @@ export class HttpError extends Error {
   }
 }
 
-export async function parseJsonBody<T = any>(
-  req: IncomingMessage | any,
+type RequestLike = IncomingMessage & { body?: unknown };
+
+export async function parseJsonBody<T = unknown>(
+  req: RequestLike,
   opts?: { limitBytes?: number },
 ): Promise<T> {
   // If Express (or another middleware) already parsed the body, reuse it.
@@ -29,8 +31,8 @@ export async function parseJsonBody<T = any>(
     let body = "";
     let size = 0;
 
-    req.on("data", (chunk: any) => {
-      const chunkStr = chunk.toString();
+    req.on("data", (chunk: Buffer | string) => {
+      const chunkStr = typeof chunk === "string" ? chunk : chunk.toString();
       size += Buffer.byteLength(chunkStr);
       if (size > limit) {
         return reject(new HttpError(413, "Payload too large"));
@@ -43,14 +45,14 @@ export async function parseJsonBody<T = any>(
         return resolve({} as T);
       }
       try {
-        const data = JSON.parse(body);
+        const data = JSON.parse(body) as T;
         resolve(data);
       } catch (_error) {
         reject(new HttpError(400, "Invalid JSON in request body"));
       }
     });
 
-    req.on("error", (err) => reject(err));
+    req.on("error", (err: Error) => reject(err));
   });
 }
 
@@ -58,8 +60,8 @@ export async function parseJsonBody<T = any>(
 type ResLike = Pick<ServerResponse, "writeHead" | "end"> & { headersSent?: boolean };
 
 export function sendJson(res: ResLike, data: unknown, status = 200): void {
-  if (!(res as any).headersSent) {
-    (res as any).writeHead(status, { "Content-Type": "application/json" });
-    (res as any).end(JSON.stringify(data));
+  if (!res.headersSent) {
+    res.writeHead(status, { "Content-Type": "application/json" });
   }
+  res.end(JSON.stringify(data));
 }

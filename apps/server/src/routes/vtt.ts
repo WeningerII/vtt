@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 import { Context } from "../router/types";
@@ -91,11 +91,18 @@ export async function updateSceneHandler(ctx: Context) {
   ctx.req.on("data", (chunk: unknown) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
-      const data = JSON.parse(body);
-      const updateData: any = { updatedAt: new Date() };
+      const data = JSON.parse(body) as Record<string, unknown>;
+      const updateData: Prisma.SceneUpdateInput = {};
 
-      if (data.name !== undefined) {updateData.name = data.name;}
-      // lightingSettings and fogSettings not part of Scene model
+      if (typeof data.name === "string" && data.name.trim()) {
+        updateData.name = data.name;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        ctx.res.writeHead(400, { "Content-Type": "application/json" });
+        ctx.res.end(JSON.stringify({ error: "No valid fields to update" }));
+        return;
+      }
 
       const scene = await ctx.prisma.scene.update({
         where: { id: sceneId },
@@ -152,8 +159,8 @@ export async function createTokenHandler(ctx: Context) {
       const token = await ctx.prisma.token.create({
         data: {
           name,
-          type: 'NPC', // Default type
-          gameSessionId: 'default-session', // Default session ID
+          type: "NPC", // Default type
+          gameSessionId: "default-session", // Default session ID
           sceneId,
           x,
           y,
@@ -193,21 +200,30 @@ export async function updateTokenHandler(ctx: Context) {
   ctx.req.on("data", (chunk: unknown) => (body += chunk));
   ctx.req.on("end", async () => {
     try {
-      const data = JSON.parse(body);
-      const updateData: any = { updatedAt: new Date() };
+      const data = JSON.parse(body) as Record<string, unknown>;
+      const updateData: Prisma.TokenUpdateInput = {};
 
-      // Only update fields that are provided
-      if (data.name !== undefined) {updateData.name = data.name;}
-      if (data.x !== undefined) {updateData.x = data.x;}
-      if (data.y !== undefined) {updateData.y = data.y;}
-      if (data.width !== undefined) {updateData.width = data.width;}
-      if (data.height !== undefined) {updateData.height = data.height;}
-      if (data.rotation !== undefined) {updateData.rotation = data.rotation;}
-      if (data.scale !== undefined) {updateData.scale = data.scale;}
-      if (data.disposition !== undefined) {updateData.disposition = data.disposition;}
-      if (data.isVisible !== undefined) {updateData.isVisible = data.isVisible;}
-      if (data.isLocked !== undefined) {updateData.isLocked = data.isLocked;}
-      if (data.layer !== undefined) {updateData.layer = data.layer;}
+      if (typeof data.name === "string" && data.name.trim()) {
+        updateData.name = data.name;
+      }
+      if (typeof data.x === "number" && Number.isFinite(data.x)) {
+        updateData.x = data.x;
+      }
+      if (typeof data.y === "number" && Number.isFinite(data.y)) {
+        updateData.y = data.y;
+      }
+      if (typeof data.rotation === "number" && Number.isFinite(data.rotation)) {
+        updateData.rotation = data.rotation;
+      }
+      if (typeof data.scale === "number" && Number.isFinite(data.scale)) {
+        updateData.scale = data.scale;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        ctx.res.writeHead(400, { "Content-Type": "application/json" });
+        ctx.res.end(JSON.stringify({ error: "No valid fields to update" }));
+        return;
+      }
 
       const token = await ctx.prisma.token.update({
         where: { id: tokenId },
