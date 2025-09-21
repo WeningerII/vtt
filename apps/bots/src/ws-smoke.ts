@@ -1,8 +1,8 @@
-import WebSocket, { RawData } from "ws";
+import WS from "ws";
 import { logger } from "@vtt/logging";
 
 const URL = process.env.URL ?? "ws://localhost:8080";
-const ws = new WebSocket(URL);
+const ws = new WS(URL);
 
 let gotEcho = false;
 
@@ -11,11 +11,11 @@ ws.on("open", () => {
   ws.send(JSON.stringify({ type: "PING", t: Date.now() }));
 });
 
-ws.on("message", (_data: RawData) => {
+ws.on("message", (_data: WS.RawData) => {
   const text = typeof _data === "string" ? _data : _data.toString("utf-8");
   logger.info("[bot] recv:", { message: text });
   try {
-    const msg = JSON.parse(text as string);
+    const msg = JSON.parse(text);
     if (msg?.type === "ECHO") {
       gotEcho = true;
       process.exit(0);

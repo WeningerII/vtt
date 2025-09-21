@@ -22,6 +22,10 @@ import {
   PasswordResetRequest,
   PasswordReset,
   AuthEvent,
+  Permission,
+  UserRole,
+  AuthEventType,
+  AuthEventDetails,
 } from "./types";
 import { userRepository } from "./database/UserRepository";
 
@@ -109,7 +113,12 @@ export class AuthManager extends EventEmitter {
 
       return null;
     } catch (error) {
-      logger.error(`Error finding user by ID ${id}:`, error as Record<string, any>);
+      logger.error(`Error finding user by ID ${id}:`, {
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack, name: error.name }
+            : error,
+      });
       return null;
     }
   }
@@ -218,7 +227,7 @@ export class AuthManager extends EventEmitter {
       session.lastActivity = new Date();
 
       return this.generateTokens(user, session);
-    } catch (_error) {
+    } catch {
       throw new Error("Invalid refresh token");
     }
   }
@@ -273,7 +282,7 @@ export class AuthManager extends EventEmitter {
         ipAddress,
         userAgent,
       };
-    } catch (_error) {
+    } catch {
       throw new Error("Invalid token");
     }
   }
@@ -383,14 +392,14 @@ export class AuthManager extends EventEmitter {
   /**
    * Check user permissions
    */
-  hasPermission(context: SecurityContext, permission: string): boolean {
-    return context.permissions.includes(permission as any);
+  hasPermission(context: SecurityContext, permission: Permission): boolean {
+    return context.permissions.includes(permission);
   }
 
   /**
    * Check user role
    */
-  hasRole(context: SecurityContext, role: string): boolean {
+  hasRole(context: SecurityContext, role: UserRole): boolean {
     const roleHierarchy: Record<string, number> = {
       guest: 0,
       player: 1,
@@ -561,8 +570,8 @@ export class AuthManager extends EventEmitter {
     return emailRegex.test(email);
   }
 
-  private getDefaultPermissions(role: string): any[] {
-    const permissions: Record<string, string[]> = {
+  private getDefaultPermissions(role: UserRole): Permission[] {
+    const permissions: Record<UserRole, Permission[]> = {
       guest: ["session.join"],
       player: ["session.join", "session.create"],
       gamemaster: [
@@ -596,7 +605,7 @@ export class AuthManager extends EventEmitter {
       ],
     };
 
-    return permissions[role] || permissions["guest"] || [];
+    return permissions[role];
   }
 
   private async recordFailedAttempt(email: string): Promise<void> {
@@ -616,14 +625,15 @@ export class AuthManager extends EventEmitter {
     // For now, just a placeholder
   }
 
-  private emitAuthEvent(type: string, userId: string, details: Record<string, any>): void {
+  private emitAuthEvent(type: AuthEventType, userId: string, details: AuthEventDetails = {}): void {
+    const { ipAddress = "", userAgent = "" } = details;
     const event: AuthEvent = {
-      type: type as any,
+      type,
       userId,
       details,
       timestamp: new Date(),
-      ipAddress: details.ipAddress || "",
-      userAgent: details.userAgent || "",
+      ipAddress,
+      userAgent,
     };
 
     this.emit("authEvent", event);
@@ -649,7 +659,7 @@ export class AuthManager extends EventEmitter {
   private async getStoredPassword(userId: string): Promise<string> {
     const password = await userRepository.getPassword(userId);
     if (!password) {
-      throw new Error('Password not found for user');
+      throw new Error("Password not found for user");
     }
     return password;
   }

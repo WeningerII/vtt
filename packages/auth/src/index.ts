@@ -9,28 +9,30 @@ export { AuthorizationManager } from "./AuthorizationManager";
 export * from "./SecurityUtils";
 
 // OAuth providers
-export { GoogleOAuthProvider, GoogleUserProfile, type GoogleOAuthConfig } from "./providers/GoogleOAuthProvider";
-export { DiscordOAuthProvider, DiscordOAuthConfig, DiscordUserProfile } from "./providers/DiscordOAuthProvider";
+export {
+  GoogleOAuthProvider,
+  GoogleUserProfile,
+  type GoogleOAuthConfig,
+} from "./providers/GoogleOAuthProvider";
+export {
+  DiscordOAuthProvider,
+  DiscordOAuthConfig,
+  DiscordUserProfile,
+} from "./providers/DiscordOAuthProvider";
 
 // OAuth state management
-export { 
-  OAuthStateManager, 
-  MemoryStateStorage, 
+export {
+  OAuthStateManager,
+  MemoryStateStorage,
   RedisStateStorage,
   type OAuthState,
-  type StateStorage 
+  type StateStorage,
 } from "./utils/OAuthStateManager";
 
 // Auth configuration will be provided by consumers
 
-// Re-export specific classes for convenience - removed duplicates
-export type { User, AuthConfig, AuthTokens, LoginCredentials, RegisterData } from "./types";
-
 // Types and interfaces
 export * from "./types";
-
-// Re-export utilities for convenience
-export { EncryptedData, PasswordStrength, CookieOptions } from "./SecurityUtils";
 
 /**
  * Create and configure the complete authentication system

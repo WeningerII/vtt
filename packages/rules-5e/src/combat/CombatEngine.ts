@@ -84,7 +84,7 @@ export interface CombatAction {
   targetPosition?: { x: number; y: number };
   attackId?: string;
   spellId?: string;
-  data?: any;
+  data?: unknown;
 }
 
 export interface CombatResult {
@@ -95,8 +95,8 @@ export interface CombatResult {
   changes?: Array<{
     combatantId: string;
     property: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: unknown;
+    newValue: unknown;
   }>;
 }
 
@@ -106,12 +106,14 @@ export class CombatEngine {
   private currentTurnIndex = 0;
   private round = 1;
   private isActive = false;
-  private eventHandlers: Map<string, Function[]> = new Map();
+  private eventHandlers: Map<string, Array<(data?: unknown) => void>> = new Map();
 
   // Dice rolling utility
   private rollDice(diceString: string): { total: number; rolls: number[] } {
     const match = diceString.match(/(\d+)d(\d+)(?:\+(\d+))?/);
-    if (!match) {throw new Error(`Invalid dice string: ${diceString}`);}
+    if (!match) {
+      throw new Error(`Invalid dice string: ${diceString}`);
+    }
 
     const count = parseInt(match[1]!);
     const sides = parseInt(match[2]!);
@@ -166,7 +168,9 @@ export class CombatEngine {
 
     // Sort by initiative (descending), with dexterity as tiebreaker
     initiatives.sort((a, b) => {
-      if (a.initiative !== b.initiative) {return b.initiative - a.initiative;}
+      if (a.initiative !== b.initiative) {
+        return b.initiative - a.initiative;
+      }
 
       const combatantA = this.combatants.get(a.id)!;
       const combatantB = this.combatants.get(b.id)!;
@@ -196,7 +200,9 @@ export class CombatEngine {
   }
 
   public nextTurn(): void {
-    if (!this.isActive) {return;}
+    if (!this.isActive) {
+      return;
+    }
 
     const currentCombatant = this.getCurrentCombatant();
     if (currentCombatant) {
@@ -265,7 +271,9 @@ export class CombatEngine {
   }
 
   public getCurrentCombatant(): Combatant | null {
-    if (!this.isActive || this.turnOrder.length === 0) {return null;}
+    if (!this.isActive || this.turnOrder.length === 0) {
+      return null;
+    }
     const id = this.turnOrder[this.currentTurnIndex];
     return id ? this.combatants.get(id) || null : null;
   }
@@ -499,9 +507,9 @@ export class CombatEngine {
     }
 
     const saveResult = success ? "succeeds" : "fails";
-    const message =
-      `${target.name} ${saveResult} the saving throw against ${spell.name}${ 
-      totalDamage > 0 ? ` and takes ${totalDamage} damage` : ""}`;
+    const message = `${target.name} ${saveResult} the saving throw against ${spell.name}${
+      totalDamage > 0 ? ` and takes ${totalDamage} damage` : ""
+    }`;
 
     return {
       success: true,
@@ -648,7 +656,9 @@ export class CombatEngine {
 
   public applyDamage(combatantId: string, damage: number, damageType?: string): void {
     const combatant = this.combatants.get(combatantId);
-    if (!combatant) {return;}
+    if (!combatant) {
+      return;
+    }
 
     // Apply temporary hit points first
     if (combatant.stats.hitPoints.temporary > 0) {
@@ -675,7 +685,9 @@ export class CombatEngine {
 
   public heal(combatantId: string, healing: number): void {
     const combatant = this.combatants.get(combatantId);
-    if (!combatant) {return;}
+    if (!combatant) {
+      return;
+    }
 
     const oldHitPoints = combatant.stats.hitPoints.current;
     combatant.stats.hitPoints.current = Math.min(
@@ -701,14 +713,14 @@ export class CombatEngine {
   }
 
   // Event system
-  public on(event: string, handler: (...args: any[]) => any): void {
+  public on(event: string, handler: (data?: unknown) => void): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  public off(event: string, handler: (...args: any[]) => any): void {
+  public off(event: string, handler: (data?: unknown) => void): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);
@@ -718,7 +730,7 @@ export class CombatEngine {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       handlers.forEach((handler) => handler(data));

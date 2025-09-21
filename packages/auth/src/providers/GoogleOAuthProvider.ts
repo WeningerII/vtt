@@ -1,11 +1,11 @@
 /**
  * Google OAuth 2.0 Provider Implementation
  */
-import { OAuth2Client } from 'google-auth-library';
-import { UserManager } from '@vtt/user-management';
-import { logger } from '@vtt/logging';
-import { OAuthStateManager } from '../utils/OAuthStateManager';
-import * as crypto from 'crypto';
+import { OAuth2Client } from "google-auth-library";
+import { UserManager, type User, type Session } from "@vtt/user-management";
+import { logger } from "@vtt/logging";
+import { OAuthStateManager } from "../utils/OAuthStateManager";
+import * as crypto from "crypto";
 
 export interface GoogleUserProfile {
   id: string;
@@ -30,12 +30,12 @@ export class GoogleOAuthProvider {
   private stateManager?: OAuthStateManager | undefined;
   // private inputValidator: InputValidator; // Temporarily disabled
 
-  constructor(config: GoogleOAuthConfig, userManager: UserManager, stateManager?: OAuthStateManager) {
-    this.client = new OAuth2Client(
-      config.clientId,
-      config.clientSecret,
-      config.redirectUri
-    );
+  constructor(
+    config: GoogleOAuthConfig,
+    userManager: UserManager,
+    stateManager?: OAuthStateManager,
+  ) {
+    this.client = new OAuth2Client(config.clientId, config.clientSecret, config.redirectUri);
     this.userManager = userManager;
     this.config = config;
     this.stateManager = stateManager;
@@ -47,41 +47,44 @@ export class GoogleOAuthProvider {
    */
   async getAuthorizationUrl(userId?: string): Promise<string> {
     const scopes = [
-      'openid',
-      'https://www.googleapis.com/auth/userinfo.email',
-      'https://www.googleapis.com/auth/userinfo.profile'
+      "openid",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
     ];
 
-    const state = this.stateManager 
-      ? await this.stateManager.generateState('google', userId)
+    const state = this.stateManager
+      ? await this.stateManager.generateState("google", userId)
       : this.generateState();
 
     return this.client.generateAuthUrl({
-      access_type: 'offline',
+      access_type: "offline",
       scope: scopes,
       state,
-      prompt: 'consent'
+      prompt: "consent",
     });
   }
 
   /**
    * Exchange authorization code for tokens and user profile
    */
-  async handleCallback(code: string, state?: string): Promise<{
+  async handleCallback(
+    code: string,
+    state?: string,
+  ): Promise<{
     success: boolean;
-    user?: any;
-    session?: any;
+    user?: User;
+    session?: Session;
     error?: string;
   }> {
     try {
       // Validate state parameter for CSRF protection
       if (state) {
-        const isValid = this.stateManager 
-          ? await this.stateManager.validateState(state, 'google')
+        const isValid = this.stateManager
+          ? await this.stateManager.validateState(state, "google")
           : this.validateState(state);
-        
+
         if (!isValid) {
-          return { success: false, error: 'Invalid state parameter' };
+          return { success: false, error: "Invalid state parameter" };
         }
       }
 
@@ -92,38 +95,42 @@ export class GoogleOAuthProvider {
       // Get user profile
       const audience = this.config.clientId;
       if (!audience) {
-        return { success: false, error: 'Google client ID not configured' };
+        return { success: false, error: "Google client ID not configured" };
       }
 
       const ticket = await this.client.verifyIdToken({
         idToken: tokens.id_token!,
-        audience
+        audience,
       });
 
       const payload = ticket.getPayload();
       if (!payload || !payload.sub || !payload.email) {
-        return { success: false, error: 'Invalid token payload' };
+        return { success: false, error: "Invalid token payload" };
       }
 
       const googleProfile: GoogleUserProfile = {
         id: payload.sub,
         email: payload.email,
-        name: payload.name || '',
-        given_name: payload.given_name || '',
-        family_name: payload.family_name || '',
-        picture: payload.picture || '',
-        email_verified: payload.email_verified || false
+        name: payload.name || "",
+        given_name: payload.given_name || "",
+        family_name: payload.family_name || "",
+        picture: payload.picture || "",
+        email_verified: payload.email_verified || false,
       };
 
-      // Find or create user  
+      // Find or create user
       const result = await this.findOrCreateUser(googleProfile);
       return result;
-
     } catch (error) {
-      logger.error('Google OAuth callback error:', error as Record<string, any>);
-      return { 
-        success: false, 
-        error: 'Authentication failed' 
+      logger.error("Google OAuth callback error:", {
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack, name: error.name }
+            : error,
+      });
+      return {
+        success: false,
+        error: "Authentication failed",
       };
     }
   }
@@ -133,8 +140,8 @@ export class GoogleOAuthProvider {
    */
   private async findOrCreateUser(profile: GoogleUserProfile): Promise<{
     success: boolean;
-    user?: any;
-    session?: any;
+    user?: User;
+    session?: Session;
     error?: string;
   }> {
     try {
@@ -146,12 +153,12 @@ export class GoogleOAuthProvider {
         await this.userManager.updateUser(user.id, {
           firstName: profile.given_name,
           lastName: profile.family_name,
-          avatarUrl: profile.picture
+          avatarUrl: profile.picture,
         });
       } else {
         // Create new user from Google profile
-        const baseUsername = (profile.email.split('@')[0] || profile.email)
-          .replace(/[^a-zA-Z0-9]/g, '') || 'user';
+        const baseUsername =
+          (profile.email.split("@")[0] || profile.email).replace(/[^a-zA-Z0-9]/g, "") || "user";
         let username = baseUsername;
         let counter = 1;
         while (this.userManager.findUserByUsername(username)) {
@@ -160,25 +167,25 @@ export class GoogleOAuthProvider {
         }
 
         const userData = {
-          locale: 'en',
+          locale: "en",
           email: profile.email,
           username,
           password: this.generateSecurePassword(),
           firstName: profile.given_name,
-          lastName: profile.family_name
+          lastName: profile.family_name,
         };
 
         const result = await this.userManager.createUser(userData);
 
         if (!result) {
-          return { success: false, error: 'Failed to create user account' };
+          return { success: false, error: "Failed to create user account" };
         }
 
         user = result;
-        
+
         // Update with Google-specific data
         await this.userManager.updateUser(user.id, {
-          avatarUrl: profile.picture
+          avatarUrl: profile.picture,
         });
       }
 
@@ -186,25 +193,29 @@ export class GoogleOAuthProvider {
       const sessionResult = await this.userManager.createSession(
         user.id,
         {
-          userAgent: 'OAuth-Google',
-          ip: 'oauth-login',
-          platform: 'web',
-          browser: 'oauth'
+          userAgent: "OAuth-Google",
+          ip: "oauth-login",
+          platform: "web",
+          browser: "oauth",
         },
-        false
+        false,
       );
 
       return {
         success: true,
         user,
-        session: sessionResult
+        session: sessionResult,
       };
-
     } catch (error) {
-      logger.error('Error finding/creating user from Google profile:', error as Record<string, any>);
+      logger.error("Error finding/creating user from Google profile:", {
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack, name: error.name }
+            : error,
+      });
       return {
         success: false,
-        error: 'Failed to process user account'
+        error: "Failed to process user account",
       };
     }
   }
@@ -213,7 +224,7 @@ export class GoogleOAuthProvider {
    * Generate cryptographically secure state parameter
    */
   private generateState(): string {
-    return crypto.randomBytes(32).toString('hex');
+    return crypto.randomBytes(32).toString("hex");
   }
 
   /**
@@ -225,12 +236,12 @@ export class GoogleOAuthProvider {
   }
 
   private generateUsernameFromEmail(email: string): string {
-    const baseUsername = email.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || 'user';
+    const baseUsername = email.split("@")[0]?.replace(/[^a-zA-Z0-9]/g, "") || "user";
     return `${baseUsername}_${Date.now()}`;
   }
 
   private generateSecurePassword(): string {
     // Generate a secure random password for OAuth users
-    return crypto.randomBytes(16).toString('hex') + Math.random().toString(36).slice(-8);
+    return crypto.randomBytes(16).toString("hex") + Math.random().toString(36).slice(-8);
   }
 }

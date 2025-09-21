@@ -3,11 +3,31 @@
  */
 
 import { EventEmitter } from "events";
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory, RateLimiterRes } from "rate-limiter-flexible";
 import helmet from "helmet";
+import type { Request, Response, NextFunction, RequestHandler } from "express";
+import type { IncomingMessage } from "http";
+import type { WebSocket } from "ws";
 import { AuthManager } from "./AuthManager";
 import { AuthorizationManager } from "./AuthorizationManager";
-import { SecurityContext, RateLimitConfig, SecuritySettings, AuditLogEntry } from "./types";
+import { SecurityContext, SecuritySettings, Permission } from "./types";
+
+type SecurityRequest = Request & {
+  securityContext?: SecurityContext;
+  user?: SecurityContext["user"];
+  cookies?: Record<string, string>;
+};
+
+type WSRequest = IncomingMessage & {
+  url: string;
+};
+
+type RequestLike = SecurityRequest | WSRequest;
+
+type SecureWebSocket = WebSocket & {
+  securityContext?: SecurityContext;
+  isAuthenticated?: boolean;
+};
 
 export class SecurityMiddleware extends EventEmitter {
   private authManager: AuthManager;
@@ -33,8 +53,8 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Authentication middleware
    */
-  authenticate() {
-    return async (req: any, res: any, _next: any) => {
+  authenticate(): RequestHandler {
+    return async (req: SecurityRequest, res: Response, next: NextFunction) => {
       try {
         const token = this.extractToken(req);
         if (!token) {
@@ -61,7 +81,7 @@ export class SecurityMiddleware extends EventEmitter {
         req.user = context.user;
 
         this.logSecurityEvent("authenticated", context.user.id, ipAddress, userAgent);
-        _next();
+        next();
       } catch (error) {
         this.logSecurityEvent(
           "authentication_failed",
@@ -80,17 +100,17 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Authorization middleware
    */
-  authorize(permission: string, resource?: string) {
-    return (req: any, res: any, _next: any) => {
+  authorize(permission: Permission, resource?: string): RequestHandler {
+    return (req: SecurityRequest, res: Response, next: NextFunction) => {
       try {
-        const context = req.securityContext as SecurityContext;
+        const context = req.securityContext;
         if (!context) {
           return res.status(401).json({ error: "Authentication required" });
         }
 
         const resourceId = req.params.id || req.params.resourceId;
 
-        if (!this.authzManager.checkPermission(context, permission as any, resource, resourceId)) {
+        if (!this.authzManager.checkPermission(context, permission, resource, resourceId)) {
           this.logSecurityEvent(
             "authorization_failed",
             context.user.id,
@@ -108,8 +128,8 @@ export class SecurityMiddleware extends EventEmitter {
           });
         }
 
-        _next();
-      } catch (error) {
+        next();
+      } catch {
         return res.status(500).json({ error: "Authorization check failed" });
       }
     };
@@ -118,12 +138,12 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Rate limiting middleware
    */
-  rateLimit(type: string = "general") {
-    return async (req: any, res: any, _next: any) => {
+  rateLimit(type: string = "general"): RequestHandler {
+    return async (req: SecurityRequest, res: Response, next: NextFunction) => {
       try {
         const limiter = this.rateLimiters.get(type);
         if (!limiter) {
-          return _next();
+          return next();
         }
 
         const key = this.getRateLimitKey(req, type);
@@ -136,9 +156,11 @@ export class SecurityMiddleware extends EventEmitter {
           "X-RateLimit-Reset": new Date(Date.now() + resRateLimit.msBeforeNext).toISOString(),
         });
 
-        _next();
-      } catch (rejRes: any) {
-        const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+        next();
+      } catch (error) {
+        const limiterRes = error instanceof RateLimiterRes ? error : undefined;
+        const msBeforeNext = limiterRes?.msBeforeNext ?? 1000;
+        const secs = Math.max(Math.round(msBeforeNext / 1000), 1);
 
         this.logSecurityEvent(
           "rate_limit_exceeded",
@@ -148,6 +170,7 @@ export class SecurityMiddleware extends EventEmitter {
           {
             type,
             retryAfter: secs,
+            remainingPoints: limiterRes?.remainingPoints,
           },
         );
 
@@ -163,7 +186,7 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Security headers middleware
    */
-  securityHeaders(): any {
+  securityHeaders(): ReturnType<typeof helmet> {
     return helmet({
       contentSecurityPolicy: {
         directives: {
@@ -192,8 +215,8 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Input validation middleware
    */
-  validateInput(schema: ValidationSchema) {
-    return (req: any, res: any, _next: any) => {
+  validateInput(schema: ValidationSchema): RequestHandler {
+    return (req: SecurityRequest, res: Response, next: NextFunction) => {
       const errors = this.validateRequestData(req, schema);
       if (errors.length > 0) {
         this.logSecurityEvent(
@@ -210,15 +233,15 @@ export class SecurityMiddleware extends EventEmitter {
           details: errors,
         });
       }
-      _next();
+      next();
     };
   }
 
   /**
    * CORS middleware with security considerations
    */
-  cors(allowedOrigins: string[] = []) {
-    return (req: any, res: any, _next: any) => {
+  cors(allowedOrigins: string[] = []): RequestHandler {
+    return (req: SecurityRequest, res: Response, next: NextFunction) => {
       const origin = req.get("Origin");
 
       if (origin && (allowedOrigins.includes(origin) || this.isDevelopment())) {
@@ -236,15 +259,15 @@ export class SecurityMiddleware extends EventEmitter {
         return res.status(200).end();
       }
 
-      _next();
+      next();
     };
   }
 
   /**
    * WebSocket security middleware
    */
-  secureWebSocket() {
-    return async (ws: any, req: any) => {
+  secureWebSocket(): (ws: SecureWebSocket, req: WSRequest) => Promise<void> {
+    return async (ws, req) => {
       try {
         const token = this.extractTokenFromWS(req);
         if (!token) {
@@ -253,7 +276,10 @@ export class SecurityMiddleware extends EventEmitter {
         }
 
         const ipAddress = this.getClientIP(req);
-        const userAgent = req.headers["user-agent"] || "";
+        const userAgentHeader = req.headers["user-agent"];
+        const userAgent = Array.isArray(userAgentHeader)
+          ? (userAgentHeader[0] ?? "")
+          : (userAgentHeader ?? "");
 
         if (this.blockedIPs.has(ipAddress)) {
           ws.close(1008, "Access denied");
@@ -273,7 +299,7 @@ export class SecurityMiddleware extends EventEmitter {
           async () => {
             try {
               await this.authManager.validateToken(token, ipAddress, userAgent);
-            } catch (error) {
+            } catch {
               clearInterval(validationInterval);
               ws.close(1008, "Token expired");
             }
@@ -284,12 +310,14 @@ export class SecurityMiddleware extends EventEmitter {
         ws.on("close", () => {
           clearInterval(validationInterval);
         });
-      } catch (error) {
+      } catch {
         this.logSecurityEvent(
           "websocket_auth_failed",
           "",
           this.getClientIP(req),
-          req.headers["user-agent"] || "",
+          Array.isArray(req.headers["user-agent"])
+            ? (req.headers["user-agent"][0] ?? "")
+            : (req.headers["user-agent"] ?? ""),
         );
         ws.close(1008, "Authentication failed");
       }
@@ -299,7 +327,7 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Intrusion detection system
    */
-  async detectIntrusion(req: any, res: any, _next: any) {
+  async detectIntrusion(req: SecurityRequest, res: Response, next: NextFunction): Promise<void> {
     const ipAddress = this.getClientIP(req);
     const userAgent = req.get("User-Agent") || "";
     const userId = this.getUserId(req);
@@ -327,7 +355,7 @@ export class SecurityMiddleware extends EventEmitter {
       await this.handleSecurityThreat("anomalous_activity", userId, ipAddress, userAgent, req);
     }
 
-    _next();
+    next();
   }
 
   /**
@@ -405,7 +433,7 @@ export class SecurityMiddleware extends EventEmitter {
     );
   }
 
-  private extractToken(req: any): string | null {
+  private extractToken(req: SecurityRequest): string | null {
     const authHeader = req.get("Authorization");
     if (authHeader && authHeader.startsWith("Bearer ")) {
       return authHeader.substring(7);
@@ -426,7 +454,7 @@ export class SecurityMiddleware extends EventEmitter {
     return null;
   }
 
-  private extractTokenFromWS(req: any): string | null {
+  private extractTokenFromWS(req: WSRequest): string | null {
     // Check query parameters
     const url = new URL(req.url, "http://localhost");
     const token = url.searchParams.get("token");
@@ -443,21 +471,23 @@ export class SecurityMiddleware extends EventEmitter {
     return null;
   }
 
-  private getClientIP(req: any): string {
+  private getClientIP(req: RequestLike): string {
+    const forwarded =
+      typeof req.headers["x-forwarded-for"] === "string"
+        ? req.headers["x-forwarded-for"].split(",")[0]
+        : Array.isArray(req.headers["x-forwarded-for"])
+          ? req.headers["x-forwarded-for"][0]
+          : undefined;
     return (
-      req.ip ||
-      req.connection?.remoteAddress ||
-      req.socket?.remoteAddress ||
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      "unknown"
+      req.ip || req.connection?.remoteAddress || req.socket?.remoteAddress || forwarded || "unknown"
     );
   }
 
-  private getUserId(req: any): string {
+  private getUserId(req: SecurityRequest): string {
     return req.securityContext?.user?.id || req.user?.id || "";
   }
 
-  private getRateLimitKey(req: any, type: string): string {
+  private getRateLimitKey(req: SecurityRequest, type: string): string {
     const baseKey = this.getClientIP(req);
     const userId = this.getUserId(req);
 
@@ -468,14 +498,17 @@ export class SecurityMiddleware extends EventEmitter {
     return `${type}:${baseKey}`;
   }
 
-  private respondUnauthorized(res: any, message: string): any {
+  private respondUnauthorized(res: Response, message: string): Response {
     return res.status(401).json({
       error: "Authentication failed",
       message,
     });
   }
 
-  private async checkSuspiciousActivity(context: SecurityContext, req: any): Promise<void> {
+  private async checkSuspiciousActivity(
+    context: SecurityContext,
+    req: SecurityRequest,
+  ): Promise<void> {
     const key = `${context.user.id}:${context.ipAddress}`;
     const tracker = this.suspiciousActivity.get(key) || {
       userId: context.user.id,
@@ -488,7 +521,7 @@ export class SecurityMiddleware extends EventEmitter {
     tracker.lastActivity = Date.now();
 
     // Check for rapid session switching
-    if (this.detectRapidSessionSwitching(tracker, context)) {
+    if (this.detectRapidSessionSwitching(tracker)) {
       await this.handleSecurityThreat(
         "rapid_session_switching",
         context.user.id,
@@ -501,7 +534,7 @@ export class SecurityMiddleware extends EventEmitter {
     this.suspiciousActivity.set(key, tracker);
   }
 
-  private detectSQLInjection(req: any): boolean {
+  private detectSQLInjection(req: SecurityRequest): boolean {
     const sqlPatterns = [
       /(\bUNION\b.*\bSELECT\b)/i,
       /(\bSELECT\b.*\bFROM\b)/i,
@@ -517,7 +550,7 @@ export class SecurityMiddleware extends EventEmitter {
     return sqlPatterns.some((pattern) => pattern.test(checkString));
   }
 
-  private detectXSS(req: any): boolean {
+  private detectXSS(req: SecurityRequest): boolean {
     const xssPatterns = [
       /<script[^>]*>.*?<\/script>/gi,
       /<iframe[^>]*>.*?<\/iframe>/gi,
@@ -531,23 +564,20 @@ export class SecurityMiddleware extends EventEmitter {
     return xssPatterns.some((pattern) => pattern.test(checkString));
   }
 
-  private detectPathTraversal(req: any): boolean {
+  private detectPathTraversal(req: SecurityRequest): boolean {
     const pathTraversalPatterns = [/\.\./g, /\.\.\//g, /%2e%2e%2f/gi, /%2e%2e%5c/gi];
 
     const checkString = req.url + JSON.stringify(req.query) + JSON.stringify(req.params);
     return pathTraversalPatterns.some((pattern) => pattern.test(checkString));
   }
 
-  private async detectAnomalousActivity(req: any): Promise<boolean> {
+  private async detectAnomalousActivity(_req: SecurityRequest): Promise<boolean> {
     // Placeholder for machine learning-based anomaly detection
     // Would analyze request patterns, timing, etc.
     return false;
   }
 
-  private detectRapidSessionSwitching(
-    tracker: SuspiciousActivityTracker,
-    context: SecurityContext,
-  ): boolean {
+  private detectRapidSessionSwitching(tracker: SuspiciousActivityTracker): boolean {
     // Check if user is switching sessions rapidly (potential account takeover)
     const recentEvents = tracker.events.filter(
       (e) =>
@@ -563,7 +593,7 @@ export class SecurityMiddleware extends EventEmitter {
     userId: string,
     ipAddress: string,
     userAgent: string,
-    req: any,
+    req: SecurityRequest,
   ): Promise<void> {
     this.logSecurityEvent("security_threat_detected", userId, ipAddress, userAgent, {
       type,
@@ -588,7 +618,7 @@ export class SecurityMiddleware extends EventEmitter {
     });
   }
 
-  private validateRequestData(req: any, schema: ValidationSchema): string[] {
+  private validateRequestData(_req: SecurityRequest, _schema: ValidationSchema): string[] {
     const errors: string[] = [];
     // Placeholder for comprehensive input validation
     // Would use libraries like Joi or express-validator
@@ -604,9 +634,9 @@ export class SecurityMiddleware extends EventEmitter {
     userId: string,
     ipAddress: string,
     userAgent: string,
-    details: Record<string, any> = {},
+    details: SecurityEventDetails = {},
   ): void {
-    const event = {
+    const event: SecurityEvent = {
       action,
       userId,
       ipAddress,
@@ -618,8 +648,8 @@ export class SecurityMiddleware extends EventEmitter {
     this.emit("securityEvent", event);
   }
 
-  private getRateLimiterStats(): Record<string, any> {
-    const stats: Record<string, any> = {};
+  private getRateLimiterStats(): Record<string, RateLimiterStats> {
+    const stats: Record<string, RateLimiterStats> = {};
 
     for (const [type, limiter] of this.rateLimiters) {
       stats[type] = {
@@ -631,10 +661,21 @@ export class SecurityMiddleware extends EventEmitter {
     return stats;
   }
 
-  private getRecentSecurityEvents(): any[] {
+  private getRecentSecurityEvents(): SecurityEvent[] {
     // Placeholder - would return recent security events from log
     return [];
   }
+}
+
+type SecurityEventDetails = Record<string, unknown>;
+
+interface SecurityEvent {
+  action: string;
+  userId: string;
+  ipAddress: string;
+  userAgent: string;
+  details: SecurityEventDetails;
+  timestamp: Date;
 }
 
 interface SuspiciousActivityTracker {
@@ -644,19 +685,24 @@ interface SuspiciousActivityTracker {
   events: Array<{
     type: string;
     timestamp: number;
-    details: Record<string, any>;
+    details: SecurityEventDetails;
   }>;
 }
 
 interface ValidationSchema {
-  body?: Record<string, any>;
-  query?: Record<string, any>;
-  params?: Record<string, any>;
+  body?: Record<string, unknown>;
+  query?: Record<string, unknown>;
+  params?: Record<string, unknown>;
+}
+
+interface RateLimiterStats {
+  points: number;
+  duration: number;
 }
 
 interface SecurityMetrics {
   blockedIPs: number;
   suspiciousActivities: number;
-  rateLimiterStats: Record<string, any>;
-  lastSecurityEvents: any[];
+  rateLimiterStats: Record<string, RateLimiterStats>;
+  lastSecurityEvents: SecurityEvent[];
 }

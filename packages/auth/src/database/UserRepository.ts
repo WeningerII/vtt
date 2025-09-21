@@ -3,8 +3,8 @@
  * Provides actual database functionality for the AuthManager
  */
 
-import { User } from '../types';
-import { logger } from '@vtt/logging';
+import { User } from "../types";
+import { logger } from "@vtt/logging";
 
 export interface UserWithPassword extends User {
   hashedPassword: string;
@@ -33,7 +33,7 @@ export class UserRepository {
   private usersByUsername = new Map<string, string>(); // username -> userId
 
   constructor() {
-    logger.info('UserRepository initialized');
+    logger.info("UserRepository initialized");
   }
 
   async findById(id: string): Promise<User | null> {
@@ -43,7 +43,7 @@ export class UserRepository {
     }
 
     // Return user without password
-    const { hashedPassword, ...user } = userWithPassword;
+    const { hashedPassword: _hashedPassword, ...user } = userWithPassword;
     return user;
   }
 
@@ -66,7 +66,7 @@ export class UserRepository {
   async create(user: User, hashedPassword: string): Promise<void> {
     const userWithPassword: UserWithPassword = {
       ...user,
-      hashedPassword
+      hashedPassword,
     };
 
     this.users.set(user.id, userWithPassword);
@@ -97,7 +97,7 @@ export class UserRepository {
 
     this.users.set(user.id, {
       ...user,
-      hashedPassword: existing.hashedPassword
+      hashedPassword: existing.hashedPassword,
     });
 
     logger.info(`User updated: ${user.id}`);
@@ -115,14 +115,14 @@ export class UserRepository {
 
     this.passwords.set(userId, hashedPassword);
     user.hashedPassword = hashedPassword;
-    
+
     logger.info(`Password updated for user: ${userId}`);
   }
 
   async storeTempTwoFactorSecret(
     userId: string,
     secret: string,
-    backupCodes: string[]
+    backupCodes: string[],
   ): Promise<void> {
     this.tempTwoFactorSecrets.set(userId, { secret, backupCodes });
   }
@@ -135,11 +135,7 @@ export class UserRepository {
     this.tempTwoFactorSecrets.delete(userId);
   }
 
-  async storeTwoFactorSecret(
-    userId: string,
-    secret: string,
-    backupCodes: string[]
-  ): Promise<void> {
+  async storeTwoFactorSecret(userId: string, secret: string, backupCodes: string[]): Promise<void> {
     this.twoFactorSecrets.set(userId, { secret, backupCodes });
   }
 
@@ -154,11 +150,7 @@ export class UserRepository {
     }
   }
 
-  async storePasswordResetToken(
-    userId: string,
-    token: string,
-    expiresAt: Date
-  ): Promise<void> {
+  async storePasswordResetToken(userId: string, token: string, expiresAt: Date): Promise<void> {
     this.passwordResetTokens.set(token, { userId, token, expiresAt });
   }
 

@@ -15,6 +15,13 @@ export interface Bounds {
   maxY: number;
 }
 
+export interface SpatialGridStats {
+  totalCells: number;
+  totalEntities: number;
+  averageEntitiesPerCell: number;
+  maxEntitiesInCell: number;
+}
+
 export class SpatialGrid {
   private cellSize: number;
   private grid: Map<string, GridCell> = new Map();
@@ -71,7 +78,13 @@ export class SpatialGrid {
         const coords = key.split(",").map(Number);
         const x = coords[0];
         const y = coords[1];
-        if (coords.length >= 2 && typeof x === 'number' && typeof y === 'number' && !isNaN(x) && !isNaN(y)) {
+        if (
+          coords.length >= 2 &&
+          typeof x === "number" &&
+          typeof y === "number" &&
+          !isNaN(x) &&
+          !isNaN(y)
+        ) {
           cell = { x, y, entities: new Set() };
           this.grid.set(key, cell);
         }
@@ -162,7 +175,9 @@ export class SpatialGrid {
     const key = this.getCellKey(x, y);
     const cell = this.grid.get(key);
 
-    if (!cell) {return [];}
+    if (!cell) {
+      return [];
+    }
 
     const entities: number[] = [];
     for (const entityId of cell.entities) {
@@ -194,12 +209,7 @@ export class SpatialGrid {
   /**
    * Get grid statistics
    */
-  getStats(): {
-    totalCells: number;
-    totalEntities: number;
-    averageEntitiesPerCell: number;
-    maxEntitiesInCell: number;
-  } {
+  getStats(): SpatialGridStats {
     let totalEntities = 0;
     let maxEntitiesInCell = 0;
 

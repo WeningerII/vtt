@@ -179,7 +179,9 @@ export class CombatEngine extends EventEmitter {
   }
 
   nextTurn(): void {
-    if (!this.isActive) {return;}
+    if (!this.isActive) {
+      return;
+    }
 
     this.currentTurnIndex++;
     if (this.currentTurnIndex >= this.turnOrder.length) {
@@ -189,7 +191,9 @@ export class CombatEngine extends EventEmitter {
   }
 
   getCurrentCombatant(): Combatant | null {
-    if (!this.isActive || this.turnOrder.length === 0) {return null;}
+    if (!this.isActive || this.turnOrder.length === 0) {
+      return null;
+    }
     const id = this.turnOrder[this.currentTurnIndex];
     return this.combatants.find((c) => c.id === id) || null;
   }
@@ -210,7 +214,7 @@ export class CombatEngine extends EventEmitter {
     return this.isActive;
   }
 
-  executeAction(_action: any): void {
+  executeAction(_action: unknown): void {
     // Placeholder for action execution
   }
 

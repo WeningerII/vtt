@@ -3,7 +3,7 @@
  */
 
 import { RigidBody, Vector2, RigidBodyConfig } from "./RigidBody";
-import { SpatialGrid } from "./SpatialGrid";
+import { SpatialGrid, SpatialGridStats } from "./SpatialGrid";
 import { EventEmitter } from "events";
 
 export interface CollisionInfo {
@@ -126,7 +126,9 @@ export class PhysicsWorld extends EventEmitter {
    * Apply gravity to all dynamic bodies
    */
   private applyGravity(): void {
-    if (this.config.gravity.x === 0 && this.config.gravity.y === 0) {return;}
+    if (this.config.gravity.x === 0 && this.config.gravity.y === 0) {
+      return;
+    }
 
     for (const body of this.bodies.values()) {
       if (!body.config.isStatic) {
@@ -172,7 +174,9 @@ export class PhysicsWorld extends EventEmitter {
       const bodyA = this.bodies.get(idA);
       const bodyB = this.bodies.get(idB);
 
-      if (!bodyA || !bodyB || !bodyA.shouldCollideWith(bodyB)) {continue;}
+      if (!bodyA || !bodyB || !bodyA.shouldCollideWith(bodyB)) {
+        continue;
+      }
 
       const collision = this.checkAABBCollision(bodyA, bodyB);
       if (collision) {
@@ -195,7 +199,9 @@ export class PhysicsWorld extends EventEmitter {
     const overlapX = Math.min(aabbA.maxX, aabbB.maxX) - Math.max(aabbA.minX, aabbB.minX);
     const overlapY = Math.min(aabbA.maxY, aabbB.maxY) - Math.max(aabbA.minY, aabbB.minY);
 
-    if (overlapX <= 0 || overlapY <= 0) {return null;}
+    if (overlapX <= 0 || overlapY <= 0) {
+      return null;
+    }
 
     // Calculate collision normal and penetration
     let normal: Vector2;
@@ -243,7 +249,9 @@ export class PhysicsWorld extends EventEmitter {
    */
   private constrainVelocities(): void {
     for (const body of this.bodies.values()) {
-      if (body.config.isStatic) {continue;}
+      if (body.config.isStatic) {
+        continue;
+      }
 
       // Max velocity constraint
       const speed = Math.sqrt(
@@ -299,7 +307,9 @@ export class PhysicsWorld extends EventEmitter {
   } {
     // Normalize direction
     const length = Math.sqrt(direction.x * direction.x + direction.y * direction.y);
-    if (length === 0) {return { hit: false };}
+    if (length === 0) {
+      return { hit: false };
+    }
 
     const normalizedDir = { x: direction.x / length, y: direction.y / length };
 
@@ -366,7 +376,7 @@ export class PhysicsWorld extends EventEmitter {
   getStats(): {
     bodyCount: number;
     activeBodyCount: number;
-    gridStats: any;
+    gridStats: SpatialGridStats;
   } {
     const activeBodies = Array.from(this.bodies.values()).filter(
       (body) =>
@@ -403,7 +413,7 @@ export class PhysicsWorld extends EventEmitter {
       isStatic: config.type === "static",
       isTrigger: config.isTrigger || false,
       layer: config.layer || 1,
-      mask: config.mask || 0xFFFFFFFF,
+      mask: config.mask || 0xffffffff,
     };
 
     const size = config.size || { x: 32, y: 32 };
@@ -413,7 +423,7 @@ export class PhysicsWorld extends EventEmitter {
       config.position.y,
       size.x,
       size.y,
-      bodyConfig
+      bodyConfig,
     );
 
     this.addBody(body);

@@ -3,7 +3,17 @@
  */
 
 import { EventEmitter } from "events";
-import { User, Permission, SecurityContext, SessionPermissions, AuditLogEntry } from "./types";
+import type { Request, Response, NextFunction } from "express";
+import { logger } from "@vtt/logging";
+import { Permission, SecurityContext, SessionPermissions, AuditLogEntry } from "./types";
+
+type AuthorizationRequest = Request & {
+  securityContext?: SecurityContext;
+  params: Request["params"] & {
+    id?: string;
+    resourceId?: string;
+  };
+};
 
 export class AuthorizationManager extends EventEmitter {
   private rolePermissions: Map<string, Set<Permission>> = new Map();
@@ -234,9 +244,9 @@ export class AuthorizationManager extends EventEmitter {
    * Create authorization middleware for Express
    */
   createMiddleware(requiredPermission: Permission, resource?: string) {
-    return async (req: any, res: any, _next: any) => {
+    return async (req: AuthorizationRequest, res: Response, next: NextFunction) => {
       try {
-        const context = req.securityContext as SecurityContext;
+        const context = req.securityContext;
         if (!context) {
           return res.status(401).json({ error: "Authentication required" });
         }
@@ -252,8 +262,14 @@ export class AuthorizationManager extends EventEmitter {
           });
         }
 
-        _next();
-      } catch (_error) {
+        next();
+      } catch (error) {
+        logger.error("Authorization middleware error", {
+          error:
+            error instanceof Error
+              ? { message: error.message, stack: error.stack, name: error.name }
+              : error,
+        });
         res.status(500).json({ error: "Authorization check failed" });
       }
     };

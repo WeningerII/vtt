@@ -121,5 +121,13 @@ module.exports = {
         "no-console": ["error", { allow: ["warn", "error"] }],
       },
     },
+    {
+      // Type declaration files
+      files: ["**/*.d.ts"],
+      rules: {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unsafe-function-type": "off",
+      },
+    },
   ],
 };

@@ -103,7 +103,7 @@ export interface AuditLogEntry {
   action: string;
   resource: string;
   resourceId?: string | undefined;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
   ipAddress: string;
   userAgent: string;
   timestamp: Date;
@@ -175,16 +175,23 @@ export interface OAuthConfig {
   scopes: string[];
 }
 
+export type AuthEventType =
+  | "login"
+  | "logout"
+  | "register"
+  | "password_reset"
+  | "permission_change"
+  | "security_violation";
+
+export interface AuthEventDetails extends Record<string, unknown> {
+  ipAddress?: string;
+  userAgent?: string;
+}
+
 export interface AuthEvent {
-  type:
-    | "login"
-    | "logout"
-    | "register"
-    | "password_reset"
-    | "permission_change"
-    | "security_violation";
+  type: AuthEventType;
   userId: string;
-  details: Record<string, any>;
+  details: AuthEventDetails;
   timestamp: Date;
   ipAddress: string;
   userAgent: string;
