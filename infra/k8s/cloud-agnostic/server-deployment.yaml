@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vtt-server
+  namespace: vtt
   labels:
     app.kubernetes.io/name: vtt-server
     app.kubernetes.io/component: backend

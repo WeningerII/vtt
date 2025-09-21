@@ -38,13 +38,35 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine TruffleHog diff base
+        id: trufflehog_range
+        run: |
+          head_sha=$(git rev-parse HEAD)
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            base_sha=$(git rev-parse HEAD~1)
+          else
+            base_sha="$head_sha"
+          fi
+
+          echo "base=$base_sha" >> "$GITHUB_OUTPUT"
+          if [ "$base_sha" = "$head_sha" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: TruffleHog OSS
+        if: steps.trufflehog_range.outputs.run == 'true'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
-          head: HEAD
+          base: ${{ steps.trufflehog_range.outputs.base }}
+          head: ${{ github.sha }}
           extra_args: --debug --only-verified
+
+      - name: TruffleHog skipped (no new commits)
+        if: steps.trufflehog_range.outputs.run != 'true'
+        run: echo "TruffleHog skipped because there is no new commit to diff against."
 
       - name: GitLeaks
         uses: gitleaks/gitleaks-action@v2
@@ -62,6 +84,7 @@ jobs:
         with:
           directory: .
           framework: kubernetes,dockerfile,github_actions
+          config_file: .checkov.yaml
           output_format: sarif
           output_file_path: checkov-results.sarif
           quiet: true
