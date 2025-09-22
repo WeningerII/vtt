@@ -1,7 +1,6 @@
-// import type { GPUDevice } from "@webgpu/types";
-type GPUDevice = any; // Fallback type until WebGPU types are properly configured
-type GPUComputePipeline = any;
-type GPUBuffer = any;
+/// <reference types="@webgpu/types" />
+
+// WebGPU types are globally available via the triple-slash directive above.
 /**
  * Advanced Physics Engine - Triple A Quality Browser-Optimized Physics
  * High-performance physics simulation with WASM acceleration and GPU compute
@@ -230,7 +229,9 @@ export class AdvancedPhysicsEngine {
   }
 
   private async initializeGPUCompute(): Promise<void> {
-    if (!this.device) {return;}
+    if (!this.device) {
+      return;
+    }
 
     // Particle simulation compute shader
     const particleShader = this.device.createShaderModule({
@@ -535,7 +536,9 @@ export class AdvancedPhysicsEngine {
 
   private integrateMotion(dt: number): void {
     for (const body of this.rigidBodies.values()) {
-      if (body.type !== "dynamic" || body.sleeping) {continue;}
+      if (body.type !== "dynamic" || body.sleeping) {
+        continue;
+      }
 
       // Linear integration
       body.velocity[0] += body.forces[0] * body.inverseMass * dt;
@@ -643,7 +646,9 @@ export class AdvancedPhysicsEngine {
     const dz = particle.position[2] - force.position[2];
     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-    if (distance > force.radius) {return [0, 0, 0];}
+    if (distance > force.radius) {
+      return [0, 0, 0];
+    }
 
     const strength = force.strength * (1 - distance / force.radius);
 
@@ -700,7 +705,9 @@ export class AdvancedPhysicsEngine {
 
   private updateSleeping(): void {
     for (const body of this.rigidBodies.values()) {
-      if (body.type !== "dynamic") {continue;}
+      if (body.type !== "dynamic") {
+        continue;
+      }
 
       const speed = Math.sqrt(
         body.velocity[0] ** 2 +
