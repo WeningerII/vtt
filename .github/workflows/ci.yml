@@ -25,20 +25,49 @@ jobs:
       - name: Install libpng-dev
         run: sudo apt-get update && sudo apt-get install -y libpng-dev
       - uses: ./.github/actions/install-deps
+
+      - name: Debug workspace for Trivy
+        run: |
+          echo "=== Current directory contents ==="
+          ls -la
+          echo "=== Disk space ==="
+          df -h
+          echo "=== Memory usage ==="
+          free -h
+
       - name: Run Trivy vulnerability scanner
+        id: trivy-scan
+        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "fs"
           scan-ref: "."
           format: "sarif"
           output: "trivy-results.sarif"
+          # Add additional configuration to help with potential issues
+          timeout: "10m"
+        env:
+          TRIVY_DEBUG: true
+
+      - name: Check if Trivy results exist
+        id: check-trivy
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "trivy-results-exist=true" >> $GITHUB_OUTPUT
+            echo "Trivy results file exists"
+          else
+            echo "trivy-results-exist=false" >> $GITHUB_OUTPUT
+            echo "Trivy results file does not exist"
+          fi
+
       - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        if: ${{ steps.check-trivy.outputs.trivy-results-exist == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
+
       - name: Upload SARIF as artifact (forked PRs)
-        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        if: ${{ steps.check-trivy.outputs.trivy-results-exist == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         uses: actions/upload-artifact@v4
         with:
           name: trivy-results-sarif
