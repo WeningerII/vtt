@@ -1,4 +1,4 @@
-import { SparseSet, MultiSparseSet } from "./SparseSet";
+import { MultiSparseSet } from "./SparseSet";
 
 export interface ComponentChange {
   entityId: number;

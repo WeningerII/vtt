@@ -35,6 +35,7 @@ describe("CombatSystem Performance Benchmarks", () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
+    // eslint-disable-next-line no-console
     console.log(`Pool performance: ${iterations * 2} operations in ${duration.toFixed(2)}ms`);
 
     // Should complete within reasonable time (adjust threshold as needed)
@@ -66,6 +67,7 @@ describe("CombatSystem Performance Benchmarks", () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
+    // eslint-disable-next-line no-console
     console.log(
       `Initiative caching: ${iterations} calls with ${entityCount} entities in ${duration.toFixed(2)}ms`,
     );
@@ -117,6 +119,7 @@ describe("CombatSystem Performance Benchmarks", () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
+    // eslint-disable-next-line no-console
     console.log(
       `Large combat simulation: ${entityCount} entities, 10 rounds in ${duration.toFixed(2)}ms`,
     );
@@ -155,6 +158,7 @@ describe("CombatSystem Performance Benchmarks", () => {
     expect(stats.poolUtilization).toBeLessThan(1.0); // Not exhausted
     expect(stats.recycledEntities).toBeGreaterThan(0); // Some recycling occurred
 
+    // eslint-disable-next-line no-console
     console.log("Memory stability stats:", stats);
   });
 
@@ -194,6 +198,7 @@ describe("CombatSystem Performance Benchmarks", () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
+    // eslint-disable-next-line no-console
     console.log(`Concurrent operations: 50 batches in ${duration.toFixed(2)}ms`);
 
     // Should handle concurrent operations reasonably well
@@ -225,10 +230,12 @@ describe("CombatSystem Performance Benchmarks", () => {
     const endTime = performance.now();
     const duration = endTime - startTime;
 
+    // eslint-disable-next-line no-console
     console.log(`Regression test: ${_operations} mixed operations in ${duration.toFixed(2)}ms`);
 
     // Alert if performance degrades significantly
     if (duration > baselineMs * 2) {
+      // eslint-disable-next-line no-console
       console.warn(`Performance regression detected: ${duration}ms > ${baselineMs * 2}ms baseline`);
     }
 
