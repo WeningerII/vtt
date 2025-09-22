@@ -485,6 +485,12 @@ importers:
       "@vtt/combat":
         specifier: workspace:*
         version: link:../../packages/combat
+      "@vtt/conditions-engine":
+        specifier: workspace:*
+        version: link:../../packages/conditions-engine
+      "@vtt/content-5e-srd":
+        specifier: workspace:*
+        version: link:../../packages/content-5e-srd
       "@vtt/core":
         specifier: workspace:*
         version: link:../../packages/core
@@ -494,6 +500,21 @@ importers:
       "@vtt/core-schemas":
         specifier: workspace:*
         version: link:../../packages/core-schemas
+      "@vtt/dice-engine":
+        specifier: workspace:*
+        version: link:../../packages/dice-engine
+      "@vtt/logging":
+        specifier: workspace:*
+        version: link:../../packages/logging
+      "@vtt/physics":
+        specifier: workspace:*
+        version: link:../../packages/physics
+      "@vtt/spell-engine":
+        specifier: workspace:*
+        version: link:../../packages/spell-engine
+      "@vtt/user-management":
+        specifier: workspace:*
+        version: link:../../packages/user-management
       axios:
         specifier: ^1.6.0
         version: 1.11.0
