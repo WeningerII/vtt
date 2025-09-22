@@ -2,7 +2,38 @@
  * Monster Statblock Adapter - Converts D&D 5e monster statblocks to ECS components
  */
 
-import { Condition, ConditionType } from "../components/Conditions";
+import { ConditionType } from "../components/Conditions";
+
+export interface SRDMonster {
+  name: string;
+  size?: string;
+  type?: string;
+  alignment?: string;
+  armor_class?: number;
+  hit_points?: number;
+  speed?: Record<string, number>;
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
+  charisma?: number;
+  skills?: Record<string, number>;
+  saving_throws?: Record<string, number>;
+  damage_resistances?: string[];
+  damage_immunities?: string[];
+  damage_vulnerabilities?: string[];
+  condition_immunities?: string[];
+  senses?: Record<string, number>;
+  languages?: string[];
+  challenge_rating?: number | string;
+  proficiency_bonus?: number;
+  actions?: Action[];
+  bonus_actions?: Action[];
+  reactions?: Action[];
+  legendary_actions?: LegendaryAction[];
+  spellcasting?: Spellcasting;
+}
 
 export interface D5eStatblock {
   name: string;
@@ -217,7 +248,7 @@ export class MonsterStatblockAdapter {
           damage: {
             diceExpression: action.damage.diceExpression,
             damageType: action.damage.damageType,
-          }
+          },
         }),
         ...(action.saveDC !== undefined && { saveDC: action.saveDC }),
         ...(action.saveAbility !== undefined && { saveAbility: action.saveAbility }),
@@ -237,7 +268,7 @@ export class MonsterStatblockAdapter {
           damage: {
             diceExpression: action.damage.diceExpression,
             damageType: action.damage.damageType,
-          }
+          },
         }),
         ...(action.saveDC !== undefined && { saveDC: action.saveDC }),
         ...(action.saveAbility !== undefined && { saveAbility: action.saveAbility }),
@@ -257,7 +288,7 @@ export class MonsterStatblockAdapter {
           damage: {
             diceExpression: action.damage.diceExpression,
             damageType: action.damage.damageType,
-          }
+          },
         }),
         ...(action.saveDC !== undefined && { saveDC: action.saveDC }),
         ...(action.saveAbility !== undefined && { saveAbility: action.saveAbility }),
@@ -314,14 +345,30 @@ export class MonsterStatblockAdapter {
    * Calculate proficiency bonus from challenge rating
    */
   private static calculateProficiencyBonus(challengeRating: number): number {
-    if (challengeRating < 1) {return 2;}
-    if (challengeRating < 5) {return 2;}
-    if (challengeRating < 9) {return 3;}
-    if (challengeRating < 13) {return 4;}
-    if (challengeRating < 17) {return 5;}
-    if (challengeRating < 21) {return 6;}
-    if (challengeRating < 25) {return 7;}
-    if (challengeRating < 29) {return 8;}
+    if (challengeRating < 1) {
+      return 2;
+    }
+    if (challengeRating < 5) {
+      return 2;
+    }
+    if (challengeRating < 9) {
+      return 3;
+    }
+    if (challengeRating < 13) {
+      return 4;
+    }
+    if (challengeRating < 17) {
+      return 5;
+    }
+    if (challengeRating < 21) {
+      return 6;
+    }
+    if (challengeRating < 25) {
+      return 7;
+    }
+    if (challengeRating < 29) {
+      return 8;
+    }
     return 9;
   }
 
@@ -378,8 +425,8 @@ export class MonsterStatblockAdapter {
   /**
    * Convert SRD monster format to standardized format
    */
-  static normalizeSRDMonster(srdMonster: any): D5eStatblock {
-    return {
+  static normalizeSRDMonster(srdMonster: SRDMonster): D5eStatblock {
+    const statblock: D5eStatblock = {
       name: srdMonster.name,
       size: srdMonster.size || "Medium",
       type: srdMonster.type || "humanoid",
@@ -395,21 +442,53 @@ export class MonsterStatblockAdapter {
         WIS: srdMonster.wisdom || 10,
         CHA: srdMonster.charisma || 10,
       },
-      skills: srdMonster.skills,
-      savingThrows: srdMonster.saving_throws,
-      damageResistances: srdMonster.damage_resistances,
-      damageImmunities: srdMonster.damage_immunities,
-      damageVulnerabilities: srdMonster.damage_vulnerabilities,
-      conditionImmunities: srdMonster.condition_immunities,
-      senses: srdMonster.senses,
-      languages: srdMonster.languages,
       challengeRating: srdMonster.challenge_rating || 0,
-      proficiencyBonus: srdMonster.proficiency_bonus,
-      actions: srdMonster.actions,
-      bonusActions: srdMonster.bonus_actions,
-      reactions: srdMonster.reactions,
-      legendaryActions: srdMonster.legendary_actions,
-      spellcasting: srdMonster.spellcasting,
     };
+
+    // Add optional properties only if they exist
+    if (srdMonster.skills) {
+      statblock.skills = srdMonster.skills;
+    }
+    if (srdMonster.saving_throws) {
+      statblock.savingThrows = srdMonster.saving_throws;
+    }
+    if (srdMonster.damage_resistances) {
+      statblock.damageResistances = srdMonster.damage_resistances;
+    }
+    if (srdMonster.damage_immunities) {
+      statblock.damageImmunities = srdMonster.damage_immunities;
+    }
+    if (srdMonster.damage_vulnerabilities) {
+      statblock.damageVulnerabilities = srdMonster.damage_vulnerabilities;
+    }
+    if (srdMonster.condition_immunities) {
+      statblock.conditionImmunities = srdMonster.condition_immunities;
+    }
+    if (srdMonster.senses) {
+      statblock.senses = srdMonster.senses;
+    }
+    if (srdMonster.languages) {
+      statblock.languages = srdMonster.languages;
+    }
+    if (srdMonster.proficiency_bonus) {
+      statblock.proficiencyBonus = srdMonster.proficiency_bonus;
+    }
+    if (srdMonster.actions) {
+      statblock.actions = srdMonster.actions;
+    }
+    if (srdMonster.bonus_actions) {
+      statblock.bonusActions = srdMonster.bonus_actions;
+    }
+    if (srdMonster.reactions) {
+      statblock.reactions = srdMonster.reactions;
+    }
+    if (srdMonster.legendary_actions) {
+      statblock.legendaryActions = srdMonster.legendary_actions;
+    }
+    if (srdMonster.spellcasting) {
+      statblock.spellcasting = srdMonster.spellcasting;
+    }
+
+    return statblock;
   }
 }

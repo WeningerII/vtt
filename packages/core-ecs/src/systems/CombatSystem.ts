@@ -1,7 +1,44 @@
 import { World, EntityId } from "../World";
 import { logger } from "@vtt/logging";
-import { CombatStore, CombatData } from "../components/Combat";
+import { CombatStore } from "../components/Combat";
 import { SpellcastingSystem, SpellEffect } from "./SpellcastingSystem";
+
+export type CombatActionData = {
+  attackType?: "melee" | "ranged";
+  damage?: number;
+  spellLevel?: number;
+  range?: number;
+  duration?: number;
+  [key: string]: unknown;
+};
+
+export type CombatEventData = {
+  initiative?: number;
+  round?: number;
+  turnInRound?: number;
+  damage?: number;
+  attackRoll?: number;
+  totalAttack?: number;
+  targetId?: EntityId;
+  targetAC?: number;
+  spellId?: string;
+  targets?: EntityId[];
+  success?: boolean;
+  participants?: EntityId[];
+  actionType?: string;
+  type?: string;
+  data?: ReactionData;
+  [key: string]: unknown;
+};
+
+export type ReactionData = {
+  type: "opportunity_attack" | "counterspell" | "shield" | "absorb_elements";
+  triggerId?: EntityId;
+  spellId?: string;
+  [key: string]: unknown;
+};
+
+export type CombatEventHandler = (event: CombatEvent) => void;
 
 export interface CombatAction {
   actorId: EntityId;
@@ -9,7 +46,7 @@ export interface CombatAction {
   type: "attack" | "spell" | "movement" | "dash" | "dodge" | "help" | "hide" | "ready" | "search";
   targetId?: EntityId;
   targets?: EntityId[];
-  data?: any;
+  data?: CombatActionData;
   spellId?: string;
   casterLevel?: number;
   spellSlotLevel?: number;
@@ -27,7 +64,7 @@ export interface CombatEvent {
     | "initiative_rolled"
     | "action_taken";
   entityId: EntityId;
-  data?: any;
+  data?: CombatEventData;
   timestamp: number;
 }
 
@@ -39,7 +76,7 @@ export class CombatSystem {
   private currentTurn: number = 0;
   private turnOrder: EntityId[] = [];
   private round: number = 1;
-  private eventHandlers: Map<string, Function[]> = new Map();
+  private eventHandlers: Map<string, CombatEventHandler[]> = new Map();
 
   constructor(world: World, combat: CombatStore, spellcastingSystem?: SpellcastingSystem) {
     this.world = world;
@@ -81,7 +118,9 @@ export class CombatSystem {
   }
 
   endCombat(): void {
-    if (!this.isActive) {return;}
+    if (!this.isActive) {
+      return;
+    }
 
     const allCombatants = this.combat.getAllInCombat();
 
@@ -99,7 +138,9 @@ export class CombatSystem {
   }
 
   nextTurn(): void {
-    if (!this.isActive) {return;}
+    if (!this.isActive) {
+      return;
+    }
 
     // End current turn
     if (this.turnOrder.length > 0) {
@@ -125,7 +166,9 @@ export class CombatSystem {
   }
 
   private startTurn(): void {
-    if (!this.isActive || this.turnOrder.length === 0) {return;}
+    if (!this.isActive || this.turnOrder.length === 0) {
+      return;
+    }
 
     const currentEntity = this.turnOrder[this.currentTurn];
     if (currentEntity !== undefined) {
@@ -138,43 +181,64 @@ export class CombatSystem {
   }
 
   getCurrentActor(): EntityId | null {
-    if (!this.isActive || this.turnOrder.length === 0) {return null;}
+    if (!this.isActive || this.turnOrder.length === 0) {
+      return null;
+    }
     const actor = this.turnOrder[this.currentTurn];
     return actor !== undefined ? actor : null;
   }
 
   canTakeAction(entityId: EntityId, actionCost: number = 1): boolean {
-    if (!this.isActive) {return false;}
+    if (!this.isActive) {
+      return false;
+    }
 
     const currentActor = this.getCurrentActor();
-    if (currentActor !== entityId) {return false;}
+    if (currentActor !== entityId) {
+      return false;
+    }
 
     const combatData = this.combat.get(entityId);
     return combatData ? combatData.actionPoints >= actionCost : false;
   }
 
   takeAction(action: CombatAction): boolean {
-    if (!this.canTakeAction(action.actorId)) {return false;}
+    if (!this.canTakeAction(action.actorId)) {
+      return false;
+    }
 
     const actionCost = this.getActionCost(action.type);
-    if (!this.combat.useAction(action.actorId, actionCost)) {return false;}
+    if (!this.combat.useAction(action.actorId, actionCost)) {
+      return false;
+    }
 
     // Process the action
     this.processAction(action);
 
-    this.emitEvent("action_taken", action.actorId, action);
+    const eventData: CombatEventData = { actionType: action.type };
+    if (action.targetId !== undefined) {
+      eventData.targetId = action.targetId;
+    }
+    if (action.targets !== undefined) {
+      eventData.targets = action.targets;
+    }
+    this.emitEvent("action_taken", action.actorId, eventData);
     return true;
   }
 
   canTakeReaction(entityId: EntityId): boolean {
-    if (!this.isActive) {return false;}
+    if (!this.isActive) {
+      return false;
+    }
 
     const combatData = this.combat.get(entityId);
     return combatData ? !combatData.reactionUsed : false;
   }
 
-  takeReaction(entityId: EntityId, reactionData: any): boolean {
-    if (!this.canTakeReaction(entityId)) {return false;}
+  takeReaction(entityId: EntityId, reactionData: ReactionData): boolean {
+    if (!this.canTakeReaction(entityId)) {
+      return false;
+    }
 
     this.combat.useReaction(entityId);
     this.emitEvent("action_taken", entityId, {
@@ -247,14 +311,18 @@ export class CombatSystem {
   }
 
   private processAttack(action: CombatAction): void {
-    if (!action.targetId) {return;}
+    if (!action.targetId) {
+      return;
+    }
 
     // TODO: Replace with proper ECS component access pattern
     const attackerStats = null; // this.world.getComponent("stats", action.entityId);
     const targetHealth = null; // this.world.getComponent("health", action.targetId);
 
     // Skip attack processing due to missing ECS integration
-    if (!attackerStats || !targetHealth) {return;}
+    if (!attackerStats || !targetHealth) {
+      return;
+    }
 
     // Simple attack resolution
     const attackRoll = Math.floor(Math.random() * 20) + 1;
@@ -329,14 +397,14 @@ export class CombatSystem {
   }
 
   // Event system
-  on(eventType: string, handler: (...args: any[]) => any): void {
+  on(eventType: string, handler: CombatEventHandler): void {
     if (!this.eventHandlers.has(eventType)) {
       this.eventHandlers.set(eventType, []);
     }
     this.eventHandlers.get(eventType)!.push(handler);
   }
 
-  off(eventType: string, handler: (...args: any[]) => any): void {
+  off(eventType: string, handler: CombatEventHandler): void {
     const handlers = this.eventHandlers.get(eventType);
     if (handlers) {
       const index = handlers.indexOf(handler);
@@ -346,13 +414,16 @@ export class CombatSystem {
     }
   }
 
-  private emitEvent(type: string, entityId: EntityId, data?: any): void {
+  private emitEvent(type: string, entityId: EntityId, data?: CombatEventData): void {
     const event: CombatEvent = {
-      type: type as any,
+      type: type as CombatEvent["type"],
       entityId,
-      data,
       timestamp: Date.now(),
     };
+
+    if (data !== undefined) {
+      event.data = data;
+    }
 
     const handlers = this.eventHandlers.get(type);
     if (handlers) {
@@ -384,7 +455,9 @@ export class CombatSystem {
   }
 
   update(_deltaTime: number): void {
-    if (!this.isActive) {return;}
+    if (!this.isActive) {
+      return;
+    }
 
     // Update combat-related logic
     // Handle ongoing effects, concentration checks, etc.

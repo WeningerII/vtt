@@ -17,13 +17,62 @@ export interface MonsterPersonalityTraits {
   cunning: number;
   curiosity: number;
   loyalty: number;
+  territorial?: number;
+  patience?: number;
+  vindictive?: number;
 }
 
 export interface TacticalPreferences {
-  preferredRange: 'melee' | 'ranged' | 'mixed';
+  preferredRange: "melee" | "ranged" | "mixed";
   flankingTendency: number;
   retreatThreshold: number;
+  fightingStyle?: string;
+  targetPriority?: Array<"weakest" | "strongest" | "spellcaster" | "healer" | "nearest" | "leader">;
+  usesTerrain?: boolean;
+  coordinatesWithAllies?: boolean;
 }
+
+export interface SpecialBehavior {
+  id: string;
+  name: string;
+  trigger: string;
+  action: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface GenerationOptions {
+  creatureType?: string;
+  intelligence?: "mindless" | "animal" | "low" | "average" | "high" | "genius";
+  alignment?: string;
+  environment?: string;
+  role?: "minion" | "elite" | "boss" | "support";
+  complexity?: "simple" | "moderate" | "complex";
+  seed?: number;
+}
+
+// Temporary placeholder classes until packages are available
+class NameGenerator {
+  constructor(_seed: number) {}
+  generateCreatureName(_type: string): string {
+    return "Generated Creature";
+  }
+}
+
+class PerlinNoise {
+  constructor(_seed: number) {}
+  noise2D(_x: number, _y: number): number {
+    return Math.random() * 2 - 1; // Simple random noise placeholder
+  }
+}
+
+// Temporary placeholder for global event bus
+const globalEventBus = {
+  emit: async (_event: unknown) => Promise.resolve(),
+};
+
+const AIEvents = {
+  behaviorChanged: (_id: string, _from: string, _to: string) => ({}),
+};
 
 export interface BehaviorTemplate {
   id: string;
@@ -39,7 +88,7 @@ export interface BehaviorTemplate {
 export interface BehaviorCondition {
   type: "health" | "distance" | "enemy_count" | "ally_count" | "time" | "resource" | "custom";
   operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
-  value: any;
+  value: string | number | boolean;
   weight: number;
 }
 
@@ -54,7 +103,7 @@ export interface BehaviorAction {
     | "retreat"
     | "patrol";
   priority: number;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   cooldown?: number;
   requirements?: BehaviorCondition[];
 }
@@ -65,7 +114,7 @@ export interface GeneratedBehavior {
   behaviorTree: BehaviorTree;
   personality: MonsterPersonalityTraits;
   tacticalPreferences: TacticalPreferences;
-  specialBehaviors: any[];
+  specialBehaviors: SpecialBehavior[];
   metadata: {
     generated: Date;
     seed: number;
@@ -126,7 +175,7 @@ export class ProceduralBehaviorGenerator {
 
     const generatedBehavior: GeneratedBehavior = {
       id: this.generateId(),
-      name: this.nameGenerator.generateCreatureName((options.creatureType as any) || "humanoid"),
+      name: this.nameGenerator.generateCreatureName(options.creatureType || "humanoid"),
       behaviorTree,
       personality,
       tacticalPreferences,
@@ -148,7 +197,7 @@ export class ProceduralBehaviorGenerator {
   /**
    * Generate personality traits using noise functions
    */
-  private generatePersonality(seed: number, options: any): MonsterPersonalityTraits {
+  private generatePersonality(seed: number, options: GenerationOptions): MonsterPersonalityTraits {
     const baseX = seed * 0.01;
     const baseY = (seed + 1000) * 0.01;
 
@@ -185,6 +234,7 @@ export class ProceduralBehaviorGenerator {
       packMentality,
       selfPreservation: (this.personalityNoise.noise2D(baseX + 20, baseY) + 1) / 2,
       curiosity: (this.personalityNoise.noise2D(baseX, baseY + 20) + 1) / 2,
+      loyalty: (this.personalityNoise.noise2D(baseX + 25, baseY) + 1) / 2,
       patience: (this.personalityNoise.noise2D(baseX + 30, baseY) + 1) / 2,
       vindictive: (this.personalityNoise.noise2D(baseX, baseY + 30) + 1) / 2,
     };
@@ -196,7 +246,7 @@ export class ProceduralBehaviorGenerator {
   private generateTacticalPreferences(
     seed: number,
     personality: MonsterPersonalityTraits,
-    options: any,
+    _options: GenerationOptions,
   ): TacticalPreferences {
     const _behaviorX = seed * 0.01;
     const _behaviorY = (seed + 2000) * 0.01;
@@ -218,7 +268,7 @@ export class ProceduralBehaviorGenerator {
       fightingStyle = "defensive";
     } else if (personality.cunning > 0.7 && personality.selfPreservation > 0.5) {
       fightingStyle = "hit_and_run";
-    } else if (personality.cunning > 0.8 && personality.patience > 0.6) {
+    } else if (personality.cunning > 0.8 && (personality.patience || 0) > 0.6) {
       fightingStyle = "ambush";
     } else if (personality.packMentality > 0.7) {
       fightingStyle = "support";
@@ -242,6 +292,7 @@ export class ProceduralBehaviorGenerator {
 
     return {
       preferredRange,
+      flankingTendency: personality.cunning * 0.8,
       fightingStyle,
       targetPriority,
       retreatThreshold: Math.max(0.1, personality.selfPreservation * 0.5),
@@ -255,7 +306,7 @@ export class ProceduralBehaviorGenerator {
    */
   private selectBehaviorTemplates(
     personality: MonsterPersonalityTraits,
-    options: any,
+    options: GenerationOptions,
   ): BehaviorTemplate[] {
     const templates: BehaviorTemplate[] = [];
     const availableTemplates = Array.from(this.behaviorTemplates.values());
@@ -286,7 +337,7 @@ export class ProceduralBehaviorGenerator {
   private scoreBehaviorTemplate(
     template: BehaviorTemplate,
     personality: MonsterPersonalityTraits,
-    options: any,
+    options: GenerationOptions,
   ): number {
     let score = 0;
 
@@ -294,16 +345,23 @@ export class ProceduralBehaviorGenerator {
     if (template.basePersonality) {
       for (const [trait, value] of Object.entries(template.basePersonality)) {
         if (trait in personality) {
-          const diff = Math.abs((personality as any)[trait] - (value as number));
+          const personalityValue = (personality as unknown as Record<string, number>)[trait];
+          const diff = Math.abs(personalityValue - (value as number));
           score += (1 - diff) * 10; // Higher score for closer match
         }
       }
     }
 
     // Bonus for matching tags
-    if (template.tags.includes(options.creatureType)) {score += 5;}
-    if (template.tags.includes(options.role)) {score += 3;}
-    if (template.tags.includes(options.environment)) {score += 2;}
+    if (template.tags.includes(options.creatureType || "")) {
+      score += 5;
+    }
+    if (template.tags.includes(options.role || "")) {
+      score += 3;
+    }
+    if (template.tags.includes(options.environment || "")) {
+      score += 2;
+    }
 
     return score;
   }
@@ -406,12 +464,15 @@ export class ProceduralBehaviorGenerator {
   /**
    * Generate special behaviors based on personality
    */
-  private generateSpecialBehaviors(personality: MonsterPersonalityTraits, _options: any): any[] {
-    const behaviors = [];
+  private generateSpecialBehaviors(
+    personality: MonsterPersonalityTraits,
+    _options: GenerationOptions,
+  ): SpecialBehavior[] {
+    const behaviors: SpecialBehavior[] = [];
 
     // Berserker behavior for high aggression
     if (personality.aggression > 0.8 && personality.selfPreservation < 0.3) {
-      (behaviors as any[]).push({
+      behaviors.push({
         id: "berserker_rage",
         name: "Berserker Rage",
         trigger: "bloodied",
@@ -422,7 +483,7 @@ export class ProceduralBehaviorGenerator {
 
     // Pack tactics for high pack mentality
     if (personality.packMentality > 0.7) {
-      (behaviors as any[]).push({
+      behaviors.push({
         id: "pack_tactics",
         name: "Pack Tactics",
         trigger: "ally_nearby",
@@ -433,7 +494,7 @@ export class ProceduralBehaviorGenerator {
 
     // Cunning retreat for high cunning and self-preservation
     if (personality.cunning > 0.6 && personality.selfPreservation > 0.6) {
-      (behaviors as any[]).push({
+      behaviors.push({
         id: "cunning_retreat",
         name: "Cunning Retreat",
         trigger: "outnumbered",
@@ -493,6 +554,8 @@ export class ProceduralBehaviorGenerator {
 
   private evaluateCondition(condition: BehaviorCondition, blackboard: Blackboard): boolean {
     const value = blackboard.get(condition.type, 0);
+    const numericValue = typeof value === "number" ? value : 0;
+    const conditionValue = typeof condition.value === "number" ? condition.value : 0;
 
     switch (condition.operator) {
       case "eq":
@@ -500,13 +563,13 @@ export class ProceduralBehaviorGenerator {
       case "ne":
         return value !== condition.value;
       case "gt":
-        return value > condition.value;
+        return numericValue > conditionValue;
       case "gte":
-        return value >= condition.value;
+        return numericValue >= conditionValue;
       case "lt":
-        return value < condition.value;
+        return numericValue < conditionValue;
       case "lte":
-        return value <= condition.value;
+        return numericValue <= conditionValue;
       default:
         return false;
     }

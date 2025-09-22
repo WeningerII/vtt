@@ -5,6 +5,19 @@
 import { HealthStore } from "../components/Health";
 import { ConditionsStore } from "../components/Conditions";
 
+export type HealthEventData = {
+  entity: number;
+  damage?: number;
+  healing?: number;
+  damageType?: string;
+  source?: number;
+  newHealth?: number;
+  tempHP?: number;
+  [key: string]: unknown;
+};
+
+export type HealthEventHandler = (data: HealthEventData) => void;
+
 export interface DamageEvent {
   entity: number;
   damage: number;
@@ -21,7 +34,7 @@ export interface HealingEvent {
 export class HealthSystem {
   private healthStore: HealthStore;
   private conditionsStore: ConditionsStore;
-  private eventHandlers: Map<string, Function[]> = new Map();
+  private eventHandlers: Map<string, HealthEventHandler[]> = new Map();
 
   constructor(healthStore: HealthStore, conditionsStore: ConditionsStore) {
     this.healthStore = healthStore;
@@ -39,10 +52,14 @@ export class HealthSystem {
   applyDamage(event: DamageEvent): void {
     const { entity, damage, damageType, source } = event;
 
-    if (!this.healthStore.has(entity)) {return;}
+    if (!this.healthStore.has(entity)) {
+      return;
+    }
 
     const health = this.healthStore.get(entity);
-    if (!health) {return;}
+    if (!health) {
+      return;
+    }
 
     const originalHP = health.current;
     const success = this.healthStore.takeDamage(entity, damage);
@@ -51,13 +68,16 @@ export class HealthSystem {
       const newHealth = this.healthStore.get(entity);
       const actualDamage = originalHP - (newHealth?.current || 0);
 
-      this.emit("damageApplied", {
+      const eventData: HealthEventData = {
         entity,
         damage: actualDamage,
         damageType,
-        source,
         newHealth: newHealth?.current || 0,
-      });
+      };
+      if (source !== undefined) {
+        eventData.source = source;
+      }
+      this.emit("damageApplied", eventData);
 
       // Check for death or unconsciousness
       if (this.healthStore.isDead(entity)) {
@@ -69,10 +89,14 @@ export class HealthSystem {
   applyHealing(event: HealingEvent): void {
     const { entity, healing, source } = event;
 
-    if (!this.healthStore.has(entity)) {return;}
+    if (!this.healthStore.has(entity)) {
+      return;
+    }
 
     const health = this.healthStore.get(entity);
-    if (!health) {return;}
+    if (!health) {
+      return;
+    }
 
     const originalHP = health.current;
     const success = this.healthStore.heal(entity, healing);
@@ -81,12 +105,15 @@ export class HealthSystem {
       const newHealth = this.healthStore.get(entity);
       const actualHealing = (newHealth?.current || 0) - originalHP;
 
-      this.emit("healingApplied", {
+      const eventData: HealthEventData = {
         entity,
         healing: actualHealing,
-        source,
         newHealth: newHealth?.current || 0,
-      });
+      };
+      if (source !== undefined) {
+        eventData.source = source;
+      }
+      this.emit("healingApplied", eventData);
 
       // Remove unconscious condition if healed above 0
       if (originalHP <= 0 && (newHealth?.current || 0) > 0) {
@@ -97,10 +124,14 @@ export class HealthSystem {
   }
 
   setTemporaryHitPoints(entity: number, tempHP: number): void {
-    if (!this.healthStore.has(entity)) {return;}
+    if (!this.healthStore.has(entity)) {
+      return;
+    }
 
     const health = this.healthStore.get(entity);
-    if (!health) {return;}
+    if (!health) {
+      return;
+    }
 
     // Temporary hit points don't stack, take the higher value
     const newTempHP = Math.max(health.temporary, tempHP);
@@ -171,27 +202,39 @@ export class HealthSystem {
   getHealthStatus(
     entity: number,
   ): "healthy" | "injured" | "bloodied" | "critical" | "unconscious" | "dead" {
-    if (!this.healthStore.has(entity)) {return "dead";}
+    if (!this.healthStore.has(entity)) {
+      return "dead";
+    }
 
-    if (this.isUnconscious(entity)) {return "unconscious";}
-    if (this.healthStore.isDead(entity)) {return "dead";}
+    if (this.isUnconscious(entity)) {
+      return "unconscious";
+    }
+    if (this.healthStore.isDead(entity)) {
+      return "dead";
+    }
 
     const percentage = this.getHealthPercentage(entity);
-    if (percentage >= 0.75) {return "healthy";}
-    if (percentage >= 0.5) {return "injured";}
-    if (percentage >= 0.25) {return "bloodied";}
+    if (percentage >= 0.75) {
+      return "healthy";
+    }
+    if (percentage >= 0.5) {
+      return "injured";
+    }
+    if (percentage >= 0.25) {
+      return "bloodied";
+    }
     return "critical";
   }
 
   // Event system
-  on(event: string, handler: (...args: any[]) => any): void {
+  on(event: string, handler: HealthEventHandler): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  off(event: string, handler: (...args: any[]) => any): void {
+  off(event: string, handler: HealthEventHandler): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);
@@ -201,9 +244,9 @@ export class HealthSystem {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: HealthEventData): void {
     const handlers = this.eventHandlers.get(event);
-    if (handlers) {
+    if (handlers && data) {
       handlers.forEach((handler) => handler(data));
     }
   }

@@ -4,6 +4,41 @@ import { StatsStore } from "../components/Stats";
 import { LegendaryAction } from "../adapters/MonsterStatblockAdapter";
 import { AILearningSystem, ActionOutcome, QValueState } from "./AILearningSystem";
 
+export interface MonsterAIData {
+  challengeRating?: number;
+  type?: string;
+  abilities?: {
+    strength?: number;
+    dexterity?: number;
+    constitution?: number;
+    intelligence?: number;
+    wisdom?: number;
+    charisma?: number;
+  };
+  spellcasting?: {
+    level: number;
+    ability: string;
+    saveDC: number;
+    attackBonus: number;
+    slots?: Record<string, number>;
+    spells: Record<string, string[]>;
+  };
+  legendaryActions?: LegendaryAction[];
+  actions?: Array<{
+    name: string;
+    description: string;
+    attackBonus?: number;
+    damage?: {
+      diceExpression: string;
+      damageType: string;
+    };
+    saveDC?: number;
+    saveAbility?: string;
+    range?: number;
+    targets?: number;
+  }>;
+}
+
 export interface AIDecision {
   entityId: EntityId;
   action: "attack" | "spell" | "move" | "legendary_action" | "wait";
@@ -25,7 +60,7 @@ export class MonsterAISystem {
   private healthStore: HealthStore;
   private statsStore: StatsStore;
   private behaviors: Map<EntityId, AIBehavior> = new Map();
-  private monsterData: Map<EntityId, any> = new Map(); // Store monster statblock data
+  private monsterData: Map<EntityId, MonsterAIData> = new Map(); // Store monster statblock data
   private learningSystem: AILearningSystem;
   private lastActions: Map<EntityId, { decision: AIDecision; timestamp: number }> = new Map();
 
@@ -41,7 +76,11 @@ export class MonsterAISystem {
     this.learningSystem = learningSystem || new AILearningSystem();
   }
 
-  registerMonster(entityId: EntityId, monsterData: any, behavior?: Partial<AIBehavior>): void {
+  registerMonster(
+    entityId: EntityId,
+    monsterData: MonsterAIData,
+    behavior?: Partial<AIBehavior>,
+  ): void {
     this.monsterData.set(entityId, monsterData);
 
     // Default behavior based on monster type/CR
@@ -103,7 +142,9 @@ export class MonsterAISystem {
         adaptiveBehavior,
         healthPercent,
       );
-      if (attackDecision) {decisions.push(attackDecision);}
+      if (attackDecision) {
+        decisions.push(attackDecision);
+      }
     }
 
     // Consider spellcasting
@@ -115,7 +156,9 @@ export class MonsterAISystem {
         adaptiveBehavior,
         healthPercent,
       );
-      if (spellDecision) {decisions.push(spellDecision);}
+      if (spellDecision) {
+        decisions.push(spellDecision);
+      }
     }
 
     // Consider movement (tactical repositioning)
@@ -126,7 +169,9 @@ export class MonsterAISystem {
       adaptiveBehavior,
       healthPercent,
     );
-    if (moveDecision) {decisions.push(moveDecision);}
+    if (moveDecision) {
+      decisions.push(moveDecision);
+    }
 
     // Use learning system to potentially override decision
     if (availableActions.length > 0) {
@@ -145,7 +190,9 @@ export class MonsterAISystem {
     // Return highest priority decision or wait
     const sortedDecisions = decisions.sort((a, b) => b.priority - a.priority);
     const bestDecision: AIDecision =
-      sortedDecisions.length > 0 && sortedDecisions[0] ? sortedDecisions[0] : { entityId, action: "wait", priority: 0 };
+      sortedDecisions.length > 0 && sortedDecisions[0]
+        ? sortedDecisions[0]
+        : { entityId, action: "wait", priority: 0 };
 
     this.recordDecision(entityId, bestDecision);
     return bestDecision;
@@ -164,14 +211,18 @@ export class MonsterAISystem {
     }
 
     const remaining = this.combatStore.getLegendaryActionsRemaining(entityId);
-    if (remaining <= 0) {return null;}
+    if (remaining <= 0) {
+      return null;
+    }
 
     // Simple AI: use cheapest available legendary action
     const availableActions = monsterData.legendaryActions.filter(
       (action: LegendaryAction) => action.cost <= remaining,
     );
 
-    if (availableActions.length === 0) {return null;}
+    if (availableActions.length === 0) {
+      return null;
+    }
 
     // Prefer attack actions, then movement
     const preferredAction =
@@ -191,37 +242,45 @@ export class MonsterAISystem {
     };
   }
 
-  private calculateAggressiveness(monsterData: any): number {
+  private calculateAggressiveness(monsterData: MonsterAIData): number {
     // Base on challenge rating and monster type
     const cr = monsterData.challengeRating || 1;
     let aggressiveness = Math.min(0.3 + cr * 0.1, 1.0);
 
     // Adjust based on monster type
-    if (monsterData.type?.toLowerCase().includes("undead")) {aggressiveness += 0.2;}
-    if (monsterData.type?.toLowerCase().includes("fiend")) {aggressiveness += 0.3;}
-    if (monsterData.type?.toLowerCase().includes("beast")) {aggressiveness += 0.1;}
+    if (monsterData.type?.toLowerCase().includes("undead")) {
+      aggressiveness += 0.2;
+    }
+    if (monsterData.type?.toLowerCase().includes("fiend")) {
+      aggressiveness += 0.3;
+    }
+    if (monsterData.type?.toLowerCase().includes("beast")) {
+      aggressiveness += 0.1;
+    }
 
     return Math.min(aggressiveness, 1.0);
   }
 
-  private calculateIntelligence(monsterData: any): number {
+  private calculateIntelligence(monsterData: MonsterAIData): number {
     const intScore = monsterData.abilities?.intelligence || 10;
     return Math.max(0.1, Math.min((intScore - 3) / 15, 1.0));
   }
 
-  private calculateSelfPreservation(monsterData: any): number {
+  private calculateSelfPreservation(monsterData: MonsterAIData): number {
     const wisScore = monsterData.abilities?.wisdom || 10;
     return Math.max(0.2, Math.min((wisScore - 5) / 15, 0.8));
   }
 
-  private calculateSpellPreference(monsterData: any): number {
+  private calculateSpellPreference(monsterData: MonsterAIData): number {
     return monsterData.spellcasting ? 0.6 : 0.1;
   }
 
   private findTargets(entityId: EntityId, allEntities: EntityId[]): EntityId[] {
     // Simple targeting: find all other entities (in real implementation, would filter by hostility)
     return allEntities.filter((id) => {
-      if (id === entityId) {return false;}
+      if (id === entityId) {
+        return false;
+      }
       const health = this.healthStore.get(id);
       return health !== undefined && health !== null && health.current > 0;
     });
@@ -233,7 +292,9 @@ export class MonsterAISystem {
     behavior: AIBehavior,
     healthPercent: number,
   ): AIDecision | null {
-    if (targets.length === 0) {return null;}
+    if (targets.length === 0) {
+      return null;
+    }
 
     // Choose target based on AI behavior
     const targetId = this.selectBestTarget(entityId, targets, behavior);
@@ -255,7 +316,9 @@ export class MonsterAISystem {
     behavior: AIBehavior,
     healthPercent: number,
   ): AIDecision | null {
-    if (targets.length === 0) {return null;}
+    if (targets.length === 0) {
+      return null;
+    }
 
     const targetId = this.selectBestTarget(entityId, targets, behavior);
 
@@ -281,7 +344,9 @@ export class MonsterAISystem {
       behavior.selfPreservation * (1 - healthPercent) * 6 + behavior.intelligence * 2;
 
     // Only consider movement if health is low or very tactical
-    if (movePriority < 4) {return null;}
+    if (movePriority < 4) {
+      return null;
+    }
 
     return {
       entityId,
@@ -295,7 +360,9 @@ export class MonsterAISystem {
     targets: EntityId[],
     behavior: AIBehavior,
   ): EntityId {
-    if (targets.length === 1) {return targets[0]!;}
+    if (targets.length === 1) {
+      return targets[0]!;
+    }
 
     // Intelligent monsters prefer low-health targets, aggressive ones prefer closest/strongest
     if (behavior.intelligence > 0.6) {
@@ -304,7 +371,9 @@ export class MonsterAISystem {
         const bestHealth = this.healthStore.get(best);
         const currentHealth = this.healthStore.get(current);
 
-        if (!bestHealth || !currentHealth) {return best;}
+        if (!bestHealth || !currentHealth) {
+          return best;
+        }
 
         const bestPercent = bestHealth.current / bestHealth.max;
         const currentPercent = currentHealth.current / currentHealth.max;

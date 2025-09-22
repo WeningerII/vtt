@@ -5,6 +5,17 @@
 import { ConditionsStore } from "../components/Conditions";
 import { StatsStore } from "../components/Stats";
 
+export type ConditionEventData = {
+  entity: number;
+  condition?: string;
+  roll?: number;
+  dc?: number;
+  damage?: number;
+  [key: string]: unknown;
+};
+
+export type ConditionEventHandler = (data: ConditionEventData) => void;
+
 export interface ConditionEffect {
   entity: number;
   conditionType: string;
@@ -16,7 +27,7 @@ export interface ConditionEffect {
 export class ConditionSystem {
   private conditionsStore: ConditionsStore;
   private statsStore: StatsStore;
-  private eventHandlers: Map<string, Function[]> = new Map();
+  private eventHandlers: Map<string, ConditionEventHandler[]> = new Map();
 
   constructor(conditionsStore: ConditionsStore, statsStore: StatsStore) {
     this.conditionsStore = conditionsStore;
@@ -154,8 +165,12 @@ export class ConditionSystem {
         case "exhaustion":
           {
             const exhaustionLevel = this.conditionsStore.getExhaustionLevel(entity);
-            if (exhaustionLevel >= 2) {speedMultiplier *= 0.5;}
-            if (exhaustionLevel >= 5) {speedMultiplier = 0;}
+            if (exhaustionLevel >= 2) {
+              speedMultiplier *= 0.5;
+            }
+            if (exhaustionLevel >= 5) {
+              speedMultiplier = 0;
+            }
           }
           break;
       }
@@ -241,14 +256,14 @@ export class ConditionSystem {
   }
 
   // Event system
-  on(event: string, handler: (...args: any[]) => any): void {
+  on(event: string, handler: ConditionEventHandler): void {
     if (!this.eventHandlers.has(event)) {
       this.eventHandlers.set(event, []);
     }
     this.eventHandlers.get(event)!.push(handler);
   }
 
-  off(event: string, handler: (...args: any[]) => any): void {
+  off(event: string, handler: ConditionEventHandler): void {
     const handlers = this.eventHandlers.get(event);
     if (handlers) {
       const index = handlers.indexOf(handler);
@@ -258,9 +273,9 @@ export class ConditionSystem {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: ConditionEventData): void {
     const handlers = this.eventHandlers.get(event);
-    if (handlers) {
+    if (handlers && data) {
       handlers.forEach((handler) => handler(data));
     }
   }

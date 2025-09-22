@@ -8,7 +8,7 @@ export enum NodeStatus {
 }
 
 export interface BlackboardData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface BehaviorTreeConfig {
@@ -18,6 +18,11 @@ export interface BehaviorTreeConfig {
   logLevel: "none" | "error" | "warn" | "info" | "debug";
 }
 
+export interface SerializedNode {
+  name: string;
+  type: string;
+  children: SerializedNode[];
+}
 
 export abstract class BehaviorNode {
   protected name: string;
@@ -125,7 +130,9 @@ export class SequenceNode extends BehaviorNode {
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
       const child = this.children[this.currentChildIndex];
-      if (!child) {break;}
+      if (!child) {
+        break;
+      }
       const status = child.execute();
 
       switch (status) {
@@ -156,7 +163,9 @@ export class SelectorNode extends BehaviorNode {
   tick(): NodeStatus {
     while (this.currentChildIndex < this.children.length) {
       const child = this.children[this.currentChildIndex];
-      if (!child) {break;}
+      if (!child) {
+        break;
+      }
       const status = child.execute();
 
       switch (status) {
@@ -259,7 +268,7 @@ export class RepeatNode extends BehaviorNode {
   private maxRepeats: number;
   private currentRepeats = 0;
 
-  constructor(name: string, blackboard: Blackboard, maxRepeats: number = -1) {
+  constructor(name: string, blackboard: Blackboard, maxRepeats: number = 3) {
     super(name, blackboard);
     this.maxRepeats = maxRepeats;
   }
@@ -270,6 +279,9 @@ export class RepeatNode extends BehaviorNode {
     }
 
     const child = this.children[0];
+    if (!child) {
+      return NodeStatus.FAILURE;
+    }
     const status = child.execute();
 
     if (status === NodeStatus.RUNNING) {
@@ -291,7 +303,7 @@ export class RepeatNode extends BehaviorNode {
     return NodeStatus.FAILURE;
   }
 
-  reset(): void {
+  override reset(): void {
     super.reset();
     this.currentRepeats = 0;
   }
@@ -312,6 +324,9 @@ export class RetryNode extends BehaviorNode {
     }
 
     const child = this.children[0];
+    if (!child) {
+      return NodeStatus.FAILURE;
+    }
     const status = child.execute();
 
     if (status === NodeStatus.SUCCESS || status === NodeStatus.RUNNING) {
@@ -333,7 +348,7 @@ export class RetryNode extends BehaviorNode {
     return NodeStatus.FAILURE;
   }
 
-  reset(): void {
+  override reset(): void {
     super.reset();
     this.currentRetries = 0;
   }
@@ -348,7 +363,7 @@ export class TimeoutNode extends BehaviorNode {
     this.timeoutMs = timeoutMs;
   }
 
-  protected onEnter(): void {
+  protected override onEnter(): void {
     this.startTime = Date.now();
   }
 
@@ -362,7 +377,12 @@ export class TimeoutNode extends BehaviorNode {
       return NodeStatus.FAILURE;
     }
 
-    const status = this.children[0]?.execute();
+    const child = this.children[0];
+    if (!child) {
+      return NodeStatus.FAILURE;
+    }
+
+    const status = child.execute();
 
     if (status === NodeStatus.RUNNING) {
       return NodeStatus.RUNNING;
@@ -390,7 +410,7 @@ export abstract class ConditionNode extends BehaviorNode {
 // Blackboard for shared state
 export class Blackboard {
   private data: BlackboardData = {};
-  private observers = new Map<string, Array<(_value: any) => void>>();
+  private observers = new Map<string, Array<(_value: unknown) => void>>();
 
   set<T>(key: string, value: T): void {
     const oldValue = this.data[key];
@@ -402,7 +422,7 @@ export class Blackboard {
   }
 
   get<T>(key: string, defaultValue?: T): T {
-    return this.data[key] !== undefined ? this.data[key] : defaultValue!;
+    return this.data[key] !== undefined ? (this.data[key] as T) : defaultValue!;
   }
 
   has(key: string): boolean {
@@ -419,14 +439,14 @@ export class Blackboard {
     this.observers.clear();
   }
 
-  observe(key: string, callback: (value: any) => void): void {
+  observe(key: string, callback: (value: unknown) => void): void {
     if (!this.observers.has(key)) {
       this.observers.set(key, []);
     }
     this.observers.get(key)!.push(callback);
   }
 
-  unobserve(key: string, callback: (value: any) => void): void {
+  unobserve(key: string, callback: (value: unknown) => void): void {
     const observers = this.observers.get(key);
     if (observers) {
       const index = observers.indexOf(callback);
@@ -436,7 +456,7 @@ export class Blackboard {
     }
   }
 
-  private notifyObservers(key: string, value: any): void {
+  private notifyObservers(key: string, value: unknown): void {
     const observers = this.observers.get(key);
     if (observers) {
       for (const observer of observers) {
@@ -550,7 +570,9 @@ export class BehaviorTree {
 
   // Tree traversal and utilities
   findNodeByName(name: string): BehaviorNode | null {
-    if (!this.root) {return null;}
+    if (!this.root) {
+      return null;
+    }
     return this.findNodeByNameRecursive(this.root, name) ?? null;
   }
 
@@ -570,7 +592,9 @@ export class BehaviorTree {
   }
 
   getAllNodes(): BehaviorNode[] {
-    if (!this.root) {return [];}
+    if (!this.root) {
+      return [];
+    }
 
     const nodes: BehaviorNode[] = [];
     this.collectNodesRecursive(this.root, nodes);
@@ -585,7 +609,15 @@ export class BehaviorTree {
   }
 
   // Debugging and profiling
-  getDebugInfo(): any {
+  getDebugInfo(): {
+    tickCount: number;
+    lastTickTime: number;
+    totalTickTime: number;
+    averageTickTime: number;
+    isRunning: boolean;
+    nodeCount: number;
+    blackboardKeys: number;
+  } {
     return {
       tickCount: this.tickCount,
       lastTickTime: this.lastTickTime,
@@ -624,12 +656,14 @@ export class BehaviorTree {
   }
 
   // Serialization
-  serialize(): any {
-    if (!this.root) {return null;}
+  serialize(): SerializedNode | null {
+    if (!this.root) {
+      return null;
+    }
     return this.serializeNode(this.root);
   }
 
-  private serializeNode(node: BehaviorNode): any {
+  private serializeNode(node: BehaviorNode): SerializedNode {
     return {
       name: node.getName(),
       type: node.constructor.name,
@@ -728,7 +762,10 @@ export class BehaviorTreeBuilder {
 
   private addNode(node: BehaviorNode): void {
     if (this.stack.length > 0) {
-      this.stack[this.stack.length - 1].addChild(node);
+      const parent = this.stack[this.stack.length - 1];
+      if (parent) {
+        parent.addChild(node);
+      }
     }
     this.stack.push(node);
   }

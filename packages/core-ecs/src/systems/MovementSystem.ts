@@ -2,8 +2,8 @@ import type { World } from "../World";
 
 /** Advance positions by velocity; dt is in seconds. */
 export function MovementSystem(world: World, dt: number) {
-  const T = (world as any).transforms;
-  const M = (world as any).movement;
+  const T = world.transforms;
+  const M = world.movement;
 
   for (const id of Array.from(world.iterMoveable())) {
     // Safe reads with defaults (TS: noUncheckedIndexedAccess)
