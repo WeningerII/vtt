@@ -43,6 +43,8 @@ RUN pnpm install --no-frozen-lockfile
 COPY --from=pruner /repo/out/full/ ./
 # Ensure base tsconfig exists for project references (copy from original repo, not pruned)
 COPY --from=pruner /repo/tsconfig.base.json ./tsconfig.base.json
+# Generate Prisma client EARLY to ensure types are available during TypeScript compilation
+RUN cd apps/server && pnpm exec prisma generate --schema prisma/schema.prisma
 # Create package directories and ensure tsconfig files exist for all referenced packages
 # These are needed for TypeScript compilation even when using stubs
 RUN mkdir -p packages/logging packages/monitoring packages/core-ecs packages/ai packages/performance packages/ui packages/i18n packages/core packages/core-schemas packages/net
@@ -52,7 +54,7 @@ RUN set -e; \
     create_tsconfig() { \
         local pkg_name="$1"; \
         local has_refs="$2"; \
-        printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./%s.tsbuildinfo",\n    "types": ["node"]\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]%s\n}' "$pkg_name" "$has_refs"; \
+        printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./%s.tsbuildinfo",\n    "types": ["node"]\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**", "**/__mocks__/**"]%s\n}' "$pkg_name" "$has_refs"; \
     }; \
     # Always copy tsconfig files from the original repo (before pruning) \
     # This ensures all package tsconfig files exist even if they were excluded by turbo prune \
@@ -60,22 +62,37 @@ RUN set -e; \
         echo "Processing package: $pkg"; \
         mkdir -p "./packages/$pkg"; \
         if [ -f "/repo/packages/$pkg/tsconfig.json" ]; then \
-            echo "Copying existing tsconfig for $pkg"; \
-            cp "/repo/packages/$pkg/tsconfig.json" "./packages/$pkg/tsconfig.json"; \
+            echo "Copying existing tsconfig for $pkg and modifying to exclude tests"; \
+            # Copy and modify the tsconfig to exclude test files \
+            node -e " \
+                const fs = require('fs'); \
+                const config = JSON.parse(fs.readFileSync('/repo/packages/$pkg/tsconfig.json', 'utf8')); \
+                config.exclude = config.exclude || []; \
+                const testExcludes = ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**', '**/__mocks__/**', 'src/**/__tests__/**']; \
+                testExcludes.forEach(pattern => { \
+                    if (!config.exclude.includes(pattern)) config.exclude.push(pattern); \
+                }); \
+                fs.writeFileSync('./packages/$pkg/tsconfig.json', JSON.stringify(config, null, 2)); \
+            "; \
         else \
             echo "Creating tsconfig for $pkg"; \
             case "$pkg" in \
                 monitoring) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }]' > "./packages/$pkg/tsconfig.json" ;; \
                 ai) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }, { "path": "../core-ecs" }]' > "./packages/$pkg/tsconfig.json" ;; \
-                ui) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./ui.tsbuildinfo",\n    "types": []\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
-                i18n) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./i18n.tsbuildinfo"\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
+                ui) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./ui.tsbuildinfo",\n    "types": []\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**", "**/__mocks__/**"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
+                i18n) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./i18n.tsbuildinfo"\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**", "**/__mocks__/**"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
                 *) create_tsconfig "$pkg" "" > "./packages/$pkg/tsconfig.json" ;; \
             esac; \
         fi; \
         echo "Tsconfig created/copied for $pkg"; \
     done
-# Generate Prisma client for server schema using workspace Prisma CLI
-RUN pnpm --filter @vtt/server exec prisma generate --schema prisma/schema.prisma
+# Install @types/jest globally to ensure it's available during package compilation if needed
+RUN pnpm add -D @types/jest@^29.5.14 --no-frozen-lockfile || true
+# Verify Prisma client was generated correctly and debug if needed
+RUN echo "Checking Prisma client generation..." && \
+    ls -la node_modules/.prisma/client/ && \
+    echo "Prisma client files:" && \
+    find node_modules/.prisma/client -name "*.d.ts" | head -5
 # Build only the server package (emit even if type errors per tsconfig)
 RUN pnpm --filter @vtt/server run build
 # Prune dev deps
