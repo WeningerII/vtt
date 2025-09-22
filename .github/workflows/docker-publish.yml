@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Setup native dependencies
+        uses: ./.github/actions/setup-native-deps
+
       - name: Verify workspace structure
         run: |
           echo "=== Workspace structure ==="

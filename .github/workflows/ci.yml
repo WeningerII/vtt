@@ -22,8 +22,8 @@ jobs:
         with:
           node-version: "20"
           pnpm-version: "9.12.2"
-      - name: Install libpng-dev
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+      - name: Setup native dependencies
+        uses: ./.github/actions/setup-native-deps
       - uses: ./.github/actions/install-deps
 
       - name: Debug workspace for Trivy
@@ -89,8 +89,8 @@ jobs:
         with:
           node-version: "20"
           pnpm-version: "9.12.2"
-      - name: Install libpng-dev
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+      - name: Setup native dependencies
+        uses: ./.github/actions/setup-native-deps
       - uses: ./.github/actions/install-deps
       - name: Check license compliance
         run: node scripts/license-check.js
@@ -104,8 +104,8 @@ jobs:
         with:
           node-version: "20"
           pnpm-version: "9.12.2"
-      - name: Install libpng-dev
-        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+      - name: Setup native dependencies
+        uses: ./.github/actions/setup-native-deps
       - uses: ./.github/actions/install-deps
       - name: Build
         run: pnpm run build
