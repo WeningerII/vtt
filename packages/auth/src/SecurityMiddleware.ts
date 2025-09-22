@@ -20,6 +20,7 @@ type SecurityRequest = Request & {
 
 type WSRequest = IncomingMessage & {
   url: string;
+  ip?: string;
 };
 
 type RequestLike = SecurityRequest | WSRequest;
@@ -186,7 +187,7 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Security headers middleware
    */
-  securityHeaders(): ReturnType<typeof helmet> {
+  securityHeaders(): RequestHandler {
     return helmet({
       contentSecurityPolicy: {
         directives: {
@@ -327,7 +328,11 @@ export class SecurityMiddleware extends EventEmitter {
   /**
    * Intrusion detection system
    */
-  async detectIntrusion(req: SecurityRequest, res: Response, next: NextFunction): Promise<void> {
+  async detectIntrusion(
+    req: SecurityRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<Response | void> {
     const ipAddress = this.getClientIP(req);
     const userAgent = req.get("User-Agent") || "";
     const userId = this.getUserId(req);

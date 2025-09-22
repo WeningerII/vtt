@@ -2,20 +2,15 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "src",
     "incremental": true,
     "tsBuildInfoFile": "./ai.tsbuildinfo",
     "composite": true,
     "types": ["node"],
     "skipLibCheck": true
   },
-  "references": [
-    { "path": "../logging" },
-    { "path": "../core-ecs" },
-    { "path": "../performance" }
-  ],
-  "include": [
-    "src/**/*"
-  ],
+  "references": [{ "path": "../logging" }, { "path": "../core-ecs" }, { "path": "../performance" }],
+  "include": ["src/**/*"],
   "exclude": [
     "src/index-broken.ts",
     "src/ProceduralBehaviorGenerator.ts",

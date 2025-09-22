@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { DiceEngine } from "./DiceEngine";
 
 describe("DiceEngine", () => {
@@ -9,7 +8,7 @@ describe("DiceEngine", () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("Initialization", () => {

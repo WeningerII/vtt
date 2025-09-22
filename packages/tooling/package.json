@@ -11,6 +11,6 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest"
+    "test": "vitest --passWithNoTests"
   }
 }

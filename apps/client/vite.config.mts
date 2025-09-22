@@ -1,9 +1,28 @@
-import { defineConfig } from "vite";
+import crypto from "node:crypto";
+import { Buffer } from "node:buffer";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
+import type { UserConfig } from "vite";
+
+// Vite 7 expects Node's newer crypto.hash API. Provide a backward-compatible shim for older runtimes.
+if (typeof (crypto as unknown as { hash?: unknown }).hash !== "function") {
+  (crypto as unknown as { hash: (algorithm: string, data: string | ArrayBufferView, encoding?: crypto.BinaryToTextEncoding) => string | Buffer }).hash = (
+    algorithm,
+    data,
+    encoding,
+  ) => {
+    const hasher = crypto.createHash(algorithm);
+    if (typeof data === "string") {
+      hasher.update(data);
+    } else {
+      hasher.update(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+    }
+    return encoding ? hasher.digest(encoding) : hasher.digest();
+  };
+}
 
 // https://vitejs.dev/config/
-export default defineConfig({
+const config: UserConfig = {
   plugins: [react()],
   resolve: {
     // Help Vite/Rollup resolve workspace packages under pnpm
@@ -66,4 +85,6 @@ export default defineConfig({
     port: 5175,
     host: true,
   },
-});
+};
+
+export default config;

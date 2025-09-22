@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:analyze": "vite build --config vite.config.performance.ts && node webpack-bundle-analyzer.js",
+    "build:analyze": "vite build --config vite.config.performance.mts && node webpack-bundle-analyzer.js",
     "preview": "vite preview",
     "lint": "eslint src --ext .ts,.tsx",
     "test": "jest",

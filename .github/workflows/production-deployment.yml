@@ -124,7 +124,7 @@ jobs:
       contents: read
       packages: write
     outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
+      image-digest: ${{ steps.combine_image_digests.outputs.digests }}
     steps:
       - uses: actions/checkout@v4
 
@@ -138,11 +138,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract metadata (server)
+        id: meta_server
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/vtt-server
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -150,20 +150,57 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
 
-      - name: Build and push Docker images
-        id: build
+      - name: Extract metadata (client)
+        id: meta_client
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/vtt-client
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push server image
+        id: build_server
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: apps/server/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_server.outputs.tags }}
+          labels: ${{ steps.meta_server.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ needs.pre-deployment-checks.outputs.version }}
-            BUILD_DATE=${{ steps.meta.outputs.labels.created }}
+            BUILD_DATE=${{ steps.meta_server.outputs.labels.created }}
+
+      - name: Build and push client image
+        id: build_client
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/client/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta_client.outputs.tags }}
+          labels: ${{ steps.meta_client.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ needs.pre-deployment-checks.outputs.version }}
+            BUILD_DATE=${{ steps.meta_client.outputs.labels.created }}
+
+      - name: Combine image digests
+        id: combine_image_digests
+        run: |
+          echo "digests=server:${SERVER_DIGEST},client:${CLIENT_DIGEST}" >> "$GITHUB_OUTPUT"
+        env:
+          SERVER_DIGEST: ${{ steps.build_server.outputs.digest }}
+          CLIENT_DIGEST: ${{ steps.build_client.outputs.digest }}
 
   deploy-staging:
     runs-on: ubuntu-latest

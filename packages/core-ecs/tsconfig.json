@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "./src",
     "incremental": true,
     "tsBuildInfoFile": "./core-ecs.tsbuildinfo",
     "composite": true,
@@ -18,10 +18,6 @@
       "@vtt/logging": ["../logging/src/index"]
     }
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "references": [
-    { "path": "../logging" }
-  ]
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../logging" }]
 }

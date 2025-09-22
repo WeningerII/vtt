@@ -1,3 +1,5 @@
+/// <reference types="@webgpu/types" />
+
 /**
  * WebGPU Context Manager - Shared WebGPU context across renderer and physics systems
  * Provides centralized GPU device management and resource sharing
@@ -17,6 +19,9 @@ import { logger } from "@vtt/logging";
 //   GPUCommandEncoder,
 // } from "@webgpu/types";
 
+// Temporary alias until TypeScript WebGPU typings include GPUCommandQueue
+type GPUCommandQueue = GPUQueue;
+
 // Import GPUTextureUsage as value, not type
 declare const GPUTextureUsage: {
   readonly RENDER_ATTACHMENT: number;
@@ -25,7 +30,7 @@ declare const GPUTextureUsage: {
   readonly COPY_DST: number;
 };
 
-import { GPUResourceManager, SystemEvent, Disposable } from "./SharedInterfaces";
+import { Disposable } from "./SharedInterfaces";
 
 export interface WebGPUContextConfig {
   powerPreference: "low-power" | "high-performance";
@@ -167,7 +172,11 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
 
       this.emit("ready", undefined);
     } catch (error) {
-      logger.error("Failed to initialize WebGPU context:", error as Record<string, any>);
+      const errObj =
+        error instanceof Error
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : error;
+      logger.error("Failed to initialize WebGPU context:", errObj);
       throw error;
     }
   }
@@ -457,16 +466,16 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
 
     // Destroy shared buffers
     for (const buffer of this.sharedBuffers.values()) {
-      if (buffer.buffer && 'destroy' in buffer.buffer) {
-        (buffer.buffer as any).destroy();
+      if (buffer.buffer && "destroy" in buffer.buffer) {
+        (buffer.buffer as GPUBuffer & { destroy?: () => void }).destroy?.();
       }
     }
     this.sharedBuffers.clear();
 
     // Destroy shared textures
     for (const texture of this.sharedTextures.values()) {
-      if (texture.texture && 'destroy' in texture.texture) {
-        (texture.texture as any).destroy();
+      if (texture.texture && "destroy" in texture.texture) {
+        (texture.texture as GPUTexture & { destroy?: () => void }).destroy?.();
       }
     }
     this.sharedTextures.clear();
@@ -495,7 +504,11 @@ export class WebGPUContextManager extends EventEmitter<WebGPUContextEvents> impl
         try {
           callback(deltaTime);
         } catch (error) {
-          logger.error("Error in frame callback:", error as Record<string, any>);
+          const errObj =
+            error instanceof Error
+              ? { name: error.name, message: error.message, stack: error.stack }
+              : error;
+          logger.error("Error in frame callback:", errObj);
         }
       }
 
