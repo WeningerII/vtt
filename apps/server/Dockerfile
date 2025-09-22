@@ -45,7 +45,7 @@ COPY --from=pruner /repo/out/full/ ./
 COPY --from=pruner /repo/tsconfig.base.json ./tsconfig.base.json
 # Create package directories and ensure tsconfig files exist for all referenced packages
 # These are needed for TypeScript compilation even when using stubs
-RUN mkdir -p packages/logging packages/monitoring packages/core-ecs packages/ai packages/performance packages/ui packages/i18n packages/core packages/core-schemas
+RUN mkdir -p packages/logging packages/monitoring packages/core-ecs packages/ai packages/performance packages/ui packages/i18n packages/core packages/core-schemas packages/net
 # Copy or create tsconfig files for all packages that might be referenced during compilation
 RUN set -e; \
     # Function to create a standard tsconfig.json template \
@@ -54,11 +54,16 @@ RUN set -e; \
         local has_refs="$2"; \
         printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./%s.tsbuildinfo",\n    "types": ["node"]\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules"]%s\n}' "$pkg_name" "$has_refs"; \
     }; \
-    # Copy or create tsconfig files for key packages \
-    for pkg in logging monitoring core-ecs ai performance ui i18n core core-schemas; do \
+    # Always copy tsconfig files from the original repo (before pruning) \
+    # This ensures all package tsconfig files exist even if they were excluded by turbo prune \
+    for pkg in logging monitoring core-ecs ai performance ui i18n core core-schemas net; do \
+        echo "Processing package: $pkg"; \
+        mkdir -p "./packages/$pkg"; \
         if [ -f "/repo/packages/$pkg/tsconfig.json" ]; then \
+            echo "Copying existing tsconfig for $pkg"; \
             cp "/repo/packages/$pkg/tsconfig.json" "./packages/$pkg/tsconfig.json"; \
         else \
+            echo "Creating tsconfig for $pkg"; \
             case "$pkg" in \
                 monitoring) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }]' > "./packages/$pkg/tsconfig.json" ;; \
                 ai) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }, { "path": "../core-ecs" }]' > "./packages/$pkg/tsconfig.json" ;; \
@@ -67,6 +72,7 @@ RUN set -e; \
                 *) create_tsconfig "$pkg" "" > "./packages/$pkg/tsconfig.json" ;; \
             esac; \
         fi; \
+        echo "Tsconfig created/copied for $pkg"; \
     done
 # Generate Prisma client for server schema using workspace Prisma CLI
 RUN pnpm --filter @vtt/server exec prisma generate --schema prisma/schema.prisma
