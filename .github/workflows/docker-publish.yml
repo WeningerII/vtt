@@ -21,6 +21,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Node.js for debugging
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify workspace structure
+        run: |
+          echo "=== Workspace structure ==="
+          ls -la
+          echo "=== Package structure ==="
+          find packages -name "tsconfig.json" | head -10
+          echo "=== Apps structure ==="
+          find apps -name "Dockerfile" -o -name "package.json"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
