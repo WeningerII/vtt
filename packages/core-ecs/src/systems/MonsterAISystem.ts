@@ -145,7 +145,7 @@ export class MonsterAISystem {
     // Return highest priority decision or wait
     const sortedDecisions = decisions.sort((a, b) => b.priority - a.priority);
     const bestDecision: AIDecision =
-      sortedDecisions.length > 0 ? sortedDecisions[0] : { entityId, action: "wait", priority: 0 };
+      sortedDecisions.length > 0 && sortedDecisions[0] ? sortedDecisions[0] : { entityId, action: "wait", priority: 0 };
 
     this.recordDecision(entityId, bestDecision);
     return bestDecision;

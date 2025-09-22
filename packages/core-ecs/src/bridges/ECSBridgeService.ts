@@ -467,7 +467,7 @@ export class ECSBridgeService {
 
     // Simple parsing for formats like "4d8+4" or "58 (9d8 + 18)"
     const match = hpString.toString().match(/(\d+)(?:\s*\([^)]+\))?/);
-    return match ? parseInt(match[1]) : 10;
+    return match && match[1] ? parseInt(match[1]) : 10;
   }
 
   /**

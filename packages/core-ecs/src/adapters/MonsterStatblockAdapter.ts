@@ -299,8 +299,12 @@ export class MonsterStatblockAdapter {
 
     // Handle fractional CRs like "1/2", "1/4", "1/8"
     if (cr.includes("/")) {
-      const [numerator, denominator] = cr.split("/").map(Number);
-      return numerator / denominator;
+      const parts = cr.split("/").map(Number);
+      const numerator = parts[0];
+      const denominator = parts[1];
+      if (numerator !== undefined && denominator !== undefined && denominator !== 0) {
+        return numerator / denominator;
+      }
     }
 
     return parseFloat(cr) || 0;
@@ -362,8 +366,8 @@ export class MonsterStatblockAdapter {
       return { dice: 1, sides: 4, modifier: 0, average: 2.5 };
     }
 
-    const dice = parseInt(match[1]);
-    const sides = parseInt(match[2]);
+    const dice = parseInt(match[1] || "1");
+    const sides = parseInt(match[2] || "4");
     const modifierSign = match[3] === "-" ? -1 : 1;
     const modifier = match[4] ? parseInt(match[4]) * modifierSign : 0;
     const average = (dice * (sides + 1)) / 2 + modifier;

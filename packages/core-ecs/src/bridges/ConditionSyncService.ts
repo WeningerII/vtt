@@ -302,7 +302,7 @@ export class ConditionSyncService {
       exhaustion: "exhaustion",
     };
 
-    return mapping[conditionName.toLowerCase()] || "custom";
+    return mapping[conditionName.toLowerCase()] as ConditionType || ("blinded" as ConditionType);
   }
 
   /**

@@ -23,6 +23,12 @@ export interface PhysicsWorldConfig {
   velocityIterations: number;
 }
 
+export interface PhysicsWorldEvents {
+  bodyAdded: (body: RigidBody) => void;
+  bodyRemoved: (body: RigidBody) => void;
+  collision: (collision: CollisionInfo) => void;
+}
+
 export class PhysicsWorld extends EventEmitter {
   private bodies: Map<number, RigidBody> = new Map();
   private spatialGrid: SpatialGrid;

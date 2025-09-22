@@ -52,12 +52,12 @@ export class Transform2DStore {
     if (!this.has(id)) {return null;}
     
     return {
-      x: this.x[id],
-      y: this.y[id], 
-      rot: this.rot[id],
-      sx: this.sx[id],
-      sy: this.sy[id],
-      zIndex: this.zIndex[id]
+      x: this.x[id] ?? 0,
+      y: this.y[id] ?? 0, 
+      rot: this.rot[id] ?? 0,
+      sx: this.sx[id] ?? 1,
+      sy: this.sy[id] ?? 1,
+      zIndex: this.zIndex[id] ?? 0
     };
   }
 
@@ -68,7 +68,7 @@ export class Transform2DStore {
    */
   getPosition(id: EntityId): { x: number; y: number } | null {
     if (!this.has(id)) {return null;}
-    return { x: this.x[id], y: this.y[id] };
+    return { x: this.x[id] ?? 0, y: this.y[id] ?? 0 };
   }
 
   /**
@@ -77,7 +77,7 @@ export class Transform2DStore {
    * @returns Rotation in radians or null if entity doesn't have transform component
    */
   getRotation(id: EntityId): number | null {
-    return this.has(id) ? this.rot[id] : null;
+    return this.has(id) ? (this.rot[id] ?? 0) : null;
   }
 
   /**
@@ -87,6 +87,6 @@ export class Transform2DStore {
    */
   getScale(id: EntityId): { sx: number; sy: number } | null {
     if (!this.has(id)) {return null;}
-    return { sx: this.sx[id], sy: this.sy[id] };
+    return { sx: this.sx[id] ?? 1, sy: this.sy[id] ?? 1 };
   }
 }
