@@ -5,16 +5,43 @@
 import { World, EntityId } from "../World";
 import { HealthStore } from "../components/Health";
 import { StatsStore } from "../components/Stats";
-import { ConditionsStore, Condition } from "../components/Conditions";
+import { ConditionsStore, Condition, ConditionType } from "../components/Conditions";
 import { CombatStore } from "../components/Combat";
+
+export interface CharacterData {
+  id: string;
+  name: string;
+  hitPoints: { current: number; max: number; temporary: number };
+  abilities: Record<string, { value: number; modifier: number }>;
+  armorClass?: number;
+  level?: number;
+  [key: string]: unknown;
+}
+
+export interface MonsterData {
+  id: string;
+  name: string;
+  hitPoints: number | { value: number; formula?: string };
+  abilities: Record<string, number>;
+  armorClass: number | { value: number; type?: string };
+  speed?: { walk?: number; [key: string]: number | undefined };
+  [key: string]: unknown;
+}
+
+export interface CharacterUpdates {
+  hitPoints?: { current?: number; max?: number; temporary?: number };
+  abilities?: Record<string, { value?: number; modifier?: number }>;
+  [key: string]: unknown;
+}
+
 // Service interfaces for dependency injection
 export interface ICharacterService {
-  getCharacter(id: string): Promise<any>;
-  updateCharacter(id: string, userId: string, updates: any): Promise<any>;
+  getCharacter(id: string): Promise<CharacterData>;
+  updateCharacter(id: string, userId: string, updates: CharacterUpdates): Promise<CharacterData>;
 }
 
 export interface IMonsterService {
-  getMonster(id: string): Promise<any>;
+  getMonster(id: string): Promise<MonsterData>;
 }
 
 export interface EntityData {
@@ -196,7 +223,7 @@ export class ECSBridgeService {
     const maxHP =
       typeof statblock.hitPoints === "number"
         ? statblock.hitPoints
-        : this.calculateHPFromString(statblock.hitPoints as any);
+        : this.calculateHPFromString(statblock.hitPoints as { value: number; formula?: string });
 
     // Create health component
     this.healthStore.add(entityId, {
@@ -227,8 +254,8 @@ export class ECSBridgeService {
       abilities: monsterAbilities,
       abilityModifiers: monsterAbilityModifiers,
       proficiencyBonus: 2,
-      armorClass: typeof statblock.armorClass === 'number' ? statblock.armorClass : (statblock.armorClass as any)?.value || 10,
-      speed: (statblock as any).speed?.walk || 30,
+      armorClass: typeof statblock.armorClass === 'number' ? statblock.armorClass : (statblock.armorClass as { value: number })?.value || 10,
+      speed: (statblock as MonsterData).speed?.walk || 30,
       level: 1,
       hitDie: "d8",
       // D&D 5e format for backward compatibility
@@ -380,7 +407,7 @@ export class ECSBridgeService {
     const entityId = this.entityMap.get(externalId);
     if (!entityId) {return false;}
 
-    this.conditionsStore.remove(entityId, conditionType as any);
+    this.conditionsStore.remove(entityId, conditionType as ConditionType);
     return true;
   }
 
@@ -408,7 +435,7 @@ export class ECSBridgeService {
         temporary: health.temporary,
       },
       armorClass: 10, // Would need to calculate from stats and equipment
-      abilities: stats as any,
+      abilities: stats as Record<string, { value: number; modifier: number }>,
       conditions,
       initiative: combat?.initiative || 0,
     };

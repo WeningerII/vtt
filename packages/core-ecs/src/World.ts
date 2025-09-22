@@ -1,10 +1,10 @@
-import { Transform2DStore, type EntityId } from './components/Transform2D';
-import { MovementStore } from './components/Movement';
-import { AppearanceStore } from './components/Appearance';
-import { StatsStore } from './components/Stats';
-import { CombatStore } from './components/Combat';
-import { HealthStore } from './components/Health';
-import { ConditionsStore } from './components/Conditions';
+import { Transform2DStore, type EntityId } from "./components/Transform2D";
+import { MovementStore } from "./components/Movement";
+import { AppearanceStore } from "./components/Appearance";
+import { StatsStore } from "./components/Stats";
+import { CombatStore } from "./components/Combat";
+import { HealthStore } from "./components/Health";
+import { ConditionsStore } from "./components/Conditions";
 
 export class World {
   readonly capacity: number;
@@ -38,7 +38,9 @@ export class World {
 
   createEntity(): EntityId {
     const id = this.free.length ? (this.free.pop() as number) : this.nextId++;
-    if (id >= this.capacity) {throw new Error('World capacity exceeded');}
+    if (id >= this.capacity) {
+      throw new Error("World capacity exceeded");
+    }
     this.alive[id] = 1;
     return id;
   }
@@ -48,7 +50,9 @@ export class World {
   }
 
   destroyEntity(id: EntityId) {
-    if (!this.alive[id]) {return;}
+    if (!this.alive[id]) {
+      return;
+    }
     this.alive[id] = 0;
     this.transforms.remove(id);
     this.movement.remove(id);
@@ -60,7 +64,9 @@ export class World {
     this.free.push(id);
   }
 
-  isAlive(id: EntityId) { return this.alive[id] === 1; }
+  isAlive(id: EntityId) {
+    return this.alive[id] === 1;
+  }
 
   /**
    * Get all alive entity IDs as an array
@@ -69,7 +75,9 @@ export class World {
   getEntities(): EntityId[] {
     const entities: EntityId[] = [];
     for (let id = 0; id < this.nextId; id++) {
-      if (this.alive[id]) {entities.push(id);}
+      if (this.alive[id]) {
+        entities.push(id);
+      }
     }
     return entities;
   }
@@ -80,7 +88,9 @@ export class World {
    */
   *iterAllEntities(): Iterable<EntityId> {
     for (let id = 0; id < this.nextId; id++) {
-      if (this.alive[id]) {yield id;}
+      if (this.alive[id]) {
+        yield id;
+      }
     }
   }
 
@@ -92,7 +102,10 @@ export class World {
   getEntitiesWithComponents(...components: (keyof this)[]): EntityId[] {
     const entities: EntityId[] = [];
     for (let id = 0; id < this.nextId; id++) {
-      if (this.alive[id] && components.every(comp => (this[comp] as any)?.has?.(id))) {
+      if (
+        this.alive[id] &&
+        components.every((comp) => (this[comp] as { has: (id: number) => boolean })?.has?.(id))
+      ) {
         entities.push(id);
       }
     }
@@ -107,4 +120,4 @@ export class World {
     }
   }
 }
-export type { EntityId } from './components/Transform2D';
+export type { EntityId } from "./components/Transform2D";

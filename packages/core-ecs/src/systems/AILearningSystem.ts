@@ -88,7 +88,7 @@ export class AILearningSystem {
       totalReward: 0,
       actionCount: 0,
       lastUpdate: Date.now(),
-      personalityAdjustments: {} as Record<string, any>,
+      personalityAdjustments: {} as Record<string, number>,
     };
 
     const reward = this.calculateReward(outcome);
@@ -307,7 +307,7 @@ export class AILearningSystem {
     let maxValue = 0;
 
     for (const [key, qValue] of Array.from(this.qValues)) {
-      if (key.startsWith(`${stateKey  }:`)) {
+      if (key.startsWith(`${stateKey}:`)) {
         maxValue = Math.max(maxValue, qValue.value);
       }
     }
@@ -373,7 +373,21 @@ export class AILearningSystem {
   /**
    * Load learning data (for persistence)
    */
-  importLearningData(data: any): void {
+  importLearningData(data: {
+    qValues?: Array<[string, QValue]>;
+    entityData?: Array<
+      [
+        EntityId,
+        {
+          totalReward: number;
+          actionCount: number;
+          lastUpdate: number;
+          personalityAdjustments: Partial<AIBehavior>;
+        },
+      ]
+    >;
+    parameters?: Partial<LearningParameters>;
+  }): void {
     if (data.qValues) {
       this.qValues = new Map(data.qValues);
     }

@@ -34,7 +34,7 @@ export interface Condition {
     ability: "strength" | "dexterity" | "constitution" | "intelligence" | "wisdom" | "charisma";
     dc: number;
   };
-  metadata?: Record<string, any>; // Optional metadata for external sync
+  metadata?: Record<string, unknown>; // Optional metadata for external sync
 }
 
 export class ConditionsStore {
@@ -75,7 +75,9 @@ export class ConditionsStore {
 
   remove(entity: number, conditionType?: ConditionType): void {
     const entityConditions = this.conditions.get(entity);
-    if (!entityConditions) {return;}
+    if (!entityConditions) {
+      return;
+    }
 
     if (conditionType) {
       // Remove specific condition
@@ -112,7 +114,9 @@ export class ConditionsStore {
 
   has(entity: number, conditionType?: ConditionType): boolean {
     const entityConditions = this.conditions.get(entity);
-    if (!entityConditions) {return false;}
+    if (!entityConditions) {
+      return false;
+    }
 
     if (conditionType) {
       return entityConditions.some((c) => c.type === conditionType);
@@ -126,7 +130,9 @@ export class ConditionsStore {
 
   getCondition(entity: number, conditionType: ConditionType): Condition | null {
     const entityConditions = this.conditions.get(entity);
-    if (!entityConditions) {return null;}
+    if (!entityConditions) {
+      return null;
+    }
 
     return entityConditions.find((c) => c.type === conditionType) || null;
   }
@@ -232,7 +238,9 @@ export class ConditionsStore {
 
   private findEntityIndex(entity: number): number {
     for (let i = 0; i < this.count; i++) {
-      if (this.entities[i] === entity) {return i;}
+      if (this.entities[i] === entity) {
+        return i;
+      }
     }
     return -1;
   }

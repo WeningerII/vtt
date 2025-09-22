@@ -4,7 +4,21 @@
 
 import { EntityId } from "../World";
 import { logger } from "@vtt/logging";
-import { Condition, ConditionType } from "../components/Conditions";
+import { Condition, ConditionType, ConditionsStore } from "../components/Conditions";
+
+export interface ConditionEffects {
+  statModifiers?: Record<string, number>;
+  immunities?: string[];
+  resistances?: string[];
+  vulnerabilities?: string[];
+  [key: string]: unknown;
+}
+
+export interface ConditionMetadata {
+  level?: number;
+  originalSource?: string;
+  [key: string]: unknown;
+}
 
 export interface DatabaseCondition {
   id: string;
@@ -13,7 +27,7 @@ export interface DatabaseCondition {
   duration: number;
   remainingDuration: number;
   source?: string;
-  metadata?: Record<string, any>;
+  metadata?: ConditionMetadata;
   appliedAt: Date;
   expiresAt?: Date;
   condition: {
@@ -21,7 +35,7 @@ export interface DatabaseCondition {
     name: string;
     description: string;
     category: string;
-    effects: Record<string, any>;
+    effects: ConditionEffects;
   };
 }
 
@@ -43,7 +57,7 @@ export class ConditionSyncService {
   private appliedConditionMap = new Map<string, string>(); // ECS Condition ID -> Database Applied Condition ID
 
   constructor(
-    private conditionsStore: any, // ECS Conditions Store
+    private conditionsStore: ConditionsStore, // ECS Conditions Store
     private database?: IConditionDatabase,
   ) {}
 
@@ -188,7 +202,7 @@ export class ConditionSyncService {
       duration,
       source: source || "system",
       appliedAt: Date.now(),
-      metadata: {} as Record<string, any>,
+      metadata: {} as ConditionMetadata,
     };
 
     this.conditionsStore.add(entityId, condition);

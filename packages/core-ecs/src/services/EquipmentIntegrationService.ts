@@ -6,18 +6,92 @@
 import { EntityId, CombatStore } from "../components/Combat";
 import { StatsStore } from "../components/Stats";
 import { HealthStore } from "../components/Health";
+
+export interface Equipment {
+  id: string;
+  name: string;
+  type: "weapon" | "armor" | "shield" | "accessory" | "consumable";
+  equipped: boolean;
+  requiresAttunement?: boolean;
+  attuned?: boolean;
+  properties: Record<string, unknown>;
+  effects: EquipmentEffect[];
+}
+
+export interface EquipmentEffect {
+  type: "stat_bonus" | "damage_bonus" | "ac_bonus" | "resistance" | "advantage";
+  target: string;
+  value: number | string;
+  condition?: string;
+}
+
+export interface Character {
+  id: string;
+  name: string;
+  level: number;
+  abilities: Record<string, number>;
+  equipment: Equipment[];
+  [key: string]: unknown;
+}
+
+export interface AttackContext {
+  targetId: string;
+  range: number;
+  isCritical: boolean;
+  hasAdvantage: boolean;
+  [key: string]: unknown;
+}
+
+export interface TriggerContext {
+  event: string;
+  targetId?: string;
+  damage?: number;
+  [key: string]: unknown;
+}
+
+export interface EquipmentProcessingResult {
+  stats: Record<string, number>;
+  effects: EquipmentEffect[];
+}
+
+export interface WeaponAttackResult {
+  attackBonus: number;
+  damageBonus: string;
+  effects: EquipmentEffect[];
+}
+
+export interface EquipmentBonuses {
+  abilityScores: Record<string, number>;
+  ac: number;
+  attackBonus: number;
+}
+
 // TODO: Implement equipment effects system
 // import { equipmentEffectsEngine, type Equipment } from "@vtt/equipment-effects";
-type Equipment = any;
 const equipmentEffectsEngine = {
-  processEquipmentEffects: () => ({ stats: {}, effects: [] }),
-  initializeCharacterEquipment: (_characterId: string, _equipment: any[]) => {},
-  processTriggers: (_characterId: string, _event: string, _character: any, _context: any) => [],
-  processWeaponAttack: (_characterId: string, _weaponId: string, _attackType: string, _targetId: string, _context: any) => ({ attackBonus: 0, damageBonus: '0', effects: [] }),
-  calculateEquipmentBonuses: (_characterId: string, _character: any) => ({ abilityScores: {}, ac: 0, attackBonus: 0 }),
-  applyPassiveEffects: (_characterId: string, _character: any) => {},
-  rechargeItems: (_characterId: string, _timeOfDay: string) => {},
-  getEquippedItems: (_characterId: string) => []
+  processEquipmentEffects: (): EquipmentProcessingResult => ({ stats: {}, effects: [] }),
+  initializeCharacterEquipment: (_characterId: string, _equipment: Equipment[]): void => {},
+  processTriggers: (
+    _characterId: string,
+    _event: string,
+    _character: Character,
+    _context: TriggerContext,
+  ): EquipmentEffect[] => [],
+  processWeaponAttack: (
+    _characterId: string,
+    _weaponId: string,
+    _attackType: string,
+    _targetId: string,
+    _context: AttackContext,
+  ): WeaponAttackResult => ({ attackBonus: 0, damageBonus: "0", effects: [] }),
+  calculateEquipmentBonuses: (_characterId: string, _character: Character): EquipmentBonuses => ({
+    abilityScores: {},
+    ac: 0,
+    attackBonus: 0,
+  }),
+  applyPassiveEffects: (_characterId: string, _character: Character): void => {},
+  rechargeItems: (_characterId: string, _timeOfDay: string): void => {},
+  getEquippedItems: (_characterId: string): Equipment[] => [],
 };
 
 export interface CharacterEquipmentState {
@@ -66,7 +140,9 @@ export class EquipmentIntegrationService {
    */
   updateEquipment(characterId: string, equipment: Equipment[]): void {
     const state = this.characterStates.get(characterId);
-    if (!state) {return;}
+    if (!state) {
+      return;
+    }
 
     state.equipment = equipment;
     state.lastUpdated = Date.now();
@@ -80,10 +156,14 @@ export class EquipmentIntegrationService {
    */
   toggleEquipment(characterId: string, itemId: string, equipped: boolean): boolean {
     const state = this.characterStates.get(characterId);
-    if (!state) {return false;}
+    if (!state) {
+      return false;
+    }
 
     const item = state.equipment.find((e) => e.id === itemId);
-    if (!item) {return false;}
+    if (!item) {
+      return false;
+    }
 
     item.equipped = equipped;
     state.lastUpdated = Date.now();
@@ -97,14 +177,20 @@ export class EquipmentIntegrationService {
    */
   attuneToItem(characterId: string, itemId: string): boolean {
     const state = this.characterStates.get(characterId);
-    if (!state) {return false;}
+    if (!state) {
+      return false;
+    }
 
     const item = state.equipment.find((e) => e.id === itemId);
-    if (!item || !item.requiresAttunement) {return false;}
+    if (!item || !item.requiresAttunement) {
+      return false;
+    }
 
     // Check attunement limits (typically 3 items)
     const currentlyAttuned = state.equipment.filter((e) => e.attuned).length;
-    if (currentlyAttuned >= 3) {return false;}
+    if (currentlyAttuned >= 3) {
+      return false;
+    }
 
     item.attuned = true;
     state.lastUpdated = Date.now();
@@ -116,11 +202,22 @@ export class EquipmentIntegrationService {
   /**
    * Process equipment triggers during combat events
    */
-  processCombatTriggers(characterId: string, event: string, context?: any): any[] {
+  processCombatTriggers(
+    characterId: string,
+    event: string,
+    context?: TriggerContext,
+  ): EquipmentEffect[] {
     const character = this.getCharacterData(characterId);
-    if (!character) {return [];}
+    if (!character) {
+      return [];
+    }
 
-    return equipmentEffectsEngine.processTriggers(characterId, event, character, context);
+    return equipmentEffectsEngine.processTriggers(
+      characterId,
+      event,
+      character,
+      context || { event },
+    );
   }
 
   /**
@@ -130,12 +227,8 @@ export class EquipmentIntegrationService {
     characterId: string,
     weaponId: string,
     targetId: string,
-    context: any,
-  ): {
-    attackBonus: number;
-    damageBonus: string;
-    effects: any[];
-  } {
+    context: AttackContext,
+  ): WeaponAttackResult {
     const character = this.getCharacterData(characterId);
     if (!character) {
       return { attackBonus: 0, damageBonus: "", effects: [] };
@@ -144,7 +237,7 @@ export class EquipmentIntegrationService {
     return equipmentEffectsEngine.processWeaponAttack(
       characterId,
       weaponId,
-      character,
+      "melee",
       targetId,
       context,
     );
@@ -155,10 +248,14 @@ export class EquipmentIntegrationService {
    */
   private updateCharacterBonuses(characterId: string): void {
     const state = this.characterStates.get(characterId);
-    if (!state) {return;}
+    if (!state) {
+      return;
+    }
 
     const character = this.getCharacterData(characterId);
-    if (!character) {return;}
+    if (!character) {
+      return;
+    }
 
     // Calculate equipment bonuses
     const bonuses = equipmentEffectsEngine.calculateEquipmentBonuses(characterId, character);
@@ -170,8 +267,9 @@ export class EquipmentIntegrationService {
       Object.entries(bonuses.abilityScores).forEach(([ability, bonus]) => {
         if (bonus !== 0) {
           const abilityValue = statsData.abilities[ability as keyof typeof statsData.abilities];
-          if (typeof abilityValue === 'number' && typeof bonus === 'number') {
-            (statsData.abilities as any)[ability] = abilityValue + bonus;
+          if (typeof abilityValue === "number" && typeof bonus === "number") {
+            (statsData.abilities as unknown as Record<string, number>)[ability] =
+              abilityValue + bonus;
           }
         }
       });
@@ -188,30 +286,44 @@ export class EquipmentIntegrationService {
   /**
    * Get character data for equipment calculations
    */
-  private getCharacterData(characterId: string): any {
+  private getCharacterData(characterId: string): Character | null {
     const state = this.characterStates.get(characterId);
-    if (!state) {return null;}
+    if (!state) {
+      return null;
+    }
 
     const statsData = this.statsStore.get(state.entityId);
     const healthData = this.healthStore.get(state.entityId);
     const combatData = this.combatStore.get(state.entityId);
 
-    if (!statsData || !healthData) {return null;}
+    if (!statsData || !healthData) {
+      return null;
+    }
 
     return {
       id: characterId,
+      name: (statsData as unknown as { name?: string }).name || `Character ${characterId}`,
+      level: statsData.level || 1,
+      abilities: statsData.abilities as unknown as Record<string, number>,
+      equipment: state.equipment,
       entityId: state.entityId,
       hitPoints: {
-        current: (healthData as any).currentHitPoints || healthData.current || 0,
-        max: (healthData as any).maxHitPoints || healthData.max || 0,
-        temporary: (healthData as any).temporaryHitPoints || healthData.temporary || 0,
+        current:
+          (healthData as unknown as { currentHitPoints?: number }).currentHitPoints ||
+          healthData.current ||
+          0,
+        max:
+          (healthData as unknown as { maxHitPoints?: number }).maxHitPoints || healthData.max || 0,
+        temporary:
+          (healthData as unknown as { temporaryHitPoints?: number }).temporaryHitPoints ||
+          healthData.temporary ||
+          0,
       },
-      abilities: statsData.abilities,
       armorClass: statsData.armorClass,
       proficiencyBonus: statsData.proficiencyBonus,
-      level: statsData.level || 1,
-      class: (statsData as any).characterClass || 'Unknown',
-      alignment: (statsData as any).alignment || 'Neutral',
+      characterClass:
+        (statsData as unknown as { characterClass?: string }).characterClass || "Unknown",
+      alignment: (statsData as unknown as { alignment?: string }).alignment || "Neutral",
       initiative: combatData?.initiative || 0,
       isInCombat: combatData?.isActive || false,
     };
