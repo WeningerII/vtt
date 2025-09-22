@@ -53,6 +53,8 @@ jobs:
         with:
           node-version: "20"
           pnpm-version: "9.12.2"
+      - name: Install libpng-dev
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
       - uses: ./.github/actions/install-deps
       - name: Check license compliance
         run: node scripts/license-check.js
@@ -66,6 +68,8 @@ jobs:
         with:
           node-version: "20"
           pnpm-version: "9.12.2"
+      - name: Install libpng-dev
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
       - uses: ./.github/actions/install-deps
       - run: pnpm run build
       - run: pnpm run lint
