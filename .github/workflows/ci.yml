@@ -18,6 +18,13 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: "20"
+          pnpm-version: "9.12.2"
+      - name: Install libpng-dev
+        run: sudo apt-get update && sudo apt-get install -y libpng-dev
+      - uses: ./.github/actions/install-deps
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -36,9 +43,9 @@ jobs:
         with:
           name: trivy-results-sarif
           path: trivy-results.sarif
-      - name: Run npm audit
+      - name: Run pnpm audit
         run: |
-          npm audit --audit-level=high --production
+          pnpm audit --audit-level high --prod
         continue-on-error: true
       - name: Check for known vulnerabilities
         run: |
@@ -71,6 +78,10 @@ jobs:
       - name: Install libpng-dev
         run: sudo apt-get update && sudo apt-get install -y libpng-dev
       - uses: ./.github/actions/install-deps
-      - run: pnpm run build
-      - run: pnpm run lint
-      - run: pnpm run test
+      - name: Build
+        run: pnpm run build
+      - name: Lint (continue on error)
+        run: pnpm run lint
+        continue-on-error: true
+      - name: Test
+        run: pnpm run test

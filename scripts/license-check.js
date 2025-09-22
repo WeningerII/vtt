@@ -56,13 +56,27 @@ class LicenseChecker {
     console.log("🔍 Scanning dependencies for license compliance...\n");
 
     try {
-      // Get dependency tree with licenses
-      const output = execSync("pnpm licenses list --json", {
-        encoding: "utf8",
-        cwd: process.cwd(),
-      });
-
-      const licenseData = JSON.parse(output);
+      // First try nlf (node license finder) if available, otherwise fallback
+      let licenseData = {};
+      try {
+        const nlfOutput = execSync("npx nlf --format json", {
+          encoding: "utf8",
+          cwd: process.cwd(),
+          timeout: 30000
+        });
+        const nlfData = JSON.parse(nlfOutput);
+        nlfData.forEach(pkg => {
+          licenseData[pkg.name] = {
+            license: pkg.license,
+            version: pkg.version,
+            repository: pkg.repository
+          };
+        });
+      } catch (nlfError) {
+        console.log("📦 nlf not available, using package.json fallback...");
+        await this.checkPackageJsonLicenses();
+        return;
+      }
 
       for (const [packageName, info] of Object.entries(licenseData)) {
         this.analyzeLicense(packageName, info);
@@ -218,11 +232,14 @@ class LicenseChecker {
     // Generate compliance files
     this.generateComplianceFiles();
 
-    // Exit code
+    // Exit code - only fail on actual violations, not unknown licenses
     const exitCode = this.violations.length > 0 ? 1 : 0;
 
     if (exitCode === 0) {
       console.log("\n✅ License compliance check passed!");
+      if (this.reviewRequired.length > 0 || this.unknown.length > 0) {
+        console.log("⚠️  Some licenses require review, but this won't block CI");
+      }
     } else {
       console.log("\n❌ License compliance check failed!");
       console.log("Please resolve violations before proceeding.");
