@@ -1,14 +1,13 @@
 /**
-import { getErrorMessage } from "../utils/errors";
  * Game Session API Routes
  */
-import { Router, Request, Response, NextFunction } from "express";
+import { Router, Request, Response, NextFunction, type IRouter } from "express";
 import { DatabaseManager } from "../database/connection";
 import { getAuthManager, AuthUser } from "../auth/auth-manager";
 import type { Prisma } from "@prisma/client";
 
 const prisma = DatabaseManager.getInstance();
-export const sessionsRouter = Router();
+export const sessionsRouter: IRouter = Router();
 
 // Extended Request interface to include user
 interface AuthenticatedRequest extends Request {
@@ -34,8 +33,9 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction): Pro
 
     (req as AuthenticatedRequest).user = user;
     next();
-  } catch (error) {
-    res.status(401).json({ error: "Authentication failed" });
+  } catch {
+    res.status(500).json({ error: "Authentication failed" });
+    return;
   }
 };
 
