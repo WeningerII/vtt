@@ -141,14 +141,20 @@ export class ClientPrediction {
 
   private performReconciliation(snapshot: ServerSnapshot): void {
     const playerEntity = snapshot.entities.find((e) => e.ownerId === this.localPlayerId);
-    if (!playerEntity) {return;}
+    if (!playerEntity) {
+      return;
+    }
 
     // Find the game state that corresponds to this server snapshot
     const correspondingState = this.findStateByTimestamp(snapshot.timestamp);
-    if (!correspondingState) {return;}
+    if (!correspondingState) {
+      return;
+    }
 
     const predictedEntity = correspondingState.entities.get(playerEntity.id);
-    if (!predictedEntity) {return;}
+    if (!predictedEntity) {
+      return;
+    }
 
     // Check if correction is needed
     const distance = this.calculateDistance(predictedEntity.position, playerEntity.position);
@@ -273,7 +279,9 @@ export class ClientPrediction {
     const prevSnapshot = snapshots[snapshots.length - 2];
     const nextSnapshot = snapshots[snapshots.length - 1];
 
-    if (!prevSnapshot || !nextSnapshot) {return;}
+    if (!prevSnapshot || !nextSnapshot) {
+      return;
+    }
 
     // Calculate interpolation factor
     const timeDiff = nextSnapshot.timestamp - prevSnapshot.timestamp;
@@ -462,8 +470,12 @@ export class ClientPrediction {
   private lerpAngle(a: number, b: number, t: number): number {
     // Handle angle wrapping
     let delta = b - a;
-    if (delta > Math.PI) {delta -= 2 * Math.PI;}
-    if (delta < -Math.PI) {delta += 2 * Math.PI;}
+    if (delta > Math.PI) {
+      delta -= 2 * Math.PI;
+    }
+    if (delta < -Math.PI) {
+      delta += 2 * Math.PI;
+    }
     return a + delta * t;
   }
 
@@ -525,7 +537,7 @@ export class ClientPrediction {
   }
 
   // Debug methods
-  public getDebugInfo(): any {
+  public getDebugInfo(): Record<string, unknown> {
     return {
       clientTime: this.clientTime,
       serverTime: this.serverTime,

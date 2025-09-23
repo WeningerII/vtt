@@ -1,4 +1,4 @@
-import type { Client } from './Client';
+import type { Client } from "./Client";
 
 /**
  * ServerRoom manages a collection of connected clients and
@@ -22,7 +22,7 @@ export class ServerRoom {
    * implementation this would filter by area of interest and send
    * binary deltas.
    */
-  broadcast(data: any): void {
+  broadcast(data: unknown): void {
     for (const client of this.clients) {
       client.send(data);
     }

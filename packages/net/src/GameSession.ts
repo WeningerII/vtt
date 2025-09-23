@@ -12,42 +12,54 @@ import { logger } from "@vtt/logging";
 // Temporary stub types
 class World {
   id: string = "";
-  entities: Map<string, any> = new Map();
+  entities: Map<string, unknown> = new Map();
   createEntity(id?: number): number {
     return id || 0;
   }
-  destroyEntity(id: number): void {}
-  update(deltaTime: number): void {}
-  getComponent(entityId: string, componentType: string): any {
-    return {};
+  destroyEntity(_id: number): void {}
+  update(_deltaTime: number): void {}
+  getComponent(_entityId: string, _componentType: string): ComponentInterface {
+    return {
+      add: (_id: string, _data: unknown) => {},
+      update: (_id: string, _data: unknown) => {},
+      remove: (_id: string) => {},
+    };
   }
-  getEntities(): any[] {
+  getEntities(): unknown[] {
     return [];
   }
 }
 class CombatEngine {
-  addCombatant(combatant: any): void {}
-  removeCombatant(id: string): void {}
-  executeAction(action: any): void {}
+  addCombatant(_combatant: unknown): void {}
+  removeCombatant(_id: string): void {}
+  executeAction(_action: unknown): void {}
   nextTurn(): void {}
   startCombat(): void {}
   endCombat(): void {}
-  getCurrentCombatant(): any {
+  getCurrentCombatant(): unknown {
     return null;
   }
-  getCombatants(): any[] {
+  getCombatants(): unknown[] {
     return [];
   }
-  getTurnOrder(): any[] {
+  getTurnOrder(): unknown[] {
     return [];
   }
   getCurrentRound(): number {
     return 0;
   }
+  /**
+   * Returns true if the combat is currently active
+   */
   isInCombat(): boolean {
     return false;
   }
-  on(event: string, handler: (...args: any[]) => void): void {}
+  /**
+   * Registers an event handler
+   * @param event The event to listen for
+   * @param handler The event handler
+   */
+  on(_event: string, _handler: (arg?: Combatant | undefined) => void): void {}
 }
 interface Combatant {
   id: string;
@@ -56,10 +68,10 @@ interface Combatant {
 class AIEntity {
   constructor(
     public id: string,
-    public personality: any,
+    public personality: unknown,
   ) {}
-  update(gameState: any, deltaTime: number): void {}
-  getState(): any {
+  update(_gameState: unknown, _deltaTime: number): void {}
+  getState(): unknown {
     return {};
   }
 }
@@ -82,14 +94,57 @@ class NPCArchetypes {
 }
 interface GameStateSnapshot {
   timestamp: number;
-  entities: any[];
-  nearbyEnemies?: any[];
-  nearbyAllies?: any[];
+  entities: unknown[];
+  nearbyEnemies?: unknown[];
+  nearbyAllies?: unknown[];
   isUnderThreat?: boolean;
   healthPercentage?: number;
   position?: { x: number; y: number; z: number };
   canMove?: boolean;
   canAttack?: boolean;
+}
+
+interface EntityUpdateData {
+  action?: string;
+  entityId?: string;
+  componentType?: string;
+  data?: unknown;
+}
+
+interface CombatUpdateData {
+  action?: string;
+  data?: unknown;
+}
+
+interface PlayerUpdateData {
+  action?: string;
+  playerId?: string;
+  data?: unknown;
+}
+
+interface SceneUpdateData {
+  action?: string;
+  data?: unknown;
+}
+
+interface SettingsUpdateData {
+  settings?: unknown;
+}
+
+interface AIState {
+  currentAction?: string;
+  behaviorTree?: unknown;
+}
+
+interface ComponentInterface {
+  add: (id: string, data: unknown) => void;
+  update: (id: string, data: unknown) => void;
+  remove: (id: string) => void;
+}
+
+interface DeltaSyncData {
+  updates?: StateUpdate[];
+  sequenceId?: number;
 }
 
 export interface Player {
@@ -122,15 +177,22 @@ export interface StateUpdate {
   type: "entity" | "combat" | "player" | "scene" | "settings";
   timestamp: number;
   playerId: string;
-  data: any;
+  data: unknown;
   sequenceId: number;
 }
 
 export interface SyncMessage {
-  type: "full_sync" | "delta_sync" | "state_update" | "player_action";
+  type:
+    | "full_sync"
+    | "delta_sync"
+    | "state_update"
+    | "player_action"
+    | "request_full_sync"
+    | "ping"
+    | "pong";
   sessionId: string;
   timestamp: number;
-  data: any;
+  data: unknown;
   sequenceId?: number;
 }
 
@@ -175,11 +237,11 @@ export class GameSession extends EventEmitter {
       this.queueUpdate("combat", "system", { event: "combatantRemoved", combatant });
     });
 
-    this.state.combat.on("attackExecuted", (data: any) => {
+    this.state.combat.on("attackExecuted", (data: unknown) => {
       this.queueUpdate("combat", "system", { event: "attackExecuted", data });
     });
 
-    this.state.combat.on("damageApplied", (data: any) => {
+    this.state.combat.on("damageApplied", (data: unknown) => {
       this.queueUpdate("combat", "system", { event: "damageApplied", data });
     });
   }
@@ -274,7 +336,7 @@ export class GameSession extends EventEmitter {
   }
 
   // State management
-  public queueUpdate(type: StateUpdate["type"], playerId: string, data: any): void {
+  public queueUpdate(type: StateUpdate["type"], playerId: string, data: unknown): void {
     if (this.updateQueue.length >= this.maxUpdateQueueSize) {
       // Remove oldest updates to prevent memory issues
       this.updateQueue.splice(0, this.updateQueue.length - this.maxUpdateQueueSize + 1);
@@ -316,21 +378,22 @@ export class GameSession extends EventEmitter {
   }
 
   private applyEntityUpdate(update: StateUpdate): boolean {
-    const { action, entityId, componentType, data } = update.data;
+    const updateData = update.data as EntityUpdateData;
+    const { action, entityId, componentType, data } = updateData;
 
     switch (action) {
       case "create":
-        this.state.world.createEntity(entityId);
+        this.state.world.createEntity(entityId ? Number(entityId) : undefined);
         break;
       case "destroy":
-        this.state.world.destroyEntity(entityId);
+        this.state.world.destroyEntity(entityId ? Number(entityId) : 0);
         break;
       case "addComponent":
         {
-          // Add component to entity
-          const component = this.state.world.getComponent(entityId, componentType);
+          // Add component
+          const component = this.state.world.getComponent(entityId || "", componentType || "");
           if (component && component.add) {
-            component.add(entityId, data);
+            component.add(entityId || "", data);
           }
         }
         break;
@@ -359,14 +422,15 @@ export class GameSession extends EventEmitter {
   }
 
   private applyCombatUpdate(update: StateUpdate): boolean {
-    const { action, data } = update.data;
+    const updateData = update.data as CombatUpdateData;
+    const { action, data } = updateData;
 
     switch (action) {
       case "addCombatant":
         this.state.combat.addCombatant(data);
         break;
       case "removeCombatant":
-        this.state.combat.removeCombatant(data.id);
+        this.state.combat.removeCombatant((data as { id: string }).id);
         break;
       case "executeAction":
         this.state.combat.executeAction(data);
@@ -388,19 +452,24 @@ export class GameSession extends EventEmitter {
   }
 
   private applyPlayerUpdate(update: StateUpdate): boolean {
-    const { action, playerId, data } = update.data;
+    const updateData = update.data as PlayerUpdateData;
+    const { action, playerId, data } = updateData;
 
     switch (action) {
       case "updateCharacter":
         {
           // Update player's character data
-          const player = this.state.players.get(playerId);
-          if (player && data.characterId && player.characterIds.includes(data.characterId)) {
+          const player = this.state.players.get(playerId || "");
+          if (
+            player &&
+            (data as { characterId: string }).characterId &&
+            player.characterIds.includes((data as { characterId: string }).characterId)
+          ) {
             // Apply character updates
             this.emit("characterUpdated", {
               playerId,
-              characterId: data.characterId,
-              updates: data.updates,
+              characterId: (data as { characterId: string }).characterId,
+              updates: (data as { updates: unknown }).updates,
             });
           }
         }
@@ -413,11 +482,12 @@ export class GameSession extends EventEmitter {
   }
 
   private applySceneUpdate(update: StateUpdate): boolean {
-    const { action, data } = update.data;
+    const updateData = update.data as SceneUpdateData;
+    const { action, data } = updateData;
 
     switch (action) {
       case "changeScene":
-        this.state.currentScene = data.sceneId;
+        this.state.currentScene = (data as { sceneId: string }).sceneId;
         break;
       case "updateSceneData":
         // Update scene-specific data
@@ -431,8 +501,9 @@ export class GameSession extends EventEmitter {
   }
 
   private applySettingsUpdate(update: StateUpdate): boolean {
-    const { settings } = update.data;
-    this.state.settings = { ...this.state.settings, ...settings };
+    const updateData = update.data as SettingsUpdateData;
+    const { settings } = updateData;
+    this.state.settings = { ...this.state.settings, ...(settings as Record<string, unknown>) };
     return true;
   }
 
@@ -477,10 +548,14 @@ export class GameSession extends EventEmitter {
 
   private isUpdateRelevantToPlayer(update: StateUpdate, playerId: string): boolean {
     const player = this.state.players.get(playerId);
-    if (!player) {return false;}
+    if (!player) {
+      return false;
+    }
 
     // GM sees all updates
-    if (player.role === "gm") {return true;}
+    if (player.role === "gm") {
+      return true;
+    }
 
     // Players see updates relevant to their characters or public updates
     switch (update.type) {
@@ -507,7 +582,8 @@ export class GameSession extends EventEmitter {
 
     for (const [playerId, clientState] of this.clientStates) {
       const deltaSync = this.getDeltaSync(playerId, clientState.lastSequenceId);
-      if (deltaSync.data.updates.length > 0) {
+      const deltaSyncData = deltaSync.data as DeltaSyncData;
+      if (deltaSyncData.updates && deltaSyncData.updates.length > 0) {
         this.emit("syncMessage", playerId, deltaSync);
         clientState.lastSequenceId = this.sequenceCounter;
       }
@@ -532,19 +608,21 @@ export class GameSession extends EventEmitter {
 
     switch (message.type) {
       case "state_update":
-        this.handleStateUpdate(playerId, message.data);
+        this.handleStateUpdate(playerId, message.data as Record<string, unknown>);
         break;
       case "player_action":
-        this.handlePlayerAction(playerId, message.data);
+        this.handlePlayerAction(playerId, message.data as Record<string, unknown>);
         break;
       default:
         logger.warn("Unknown message type:", { type: message.type });
     }
   }
 
-  private handleStateUpdate(playerId: string, data: any): void {
+  private handleStateUpdate(playerId: string, data: Record<string, unknown>): void {
     const player = this.state.players.get(playerId);
-    if (!player) {return;}
+    if (!player) {
+      return;
+    }
 
     // Validate that player has permission to make this update
     if (!this.validatePlayerPermission(player, data)) {
@@ -553,34 +631,38 @@ export class GameSession extends EventEmitter {
     }
 
     // Queue the update
-    this.queueUpdate(data.type, playerId, data);
+    this.queueUpdate(data.type as StateUpdate["type"], playerId, data);
   }
 
-  private handlePlayerAction(playerId: string, action: any): void {
+  private handlePlayerAction(playerId: string, action: Record<string, unknown>): void {
     const player = this.state.players.get(playerId);
-    if (!player) {return;}
+    if (!player) {
+      return;
+    }
 
     switch (action.type) {
       case "move_token":
-        this.handleMoveToken(playerId, action.data);
+        this.handleMoveToken(playerId, action.data as Record<string, unknown>);
         break;
       case "combat_action":
-        this.handleCombatAction(playerId, action.data);
+        this.handleCombatAction(playerId, action.data as Record<string, unknown>);
         break;
       case "chat_message":
-        this.handleChatMessage(playerId, action.data);
+        this.handleChatMessage(playerId, action.data as Record<string, unknown>);
         break;
       default:
         logger.warn("Unknown player action:", { type: action.type });
     }
   }
 
-  private handleMoveToken(playerId: string, data: any): void {
+  private handleMoveToken(playerId: string, data: Record<string, unknown>): void {
     const player = this.state.players.get(playerId);
-    if (!player) {return;}
+    if (!player) {
+      return;
+    }
 
     // Validate token ownership or GM permissions
-    if (player.role !== "gm" && !this.playerOwnsToken(player, data.tokenId)) {
+    if (player.role !== "gm" && !this.playerOwnsToken(player, data.tokenId as string)) {
       return;
     }
 
@@ -592,12 +674,14 @@ export class GameSession extends EventEmitter {
     });
   }
 
-  private handleCombatAction(playerId: string, data: any): void {
+  private handleCombatAction(playerId: string, data: Record<string, unknown>): void {
     const player = this.state.players.get(playerId);
-    if (!player) {return;}
+    if (!player) {
+      return;
+    }
 
     // Validate that it's the player's turn or they're the GM
-    const currentCombatant = this.state.combat.getCurrentCombatant();
+    const currentCombatant = this.state.combat.getCurrentCombatant() as Combatant | null;
     if (
       player.role !== "gm" &&
       (!currentCombatant || !player.characterIds.includes(currentCombatant.id))
@@ -611,7 +695,7 @@ export class GameSession extends EventEmitter {
     });
   }
 
-  private handleChatMessage(playerId: string, data: any): void {
+  private handleChatMessage(playerId: string, data: Record<string, unknown>): void {
     this.queueUpdate("player", playerId, {
       event: "chatMessage",
       playerId,
@@ -620,22 +704,25 @@ export class GameSession extends EventEmitter {
     });
   }
 
-  private validatePlayerPermission(player: Player, update: any): boolean {
+  private validatePlayerPermission(player: Player, update: Record<string, unknown>): boolean {
     // GM can do anything
-    if (player.role === "gm") {return true;}
+    if (player.role === "gm") {
+      return true;
+    }
 
     // Players can only update their own characters and make certain actions
     switch (update.type) {
       case "entity":
         // Players can only update entities they own
-        return this.playerOwnsEntity(player, update.entityId);
+        return this.playerOwnsEntity(player, (update.data as EntityUpdateData).entityId || "");
       case "player":
         // Players can only update their own player data
         return update.playerId === player.id;
       case "combat":
         // Players can only take combat actions for their characters
         return (
-          update.action === "executeAction" && player.characterIds.includes(update.data.actorId)
+          update.action === "executeAction" &&
+          player.characterIds.includes(((update.data as CombatUpdateData).data as string) || "")
         );
       default:
         return false;
@@ -653,7 +740,7 @@ export class GameSession extends EventEmitter {
   }
 
   // Serialization helpers
-  private serializePlayer(player: Player): any {
+  private serializePlayer(player: Player): Record<string, unknown> {
     return {
       id: player.id,
       name: player.name,
@@ -663,7 +750,7 @@ export class GameSession extends EventEmitter {
     };
   }
 
-  private serializeWorldState(): any {
+  private serializeWorldState(): Record<string, unknown> {
     // Serialize the ECS world state
     return {
       entities: this.state.world.getEntities(),
@@ -671,7 +758,7 @@ export class GameSession extends EventEmitter {
     };
   }
 
-  private serializeCombatState(): any {
+  private serializeCombatState(): Record<string, unknown> {
     return {
       combatants: this.state.combat.getCombatants(),
       turnOrder: this.state.combat.getTurnOrder(),
@@ -771,7 +858,7 @@ export class GameSession extends EventEmitter {
       aiEntity.update(gameState, deltaTime);
 
       // Check if AI wants to take any actions
-      const aiState = aiEntity.getState();
+      const aiState = aiEntity.getState() as AIState;
       if (aiState.currentAction && aiState.behaviorTree) {
         this.handleAIAction(entityId, aiState.currentAction);
       }

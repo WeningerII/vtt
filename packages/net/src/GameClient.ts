@@ -6,6 +6,75 @@ import { EventEmitter } from "events";
 import { logger } from "@vtt/logging";
 import { SyncMessage, Player, GameState } from "./GameSession";
 
+// Message type definitions
+interface BaseMessage {
+  type: string;
+  timestamp?: number;
+  data?: unknown;
+}
+
+interface PongMessage extends BaseMessage {
+  type: "pong";
+  timestamp: number;
+}
+
+interface PlayerJoinedMessage extends BaseMessage {
+  type: "player_joined";
+  data: Player;
+}
+
+interface PlayerLeftMessage extends BaseMessage {
+  type: "player_left";
+  data: { playerId: string };
+}
+
+interface ServerErrorMessage extends BaseMessage {
+  type: "error";
+  data: { message: string; code?: string };
+}
+
+interface StateUpdate {
+  type: "player" | "entity" | "combat" | "scene" | "settings";
+  data: {
+    event?: string;
+    player?: Player;
+    playerId?: string;
+    connected?: boolean;
+    message?: string;
+    timestamp?: number;
+    updates?: unknown;
+    settings?: unknown;
+    sceneId?: string;
+    action?: string;
+    combatant?: unknown;
+    data?: unknown;
+  };
+}
+
+interface PlayerActionData {
+  type: string;
+  data?: {
+    message?: string;
+    tokenId?: string;
+    x?: number;
+    y?: number;
+    combatAction?: unknown;
+  };
+}
+
+interface FullSyncData {
+  sessionId?: string;
+  players?: Player[];
+  currentScene?: string;
+  settings?: unknown;
+  sequenceId?: number;
+}
+
+interface DeltaSyncData {
+  updates?: StateUpdate[];
+  sequenceId?: number;
+}
+
 export interface ClientConfig {
   serverUrl: string;
   playerId: string;
@@ -165,7 +234,7 @@ export class GameClient extends EventEmitter {
     }
   }
 
-  private handlePong(_message: any): void {
+  private handlePong(_message: PongMessage): void {
     const now = Date.now();
     this.connectionState.latency = now - this.connectionState.lastPing;
     this.emit("latencyUpdate", this.connectionState.latency);
@@ -173,17 +242,18 @@ export class GameClient extends EventEmitter {
 
   private handleFullSync(message: SyncMessage): void {
     const { data } = message;
+    const syncData = data as FullSyncData;
 
     // Update local game state
     this.gameState = {
-      sessionId: data.sessionId || "",
-      players: new Map(data.players?.map((p: Player) => [p.id, p]) || []),
-      currentScene: data.currentScene,
-      settings: data.settings,
+      sessionId: syncData.sessionId || "",
+      players: new Map(syncData.players?.map((p: Player) => [p.id, p]) || []),
+      currentScene: syncData.currentScene,
+      settings: syncData.settings,
       lastUpdate: Date.now(),
     } as GameState;
 
-    this.lastSequenceId = data.sequenceId || 0;
+    this.lastSequenceId = syncData.sequenceId || 0;
 
     this.emit("fullSync", this.gameState);
     this.emit("stateUpdated", this.gameState);
@@ -191,22 +261,23 @@ export class GameClient extends EventEmitter {
 
   private handleDeltaSync(message: SyncMessage): void {
     const { data } = message;
+    const deltaData = data as DeltaSyncData;
 
-    if (data.updates && Array.isArray(data.updates)) {
-      for (const update of data.updates) {
+    if (deltaData.updates && Array.isArray(deltaData.updates)) {
+      for (const update of deltaData.updates) {
         this.applyStateUpdate(update);
       }
     }
 
-    if (data.sequenceId) {
-      this.lastSequenceId = Math.max(this.lastSequenceId, data.sequenceId);
+    if (deltaData.sequenceId) {
+      this.lastSequenceId = Math.max(this.lastSequenceId, deltaData.sequenceId);
     }
 
-    this.emit("deltaSync", data.updates);
+    this.emit("deltaSync", deltaData.updates);
     this.emit("stateUpdated", this.gameState);
   }
 
-  private applyStateUpdate(update: any): void {
+  private applyStateUpdate(update: StateUpdate): void {
     try {
       switch (update.type) {
         case "player":
@@ -232,7 +303,7 @@ export class GameClient extends EventEmitter {
     }
   }
 
-  private applyPlayerUpdate(update: any): void {
+  private applyPlayerUpdate(update: StateUpdate): void {
     const { data } = update;
 
     switch (data.event) {
@@ -253,7 +324,7 @@ export class GameClient extends EventEmitter {
         if (this.gameState.players && data.playerId) {
           const player = this.gameState.players.get(data.playerId);
           if (player) {
-            player.connected = data.connected;
+            player.connected = data.connected ?? false;
             this.emit("playerConnectionChanged", player);
           }
         }
@@ -268,11 +339,11 @@ export class GameClient extends EventEmitter {
     }
   }
 
-  private applyEntityUpdate(update: any): void {
+  private applyEntityUpdate(update: StateUpdate): void {
     this.emit("entityUpdate", update.data);
   }
 
-  private applyCombatUpdate(update: any): void {
+  private applyCombatUpdate(update: StateUpdate): void {
     const { data } = update;
 
     switch (data.event) {
@@ -291,31 +362,31 @@ export class GameClient extends EventEmitter {
     }
   }
 
-  private applySceneUpdate(update: any): void {
+  private applySceneUpdate(update: StateUpdate): void {
     const { data } = update;
 
     if (data.action === "changeScene") {
-      this.gameState.currentScene = data.sceneId;
+      this.gameState.currentScene = data.sceneId ?? "";
       this.emit("sceneChanged", data.sceneId);
     }
   }
 
-  private applySettingsUpdate(update: any): void {
+  private applySettingsUpdate(update: StateUpdate): void {
     if (this.gameState.settings && update.data.settings) {
       this.gameState.settings = { ...this.gameState.settings, ...update.data.settings };
       this.emit("settingsChanged", this.gameState.settings);
     }
   }
 
-  private handlePlayerJoined(message: any): void {
+  private handlePlayerJoined(message: PlayerJoinedMessage): void {
     this.emit("playerJoined", message.data);
   }
 
-  private handlePlayerLeft(message: any): void {
+  private handlePlayerLeft(message: PlayerLeftMessage): void {
     this.emit("playerLeft", message.data);
   }
 
-  private handleServerError(message: any): void {
+  private handleServerError(message: ServerErrorMessage): void {
     logger.error("Server error:", { data: message.data });
     this.emit("serverError", message.data);
   }
@@ -336,7 +407,7 @@ export class GameClient extends EventEmitter {
     }
   }
 
-  private handleConnectionError(error: any): void {
+  private handleConnectionError(error: unknown): void {
     logger.error("Connection error:", { error });
     this.emit("connectionError", error);
 
@@ -374,9 +445,9 @@ export class GameClient extends EventEmitter {
     }
   }
 
-  private sendMessage(message: any): void {
+  private sendMessage(message: BaseMessage | SyncMessage): void {
     if (!this.connectionState.connected || !this.ws) {
-      this.messageQueue.push(message);
+      this.messageQueue.push(message as SyncMessage);
       return;
     }
 
@@ -384,7 +455,7 @@ export class GameClient extends EventEmitter {
       this.ws.send(JSON.stringify(message));
     } catch (error) {
       logger.error("Error sending message:", { error });
-      this.messageQueue.push(message);
+      this.messageQueue.push(message as SyncMessage);
     }
   }
 
@@ -410,7 +481,7 @@ export class GameClient extends EventEmitter {
     this.connectionState.connecting = false;
   }
 
-  public sendStateUpdate(type: string, data: any): void {
+  public sendStateUpdate(type: string, data: Record<string, unknown>): void {
     const message: SyncMessage = {
       type: "state_update",
       sessionId: this.gameState.sessionId || "",
@@ -424,7 +495,7 @@ export class GameClient extends EventEmitter {
     this.sendMessage(message);
   }
 
-  public sendPlayerAction(actionType: string, actionData: any): void {
+  public sendPlayerAction(actionType: string, actionData: PlayerActionData["data"]): void {
     const message: SyncMessage = {
       type: "player_action",
       sessionId: this.gameState.sessionId || "",
@@ -446,15 +517,20 @@ export class GameClient extends EventEmitter {
     this.sendPlayerAction("move_token", { tokenId, x, y });
   }
 
-  public executeCombatAction(combatAction: any): void {
+  public executeCombatAction(combatAction: unknown): void {
     this.sendPlayerAction("combat_action", { combatAction });
   }
 
   public requestFullSync(): void {
-    this.sendMessage({
+    const message: SyncMessage = {
       type: "request_full_sync",
-      sequenceId: this.lastSequenceId,
-    });
+      sessionId: this.gameState.sessionId || "",
+      timestamp: Date.now(),
+      data: {
+        sequenceId: this.lastSequenceId,
+      },
+    };
+    this.sendMessage(message);
   }
 
   // Getters

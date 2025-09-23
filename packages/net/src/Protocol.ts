@@ -22,7 +22,7 @@ export const _Protocol = {
   encode<T>(type: MessageType, payload: T): string {
     return JSON.stringify({ type, payload });
   },
-  decode(data: string): { type: MessageType; payload: any } {
+  decode(data: string): { type: MessageType; payload: unknown } {
     return JSON.parse(data);
   },
 };

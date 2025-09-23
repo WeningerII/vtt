@@ -11,15 +11,15 @@ export class Client {
   /**
    * Register a handler for messages from the server.
    */
-  onMessage(cb: (data: any) => void): void {
-    this.socket.addEventListener('message', ev => cb(ev.data));
+  onMessage(cb: (data: string) => void): void {
+    this.socket.addEventListener("message", (ev) => cb(ev.data));
   }
 
   /**
    * Send a message to the server. Accepts any serialisable payload.
    */
-  send(data: any): void {
-    const payload = typeof data === 'string' ? data : JSON.stringify(data);
+  send(data: unknown): void {
+    const payload = typeof data === "string" ? data : JSON.stringify(data);
     this.socket.send(payload);
   }
 }

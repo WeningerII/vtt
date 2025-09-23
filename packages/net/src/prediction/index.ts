@@ -29,7 +29,7 @@ import {
 import {
   LagCompensation,
   type LagCompensationConfig,
-  type HistoricalState,
+  // type HistoricalState,
   type CompensationResult,
   type ValidationResult,
 } from "./LagCompensation";
