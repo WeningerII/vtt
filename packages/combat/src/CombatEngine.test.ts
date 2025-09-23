@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, jest } from "@jest/globals";
 import { CombatEngine } from "./CombatEngine";
 
 describe("CombatEngine", () => {
@@ -9,7 +9,7 @@ describe("CombatEngine", () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe("Initialization", () => {

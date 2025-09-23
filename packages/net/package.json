@@ -7,8 +7,11 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "test": "vitest --passWithNoTests"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  }
 }

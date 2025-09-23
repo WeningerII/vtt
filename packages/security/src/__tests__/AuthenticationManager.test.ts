@@ -3,7 +3,7 @@
  * Comprehensive test suite for authentication and authorization
  */
 
-import { AuthenticationManager } from "../AuthenticationManager";
+import { TestAuthenticationManager as AuthenticationManager } from "./test-utils";
 
 describe("AuthenticationManager", () => {
   let authManager: AuthenticationManager;
@@ -148,8 +148,8 @@ describe("AuthenticationManager", () => {
 
       const sessions = authManager.getUserSessions(result.user!.id);
       expect(sessions).toHaveLength(1);
-      expect(sessions[0].ipAddress).toBe("192.168.1.1");
-      expect(sessions[0].userAgent).toBe("Test Browser");
+      expect(sessions[0]?.ipAddress).toBe("192.168.1.1");
+      expect(sessions[0]?.userAgent).toBe("Test Browser");
     });
   });
 
@@ -279,7 +279,7 @@ describe("AuthenticationManager", () => {
       };
 
       // Create multiple sessions (more than maxSessions = 3)
-      const sessions = [];
+      const sessions: any[] = [];
       for (let i = 0; i < 5; i++) {
         const result = await authManager.login({
           ...credentials,

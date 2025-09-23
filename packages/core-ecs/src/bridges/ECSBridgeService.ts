@@ -15,7 +15,18 @@ export interface CharacterData {
   abilities: Record<string, { value: number; modifier: number }>;
   armorClass?: number;
   level?: number;
+  proficiencyBonus?: number;
+  speed?: number;
+  hitDie?: string;
+  initiative?: number;
   [key: string]: unknown;
+}
+
+// Type guard function
+function hasStatblock(
+  monster: MonsterData,
+): monster is MonsterData & { statblock: MonsterStatblock } {
+  return "statblock" in monster && monster.statblock !== undefined;
 }
 
 export interface MonsterData {
@@ -25,6 +36,7 @@ export interface MonsterData {
   abilities: Record<string, number>;
   armorClass: number | { value: number; type?: string };
   speed?: { walk?: number; [key: string]: number | undefined };
+  statblock?: MonsterStatblock;
   [key: string]: unknown;
 }
 
@@ -82,7 +94,7 @@ export class ECSBridgeService {
   // Entity mapping
   private entityMap = new Map<string, EntityId>(); // External ID -> ECS EntityId
   private reverseEntityMap = new Map<EntityId, string>(); // ECS EntityId -> External ID
-  
+
   // Store references
   private healthStore: HealthStore;
   private statsStore: StatsStore;
@@ -138,14 +150,14 @@ export class ECSBridgeService {
       temporary: character.hitPoints.temporary || 0,
     });
 
-    // Set stats - convert character abilities format to ECS format
+    // Set stats - convert character abilities format to ECS format (supports { value, modifier })
     const abilities = {
-      strength: character.abilities?.strength || 10,
-      dexterity: character.abilities?.dexterity || 10,
-      constitution: character.abilities?.constitution || 10,
-      intelligence: character.abilities?.intelligence || 10,
-      wisdom: character.abilities?.wisdom || 10,
-      charisma: character.abilities?.charisma || 10,
+      strength: character.abilities.strength?.value ?? 10,
+      dexterity: character.abilities.dexterity?.value ?? 10,
+      constitution: character.abilities.constitution?.value ?? 10,
+      intelligence: character.abilities.intelligence?.value ?? 10,
+      wisdom: character.abilities.wisdom?.value ?? 10,
+      charisma: character.abilities.charisma?.value ?? 10,
     };
     const abilityModifiers = {
       strength: Math.floor((abilities.strength - 10) / 2),
@@ -155,7 +167,7 @@ export class ECSBridgeService {
       wisdom: Math.floor((abilities.wisdom - 10) / 2),
       charisma: Math.floor((abilities.charisma - 10) / 2),
     };
-    
+
     this.world.stats.add(entityId, {
       abilities,
       abilityModifiers,
@@ -219,11 +231,9 @@ export class ECSBridgeService {
     this.reverseEntityMap.set(entityId, instanceId);
 
     // Extract statblock data
-    const statblock = monster.statblock as MonsterStatblock;
-    const maxHP =
-      typeof statblock.hitPoints === "number"
-        ? statblock.hitPoints
-        : this.calculateHPFromString(statblock.hitPoints as { value: number; formula?: string });
+    const statblock = hasStatblock(monster) ? monster.statblock : undefined;
+    const hpSource = statblock ? statblock.hitPoints : monster.hitPoints;
+    const maxHP = this.calculateHPFromString(hpSource);
 
     // Create health component
     this.healthStore.add(entityId, {
@@ -233,14 +243,23 @@ export class ECSBridgeService {
     });
 
     // Set stats from statblock - convert to ECS format
-    const monsterAbilities = {
-      strength: statblock.abilities.STR,
-      dexterity: statblock.abilities.DEX,
-      constitution: statblock.abilities.CON,
-      intelligence: statblock.abilities.INT,
-      wisdom: statblock.abilities.WIS,
-      charisma: statblock.abilities.CHA,
-    };
+    const monsterAbilities = statblock
+      ? {
+          strength: statblock.abilities.STR,
+          dexterity: statblock.abilities.DEX,
+          constitution: statblock.abilities.CON,
+          intelligence: statblock.abilities.INT,
+          wisdom: statblock.abilities.WIS,
+          charisma: statblock.abilities.CHA,
+        }
+      : {
+          strength: monster.abilities.strength ?? monster.abilities.STR ?? 10,
+          dexterity: monster.abilities.dexterity ?? monster.abilities.DEX ?? 10,
+          constitution: monster.abilities.constitution ?? monster.abilities.CON ?? 10,
+          intelligence: monster.abilities.intelligence ?? monster.abilities.INT ?? 10,
+          wisdom: monster.abilities.wisdom ?? monster.abilities.WIS ?? 10,
+          charisma: monster.abilities.charisma ?? monster.abilities.CHA ?? 10,
+        };
     const monsterAbilityModifiers = {
       strength: Math.floor((monsterAbilities.strength - 10) / 2),
       dexterity: Math.floor((monsterAbilities.dexterity - 10) / 2),
@@ -249,13 +268,23 @@ export class ECSBridgeService {
       wisdom: Math.floor((monsterAbilities.wisdom - 10) / 2),
       charisma: Math.floor((monsterAbilities.charisma - 10) / 2),
     };
-    
+
     this.world.stats.add(entityId, {
       abilities: monsterAbilities,
       abilityModifiers: monsterAbilityModifiers,
       proficiencyBonus: 2,
-      armorClass: typeof statblock.armorClass === 'number' ? statblock.armorClass : (statblock.armorClass as { value: number })?.value || 10,
-      speed: (statblock as MonsterData).speed?.walk || 30,
+      armorClass: statblock
+        ? typeof statblock.armorClass === "number"
+          ? statblock.armorClass
+          : (statblock.armorClass as { value: number })?.value || 10
+        : typeof monster.armorClass === "number"
+          ? monster.armorClass
+          : typeof monster.armorClass === "object" &&
+              monster.armorClass !== null &&
+              "value" in monster.armorClass
+            ? (monster.armorClass as { value: number }).value
+            : 10,
+      speed: monster.speed?.walk || 30,
       level: 1,
       hitDie: "d8",
       // D&D 5e format for backward compatibility
@@ -268,7 +297,7 @@ export class ECSBridgeService {
     });
 
     // Initialize combat component with monster initiative bonus
-    const _dexModifier = Math.floor((statblock.abilities.DEX - 10) / 2);
+    const _dexModifier = Math.floor((monsterAbilities.dexterity - 10) / 2);
     this.world.combat.add(entityId, {
       initiative: 0,
       isActive: false,
@@ -296,24 +325,42 @@ export class ECSBridgeService {
    * Sync ECS stats back to character service
    */
   async syncStatsToCharacter(entityId: number): Promise<void> {
-    if (!this.characterService) {return;}
+    if (!this.characterService) {
+      return;
+    }
 
     const externalId = this.reverseEntityMap.get(entityId);
-    if (!externalId || !externalId.startsWith("char")) {return;}
+    if (!externalId || !externalId.startsWith("char")) {
+      return;
+    }
 
     const characterId = externalId.substring(5);
     const stats = this.statsStore.get(entityId);
-    if (!stats) {return;}
+    if (!stats) {
+      return;
+    }
 
     // Convert ECS stats format back to character format
     const characterUpdates = {
       abilities: {
-        STR: stats.STR ? { value: stats.STR.value, modifier: stats.STR.modifier } : { value: 10, modifier: 0 },
-        DEX: stats.DEX ? { value: stats.DEX.value, modifier: stats.DEX.modifier } : { value: 10, modifier: 0 },
-        CON: stats.CON ? { value: stats.CON.value, modifier: stats.CON.modifier } : { value: 10, modifier: 0 },
-        INT: stats.INT ? { value: stats.INT.value, modifier: stats.INT.modifier } : { value: 10, modifier: 0 },
-        WIS: stats.WIS ? { value: stats.WIS.value, modifier: stats.WIS.modifier } : { value: 10, modifier: 0 },
-        CHA: stats.CHA ? { value: stats.CHA.value, modifier: stats.CHA.modifier } : { value: 10, modifier: 0 },
+        STR: stats.STR
+          ? { value: stats.STR.value, modifier: stats.STR.modifier }
+          : { value: 10, modifier: 0 },
+        DEX: stats.DEX
+          ? { value: stats.DEX.value, modifier: stats.DEX.modifier }
+          : { value: 10, modifier: 0 },
+        CON: stats.CON
+          ? { value: stats.CON.value, modifier: stats.CON.modifier }
+          : { value: 10, modifier: 0 },
+        INT: stats.INT
+          ? { value: stats.INT.value, modifier: stats.INT.modifier }
+          : { value: 10, modifier: 0 },
+        WIS: stats.WIS
+          ? { value: stats.WIS.value, modifier: stats.WIS.modifier }
+          : { value: 10, modifier: 0 },
+        CHA: stats.CHA
+          ? { value: stats.CHA.value, modifier: stats.CHA.modifier }
+          : { value: 10, modifier: 0 },
       },
     };
 
@@ -324,10 +371,14 @@ export class ECSBridgeService {
    * Sync character changes back to CharacterService
    */
   async syncCharacterToService(characterId: string): Promise<void> {
-    if (!this.characterService) {return;}
+    if (!this.characterService) {
+      return;
+    }
 
     const entityId = this.entityMap.get(characterId);
-    if (!entityId) {return;}
+    if (!entityId) {
+      return;
+    }
 
     const health = this.healthStore.get(entityId);
     const _conditions = this.conditionsStore.get(entityId);
@@ -355,7 +406,9 @@ export class ECSBridgeService {
     _damageType: string = "untyped",
   ): Promise<boolean> {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) {return false;}
+    if (!entityId) {
+      return false;
+    }
 
     const success = this.healthStore.takeDamage(entityId, damage);
 
@@ -376,7 +429,9 @@ export class ECSBridgeService {
    */
   async applyHealing(externalId: string, healing: number): Promise<boolean> {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) {return false;}
+    if (!entityId) {
+      return false;
+    }
 
     const success = this.healthStore.heal(entityId, healing);
 
@@ -394,7 +449,9 @@ export class ECSBridgeService {
    */
   applyCondition(externalId: string, condition: Condition): boolean {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) {return false;}
+    if (!entityId) {
+      return false;
+    }
 
     this.conditionsStore.add(entityId, condition);
     return true;
@@ -405,7 +462,9 @@ export class ECSBridgeService {
    */
   removeCondition(externalId: string, conditionType: string): boolean {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) {return false;}
+    if (!entityId) {
+      return false;
+    }
 
     this.conditionsStore.remove(entityId, conditionType as ConditionType);
     return true;
@@ -416,14 +475,18 @@ export class ECSBridgeService {
    */
   getEntityData(externalId: string): EntityData | null {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) {return null;}
+    if (!entityId) {
+      return null;
+    }
 
     const health = this.healthStore.get(entityId);
     const stats = this.statsStore.get(entityId);
     const conditions = this.conditionsStore.get(entityId);
     const combat = this.combatStore.get(entityId);
 
-    if (!health || !stats) {return null;}
+    if (!health || !stats) {
+      return null;
+    }
 
     return {
       id: externalId,
@@ -435,7 +498,32 @@ export class ECSBridgeService {
         temporary: health.temporary,
       },
       armorClass: 10, // Would need to calculate from stats and equipment
-      abilities: stats as Record<string, { value: number; modifier: number }>,
+      abilities: {
+        STR: stats.STR ?? {
+          value: stats.abilities.strength,
+          modifier: stats.abilityModifiers.strength,
+        },
+        DEX: stats.DEX ?? {
+          value: stats.abilities.dexterity,
+          modifier: stats.abilityModifiers.dexterity,
+        },
+        CON: stats.CON ?? {
+          value: stats.abilities.constitution,
+          modifier: stats.abilityModifiers.constitution,
+        },
+        INT: stats.INT ?? {
+          value: stats.abilities.intelligence,
+          modifier: stats.abilityModifiers.intelligence,
+        },
+        WIS: stats.WIS ?? {
+          value: stats.abilities.wisdom,
+          modifier: stats.abilityModifiers.wisdom,
+        },
+        CHA: stats.CHA ?? {
+          value: stats.abilities.charisma,
+          modifier: stats.abilityModifiers.charisma,
+        },
+      },
       conditions,
       initiative: combat?.initiative || 0,
     };
@@ -446,7 +534,9 @@ export class ECSBridgeService {
    */
   removeEntity(externalId: string): boolean {
     const entityId = this.entityMap.get(externalId);
-    if (!entityId) {return false;}
+    if (!entityId) {
+      return false;
+    }
 
     // Remove from all component stores
     this.healthStore.remove(entityId);
@@ -489,12 +579,24 @@ export class ECSBridgeService {
   /**
    * Calculate HP from D&D hit dice string (e.g., "4d8+4")
    */
-  private calculateHPFromString(hpString: string | number): number {
-    if (typeof hpString === "number") {return hpString;}
-
-    // Simple parsing for formats like "4d8+4" or "58 (9d8 + 18)"
-    const match = hpString.toString().match(/(\d+)(?:\s*\([^)]+\))?/);
-    return match && match[1] ? parseInt(match[1]) : 10;
+  private calculateHPFromString(hp: string | number | { value: number; formula?: string }): number {
+    if (typeof hp === "number") {
+      return hp;
+    }
+    if (typeof hp === "string") {
+      // Simple parsing for formats like "4d8+4" or "58 (9d8 + 18)"
+      const match = hp.toString().match(/(\d+)(?:\s*\([^)]+\))?/);
+      return match && match[1] ? parseInt(match[1]) : 10;
+    }
+    // Object form
+    if (typeof hp.value === "number") {
+      return hp.value;
+    }
+    if (hp.formula) {
+      const match = hp.formula.match(/(\d+)/);
+      return match && match[1] ? parseInt(match[1]) : 10;
+    }
+    return 10;
   }
 
   /**

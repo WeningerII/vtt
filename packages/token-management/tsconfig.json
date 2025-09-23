@@ -15,7 +15,9 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ],
   "references": [
     { "path": "../logging" }

@@ -7,13 +7,15 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "test": "vitest --passWithNoTests"
   },
   "dependencies": {
     "@vtt/logging": "workspace:*",
     "gl-matrix": "^3.4.3"
   },
   "devDependencies": {
-    "@webgpu/types": "^0.1.44"
+    "@webgpu/types": "^0.1.44",
+    "vitest": "^3.0.0"
   }
 }

@@ -11,7 +11,7 @@ module.exports = {
   coverageReporters: ["text", "lcov", "html"],
   // Use simple setup without global mocks for this package
   setupFilesAfterEnv: [],
-  moduleNameMapping: {
+  moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
 };

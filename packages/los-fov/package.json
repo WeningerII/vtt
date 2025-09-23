@@ -6,7 +6,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b",
-    "lint": "eslint src --ext .ts"
+    "build": "tsc -b", 
+    "lint": "eslint src --ext .ts",
+    "test": "vitest --passWithNoTests"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
   }
 }

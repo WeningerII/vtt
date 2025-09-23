@@ -84,10 +84,14 @@ export class ConditionSyncService {
    * Sync conditions from database to ECS for a specific entity
    */
   async syncFromDatabase(entityId: EntityId): Promise<void> {
-    if (!this.database) {return;}
+    if (!this.database) {
+      return;
+    }
 
     const actorId = this.entityToActorMap.get(entityId);
-    if (!actorId) {return;}
+    if (!actorId) {
+      return;
+    }
 
     try {
       const dbConditions = await this.database.getAppliedConditions(actorId);
@@ -124,22 +128,29 @@ export class ConditionSyncService {
    * Sync conditions from ECS to database for a specific entity
    */
   async syncToDatabase(entityId: EntityId): Promise<void> {
-    if (!this.database) {return;}
+    if (!this.database) {
+      return;
+    }
 
     const actorId = this.entityToActorMap.get(entityId);
-    if (!actorId) {return;}
+    if (!actorId) {
+      return;
+    }
 
     try {
-      const ecsConditions = this.conditionsStore.getAll(entityId) || [];
+      const ecsConditions = this.conditionsStore.get(entityId) || [];
       const dbConditions = await this.database.getAppliedConditions(actorId);
 
       // Create maps for efficient lookup
-      const _ecsConditionMap = new Map(ecsConditions.map((c: Condition) => [c.id, c]));
+      const _ecsConditionMap = new Map<string, Condition>(
+        ecsConditions.filter((c: Condition) => !!c.id).map((c: Condition) => [c.id as string, c]),
+      );
       const dbConditionMap = new Map(dbConditions.map((c) => [c.id, c]));
 
       // Update existing conditions in database
       for (const condition of ecsConditions) {
-        const dbId = this.appliedConditionMap.get(condition.id);
+        const condId = condition.id;
+        const dbId = condId ? this.appliedConditionMap.get(condId) : undefined;
 
         if (dbId && dbConditionMap.has(dbId)) {
           // Update duration in database
@@ -157,20 +168,23 @@ export class ConditionSyncService {
               condition.duration,
               condition.source,
             );
-            this.appliedConditionMap.set(condition.id, newDbId);
+            if (condId) {
+              this.appliedConditionMap.set(condId, newDbId);
+            }
           }
         }
       }
 
       // Remove conditions from database that no longer exist in ECS
       for (const dbCondition of dbConditions) {
-        const correspondingECSCondition = ecsConditions.find(
-          (c: Condition) => c.id && this.appliedConditionMap.get(c.id) === dbCondition.id,
-        );
+        const correspondingECSCondition = ecsConditions.find((c: Condition) => {
+          const id = c.id;
+          return id ? this.appliedConditionMap.get(id) === dbCondition.id : false;
+        });
 
         if (!correspondingECSCondition) {
           if (dbCondition.conditionId) {
-            this.database.removeCondition(dbCondition.conditionId);
+            await this.database.removeCondition(dbCondition.conditionId);
           }
           // Remove from our mapping
           const ecsId = [...this.appliedConditionMap.entries()].find(
@@ -241,8 +255,12 @@ export class ConditionSyncService {
    * Remove a condition from ECS and sync to database
    */
   async removeCondition(entityId: EntityId, conditionId: string): Promise<void> {
-    // Remove from ECS
-    this.conditionsStore.remove(entityId, conditionId);
+    // Remove from ECS (map id -> ConditionType expected by store)
+    const ecsConditions = this.conditionsStore.get(entityId) || [];
+    const toRemove = ecsConditions.find((c) => c.id === conditionId);
+    if (toRemove) {
+      this.conditionsStore.remove(entityId, toRemove.type);
+    }
 
     // Sync to database
     const dbId = this.appliedConditionMap.get(conditionId);
@@ -265,7 +283,7 @@ export class ConditionSyncService {
     newDuration: number,
   ): Promise<void> {
     // Update in ECS
-    const conditions = this.conditionsStore.getAll(entityId) || [];
+    const conditions = this.conditionsStore.get(entityId) || [];
     const condition = conditions.find((c: Condition) => c.id === conditionId);
 
     if (condition) {
@@ -316,7 +334,7 @@ export class ConditionSyncService {
       exhaustion: "exhaustion",
     };
 
-    return mapping[conditionName.toLowerCase()] as ConditionType || ("blinded" as ConditionType);
+    return (mapping[conditionName.toLowerCase()] as ConditionType) || ("blinded" as ConditionType);
   }
 
   /**

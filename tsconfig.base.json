@@ -19,6 +19,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "disableSourceOfProjectReferenceRedirect": true,
     "baseUrl": ".",
     "paths": {
       "@vtt/ui": [

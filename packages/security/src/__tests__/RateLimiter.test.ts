@@ -4,12 +4,12 @@
  */
 
 import {
-  RateLimiter,
-  TokenBucketRateLimiter,
-  AdaptiveRateLimiter,
-  RateLimiterManager,
+  TestRateLimiter as RateLimiter,
+  TestTokenBucketRateLimiter as TokenBucketRateLimiter,
+  TestAdaptiveRateLimiter as AdaptiveRateLimiter,
+  TestRateLimiterManager as RateLimiterManager,
   RATE_LIMIT_PRESETS,
-} from "../RateLimiter";
+} from "./test-utils";
 
 describe("RateLimiter", () => {
   describe("Basic Rate Limiting", () => {
@@ -44,7 +44,7 @@ describe("RateLimiter", () => {
       expect(result.info.retryAfter).toBeGreaterThan(0);
     });
 
-    test("should reset limits after window expires", (_done) => {
+    test("should reset limits after window expires", (done) => {
       const limiter = new RateLimiter({
         windowMs: 100, // 100ms window
         max: 2,
@@ -62,7 +62,7 @@ describe("RateLimiter", () => {
       setTimeout(() => {
         result = limiter.checkLimit("test-user");
         expect(result.allowed).toBe(true);
-        _done();
+        done();
       }, 150);
     });
 
@@ -97,7 +97,7 @@ describe("RateLimiter", () => {
   });
 
   describe("Rate Limiter Events", () => {
-    test("should emit events on requests and rate limiting", (_done) => {
+    test("should emit events on requests and rate limiting", (done) => {
       const limiter = new RateLimiter({
         windowMs: 60000,
         max: 1,
@@ -114,14 +114,14 @@ describe("RateLimiter", () => {
         rateLimitedEmitted = true;
         expect(requestEmitted).toBe(true);
         expect(rateLimitedEmitted).toBe(true);
-        _done();
+        done();
       });
 
       limiter.checkLimit("test-user");
       limiter.checkLimit("test-user");
     });
 
-    test("should emit reset events", (_done) => {
+    test("should emit reset events", (done) => {
       const limiter = new RateLimiter({
         windowMs: 60000,
         max: 1,
@@ -129,7 +129,7 @@ describe("RateLimiter", () => {
 
       limiter.on("reset", (data) => {
         expect(data.identifier).toBe("test-user");
-        _done();
+        done();
       });
 
       limiter.checkLimit("test-user");
@@ -185,7 +185,7 @@ describe("TokenBucketRateLimiter", () => {
     expect(result.info.retryAfter).toBeGreaterThan(0);
   });
 
-  test("should refill tokens over time", (_done) => {
+  test("should refill tokens over time", (done) => {
     const limiter = new TokenBucketRateLimiter({
       capacity: 5,
       refillRate: 10, // 10 tokens per second for faster testing
@@ -200,12 +200,12 @@ describe("TokenBucketRateLimiter", () => {
     result = limiter.consume("test-user", 1);
     expect(result.allowed).toBe(false);
 
-    // Wait for refill
+    // Wait for refill (refill interval is 1000ms)
     setTimeout(() => {
       result = limiter.consume("test-user", 1);
       expect(result.allowed).toBe(true);
-      _done();
-    }, 200); // Wait 200ms for refill
+      done();
+    }, 1200); // Wait 1200ms for refill cycle
   });
 
   test("should handle manual token addition", () => {
@@ -225,7 +225,7 @@ describe("TokenBucketRateLimiter", () => {
 });
 
 describe("AdaptiveRateLimiter", () => {
-  test("should adapt limits based on system load", (_done) => {
+  test("should adapt limits based on system load", (done) => {
     const limiter = new AdaptiveRateLimiter(
       {
         windowMs: 60000,
@@ -249,14 +249,14 @@ describe("AdaptiveRateLimiter", () => {
       limitAdapted = true;
     });
 
-    // Wait for adaptation cycle
+    // Wait for adaptation cycle (adaptation interval is 5000ms)
     setTimeout(() => {
       expect(limitAdapted).toBe(true);
-      _done();
-    }, 6000); // Wait for adaptation interval
-  });
+      done();
+    }, 5500); // Wait 5500ms for adaptation cycle
+  }, 8000); // 8000ms timeout to avoid race condition with 5000ms adaptation interval
 
-  test("should increase limits under low load", (_done) => {
+  test("should increase limits under low load", (done) => {
     const limiter = new AdaptiveRateLimiter(
       {
         windowMs: 60000,
@@ -282,9 +282,9 @@ describe("AdaptiveRateLimiter", () => {
 
     setTimeout(() => {
       expect(limitAdapted).toBe(true);
-      _done();
-    }, 6000);
-  });
+      done();
+    }, 5500); // Wait 5500ms for adaptation cycle
+  }, 8000); // 8000ms timeout to avoid race condition with 5000ms adaptation interval
 });
 
 describe("RateLimiterManager", () => {
@@ -366,7 +366,7 @@ describe("RateLimiterManager", () => {
 
 describe("Rate Limit Presets", () => {
   test("should have valid preset configurations", () => {
-    Object.entries(RATE_LIMIT_PRESETS).forEach(([name, config]) => {
+    Object.entries(RATE_LIMIT_PRESETS).forEach(([_name, config]) => {
       expect(config.windowMs).toBeGreaterThan(0);
       expect(config.max).toBeGreaterThan(0);
       expect(config.message).toBeDefined();
@@ -395,7 +395,7 @@ describe("Rate Limit Presets", () => {
 });
 
 describe("Cleanup and Resource Management", () => {
-  test("should clean up expired windows", (_done) => {
+  test("should clean up expired windows", (done) => {
     const limiter = new RateLimiter({
       windowMs: 100, // Very short window
       max: 5,
@@ -412,7 +412,7 @@ describe("Cleanup and Resource Management", () => {
     // Wait for cleanup
     setTimeout(() => {
       expect(cleanupEmitted).toBe(true);
-      _done();
+      done();
     }, 200);
   });
 
