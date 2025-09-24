@@ -30,6 +30,7 @@ node_modules
 # Analysis and scan files
 exhaustive-scan-*.csv
 exhaustive-scan-*.json
+audit-report.json
 fix-*.js
 
 # Test outputs
