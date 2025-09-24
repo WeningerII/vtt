@@ -118,7 +118,9 @@ export class Agent {
   }
 
   public update(deltaTime: number): void {
-    if (!this.isActive) {return;}
+    if (!this.isActive) {
+      return;
+    }
 
     const startTime = performance.now();
 
@@ -528,7 +530,9 @@ export class AgentManager {
     const nearby: Agent[] = [];
 
     for (const otherAgent of this.agents.values()) {
-      if (otherAgent === agent) {continue;}
+      if (otherAgent === agent) {
+        continue;
+      }
 
       const distance = agent.getDistanceTo(otherAgent.position);
       if (distance <= range) {
@@ -548,7 +552,7 @@ export class AgentManager {
       activeAgents: activeAgents.length,
       maxAgentsPerFrame: this.maxAgentsPerFrame,
       averageUpdateTime:
-        activeAgents.reduce((_sum, _agent) => sum + agent.getStats().averageUpdateTime, 0) /
+        activeAgents.reduce((sum, agent) => sum + agent.getStats().averageUpdateTime, 0) /
         Math.max(activeAgents.length, 1),
     };
   }
@@ -569,7 +573,7 @@ export class AgentManager {
 }
 
 // Utility functions for creating common agent configurations
-export function createBasicAgentConfig(_id: string, position: Vector2): AgentConfig {
+export function createBasicAgentConfig(id: string, position: Vector2): AgentConfig {
   return {
     id,
     name: `Agent_${id}`,
@@ -584,7 +588,7 @@ export function createBasicAgentConfig(_id: string, position: Vector2): AgentCon
   };
 }
 
-export function createFastAgentConfig(_id: string, position: Vector2): AgentConfig {
+export function createFastAgentConfig(id: string, position: Vector2): AgentConfig {
   return {
     id,
     name: `FastAgent_${id}`,

@@ -320,7 +320,7 @@ export class AdvancedAssetPipeline {
       this.stats.assetsLoaded++;
     });
 
-    this.loader.on("load:error", (asset: Asset, _error: Error) => {
+    this.loader.on("load:error", (asset: Asset, error: Error) => {
       this.stats.errors++;
       logger.error(`Failed to load asset ${asset.id}:`, error);
     });
@@ -434,7 +434,9 @@ export class AdvancedAssetPipeline {
 
     // Load from storage or CDN
     const asset = this.assets.get(assetId);
-    if (!asset) {return null;}
+    if (!asset) {
+      return null;
+    }
 
     try {
       const loadedAsset = await this.loader.load(asset);
@@ -448,7 +450,9 @@ export class AdvancedAssetPipeline {
 
   async streamAsset(assetId: string): Promise<ReadableStream<Uint8Array> | null> {
     const asset = this.assets.get(assetId);
-    if (!asset) {return null;}
+    if (!asset) {
+      return null;
+    }
 
     return this.streamer.createStream(asset);
   }
@@ -467,7 +471,7 @@ export class AdvancedAssetPipeline {
       created: new Date(),
     };
 
-    return new Promise((_resolve, __reject) => {
+    return new Promise((resolve, reject) => {
       this.processingQueue.enqueue(task, task.priority);
 
       this.worker.process(task).then(resolve).catch(reject);
@@ -516,7 +520,9 @@ export class AdvancedAssetPipeline {
 
   async loadBundle(bundleId: string): Promise<Asset[]> {
     const bundle = this.bundles.get(bundleId);
-    if (!bundle) {return [];}
+    if (!bundle) {
+      return [];
+    }
 
     const assets: Asset[] = [];
 
@@ -559,17 +565,27 @@ export class AdvancedAssetPipeline {
   }
 
   private matchesQuery(asset: Asset, query: AssetSearchQuery): boolean {
-    if (query.type && asset.type !== query.type) {return false;}
-    if (query.format && asset.format !== query.format) {return false;}
-    if (query.tags && !query.tags.every((tag) => asset.metadata.tags.includes(tag))) {return false;}
-    if (query.text && !asset.name.toLowerCase().includes(query.text.toLowerCase())) {return false;}
+    if (query.type && asset.type !== query.type) {
+      return false;
+    }
+    if (query.format && asset.format !== query.format) {
+      return false;
+    }
+    if (query.tags && !query.tags.every((tag) => asset.metadata.tags.includes(tag))) {
+      return false;
+    }
+    if (query.text && !asset.name.toLowerCase().includes(query.text.toLowerCase())) {
+      return false;
+    }
     return true;
   }
 
   private sortAssets(assets: Asset[], sort?: AssetSort): Asset[] {
-    if (!sort) {return assets;}
+    if (!sort) {
+      return assets;
+    }
 
-    return assets.sort((_a, _b) => {
+    return assets.sort((a, b) => {
       let comparison = 0;
 
       switch (sort.field) {
@@ -598,10 +614,18 @@ export class AdvancedAssetPipeline {
     const videoFormats = ["mp4", "webm", "avi", "mov", "mkv"];
     const modelFormats = ["gltf", "glb", "obj", "fbx", "dae"];
 
-    if (imageFormats.includes(format.toLowerCase())) {return "texture";}
-    if (audioFormats.includes(format.toLowerCase())) {return "audio";}
-    if (videoFormats.includes(format.toLowerCase())) {return "video";}
-    if (modelFormats.includes(format.toLowerCase())) {return "model";}
+    if (imageFormats.includes(format.toLowerCase())) {
+      return "texture";
+    }
+    if (audioFormats.includes(format.toLowerCase())) {
+      return "audio";
+    }
+    if (videoFormats.includes(format.toLowerCase())) {
+      return "video";
+    }
+    if (modelFormats.includes(format.toLowerCase())) {
+      return "model";
+    }
 
     return "data";
   }
@@ -771,7 +795,7 @@ class ProcessingWorker {
       outputAssets: [],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -804,7 +828,7 @@ class TextureProcessor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -820,7 +844,7 @@ class TextureCompressor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -836,7 +860,7 @@ class MipMapGenerator implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -852,7 +876,7 @@ class AudioProcessor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -868,7 +892,7 @@ class AudioCompressor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -884,7 +908,7 @@ class AudioNormalizer implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -900,7 +924,7 @@ class ModelProcessor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -916,7 +940,7 @@ class ModelOptimizer implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -932,7 +956,7 @@ class LODGenerator implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -948,7 +972,7 @@ class CompressionProcessor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -964,7 +988,7 @@ class ValidationProcessor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }
@@ -980,7 +1004,7 @@ class MetadataExtractor implements AssetProcessor {
       outputAssets: [asset],
       warnings: [],
       errors: [],
-      metadata: Record<string, any>,
+      metadata: {} as Record<string, any>,
       processingTime: 0,
     };
   }

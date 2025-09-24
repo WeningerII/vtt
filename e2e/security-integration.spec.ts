@@ -5,10 +5,10 @@
 
 import { test, expect } from "@playwright/test";
 import { SecuritySystem } from "../packages/security/src";
-import { _RateLimiter, _RATE_LIMIT_PRESETS } from "../packages/security/src/RateLimiter";
+import { RateLimiter, RATE_LIMIT_PRESETS } from "../packages/security/src/RateLimiter";
 
 test.describe("Security Integration Tests", () => {
-  let _securitySystem: SecuritySystem;
+  let securitySystem: SecuritySystem;
   let baseURL: string;
 
   test.beforeAll(async () => {
@@ -489,7 +489,7 @@ test.describe("Security Integration Tests", () => {
         data: { email: "gm-rbac@example.com", password: "GMPass123!" },
       });
 
-      const { _token: gmToken } = await gmLoginResponse.json();
+      const { token: gmToken } = await gmLoginResponse.json();
 
       // Promote to GM role (would normally be done by admin)
       await request.post(`${baseURL}/api/admin/users/gm-rbac@example.com/roles`, {
@@ -525,7 +525,8 @@ test.describe("Security Integration Tests", () => {
     });
 
     test("should handle CORS properly", async ({ request }) => {
-      const response = await request.options(`${baseURL}/api/auth/login`, {
+      const response = await request.fetch(`${baseURL}/api/auth/login`, {
+        method: "OPTIONS",
         headers: {
           Origin: "https://trusted-domain.com",
           "Access-Control-Request-Method": "POST",
@@ -581,7 +582,7 @@ test.describe("Security Integration Tests", () => {
 
         // Missing required fields
         request.post(`${baseURL}/api/auth/login`, {
-          data: Record<string, any>,
+          data: {} as Record<string, any>,
         }),
       ];
 

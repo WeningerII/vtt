@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDir": "src",
     "incremental": true,
     "tsBuildInfoFile": "./core-ecs.tsbuildinfo",
     "composite": true,
@@ -12,11 +12,7 @@
     "target": "ES2020",
     "downlevelIteration": true,
     "strict": false,
-    "noUncheckedIndexedAccess": false,
-    "baseUrl": ".",
-    "paths": {
-      "@vtt/logging": ["../logging/src/index"]
-    }
+    "noUncheckedIndexedAccess": false
   },
   "include": ["src/**/*.ts"],
   "references": [{ "path": "../logging" }]

@@ -52,7 +52,7 @@ test.describe("Real-time Collaboration Scenarios", () => {
 
       // Start concurrent moves
       await Promise.all([
-        _(async () => {
+        (async () => {
           await gmToken.hover();
           await gmPage.mouse.down();
           await gmPage.mouse.move(300, 300);
@@ -441,7 +441,7 @@ test.describe("Real-time Collaboration Scenarios", () => {
       });
 
       await authUtils.mockAuthentication(gmPage, gm);
-      await authUtils.mockAuthentication(playerPage, player1);
+      await authUtils.mockAuthentication(playerPage, gameSession.users.player);
 
       const sceneUrl = `/scenes/${gameSession.scene.id}`;
       await Promise.all([gmPage.goto(sceneUrl), playerPage.goto(sceneUrl)]);

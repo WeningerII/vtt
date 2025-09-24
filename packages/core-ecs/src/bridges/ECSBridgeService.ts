@@ -501,27 +501,27 @@ export class ECSBridgeService {
       abilities: {
         STR: stats.STR ?? {
           value: stats.abilities.strength,
-          modifier: stats.abilityModifiers.strength,
+          modifier: stats.abilityModifiers.strength ?? 0,
         },
         DEX: stats.DEX ?? {
           value: stats.abilities.dexterity,
-          modifier: stats.abilityModifiers.dexterity,
+          modifier: stats.abilityModifiers.dexterity ?? 0,
         },
         CON: stats.CON ?? {
           value: stats.abilities.constitution,
-          modifier: stats.abilityModifiers.constitution,
+          modifier: stats.abilityModifiers.constitution ?? 0,
         },
         INT: stats.INT ?? {
           value: stats.abilities.intelligence,
-          modifier: stats.abilityModifiers.intelligence,
+          modifier: stats.abilityModifiers.intelligence ?? 0,
         },
         WIS: stats.WIS ?? {
           value: stats.abilities.wisdom,
-          modifier: stats.abilityModifiers.wisdom,
+          modifier: stats.abilityModifiers.wisdom ?? 0,
         },
         CHA: stats.CHA ?? {
           value: stats.abilities.charisma,
-          modifier: stats.abilityModifiers.charisma,
+          modifier: stats.abilityModifiers.charisma ?? 0,
         },
       },
       conditions,

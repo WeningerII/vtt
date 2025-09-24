@@ -757,7 +757,7 @@ export class BehaviorTreeBuilder {
   }
 
   build(): BehaviorNode | null {
-    return this.stack.length > 0 ? this.stack[0] : null;
+    return this.stack.length > 0 ? this.stack[0] || null : null;
   }
 
   private addNode(node: BehaviorNode): void {

@@ -233,6 +233,10 @@ export class MonsterAISystem {
     const potentialTargets = this.findTargets(entityId, allEntities);
     const targetId = potentialTargets.length > 0 ? potentialTargets[0] : undefined;
 
+    if (!preferredAction) {
+      return null; // No available actions
+    }
+
     return {
       entityId,
       action: "legendary_action",

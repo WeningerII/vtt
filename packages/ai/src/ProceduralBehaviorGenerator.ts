@@ -346,8 +346,10 @@ export class ProceduralBehaviorGenerator {
       for (const [trait, value] of Object.entries(template.basePersonality)) {
         if (trait in personality) {
           const personalityValue = (personality as unknown as Record<string, number>)[trait];
-          const diff = Math.abs(personalityValue - (value as number));
-          score += (1 - diff) * 10; // Higher score for closer match
+          if (personalityValue !== undefined) {
+            const diff = Math.abs(personalityValue - (value as number));
+            score += (1 - diff) * 10; // Higher score for closer match
+          }
         }
       }
     }

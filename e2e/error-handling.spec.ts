@@ -467,12 +467,12 @@ test.describe("Error Handling and Resilience Tests", () => {
 
       // Remove modern Canvas features
       const originalGetContext = HTMLCanvasElement.prototype.getContext;
-      HTMLCanvasElement.prototype.getContext = function (type: string) {
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string) {
         if (type === "webgl" || type === "webgl2") {
           return null; // Simulate no WebGL support
         }
-        return originalGetContext.call(this, type);
-      };
+        return originalGetContext.call(this, type as any);
+      } as any;
 
       // Remove modern audio features
       delete (window as any).AudioContext;

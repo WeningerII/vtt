@@ -2,8 +2,8 @@ import { IncomingMessage, ServerResponse } from "http";
 import { PrismaClient } from "@prisma/client";
 
 // Re-export router types for convenience
-export { RouteContext, RouteHandler, Route, Middleware, Next } from "../router/context";
-export type { AuthenticatedRequest } from "../router/context";
+export { RouteContext, RouteHandler, Route } from "../router/context";
+export type { Middleware, Next, AuthenticatedRequest } from "../router/context";
 
 // Utility function to create a basic route context for testing
 export function createMockContext(

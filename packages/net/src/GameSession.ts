@@ -230,11 +230,15 @@ export class GameSession extends EventEmitter {
   }
 
   private setupCombatEventHandlers(): void {
-    this.state.combat.on("combatStarted", (combatant: Combatant) => {
-      this.queueUpdate("combat", "system", { event: "combatantAdded", combatant });
+    this.state.combat.on("combatStarted", (combatant?: Combatant) => {
+      if (combatant) {
+        this.queueUpdate("combat", "system", { event: "combatantAdded", combatant });
+      }
     });
-    this.state.combat.on("combatantRemoved", (combatant: Combatant) => {
-      this.queueUpdate("combat", "system", { event: "combatantRemoved", combatant });
+    this.state.combat.on("combatantRemoved", (combatant?: Combatant) => {
+      if (combatant) {
+        this.queueUpdate("combat", "system", { event: "combatantRemoved", combatant });
+      }
     });
 
     this.state.combat.on("attackExecuted", (data: unknown) => {
@@ -400,17 +404,21 @@ export class GameSession extends EventEmitter {
       case "updateComponent":
         {
           // Update component data
-          const updateComponent = this.state.world.getComponent(entityId, componentType);
-          if (updateComponent && updateComponent.update) {
-            updateComponent.update(entityId, data);
+          if (entityId && componentType) {
+            const updateComponent = this.state.world.getComponent(entityId, componentType);
+            if (updateComponent && updateComponent.update) {
+              updateComponent.update(entityId, data);
+            }
           }
         }
         break;
       case "removeComponent":
         {
-          const removeComponent = this.state.world.getComponent(entityId, componentType);
-          if (removeComponent && removeComponent.remove) {
-            removeComponent.remove(entityId);
+          if (entityId && componentType) {
+            const removeComponent = this.state.world.getComponent(entityId, componentType);
+            if (removeComponent && removeComponent.remove) {
+              removeComponent.remove(entityId);
+            }
           }
         }
         break;

@@ -28,7 +28,7 @@ export type {
 } from "./AnalyticsManager";
 
 // Utility functions for quick analytics setup
-export function createBasicAnalyticsConfig(_endpoint: string): Partial<AnalyticsConfig> {
+export function createBasicAnalyticsConfig(endpoint: string): Partial<AnalyticsConfig> {
   return {
     telemetry: {
       endpoint,
@@ -54,7 +54,7 @@ export function createBasicAnalyticsConfig(_endpoint: string): Partial<Analytics
         {
           id: "console",
           type: "console",
-          config: Record<string, any>,
+          config: {} as Record<string, any>,
           enabled: true,
         },
       ],
