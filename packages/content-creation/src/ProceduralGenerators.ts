@@ -147,12 +147,20 @@ export class BiomeGenerator {
     if (temp < 0.3) {
       return humid > 0.5 ? "tundra" : "arctic";
     } else if (temp < 0.6) {
-      if (humid < 0.3) {return "desert";}
-      if (humid < 0.6) {return "grassland";}
+      if (humid < 0.3) {
+        return "desert";
+      }
+      if (humid < 0.6) {
+        return "grassland";
+      }
       return "temperate_forest";
     } else {
-      if (humid < 0.4) {return "desert";}
-      if (humid < 0.7) {return "savanna";}
+      if (humid < 0.4) {
+        return "desert";
+      }
+      if (humid < 0.7) {
+        return "savanna";
+      }
       return "tropical_forest";
     }
   }
@@ -280,13 +288,13 @@ export class NameGenerator {
     const { prefixes, suffixes } = this.nameComponents.fantasy;
     const prefix = prefixes[Math.floor(this.nextRandom() * prefixes.length)];
     const suffix = suffixes[Math.floor(this.nextRandom() * suffixes.length)];
-    return (prefix ?? '') + (suffix ?? '');
+    return (prefix ?? "") + (suffix ?? "");
   }
 
   generatePlaceName(): string {
     const { descriptors, features } = this.nameComponents.places;
-    const descriptor = descriptors[Math.floor(this.nextRandom() * descriptors.length)] ?? '';
-    const feature = features[Math.floor(this.nextRandom() * features.length)] ?? '';
+    const descriptor = descriptors[Math.floor(this.nextRandom() * descriptors.length)] ?? "";
+    const feature = features[Math.floor(this.nextRandom() * features.length)] ?? "";
     return `${descriptor} ${feature}`;
   }
 
@@ -352,7 +360,7 @@ export class TreasureGenerator {
   generateTreasure(
     rarity: "common" | "uncommon" | "rare" | "legendary",
     quantity: number = 1,
-  ): any {
+  ): { coins: Record<string, number>; items: string[] } {
     const table = this.treasureTables[rarity];
     const treasure = {
       coins: {} as Record<string, number>,
@@ -436,7 +444,16 @@ export class QuestGenerator {
     return this.random / 233280;
   }
 
-  generateQuest(type?: keyof typeof this.questTemplates): any {
+  generateQuest(type?: keyof typeof this.questTemplates): {
+    type: string;
+    title: string;
+    objective: string;
+    complication: string;
+    reward: string;
+    difficulty: string;
+    estimatedDuration: number;
+    requiredLevel: number;
+  } {
     const questType =
       type ||
       (this.randomChoice(Object.keys(this.questTemplates)) as keyof typeof this.questTemplates);
@@ -471,12 +488,30 @@ export class QuestGenerator {
     const index = Math.floor(this.nextRandom() * array.length);
     const item = array[index];
     if (item === undefined) {
-      throw new Error('Array is empty or index out of bounds');
+      throw new Error("Array is empty or index out of bounds");
     }
     return item;
   }
 
-  private fillPlaceholders(quest: any): any {
+  private fillPlaceholders(quest: {
+    type: string;
+    title: string;
+    objective: string;
+    complication: string;
+    reward: string;
+    difficulty: string;
+    estimatedDuration: number;
+    requiredLevel: number;
+  }): {
+    type: string;
+    title: string;
+    objective: string;
+    complication: string;
+    reward: string;
+    difficulty: string;
+    estimatedDuration: number;
+    requiredLevel: number;
+  } {
     const placeholders = {
       "{item}": () =>
         this.randomChoice(["Ancient Tome", "Crystal Orb", "Golden Chalice", "Sacred Relic"]),
