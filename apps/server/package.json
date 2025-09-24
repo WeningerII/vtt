@@ -41,7 +41,7 @@
     "@vtt/physics": "workspace:*",
     "@vtt/spell-engine": "workspace:*",
     "@vtt/user-management": "workspace:*",
-    "axios": "^1.6.0",
+    "axios": "^1.12.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express-session": "^1.18.2",
