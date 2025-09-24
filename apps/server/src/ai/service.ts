@@ -1,4 +1,4 @@
-import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 // Restore AI imports now that build issues are resolved
@@ -93,14 +93,13 @@ export function createAIServices(prisma: PrismaClient) {
       .map((p: AIProvider) => ({ name: p.name, capabilities: p.capabilities() }));
   }
 
-  const toInputJson = (value: unknown): Prisma.InputJsonValue =>
-    JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+  const toInputJson = (value: unknown): any => JSON.parse(JSON.stringify(value)) as any;
 
   async function textToImage(input: WithMapId<TextToImageRequest>, _ctx?: AIContext) {
     const job = await prisma.generationJob.create({
       data: {
-        type: JobType.TEXT_TO_IMAGE,
-        status: JobStatus.RUNNING,
+        type: "TEXT_TO_IMAGE",
+        status: "RUNNING",
         input: toInputJson(input),
         mapId: input.mapId ?? null,
       },
@@ -133,7 +132,7 @@ export function createAIServices(prisma: PrismaClient) {
       const updated = await prisma.generationJob.update({
         where: { id: job.id },
         data: {
-          status: JobStatus.SUCCEEDED,
+          status: "SUCCEEDED",
           output: toInputJson({
             image: result.image,
             provider: result.provider,
@@ -161,7 +160,7 @@ export function createAIServices(prisma: PrismaClient) {
       });
       await prisma.generationJob.update({
         where: { id: job.id },
-        data: { status: JobStatus.FAILED, error: errorMessage },
+        data: { status: "FAILED", error: errorMessage },
       });
       throw err;
     }
@@ -170,8 +169,8 @@ export function createAIServices(prisma: PrismaClient) {
   async function depth(input: WithMapId<DepthRequest>, _ctx?: AIContext) {
     const job = await prisma.generationJob.create({
       data: {
-        type: JobType.DEPTH,
-        status: JobStatus.RUNNING,
+        type: "DEPTH",
+        status: "RUNNING",
         input: toInputJson(input),
         mapId: input.mapId ?? null,
       },
@@ -204,7 +203,7 @@ export function createAIServices(prisma: PrismaClient) {
       const updated = await prisma.generationJob.update({
         where: { id: job.id },
         data: {
-          status: JobStatus.SUCCEEDED,
+          status: "SUCCEEDED",
           output: toInputJson({
             depth: result.depth,
             provider: result.provider,
@@ -231,7 +230,7 @@ export function createAIServices(prisma: PrismaClient) {
       });
       await prisma.generationJob.update({
         where: { id: job.id },
-        data: { status: JobStatus.FAILED, error: errorMessage },
+        data: { status: "FAILED", error: errorMessage },
       });
       throw err;
     }
@@ -240,8 +239,8 @@ export function createAIServices(prisma: PrismaClient) {
   async function segmentation(input: WithMapId<SegmentationRequest>, _ctx?: AIContext) {
     const job = await prisma.generationJob.create({
       data: {
-        type: JobType.SEGMENTATION,
-        status: JobStatus.RUNNING,
+        type: "SEGMENTATION",
+        status: "RUNNING",
         input: toInputJson(input),
         mapId: input.mapId ?? null,
       },
@@ -274,7 +273,7 @@ export function createAIServices(prisma: PrismaClient) {
       const updated = await prisma.generationJob.update({
         where: { id: job.id },
         data: {
-          status: JobStatus.SUCCEEDED,
+          status: "SUCCEEDED",
           output: toInputJson({
             mask: result.mask,
             classes: result.classes ?? {},
@@ -302,7 +301,7 @@ export function createAIServices(prisma: PrismaClient) {
       });
       await prisma.generationJob.update({
         where: { id: job.id },
-        data: { status: JobStatus.FAILED, error: errorMessage },
+        data: { status: "FAILED", error: errorMessage },
       });
       throw err;
     }

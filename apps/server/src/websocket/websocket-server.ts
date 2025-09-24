@@ -4,7 +4,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server as HTTPServer, IncomingMessage } from "http";
 import { Duplex } from "stream";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { getAuthManager } from "../auth/auth-manager";
 import { CombatWebSocketManager, CombatWebSocketMessage } from "./combatEvents";
 import { ActorIntegrationService } from "../services/ActorIntegrationService";
@@ -976,14 +976,14 @@ export class VTTWebSocketServer {
     return undefined;
   }
 
-  private asJsonObject(value: Prisma.JsonValue | null): Prisma.JsonObject | null {
+  private asJsonObject(value: unknown): Record<string, unknown> | null {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       return null;
     }
-    return value as Prisma.JsonObject;
+    return value as Record<string, unknown>;
   }
 
-  private getNumberFromJson(obj: Prisma.JsonObject | null, key: string): number | undefined {
+  private getNumberFromJson(obj: Record<string, unknown> | null, key: string): number | undefined {
     if (!obj) {
       return undefined;
     }

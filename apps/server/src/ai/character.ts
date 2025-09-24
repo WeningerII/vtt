@@ -3,7 +3,7 @@
  * Handles intelligent character creation from natural language prompts
  */
 
-import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { getErrorMessage } from "../utils/errors";
 import { logger } from "@vtt/logging";
 import { CharacterService } from "../character/CharacterService";
@@ -872,13 +872,13 @@ Format as JSON with detailed analysis.`;
     generation: CharacterGeneration,
     character: Character,
   ): Promise<void> {
-    const inputData = generation.concept as unknown as Prisma.InputJsonValue;
-    const outputData = JSON.parse(JSON.stringify(character)) as Prisma.InputJsonValue;
+    const inputData = generation.concept as unknown as any;
+    const outputData = JSON.parse(JSON.stringify(character)) as any;
 
     await this.prisma.generationJob.create({
       data: {
-        type: JobType.TEXT_TO_IMAGE,
-        status: JobStatus.SUCCEEDED,
+        type: "TEXT_TO_IMAGE",
+        status: "SUCCEEDED",
         input: inputData,
         output: outputData,
       },

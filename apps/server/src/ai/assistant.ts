@@ -2,7 +2,7 @@
  * AI Assistant service for natural language rule queries and game assistance
  */
 
-import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { createAIServices } from "./service";
 import { getErrorMessage } from "../utils/errors";
 
@@ -76,15 +76,13 @@ ${query.context?.campaignId ? `- Campaign ID: ${query.context.campaignId}` : ""}
 
         const inputData = JSON.parse(
           JSON.stringify({ query: query.question, context: query.context }),
-        ) as Prisma.InputJsonValue;
-        const outputData = JSON.parse(
-          JSON.stringify({ answer: response.text }),
-        ) as Prisma.InputJsonValue;
+        ) as any;
+        const outputData = JSON.parse(JSON.stringify({ answer: response.text })) as any;
 
         await prisma.generationJob.create({
           data: {
-            type: JobType.TEXT_TO_IMAGE,
-            status: JobStatus.SUCCEEDED,
+            type: "TEXT_TO_IMAGE",
+            status: "SUCCEEDED",
             input: inputData,
             output: outputData,
           },

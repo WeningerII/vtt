@@ -2,7 +2,7 @@
  * AI-driven content generation service integrating Anthropic's generateGameContent
  */
 
-import { JobStatus, JobType, Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { createAIServices } from "./service";
 import { getErrorMessage } from "../utils/errors";
 
@@ -115,15 +115,13 @@ Create something unique that enhances gameplay.`,
         // Log the generation for analytics
         const inputData = JSON.parse(
           JSON.stringify({ type: request.type, context: request.context }),
-        ) as Prisma.InputJsonValue;
-        const outputData = JSON.parse(
-          JSON.stringify({ content: response.text }),
-        ) as Prisma.InputJsonValue;
+        ) as any;
+        const outputData = JSON.parse(JSON.stringify({ content: response.text })) as any;
 
         await prisma.generationJob.create({
           data: {
-            type: JobType.TEXT_TO_IMAGE,
-            status: JobStatus.SUCCEEDED,
+            type: "TEXT_TO_IMAGE",
+            status: "SUCCEEDED",
             input: inputData,
             output: outputData,
           },

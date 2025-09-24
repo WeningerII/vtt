@@ -4,7 +4,7 @@
 import { Router, Request, Response, NextFunction, type IRouter } from "express";
 import { DatabaseManager } from "../database/connection";
 import { getAuthManager, AuthUser } from "../auth/auth-manager";
-import type { Prisma } from "@prisma/client";
+// Removed Prisma JSON type dependency for compatibility
 
 const prisma = DatabaseManager.getInstance();
 export const sessionsRouter: IRouter = Router();
@@ -39,24 +39,24 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction): Pro
   }
 };
 
-function toJsonObject(value: Prisma.JsonValue | null): Prisma.JsonObject {
+function toJsonObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
-  return value as Prisma.JsonObject;
+  return value as Record<string, unknown>;
 }
 
-function readString(obj: Prisma.JsonObject, key: string): string | undefined {
+function readString(obj: Record<string, unknown>, key: string): string | undefined {
   const value = obj[key];
   return typeof value === "string" ? value : undefined;
 }
 
-function readNumber(obj: Prisma.JsonObject, key: string): number | undefined {
+function readNumber(obj: Record<string, unknown>, key: string): number | undefined {
   const value = obj[key];
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function readBoolean(obj: Prisma.JsonObject, key: string): boolean | undefined {
+function readBoolean(obj: Record<string, unknown>, key: string): boolean | undefined {
   const value = obj[key];
   return typeof value === "boolean" ? value : undefined;
 }

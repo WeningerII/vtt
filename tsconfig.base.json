@@ -2,11 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "lib": [
-      "ES2020",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -22,225 +18,79 @@
     "disableSourceOfProjectReferenceRedirect": true,
     "baseUrl": ".",
     "paths": {
-      "@vtt/ui": [
-        "packages/ui/src/index.ts"
-      ],
-      "@vtt/ui/*": [
-        "packages/ui/src/*"
-      ],
-      "@/client/*": [
-        "apps/client/src/*"
-      ],
-      "@/editor/*": [
-        "apps/editor/src/*"
-      ],
-      "@/server/*": [
-        "apps/server/src/*"
-      ],
-      "@vtt/ai": [
-        "packages/ai/src/index.ts"
-      ],
-      "@vtt/ai/*": [
-        "packages/ai/src/*"
-      ],
-      "@vtt/analytics": [
-        "packages/analytics/src/index.ts"
-      ],
-      "@vtt/analytics/*": [
-        "packages/analytics/src/*"
-      ],
-      "@vtt/asset-pipeline": [
-        "packages/asset-pipeline/src/index.ts"
-      ],
-      "@vtt/asset-pipeline/*": [
-        "packages/asset-pipeline/src/*"
-      ],
-      "@vtt/audio": [
-        "packages/audio/src/index.ts"
-      ],
-      "@vtt/audio/*": [
-        "packages/audio/src/*"
-      ],
-      "@vtt/auth": [
-        "packages/auth/src/index.ts"
-      ],
-      "@vtt/auth/*": [
-        "packages/auth/src/*"
-      ],
-      "@vtt/character-management": [
-        "packages/character-management/src/index.ts"
-      ],
-      "@vtt/character-management/*": [
-        "packages/character-management/src/*"
-      ],
-      "@vtt/collaboration": [
-        "packages/collaboration/src/index.ts"
-      ],
-      "@vtt/collaboration/*": [
-        "packages/collaboration/src/*"
-      ],
-      "@vtt/conditions-engine": [
-        "packages/conditions-engine/src/index.ts"
-      ],
-      "@vtt/conditions-engine/*": [
-        "packages/conditions-engine/src/*"
-      ],
-      "@vtt/content": [
-        "packages/content/src/index.ts"
-      ],
-      "@vtt/content/*": [
-        "packages/content/src/*"
-      ],
-      "@vtt/content-5e-srd": [
-        "packages/content-5e-srd/src/index.ts"
-      ],
-      "@vtt/content-5e-srd/*": [
-        "packages/content-5e-srd/src/*"
-      ],
-      "@vtt/content-yjs": [
-        "packages/content-yjs/src/index.ts"
-      ],
-      "@vtt/content-yjs/*": [
-        "packages/content-yjs/src/*"
-      ],
-      "@vtt/core": [
-        "packages/core/src/index.ts"
-      ],
-      "@vtt/core/*": [
-        "packages/core/src/*"
-      ],
-      "@vtt/core-ecs": [
-        "packages/core-ecs/src/index.ts"
-      ],
-      "@vtt/core-ecs/*": [
-        "packages/core-ecs/src/*"
-      ],
-      "@vtt/core-schemas": [
-        "packages/core-schemas/src/index.ts"
-      ],
-      "@vtt/core-schemas/*": [
-        "packages/core-schemas/src/*"
-      ],
-      "@vtt/data-layer": [
-        "packages/data-layer/src/index.ts"
-      ],
-      "@vtt/data-layer/*": [
-        "packages/data-layer/src/*"
-      ],
-      "@vtt/dice-engine": [
-        "packages/dice-engine/src/index.ts"
-      ],
-      "@vtt/dice-engine/*": [
-        "packages/dice-engine/src/*"
-      ],
-      "@vtt/map-editor": [
-        "packages/map-editor/src/index.ts"
-      ],
-      "@vtt/map-editor/*": [
-        "packages/map-editor/src/*"
-      ],
-      "@vtt/monitoring": [
-        "packages/monitoring/src/index.ts"
-      ],
-      "@vtt/monitoring/*": [
-        "packages/monitoring/src/*"
-      ],
-      "@vtt/net": [
-        "packages/net/src/index.ts"
-      ],
-      "@vtt/net/*": [
-        "packages/net/src/*"
-      ],
-      "@vtt/notification": [
-        "packages/notification/src/index.ts"
-      ],
-      "@vtt/notification/*": [
-        "packages/notification/src/*"
-      ],
-      "@vtt/performance": [
-        "packages/performance/src/index.ts"
-      ],
-      "@vtt/performance/*": [
-        "packages/performance/src/*"
-      ],
-      "@vtt/physics": [
-        "packages/physics/src/index.ts"
-      ],
-      "@vtt/physics/*": [
-        "packages/physics/src/*"
-      ],
-      "@vtt/physics-spell-bridge": [
-        "packages/physics-spell-bridge/src/index.ts"
-      ],
-      "@vtt/physics-spell-bridge/*": [
-        "packages/physics-spell-bridge/src/*"
-      ],
-      "@vtt/platform": [
-        "packages/platform/src/index.ts"
-      ],
-      "@vtt/platform/*": [
-        "packages/platform/src/*"
-      ],
-      "@vtt/plugin-system": [
-        "packages/plugin-system/src/index.ts"
-      ],
-      "@vtt/plugin-system/*": [
-        "packages/plugin-system/src/*"
-      ],
-      "@vtt/renderer": [
-        "packages/renderer/src/index.ts"
-      ],
-      "@vtt/renderer/*": [
-        "packages/renderer/src/*"
-      ],
-      "@vtt/rules-5e": [
-        "packages/rules-5e/src/index.ts"
-      ],
-      "@vtt/rules-5e/*": [
-        "packages/rules-5e/src/*"
-      ],
-      "@vtt/security": [
-        "packages/security/src/index.ts"
-      ],
-      "@vtt/security/*": [
-        "packages/security/src/*"
-      ],
-      "@vtt/spell-engine": [
-        "packages/spell-engine/src/index.ts"
-      ],
-      "@vtt/spell-engine/*": [
-        "packages/spell-engine/src/*"
-      ],
-      "@vtt/testing": [
-        "packages/testing/src/index.ts"
-      ],
-      "@vtt/testing/*": [
-        "packages/testing/src/*"
-      ],
-      "@vtt/user-management": [
-        "packages/user-management/src/index.ts"
-      ],
-      "@vtt/user-management/*": [
-        "packages/user-management/src/*"
-      ],
-      "@services/auth": [
-        "services/auth/src/index.ts"
-      ],
-      "@services/auth/*": [
-        "services/auth/src/*"
-      ],
-      "@services/files": [
-        "services/files/src/index.ts"
-      ],
-      "@services/files/*": [
-        "services/files/src/*"
-      ],
-      "@vtt/logging": [
-        "packages/logging/src/index.ts"
-      ],
-      "@vtt/logging/*": [
-        "packages/logging/src/*"
-      ]
+      "@vtt/ui": ["packages/ui/src/index.ts"],
+      "@vtt/ui/*": ["packages/ui/src/*"],
+      "@/client/*": ["apps/client/src/*"],
+      "@/editor/*": ["apps/editor/src/*"],
+      "@/server/*": ["apps/server/src/*"],
+      "@vtt/ai": ["packages/ai/src/index.ts"],
+      "@vtt/ai/*": ["packages/ai/src/*"],
+      "@vtt/analytics": ["packages/analytics/src/index.ts"],
+      "@vtt/analytics/*": ["packages/analytics/src/*"],
+      "@vtt/asset-pipeline": ["packages/asset-pipeline/src/index.ts"],
+      "@vtt/asset-pipeline/*": ["packages/asset-pipeline/src/*"],
+      "@vtt/audio": ["packages/audio/src/index.ts"],
+      "@vtt/audio/*": ["packages/audio/src/*"],
+      "@vtt/auth": ["packages/auth/src/index.ts"],
+      "@vtt/auth/*": ["packages/auth/src/*"],
+      "@vtt/character-management": ["packages/character-management/src/index.ts"],
+      "@vtt/character-management/*": ["packages/character-management/src/*"],
+      "@vtt/collaboration": ["packages/collaboration/src/index.ts"],
+      "@vtt/collaboration/*": ["packages/collaboration/src/*"],
+      "@vtt/conditions-engine": ["packages/conditions-engine/src/index.ts"],
+      "@vtt/conditions-engine/*": ["packages/conditions-engine/src/*"],
+      "@vtt/content": ["packages/content/src/index.ts"],
+      "@vtt/content/*": ["packages/content/src/*"],
+      "@vtt/content-5e-srd": ["packages/content-5e-srd/src/index.ts"],
+      "@vtt/content-5e-srd/*": ["packages/content-5e-srd/src/*"],
+      "@vtt/content-yjs": ["packages/content-yjs/src/index.ts"],
+      "@vtt/content-yjs/*": ["packages/content-yjs/src/*"],
+      "@vtt/core": ["packages/core/src/index.ts"],
+      "@vtt/core/*": ["packages/core/src/*"],
+      "@vtt/core-ecs": ["packages/core-ecs/src/index.ts"],
+      "@vtt/core-ecs/*": ["packages/core-ecs/src/*"],
+      "@vtt/core-schemas": ["packages/core-schemas/src/index.ts"],
+      "@vtt/core-schemas/*": ["packages/core-schemas/src/*"],
+      "@vtt/data-layer": ["packages/data-layer/src/index.ts"],
+      "@vtt/data-layer/*": ["packages/data-layer/src/*"],
+      "@vtt/dice-engine": ["packages/dice-engine/src/index.ts"],
+      "@vtt/dice-engine/*": ["packages/dice-engine/src/*"],
+      "@vtt/map-editor": ["packages/map-editor/src/index.ts"],
+      "@vtt/map-editor/*": ["packages/map-editor/src/*"],
+      "@vtt/monitoring": ["packages/monitoring/src/index.ts"],
+      "@vtt/monitoring/*": ["packages/monitoring/src/*"],
+      "@vtt/net": ["packages/net/src/index.ts"],
+      "@vtt/net/*": ["packages/net/src/*"],
+      "@vtt/notification": ["packages/notification/src/index.ts"],
+      "@vtt/notification/*": ["packages/notification/src/*"],
+      "@vtt/performance": ["packages/performance/dist/index.d.ts"],
+      "@vtt/performance/*": ["packages/performance/dist/*"],
+      "@vtt/physics": ["packages/physics/src/index.ts"],
+      "@vtt/physics/*": ["packages/physics/src/*"],
+      "@vtt/physics-spell-bridge": ["packages/physics-spell-bridge/src/index.ts"],
+      "@vtt/physics-spell-bridge/*": ["packages/physics-spell-bridge/src/*"],
+      "@vtt/platform": ["packages/platform/src/index.ts"],
+      "@vtt/platform/*": ["packages/platform/src/*"],
+      "@vtt/plugin-system": ["packages/plugin-system/src/index.ts"],
+      "@vtt/plugin-system/*": ["packages/plugin-system/src/*"],
+      "@vtt/renderer": ["packages/renderer/src/index.ts"],
+      "@vtt/renderer/*": ["packages/renderer/src/*"],
+      "@vtt/rules-5e": ["packages/rules-5e/src/index.ts"],
+      "@vtt/rules-5e/*": ["packages/rules-5e/src/*"],
+      "@vtt/security": ["packages/security/src/index.ts"],
+      "@vtt/security/*": ["packages/security/src/*"],
+      "@vtt/spell-engine": ["packages/spell-engine/src/index.ts"],
+      "@vtt/spell-engine/*": ["packages/spell-engine/src/*"],
+      "@vtt/testing": ["packages/testing/src/index.ts"],
+      "@vtt/testing/*": ["packages/testing/src/*"],
+      "@vtt/user-management": ["packages/user-management/src/index.ts"],
+      "@vtt/user-management/*": ["packages/user-management/src/*"],
+      "@services/auth": ["services/auth/src/index.ts"],
+      "@services/auth/*": ["services/auth/src/*"],
+      "@services/files": ["services/files/src/index.ts"],
+      "@services/files/*": ["services/files/src/*"],
+      "@vtt/logging": ["packages/logging/dist/index.d.ts"],
+      "@vtt/logging/*": ["packages/logging/dist/*"]
     },
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -248,14 +98,8 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitAny": false,
-    "typeRoots": [
-      "./node_modules/@types",
-      "./types"
-    ]
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": [],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "exclude": ["node_modules", "dist"]
 }

@@ -79,7 +79,6 @@
     { "path": "../../packages/core" },
     { "path": "../../packages/core-ecs" },
     { "path": "../../packages/core-schemas" },
-    { "path": "../../packages/ai" },
     { "path": "../../packages/auth" },
     { "path": "../../packages/user-management" },
     { "path": "../../packages/combat" },
