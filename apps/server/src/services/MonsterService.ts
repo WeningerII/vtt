@@ -3,7 +3,7 @@
  * Full Prisma integration with SRD content support
  */
 
-import { PrismaClient, Monster } from "@prisma/client";
+import { PrismaClient, Prisma, Monster } from "@prisma/client";
 import { logger } from "@vtt/logging";
 // Fallback SRD monsters data - will be replaced with proper @vtt/content-5e-srd import when available
 const SRDMonsters = [
@@ -13,13 +13,13 @@ const SRDMonsters = [
     tags: ["GOBLINOID", "HUMANOID"],
   },
   {
-    id: "srd-orc", 
+    id: "srd-orc",
     name: "Orc",
     tags: ["HUMANOID"],
   },
   {
     id: "srd-skeleton",
-    name: "Skeleton", 
+    name: "Skeleton",
     tags: ["UNDEAD"],
   },
   {
@@ -109,14 +109,14 @@ export class MonsterService {
     if (query && query.trim()) {
       whereClause.name = {
         contains: query.trim(),
-        mode: 'insensitive'
+        mode: "insensitive",
       };
     }
 
     // Tag filtering
     if (tags && tags.length > 0) {
       whereClause.tags = {
-        hasAny: tags
+        hasAny: tags,
       };
     }
 
@@ -124,7 +124,7 @@ export class MonsterService {
       const [monsters, totalCount] = await Promise.all([
         this.prisma.monster.findMany({
           where: whereClause,
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
           skip: offset,
           take: limit,
           select: {
@@ -158,10 +158,7 @@ export class MonsterService {
       // Try to find by regular ID first, then by stableId
       const monster = await this.prisma.monster.findFirst({
         where: {
-          OR: [
-            { id: idOrStableId },
-            { stableId: idOrStableId },
-          ],
+          OR: [{ id: idOrStableId }, { stableId: idOrStableId }],
         },
       });
 
@@ -210,10 +207,16 @@ export class MonsterService {
       }
 
       // Prepare update data
-      const updateData: any = {};
-      if (request.name !== undefined) {updateData.name = request.name;}
-      if (request.statblock !== undefined) {updateData.statblock = request.statblock;}
-      if (request.tags !== undefined) {updateData.tags = request.tags;}
+      const updateData: Prisma.MonsterUpdateInput = {};
+      if (request.name !== undefined) {
+        updateData.name = request.name;
+      }
+      if (request.statblock !== undefined) {
+        updateData.statblock = request.statblock;
+      }
+      if (request.tags !== undefined) {
+        updateData.tags = request.tags;
+      }
 
       const updatedMonster = await this.prisma.monster.update({
         where: { id: existingMonster.id },
@@ -254,9 +257,9 @@ export class MonsterService {
         this.prisma.monster.count({
           where: {
             stableId: {
-              startsWith: 'srd-'
-            }
-          }
+              startsWith: "srd-",
+            },
+          },
         }),
         // Get top 10 most common tags
         this.prisma.$queryRaw<Array<{ tag: string; count: bigint }>>`
@@ -268,7 +271,7 @@ export class MonsterService {
           GROUP BY tag
           ORDER BY count DESC
           LIMIT 10
-        `
+        `,
       ]);
 
       const customCount = totalCount - srdCount;
@@ -277,9 +280,9 @@ export class MonsterService {
         totalCount,
         srdCount,
         customCount,
-        topTags: tagStats.map(stat => ({
+        topTags: tagStats.map((stat) => ({
           tag: stat.tag,
-          count: Number(stat.count)
+          count: Number(stat.count),
         })),
       };
     } catch (error) {

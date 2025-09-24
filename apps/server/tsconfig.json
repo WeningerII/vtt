@@ -21,11 +21,16 @@
       "@vtt/core-ecs/*": ["packages/core-ecs/dist/*"],
       "@vtt/core-schemas": ["packages/core-schemas/dist/index.d.ts"],
       "@vtt/core-schemas/*": ["packages/core-schemas/dist/*"],
-      "@vtt/ai": ["packages/ai/dist/index.d.ts"],
-      "@vtt/ai/*": ["packages/ai/dist/*"],
+      "@vtt/ai": [
+        "packages/ai/dist/src/index.d.ts",
+        "packages/ai/dist/index.d.ts",
+        "packages/ai/src/index.ts"
+      ],
+      "@vtt/ai/*": ["packages/ai/dist/src/*", "packages/ai/dist/*", "packages/ai/src/*"],
       "@vtt/ai/src/providers/RealProviders": [
         "packages/ai/dist/providers/RealProviders.d.ts",
-        "packages/ai/dist/providers/RealProviders"
+        "packages/ai/dist/providers/RealProviders",
+        "packages/ai/src/providers/RealProviders.ts"
       ],
       "@vtt/auth": ["packages/auth/dist/index.d.ts"],
       "@vtt/auth/*": ["packages/auth/dist/*"],

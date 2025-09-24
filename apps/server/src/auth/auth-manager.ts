@@ -1,10 +1,10 @@
 /**
  * Authentication Manager - Core auth functionality
  */
-import { compare, hash } from 'bcrypt';
-import { sign, verify, type SignOptions } from 'jsonwebtoken';
-import { PrismaClient, type User as PrismaUser } from '@prisma/client';
-import { DatabaseManager } from '../database/connection';
+import { compare, hash } from "bcrypt";
+import { sign, verify, type SignOptions } from "jsonwebtoken";
+import { PrismaClient, type User as PrismaUser } from "@prisma/client";
+import { DatabaseManager } from "../database/connection";
 
 export interface AuthConfig {
   jwtSecret: string;
@@ -69,15 +69,14 @@ export class AuthManager {
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: data.email },
-          { username: data.username }
-        ]
-      }
+        OR: [{ email: data.email }, { username: data.username }],
+      },
     });
 
     if (existingUser) {
-      throw new Error(existingUser.email === data.email ? 'Email already registered' : 'Username already taken');
+      throw new Error(
+        existingUser.email === data.email ? "Email already registered" : "Username already taken",
+      );
     }
 
     // Hash password
@@ -91,8 +90,8 @@ export class AuthManager {
         displayName: data.displayName,
         passwordHash,
         permissions: [],
-        lastLogin: new Date()
-      }
+        lastLogin: new Date(),
+      },
     });
 
     // Generate tokens
@@ -100,30 +99,30 @@ export class AuthManager {
 
     return {
       user: this.formatUser(user),
-      tokens
+      tokens,
     };
   }
 
   async login(data: LoginData): Promise<{ user: AuthUser; tokens: AuthTokens }> {
     // Find user by email
     const user = await this.prisma.user.findUnique({
-      where: { email: data.email }
+      where: { email: data.email },
     });
 
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     // Verify password
     const isValidPassword = await compare(data.password, user.passwordHash);
     if (!isValidPassword) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
-      data: { lastLogin: new Date() }
+      data: { lastLogin: new Date() },
     });
 
     // Generate tokens
@@ -131,7 +130,7 @@ export class AuthManager {
 
     return {
       user: this.formatUser(user),
-      tokens
+      tokens,
     };
   }
 
@@ -139,16 +138,16 @@ export class AuthManager {
     // Find refresh token
     const tokenRecord = await this.prisma.refreshToken.findUnique({
       where: { token: refreshToken },
-      include: { user: true }
+      include: { user: true },
     });
 
     if (!tokenRecord || tokenRecord.expiresAt < new Date()) {
-      throw new Error('Invalid or expired refresh token');
+      throw new Error("Invalid or expired refresh token");
     }
 
     // Delete old refresh token
     await this.prisma.refreshToken.delete({
-      where: { id: tokenRecord.id }
+      where: { id: tokenRecord.id },
     });
 
     // Generate new tokens
@@ -157,7 +156,7 @@ export class AuthManager {
 
   async getUserById(userId: string): Promise<AuthUser | null> {
     const user = await this.prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     return user ? this.formatUser(user) : null;
@@ -181,14 +180,14 @@ export class AuthManager {
 
   async logout(refreshToken: string): Promise<void> {
     await this.prisma.refreshToken.deleteMany({
-      where: { token: refreshToken }
+      where: { token: refreshToken },
     });
   }
 
   async generateOAuthTokens(oauthUser: OAuthProfile): Promise<AuthTokens> {
     // Find or create user from OAuth data
     let user = await this.prisma.user.findUnique({
-      where: { email: oauthUser.email }
+      where: { email: oauthUser.email },
     });
 
     if (!user) {
@@ -196,14 +195,14 @@ export class AuthManager {
       user = await this.prisma.user.create({
         data: {
           email: oauthUser.email,
-          username: oauthUser.username || oauthUser.email.split('@')[0],
-          displayName: oauthUser.displayName || oauthUser.username || 'User',
+          username: oauthUser.username || oauthUser.email.split("@")[0],
+          displayName: oauthUser.displayName || oauthUser.username || "User",
           avatar: oauthUser.avatar,
-          passwordHash: '', // OAuth users don't have passwords
+          passwordHash: "", // OAuth users don't have passwords
           permissions: [],
           isEmailVerified: true, // OAuth emails are pre-verified
-          lastLogin: new Date()
-        }
+          lastLogin: new Date(),
+        },
       });
     } else {
       // Update existing user's last login and avatar
@@ -211,8 +210,8 @@ export class AuthManager {
         where: { id: user.id },
         data: {
           lastLogin: new Date(),
-          avatar: oauthUser.avatar || user.avatar
-        }
+          avatar: oauthUser.avatar || user.avatar,
+        },
       });
     }
 
@@ -222,18 +221,14 @@ export class AuthManager {
 
   private async generateTokens(userId: string): Promise<AuthTokens> {
     // Generate access token
-    const accessToken = sign(
-      { userId },
-      this.config.jwtSecret,
-      { expiresIn: this.config.jwtExpiration } as SignOptions
-    );
+    const accessToken = sign({ userId }, this.config.jwtSecret, {
+      expiresIn: this.config.jwtExpiration,
+    } as SignOptions);
 
     // Generate refresh token
-    const refreshToken = sign(
-      { userId, type: 'refresh' },
-      this.config.jwtSecret,
-      { expiresIn: this.config.refreshTokenExpiration } as SignOptions
-    );
+    const refreshToken = sign({ userId, type: "refresh" }, this.config.jwtSecret, {
+      expiresIn: this.config.refreshTokenExpiration,
+    } as SignOptions);
 
     // Store refresh token in database
     const expiresAt = new Date();
@@ -243,8 +238,8 @@ export class AuthManager {
       data: {
         token: refreshToken,
         userId,
-        expiresAt
-      }
+        expiresAt,
+      },
     });
 
     return { accessToken, refreshToken };
@@ -252,7 +247,9 @@ export class AuthManager {
 
   private formatUser(user: PrismaUser): AuthUser {
     const permissions = Array.isArray(user.permissions)
-      ? (user.permissions as unknown[]).filter((value): value is string => typeof value === 'string')
+      ? (user.permissions as unknown[]).filter(
+          (value): value is string => typeof value === "string",
+        )
       : [];
 
     return {
@@ -261,11 +258,11 @@ export class AuthManager {
       username: user.username,
       displayName: user.displayName,
       avatar: user.avatar ?? undefined,
-      role: user.role ?? 'user',
+      role: user.role ?? "user",
       permissions,
-      subscription: user.subscription ?? 'free',
+      subscription: user.subscription ?? "free",
       isEmailVerified: Boolean(user.isEmailVerified),
-      lastLogin: (user.lastLogin ?? new Date()).toISOString()
+      lastLogin: (user.lastLogin ?? new Date()).toISOString(),
     };
   }
 }
@@ -276,7 +273,11 @@ export class AuthManager {
 export function getAuthManager(): AuthManager {
   if (!authManagerInstance) {
     const config: AuthConfig = {
-      jwtSecret: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || process.env.JWT_REFRESH_SECRET || "dev-secret-change-in-production",
+      jwtSecret:
+        process.env.JWT_SECRET ||
+        process.env.JWT_ACCESS_SECRET ||
+        process.env.JWT_REFRESH_SECRET ||
+        "dev-secret-change-in-production",
       jwtExpiration: "7d",
       refreshTokenExpiration: "30d",
       bcryptRounds: 12,
@@ -298,9 +299,9 @@ export function getAuthManager(): AuthManager {
       },
       oauth: {},
     };
-    
+
     authManagerInstance = new AuthManager(DatabaseManager.getInstance(), config);
   }
-  
+
   return authManagerInstance;
 }

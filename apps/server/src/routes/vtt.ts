@@ -201,7 +201,7 @@ export async function updateTokenHandler(ctx: Context) {
   ctx.req.on("end", async () => {
     try {
       const data = JSON.parse(body) as Record<string, unknown>;
-      const updateData: Prisma.TokenUpdateInput = {};
+      const updateData: any = {};
 
       if (typeof data.name === "string" && data.name.trim()) {
         updateData.name = data.name;

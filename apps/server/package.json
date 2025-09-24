@@ -15,7 +15,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "prebuild": "pnpm --workspace-concurrency=1 --filter @vtt/server... --filter=!@vtt/server exec tsc -b --force && npm run clean",
+    "prebuild": "pnpm --workspace-concurrency=1 -r --filter @vtt/ai run build && npm run clean",
     "postbuild": "cp -r prisma dist/",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",
