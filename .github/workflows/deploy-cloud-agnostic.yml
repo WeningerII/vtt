@@ -209,7 +209,7 @@ jobs:
           esac
 
       - name: Download Terraform Plan
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v5
         with:
           name: tfplan-${{ matrix.cloud }}-${{ matrix.environment }}
           path: infra/terraform/
