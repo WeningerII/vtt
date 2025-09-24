@@ -1,5 +1,8 @@
 name: CI Actions Smoke Test
 
+permissions:
+  contents: read # Only read access to repository contents
+
 on:
   workflow_dispatch:
 

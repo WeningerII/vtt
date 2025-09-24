@@ -39,3 +39,26 @@ docs/examples/
 
 # AWS CLI examples (contains example credentials)
 aws/dist/awscli/examples/
+
+# Test fixtures and mock data containing safe test secrets
+tests/integration/auth.integration.test.ts
+
+# Dependency documentation with example credentials
+**/node_modules/**/@aws-sdk/**/*.d.ts
+**/node_modules/**/google-auth-library/**/*.d.ts
+
+# Build output and reports (contains file paths that trigger base64 patterns)
+reports/
+results.json
+**/ts-prune.txt
+**/unused-exports-detail.txt
+
+# Scripts with component paths (triggers base64 pattern matching)
+scripts/generate-tests.js
+scripts/test-critical-features.js
+setup-components.js
+test-critical-fixes.js
+test-fixes.js
+
+# TypeScript config files (property names trigger false positives)
+tsconfig*.json

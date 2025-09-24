@@ -262,7 +262,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-2022, macos-latest] # Use windows-2022 instead of windows-latest for stability
         browser: [chromium, firefox, webkit]
         exclude:
           # WebKit is not supported on Linux
@@ -300,6 +300,7 @@ jobs:
         run: |
           cp .env.test .env
           echo "Cross-platform compatibility testing on ${{ matrix.os }} with ${{ matrix.browser }}"
+          # Note: Using windows-2022 for Windows tests due to Windows Server 2025 migration issues
 
       - name: Run compatibility tests
         run: |
