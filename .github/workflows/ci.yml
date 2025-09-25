@@ -17,7 +17,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
@@ -84,7 +84,7 @@ jobs:
   license-compliance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
@@ -99,7 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [security, license-compliance]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"

@@ -51,7 +51,7 @@ jobs:
       deploy_infra: ${{ steps.detect.outputs.deploy_infra }}
       deploy_k8s: ${{ steps.detect.outputs.deploy_k8s }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 2
 
@@ -98,7 +98,7 @@ jobs:
           - cloud: ${{ needs.detect-changes.outputs.cloud_provider }}
             environment: ${{ needs.detect-changes.outputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -181,7 +181,7 @@ jobs:
           - cloud: ${{ needs.detect-changes.outputs.cloud_provider }}
             environment: ${{ needs.detect-changes.outputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -270,7 +270,7 @@ jobs:
           - cloud: ${{ needs.detect-changes.outputs.cloud_provider }}
             environment: ${{ needs.detect-changes.outputs.environment }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
