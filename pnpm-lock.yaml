@@ -879,6 +879,9 @@ importers:
 
   packages/content-management:
     dependencies:
+      "@vtt/logging":
+        specifier: workspace:*
+        version: link:../logging
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
