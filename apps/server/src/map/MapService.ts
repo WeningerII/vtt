@@ -7,26 +7,72 @@ import {
   MapScene,
   GridSettings,
   LightSource,
-  FogArea,
   TokenPosition,
   MeasurementTool,
   CombatGrid,
   GridEffect,
-  MapUpdateEvent,
   LineOfSightResult,
-  GridType,
   InitiativeEntry,
+  LightingSettings,
+  FogSettings,
+  FogArea,
 } from "./types";
 import { PrismaClient, GameSessionStatus } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { GameEventBridge } from "../integration/GameEventBridge";
-import { SpellEngine } from '@vtt/spell-engine';
-import { DiceEngine } from '@vtt/dice-engine';
-import { ConditionsEngine } from '@vtt/conditions-engine';
+import { SpellEngine, type Spell, type CastingResult, D5E_SPELLS } from "@vtt/spell-engine";
+import { DiceEngine, type DamageResult } from "@vtt/dice-engine";
+import { ConditionsEngine } from "@vtt/conditions-engine";
 // WebSocketManager removed - using VTTWebSocketServer directly
-import { PhysicsWorld, RigidBody } from '@vtt/physics';
+import { PhysicsWorld, RigidBody } from "@vtt/physics";
 
-interface SpellEffectState {
+type MapRealtimeBroadcaster = {
+  broadcast(event: string, payload: Record<string, unknown>): void;
+};
+
+type PhysicsVisualBridge = {
+  createSpellVisualEffect(
+    spellId: string,
+    name: string,
+    school: string,
+    casterPosition: { x: number; y: number },
+    targetPosition?: { x: number; y: number },
+  ): string[];
+  updateSpellVisualEffect(effectId: string, updates: Record<string, unknown>): void;
+  removeSpellVisualEffect(effectId: string): void;
+};
+
+type SceneMetadata = {
+  gridSettings?: Partial<GridSettings>;
+  lightingSettings?: Partial<LightingSettings>;
+  fogSettings?: Partial<FogSettings>;
+};
+
+type SceneTokenMetadata = Record<string, unknown> | null;
+
+type ConditionState = {
+  id: string;
+  name: string;
+  duration: number;
+  appliedAt: number;
+};
+
+type CachedToken = TokenPosition & {
+  name?: string;
+  metadata?: SceneTokenMetadata;
+  health?: number;
+  maxHealth?: number;
+  hitPoints?: number;
+  maxHitPoints?: number;
+  attackBonus?: number;
+  damageBonus?: number;
+  armorClass?: number;
+  initiative?: number;
+  conditions?: ConditionState[];
+};
+
+type SpellEffectPayload = {
+  id: string;
   sceneId?: string;
   expiresAt?: number;
   type?: string;
@@ -39,7 +85,171 @@ interface SpellEffectState {
   velocity?: { x: number; y: number };
   position?: { x: number; y: number };
   [key: string]: unknown;
-}
+};
+
+type SpellEffectState = SpellEffectPayload;
+
+type MapEventData = Record<string, unknown> & { type: string };
+
+type MapRecord = {
+  widthPx?: number | null;
+  heightPx?: number | null;
+};
+
+type AttackDetails = {
+  attackRoll: number;
+  attackBonus: number;
+  totalAttack: number;
+  targetAC: number;
+  weaponId?: string;
+};
+
+type AttackExecutionResult = {
+  success: boolean;
+  hit: boolean;
+  damage?: number;
+  critical?: boolean;
+  details: AttackDetails | { error: string };
+};
+
+type SpellEngineEffect = CastingResult["effects"][number];
+
+type SpellCastingDetails = {
+  spellId: string;
+  casterId: string;
+  targetId?: string;
+  position?: { x: number; y: number };
+};
+
+type SpellCastingResult = {
+  success: boolean;
+  effects: SpellEngineEffect[];
+  details: SpellCastingDetails | { error: string };
+};
+
+type CombatantSummary = {
+  id: string;
+  name: string;
+  initiative: number;
+};
+
+type CombatStatus = {
+  inCombat: boolean;
+  round: number;
+  turn: number;
+  order: CombatantSummary[];
+  current: number;
+  delayed: string[];
+  surprised: string[];
+};
+
+type EncounterMonsterInput = {
+  name: string;
+  position?: { x: number; y: number };
+  disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
+  size?: number;
+  [key: string]: unknown;
+};
+
+type EncounterInput = {
+  monsters?: EncounterMonsterInput[];
+  [key: string]: unknown;
+};
+
+type EncounterMonsterSummary = EncounterMonsterInput & { id: string };
+
+type EncounterSummary = Omit<EncounterInput, "monsters"> & {
+  id: string;
+  monsters: EncounterMonsterSummary[];
+};
+
+type NPCCreationInput = {
+  name: string;
+  position?: { x: number; y: number };
+  disposition?: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
+  [key: string]: unknown;
+};
+
+type NPCCreationResult = NPCCreationInput & {
+  id: string | null;
+  disposition: "FRIENDLY" | "NEUTRAL" | "HOSTILE" | "UNKNOWN";
+  position: { x: number; y: number };
+};
+
+type TreasureInput = {
+  name?: string;
+  position?: { x: number; y: number };
+  [key: string]: unknown;
+};
+
+type TreasureResult = {
+  id: string | null;
+  name: string;
+  position: { x: number; y: number };
+  [key: string]: unknown;
+};
+
+type HazardInput = {
+  name: string;
+  position?: { x: number; y: number };
+  area?: { radius?: number; width?: number; height?: number; [key: string]: unknown };
+  damage?: { dice: string; type: string };
+  [key: string]: unknown;
+};
+
+type HazardResult = HazardInput & {
+  id: string;
+  type: string;
+};
+
+type SceneUpdateInput = {
+  name?: string;
+  width?: number;
+  height?: number;
+  grid?: Partial<GridSettings>;
+  lighting?: Partial<LightingSettings>;
+  fog?: Partial<FogSettings>;
+  [key: string]: unknown;
+};
+
+type SpellEffectGeometry = {
+  width?: number;
+  height?: number;
+  radius?: number;
+  length?: number;
+  angle?: number;
+};
+
+type SpellEffectDefinition = {
+  id?: string;
+  type?: string;
+  area?: SpellEffectGeometry;
+  school?: string;
+  name?: string;
+  [key: string]: unknown;
+};
+
+type SpellEffectMetadata = {
+  type?: string;
+  spellId?: string;
+  sceneId?: string;
+  tokenId?: string;
+  bodyType?: string;
+};
+
+type ExtendedRigidBody = RigidBody & { userData?: SpellEffectMetadata };
+
+type TokenSpellCollision = {
+  tokenId: string;
+  spellEffectId: string;
+  collision: Record<string, unknown>;
+};
+
+type SpellSpellCollision = {
+  spellEffectAId: string;
+  spellEffectBId: string;
+  collision: Record<string, unknown>;
+};
 
 export class MapService {
   private scenes = new Map<string, MapScene>();
@@ -55,11 +265,11 @@ export class MapService {
   private spatialIndex = new Map<string, Map<string, Set<string>>>();
   private spellEffectPhysicsBodies = new Map<string, number>();
   private physicsUpdateInterval: NodeJS.Timeout | null = null;
-  private visualEffectsBridge: any = null; // Would be PhysicsVisualBridge instance
+  private visualEffectsBridge: PhysicsVisualBridge | null = null;
 
   constructor(
     private prisma: PrismaClient,
-    private webSocketManager?: any, // Legacy stub
+    private webSocketManager?: MapRealtimeBroadcaster,
   ) {
     // Initialize physics world
     this.physicsWorld = new PhysicsWorld();
@@ -75,6 +285,155 @@ export class MapService {
 
   private toRecord(value: unknown): Record<string, unknown> {
     return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
+  }
+
+  private parseSceneMetadata(raw: unknown): SceneMetadata | null {
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      if (typeof raw === "string") {
+        return JSON.parse(raw) as SceneMetadata;
+      }
+
+      if (typeof raw === "object" && raw !== null && !Array.isArray(raw)) {
+        return raw as SceneMetadata;
+      }
+    } catch (error) {
+      logger.warn("Failed to parse scene metadata:", error as Error);
+    }
+
+    return null;
+  }
+
+  private buildGridSettings(overrides?: Partial<GridSettings>): GridSettings {
+    return {
+      type: overrides?.type ?? "square",
+      size: overrides?.size ?? 50,
+      offsetX: overrides?.offsetX ?? 0,
+      offsetY: overrides?.offsetY ?? 0,
+      snapMode: overrides?.snapMode ?? "center",
+      visible: overrides?.visible ?? true,
+      color: overrides?.color ?? "#000000",
+      opacity: overrides?.opacity ?? 0.3,
+    };
+  }
+
+  private buildLightingSettings(overrides?: Partial<LightingSettings>): LightingSettings {
+    return {
+      enabled: overrides?.enabled ?? false,
+      globalIllumination: overrides?.globalIllumination ?? 0.3,
+      darkvision: overrides?.darkvision ?? false,
+      lightSources: overrides?.lightSources ? [...overrides.lightSources] : [],
+    };
+  }
+
+  private buildFogSettings(overrides?: Partial<FogSettings>): FogSettings {
+    return {
+      enabled: overrides?.enabled ?? false,
+      mode: overrides?.mode ?? "exploration",
+      exploredAreas: overrides?.exploredAreas ? [...overrides.exploredAreas] : [],
+      hiddenAreas: overrides?.hiddenAreas ? [...overrides.hiddenAreas] : [],
+      lineOfSight: overrides?.lineOfSight ?? false,
+      sightRadius: overrides?.sightRadius ?? 30,
+    };
+  }
+
+  private getCachedToken(scene: MapScene, tokenId: string): CachedToken | undefined {
+    const token = scene.tokens?.find((entry) => entry.id === tokenId);
+    return token ? (token as CachedToken) : undefined;
+  }
+
+  private mergeCachedToken(scene: MapScene, tokenId: string, updates: Partial<CachedToken>): void {
+    if (!scene.tokens) {
+      return;
+    }
+    const index = scene.tokens.findIndex((entry) => entry.id === tokenId);
+    if (index === -1) {
+      return;
+    }
+
+    Object.assign(scene.tokens[index] as CachedToken, updates);
+  }
+
+  private extractNumberField(record: Record<string, unknown>, keys: string[]): number | null {
+    for (const key of keys) {
+      const value = record[key];
+      if (typeof value === "number") {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  private isDamageResult(result: unknown): result is DamageResult {
+    return (
+      typeof result === "object" &&
+      result !== null &&
+      typeof (result as DamageResult).total === "number" &&
+      Array.isArray((result as DamageResult).components)
+    );
+  }
+
+  private isPoint(value: unknown): value is { x: number; y: number } {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      typeof (value as { x?: unknown }).x === "number" &&
+      typeof (value as { y?: unknown }).y === "number"
+    );
+  }
+
+  private extractDamage(effect: SpellEngineEffect): { amount: number; damageType?: string } | null {
+    const { result } = effect;
+
+    if (this.isDamageResult(result)) {
+      const primaryComponent = result.components[0];
+      return {
+        amount: result.total,
+        damageType:
+          primaryComponent && typeof primaryComponent.type === "string"
+            ? primaryComponent.type
+            : undefined,
+      };
+    }
+
+    const record = this.toRecord(result);
+    const amount = this.extractNumberField(record, ["damage", "amount", "value", "total"]);
+    if (amount === null) {
+      return null;
+    }
+
+    const damageType = typeof record.damageType === "string" ? record.damageType : undefined;
+    return { amount, damageType };
+  }
+
+  private extractHealing(effect: SpellEngineEffect): number | null {
+    const record = this.toRecord(effect.result);
+    return this.extractNumberField(record, ["healing", "amount", "value", "total"]);
+  }
+
+  private extractCondition(
+    effect: SpellEngineEffect,
+  ): { condition: string; duration?: number } | null {
+    const record = this.toRecord(effect.result);
+    const condition = typeof record.condition === "string" ? record.condition : undefined;
+    if (!condition) {
+      return null;
+    }
+
+    const duration = this.extractNumberField(record, ["duration"]);
+    return { condition, duration: duration ?? undefined };
+  }
+
+  private extractMovementPosition(effect: SpellEngineEffect): { x: number; y: number } | null {
+    const record = this.toRecord(effect.result);
+    const position = record.position;
+    if (this.isPoint(position)) {
+      return position;
+    }
+    return null;
   }
 
   /**
@@ -94,46 +453,19 @@ export class MapService {
     campaignId: string,
     mapId?: string,
     gridSettings?: Partial<GridSettings>,
-    lightingSettings?: any,
-    fogSettings?: any,
+    lightingSettings?: Partial<LightingSettings>,
+    fogSettings?: Partial<FogSettings>,
   ): Promise<MapScene> {
-    const defaultGrid: GridSettings = {
-      type: "square",
-      size: 50,
-      offsetX: 0,
-      offsetY: 0,
-      snapMode: "center",
-      visible: true,
-      color: "#000000",
-      opacity: 0.3,
-      ...gridSettings,
-    };
+    const defaultGrid = this.buildGridSettings(gridSettings);
+    const defaultLighting = this.buildLightingSettings(lightingSettings);
+    const defaultFog = this.buildFogSettings(fogSettings);
 
-    const _defaultLighting = {
-      enabled: false,
-      ambientLight: 0.2,
-      darkvisionRange: 60,
-      lightSources: [],
-      ...lightingSettings,
-    };
-
-    const _defaultFog = {
-      enabled: false,
-      areas: [],
-      exploredAreas: [],
-      ...fogSettings,
-    };
-
-    // Create scene in database
     const dbScene = await this.prisma.scene.create({
       data: {
         name,
         campaignId,
         mapId: mapId || null,
-        // Grid, lighting and fog settings stored as JSON in metadata for now
-        // gridSettings: defaultGrid as any,
-        // lightingSettings: defaultLighting as any,
-        // fogSettings: defaultFog as any,
+        // TODO(@prisma): Persist metadata once `Scene.metadata` (JSON) is available to store grid/lighting/fog defaults
       },
       include: {
         campaign: true,
@@ -186,20 +518,8 @@ export class MapService {
           zIndex: 300,
         },
       ],
-      lighting: {
-        enabled: false,
-        globalIllumination: 0.3,
-        darkvision: false,
-        lightSources: [],
-      },
-      fog: {
-        enabled: false,
-        mode: "exploration",
-        exploredAreas: [],
-        hiddenAreas: [],
-        lineOfSight: false,
-        sightRadius: 30,
-      },
+      lighting: defaultLighting,
+      fog: defaultFog,
       tokens: [],
     };
 
@@ -213,7 +533,9 @@ export class MapService {
   async getScene(sceneId: string): Promise<MapScene | null> {
     // Check cache first
     const cached = this.scenes.get(sceneId);
-    if (cached) {return cached;}
+    if (cached) {
+      return cached;
+    }
 
     // Load from database
     const dbScene = await this.prisma.scene.findUnique({
@@ -224,21 +546,24 @@ export class MapService {
       },
     });
 
-    if (!dbScene) {return null;}
+    if (!dbScene) {
+      return null;
+    }
 
     // Get dimensions from map or use defaults
     let sceneWidth = 1920;
     let sceneHeight = 1080;
-    if ((dbScene as any).map) {
-      // Prefer map dimensions when available
-      const m = (dbScene as any).map as { widthPx?: number; heightPx?: number };
-      if (typeof m.widthPx === 'number' && typeof m.heightPx === 'number') {
-        sceneWidth = m.widthPx;
-        sceneHeight = m.heightPx;
-      }
+    const mapRecord = dbScene.map as MapRecord | null;
+    if (mapRecord?.widthPx && mapRecord?.heightPx) {
+      sceneWidth = mapRecord.widthPx;
+      sceneHeight = mapRecord.heightPx;
     }
 
-    // Build MapScene object
+    const metadata = this.parseSceneMetadata((dbScene as { metadata?: unknown }).metadata);
+    const gridSettings = this.buildGridSettings(metadata?.gridSettings);
+    const lightingSettings = this.buildLightingSettings(metadata?.lightingSettings);
+    const fogSettings = this.buildFogSettings(metadata?.fogSettings);
+
     const scene: MapScene = {
       id: dbScene.id,
       name: dbScene.name,
@@ -246,56 +571,9 @@ export class MapService {
       height: sceneHeight,
       campaignId: dbScene.campaignId,
       mapId: dbScene.mapId,
-      grid: (() => {
-        try {
-          // Type assertion for metadata field (may need to be added to Prisma schema)
-          const sceneWithMetadata = dbScene as any;
-          if (sceneWithMetadata.metadata) {
-            const metadata =
-              typeof sceneWithMetadata.metadata === "string"
-                ? JSON.parse(sceneWithMetadata.metadata)
-                : sceneWithMetadata.metadata;
-            return (
-              metadata.gridSettings || {
-                type: "square",
-                size: 50,
-                offsetX: 0,
-                offsetY: 0,
-                snapMode: "center",
-                visible: true,
-                color: "#000000",
-                opacity: 0.3,
-              }
-            );
-          }
-        } catch (error) {
-          logger.warn("Failed to parse scene metadata:", error as Error);
-        }
-        return {
-          type: "square",
-          size: 50,
-          offsetX: 0,
-          offsetY: 0,
-          snapMode: "center",
-          visible: true,
-          color: "#000000",
-          opacity: 0.3,
-        };
-      })(),
-      lighting: {
-        enabled: false,
-        globalIllumination: 0.3,
-        darkvision: false,
-        lightSources: [],
-      },
-      fog: {
-        enabled: false,
-        mode: "exploration",
-        exploredAreas: [],
-        hiddenAreas: [],
-        lineOfSight: false,
-        sightRadius: 30,
-      },
+      grid: gridSettings,
+      lighting: lightingSettings,
+      fog: fogSettings,
       layers: [
         {
           id: "bg",
@@ -331,38 +609,30 @@ export class MapService {
     y1: number,
     x2: number,
     y2: number,
-    gridSettings: any,
+    gridSettings: GridSettings,
     unit: "feet" | "meters" | "pixels" | "grid",
   ): number {
     const pixelDistance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
 
-    if (unit === "pixels") {return pixelDistance;}
+    if (unit === "pixels") {
+      return pixelDistance;
+    }
 
-    const gridSize = gridSettings?.size || 50;
+    const gridSize = gridSettings.size || 50;
     const gridDistance = pixelDistance / gridSize;
 
     // Convert to feet (assuming 5 feet per grid square in D&D)
-    if (unit === "feet") {return gridDistance * 5;}
-    if (unit === "meters") {return gridDistance * 1.5;}
-    if (unit === "grid") {return gridDistance;}
+    if (unit === "feet") {
+      return gridDistance * 5;
+    }
+    if (unit === "meters") {
+      return gridDistance * 1.5;
+    }
+    if (unit === "grid") {
+      return gridDistance;
+    }
 
     return pixelDistance;
-  }
-
-  /**
-   * Add fog area
-   */
-  async addFogArea(_sceneId: string, _fogArea: unknown): Promise<any | null> {
-    // Simplified implementation
-    return null;
-  }
-
-  /**
-   * Reveal fog area
-   */
-  async revealFogArea(_sceneId: string, _x: number, _y: number, _radius: number): Promise<boolean> {
-    // Simplified implementation
-    return true;
   }
 
   /**
@@ -370,10 +640,10 @@ export class MapService {
    */
   async createMeasurement(
     sceneId: string,
-    type: "distance" | "area",
+    measurementKind: "distance" | "area",
     points: Array<{ x: number; y: number }>,
     ownerId: string,
-  ): Promise<any> {
+  ): Promise<MeasurementTool> {
     const scene = await this.getScene(sceneId);
     if (!scene) {
       throw new Error("Scene not found");
@@ -400,7 +670,7 @@ export class MapService {
       }
     }
 
-    if (type === "area" && points.length >= 3) {
+    if (measurementKind === "area" && points.length >= 3) {
       // Calculate polygon area using shoelace formula
       let sum = 0;
       for (let i = 0; i < points.length; i++) {
@@ -414,21 +684,21 @@ export class MapService {
       }
       area = Math.abs(sum) / 2;
       // Convert to grid squares
-      const gridSize = scene.grid?.size || 50;
+      const gridSize = scene.grid.size || 50;
       area = area / (gridSize * gridSize);
     }
 
-    const measurement = {
+    const measurement: MeasurementTool = {
       id: uuidv4(),
-      type,
+      type: measurementKind === "area" ? "area" : "ruler",
       points,
-      color: "#ff0000",
+      color: "#FF0000",
       visible: true,
       ownerId,
       measurements: {
         distance,
         ...(area > 0 && { area }),
-        units: "feet",
+        units: measurementKind === "distance" ? "feet" : "squares",
       },
     };
 
@@ -453,7 +723,9 @@ export class MapService {
   ): Promise<string | null> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return null;}
+      if (!scene) {
+        return null;
+      }
 
       // Snap token position to grid
       const alignedPosition = this.snapToGrid(tokenData.x, tokenData.y, scene.grid);
@@ -463,10 +735,12 @@ export class MapService {
       let activeSession = await this.prisma.gameSession.findFirst({
         where: { campaignId: scene.campaignId, status: GameSessionStatus.ACTIVE },
       });
-      
+
       if (!activeSession) {
         // Auto-create a WAITING session to preserve token placement workflow
-        logger.info(`Auto-creating WAITING session for campaign ${scene.campaignId} to place token`);
+        logger.info(
+          `Auto-creating WAITING session for campaign ${scene.campaignId} to place token`,
+        );
         activeSession = await this.prisma.gameSession.create({
           data: {
             name: `Token Placement Session ${new Date().toISOString()}`,
@@ -487,16 +761,16 @@ export class MapService {
           y: alignedPosition.y,
           rotation: 0,
           scale: 1,
-          type: 'NPC', // Default type
+          type: "NPC", // Default type
           gameSessionId: activeSession.id, // Link to the active session
-          visibility: 'VISIBLE',
+          visibility: "VISIBLE",
           characterId: tokenData.actorId,
           imageUrl: tokenData.assetId,
           metadata: {
             width: tokenData.width || 50,
             height: tokenData.height || 50,
-            disposition: tokenData.disposition || 'NEUTRAL',
-            layer: 1
+            disposition: tokenData.disposition || "NEUTRAL",
+            layer: 1,
           },
         },
       });
@@ -518,8 +792,13 @@ export class MapService {
             isTrigger: false,
             layer: 1,
             mask: 0xffffffff,
-          }
+          },
         );
+        (rigidBody as ExtendedRigidBody).userData = {
+          bodyType: "token",
+          tokenId,
+          sceneId,
+        } satisfies SpellEffectMetadata & { bodyType: string };
         this.physicsWorld.addBody(rigidBody);
       } catch (error) {
         logger.warn(`Failed to create physics body for token: ${tokenId}`, error as Error);
@@ -556,7 +835,9 @@ export class MapService {
    */
   async updateGridSettings(sceneId: string, settings: Partial<GridSettings>): Promise<boolean> {
     const scene = this.scenes.get(sceneId);
-    if (!scene) {return false;}
+    if (!scene) {
+      return false;
+    }
 
     Object.assign(scene.grid, settings);
 
@@ -580,17 +861,27 @@ export class MapService {
     // Emit update event for real-time sync
     this.emitMapUpdate(sceneId, {
       type: "grid_settings_changed",
-      sceneId,
-      settings: scene.grid,
-      timestamp: Date.now(),
     });
 
     return true;
   }
 
   /**
-   * Remove a token from scene
+   * Add fog area
    */
+  async addFogArea(_sceneId: string, _fogArea: Partial<FogArea>): Promise<FogArea | null> {
+    // TODO: Implement persistent fog handling once fog of war data model is finalized
+    return null;
+  }
+
+  /**
+   * Reveal fog area
+   */
+  async revealFogArea(_sceneId: string, _x: number, _y: number, _radius: number): Promise<boolean> {
+    // TODO: Implement reveal logic leveraging fog exploration tracking
+    return true;
+  }
+
   async removeToken(sceneId: string, tokenId: string): Promise<boolean> {
     try {
       await this.prisma.token.delete({
@@ -625,10 +916,14 @@ export class MapService {
   async moveToken(sceneId: string, tokenId: string, x: number, y: number): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
+      if (!scene) {
+        return false;
+      }
 
       const token = scene.tokens?.find((t) => t.id === tokenId);
-      if (!token) {return false;}
+      if (!token) {
+        return false;
+      }
 
       // Snap to grid for consistent positioning
       const alignedPosition = this.snapToGrid(x, y, scene.grid);
@@ -699,7 +994,9 @@ export class MapService {
     updates: Partial<Omit<TokenPosition, "id">>,
   ): Promise<boolean> {
     const scene = await this.getScene(sceneId);
-    if (!scene) {return false;}
+    if (!scene) {
+      return false;
+    }
 
     // Update database
     await this.prisma.token.update({
@@ -723,14 +1020,14 @@ export class MapService {
    */
   private setupPhysicsIntegration(): void {
     // Set up physics world event listeners
-    this.physicsWorld.on('collision', (data: unknown) => {
+    this.physicsWorld.on("collision", (data: unknown) => {
       this.handleTokenCollision(this.toRecord(data));
     });
 
     // Start physics update loop
     this.physicsUpdateInterval = setInterval(() => {
-      this.physicsWorld.update(1/60);
-    }, 1000/60);
+      this.physicsWorld.update(1 / 60);
+    }, 1000 / 60);
   }
 
   /**
@@ -806,7 +1103,9 @@ export class MapService {
   // Synchronize physics bodies with grid-aligned token positions
   private async synchronizePhysicsWithGrid(sceneId: string): Promise<void> {
     const scene = await this.getScene(sceneId);
-    if (!scene || !scene.tokens) {return;}
+    if (!scene || !scene.tokens) {
+      return;
+    }
 
     const _gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
@@ -836,7 +1135,9 @@ export class MapService {
    */
   private async initializePhysicsForScene(sceneId: string): Promise<void> {
     const scene = await this.getScene(sceneId);
-    if (!scene || !scene.tokens) {return;}
+    if (!scene || !scene.tokens) {
+      return;
+    }
 
     const gridBounds = this.getGridBounds(scene.grid, scene.width, scene.height);
 
@@ -867,7 +1168,7 @@ export class MapService {
             isTrigger: false,
             layer: 1,
             mask: 0xffffffff,
-          }
+          },
         );
         this.physicsWorld.addBody(rigidBody);
       } catch (error) {
@@ -884,7 +1185,9 @@ export class MapService {
    */
   private async updatePhysicsWorld(sceneId: string): Promise<void> {
     const scene = await this.getScene(sceneId);
-    if (!scene || !scene.tokens) {return;}
+    if (!scene || !scene.tokens) {
+      return;
+    }
 
     // Sync physics bodies with token positions
     for (const token of scene.tokens) {
@@ -901,16 +1204,18 @@ export class MapService {
    * Get active spell effects for scene
    */
   private getActiveSpellEffects(sceneId: string): SpellEffectState[] {
-    return Array.from(this.activeSpellEffects.values())
-      .filter((effect) => effect.sceneId === sceneId);
+    return Array.from(this.activeSpellEffects.values()).filter(
+      (effect) => effect.sceneId === sceneId,
+    );
   }
 
   /**
    * Get spell projectiles for scene
    */
   private getSpellProjectiles(sceneId: string): SpellEffectState[] {
-    return Array.from(this.spellProjectiles.values())
-      .filter((projectile) => projectile.sceneId === sceneId);
+    return Array.from(this.spellProjectiles.values()).filter(
+      (projectile) => projectile.sceneId === sceneId,
+    );
   }
 
   /**
@@ -965,7 +1270,8 @@ export class MapService {
     const sceneId = typeof record.sceneId === "string" ? record.sceneId : undefined;
     const tokenAId = typeof record.tokenAId === "string" ? record.tokenAId : undefined;
     const tokenBId = typeof record.tokenBId === "string" ? record.tokenBId : undefined;
-    const position = typeof record.position === "object" && record.position !== null ? record.position : undefined;
+    const position =
+      typeof record.position === "object" && record.position !== null ? record.position : undefined;
 
     // Process token collisions
     if (sceneId && tokenAId && tokenBId) {
@@ -982,7 +1288,7 @@ export class MapService {
   /**
    * Emit map update event for real-time synchronization
    */
-  private emitMapUpdate(sceneId: string, data: Record<string, unknown>): void {
+  private emitMapUpdate(sceneId: string, data: MapEventData): void {
     // Broadcast to all connected clients in the scene
     if (this.webSocketManager) {
       try {
@@ -999,10 +1305,10 @@ export class MapService {
     // Trigger automation if event bridge is available
     if (this.eventBridge) {
       try {
-        const eventType = typeof data.type === "string" ? data.type : "map_update";
+        const eventType = data.type;
         this.eventBridge.processGameEvent({
           type: eventType,
-          data: data as Record<string, any>,
+          data,
           sceneId,
           userId: "system",
           timestamp: Date.now(),
@@ -1091,7 +1397,9 @@ export class MapService {
   ): Set<string> {
     const nearbyTokens = new Set<string>();
     const sceneIndex = this.spatialIndex.get(sceneId);
-    if (!sceneIndex) {return nearbyTokens;}
+    if (!sceneIndex) {
+      return nearbyTokens;
+    }
 
     const gridSize = 100;
     const cellRadius = Math.ceil(radius / gridSize);
@@ -1123,32 +1431,31 @@ export class MapService {
   ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
+      if (!scene) {
+        return false;
+      }
 
-      const token = scene.tokens?.find((t) => t.id === targetId);
-      if (!token) {return false;}
+      const token = scene.tokens?.find((t) => t.id === targetId) as CachedToken | undefined;
+      if (!token) {
+        return false;
+      }
 
-      // Update token health in database
+      const currentHealth =
+        typeof token.health === "number" ? token.health : (token.hitPoints ?? 0);
+      const nextHealth = Math.max(0, currentHealth - damage);
+
       await this.prisma.token.update({
         where: { id: targetId },
         data: {
-          // Update health field
-          health: Math.max(0, (token as any).health - damage),
+          health: nextHealth,
         },
       });
 
-      // Update cached scene
-      if (scene.tokens) {
-        const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
-        if (tokenIndex >= 0) {
-          (scene.tokens[tokenIndex] as any).health = Math.max(
-            0,
-            ((scene.tokens[tokenIndex] as any).hitPoints || 100) - damage,
-          );
-        }
-      }
+      this.mergeCachedToken(scene, targetId, {
+        health: nextHealth,
+        hitPoints: nextHealth,
+      });
 
-      // Emit real-time update
       this.emitMapUpdate(sceneId, {
         type: "damage_applied",
         targetId,
@@ -1170,36 +1477,31 @@ export class MapService {
   async applyHealing(sceneId: string, targetId: string, healing: number): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
+      if (!scene) {
+        return false;
+      }
 
-      const token = scene.tokens?.find((t) => t.id === targetId);
-      if (!token) {return false;}
+      const token = scene.tokens?.find((t) => t.id === targetId) as CachedToken | undefined;
+      if (!token) {
+        return false;
+      }
 
-      const currentHP = (token as any).hitPoints || 100;
-      const maxHP = (token as any).maxHitPoints || 100;
+      const currentHP = typeof token.hitPoints === "number" ? token.hitPoints : (token.health ?? 0);
+      const maxHP = token.maxHitPoints ?? token.maxHealth ?? currentHP;
       const newHP = Math.min(maxHP, currentHP + healing);
 
-      // Update token health in database
       await this.prisma.token.update({
         where: { id: targetId },
         data: {
-          // Update health field
-          health: Math.max(0, Math.min((token as any).maxHealth || 100, (token as any).health + healing)),
+          health: newHP,
         },
       });
 
-      // Update cached scene
-      if (scene.tokens) {
-        const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
-        if (tokenIndex >= 0) {
-          (scene.tokens[tokenIndex] as any).health = Math.max(
-            0,
-            (scene.tokens[tokenIndex] as any).health - 0,
-          );
-        }
-      }
+      this.mergeCachedToken(scene, targetId, {
+        health: newHP,
+        hitPoints: newHP,
+      });
 
-      // Emit real-time update
       this.emitMapUpdate(sceneId, {
         type: "healing_applied",
         targetId,
@@ -1226,14 +1528,17 @@ export class MapService {
   ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
+      if (!scene) {
+        return false;
+      }
 
-      const token = scene.tokens?.find((t) => t.id === targetId);
-      if (!token) {return false;}
+      const token = scene.tokens?.find((t) => t.id === targetId) as CachedToken | undefined;
+      if (!token) {
+        return false;
+      }
 
-      // Add condition to token (assuming conditions field exists or will be added)
-      const conditions = (token as any).conditions || [];
-      const newCondition = {
+      const conditions = token.conditions ? [...token.conditions] : [];
+      const newCondition: ConditionState = {
         id: uuidv4(),
         name: condition,
         duration: duration || -1, // -1 for permanent
@@ -1242,7 +1547,6 @@ export class MapService {
 
       conditions.push(newCondition);
 
-      // Update token in database
       await this.prisma.token.update({
         where: { id: targetId },
         data: {
@@ -1252,19 +1556,12 @@ export class MapService {
         },
       });
 
-      // Update cached scene
-      if (scene.tokens) {
-        const tokenIndex = scene.tokens.findIndex((t) => t.id === targetId);
-        if (tokenIndex >= 0) {
-          (scene.tokens[tokenIndex] as any).conditions = conditions;
-        }
-      }
+      this.mergeCachedToken(scene, targetId, { conditions });
 
-      // Emit real-time update
       this.emitMapUpdate(sceneId, {
         type: "condition_applied",
         targetId,
-        metadata: { ...((token as any).metadata || {}), conditions },
+        metadata: { ...(token.metadata ?? {}), conditions },
         timestamp: Date.now(),
       });
 
@@ -1283,19 +1580,15 @@ export class MapService {
     attackerId: string,
     targetId: string,
     weaponId?: string,
-  ): Promise<{
-    success: boolean;
-    hit: boolean;
-    damage?: number;
-    critical?: boolean;
-    details: any;
-  }> {
+  ): Promise<AttackExecutionResult> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return { success: false, hit: false, details: { error: "Scene not found" } };}
+      if (!scene) {
+        return { success: false, hit: false, details: { error: "Scene not found" } };
+      }
 
-      const attacker = scene.tokens?.find((t) => t.id === attackerId);
-      const target = scene.tokens?.find((t) => t.id === targetId);
+      const attacker = this.getCachedToken(scene, attackerId);
+      const target = this.getCachedToken(scene, targetId);
 
       if (!attacker || !target) {
         return { success: false, hit: false, details: { error: "Attacker or target not found" } };
@@ -1303,9 +1596,9 @@ export class MapService {
 
       // Basic attack calculation (would integrate with ActionSystem for full implementation)
       const attackRoll = Math.floor(Math.random() * 20) + 1;
-      const attackBonus = (attacker as any).attackBonus || 5;
+      const attackBonus = attacker.attackBonus ?? 5;
       const totalAttack = attackRoll + attackBonus;
-      const targetAC = (target as any).armorClass || 15;
+      const targetAC = target.armorClass ?? 15;
 
       const hit = totalAttack >= targetAC;
       const critical = attackRoll === 20;
@@ -1314,7 +1607,7 @@ export class MapService {
       if (hit) {
         // Basic damage calculation
         const baseDamage = Math.floor(Math.random() * 8) + 1; // 1d8
-        const damageBonus = (attacker as any).damageBonus || 3;
+        const damageBonus = attacker.damageBonus ?? 3;
         damage = baseDamage + damageBonus;
 
         if (critical) {
@@ -1325,13 +1618,7 @@ export class MapService {
         await this.applyDamage(sceneId, targetId, damage);
       }
 
-      const result: {
-        success: boolean;
-        hit: boolean;
-        damage?: number;
-        critical?: boolean;
-        details: any;
-      } = {
+      const result: AttackExecutionResult = {
         success: true,
         hit,
         ...(hit && { damage }),
@@ -1370,31 +1657,26 @@ export class MapService {
     spellId: string,
     targetId?: string,
     position?: { x: number; y: number },
-  ): Promise<{
-    success: boolean;
-    effects: Record<string, unknown>[];
-    details: any;
-  }> {
+  ): Promise<SpellCastingResult> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return { success: false, effects: [], details: { error: "Scene not found" } };}
+      if (!scene) {
+        return { success: false, effects: [], details: { error: "Scene not found" } };
+      }
 
-      const caster = scene.tokens?.find((t) => t.id === casterId);
+      const caster = this.getCachedToken(scene, casterId);
       if (!caster) {
         return { success: false, effects: [], details: { error: "Caster not found" } };
       }
 
-      // Use actual SpellEngine for spell casting
-      const effects: Record<string, unknown>[] = [];
+      const effects: SpellEngineEffect[] = [];
 
-      // Get spell data (in a real implementation, this would come from a spell database)
       const spell = this.getSpellData(spellId);
       if (!spell) {
         return { success: false, effects: [], details: { error: "Spell not found" } };
       }
 
-      // Cast spell using SpellEngine
-      const castingResult = this.spellEngine?.castSpell?.(
+      const castingResult = this.spellEngine.castSpell(
         spell,
         caster,
         targetId ? [targetId] : [],
@@ -1403,44 +1685,58 @@ export class MapService {
       );
 
       if (!castingResult.success) {
-        return { success: false, effects: [], details: castingResult };
+        const errorDetails = castingResult.error
+          ? { error: castingResult.error }
+          : { error: "Spell engine returned unsuccessful result" };
+        return { success: false, effects: [], details: errorDetails };
       }
 
-      // Apply spell effects using existing methods
       for (const effect of castingResult.effects || []) {
         switch (effect.type) {
           case "damage":
             if (effect.target) {
-              const damage = effect.result?.damage || 0;
-              const damageType = effect.result?.damageType || "force";
-              await this.applyDamage(sceneId, effect.target, damage, damageType);
-              effects.push(effect);
+              const damagePayload = this.extractDamage(effect);
+              if (damagePayload) {
+                await this.applyDamage(
+                  sceneId,
+                  effect.target,
+                  damagePayload.amount,
+                  damagePayload.damageType ?? "force",
+                );
+                effects.push(effect);
+              }
             }
             break;
           case "healing":
             if (effect.target) {
-              const healing = effect.result?.healing || 0;
-              await this.applyHealing(sceneId, effect.target, healing);
-              effects.push(effect);
+              const healingAmount = this.extractHealing(effect);
+              if (healingAmount !== null) {
+                await this.applyHealing(sceneId, effect.target, healingAmount);
+                effects.push(effect);
+              }
             }
             break;
           case "condition":
             if (effect.target) {
-              const condition = effect.result?.condition || "unknown";
-              const duration = effect.result?.duration;
-              await this.applyCondition(sceneId, effect.target, condition, duration);
-              effects.push(effect);
+              const conditionPayload = this.extractCondition(effect);
+              if (conditionPayload) {
+                await this.applyCondition(
+                  sceneId,
+                  effect.target,
+                  conditionPayload.condition,
+                  conditionPayload.duration,
+                );
+                effects.push(effect);
+              }
             }
             break;
           case "movement":
-            if (effect.target && effect.result?.position) {
-              await this.moveToken(
-                sceneId,
-                effect.target,
-                effect.result.position.x,
-                effect.result.position.y,
-              );
-              effects.push(effect);
+            if (effect.target) {
+              const destination = this.extractMovementPosition(effect);
+              if (destination) {
+                await this.moveToken(sceneId, effect.target, destination.x, destination.y);
+                effects.push(effect);
+              }
             }
             break;
           default:
@@ -1448,7 +1744,7 @@ export class MapService {
         }
       }
 
-      const result = {
+      const result: SpellCastingResult = {
         success: true,
         effects,
         details: {
@@ -1480,160 +1776,40 @@ export class MapService {
   /**
    * Get spell data for casting (placeholder implementation)
    */
-  private getSpellData(spellId: string): any {
-    // Basic spell database - in production this would come from a proper spell database
-    const spells: Record<string, any> = {
-      fireball: {
-        id: "fireball",
-        name: "Fireball",
-        level: 3,
-        school: "evocation",
-        castingTime: "1 action",
-        range: 150,
-        components: ["V", "S", "M"],
-        duration: "instantaneous",
-        description:
-          "A bright streak flashes from your pointing finger to a point you choose within range and then blossoms with a low roar into an explosion of flame.",
-        damage: { dice: "8d6", type: "fire" },
-        area: { type: "sphere", radius: 20 },
-        savingThrow: { ability: "dexterity", dc: 15 },
-      },
-      cure_wounds: {
-        id: "cure_wounds",
-        name: "Cure Wounds",
-        level: 1,
-        school: "evocation",
-        castingTime: "1 action",
-        range: "touch",
-        components: ["V", "S"],
-        duration: "instantaneous",
-        description: "A creature you touch regains a number of hit points.",
-        healing: { dice: "1d8", modifier: 3 },
-      },
-      hold_person: {
-        id: "hold_person",
-        name: "Hold Person",
-        level: 2,
-        school: "enchantment",
-        castingTime: "1 action",
-        range: 60,
-        components: ["V", "S", "M"],
-        duration: "concentration, up to 1 minute",
-        description:
-          "Choose a humanoid that you can see within range. The target must succeed on a Wisdom saving throw or be paralyzed for the duration.",
-        condition: "paralyzed",
-        savingThrow: { ability: "wisdom", dc: 15 },
-        concentration: true,
-      },
-      misty_step: {
-        id: "misty_step",
-        name: "Misty Step",
-        level: 2,
-        school: "conjuration",
-        castingTime: "1 bonus action",
-        range: "self",
-        components: ["V"],
-        duration: "instantaneous",
-        description:
-          "Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.",
-        teleport: { range: 30 },
-      },
-    };
-
-    return spells[spellId] || null;
-  }
-
-  /**
-   * Get basic spell effects (placeholder for full SpellEngine integration)
-   */
-  private getBasicSpellEffects(
-    spellId: string,
-    targetId?: string,
-    position?: { x: number; y: number },
-  ): Record<string, unknown>[] {
-    const effects: Record<string, unknown>[] = [];
-
-    switch (spellId) {
-      case "fireball":
-        if (position) {
-          // Area damage effect
-          effects.push({
-            type: "damage",
-            value: Math.floor(Math.random() * 6 * 8) + 8, // 8d6
-            damageType: "fire",
-            area: { center: position, radius: 20 },
-          });
-        }
-        break;
-      case "cure_wounds":
-        if (targetId) {
-          effects.push({
-            type: "healing",
-            targetId,
-            value: Math.floor(Math.random() * 8) + 1 + 3, // 1d8 + 3
-          });
-        }
-        break;
-      case "hold_person":
-        if (targetId) {
-          effects.push({
-            type: "condition",
-            targetId,
-            condition: "paralyzed",
-            duration: 60000, // 1 minute
-          });
-        }
-        break;
-      case "misty_step":
-        if (targetId && position) {
-          effects.push({
-            type: "movement",
-            targetId,
-            position,
-          });
-        }
-        break;
-      default:
-        // Generic spell effect
-        if (targetId) {
-          effects.push({
-            type: "damage",
-            targetId,
-            value: Math.floor(Math.random() * 6) + 1, // 1d6
-            damageType: "force",
-          });
-        }
-    }
-
-    return effects;
+  private getSpellData(spellId: string): Spell | undefined {
+    const spell = D5E_SPELLS[spellId];
+    return spell ? { ...spell } : undefined;
   }
 
   /**
    * Add encounter to scene
    */
-  async addEncounter(sceneId: string, encounterData: Record<string, any>): Promise<any> {
+  async addEncounter(
+    sceneId: string,
+    encounterData: EncounterInput,
+  ): Promise<EncounterSummary | null> {
     try {
       // Add encounter tokens to scene
-      const addedTokens: Record<string, unknown>[] = [];
+      const addedTokens: EncounterSummary["monsters"] = [];
 
-      if (encounterData.monsters) {
-        for (const monster of encounterData.monsters) {
-          const tokenId = await this.addToken(sceneId, {
-            name: monster.name,
-            x: monster.position?.x || Math.random() * 1000,
-            y: monster.position?.y || Math.random() * 1000,
-            disposition: "HOSTILE",
-            width: monster.size || 1,
-            height: monster.size || 1,
-          });
+      const monsters = encounterData.monsters ?? [];
+      for (const monster of monsters) {
+        const tokenId = await this.addToken(sceneId, {
+          name: monster.name,
+          x: monster.position?.x ?? Math.random() * 1000,
+          y: monster.position?.y ?? Math.random() * 1000,
+          disposition: "HOSTILE",
+          width: monster.size ?? 1,
+          height: monster.size ?? 1,
+        });
 
-          if (tokenId) {
-            addedTokens.push({ id: tokenId, ...monster });
-          }
+        if (tokenId) {
+          addedTokens.push({ ...monster, id: tokenId });
         }
       }
 
-      return { id: uuidv4(), monsters: addedTokens, ...encounterData };
+      const { monsters: _inputMonsters, ...rest } = encounterData;
+      return { id: uuidv4(), monsters: addedTokens, ...rest };
     } catch (error) {
       logger.error("Failed to add encounter:", error as Error);
       return null;
@@ -1643,18 +1819,26 @@ export class MapService {
   /**
    * Add NPC to scene
    */
-  async addNPC(sceneId: string, npcData: Record<string, any>): Promise<any> {
+  async addNPC(sceneId: string, npcData: NPCCreationInput): Promise<NPCCreationResult | null> {
     try {
       const tokenId = await this.addToken(sceneId, {
         name: npcData.name,
-        x: npcData.position?.x || Math.random() * 1000,
-        y: npcData.position?.y || Math.random() * 1000,
-        disposition: npcData.disposition || "NEUTRAL",
+        x: npcData.position?.x ?? Math.random() * 1000,
+        y: npcData.position?.y ?? Math.random() * 1000,
+        disposition: npcData.disposition ?? "NEUTRAL",
         width: 1,
         height: 1,
       });
 
-      return { id: tokenId, ...npcData };
+      const position = npcData.position ?? { x: 0, y: 0 };
+      const disposition = npcData.disposition ?? "NEUTRAL";
+
+      return {
+        id: tokenId,
+        ...npcData,
+        disposition,
+        position,
+      };
     } catch (error) {
       logger.error("Failed to add NPC:", error as Error);
       return null;
@@ -1664,18 +1848,26 @@ export class MapService {
   /**
    * Add treasure to scene
    */
-  async addTreasure(sceneId: string, treasureData: Record<string, any>): Promise<any> {
+  async addTreasure(sceneId: string, treasureData: TreasureInput): Promise<TreasureResult | null> {
     try {
       const tokenId = await this.addToken(sceneId, {
-        name: treasureData.name || "Treasure",
-        x: treasureData.position?.x || Math.random() * 1000,
-        y: treasureData.position?.y || Math.random() * 1000,
+        name: treasureData.name ?? "Treasure",
+        x: treasureData.position?.x ?? Math.random() * 1000,
+        y: treasureData.position?.y ?? Math.random() * 1000,
         disposition: "NEUTRAL",
         width: 0.5,
         height: 0.5,
       });
 
-      return { id: tokenId, ...treasureData };
+      const position = treasureData.position ?? { x: 0, y: 0 };
+      const name = treasureData.name ?? "Treasure";
+
+      return {
+        id: tokenId,
+        ...treasureData,
+        name,
+        position,
+      };
     } catch (error) {
       logger.error("Failed to add treasure:", error as Error);
       return null;
@@ -1685,16 +1877,18 @@ export class MapService {
   /**
    * Add hazard to scene
    */
-  async addHazard(sceneId: string, hazardData: Record<string, any>): Promise<any> {
+  async addHazard(sceneId: string, hazardData: HazardInput): Promise<HazardResult | null> {
     try {
-      const effect = {
+      const { name, position: rawPosition, area: rawArea, damage: rawDamage, ...rest } = hazardData;
+
+      const effect: HazardResult = {
         id: uuidv4(),
         type: "hazard",
-        name: hazardData.name,
-        position: hazardData.position || { x: Math.random() * 1000, y: Math.random() * 1000 },
-        area: hazardData.area || { radius: 10 },
-        damage: hazardData.damage || { dice: "1d6", type: "fire" },
-        ...hazardData,
+        name,
+        position: rawPosition ?? { x: Math.random() * 1000, y: Math.random() * 1000 },
+        area: rawArea ?? { radius: 10 },
+        damage: rawDamage ?? { dice: "1d6", type: "fire" },
+        ...rest,
       };
 
       this.activeSpellEffects.set(effect.id, effect);
@@ -1716,22 +1910,27 @@ export class MapService {
   /**
    * Get combat status for scene
    */
-  async getCombatStatus(sceneId: string): Promise<any> {
+  async getCombatStatus(sceneId: string): Promise<CombatStatus | null> {
     try {
       // Basic combat status - would integrate with combat engine
       const scene = await this.getScene(sceneId);
-      if (!scene || !scene.tokens) {return null;}
+      if (!scene || !scene.tokens) {
+        return null;
+      }
 
       return {
         inCombat: false,
         round: 0,
         turn: 0,
         order: scene.tokens
-          .map((t) => ({
-            id: t.id,
-            name: (t as any).name || "Unknown",
-            initiative: (t as any).initiative || 10,
-          }))
+          .map((t) => {
+            const token = t as CachedToken;
+            return {
+              id: token.id,
+              name: token.name ?? "Unknown",
+              initiative: token.initiative ?? 10,
+            };
+          })
           .sort((a, b) => b.initiative - a.initiative),
         current: 0,
         delayed: [],
@@ -1793,11 +1992,15 @@ export class MapService {
    */
   async createSpellEffectPhysicsBody(
     sceneId: string,
-    spellEffect: any,
+    spellEffect: SpellEffectDefinition,
     position: { x: number; y: number },
-    size?: { width?: number; height?: number; radius?: number },
-  ): Promise<number | null> {
+    size?: SpellEffectGeometry,
+  ): Promise<{ physicsBodyId: number | null; effectId: string }> {
     try {
+      const effectId = spellEffect.id ?? uuidv4();
+      const effectType = typeof spellEffect.type === "string" ? spellEffect.type : "generic";
+      const geometry = size ?? spellEffect.area ?? {};
+
       const bodyConfig = {
         mass: 0, // Static body for spell effects
         position,
@@ -1806,53 +2009,59 @@ export class MapService {
         isSensor: true, // Allows overlap detection without collision response
         userData: {
           type: "spell_effect",
-          spellId: spellEffect.id,
-          effectType: spellEffect.type,
+          spellId: effectId,
+          effectType,
           sceneId,
         },
       };
 
       // Determine body shape based on spell effect
       let bodyShape;
-      if (size?.radius) {
-        bodyShape = { type: "circle", radius: size.radius };
+      if (geometry.radius) {
+        bodyShape = { type: "circle", radius: geometry.radius };
       } else {
         bodyShape = {
           type: "rectangle",
-          width: size?.width || 50,
-          height: size?.height || 50,
+          width: geometry.width ?? 50,
+          height: geometry.height ?? 50,
         };
       }
 
       // Create physics body for spell effect
-      const numericId = this.generateNumericId(spellEffect.id);
+      const numericId = this.generateNumericId(effectId);
       const physicsBody = new RigidBody(
         numericId,
         position.x,
         position.y,
-        size?.width || 50,
-        size?.height || 50,
-        bodyConfig
+        geometry.width ?? 50,
+        geometry.height ?? 50,
+        bodyConfig,
       );
+      (physicsBody as ExtendedRigidBody).userData = {
+        bodyType: "spell_effect",
+        spellId: effectId,
+        sceneId,
+        type: effectType,
+      } satisfies SpellEffectMetadata & { bodyType: string };
       this.physicsWorld.addBody(physicsBody);
 
       // Store mapping for cleanup
-      this.spellEffectPhysicsBodies.set(spellEffect.id, numericId);
+      this.spellEffectPhysicsBodies.set(effectId, numericId);
 
-        // Emit physics body created event
+      // Emit physics body created event
       this.emitMapUpdate(sceneId, {
         type: "spell_effect_physics_created",
-        spellEffectId: spellEffect.id,
+        spellEffectId: effectId,
         physicsBodyId: numericId,
         position,
         shape: bodyShape,
         timestamp: Date.now(),
       });
 
-      return numericId;
+      return { physicsBodyId: numericId, effectId };
     } catch (error) {
       logger.error("Failed to create spell effect physics body:", error as Error);
-      return null;
+      return { physicsBodyId: null, effectId: spellEffect.id ?? uuidv4() };
     }
   }
 
@@ -1866,10 +2075,14 @@ export class MapService {
   ): Promise<boolean> {
     try {
       const physicsBodyId = this.spellEffectPhysicsBodies.get(spellEffectId);
-      if (!physicsBodyId) {return false;}
+      if (!physicsBodyId) {
+        return false;
+      }
 
       const physicsBody = this.physicsWorld.getBody(physicsBodyId);
-      if (!physicsBody) {return false;}
+      if (!physicsBody) {
+        return false;
+      }
 
       if (position) {
         physicsBody.position.x = position.x;
@@ -1878,8 +2091,12 @@ export class MapService {
 
       // Update size if changed
       if (size) {
-        if (size.width !== undefined) {physicsBody.width = size.width;}
-        if (size.height !== undefined) {physicsBody.height = size.height;}
+        if (size.width !== undefined) {
+          physicsBody.width = size.width;
+        }
+        if (size.height !== undefined) {
+          physicsBody.height = size.height;
+        }
       }
 
       return true;
@@ -1895,11 +2112,13 @@ export class MapService {
   async removeSpellEffectPhysicsBody(spellEffectId: string): Promise<boolean> {
     try {
       const physicsBodyId = this.spellEffectPhysicsBodies.get(spellEffectId);
-      if (!physicsBodyId) {return false;}
+      if (!physicsBodyId) {
+        return false;
+      }
 
       const removed = this.physicsWorld.removeBody(physicsBodyId);
       this.spellEffectPhysicsBodies.delete(spellEffectId);
-      
+
       return removed !== null;
     } catch (error) {
       logger.error("Failed to remove spell effect physics body:", error as Error);
@@ -1914,39 +2133,46 @@ export class MapService {
     Array<{
       tokenId: string;
       spellEffectId: string;
-      collision: any;
+      collision: boolean;
     }>
   > {
     try {
       const collisions: Array<{
         tokenId: string;
         spellEffectId: string;
-        collision: any;
+        collision: boolean;
       }> = [];
 
       const scene = await this.getScene(sceneId);
-      if (!scene?.tokens) {return collisions;}
+      if (!scene?.tokens) {
+        return collisions;
+      }
 
       // Check each token's physics body against spell effect bodies
       for (const token of scene.tokens) {
         const tokenPhysicsId = this.generateNumericId(token.id);
         const tokenPhysicsBody = this.physicsWorld.getBody(tokenPhysicsId);
 
-        if (!tokenPhysicsBody) {continue;}
+        if (!tokenPhysicsBody) {
+          continue;
+        }
 
         // Check collisions with all spell effect bodies
         for (const [spellEffectId, spellBodyId] of this.spellEffectPhysicsBodies) {
           const spellBody = this.physicsWorld.getBody(spellBodyId);
-          if (!spellBody) {continue;}
+          if (!spellBody) {
+            continue;
+          }
 
           // Check if bodies are overlapping using AABB
           const tokenAABB = tokenPhysicsBody.getAABB();
           const spellAABB = spellBody.getAABB();
-          const overlapping = tokenAABB.minX < spellAABB.maxX && 
-                            tokenAABB.maxX > spellAABB.minX &&
-                            tokenAABB.minY < spellAABB.maxY && 
-                            tokenAABB.maxY > spellAABB.minY;
-          
+          const overlapping =
+            tokenAABB.minX < spellAABB.maxX &&
+            tokenAABB.maxX > spellAABB.minX &&
+            tokenAABB.minY < spellAABB.maxY &&
+            tokenAABB.maxY > spellAABB.minY;
+
           if (overlapping) {
             collisions.push({
               tokenId: token.id,
@@ -1982,7 +2208,9 @@ export class MapService {
   ): Promise<string[]> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene?.tokens) {return [];}
+      if (!scene?.tokens) {
+        return [];
+      }
 
       const affectedTokens: string[] = [];
 
@@ -2031,7 +2259,9 @@ export class MapService {
                 );
 
                 let angleDiff = Math.abs(casterToToken - casterToSpell);
-                if (angleDiff > Math.PI) {angleDiff = 2 * Math.PI - angleDiff;}
+                if (angleDiff > Math.PI) {
+                  angleDiff = 2 * Math.PI - angleDiff;
+                }
 
                 isAffected = angleDiff <= (spellArea.angle * Math.PI) / 180 / 2;
               }
@@ -2146,8 +2376,9 @@ export class MapService {
       }
 
       // Clean up expired effects
-      for (const effectId of expiredEffects) {
-        // this.removeSpellEffect(spellEffectId); // Method not implemented
+      for (const expiredId of expiredEffects) {
+        await this.removeSpellEffectPhysicsBody(expiredId);
+        this.activeSpellEffects.delete(expiredId);
       }
 
       // Step physics simulation
@@ -2205,7 +2436,7 @@ export class MapService {
    */
   async createSpellWithVisualEffects(
     sceneId: string,
-    spellData: any,
+    spellData: SpellEffectDefinition,
     casterPosition: { x: number; y: number },
     targetPosition?: { x: number; y: number },
   ): Promise<{
@@ -2216,10 +2447,12 @@ export class MapService {
     try {
       // Create spell effect (stubbed for build compatibility)
       const spellEffect = { id: uuidv4(), ...spellData };
-      if (!spellEffect) {throw new Error("Failed to create spell effect");}
+      if (!spellEffect) {
+        throw new Error("Failed to create spell effect");
+      }
 
       // Create physics body
-      const physicsBodyId = await this.createSpellEffectPhysicsBody(
+      const { physicsBodyId, effectId } = await this.createSpellEffectPhysicsBody(
         sceneId,
         spellEffect,
         targetPosition || casterPosition,
@@ -2231,9 +2464,9 @@ export class MapService {
 
       if (this.visualEffectsBridge) {
         const visualIds = this.visualEffectsBridge.createSpellVisualEffect(
-          spellData.id,
-          spellData.name,
-          spellData.school || "evocation",
+          spellEffect.id ?? effectId,
+          spellEffect.name ?? "Unknown Spell",
+          spellEffect.school || "evocation",
           casterPosition,
           targetPosition,
         );
@@ -2243,17 +2476,17 @@ export class MapService {
       // Emit comprehensive spell creation event
       this.emitMapUpdate(sceneId, {
         type: "spell_with_physics_created",
-        spellEffectId: spellEffect.id,
+        spellEffectId: effectId,
         physicsBodyId,
         visualEffectIds,
         casterPosition,
         targetPosition,
-        spellData,
+        spellData: spellEffect,
         timestamp: Date.now(),
       });
 
       return {
-        spellEffectId: spellEffect.id,
+        spellEffectId: effectId,
         physicsBodyId,
         visualEffectIds,
       };
@@ -2270,13 +2503,17 @@ export class MapService {
   /**
    * Initialize physics integration
    */
-  initializePhysicsIntegration(visualEffectsBridge?: Record<string, unknown>): void {
-    this.visualEffectsBridge = visualEffectsBridge;
+  initializePhysicsIntegration(visualEffectsBridge?: PhysicsVisualBridge | null): void {
+    this.visualEffectsBridge = visualEffectsBridge ?? null;
     this.startSpellPhysicsLoop();
 
     // Setup physics event handlers
-    this.physicsWorld.on("collision", (bodyA: any, bodyB: any, collision: unknown) => {
-      this.handlePhysicsCollision(bodyA, bodyB, this.toRecord(collision));
+    this.physicsWorld.on("collision", (bodyA: RigidBody, bodyB: RigidBody, collision: unknown) => {
+      this.handlePhysicsCollision(
+        bodyA as ExtendedRigidBody,
+        bodyB as ExtendedRigidBody,
+        this.toRecord(collision),
+      );
     });
 
     logger.info("MapService physics integration initialized");
@@ -2285,38 +2522,64 @@ export class MapService {
   /**
    * Handle physics collision events
    */
-  private async handlePhysicsCollision(bodyA: any, bodyB: any, collision: Record<string, unknown>): Promise<void> {
+  private async handlePhysicsCollision(
+    bodyA: ExtendedRigidBody,
+    bodyB: ExtendedRigidBody,
+    collision: Record<string, unknown>,
+  ): Promise<void> {
     try {
       // Determine collision types
-      const typeA = bodyA.userData?.type;
-      const typeB = bodyB.userData?.type;
+      const userDataA = this.toRecord(bodyA.userData);
+      const userDataB = this.toRecord(bodyB.userData);
+      const typeA = typeof userDataA.type === "string" ? userDataA.type : undefined;
+      const typeB = typeof userDataB.type === "string" ? userDataB.type : undefined;
 
       // Token vs Spell Effect collision
       if (
         (typeA === "token" && typeB === "spell_effect") ||
         (typeA === "spell_effect" && typeB === "token")
       ) {
-        const tokenBody = typeA === "token" ? bodyA : bodyB;
-        const spellBody = typeA === "spell_effect" ? bodyA : bodyB;
+        const tokenMetadata = typeA === "token" ? userDataA : userDataB;
+        const spellMetadata = typeA === "spell_effect" ? userDataA : userDataB;
 
-        this.emitMapUpdate(spellBody.userData.sceneId, {
-          type: "token_spell_collision",
-          tokenId: tokenBody.userData.tokenId,
-          spellEffectId: spellBody.userData.spellId,
-          collision,
-          timestamp: Date.now(),
-        });
+        const sceneIdentifier =
+          typeof spellMetadata.sceneId === "string" ? spellMetadata.sceneId : undefined;
+        const tokenId =
+          typeof tokenMetadata.tokenId === "string" ? tokenMetadata.tokenId : undefined;
+        const spellEffectId =
+          typeof spellMetadata.spellId === "string" ? spellMetadata.spellId : undefined;
+
+        if (sceneIdentifier && tokenId && spellEffectId) {
+          const payload: MapEventData & TokenSpellCollision = {
+            type: "token_spell_collision",
+            tokenId,
+            spellEffectId,
+            collision,
+          };
+          this.emitMapUpdate(sceneIdentifier, payload);
+        }
       }
 
       // Spell Effect vs Spell Effect collision
       if (typeA === "spell_effect" && typeB === "spell_effect") {
-        this.emitMapUpdate(bodyA.userData.sceneId, {
-          type: "spell_spell_collision",
-          spellEffectAId: bodyA.userData.spellId,
-          spellEffectBId: bodyB.userData.spellId,
-          collision,
-          timestamp: Date.now(),
-        });
+        const spellMetadataA = userDataA;
+        const spellMetadataB = userDataB;
+        const sceneIdentifier =
+          typeof spellMetadataA.sceneId === "string" ? spellMetadataA.sceneId : undefined;
+        const spellEffectAId =
+          typeof spellMetadataA.spellId === "string" ? spellMetadataA.spellId : undefined;
+        const spellEffectBId =
+          typeof spellMetadataB.spellId === "string" ? spellMetadataB.spellId : undefined;
+
+        if (sceneIdentifier && spellEffectAId && spellEffectBId) {
+          const payload: MapEventData & SpellSpellCollision = {
+            type: "spell_spell_collision",
+            spellEffectAId,
+            spellEffectBId,
+            collision,
+          };
+          this.emitMapUpdate(sceneIdentifier, payload);
+        }
       }
     } catch (error) {
       logger.error("Failed to handle physics collision:", error as Error);
@@ -2334,7 +2597,7 @@ export class MapService {
         include: {
           campaign: true,
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
       });
 
       const scenes: MapScene[] = [];
@@ -2389,51 +2652,58 @@ export class MapService {
     endX: number,
     endY: number,
     obstacles: Array<{ x: number; y: number; width: number; height: number }> = [],
-    sceneId?: string
   ): Promise<Array<{ x: number; y: number }>> {
     try {
       // Simple pathfinding - in production would use A* algorithm
       const path: Array<{ x: number; y: number }> = [];
-      
+
       // For now, return direct path with basic obstacle avoidance
       const dx = endX - startX;
       const dy = endY - startY;
       const steps = Math.max(Math.abs(dx), Math.abs(dy));
-      
+
       if (steps === 0) {
         return [{ x: startX, y: startY }];
       }
-      
+
       const stepX = dx / steps;
       const stepY = dy / steps;
-      
+
       for (let i = 0; i <= steps; i++) {
         const x = startX + stepX * i;
         const y = startY + stepY * i;
-        
+
         // Basic collision check
         let blocked = false;
         for (const obstacle of obstacles) {
           if (
-            x >= obstacle.x && 
+            x >= obstacle.x &&
             x <= obstacle.x + obstacle.width &&
-            y >= obstacle.y && 
+            y >= obstacle.y &&
             y <= obstacle.y + obstacle.height
           ) {
             blocked = true;
             break;
           }
         }
-        
+
         if (!blocked) {
           path.push({ x: Math.round(x), y: Math.round(y) });
         }
       }
-      
-      return path.length > 0 ? path : [{ x: startX, y: startY }, { x: endX, y: endY }];
+
+      return path.length > 0
+        ? path
+        : [
+            { x: startX, y: startY },
+            { x: endX, y: endY },
+          ];
     } catch (error) {
       logger.error("Failed to calculate movement path:", error as Error);
-      return [{ x: startX, y: startY }, { x: endX, y: endY }];
+      return [
+        { x: startX, y: startY },
+        { x: endX, y: endY },
+      ];
     }
   }
 
@@ -2445,50 +2715,50 @@ export class MapService {
     fromY: number,
     toX: number,
     toY: number,
-    obstacles: Array<{ x: number; y: number; width: number; height: number }> = []
+    obstacles: Array<{ x: number; y: number; width: number; height: number }> = [],
   ): LineOfSightResult {
     try {
       const dx = toX - fromX;
       const dy = toY - fromY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      
+
       if (distance === 0) {
         return { visible: true, partialCover: false, totalCover: false };
       }
-      
+
       // Raycast algorithm
       const steps = Math.ceil(distance);
       const stepX = dx / steps;
       const stepY = dy / steps;
-      
+
       const blockedPoints: Array<{ x: number; y: number }> = [];
-      
+
       for (let i = 1; i < steps; i++) {
         const x = fromX + stepX * i;
         const y = fromY + stepY * i;
-        
+
         // Check collision with obstacles
         for (const obstacle of obstacles) {
           if (
-            x >= obstacle.x && 
+            x >= obstacle.x &&
             x <= obstacle.x + obstacle.width &&
-            y >= obstacle.y && 
+            y >= obstacle.y &&
             y <= obstacle.y + obstacle.height
           ) {
             blockedPoints.push({ x: Math.round(x), y: Math.round(y) });
           }
         }
       }
-      
+
       const hasBlockage = blockedPoints.length > 0;
       const partialCover = hasBlockage && blockedPoints.length < steps / 2;
       const totalCover = blockedPoints.length >= steps / 2;
-      
-      return { 
-        visible: !totalCover, 
+
+      return {
+        visible: !totalCover,
         blockedBy: hasBlockage ? blockedPoints : undefined,
         partialCover,
-        totalCover
+        totalCover,
       };
     } catch (error) {
       logger.error("Failed to calculate line of sight:", error as Error);
@@ -2499,11 +2769,18 @@ export class MapService {
   /**
    * Add combatant to initiative order
    */
-  async addCombatant(sceneId: string, tokenId: string, name: string, initiative: number): Promise<boolean> {
+  async addCombatant(
+    sceneId: string,
+    tokenId: string,
+    name: string,
+    initiative: number,
+  ): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
-      
+      if (!scene) {
+        return false;
+      }
+
       // Get or create combat grid for scene
       let combatGrid = this.combatGrids.get(sceneId);
       if (!combatGrid) {
@@ -2512,32 +2789,32 @@ export class MapService {
           initiative: [],
           currentTurn: 0,
           round: 1,
-          phase: 'setup',
-          effects: []
+          phase: "setup",
+          effects: [],
         };
         this.combatGrids.set(sceneId, combatGrid);
       }
-      
+
       // Add or update combatant
-      const existingIndex = combatGrid.initiative.findIndex(init => init.tokenId === tokenId);
+      const existingIndex = combatGrid.initiative.findIndex((init) => init.tokenId === tokenId);
       const combatant: InitiativeEntry = {
         id: uuidv4(),
         tokenId,
         name,
         initiative,
         hasActed: false,
-        conditions: []
+        conditions: [],
       };
-      
+
       if (existingIndex >= 0) {
         combatGrid.initiative[existingIndex] = combatant;
       } else {
         combatGrid.initiative.push(combatant);
       }
-      
+
       // Sort by initiative (descending)
       combatGrid.initiative.sort((a, b) => b.initiative - a.initiative);
-      
+
       // Emit update
       this.emitMapUpdate(sceneId, {
         type: "combat_combatant_added",
@@ -2545,7 +2822,7 @@ export class MapService {
         combatant,
         timestamp: Date.now(),
       });
-      
+
       return true;
     } catch (error) {
       logger.error("Failed to add combatant:", error as Error);
@@ -2562,26 +2839,26 @@ export class MapService {
       if (!combatGrid || combatGrid.initiative.length === 0) {
         return false;
       }
-      
+
       // Advance turn
       combatGrid.currentTurn++;
-      
+
       // Check if round is complete
       if (combatGrid.currentTurn >= combatGrid.initiative.length) {
         combatGrid.currentTurn = 0;
         combatGrid.round++;
-        
+
         // Reset hasActed flags for new round
-        combatGrid.initiative.forEach(init => {
+        combatGrid.initiative.forEach((init) => {
           init.hasActed = false;
         });
       }
-      
+
       // Mark current combatant as having acted
       if (combatGrid.initiative[combatGrid.currentTurn]) {
         combatGrid.initiative[combatGrid.currentTurn].hasActed = true;
       }
-      
+
       // Emit update
       this.emitMapUpdate(sceneId, {
         type: "combat_turn_advanced",
@@ -2591,7 +2868,7 @@ export class MapService {
         currentCombatant: combatGrid.initiative[combatGrid.currentTurn],
         timestamp: Date.now(),
       });
-      
+
       return true;
     } catch (error) {
       logger.error("Failed to advance turn:", error as Error);
@@ -2602,16 +2879,21 @@ export class MapService {
   /**
    * Add grid effect to scene
    */
-  async addGridEffect(sceneId: string, effectData: Omit<GridEffect, "id">): Promise<GridEffect | null> {
+  async addGridEffect(
+    sceneId: string,
+    effectData: Omit<GridEffect, "id">,
+  ): Promise<GridEffect | null> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return null;}
-      
+      if (!scene) {
+        return null;
+      }
+
       const effect: GridEffect = {
         id: uuidv4(),
-        ...effectData
+        ...effectData,
       };
-      
+
       // Store effect (in production would persist to database)
       // For now, emit as real-time update
       this.emitMapUpdate(sceneId, {
@@ -2620,7 +2902,7 @@ export class MapService {
         effect,
         timestamp: Date.now(),
       });
-      
+
       return effect;
     } catch (error) {
       logger.error("Failed to add grid effect:", error as Error);
@@ -2634,16 +2916,18 @@ export class MapService {
   async addLightSource(sceneId: string, lightData: Omit<LightSource, "id">): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
-      
+      if (!scene) {
+        return false;
+      }
+
       const lightSource: LightSource = {
         id: uuidv4(),
-        ...lightData
+        ...lightData,
       };
-      
+
       // Add to scene lighting
       scene.lighting.lightSources.push(lightSource);
-      
+
       // Emit update
       this.emitMapUpdate(sceneId, {
         type: "light_source_added",
@@ -2651,7 +2935,7 @@ export class MapService {
         lightSource,
         timestamp: Date.now(),
       });
-      
+
       return true;
     } catch (error) {
       logger.error("Failed to add light source:", error as Error);
@@ -2662,43 +2946,60 @@ export class MapService {
   /**
    * Update scene with new settings
    */
-  async updateScene(sceneId: string, updates: Record<string, any>): Promise<MapScene | null> {
+  async updateScene(sceneId: string, updates: SceneUpdateInput): Promise<MapScene | null> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return null;}
+      if (!scene) {
+        return null;
+      }
 
       // Update scene in database
+      const existingMetadata = this.parseSceneMetadata((scene as { metadata?: unknown }).metadata);
+      const mergedMetadata: SceneMetadata = {
+        gridSettings: updates.grid
+          ? { ...existingMetadata?.gridSettings, ...updates.grid }
+          : existingMetadata?.gridSettings,
+        lightingSettings: updates.lighting
+          ? { ...existingMetadata?.lightingSettings, ...updates.lighting }
+          : existingMetadata?.lightingSettings,
+        fogSettings: updates.fog
+          ? { ...existingMetadata?.fogSettings, ...updates.fog }
+          : existingMetadata?.fogSettings,
+      };
+
+      const metadataPayload: SceneMetadata = {
+        ...(mergedMetadata.gridSettings ? { gridSettings: mergedMetadata.gridSettings } : {}),
+        ...(mergedMetadata.lightingSettings
+          ? { lightingSettings: mergedMetadata.lightingSettings }
+          : {}),
+        ...(mergedMetadata.fogSettings ? { fogSettings: mergedMetadata.fogSettings } : {}),
+      };
+
       await this.prisma.scene.update({
         where: { id: sceneId },
         data: {
           ...(updates.name && { name: updates.name }),
-          ...(updates.grid && {
-            // Store grid settings in metadata field if available
-            metadata: JSON.stringify({ gridSettings: updates.grid }),
-          }),
-          ...(updates.lighting && {
-            // Store lighting settings in metadata field if available
-            metadata: JSON.stringify({
-              ...((scene as any).metadata ? JSON.parse((scene as any).metadata) : {}),
-              lightingSettings: updates.lighting,
-            }),
-          }),
-          ...(updates.fog && {
-            // Store fog settings in metadata field if available
-            metadata: JSON.stringify({
-              ...((scene as any).metadata ? JSON.parse((scene as any).metadata) : {}),
-              fogSettings: updates.fog,
-            }),
-          }),
-          updatedAt: new Date(),
+          ...(Object.keys(metadataPayload).length > 0
+            ? {
+                metadata: JSON.stringify(metadataPayload),
+              }
+            : {}),
         },
       });
 
       // Update cached scene
-      if (updates.name) {scene.name = updates.name;}
-      if (updates.grid) {Object.assign(scene.grid, updates.grid);}
-      if (updates.lighting) {Object.assign(scene.lighting, updates.lighting);}
-      if (updates.fog) {Object.assign(scene.fog, updates.fog);}
+      if (updates.name) {
+        scene.name = updates.name;
+      }
+      if (updates.grid) {
+        Object.assign(scene.grid, updates.grid);
+      }
+      if (updates.lighting) {
+        Object.assign(scene.lighting, updates.lighting);
+      }
+      if (updates.fog) {
+        Object.assign(scene.fog, updates.fog);
+      }
 
       // Emit real-time update
       this.emitMapUpdate(sceneId, {
@@ -2721,14 +3022,16 @@ export class MapService {
   async removeLightSource(sceneId: string, lightId: string): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
-      
+      if (!scene) {
+        return false;
+      }
+
       // Remove from scene lighting (stored in metadata)
-      const lightIndex = scene.lighting.lightSources?.findIndex(light => light.id === lightId);
+      const lightIndex = scene.lighting.lightSources?.findIndex((light) => light.id === lightId);
       if (lightIndex !== undefined && lightIndex >= 0) {
         scene.lighting.lightSources.splice(lightIndex, 1);
       }
-      
+
       // Emit update
       this.emitMapUpdate(sceneId, {
         type: "light_update",
@@ -2737,7 +3040,7 @@ export class MapService {
         action: "removed",
         timestamp: Date.now(),
       });
-      
+
       return true;
     } catch (error) {
       logger.error("Failed to remove light source:", error as Error);
@@ -2751,8 +3054,10 @@ export class MapService {
   async getMeasurements(sceneId: string): Promise<MeasurementTool[]> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return [];}
-      
+      if (!scene) {
+        return [];
+      }
+
       // Return measurements from scene metadata or cache
       const measurements = this.measurements.get(sceneId);
       return Array.isArray(measurements) ? measurements : [];
@@ -2768,20 +3073,22 @@ export class MapService {
   async initializeCombat(sceneId: string): Promise<boolean> {
     try {
       const scene = await this.getScene(sceneId);
-      if (!scene) {return false;}
-      
+      if (!scene) {
+        return false;
+      }
+
       // Create or reset combat grid
       const combatGrid: CombatGrid = {
         sceneId,
         initiative: [],
         currentTurn: 0,
         round: 1,
-        phase: 'setup',
-        effects: []
+        phase: "setup",
+        effects: [],
       };
-      
+
       this.combatGrids.set(sceneId, combatGrid);
-      
+
       // Emit update
       this.emitMapUpdate(sceneId, {
         type: "combat_initialized",
@@ -2789,7 +3096,7 @@ export class MapService {
         combatGrid,
         timestamp: Date.now(),
       });
-      
+
       return true;
     } catch (error) {
       logger.error("Failed to initialize combat:", error as Error);

@@ -2,7 +2,7 @@
  * Encounter service for business logic and combat flow
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma, EncounterStatus } from "@prisma/client";
 
 export interface CreateEncounterRequest {
   name: string;
@@ -17,7 +17,7 @@ export interface AddParticipantRequest {
 
 export interface EncounterSearchOptions {
   gameSessionId: string;
-  status?: string; // 'PLANNED' | 'ACTIVE' | 'PAUSED' | 'COMPLETED'
+  status?: EncounterStatus;
   limit?: number;
   offset?: number;
 }
@@ -28,8 +28,10 @@ export class EncounterService {
   async searchEncounters(options: EncounterSearchOptions) {
     const { gameSessionId, status, limit = 50, offset = 0 } = options;
 
-    const where: any = { gameSessionId };
-    if (status !== undefined) {where.status = status;}
+    const where: Prisma.EncounterWhereInput = { gameSessionId };
+    if (status !== undefined) {
+      where.status = status;
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.encounter.findMany({
@@ -47,8 +49,8 @@ export class EncounterService {
                   type: true,
                   initiative: true,
                   health: true,
-                  maxHealth: true
-                }
+                  maxHealth: true,
+                },
               },
             },
             orderBy: { initiative: "desc" },
@@ -76,8 +78,8 @@ export class EncounterService {
                 health: true,
                 maxHealth: true,
                 x: true,
-                y: true
-              }
+                y: true,
+              },
             },
           },
           orderBy: { initiative: "desc" },
@@ -86,9 +88,9 @@ export class EncounterService {
           select: {
             id: true,
             name: true,
-            campaignId: true
-          }
-        }
+            campaignId: true,
+          },
+        },
       },
     });
   }
@@ -100,7 +102,7 @@ export class EncounterService {
         gameSessionId: request.campaignId, // Note: This might need to be actual gameSessionId
         roundNumber: 1,
         currentTurn: 0,
-        status: 'PLANNED',
+        status: EncounterStatus.PLANNED,
       },
       include: {
         encounterTokens: {
@@ -123,10 +125,12 @@ export class EncounterService {
     }
 
     // Check if participant already exists
-    const existing = await this.prisma.encounterToken.findFirst({
+    const existing = await this.prisma.encounterToken.findUnique({
       where: {
-        encounterId,
-        tokenId: request.actorId,
+        encounterId_tokenId: {
+          encounterId,
+          tokenId: request.actorId,
+        },
       },
     });
     if (existing) {
@@ -149,10 +153,7 @@ export class EncounterService {
 
   async removeParticipant(encounterId: string, participantId: string) {
     await this.prisma.encounterToken.delete({
-      where: {
-        id: participantId,
-        encounterId,
-      },
+      where: { id: participantId },
     });
 
     return true;
@@ -162,7 +163,7 @@ export class EncounterService {
     const encounter = await this.prisma.encounter.update({
       where: { id },
       data: {
-        status: 'ACTIVE',
+        status: EncounterStatus.ACTIVE,
         startedAt: new Date(),
         roundNumber: 1,
         currentTurn: 0,
@@ -174,7 +175,7 @@ export class EncounterService {
 
   async nextTurn(id: string) {
     const encounter = await this.getEncounter(id);
-    if (!encounter || encounter.status !== 'ACTIVE') {
+    if (!encounter || encounter.status !== EncounterStatus.ACTIVE) {
       throw new Error("Encounter not found or not active");
     }
 
@@ -200,7 +201,7 @@ export class EncounterService {
     const encounter = await this.prisma.encounter.update({
       where: { id },
       data: {
-        status: 'COMPLETED',
+        status: EncounterStatus.COMPLETED,
         endedAt: new Date(),
       },
     });
@@ -216,7 +217,7 @@ export class EncounterService {
 
   async getCurrentParticipant(id: string) {
     const encounter = await this.getEncounter(id);
-    if (!encounter || encounter.status !== 'ACTIVE') {
+    if (!encounter || encounter.status !== EncounterStatus.ACTIVE) {
       return null;
     }
 
@@ -233,8 +234,10 @@ export class EncounterService {
     // This could be implemented using metadata or separate tracking
     return this.prisma.encounterToken.update({
       where: {
-        id: tokenId,
-        encounterId,
+        encounterId_tokenId: {
+          encounterId,
+          tokenId,
+        },
       },
       data: { isActive: hasActed },
     });
@@ -243,8 +246,10 @@ export class EncounterService {
   async setParticipantActive(encounterId: string, tokenId: string, isActive: boolean) {
     return this.prisma.encounterToken.update({
       where: {
-        id: tokenId,
-        encounterId,
+        encounterId_tokenId: {
+          encounterId,
+          tokenId,
+        },
       },
       data: { isActive },
     });
@@ -253,8 +258,10 @@ export class EncounterService {
   async updateInitiative(encounterId: string, tokenId: string, initiative: number) {
     return this.prisma.encounterToken.update({
       where: {
-        id: tokenId,
-        encounterId,
+        encounterId_tokenId: {
+          encounterId,
+          tokenId,
+        },
       },
       data: { initiative },
     });
@@ -271,10 +278,19 @@ export class EncounterService {
     const updates = participants.map(async (participant) => {
       // Roll d20 + dex modifier (simplified from token data)
       let dexMod = 0;
-      if (participant.token && participant.token.metadata) {
-        const metadata = participant.token.metadata as any;
-        const dex = metadata?.abilities?.DEX || 10;
-        dexMod = Math.floor((dex - 10) / 2);
+      const metadata = participant.token?.metadata;
+      if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+        const abilities = (metadata as Record<string, unknown>).abilities;
+        if (
+          abilities &&
+          typeof abilities === "object" &&
+          abilities !== null &&
+          !Array.isArray(abilities)
+        ) {
+          const dexRaw = (abilities as Record<string, unknown>).DEX;
+          const dex = typeof dexRaw === "number" ? dexRaw : 10;
+          dexMod = Math.floor((dex - 10) / 2);
+        }
       }
 
       const roll = Math.floor(Math.random() * 20) + 1 + dexMod;
@@ -289,13 +305,13 @@ export class EncounterService {
   async getEncounterStats(gameSessionId: string) {
     const [activeCount, totalCount, avgRounds] = await Promise.all([
       this.prisma.encounter.count({
-        where: { gameSessionId, status: 'ACTIVE' },
+        where: { gameSessionId, status: EncounterStatus.ACTIVE },
       }),
       this.prisma.encounter.count({
         where: { gameSessionId },
       }),
       this.prisma.encounter.aggregate({
-        where: { gameSessionId, status: 'COMPLETED' },
+        where: { gameSessionId, status: EncounterStatus.COMPLETED },
         _avg: { roundNumber: true },
       }),
     ]);
@@ -303,7 +319,7 @@ export class EncounterService {
     return {
       active: activeCount,
       total: totalCount,
-      averageRounds: avgRounds._avg.roundNumber || 0,
+      averageRounds: avgRounds._avg.roundNumber ?? 0,
     };
   }
 }
