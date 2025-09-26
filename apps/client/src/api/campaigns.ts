@@ -3,6 +3,14 @@
  */
 import { ApiResponse, apiRequest } from "./base";
 
+export interface CampaignCharacter {
+  id: string;
+  name: string;
+  class: string;
+  level: number;
+  race?: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -10,7 +18,7 @@ export interface Campaign {
   gameSystem: string;
   gameMasterId: string;
   players: string[];
-  characters: any[];
+  characters: CampaignCharacter[];
   sessions: number;
   totalHours: number;
   isActive: boolean;

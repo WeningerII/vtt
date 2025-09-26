@@ -4,13 +4,19 @@
  * Optimized for mobile portrait, landscape, and tablet modes
  */
 
-import React, { memo, useEffect, useState, useCallback } from 'react';
-import { cn } from '../lib/utils';
+import React, { memo, useEffect, useState, useCallback } from "react";
+import { cn } from "../lib/utils";
+import "./AdaptiveLayout.css";
 
-export type LayoutMode = 'mobile-portrait' | 'mobile-landscape' | 'tablet-portrait' | 'tablet-landscape' | 'desktop';
-export type PanelPosition = 'left' | 'right' | 'bottom' | 'floating';
+export type LayoutMode =
+  | "mobile-portrait"
+  | "mobile-landscape"
+  | "tablet-portrait"
+  | "tablet-landscape"
+  | "desktop";
+export type PanelPosition = "left" | "right" | "bottom" | "floating";
 
-interface AdaptiveLayoutProps {
+export interface AdaptiveLayoutProps {
   children: React.ReactNode;
   className?: string;
   onLayoutChange?: (mode: LayoutMode) => void;
@@ -19,99 +25,88 @@ interface AdaptiveLayoutProps {
 interface LayoutConfig {
   mode: LayoutMode;
   breakpoint: { minWidth: number; maxWidth: number; orientation?: string };
-  panelConfig: {
-    navigation: PanelPosition;
-    sidebar: PanelPosition;
-    toolbar: PanelPosition;
-  };
+  panelConfig: Record<"navigation" | "sidebar" | "toolbar", PanelPosition>;
   gridAreas: string[];
   gridTemplate: string;
 }
 
 const layoutConfigs: LayoutConfig[] = [
-  // Mobile Portrait (< 768px, portrait)
   {
-    mode: 'mobile-portrait',
-    breakpoint: { minWidth: 0, maxWidth: 767, orientation: 'portrait' },
+    mode: "mobile-portrait",
+    breakpoint: { minWidth: 0, maxWidth: 767, orientation: "portrait" },
     panelConfig: {
-      navigation: 'bottom',
-      sidebar: 'floating',
-      toolbar: 'floating'
+      navigation: "bottom",
+      sidebar: "floating",
+      toolbar: "floating",
     },
     gridAreas: ['"main"', '"nav"'],
-    gridTemplate: '1fr auto / 1fr'
+    gridTemplate: "1fr auto / 1fr",
   },
-
-  // Mobile Landscape (< 768px, landscape)
   {
-    mode: 'mobile-landscape',
-    breakpoint: { minWidth: 0, maxWidth: 767, orientation: 'landscape' },
+    mode: "mobile-landscape",
+    breakpoint: { minWidth: 0, maxWidth: 767, orientation: "landscape" },
     panelConfig: {
-      navigation: 'left',
-      sidebar: 'right',
-      toolbar: 'bottom'
+      navigation: "left",
+      sidebar: "right",
+      toolbar: "bottom",
     },
     gridAreas: ['"nav main sidebar"', '"toolbar toolbar toolbar"'],
-    gridTemplate: '1fr auto / 60px 1fr 280px'
+    gridTemplate: "1fr auto / 60px 1fr 280px",
   },
-
-  // Tablet Portrait (768px - 1024px, portrait)
   {
-    mode: 'tablet-portrait',
-    breakpoint: { minWidth: 768, maxWidth: 1024, orientation: 'portrait' },
+    mode: "tablet-portrait",
+    breakpoint: { minWidth: 768, maxWidth: 1024, orientation: "portrait" },
     panelConfig: {
-      navigation: 'left',
-      sidebar: 'right',
-      toolbar: 'bottom'
+      navigation: "left",
+      sidebar: "right",
+      toolbar: "bottom",
     },
     gridAreas: ['"nav main sidebar"', '"toolbar toolbar toolbar"'],
-    gridTemplate: '1fr auto / 80px 1fr 320px'
+    gridTemplate: "1fr auto / 80px 1fr 320px",
   },
-
-  // Tablet Landscape (768px - 1200px, landscape)
   {
-    mode: 'tablet-landscape',
-    breakpoint: { minWidth: 768, maxWidth: 1200, orientation: 'landscape' },
+    mode: "tablet-landscape",
+    breakpoint: { minWidth: 768, maxWidth: 1200, orientation: "landscape" },
     panelConfig: {
-      navigation: 'left',
-      sidebar: 'right',
-      toolbar: 'bottom'
+      navigation: "left",
+      sidebar: "right",
+      toolbar: "bottom",
     },
     gridAreas: ['"nav main sidebar"'],
-    gridTemplate: '1fr / 70px 1fr 380px'
+    gridTemplate: "1fr / 70px 1fr 380px",
   },
-
-  // Desktop (> 1200px)
   {
-    mode: 'desktop',
+    mode: "desktop",
     breakpoint: { minWidth: 1201, maxWidth: Infinity },
     panelConfig: {
-      navigation: 'left',
-      sidebar: 'right',
-      toolbar: 'bottom'
+      navigation: "left",
+      sidebar: "right",
+      toolbar: "bottom",
     },
     gridAreas: ['"nav main sidebar"'],
-    gridTemplate: '1fr / 80px 1fr 400px'
-  }
+    gridTemplate: "1fr / 80px 1fr 400px",
+  },
 ];
 
 export const useAdaptiveLayout = () => {
   const [currentLayout, setCurrentLayout] = useState<LayoutConfig>(() => layoutConfigs[0]!);
-  const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+  const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
 
   const updateLayout = useCallback(() => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    const currentOrientation = width > height ? 'landscape' : 'portrait';
-    
+    const currentOrientation = width > height ? "landscape" : "portrait";
+
     setOrientation(currentOrientation);
 
-    const matchingLayout: LayoutConfig | undefined = layoutConfigs.find(config => {
-      const { minWidth, maxWidth, orientation: requiredOrientation } = config.breakpoint;
-      const widthMatches = width >= minWidth && width <= maxWidth;
-      const orientationMatches = !requiredOrientation || requiredOrientation === currentOrientation;
-      return widthMatches && orientationMatches;
-    }) ?? layoutConfigs[0]!; // Default fallback
+    const matchingLayout =
+      layoutConfigs.find((config) => {
+        const { minWidth, maxWidth, orientation: requiredOrientation } = config.breakpoint;
+        const widthMatches = width >= minWidth && width <= maxWidth;
+        const orientationMatches =
+          !requiredOrientation || requiredOrientation === currentOrientation;
+        return widthMatches && orientationMatches;
+      }) ?? layoutConfigs[0]!;
 
     if (matchingLayout.mode !== currentLayout.mode) {
       setCurrentLayout(matchingLayout);
@@ -120,37 +115,36 @@ export const useAdaptiveLayout = () => {
 
   useEffect(() => {
     updateLayout();
-    
+
     const handleResize = () => updateLayout();
     const handleOrientationChange = () => {
-      // Delay to ensure dimensions are updated after orientation change
       setTimeout(updateLayout, 150);
     };
 
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleOrientationChange);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleOrientationChange);
     };
   }, [updateLayout]);
 
   return {
     layout: currentLayout,
     orientation,
-    isMobile: currentLayout.mode.includes('mobile'),
-    isTablet: currentLayout.mode.includes('tablet'),
-    isDesktop: currentLayout.mode === 'desktop',
-    isLandscape: orientation === 'landscape',
-    isPortrait: orientation === 'portrait'
+    isMobile: currentLayout.mode.includes("mobile"),
+    isTablet: currentLayout.mode.includes("tablet"),
+    isDesktop: currentLayout.mode === "desktop",
+    isLandscape: orientation === "landscape",
+    isPortrait: orientation === "portrait",
   };
 };
 
-export const AdaptiveLayout = memo<AdaptiveLayoutProps>(({
+const AdaptiveLayoutBase: React.FC<AdaptiveLayoutProps> = ({
   children,
   className,
-  onLayoutChange
+  onLayoutChange,
 }) => {
   const { layout, orientation } = useAdaptiveLayout();
 
@@ -161,108 +155,115 @@ export const AdaptiveLayout = memo<AdaptiveLayoutProps>(({
   return (
     <div
       className={cn(
-        'adaptive-layout h-screen w-screen overflow-hidden',
+        "adaptive-layout h-screen w-screen overflow-hidden adaptive-layout-grid",
         `layout-${layout.mode}`,
         `orientation-${orientation}`,
-        className
+        className,
       )}
-      style={{
-        display: 'grid',
-        gridTemplate: layout.gridTemplate,
-        gridTemplateAreas: layout.gridAreas.map(area => `"${area}"`).join(' ')
-      }}
       data-layout={layout.mode}
       data-orientation={orientation}
     >
       {children}
     </div>
   );
-});
+};
 
-// Layout-aware panel wrapper
-interface AdaptivePanelProps {
+export interface AdaptivePanelProps {
   children: React.ReactNode;
-  panelType: 'navigation' | 'sidebar' | 'toolbar' | 'main';
+  panelType: "navigation" | "sidebar" | "toolbar" | "main";
   className?: string;
 }
 
-export const AdaptivePanel = memo<AdaptivePanelProps>(({
-  children,
-  panelType,
-  className
-}) => {
+const resolveGridArea = (panelType: AdaptivePanelProps["panelType"]) => {
+  switch (panelType) {
+    case "navigation":
+      return "nav";
+    case "sidebar":
+      return "sidebar";
+    case "toolbar":
+      return "toolbar";
+    case "main":
+    default:
+      return "main";
+  }
+};
+
+const AdaptivePanelBase: React.FC<AdaptivePanelProps> = ({ children, panelType, className }) => {
   const { layout, isMobile, isTablet } = useAdaptiveLayout();
-  const config = layout.panelConfig[panelType as keyof typeof layout.panelConfig];
+  const config = layout.panelConfig[panelType];
+  const gridAreaClass = `grid-area-${resolveGridArea(panelType)}`;
 
   return (
     <div
       className={cn(
         `adaptive-panel panel-${panelType}`,
-        `panel-position-${config || 'floating'}`,
+        `panel-position-${config || "floating"}`,
+        gridAreaClass,
         {
-          // Mobile-specific styles
-          'mobile-panel': isMobile,
-          'tablet-panel': isTablet,
-          
-          // Position-specific styles
-          'panel-floating': config === 'floating',
-          'panel-docked': config !== 'floating',
-          
-          // Panel type styles
-          'navigation-panel': panelType === 'navigation',
-          'sidebar-panel': panelType === 'sidebar',
-          'toolbar-panel': panelType === 'toolbar',
-          'main-panel': panelType === 'main'
+          "mobile-panel": isMobile,
+          "tablet-panel": isTablet,
+          "panel-floating": config === "floating",
+          "panel-docked": config !== "floating",
+          "navigation-panel": panelType === "navigation",
+          "sidebar-panel": panelType === "sidebar",
+          "toolbar-panel": panelType === "toolbar",
+          "main-panel": panelType === "main",
         },
-        className
+        className,
       )}
-      style={{
-        gridArea: panelType === 'main' ? 'main' : 
-                 panelType === 'navigation' ? 'nav' : 
-                 panelType === 'sidebar' ? 'sidebar' : 
-                 panelType === 'toolbar' ? 'toolbar' : 'auto'
-      }}
     >
       {children}
     </div>
   );
-});
+};
 
-// Enhanced responsive utilities
-export const ResponsiveContainer = memo<{
+type ResponsiveContainerProps = {
   children: React.ReactNode;
   className?: string;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
-}>(({
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+};
+
+const ResponsiveContainerBase: React.FC<ResponsiveContainerProps> = ({
   children,
   className,
-  maxWidth = 'full'
+  maxWidth = "full",
 }) => {
   const { isMobile, isTablet } = useAdaptiveLayout();
-  
-  const maxWidthClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md', 
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
-    full: 'max-w-full'
+
+  const maxWidthClasses: Record<NonNullable<ResponsiveContainerProps["maxWidth"]>, string> = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-lg",
+    xl: "max-w-xl",
+    "2xl": "max-w-2xl",
+    full: "max-w-full",
   };
 
   return (
-    <div className={cn(
-      'responsive-container mx-auto',
-      maxWidthClasses[maxWidth],
-      {
-        'px-4': isMobile,
-        'px-6': isTablet,
-        'px-8': !isMobile && !isTablet
-      },
-      className
-    )}>
+    <div
+      className={cn(
+        "responsive-container mx-auto",
+        maxWidthClasses[maxWidth],
+        {
+          "px-4": isMobile,
+          "px-6": isTablet,
+          "px-8": !isMobile && !isTablet,
+        },
+        className,
+      )}
+    >
       {children}
     </div>
   );
-});
+};
+
+export const AdaptiveLayout = memo(AdaptiveLayoutBase);
+AdaptiveLayout.displayName = "AdaptiveLayout";
+
+export const AdaptivePanel = memo(AdaptivePanelBase);
+AdaptivePanel.displayName = "AdaptivePanel";
+
+export const ResponsiveContainer = memo(ResponsiveContainerBase);
+ResponsiveContainer.displayName = "ResponsiveContainer";
 
 export default AdaptiveLayout;

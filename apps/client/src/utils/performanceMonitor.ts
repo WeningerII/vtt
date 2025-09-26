@@ -3,11 +3,26 @@
  * Tracks key gaming performance indicators without heavy overhead
  */
 
+interface PerformanceMemoryInfo {
+  jsHeapSizeLimit: number;
+  totalJSHeapSize: number;
+  usedJSHeapSize: number;
+}
+
+const getPerformanceMemory = (): PerformanceMemoryInfo | undefined => {
+  if (typeof performance === "undefined") {
+    return undefined;
+  }
+
+  const perfWithMemory = performance as Performance & { memory?: PerformanceMemoryInfo };
+  return perfWithMemory.memory;
+};
+
 interface PerformanceMetric {
   name: string;
   value: number;
   timestamp: number;
-  category: 'dice' | 'combat' | 'character' | 'map' | 'chat' | 'general';
+  category: "dice" | "combat" | "character" | "map" | "chat" | "general";
 }
 
 interface GamePerformanceData {
@@ -34,7 +49,9 @@ class PerformanceMonitor {
    */
   private initializeObservers() {
     // Only initialize if PerformanceObserver is supported
-    if (typeof PerformanceObserver === 'undefined') {return;}
+    if (typeof PerformanceObserver === "undefined") {
+      return;
+    }
 
     try {
       // Monitor paint and navigation timing
@@ -43,12 +60,12 @@ class PerformanceMonitor {
           this.recordMetric({
             name: entry.name,
             value: entry.startTime,
-            category: 'general'
+            category: "general",
           });
         }
       });
-      paintObserver.observe({ entryTypes: ['paint'] });
-      this.observers.set('paint', paintObserver);
+      paintObserver.observe({ entryTypes: ["paint"] });
+      this.observers.set("paint", paintObserver);
 
       // Monitor user interactions
       const measureObserver = new PerformanceObserver((list) => {
@@ -56,27 +73,28 @@ class PerformanceMonitor {
           this.recordMetric({
             name: entry.name,
             value: entry.duration,
-            category: 'general'
+            category: "general",
           });
         }
       });
-      measureObserver.observe({ entryTypes: ['measure'] });
-      this.observers.set('measure', measureObserver);
-
+      measureObserver.observe({ entryTypes: ["measure"] });
+      this.observers.set("measure", measureObserver);
     } catch (error) {
-      console.warn('Performance monitoring partially unavailable:', error);
+      console.warn("Performance monitoring partially unavailable:", error);
     }
   }
 
   /**
    * Record a performance metric
    */
-  recordMetric(metric: Omit<PerformanceMetric, 'timestamp'>) {
-    if (!this.isEnabled) {return;}
+  recordMetric(metric: Omit<PerformanceMetric, "timestamp">) {
+    if (!this.isEnabled) {
+      return;
+    }
 
     const fullMetric: PerformanceMetric = {
       ...metric,
-      timestamp: performance.now()
+      timestamp: performance.now(),
     };
 
     this.metrics.push(fullMetric);
@@ -90,16 +108,16 @@ class PerformanceMonitor {
   /**
    * Gaming-specific performance tracking
    */
-  
+
   // Track dice roll performance
   startDiceRoll(): () => void {
     const start = performance.now();
     return () => {
       const duration = performance.now() - start;
       this.recordMetric({
-        name: 'dice-roll-duration',
+        name: "dice-roll-duration",
         value: duration,
-        category: 'dice'
+        category: "dice",
       });
     };
   }
@@ -110,9 +128,9 @@ class PerformanceMonitor {
     return () => {
       const duration = performance.now() - start;
       this.recordMetric({
-        name: 'character-sheet-load',
+        name: "character-sheet-load",
         value: duration,
-        category: 'character'
+        category: "character",
       });
     };
   }
@@ -125,7 +143,7 @@ class PerformanceMonitor {
       this.recordMetric({
         name: `combat-${action}`,
         value: duration,
-        category: 'combat'
+        category: "combat",
       });
     };
   }
@@ -136,9 +154,9 @@ class PerformanceMonitor {
     return () => {
       const duration = performance.now() - start;
       this.recordMetric({
-        name: 'map-render-time',
+        name: "map-render-time",
         value: duration,
-        category: 'map'
+        category: "map",
       });
     };
   }
@@ -149,9 +167,9 @@ class PerformanceMonitor {
     return () => {
       const duration = performance.now() - start;
       this.recordMetric({
-        name: 'chat-message-latency',
+        name: "chat-message-latency",
         value: duration,
-        category: 'chat'
+        category: "chat",
       });
     };
   }
@@ -166,25 +184,25 @@ class PerformanceMonitor {
       characterSheetLoad: [],
       mapRenderTime: [],
       chatMessageLatency: [],
-      memoryUsage: []
+      memoryUsage: [],
     };
 
     // Group metrics by category
-    const diceMetrics = this.metrics.filter(m => m.category === 'dice');
-    const characterMetrics = this.metrics.filter(m => m.category === 'character');
-    const mapMetrics = this.metrics.filter(m => m.category === 'map');
-    const chatMetrics = this.metrics.filter(m => m.category === 'chat');
+    const diceMetrics = this.metrics.filter((m) => m.category === "dice");
+    const characterMetrics = this.metrics.filter((m) => m.category === "character");
+    const mapMetrics = this.metrics.filter((m) => m.category === "map");
+    const chatMetrics = this.metrics.filter((m) => m.category === "chat");
 
     // Extract values (keep only recent metrics to avoid computation overhead)
-    summary.diceRollLatency = diceMetrics.slice(-50).map(m => m.value);
-    summary.characterSheetLoad = characterMetrics.slice(-20).map(m => m.value);
-    summary.mapRenderTime = mapMetrics.slice(-30).map(m => m.value);
-    summary.chatMessageLatency = chatMetrics.slice(-100).map(m => m.value);
+    summary.diceRollLatency = diceMetrics.slice(-50).map((m) => m.value);
+    summary.characterSheetLoad = characterMetrics.slice(-20).map((m) => m.value);
+    summary.mapRenderTime = mapMetrics.slice(-30).map((m) => m.value);
+    summary.chatMessageLatency = chatMetrics.slice(-100).map((m) => m.value);
 
     // Add memory usage if available
-    if ('memory' in performance) {
-      const mem = (performance as any).memory;
-      summary.memoryUsage.push(mem.usedJSHeapSize / 1024 / 1024); // MB
+    const memoryInfo = getPerformanceMemory();
+    if (memoryInfo) {
+      summary.memoryUsage.push(memoryInfo.usedJSHeapSize / 1024 / 1024); // MB
     }
 
     return summary;
@@ -195,8 +213,8 @@ class PerformanceMonitor {
    */
   getStats() {
     const summary = this.getSummary();
-    
-    const average = (arr: number[]) => 
+
+    const average = (arr: number[]) =>
       arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
 
     return {
@@ -205,7 +223,7 @@ class PerformanceMonitor {
       avgMapRenderTime: Math.round(average(summary.mapRenderTime)),
       avgChatLatency: Math.round(average(summary.chatMessageLatency)),
       currentMemoryUsage: summary.memoryUsage[summary.memoryUsage.length - 1] || 0,
-      totalMetrics: this.metrics.length
+      totalMetrics: this.metrics.length,
     };
   }
 
@@ -217,22 +235,22 @@ class PerformanceMonitor {
     const issues: string[] = [];
 
     if (stats.avgDiceRollTime > 100) {
-      issues.push('Slow dice roll performance');
+      issues.push("Slow dice roll performance");
     }
     if (stats.avgCharacterLoadTime > 1000) {
-      issues.push('Slow character sheet loading');
+      issues.push("Slow character sheet loading");
     }
     if (stats.avgMapRenderTime > 500) {
-      issues.push('Slow map rendering');
+      issues.push("Slow map rendering");
     }
     if (stats.currentMemoryUsage > 100) {
-      issues.push('High memory usage');
+      issues.push("High memory usage");
     }
 
     return {
       isHealthy: issues.length === 0,
       issues,
-      stats
+      stats,
     };
   }
 
@@ -254,7 +272,7 @@ class PerformanceMonitor {
    * Cleanup observers
    */
   destroy() {
-    this.observers.forEach(observer => observer.disconnect());
+    this.observers.forEach((observer) => observer.disconnect());
     this.observers.clear();
     this.metrics = [];
   }
@@ -274,6 +292,6 @@ export function usePerformanceMonitor() {
     startMapRender: performanceMonitor.startMapRender.bind(performanceMonitor),
     startChatMessage: performanceMonitor.startChatMessage.bind(performanceMonitor),
     getStats: performanceMonitor.getStats.bind(performanceMonitor),
-    getHealthStatus: performanceMonitor.getHealthStatus.bind(performanceMonitor)
+    getHealthStatus: performanceMonitor.getHealthStatus.bind(performanceMonitor),
   };
 }

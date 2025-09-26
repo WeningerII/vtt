@@ -19,6 +19,12 @@ import "./styles/theme.css";
 import "./styles/utilities.css";
 import { I18nProvider } from "@vtt/i18n";
 
+declare global {
+  interface Window {
+    __VTT_DISABLE_LEGACY_WS?: boolean;
+  }
+}
+
 interface AppConfig {
   serverUrl: string;
   wsUrl: string;
@@ -35,32 +41,32 @@ export default function App() {
     const initializeApp = async () => {
       try {
         // Disable legacy, component-scoped WebSocket hook to prevent duplicate connections
-        try {
-          (window as any).__VTT_DISABLE_LEGACY_WS = true;
-        } catch {}
+        if (typeof window !== "undefined") {
+          window.__VTT_DISABLE_LEGACY_WS = true;
+        }
 
         // Load configuration from environment variables
         const appConfig: AppConfig = {
-          serverUrl: (import.meta as any).env?.VITE_SERVER_URL || "http://localhost:8080",
+          serverUrl: import.meta.env.VITE_SERVER_URL ?? "http://localhost:8080",
           wsUrl: (() => {
-            const configuredWsUrl = (import.meta as any).env?.VITE_WS_URL;
+            const configuredWsUrl = import.meta.env.VITE_WS_URL;
             if (configuredWsUrl) {
               logger.info("Using configured WebSocket URL:", configuredWsUrl);
               return configuredWsUrl;
             }
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             const host = window.location.host;
             const fallbackUrl = `${protocol}//${host}/ws`;
             logger.info("Using fallback WebSocket URL:", fallbackUrl);
             return fallbackUrl;
           })(),
-          version: (import.meta as any).env?.VITE_APP_VERSION || "1.0.0",
-          environment: (import.meta as any).env?.MODE === "production" ? "production" : "development",
+          version: import.meta.env.VITE_APP_VERSION ?? "1.0.0",
+          environment: import.meta.env.MODE === "production" ? "production" : "development",
         };
 
         setConfig(appConfig);
       } catch (error) {
-        logger.error("Failed to initialize application:", error as any);
+        logger.error("Failed to initialize application:", error);
       } finally {
         setIsLoading(false);
       }
@@ -72,10 +78,13 @@ export default function App() {
       const error = event.error;
       if (error instanceof Error) {
         logger.error("Global error:", error);
-      } else if (error && typeof error === 'object' && Object.keys(error).length > 0) {
-        logger.error("Global error:", { message: error.message || 'Unknown error', details: error });
+      } else if (error && typeof error === "object" && Object.keys(error).length > 0) {
+        logger.error("Global error:", {
+          message: error.message || "Unknown error",
+          details: error,
+        });
       } else {
-        logger.error("Global error:", { message: event.message || 'Unknown global error' });
+        logger.error("Global error:", { message: event.message || "Unknown global error" });
       }
     };
 
@@ -84,10 +93,15 @@ export default function App() {
       const reason = event.reason;
       if (reason instanceof Error) {
         logger.error("Unhandled promise rejection:", reason);
-      } else if (reason && typeof reason === 'object' && Object.keys(reason).length > 0) {
-        logger.error("Unhandled promise rejection:", { message: reason.message || 'Unknown rejection', details: reason });
+      } else if (reason && typeof reason === "object" && Object.keys(reason).length > 0) {
+        logger.error("Unhandled promise rejection:", {
+          message: reason.message || "Unknown rejection",
+          details: reason,
+        });
       } else {
-        logger.error("Unhandled promise rejection:", { message: String(reason) || 'Unknown promise rejection' });
+        logger.error("Unhandled promise rejection:", {
+          message: String(reason) || "Unknown promise rejection",
+        });
       }
     };
 
@@ -96,7 +110,7 @@ export default function App() {
 
     // Performance monitoring in development
     let observer: PerformanceObserver | null = null;
-    if ((import.meta as any).env?.MODE !== "production") {
+    if (import.meta.env.MODE !== "production") {
       observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           logger.info(`Performance: ${entry.name} ${entry.duration}ms`);
@@ -154,13 +168,13 @@ export default function App() {
               <div className="app">
                 <Router />
 
-              {/* Development info footer */}
-              {config.environment === "development" && (
-                <div className="dev-info">
-                  VTT v{config.version} | {config.environment} | Server: {config.serverUrl} |
-                  WebSocket: {config.wsUrl}
-                </div>
-              )}
+                {/* Development info footer */}
+                {config.environment === "development" && (
+                  <div className="dev-info">
+                    VTT v{config.version} | {config.environment} | Server: {config.serverUrl} |
+                    WebSocket: {config.wsUrl}
+                  </div>
+                )}
               </div>
 
               {/* Toast notifications - will be implemented later */}

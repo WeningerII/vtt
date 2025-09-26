@@ -3,23 +3,35 @@
  * Enhanced with comprehensive performance monitoring for the VTT application
  */
 
-import React, { useEffect, useRef, useState, type ComponentType } from "react";
+import { createElement, useEffect, useRef, useState, type ComponentType } from "react";
 import { logger } from "../lib/logger";
 
-// Core Web Vitals interfaces
-interface CoreWebVitals {
-  lcp: number | null; // Largest Contentful Paint
-  fid: number | null; // First Input Delay
-  cls: number | null; // Cumulative Layout Shift
-  fcp: number | null; // First Contentful Paint
-  ttfb: number | null; // Time to First Byte
+interface PerformanceMemory {
+  jsHeapSizeLimit: number;
+  totalJSHeapSize: number;
+  usedJSHeapSize: number;
 }
 
-interface VTTPerformanceMetrics extends PerformanceMetrics {
-  webVitals?: Partial<CoreWebVitals>;
-  frameRate?: number;
-  memoryPressure?: 'low' | 'medium' | 'high';
-}
+type PerformanceWithMemory = Performance & { memory?: PerformanceMemory };
+
+const getPerformanceMemory = (): PerformanceMemory | undefined => {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  return (window.performance as PerformanceWithMemory).memory;
+};
+
+const serializeProps = (value: unknown): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch (error) {
+    logger.warn("Failed to serialize component props for performance metric", error);
+    return undefined;
+  }
+};
 
 // Performance metrics interface
 interface PerformanceMetrics {
@@ -27,7 +39,7 @@ interface PerformanceMetrics {
   componentName: string;
   timestamp: number;
   memoryUsage?: number;
-  props?: any;
+  propsSnapshot?: string;
 }
 
 // Global performance store
@@ -59,7 +71,9 @@ class PerformanceMonitor {
 
   getAverageRenderTime(componentName: string): number {
     const componentMetrics = this.getMetrics(componentName);
-    if (componentMetrics.length === 0) {return 0;}
+    if (componentMetrics.length === 0) {
+      return 0;
+    }
 
     const totalTime = componentMetrics.reduce((sum, metric) => sum + metric.renderTime, 0);
     return totalTime / componentMetrics.length;
@@ -79,11 +93,11 @@ class PerformanceMonitor {
     if (
       typeof window !== "undefined" &&
       "performance" in window &&
-      "memory" in (window.performance as any)
+      Boolean(getPerformanceMemory())
     ) {
       this.memoryCheckInterval = setInterval(() => {
-        const memory = (window.performance as any).memory;
-        if (memory.usedJSHeapSize > memory.jsHeapSizeLimit * 0.9) {
+        const memory = getPerformanceMemory();
+        if (memory && memory.usedJSHeapSize > memory.jsHeapSizeLimit * 0.9) {
           console.warn("Memory usage is high:", {
             used: memory.usedJSHeapSize,
             total: memory.totalJSHeapSize,
@@ -106,7 +120,7 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // React hook for measuring component render performance
-export function useRenderPerformance(componentName: string, props?: any) {
+export function useRenderPerformance<P>(componentName: string, props?: P) {
   const renderStartTime = useRef<number>(0);
   const renderCount = useRef<number>(0);
 
@@ -118,17 +132,15 @@ export function useRenderPerformance(componentName: string, props?: any) {
   useEffect(() => {
     const renderTime = performance.now() - renderStartTime.current;
 
+    const propsSnapshot = serializeProps(props);
+    const memoryUsage = getPerformanceMemory()?.usedJSHeapSize;
+
     const metric: PerformanceMetrics = {
       renderTime,
       componentName,
       timestamp: Date.now(),
-      props: props ? JSON.stringify(props) : undefined,
-      memoryUsage:
-        typeof window !== "undefined" &&
-        "performance" in window &&
-        "memory" in (window.performance as any)
-          ? (window.performance as any).memory.usedJSHeapSize
-          : undefined,
+      ...(propsSnapshot !== undefined ? { propsSnapshot } : {}),
+      ...(memoryUsage !== undefined ? { memoryUsage } : {}),
     };
 
     performanceMonitor.addMetric(metric);
@@ -146,7 +158,7 @@ export function useRenderPerformance(componentName: string, props?: any) {
 }
 
 // Hook for detecting memory leaks
-export function useMemoryLeak(componentName: string) {
+export function useMemoryLeak(_componentName: string) {
   const [memoryUsage, setMemoryUsage] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -154,11 +166,13 @@ export function useMemoryLeak(componentName: string) {
     if (
       typeof window !== "undefined" &&
       "performance" in window &&
-      "memory" in (window.performance as any)
+      Boolean(getPerformanceMemory())
     ) {
       intervalRef.current = setInterval(() => {
-        const memory = (window.performance as any).memory;
-        setMemoryUsage(memory.usedJSHeapSize);
+        const memory = getPerformanceMemory();
+        if (memory) {
+          setMemoryUsage(memory.usedJSHeapSize);
+        }
       }, 1000);
 
       return () => {
@@ -182,7 +196,7 @@ export function withPerformanceMonitoring<P extends object>(
 
   const PerformanceWrappedComponent = (props: P) => {
     useRenderPerformance(displayName, props);
-    return React.createElement(WrappedComponent, props as any);
+    return createElement(WrappedComponent, props);
   };
 
   PerformanceWrappedComponent.displayName = `withPerformanceMonitoring(${displayName})`;
@@ -254,10 +268,18 @@ export function PerformanceDashboard() {
       }
 
       const stat = stats[metric.componentName];
-      if (stat) {stat.count++;}
-      if (stat) {stat.totalTime += metric.renderTime;}
-      if (stat) {stat.maxTime = Math.max(stat.maxTime, metric.renderTime);}
-      if (stat) {stat.minTime = Math.min(stat.minTime, metric.renderTime);}
+      if (stat) {
+        stat.count++;
+      }
+      if (stat) {
+        stat.totalTime += metric.renderTime;
+      }
+      if (stat) {
+        stat.maxTime = Math.max(stat.maxTime, metric.renderTime);
+      }
+      if (stat) {
+        stat.minTime = Math.min(stat.minTime, metric.renderTime);
+      }
 
       return stats;
     },
@@ -268,7 +290,7 @@ export function PerformanceDashboard() {
     return null;
   }
 
-  return React.createElement(
+  return createElement(
     "div",
     {
       style: {
@@ -285,15 +307,15 @@ export function PerformanceDashboard() {
         zIndex: 9999,
       },
     },
-    React.createElement("h3", null, "Performance Monitor"),
+    createElement("h3", null, "Performance Monitor"),
     ...Object.entries(componentStats).map(([name, stats]) =>
-      React.createElement(
+      createElement(
         "div",
         { key: name, style: { marginBottom: 8 } },
-        React.createElement("strong", null, name),
-        React.createElement("div", null, `Renders: ${stats.count}`),
-        React.createElement("div", null, `Avg: ${(stats.totalTime / stats.count).toFixed(2)}ms`),
-        React.createElement("div", null, `Max: ${stats.maxTime.toFixed(2)}ms`),
+        createElement("strong", null, name),
+        createElement("div", null, `Renders: ${stats.count}`),
+        createElement("div", null, `Avg: ${(stats.totalTime / stats.count).toFixed(2)}ms`),
+        createElement("div", null, `Max: ${stats.maxTime.toFixed(2)}ms`),
       ),
     ),
   );

@@ -1,0 +1,46 @@
+/* Grid layout utilities for AdaptiveLayout */
+
+.adaptive-layout-grid {
+  display: grid;
+}
+
+.layout-mobile-portrait.adaptive-layout-grid {
+  grid-template: 1fr auto / 1fr;
+  grid-template-areas: "main" "nav";
+}
+
+.layout-mobile-landscape.adaptive-layout-grid {
+  grid-template: 1fr auto / 60px 1fr 280px;
+  grid-template-areas: "nav main sidebar" "toolbar toolbar toolbar";
+}
+
+.layout-tablet-portrait.adaptive-layout-grid {
+  grid-template: 1fr auto / 80px 1fr 320px;
+  grid-template-areas: "nav main sidebar" "toolbar toolbar toolbar";
+}
+
+.layout-tablet-landscape.adaptive-layout-grid {
+  grid-template: 1fr / 70px 1fr 380px;
+  grid-template-areas: "nav main sidebar";
+}
+
+.layout-desktop.adaptive-layout-grid {
+  grid-template: 1fr / 80px 1fr 400px;
+  grid-template-areas: "nav main sidebar";
+}
+
+.grid-area-main {
+  grid-area: main;
+}
+
+.grid-area-nav {
+  grid-area: nav;
+}
+
+.grid-area-sidebar {
+  grid-area: sidebar;
+}
+
+.grid-area-toolbar {
+  grid-area: toolbar;
+}

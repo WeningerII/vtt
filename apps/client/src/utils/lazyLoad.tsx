@@ -1,22 +1,27 @@
-import { lazy, Suspense, ComponentType } from "react";
+import React, { lazy, Suspense, type ComponentType, type FC } from "react";
 import { LoadingSpinner } from "../components/ui/LoadingSpinner";
 
-/**
- * Wrapper for lazy loading components with a loading fallback
- */
-export function lazyLoad<T extends ComponentType<any>>(importFunc: () => Promise<{ default: T }>) {
+type LazyImport<Props extends Record<string, unknown>> = () => Promise<{
+  default: ComponentType<Props>;
+}>;
+
+export function lazyLoad<Props extends Record<string, unknown>>(
+  importFunc: LazyImport<Props>,
+): FC<Props> {
   const LazyComponent = lazy(importFunc);
 
-  return (props: any) => (
+  const LazyWrapper: FC<Props> = (props) => (
     <Suspense fallback={<LoadingSpinner showLabel label="Loading..." />}>
       <LazyComponent {...props} />
     </Suspense>
   );
+
+  LazyWrapper.displayName = "LazyLoadedComponent";
+  return LazyWrapper;
 }
 
-/**
- * Preload a lazy component
- */
-export function preloadComponent(importFunc: () => Promise<any>) {
-  importFunc();
+export function preloadComponent<Props extends Record<string, unknown>>(
+  importFunc: LazyImport<Props>,
+): void {
+  void importFunc();
 }
