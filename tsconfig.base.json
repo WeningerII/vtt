@@ -22,21 +22,23 @@
         "packages/*/dist/index.d.ts",
         "packages/*/dist/index.js",
         "packages/*/dist/index.mjs",
+        "packages/*/dist",
         "packages/*/src/index.ts",
         "packages/*/src/index.tsx",
         "packages/*/src/index.mts",
-        "packages/*/src/index.js"
+        "packages/*/src/index.js",
+        "packages/*/src"
       ],
-      "@vtt/*/*": ["packages/*/dist/*", "packages/*/src/*"],
       "@services/*": [
         "services/*/dist/index.d.ts",
         "services/*/dist/index.js",
+        "services/*/dist",
         "services/*/src/index.ts",
         "services/*/src/index.tsx",
         "services/*/src/index.mts",
-        "services/*/src/index.js"
+        "services/*/src/index.js",
+        "services/*/src"
       ],
-      "@services/*/*": ["services/*/dist/*", "services/*/src/*"],
       "@/client/*": ["apps/client/src/*"],
       "@/editor/*": ["apps/editor/src/*"],
       "@/server/*": ["apps/server/src/*"]
