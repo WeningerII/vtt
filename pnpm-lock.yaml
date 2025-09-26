@@ -6,7 +6,7 @@ settings:
 
 overrides:
   esbuild: ">=0.25.0"
-  got@<11.8.5: ">=11.8.5"
+  got: 11.8.6
   semver-regex@<3.1.3: ">=3.1.3"
   semver-regex@<3.1.4: ">=3.1.4"
   happy-dom@<15.10.2: ">=15.10.2"
@@ -5083,12 +5083,6 @@ packages:
         integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==,
       }
 
-  "@sec-ant/readable-stream@0.4.1":
-    resolution:
-      {
-        integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==,
-      }
-
   "@sideway/address@4.1.5":
     resolution:
       {
@@ -5119,12 +5113,12 @@ packages:
         integrity: sha512-6gS8pZzSXdyRHTIqoqSVknxolr1kzfy4/CeDnrzsVz8TTIWUbOBr6gnzOmTYJ3eXQNh4IYHIGi5aIL7sOZ2G/g==,
       }
 
-  "@sindresorhus/is@7.0.2":
+  "@sindresorhus/is@4.6.0":
     resolution:
       {
-        integrity: sha512-d9xRovfKNz1SKieM0qJdO+PQonjnnIfSNWfHYnBSJ9hkjm0ZPw6HlxscDXYstp3z+7V2GOFHc+J0CYrYTjqCJw==,
+        integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==,
       }
-    engines: { node: ">=18" }
+    engines: { node: ">=10" }
 
   "@sinonjs/commons@3.0.1":
     resolution:
@@ -5457,12 +5451,12 @@ packages:
         integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==,
       }
 
-  "@szmarczak/http-timer@5.0.1":
+  "@szmarczak/http-timer@4.0.6":
     resolution:
       {
-        integrity: sha512-+PmQX0PiAYPMeVYe237LJAYvOMYW1j2rH5YROyS3b4CTVJum34HfRvKvAzozHAQG0TnHNdUfY9nCeUyRAs//cw==,
+        integrity: sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w==,
       }
-    engines: { node: ">=14.16" }
+    engines: { node: ">=10" }
 
   "@tanstack/query-core@5.86.0":
     resolution:
@@ -5627,6 +5621,12 @@ packages:
     resolution:
       {
         integrity: sha512-ZqS9JGpBxVOvsawzmVt30sP++gSQMTejCkIAQ3VdadOcRE8izTyW66hufvwLeH+YEGP6Js2AW7Gz+RMyvrEbmw==,
+      }
+
+  "@types/cacheable-request@6.0.3":
+    resolution:
+      {
+        integrity: sha512-IQ3EbTzGxIigb1I3qPZc1rWJnH0BmSKv5QYTalEwweFvyBDLSAe24zP0le/hyi7ecGfZVlIVAg4BZqb8WBwKqw==,
       }
 
   "@types/chai@5.2.2":
@@ -5898,6 +5898,12 @@ packages:
         integrity: sha512-lZuNAY9xeJt7Bx4t4dx0rYCDqGPW8RXhQZK1td7d4H6E9zYbLoOtjBvfwdTKpsyxQI/2jv+armjX/RW+ZNpXOQ==,
       }
 
+  "@types/keyv@3.1.4":
+    resolution:
+      {
+        integrity: sha512-BQ5aZNSCpj7D6K2ksrRCTmKRLEpnPvWDiLPfoGyhZ++8YtiK9d/3DBKPJgry359X/P1PfruyYwvnvwFjuEiEIg==,
+      }
+
   "@types/koa-compose@3.2.8":
     resolution:
       {
@@ -6088,6 +6094,12 @@ packages:
         integrity: sha512-bI+gth8La8Wg/QCR1+V1fhrL9+LZUSWfcqpOj2Kc80ZQ4ffbdL173vQd5wovmoV9i071FU9oP2g6etLuEwb6Rg==,
       }
     deprecated: This is a stub types definition. redis provides its own type definitions, so you do not need this installed.
+
+  "@types/responselike@1.0.3":
+    resolution:
+      {
+        integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==,
+      }
 
   "@types/semver@7.7.1":
     resolution:
@@ -7405,19 +7417,19 @@ packages:
       }
     engines: { node: ">=8" }
 
-  cacheable-lookup@7.0.0:
+  cacheable-lookup@5.0.4:
     resolution:
       {
-        integrity: sha512-+qJyx4xiKra8mZrcwhjMRMUhD5NR1R8esPkzIYxX96JiecFoxAXFuz/GpR3+ev4PE1WamHip78wV0vcmPQtp8w==,
+        integrity: sha512-2/kNscPhpcxrOigMZzbiWF7dz8ilhb/nIHU3EyZiXWXpeq/au8qJ8VhdftMkty3n7Gj6HIGalQG8oiBNB3AJgA==,
       }
-    engines: { node: ">=14.16" }
+    engines: { node: ">=10.6.0" }
 
-  cacheable-request@12.0.1:
+  cacheable-request@7.0.4:
     resolution:
       {
-        integrity: sha512-Yo9wGIQUaAfIbk+qY0X4cDQgCosecfBe3V9NSyeY4qPC2SAkbCS4Xj79VP8WOzitpJUZKc/wsRCYF5ariDIwkg==,
+        integrity: sha512-v+p6ongsrp0yTGbJXjgxPow2+DL93DASP4kXCDKb8/bwRtt9OEF3whggkkDkGNzgcWy2XaF4a8nZglC7uElscg==,
       }
-    engines: { node: ">=18" }
+    engines: { node: ">=8" }
 
   caching-transform@4.0.0:
     resolution:
@@ -7648,6 +7660,12 @@ packages:
         integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==,
       }
     engines: { node: ">=12" }
+
+  clone-response@1.0.3:
+    resolution:
+      {
+        integrity: sha512-ROoL94jJH2dUVML2Y/5PEDNaSHgeOdSDicUyS7izcF63G6sTc/FTjLub4b8Il9S8S0beOfYt0TaA5qvFK+w0wA==,
+      }
 
   clsx@2.1.1:
     resolution:
@@ -9310,13 +9328,6 @@ packages:
       }
     engines: { node: ">=14" }
 
-  form-data-encoder@4.1.0:
-    resolution:
-      {
-        integrity: sha512-G6NsmEW15s0Uw9XnCg+33H3ViYRyiM0hMrMhhqQOR8NFc5GhYrI+6I3u7OTw7b91J2g8rtvMBZJDbcGb2YUniw==,
-      }
-    engines: { node: ">= 18" }
-
   form-data@4.0.4:
     resolution:
       {
@@ -9583,13 +9594,6 @@ packages:
       }
     engines: { node: ">=16" }
 
-  get-stream@9.0.1:
-    resolution:
-      {
-        integrity: sha512-kVCxPF3vQM/N0B1PmoqVUqgHP+EeVjmZSQn+1oCRPxd2P21P2F19lIgbR3HBosbB1PUhOAoctJnfEn2GbN2eZA==,
-      }
-    engines: { node: ">=18" }
-
   get-symbol-description@1.1.0:
     resolution:
       {
@@ -9734,12 +9738,12 @@ packages:
       }
     engines: { node: ">= 0.4" }
 
-  got@14.4.8:
+  got@11.8.6:
     resolution:
       {
-        integrity: sha512-vxwU4HuR0BIl+zcT1LYrgBjM+IJjNElOjCzs0aPgHorQyr/V6H6Y73Sn3r3FOlUffvWD+Q5jtRuGWaXkU8Jbhg==,
+        integrity: sha512-6tfZ91bOr7bOXnK7PRDCGBLa1H4U080YHNaAQ2KsMGlLEzRbk44nsZF2E1IeRc3vtJHPVbKCYgdFbaGO2ljd8g==,
       }
-    engines: { node: ">=20" }
+    engines: { node: ">=10.19.0" }
 
   graceful-fs@4.2.11:
     resolution:
@@ -9934,10 +9938,10 @@ packages:
         integrity: sha512-bqX0XTF6fnXSQcEJ2Iuyr75yVakyjIDCqroJQ/aHfSdlM743Cwqoi2nDYMzLGWUcuTWGWy8AAvOKXTfiv6q9RA==,
       }
 
-  http2-wrapper@2.2.1:
+  http2-wrapper@1.0.3:
     resolution:
       {
-        integrity: sha512-V5nVw1PAOgfI3Lmeaj2Exmeg7fenjhRUgz1lPSezy1CuhPYbgQtbQj4jZfEAEMlaL+vupsvhjqCyjzob0yxsmQ==,
+        integrity: sha512-V+23sDMr12Wnz7iTcDeJr3O6AIxlnvT/bmaAAAP/Xda35C90p9599p0F1eHR/N1KILWSoWVAiOMFjBBXaXSMxg==,
       }
     engines: { node: ">=10.19.0" }
 
@@ -10434,13 +10438,6 @@ packages:
         integrity: sha512-LnQR4bZ9IADDRSkvpqMGvt/tEJWclzklNgSw48V5EAaAeDd6qGvN8ei6k5p0tvxSR171VmGyHuTiAOfxAbr8kA==,
       }
     engines: { node: ^12.20.0 || ^14.13.1 || >=16.0.0 }
-
-  is-stream@4.0.1:
-    resolution:
-      {
-        integrity: sha512-Dnz92NInDqYckGEUJv689RbRiTSEHCQ7wOVeALbkOz999YpqT46yMRIGtSNl2iCL1waAZSx40+h59NV/EwzV/A==,
-      }
-    engines: { node: ">=18" }
 
   is-string@1.1.1:
     resolution:
@@ -11481,12 +11478,12 @@ packages:
         integrity: sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ==,
       }
 
-  lowercase-keys@3.0.0:
+  lowercase-keys@2.0.0:
     resolution:
       {
-        integrity: sha512-ozCC6gdQ+glXOQsveKD0YsDy8DSQFjDTz4zyzEHNV5+JP5D62LmfDZ6o1cycFx9ouG940M5dE8C8CTewdj2YWQ==,
+        integrity: sha512-tqNXrS78oMOE73NMxK4EMLQsQowWf8jKooH9g7xPavRT706R6bkQJ6DY2Te7QukaZsulxa30wQ7bk0pm4XiHmA==,
       }
-    engines: { node: ^12.20.0 || ^14.13.1 || >=16.0.0 }
+    engines: { node: ">=8" }
 
   lru-cache@10.4.3:
     resolution:
@@ -11706,19 +11703,19 @@ packages:
       }
     engines: { node: ">=18" }
 
+  mimic-response@1.0.1:
+    resolution:
+      {
+        integrity: sha512-j5EctnkH7amfV/q5Hgmoal1g2QHFJRraOtmx0JpIqkxhBhI/lJSl1nMpQ45hVarwNETOoWEimndZ4QK0RHxuxQ==,
+      }
+    engines: { node: ">=4" }
+
   mimic-response@3.1.0:
     resolution:
       {
         integrity: sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==,
       }
     engines: { node: ">=10" }
-
-  mimic-response@4.0.0:
-    resolution:
-      {
-        integrity: sha512-e5ISH9xMYU0DzrT+jl8q2ze9D6eWBto+I8CNpe+VI+K2J/F/k3PdkdTdz4wvGVH4NTpo+NRYTVIuMQEMMcsLqg==,
-      }
-    engines: { node: ^12.20.0 || ^14.13.1 || >=16.0.0 }
 
   min-indent@1.0.1:
     resolution:
@@ -12016,12 +12013,12 @@ packages:
       }
     engines: { node: ">=0.10.0" }
 
-  normalize-url@8.0.2:
+  normalize-url@6.1.0:
     resolution:
       {
-        integrity: sha512-Ee/R3SyN4BuynXcnTaekmaVdbDAEiNrHqjQIA37mHU8G9pf7aaAD4ZX3XjBLo6rsdcxA/gtkcNYZLt30ACgynw==,
+        integrity: sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==,
       }
-    engines: { node: ">=14.16" }
+    engines: { node: ">=10" }
 
   npm-conf@1.1.3:
     resolution:
@@ -12249,12 +12246,12 @@ packages:
       }
     engines: { node: ">= 0.4" }
 
-  p-cancelable@4.0.1:
+  p-cancelable@2.1.1:
     resolution:
       {
-        integrity: sha512-wBowNApzd45EIKdO1LaU+LrMBwAcjfPaYtVzV3lmfM3gf8Z4CHZsiIqlM8TZZ8okYvh5A1cP6gTfCRQtwUpaUg==,
+        integrity: sha512-BZOr3nRQHOntUjTrH8+Lh54smKHoHyur8We1V8DSMVrl5A2malOOwuJRnKRDjSnkoeBh4at6BwEnb5I7Jl31wg==,
       }
-    engines: { node: ">=14.16" }
+    engines: { node: ">=8" }
 
   p-event@1.3.0:
     resolution:
@@ -13497,12 +13494,11 @@ packages:
       }
     hasBin: true
 
-  responselike@3.0.0:
+  responselike@2.0.1:
     resolution:
       {
-        integrity: sha512-40yHxbNcl2+rzXvZuVkrYohathsSJlMTXKryG5y8uciHv1+xDLHQpgjG64JUO9nrEq2jGLH6IZ8BcZyw3wrweg==,
+        integrity: sha512-4gl03wn3hj1HP3yzgdI7d3lCkF95F21Pz4BPGvKHinyQzALR5CapwC8yIi0Rh58DEMQ/SguC03wFj2k0M/mHhw==,
       }
-    engines: { node: ">=14.16" }
 
   restore-cursor@5.1.0:
     resolution:
@@ -18504,8 +18500,6 @@ snapshots:
 
   "@scarf/scarf@1.4.0": {}
 
-  "@sec-ant/readable-stream@0.4.1": {}
-
   "@sideway/address@4.1.5":
     dependencies:
       "@hapi/hoek": 9.3.0
@@ -18518,7 +18512,7 @@ snapshots:
 
   "@sinclair/typebox@0.34.41": {}
 
-  "@sindresorhus/is@7.0.2": {}
+  "@sindresorhus/is@4.6.0": {}
 
   "@sinonjs/commons@3.0.1":
     dependencies:
@@ -18814,7 +18808,7 @@ snapshots:
 
   "@standard-schema/spec@1.0.0": {}
 
-  "@szmarczak/http-timer@5.0.1":
+  "@szmarczak/http-timer@4.0.6":
     dependencies:
       defer-to-connect: 2.0.1
 
@@ -18934,6 +18928,13 @@ snapshots:
   "@types/bunyan@1.8.9":
     dependencies:
       "@types/node": 24.3.1
+
+  "@types/cacheable-request@6.0.3":
+    dependencies:
+      "@types/http-cache-semantics": 4.0.4
+      "@types/keyv": 3.1.4
+      "@types/node": 24.3.1
+      "@types/responselike": 1.0.3
 
   "@types/chai@5.2.2":
     dependencies:
@@ -19112,6 +19113,10 @@ snapshots:
 
   "@types/keygrip@1.0.6": {}
 
+  "@types/keyv@3.1.4":
+    dependencies:
+      "@types/node": 24.3.1
+
   "@types/koa-compose@3.2.8":
     dependencies:
       "@types/koa": 2.13.9
@@ -19238,6 +19243,10 @@ snapshots:
   "@types/redis@4.0.11":
     dependencies:
       redis: 5.8.2
+
+  "@types/responselike@1.0.3":
+    dependencies:
+      "@types/node": 24.3.1
 
   "@types/semver@7.7.1": {}
 
@@ -20164,17 +20173,17 @@ snapshots:
 
   cac@6.7.14: {}
 
-  cacheable-lookup@7.0.0: {}
+  cacheable-lookup@5.0.4: {}
 
-  cacheable-request@12.0.1:
+  cacheable-request@7.0.4:
     dependencies:
-      "@types/http-cache-semantics": 4.0.4
-      get-stream: 9.0.1
+      clone-response: 1.0.3
+      get-stream: 5.2.0
       http-cache-semantics: 4.2.0
       keyv: 4.5.4
-      mimic-response: 4.0.0
-      normalize-url: 8.0.2
-      responselike: 3.0.0
+      lowercase-keys: 2.0.0
+      normalize-url: 6.1.0
+      responselike: 2.0.1
 
   caching-transform@4.0.0:
     dependencies:
@@ -20316,6 +20325,10 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
+
+  clone-response@1.0.3:
+    dependencies:
+      mimic-response: 1.0.1
 
   clsx@2.1.1: {}
 
@@ -20695,7 +20708,7 @@ snapshots:
       file-type: 5.2.0
       filenamify: 2.1.0
       get-stream: 3.0.0
-      got: 14.4.8
+      got: 11.8.6
       make-dir: 1.3.0
       p-event: 1.3.0
       pify: 3.0.0
@@ -20710,7 +20723,7 @@ snapshots:
       file-type: 8.1.0
       filenamify: 2.1.0
       get-stream: 3.0.0
-      got: 14.4.8
+      got: 11.8.6
       make-dir: 1.3.0
       p-event: 2.3.1
       pify: 3.0.0
@@ -21537,8 +21550,6 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
-  form-data-encoder@4.1.0: {}
-
   form-data@4.0.4:
     dependencies:
       asynckit: 0.4.0
@@ -21704,11 +21715,6 @@ snapshots:
 
   get-stream@8.0.1: {}
 
-  get-stream@9.0.1:
-    dependencies:
-      "@sec-ant/readable-stream": 0.4.1
-      is-stream: 4.0.1
-
   get-symbol-description@1.1.0:
     dependencies:
       call-bound: 1.0.4
@@ -21836,19 +21842,19 @@ snapshots:
 
   gopd@1.2.0: {}
 
-  got@14.4.8:
+  got@11.8.6:
     dependencies:
-      "@sindresorhus/is": 7.0.2
-      "@szmarczak/http-timer": 5.0.1
-      cacheable-lookup: 7.0.0
-      cacheable-request: 12.0.1
+      "@sindresorhus/is": 4.6.0
+      "@szmarczak/http-timer": 4.0.6
+      "@types/cacheable-request": 6.0.3
+      "@types/responselike": 1.0.3
+      cacheable-lookup: 5.0.4
+      cacheable-request: 7.0.4
       decompress-response: 6.0.0
-      form-data-encoder: 4.1.0
-      http2-wrapper: 2.2.1
-      lowercase-keys: 3.0.0
-      p-cancelable: 4.0.1
-      responselike: 3.0.0
-      type-fest: 4.41.0
+      http2-wrapper: 1.0.3
+      lowercase-keys: 2.0.0
+      p-cancelable: 2.1.1
+      responselike: 2.0.1
 
   graceful-fs@4.2.11: {}
 
@@ -21965,7 +21971,7 @@ snapshots:
     dependencies:
       "@types/node": 10.17.60
 
-  http2-wrapper@2.2.1:
+  http2-wrapper@1.0.3:
     dependencies:
       quick-lru: 5.1.1
       resolve-alpn: 1.2.1
@@ -22230,8 +22236,6 @@ snapshots:
   is-stream@2.0.1: {}
 
   is-stream@3.0.0: {}
-
-  is-stream@4.0.1: {}
 
   is-string@1.1.1:
     dependencies:
@@ -23337,7 +23341,7 @@ snapshots:
 
   loupe@3.2.1: {}
 
-  lowercase-keys@3.0.0: {}
+  lowercase-keys@2.0.0: {}
 
   lru-cache@10.4.3: {}
 
@@ -23430,9 +23434,9 @@ snapshots:
 
   mimic-function@5.0.1: {}
 
-  mimic-response@3.1.0: {}
+  mimic-response@1.0.1: {}
 
-  mimic-response@4.0.0: {}
+  mimic-response@3.1.0: {}
 
   min-indent@1.0.1: {}
 
@@ -23598,7 +23602,7 @@ snapshots:
 
   normalize-path@3.0.0: {}
 
-  normalize-url@8.0.2: {}
+  normalize-url@6.1.0: {}
 
   npm-conf@1.1.3:
     dependencies:
@@ -23769,7 +23773,7 @@ snapshots:
       object-keys: 1.1.1
       safe-push-apply: 1.0.0
 
-  p-cancelable@4.0.1: {}
+  p-cancelable@2.1.1: {}
 
   p-event@1.3.0:
     dependencies:
@@ -24531,9 +24535,9 @@ snapshots:
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
-  responselike@3.0.0:
+  responselike@2.0.1:
     dependencies:
-      lowercase-keys: 3.0.0
+      lowercase-keys: 2.0.0
 
   restore-cursor@5.1.0:
     dependencies:
