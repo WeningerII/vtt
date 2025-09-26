@@ -89,8 +89,8 @@
       "@services/auth/*": ["services/auth/src/*"],
       "@services/files": ["services/files/src/index.ts"],
       "@services/files/*": ["services/files/src/*"],
-      "@vtt/logging": ["packages/logging/dist/index.d.ts"],
-      "@vtt/logging/*": ["packages/logging/dist/*"]
+      "@vtt/logging": ["packages/logging/src/index.ts"],
+      "@vtt/logging/*": ["packages/logging/src/*"]
     },
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
