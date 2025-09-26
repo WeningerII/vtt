@@ -292,7 +292,7 @@ importers:
         specifier: ^3.6.2
         version: 3.6.2
       prisma:
-        specifier: ^6.14.0
+        specifier: ^6.15.0
         version: 6.15.0(magicast@0.3.5)(typescript@5.9.2)
       puppeteer:
         specifier: ^24.18.0
@@ -315,6 +315,9 @@ importers:
 
   apps/bots:
     dependencies:
+      "@vtt/logging":
+        specifier: workspace:*
+        version: link:../../packages/logging
       "@vtt/net":
         specifier: workspace:*
         version: link:../../packages/net
@@ -466,7 +469,7 @@ importers:
   apps/server:
     dependencies:
       "@prisma/client":
-        specifier: ^6.14.0
+        specifier: ^6.15.0
         version: 6.15.0(prisma@6.15.0(magicast@0.3.5)(typescript@5.9.2))(typescript@5.9.2)
       "@types/socket.io":
         specifier: ^3.0.2
@@ -590,7 +593,7 @@ importers:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@24.3.1)
       prisma:
-        specifier: ^6.14.0
+        specifier: ^6.15.0
         version: 6.15.0(magicast@0.3.5)(typescript@5.9.2)
       ts-jest:
         specifier: ^29.4.1
