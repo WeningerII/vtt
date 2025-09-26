@@ -78,8 +78,8 @@ RUN pnpm --filter @vtt/logging run build \
  && pnpm --filter @vtt/core run build \
  && pnpm --filter @vtt/core-ecs run build \
  && pnpm --filter @vtt/core-schemas run build \
- && pnpm --filter @vtt/auth run build \
  && pnpm --filter @vtt/user-management run build \
+ && pnpm --filter @vtt/auth run build \
  && pnpm --filter @vtt/combat run build \
  && pnpm --filter @vtt/conditions-engine run build \
  && pnpm --filter @vtt/dice-engine run build \
