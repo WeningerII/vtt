@@ -9,6 +9,7 @@ runs:
   using: "composite"
   steps:
     - name: Cache apt packages
+      if: runner.os == 'Linux'
       uses: actions/cache@v4
       with:
         path: /var/cache/apt
@@ -17,6 +18,7 @@ runs:
           apt-cache-${{ runner.os }}-
 
     - name: Install native build dependencies
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         set -euo pipefail
@@ -35,3 +37,9 @@ runs:
         sudo apt-get install -y $PACKAGES
 
         echo "✅ Native dependencies installed successfully"
+
+    - name: Skip native dependency setup on non-Linux runners
+      if: runner.os != 'Linux'
+      shell: bash
+      run: |
+        echo "Native dependency setup is only required on Linux runners. Skipping."
