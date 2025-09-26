@@ -126,7 +126,7 @@
     "@types/webxr": "0.5.23",
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.40.0",
-    "@typescript-eslint/parser": "^8.40.0",
+    "@typescript-eslint/parser": "^8.44.1",
     "@webgpu/types": "^0.1.64",
     "eslint": "^8.0.0",
     "eslint-plugin-import": "^2.32.0",
