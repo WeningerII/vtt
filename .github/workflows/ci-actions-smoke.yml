@@ -25,6 +25,7 @@ jobs:
         with:
           frozen-lockfile: "true"
           prefer-offline: "false"
+          ensure-native-deps: "true"
 
       - name: Print pnpm store path
         run: pnpm store path

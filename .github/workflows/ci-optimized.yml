@@ -55,6 +55,7 @@ jobs:
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - uses: ./.github/actions/install-deps
         with:
+          ensure-native-deps: "true"
           prefer-offline: "true"
       - name: Lint (parallel with typecheck dependencies)
         env:
@@ -90,6 +91,7 @@ jobs:
             turbo-${{ runner.os }}-
       - uses: ./.github/actions/install-deps
         with:
+          ensure-native-deps: "true"
           prefer-offline: "true"
       - name: Generate Prisma client
         run: pnpm db:gen
@@ -115,6 +117,7 @@ jobs:
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - uses: ./.github/actions/install-deps
         with:
+          ensure-native-deps: "true"
           prefer-offline: "true"
       - name: Run tests with coverage (shard ${{ matrix.shard }}/4)
         env:
@@ -156,6 +159,7 @@ jobs:
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - uses: ./.github/actions/install-deps
         with:
+          ensure-native-deps: "true"
           prefer-offline: "true"
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium --with-deps

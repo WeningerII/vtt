@@ -74,6 +74,7 @@ jobs:
         with:
           frozen-lockfile: "true"
           prefer-offline: "false"
+          ensure-native-deps: "true"
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps ${{ matrix.browser }}

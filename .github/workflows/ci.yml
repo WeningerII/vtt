@@ -25,6 +25,8 @@ jobs:
       - name: Setup native dependencies
         uses: ./.github/actions/setup-native-deps
       - uses: ./.github/actions/install-deps
+        with:
+          ensure-native-deps: "true"
 
       - name: Debug workspace for Trivy
         run: |
@@ -92,6 +94,8 @@ jobs:
       - name: Setup native dependencies
         uses: ./.github/actions/setup-native-deps
       - uses: ./.github/actions/install-deps
+        with:
+          ensure-native-deps: "true"
       - name: Check license compliance
         run: node scripts/license-check.js
 
@@ -107,6 +111,8 @@ jobs:
       - name: Setup native dependencies
         uses: ./.github/actions/setup-native-deps
       - uses: ./.github/actions/install-deps
+        with:
+          ensure-native-deps: "true"
       - name: Build
         run: pnpm run build
       - name: Lint (continue on error)

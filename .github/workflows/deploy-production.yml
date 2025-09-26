@@ -72,6 +72,8 @@ jobs:
         with:
           frozen-lockfile: "true"
           prefer-offline: "false"
+          ensure-native-deps: "true"
+          ensure-native-deps: "true"
 
       - name: Generate Prisma client
         run: pnpm db:gen
