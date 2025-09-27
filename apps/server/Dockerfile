@@ -63,7 +63,7 @@ RUN set -e; \
             echo "Creating tsconfig for $pkg"; \
             case "$pkg" in \
                 monitoring) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }]' > "./packages/$pkg/tsconfig.json" ;; \
-                ai) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }, { "path": "../core-ecs" }]' > "./packages/$pkg/tsconfig.json" ;; \
+                ai) create_tsconfig "$pkg" ',\n  "references": [{ "path": "../logging" }, { "path": "../core-ecs" }, { "path": "../performance" }]' > "./packages/$pkg/tsconfig.json" ;; \
                 ui) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./ui.tsbuildinfo",\n    "types": []\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**", "**/__mocks__/**"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
                 i18n) printf '{\n  "extends": "../../tsconfig.base.json",\n  "compilerOptions": {\n    "outDir": "dist",\n    "rootDir": "src",\n    "jsx": "react-jsx",\n    "composite": true,\n    "incremental": true,\n    "tsBuildInfoFile": "./i18n.tsbuildinfo"\n  },\n  "include": ["src/**/*"],\n  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**", "**/__mocks__/**"]\n}' > "./packages/$pkg/tsconfig.json" ;; \
                 *) create_tsconfig "$pkg" "" > "./packages/$pkg/tsconfig.json" ;; \
@@ -78,6 +78,7 @@ RUN pnpm --filter @vtt/logging run build \
  && pnpm --filter @vtt/core run build \
  && pnpm --filter @vtt/core-ecs run build \
  && pnpm --filter @vtt/core-schemas run build \
+ && pnpm --filter @vtt/performance run build \
  && pnpm --filter @vtt/user-management run build \
  && pnpm --filter @vtt/auth run build \
  && pnpm --filter @vtt/combat run build \
