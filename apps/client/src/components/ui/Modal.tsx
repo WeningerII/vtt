@@ -153,7 +153,7 @@ const Modal = memo<ModalProps>((props) => {
             const audio = new Audio(soundFile);
             audio.volume = 0.3;
             await audio.play();
-          } catch (_error) {
+          } catch {
             // Silent fail
           }
         }
