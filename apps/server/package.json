@@ -54,7 +54,7 @@
     "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1",
     "ws": "^8.18.3",
-    "zod": "^3.0.0"
+    "zod": "^4.1.11"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
