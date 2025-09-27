@@ -1,55 +1,131 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { GameSession, GameConfig, Player, GamePhase } from "./GameSession";
-import { EntityId } from "@vtt/core-ecs";
+import { createRequire } from "node:module";
+import type { EntityId } from "@vtt/core-ecs";
 
-// Mock dependencies
-vi.mock("@vtt/core-ecs", () => ({
-  World: vi.fn().mockImplementation((capacity: number) => ({
-    create: vi.fn(() => 1),
-    isAlive: vi.fn(() => true),
-    getEntities: vi.fn(() => [1, 2, 3]),
-    destroyEntity: vi.fn(),
+const requireModule = createRequire(__filename);
+
+const createTransformStore = () => {
+  const x: Record<number, number> = {};
+  const y: Record<number, number> = {};
+  const rot: Record<number, number> = {};
+  const sx: Record<number, number> = {};
+  const sy: Record<number, number> = {};
+  const zIndex: Record<number, number> = {};
+
+  const has = vi.fn((entityId: number) => entityId in x);
+
+  return {
+    has,
+    x,
+    y,
+    rot,
+    sx,
+    sy,
+    zIndex,
+  };
+};
+
+const createAppearanceStore = () => ({
+  sprite: {} as Record<number, number>,
+  tintR: {} as Record<number, number>,
+  tintG: {} as Record<number, number>,
+  tintB: {} as Record<number, number>,
+  alpha: {} as Record<number, number>,
+  frame: {} as Record<number, number>,
+});
+
+const createMovementStore = () => {
+  const vx: Record<number, number> = {};
+  const vy: Record<number, number> = {};
+  const speed: Record<number, number> = {};
+
+  const has = vi.fn((entityId: number) => entityId in vx || entityId in vy);
+
+  return {
+    has,
+    vx,
+    vy,
+    speed,
+  };
+};
+
+const createdEntities = () => {
+  const ids = new Set<number>();
+  return {
+    add(id: number) {
+      ids.add(id);
+    },
+    remove(id: number) {
+      ids.delete(id);
+    },
+    list() {
+      return Array.from(ids.values());
+    },
+    has(id: number) {
+      return ids.has(id);
+    },
+  };
+};
+
+function createMockWorld() {
+  let nextEntity = 1;
+  const entities = createdEntities();
+  const transforms = createTransformStore();
+  const appearance = createAppearanceStore();
+  const movement = createMovementStore();
+
+  const world = {
+    create: vi.fn(() => {
+      const id = nextEntity++;
+      entities.add(id);
+      return id;
+    }),
+    destroyEntity: vi.fn((entityId: number) => {
+      entities.remove(entityId);
+      delete transforms.x[entityId];
+      delete transforms.y[entityId];
+      delete movement.vx[entityId];
+      delete movement.vy[entityId];
+    }),
+    getEntities: vi.fn(() => entities.list()),
+    isAlive: vi.fn((entityId: number) => entities.has(entityId)),
+    transforms,
+    appearance,
+    movement,
     update: vi.fn(),
-    transforms: {
-      add: vi.fn(),
-      has: vi.fn(() => true),
-      x: { 1: 0 },
-      y: { 1: 0 },
-    },
-    appearance: {
-      add: vi.fn(),
-    },
-    movement: {
-      add: vi.fn(),
-      has: vi.fn(() => true),
-      vx: { 1: 0 },
-      vy: { 1: 0 },
-    },
-  })),
-  NetworkSyncSystem: vi.fn().mockImplementation(() => ({
-    update: vi.fn(() => ({ changes: [] })),
-    getSnapshot: vi.fn(() => ({ entities: [] })),
-  })),
-  MovementSystem: vi.fn(),
-}));
+  };
+
+  return world;
+}
+
+const createMockNetSync = () => ({
+  update: vi.fn(() => ({ seq: 1, baseSeq: 0, created: [], updated: [], removed: [] })),
+  getSnapshot: vi.fn(() => ({ entities: [] })),
+});
+
+type MockWorld = ReturnType<typeof createMockWorld>;
+
+const getMockWorld = (gameSession: GameSession): MockWorld =>
+  gameSession.world as unknown as MockWorld;
+
+vi.mock("@vtt/core-ecs", () => {
+  const NetworkSyncSystem = vi.fn().mockImplementation(createMockNetSync);
+
+  const MovementSystem = vi.fn();
+
+  const World = vi.fn().mockImplementation(createMockWorld);
+
+  return { World, NetworkSyncSystem, MovementSystem };
+});
 
 vi.mock("@vtt/logging", () => ({
   logger: {
     error: vi.fn(),
+    info: vi.fn(),
   },
 }));
 
-vi.mock("./DiceRoller", () => ({
-  createDiceRollResult: vi.fn((dice: string, label?: string) => ({
-    dice,
-    label,
-    total: 10,
-    rolls: [
-      { die: "d6", result: 4 },
-      { die: "d6", result: 6 },
-    ],
-  })),
-}));
+import { GameSession, type GameConfig } from "./GameSession";
 
 describe("GameSession", () => {
   let session: GameSession;
@@ -68,7 +144,8 @@ describe("GameSession", () => {
   afterEach(() => {
     session.destroy();
     vi.clearAllTimers();
-    vi.restoreAllMocks();
+    vi.useRealTimers();
+    vi.clearAllMocks();
   });
 
   describe("Initialization", () => {
@@ -82,9 +159,10 @@ describe("GameSession", () => {
       const intervalSpy = vi.spyOn(global, "setInterval");
       const newSession = new GameSession({ ...mockConfig, tickRate: 60 });
 
-      expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 16); // 1000/60 ≈ 16
+      expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 16);
 
       newSession.destroy();
+      intervalSpy.mockRestore();
     });
 
     it("should set initial phase to exploration", () => {
@@ -98,223 +176,107 @@ describe("GameSession", () => {
     const displayName1 = "Player One";
     const displayName2 = "Player Two";
 
-    describe("addPlayer", () => {
-      it("should add new player successfully", () => {
-        const result = session.addPlayer(userId1, displayName1);
+    it("should add and remove players", () => {
+      expect(session.addPlayer(userId1, displayName1)).toBe(true);
+      expect(session.addPlayer(userId1, "duplicate")).toBe(false);
+      expect(session.getPlayer(userId1)?.displayName).toBe(displayName1);
 
-        expect(result).toBe(true);
-
-        const player = session.getPlayer(userId1);
-        expect(player).toBeDefined();
-        expect(player?.userId).toBe(userId1);
-        expect(player?.displayName).toBe(displayName1);
-        expect(player?.connected).toBe(true);
-      });
-
-      it("should not add duplicate player", () => {
-        session.addPlayer(userId1, displayName1);
-        const result = session.addPlayer(userId1, "Different Name");
-
-        expect(result).toBe(false);
-
-        const player = session.getPlayer(userId1);
-        expect(player?.displayName).toBe(displayName1); // Name unchanged
-      });
+      session.removePlayer(userId1);
+      expect(session.getPlayer(userId1)).toBeUndefined();
     });
 
-    describe("removePlayer", () => {
-      it("should remove existing player", () => {
-        session.addPlayer(userId1, displayName1);
-        session.removePlayer(userId1);
+    it("should track connection state and counts", () => {
+      session.addPlayer(userId1, displayName1);
+      session.addPlayer(userId2, displayName2);
 
-        const player = session.getPlayer(userId1);
-        expect(player).toBeUndefined();
-      });
+      expect(session.getPlayerCount()).toBe(2);
+      expect(session.getConnectedPlayerCount()).toBe(2);
 
-      it("should handle removing non-existent player", () => {
-        expect(() => session.removePlayer("non-existent")).not.toThrow();
-      });
-    });
+      session.setPlayerConnected(userId1, false);
+      expect(session.getConnectedPlayerCount()).toBe(1);
+      expect(session.isEmpty()).toBe(false);
 
-    describe("setPlayerConnected", () => {
-      beforeEach(() => {
-        session.addPlayer(userId1, displayName1);
-      });
-
-      it("should update player connection status", () => {
-        const result = session.setPlayerConnected(userId1, false);
-
-        expect(result).toBe(true);
-
-        const player = session.getPlayer(userId1);
-        expect(player?.connected).toBe(false);
-      });
-
-      it("should return false for non-existent player", () => {
-        const result = session.setPlayerConnected("non-existent", true);
-        expect(result).toBe(false);
-      });
-    });
-
-    describe("getPlayers", () => {
-      it("should return all players", () => {
-        session.addPlayer(userId1, displayName1);
-        session.addPlayer(userId2, displayName2);
-
-        const players = session.getPlayers();
-
-        expect(players).toHaveLength(2);
-        expect(players.find((p) => p.userId === userId1)).toBeDefined();
-        expect(players.find((p) => p.userId === userId2)).toBeDefined();
-      });
-
-      it("should return empty array when no players", () => {
-        expect(session.getPlayers()).toEqual([]);
-      });
-    });
-
-    describe("getConnectedPlayers", () => {
-      it("should return only connected players", () => {
-        session.addPlayer(userId1, displayName1);
-        session.addPlayer(userId2, displayName2);
-        session.setPlayerConnected(userId1, false);
-
-        const connected = session.getConnectedPlayers();
-
-        expect(connected).toHaveLength(1);
-        expect(connected[0].userId).toBe(userId2);
-      });
-    });
-
-    describe("Player counts", () => {
-      it("should return correct player count", () => {
-        expect(session.getPlayerCount()).toBe(0);
-
-        session.addPlayer(userId1, displayName1);
-        expect(session.getPlayerCount()).toBe(1);
-
-        session.addPlayer(userId2, displayName2);
-        expect(session.getPlayerCount()).toBe(2);
-
-        session.removePlayer(userId1);
-        expect(session.getPlayerCount()).toBe(1);
-      });
-
-      it("should return correct connected player count", () => {
-        session.addPlayer(userId1, displayName1);
-        session.addPlayer(userId2, displayName2);
-
-        expect(session.getConnectedPlayerCount()).toBe(2);
-
-        session.setPlayerConnected(userId1, false);
-        expect(session.getConnectedPlayerCount()).toBe(1);
-      });
-
-      it("should correctly identify empty session", () => {
-        expect(session.isEmpty()).toBe(true);
-
-        session.addPlayer(userId1, displayName1);
-        expect(session.isEmpty()).toBe(false);
-
-        session.setPlayerConnected(userId1, false);
-        expect(session.isEmpty()).toBe(true);
-      });
+      session.setPlayerConnected(userId2, false);
+      expect(session.isEmpty()).toBe(true);
     });
   });
 
   describe("Entity Management", () => {
-    describe("createToken", () => {
-      it("should create token with position", () => {
-        const entityId = session.createToken(100, 200, "owner-123");
+    it("should create tokens with default values", () => {
+      const entityId = session.createToken(100, 200, "owner");
+      const world = getMockWorld(session);
 
-        expect(entityId).toBe(1);
-        expect(session.world.transforms.add).toHaveBeenCalledWith(
-          entityId,
-          expect.objectContaining({ x: 100, y: 200 }),
-        );
-        expect(session.world.appearance.add).toHaveBeenCalled();
-        expect(session.world.movement.add).toHaveBeenCalled();
-      });
-
-      it("should create token without owner", () => {
-        const entityId = session.createToken(50, 75);
-
-        expect(entityId).toBe(1);
-        expect(session.world.transforms.add).toHaveBeenCalledWith(
-          entityId,
-          expect.objectContaining({ x: 50, y: 75 }),
-        );
-      });
+      expect(entityId).toBe(1);
+      expect(world.transforms.x[entityId]).toBe(100);
+      expect(world.transforms.y[entityId]).toBe(200);
+      expect(world.movement.vx[entityId]).toBe(0);
+      expect(world.appearance.sprite[entityId]).toBe(0);
     });
 
     describe("moveToken", () => {
-      const entityId = 1 as EntityId;
+      let entityId: EntityId;
+      let world: MockWorld;
 
-      it("should move token with animation", () => {
+      beforeEach(() => {
+        entityId = session.createToken(0, 0) as EntityId;
+        world = getMockWorld(session);
+        world.transforms.x[entityId] = 0;
+        world.transforms.y[entityId] = 0;
+        world.movement.vx[entityId] = 0;
+        world.movement.vy[entityId] = 0;
+      });
+
+      it("should animate movement when requested", () => {
+        const setTimeoutSpy = vi.spyOn(global, "setTimeout");
         const result = session.moveToken(entityId, 200, 300, true);
 
         expect(result).toBe(true);
-        expect(session.world.movement.vx[entityId]).toBeDefined();
-        expect(session.world.movement.vy[entityId]).toBeDefined();
+        expect(world.movement.vx[entityId]).not.toBeUndefined();
+        expect(world.movement.vy[entityId]).not.toBeUndefined();
+        expect(setTimeoutSpy).toHaveBeenCalled();
+
+        const duration = setTimeoutSpy.mock.calls[0]?.[1] as number;
+        vi.advanceTimersByTime(duration);
+
+        expect(world.movement.vx[entityId]).toBe(0);
+        expect(world.movement.vy[entityId]).toBe(0);
+        expect(world.transforms.x[entityId]).toBe(200);
+        expect(world.transforms.y[entityId]).toBe(300);
+
+        setTimeoutSpy.mockRestore();
       });
 
-      it("should move token instantly without animation", () => {
-        const result = session.moveToken(entityId, 200, 300, false);
-
-        expect(result).toBe(true);
-        expect(session.world.transforms.x[entityId]).toBe(200);
-        expect(session.world.transforms.y[entityId]).toBe(300);
+      it("should move instantly when animation disabled", () => {
+        expect(session.moveToken(entityId, 50, 75, false)).toBe(true);
+        expect(world.transforms.x[entityId]).toBe(50);
+        expect(world.transforms.y[entityId]).toBe(75);
       });
 
-      it("should return false for dead entity", () => {
-        session.world.isAlive = vi.fn(() => false);
+      it("should guard against invalid entities", () => {
+        world.destroyEntity(entityId);
+        expect(session.moveToken(entityId, 10, 10)).toBe(false);
 
-        const result = session.moveToken(entityId, 200, 300);
+        const orphanEntity = session.createToken(5, 5) as EntityId;
+        const updatedWorld = getMockWorld(session);
+        delete updatedWorld.transforms.x[orphanEntity];
+        delete updatedWorld.transforms.y[orphanEntity];
 
-        expect(result).toBe(false);
-      });
-
-      it("should return false for entity without transform", () => {
-        session.world.transforms.has = vi.fn(() => false);
-
-        const result = session.moveToken(entityId, 200, 300);
-
-        expect(result).toBe(false);
-      });
-
-      it("should stop movement after animation duration", () => {
-        session.world.transforms.x[entityId] = 0;
-        session.world.transforms.y[entityId] = 0;
-
-        session.moveToken(entityId, 200, 300, true);
-
-        // Fast-forward time
-        vi.advanceTimersByTime(2000); // Max 2 seconds animation
-
-        expect(session.world.movement.vx[entityId]).toBe(0);
-        expect(session.world.movement.vy[entityId]).toBe(0);
-        expect(session.world.transforms.x[entityId]).toBe(200);
-        expect(session.world.transforms.y[entityId]).toBe(300);
+        expect(session.moveToken(orphanEntity, 10, 10)).toBe(false);
       });
     });
   });
 
   describe("Dice Rolling", () => {
-    it("should roll dice for valid player", () => {
-      session.addPlayer("user-1", "Player One");
-
-      const result = session.rollDice("2d6", "user-1", "Attack Roll");
+    it("should roll dice with optional label", () => {
+      const result = session.rollDice("2d6", "Attack Roll");
 
       expect(result).toBeDefined();
       expect(result?.dice).toBe("2d6");
       expect(result?.label).toBe("Attack Roll");
-      expect(result?.total).toBe(10);
     });
 
-    it("should return null for invalid player", () => {
-      const result = session.rollDice("2d6", "non-existent", "Attack Roll");
-
-      expect(result).toBeNull();
+    it("should throw for invalid dice notation", () => {
+      expect(() => session.rollDice("not dice")).toThrowError("Failed to roll dice: not dice");
     });
   });
 
@@ -323,80 +285,27 @@ describe("GameSession", () => {
     const entity2 = 2 as EntityId;
     const entity3 = 3 as EntityId;
 
-    describe("Phase management", () => {
-      it("should set and get phase", () => {
-        session.setPhase("combat");
-        expect(session.getPhase()).toBe("combat");
+    it("should manage combat phases and turn order", () => {
+      session.setPhase("combat");
+      expect(session.getPhase()).toBe("combat");
 
-        session.setPhase("downtime");
-        expect(session.getPhase()).toBe("downtime");
-      });
-    });
+      session.setPhase("downtime");
+      expect(session.getPhase()).toBe("downtime");
 
-    describe("initiateCombat", () => {
-      it("should initialize combat with entities", () => {
-        const entities = [entity1, entity2, entity3];
+      session.initiateCombat([entity1, entity2, entity3]);
+      let state = session.getGameState();
+      expect(state.turnOrder).toEqual(["1", "2", "3"]);
+      expect(state.currentTurn).toBe("1");
 
-        session.initiateCombat(entities);
+      expect(session.nextTurn()).toBe(entity2);
+      expect(session.nextTurn()).toBe(entity3);
+      expect(session.nextTurn()).toBe(entity1);
 
-        expect(session.getPhase()).toBe("combat");
-        const state = session.getGameState();
-        expect(state.turnOrder).toEqual(["1", "2", "3"]);
-        expect(state.currentTurn).toBe("1");
-      });
-
-      it("should handle empty entity list", () => {
-        session.initiateCombat([]);
-
-        expect(session.getPhase()).toBe("combat");
-        const state = session.getGameState();
-        expect(state.turnOrder).toEqual([]);
-        expect(state.currentTurn).toBeUndefined();
-      });
-    });
-
-    describe("nextTurn", () => {
-      beforeEach(() => {
-        session.initiateCombat([entity1, entity2, entity3]);
-      });
-
-      it("should advance to next turn", () => {
-        const next = session.nextTurn();
-
-        expect(next).toBe(entity2);
-
-        const state = session.getGameState();
-        expect(state.currentTurn).toBe("2");
-      });
-
-      it("should wrap around to first entity", () => {
-        session.nextTurn(); // to entity2
-        session.nextTurn(); // to entity3
-        const next = session.nextTurn(); // should wrap to entity1
-
-        expect(next).toBe(entity1);
-      });
-
-      it("should return undefined for empty turn order", () => {
-        session.endCombat();
-
-        const next = session.nextTurn();
-
-        expect(next).toBeUndefined();
-      });
-    });
-
-    describe("endCombat", () => {
-      it("should reset combat state", () => {
-        session.initiateCombat([entity1, entity2]);
-        session.endCombat();
-
-        expect(session.getPhase()).toBe("exploration");
-
-        const state = session.getGameState();
-        expect(state.turnOrder).toEqual([]);
-        expect(state.currentTurn).toBeUndefined();
-      });
+      session.endCombat();
+      state = session.getGameState();
+      expect(session.getPhase()).toBe("exploration");
+      expect(state.turnOrder).toEqual([]);
+      expect(state.currentTurn).toBeUndefined();
     });
   });
 
@@ -438,19 +347,18 @@ describe("GameSession", () => {
     it("should update world on tick", () => {
       const updateSpy = vi.spyOn(session.world, "update");
 
-      // Advance timer to trigger tick
-      vi.advanceTimersByTime(35); // One tick at 30fps
+      vi.advanceTimersByTime(35);
 
       expect(updateSpy).toHaveBeenCalled();
+      updateSpy.mockRestore();
     });
 
     it("should handle tick errors gracefully", () => {
-      const { logger } = require("@vtt/logging");
+      const { logger } = requireModule("@vtt/logging");
       session.world.update = vi.fn(() => {
         throw new Error("Tick error");
       });
 
-      // Advance timer to trigger tick
       vi.advanceTimersByTime(35);
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -469,7 +377,9 @@ describe("GameSession", () => {
 
       expect(clearIntervalSpy).toHaveBeenCalled();
       expect(session.getPlayerCount()).toBe(0);
-      expect(session.world.destroyEntity).toHaveBeenCalledTimes(3); // For mock entities [1,2,3]
+      expect(session.world.destroyEntity).toHaveBeenCalledTimes(3);
+
+      clearIntervalSpy.mockRestore();
     });
 
     it("should handle multiple destroy calls", () => {

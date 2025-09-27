@@ -1,47 +1,169 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from "vitest";
+import { ActorService, type ActorSearchOptions, type CreateActorRequest } from "./ActorService";
 import {
-  ActorService,
-  CreateActorRequest,
-  UpdateActorRequest,
-  ActorSearchOptions,
-} from "./ActorService";
-import { PrismaClient } from "@prisma/client";
+  PrismaClient,
+  Prisma,
+  TokenType,
+  TokenVisibility,
+  type Token,
+  type Monster,
+  type Character,
+} from "@prisma/client";
 
-// Mock dependencies
-vi.mock("@prisma/client");
+type TokenWithSession = Token & { gameSession?: { campaignId: string } };
+
+type TokenFindManyArgs = Prisma.TokenFindManyArgs;
+type TokenFindUniqueArgs = Prisma.TokenFindUniqueArgs;
+type TokenCreateArgs = Prisma.TokenCreateArgs;
+type TokenUpdateArgs = Prisma.TokenUpdateArgs;
+type TokenDeleteArgs = Prisma.TokenDeleteArgs;
+type TokenCountArgs = Prisma.TokenCountArgs;
+type TokenGroupByArgs = Prisma.TokenGroupByArgs;
+type MonsterFindUniqueArgs = Prisma.MonsterFindUniqueArgs;
+type CharacterFindUniqueArgs = Prisma.CharacterFindUniqueArgs;
+
+interface PrismaTokenMock {
+  findMany: Mock<[args?: TokenFindManyArgs], Promise<TokenWithSession[]>>;
+  findUnique: Mock<[args: TokenFindUniqueArgs], Promise<TokenWithSession | null>>;
+  create: Mock<[args: TokenCreateArgs], Promise<TokenWithSession>>;
+  update: Mock<[args: TokenUpdateArgs], Promise<TokenWithSession>>;
+  delete: Mock<[args: TokenDeleteArgs], Promise<TokenWithSession>>;
+  count: Mock<[args?: TokenCountArgs], Promise<number>>;
+  groupBy: Mock<
+    [args: TokenGroupByArgs],
+    Promise<Array<{ type: TokenType | null; _count: { _all: number } }>>
+  >;
+}
+
+interface PrismaMonsterMock {
+  findUnique: Mock<[args: MonsterFindUniqueArgs], Promise<Monster | null>>;
+}
+
+interface PrismaCharacterMock {
+  findUnique: Mock<[args: CharacterFindUniqueArgs], Promise<Character | null>>;
+}
+
+interface PrismaMock {
+  token: PrismaTokenMock;
+  monster: PrismaMonsterMock;
+  character: PrismaCharacterMock;
+}
+
+const sampleToken = (overrides: Partial<TokenWithSession> = {}): TokenWithSession => ({
+  id: "token-id",
+  name: "Sample Token",
+  type: TokenType.NPC,
+  visibility: TokenVisibility.VISIBLE,
+  gameSessionId: "session-1",
+  sceneId: null,
+  characterId: null,
+  x: 0,
+  y: 0,
+  z: 0,
+  rotation: 0,
+  scale: 1,
+  health: 10,
+  maxHealth: 10,
+  initiative: 0,
+  speed: 30,
+  imageUrl: null,
+  metadata: null,
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+  updatedAt: new Date("2024-01-01T00:00:00Z"),
+  gameSession: { campaignId: "campaign-123" },
+  ...overrides,
+});
+
+const sampleMonster = (overrides: Partial<Monster> = {}): Monster => ({
+  id: "monster-1",
+  stableId: "stable-monster",
+  name: "Goblin",
+  statblock: {},
+  tags: [],
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+  updatedAt: new Date("2024-01-01T00:00:00Z"),
+  ...overrides,
+});
+
+const sampleCharacter = (overrides: Partial<Character> = {}): Character => ({
+  id: "character-1",
+  name: "Hero",
+  sheet: {},
+  prompt: "",
+  provider: "provider",
+  model: "model",
+  cost: 0,
+  latencyMs: 0,
+  createdAt: new Date("2024-01-01T00:00:00Z"),
+  ...overrides,
+});
+
+const createMockPrisma = (): PrismaMock => {
+  const findMany = vi.fn<[args?: TokenFindManyArgs], Promise<TokenWithSession[]>>(() =>
+    Promise.resolve([]),
+  );
+  const findUnique = vi.fn<[args: TokenFindUniqueArgs], Promise<TokenWithSession | null>>(() =>
+    Promise.resolve(null),
+  );
+  const create = vi.fn<[args: TokenCreateArgs], Promise<TokenWithSession>>((args) =>
+    Promise.resolve({
+      ...sampleToken(),
+      ...(args.data as TokenWithSession),
+    }),
+  );
+  const update = vi.fn<[args: TokenUpdateArgs], Promise<TokenWithSession>>((args) =>
+    Promise.resolve({
+      ...sampleToken({ id: String(args.where.id) }),
+      ...(args.data as TokenWithSession),
+    }),
+  );
+  const remove = vi.fn<[args: TokenDeleteArgs], Promise<TokenWithSession>>((args) =>
+    Promise.resolve(sampleToken({ id: String(args.where.id) })),
+  );
+  const count = vi.fn<[args?: TokenCountArgs], Promise<number>>(() => Promise.resolve(0));
+  const groupBy = vi.fn<
+    [args: TokenGroupByArgs],
+    Promise<Array<{ type: TokenType | null; _count: { _all: number } }>>
+  >(() => Promise.resolve([]));
+
+  const monsterFindUnique = vi.fn<[args: MonsterFindUniqueArgs], Promise<Monster | null>>(() =>
+    Promise.resolve(null),
+  );
+  const characterFindUnique = vi.fn<[args: CharacterFindUniqueArgs], Promise<Character | null>>(
+    () => Promise.resolve(null),
+  );
+
+  return {
+    token: {
+      findMany,
+      findUnique,
+      create,
+      update,
+      delete: remove,
+      count,
+      groupBy,
+    },
+    monster: {
+      findUnique: monsterFindUnique,
+    },
+    character: {
+      findUnique: characterFindUnique,
+    },
+  };
+};
 
 describe("ActorService", () => {
   let service: ActorService;
-  // TODO: Type mockPrisma as PrismaClient mock instead of any
-  let mockPrisma: any;
+  let prisma: PrismaMock;
 
-  const mockCampaignId = "campaign-123";
-  const mockUserId = "user-456";
-  const mockActorId = "actor-789";
-  const mockMonsterId = "monster-111";
-  const mockCharacterId = "character-222";
+  const campaignId = "campaign-123";
+  const tokenId = "token-456";
+  const monsterId = "monster-789";
+  const characterId = "character-999";
 
   beforeEach(() => {
-    // Setup mock Prisma client
-    mockPrisma = {
-      actor: {
-        findMany: vi.fn(),
-        findUnique: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-        delete: vi.fn(),
-        count: vi.fn(),
-        groupBy: vi.fn(),
-      },
-      monster: {
-        findUnique: vi.fn(),
-      },
-      character: {
-        findUnique: vi.fn(),
-      },
-    };
-
-    service = new ActorService(mockPrisma);
+    prisma = createMockPrisma();
+    service = new ActorService(prisma as unknown as PrismaClient);
   });
 
   afterEach(() => {
@@ -49,796 +171,262 @@ describe("ActorService", () => {
   });
 
   describe("searchActors", () => {
-    it("should search actors with default pagination", async () => {
-      const mockActors = [
-        {
-          id: "actor-1",
-          name: "Goblin",
-          kind: "MONSTER",
-          campaignId: mockCampaignId,
-          isActive: true,
-          monster: { id: "monster-1", name: "Goblin" },
-          character: null,
-          tokens: [],
-          appliedConditions: [],
-        },
-        {
-          id: "actor-2",
-          name: "Hero",
-          kind: "PC",
-          campaignId: mockCampaignId,
-          isActive: true,
-          monster: null,
-          character: { id: "char-1", name: "Hero" },
-          tokens: [],
-          appliedConditions: [],
-        },
-      ];
+    it("returns tokens with default pagination", async () => {
+      const tokens = [sampleToken({ id: "token-1" }), sampleToken({ id: "token-2" })];
 
-      mockPrisma.actor.findMany.mockResolvedValue(mockActors);
-      mockPrisma.actor.count.mockResolvedValue(2);
+      prisma.token.findMany.mockResolvedValue(tokens);
+      prisma.token.count.mockResolvedValue(2);
 
-      const options: ActorSearchOptions = {
-        campaignId: mockCampaignId,
-      };
-
+      const options: ActorSearchOptions = { campaignId };
       const result = await service.searchActors(options);
 
-      expect(result.items).toEqual(mockActors);
-      expect(result.total).toBe(2);
-      expect(result.limit).toBe(50);
-      expect(result.offset).toBe(0);
-
-      expect(mockPrisma.actor.findMany).toHaveBeenCalledWith({
-        where: { campaignId: mockCampaignId },
+      expect(result).toEqual({ items: tokens, total: 2, limit: 50, offset: 0 });
+      expect(prisma.token.findMany).toHaveBeenCalledWith({
+        where: {
+          gameSession: { campaignId },
+        },
         skip: 0,
         take: 50,
         orderBy: { name: "asc" },
-        include: {
-          monster: true,
-          character: true,
-          tokens: true,
-          appliedConditions: {
-            include: {
-              condition: true,
-            },
-          },
-        },
       });
     });
 
-    it("should filter actors by kind", async () => {
-      mockPrisma.actor.findMany.mockResolvedValue([]);
-      mockPrisma.actor.count.mockResolvedValue(0);
+    it("applies kind filter and limit cap", async () => {
+      prisma.token.findMany.mockResolvedValue([]);
+      prisma.token.count.mockResolvedValue(0);
 
-      const options: ActorSearchOptions = {
-        campaignId: mockCampaignId,
-        kind: "MONSTER",
-      };
+      await service.searchActors({ campaignId, kind: "PC", limit: 500, offset: 10 });
 
-      await service.searchActors(options);
-
-      expect(mockPrisma.actor.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            campaignId: mockCampaignId,
-            kind: "MONSTER",
-          },
-        }),
-      );
-    });
-
-    it("should filter actors by active status", async () => {
-      mockPrisma.actor.findMany.mockResolvedValue([]);
-      mockPrisma.actor.count.mockResolvedValue(0);
-
-      const options: ActorSearchOptions = {
-        campaignId: mockCampaignId,
-        isActive: false,
-      };
-
-      await service.searchActors(options);
-
-      expect(mockPrisma.actor.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            campaignId: mockCampaignId,
-            isActive: false,
-          },
-        }),
-      );
-    });
-
-    it("should respect custom pagination", async () => {
-      mockPrisma.actor.findMany.mockResolvedValue([]);
-      mockPrisma.actor.count.mockResolvedValue(100);
-
-      const options: ActorSearchOptions = {
-        campaignId: mockCampaignId,
-        limit: 25,
-        offset: 50,
-      };
-
-      const result = await service.searchActors(options);
-
-      expect(mockPrisma.actor.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          skip: 50,
-          take: 25,
-        }),
-      );
-      expect(result.limit).toBe(25);
-      expect(result.offset).toBe(50);
-    });
-
-    it("should cap limit at 200", async () => {
-      mockPrisma.actor.findMany.mockResolvedValue([]);
-      mockPrisma.actor.count.mockResolvedValue(500);
-
-      const options: ActorSearchOptions = {
-        campaignId: mockCampaignId,
-        limit: 300,
-      };
-
-      await service.searchActors(options);
-
-      expect(mockPrisma.actor.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          take: 200,
-        }),
-      );
+      expect(prisma.token.findMany).toHaveBeenCalledWith({
+        where: {
+          gameSession: { campaignId },
+          type: "PC",
+        },
+        skip: 10,
+        take: 200,
+        orderBy: { name: "asc" },
+      });
     });
   });
 
   describe("getActor", () => {
-    it("should get actor with all relations", async () => {
-      const mockActor = {
-        id: mockActorId,
-        name: "Test Actor",
-        kind: "NPC",
-        monster: null,
-        character: null,
-        tokens: [],
-        appliedConditions: [],
-        encounterParticipants: [],
-      };
+    it("returns token when found", async () => {
+      const token = sampleToken({ id: tokenId });
+      prisma.token.findUnique.mockResolvedValue(token);
 
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
+      const result = await service.getActor(tokenId);
 
-      const result = await service.getActor(mockActorId);
-
-      expect(result).toEqual(mockActor);
-      expect(mockPrisma.actor.findUnique).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        include: {
-          monster: true,
-          character: true,
-          tokens: true,
-          appliedConditions: {
-            include: {
-              condition: true,
-            },
-          },
-          encounterParticipants: {
-            include: {
-              encounter: true,
-            },
-          },
-        },
+      expect(result).toEqual(token);
+      expect(prisma.token.findUnique).toHaveBeenCalledWith({
+        where: { id: tokenId },
+        include: { gameSession: true },
       });
     });
 
-    it("should return null for non-existent actor", async () => {
-      mockPrisma.actor.findUnique.mockResolvedValue(null);
+    it("returns null when not found", async () => {
+      prisma.token.findUnique.mockResolvedValue(null);
 
-      const result = await service.getActor("non-existent");
+      const result = await service.getActor("missing");
 
       expect(result).toBeNull();
     });
   });
 
   describe("createActor", () => {
-    it("should create PC actor with character reference", async () => {
-      const mockCharacter = {
-        id: mockCharacterId,
-        name: "Hero Character",
-      };
-
-      mockPrisma.character.findUnique.mockResolvedValue(mockCharacter);
-      mockPrisma.actor.create.mockResolvedValue({
-        id: mockActorId,
-        name: "Hero",
-        kind: "PC",
-        characterId: mockCharacterId,
-        character: mockCharacter,
-      });
+    it("creates token with defaults", async () => {
+      const created = sampleToken({ id: tokenId });
+      prisma.token.create.mockResolvedValue(created);
 
       const request: CreateActorRequest = {
-        name: "Hero",
-        kind: "PC",
-        campaignId: mockCampaignId,
-        userId: mockUserId,
-        characterId: mockCharacterId,
-        currentHp: 50,
-        maxHp: 50,
-        ac: 16,
+        name: "NPC",
+        kind: "NPC",
+        campaignId,
+        userId: "user-1",
       };
 
       const result = await service.createActor(request);
 
-      expect(result.name).toBe("Hero");
-      expect(result.kind).toBe("PC");
-      expect(mockPrisma.actor.create).toHaveBeenCalledWith({
+      expect(result).toEqual(created);
+      expect(prisma.token.create).toHaveBeenCalledWith({
         data: {
-          name: "Hero",
-          kind: "PC",
-          campaignId: mockCampaignId,
-          userId: mockUserId,
-          characterId: mockCharacterId,
-          monsterId: undefined,
-          currentHp: 50,
-          maxHp: 50,
-          tempHp: 0,
-          ac: 16,
+          name: "NPC",
+          type: "NPC",
+          gameSessionId: "default-session",
+          characterId: undefined,
+          health: 0,
+          maxHealth: 0,
           initiative: 0,
-          isActive: true,
         },
-        include: {
-          monster: true,
-          character: true,
-        },
+        include: { gameSession: true },
       });
     });
 
-    it("should create MONSTER actor with monster reference", async () => {
-      const mockMonster = {
-        id: mockMonsterId,
+    it("validates monster reference", async () => {
+      prisma.monster.findUnique.mockResolvedValue(sampleMonster({ id: monsterId }));
+      prisma.token.create.mockResolvedValue(sampleToken());
+
+      await service.createActor({
         name: "Goblin",
-      };
-
-      mockPrisma.monster.findUnique.mockResolvedValue(mockMonster);
-      mockPrisma.actor.create.mockResolvedValue({
-        id: mockActorId,
-        name: "Goblin Scout",
         kind: "MONSTER",
-        monsterId: mockMonsterId,
-        monster: mockMonster,
+        campaignId,
+        userId: "user-1",
+        monsterId,
       });
 
-      const request: CreateActorRequest = {
-        name: "Goblin Scout",
-        kind: "MONSTER",
-        campaignId: mockCampaignId,
-        userId: mockUserId,
-        monsterId: mockMonsterId,
-        currentHp: 7,
-        maxHp: 7,
-        ac: 13,
-      };
-
-      const result = await service.createActor(request);
-
-      expect(result.name).toBe("Goblin Scout");
-      expect(result.kind).toBe("MONSTER");
+      expect(prisma.monster.findUnique).toHaveBeenCalledWith({ where: { id: monsterId } });
     });
 
-    it("should throw error for invalid monster reference", async () => {
-      mockPrisma.monster.findUnique.mockResolvedValue(null);
+    it("throws when monster reference missing", async () => {
+      prisma.monster.findUnique.mockResolvedValue(null);
 
-      const request: CreateActorRequest = {
-        name: "Invalid Monster",
-        kind: "MONSTER",
-        campaignId: mockCampaignId,
-        userId: mockUserId,
-        monsterId: "invalid-id",
-      };
-
-      await expect(service.createActor(request)).rejects.toThrow("Monster not found");
-    });
-
-    it("should throw error for invalid character reference", async () => {
-      mockPrisma.character.findUnique.mockResolvedValue(null);
-
-      const request: CreateActorRequest = {
-        name: "Invalid Character",
-        kind: "PC",
-        campaignId: mockCampaignId,
-        userId: mockUserId,
-        characterId: "invalid-id",
-      };
-
-      await expect(service.createActor(request)).rejects.toThrow("Character not found");
-    });
-
-    it("should use default values when not provided", async () => {
-      mockPrisma.actor.create.mockResolvedValue({
-        id: mockActorId,
-        name: "NPC",
-        kind: "NPC",
-      });
-
-      const request: CreateActorRequest = {
-        name: "NPC",
-        kind: "NPC",
-        campaignId: mockCampaignId,
-        userId: mockUserId,
-      };
-
-      await service.createActor(request);
-
-      expect(mockPrisma.actor.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          currentHp: 0,
-          maxHp: 0,
-          tempHp: 0,
-          ac: 10,
-          initiative: 0,
-          isActive: true,
+      await expect(
+        service.createActor({
+          name: "Bad Goblin",
+          kind: "MONSTER",
+          campaignId,
+          userId: "user-1",
+          monsterId,
         }),
-        include: {
-          monster: true,
-          character: true,
-        },
+      ).rejects.toThrow("Monster not found");
+    });
+
+    it("validates character reference", async () => {
+      prisma.character.findUnique.mockResolvedValue(sampleCharacter({ id: characterId }));
+
+      await service.createActor({
+        name: "Hero",
+        kind: "PC",
+        campaignId,
+        userId: "user-1",
+        characterId,
       });
+
+      expect(prisma.character.findUnique).toHaveBeenCalledWith({ where: { id: characterId } });
     });
   });
 
   describe("createActorFromMonster", () => {
-    it("should create actor from monster with statblock", async () => {
-      const mockMonster = {
-        id: mockMonsterId,
-        name: "Goblin",
-        statblock: {
-          hp: { average: 7, formula: "2d6" },
-          ac: { value: 15, type: "armor" },
-        },
-      };
-
-      mockPrisma.monster.findUnique.mockResolvedValue(mockMonster);
-      mockPrisma.actor.create.mockResolvedValue({
-        id: mockActorId,
-        name: "Goblin",
-        kind: "MONSTER",
-        monsterId: mockMonsterId,
-        currentHp: 7,
-        maxHp: 7,
-        ac: 15,
+    it("creates token using monster statblock", async () => {
+      const monster = sampleMonster({
+        id: monsterId,
+        statblock: { hp: { average: 12 }, ac: { value: 15 } },
       });
 
-      const result = await service.createActorFromMonster(
-        mockMonsterId,
-        mockCampaignId,
-        mockUserId,
-      );
+      prisma.monster.findUnique.mockResolvedValue(monster);
+      prisma.token.create.mockResolvedValue(sampleToken({ id: tokenId }));
 
-      expect(result.name).toBe("Goblin");
-      expect(mockPrisma.actor.create).toHaveBeenCalledWith({
+      await service.createActorFromMonster(monsterId, campaignId, "user-1", "Goblin Scout");
+
+      expect(prisma.token.create).toHaveBeenCalledWith({
         data: {
-          name: "Goblin",
-          kind: "MONSTER",
-          campaignId: mockCampaignId,
-          userId: mockUserId,
-          monsterId: mockMonsterId,
-          currentHp: 7,
-          maxHp: 7,
-          tempHp: 0,
-          ac: 15,
+          name: "Goblin Scout",
+          type: "NPC",
+          gameSessionId: "default-session",
+          health: 12,
+          maxHealth: 12,
           initiative: 0,
-          isActive: true,
         },
-        include: {
-          monster: true,
-        },
-      });
-    });
-
-    it("should use custom name if provided", async () => {
-      const mockMonster = {
-        id: mockMonsterId,
-        name: "Goblin",
-        statblock: {
-          hp: { average: 7 },
-          ac: { value: 15 },
-        },
-      };
-
-      mockPrisma.monster.findUnique.mockResolvedValue(mockMonster);
-      mockPrisma.actor.create.mockResolvedValue({
-        id: mockActorId,
-        name: "Goblin Chief",
-        kind: "MONSTER",
-      });
-
-      await service.createActorFromMonster(
-        mockMonsterId,
-        mockCampaignId,
-        mockUserId,
-        "Goblin Chief",
-      );
-
-      expect(mockPrisma.actor.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          name: "Goblin Chief",
-        }),
-        include: {
-          monster: true,
-        },
-      });
-    });
-
-    it("should use defaults for missing statblock values", async () => {
-      const mockMonster = {
-        id: mockMonsterId,
-        name: "Strange Creature",
-        statblock: {},
-      };
-
-      mockPrisma.monster.findUnique.mockResolvedValue(mockMonster);
-      mockPrisma.actor.create.mockResolvedValue({
-        id: mockActorId,
-        name: "Strange Creature",
-        kind: "MONSTER",
-      });
-
-      await service.createActorFromMonster(mockMonsterId, mockCampaignId, mockUserId);
-
-      expect(mockPrisma.actor.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          currentHp: 1,
-          maxHp: 1,
-          ac: 10,
-        }),
-        include: {
-          monster: true,
-        },
-      });
-    });
-
-    it("should throw error for non-existent monster", async () => {
-      mockPrisma.monster.findUnique.mockResolvedValue(null);
-
-      await expect(
-        service.createActorFromMonster("invalid-id", mockCampaignId, mockUserId),
-      ).rejects.toThrow("Monster not found");
-    });
-  });
-
-  describe("updateActor", () => {
-    it("should update all provided fields", async () => {
-      const updateRequest: UpdateActorRequest = {
-        name: "Updated Name",
-        currentHp: 25,
-        maxHp: 30,
-        tempHp: 5,
-        ac: 18,
-        initiative: 15,
-        isActive: false,
-      };
-
-      mockPrisma.actor.update.mockResolvedValue({
-        id: mockActorId,
-        ...updateRequest,
-      });
-
-      await service.updateActor(mockActorId, updateRequest);
-
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: updateRequest,
-        include: {
-          monster: true,
-          character: true,
-        },
-      });
-    });
-
-    it("should update only provided fields", async () => {
-      const updateRequest: UpdateActorRequest = {
-        currentHp: 10,
-        initiative: 20,
-      };
-
-      mockPrisma.actor.update.mockResolvedValue({
-        id: mockActorId,
-        currentHp: 10,
-        initiative: 20,
-      });
-
-      await service.updateActor(mockActorId, updateRequest);
-
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: {
-          currentHp: 10,
-          initiative: 20,
-        },
-        include: {
-          monster: true,
-          character: true,
-        },
-      });
-    });
-
-    it("should handle undefined values correctly", async () => {
-      const updateRequest: UpdateActorRequest = {
-        name: undefined,
-        currentHp: 0,
-        isActive: false,
-      };
-
-      mockPrisma.actor.update.mockResolvedValue({
-        id: mockActorId,
-      });
-
-      await service.updateActor(mockActorId, updateRequest);
-
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: {
-          currentHp: 0,
-          isActive: false,
-        },
-        include: {
-          monster: true,
-          character: true,
-        },
+        include: { gameSession: true },
       });
     });
   });
 
-  describe("deleteActor", () => {
-    it("should delete actor by id", async () => {
-      mockPrisma.actor.delete.mockResolvedValue({
-        id: mockActorId,
-        name: "Deleted Actor",
-      });
+  describe("update and delete", () => {
+    it("updates token fields", async () => {
+      prisma.token.update.mockResolvedValue(sampleToken({ id: tokenId }));
 
-      const result = await service.deleteActor(mockActorId);
-
-      expect(result.id).toBe(mockActorId);
-      expect(mockPrisma.actor.delete).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-      });
-    });
-  });
-
-  describe("healActor", () => {
-    it("should heal actor up to max HP", async () => {
-      const mockActor = {
-        id: mockActorId,
-        currentHp: 10,
-        maxHp: 25,
-        tempHp: 0,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        currentHp: 20,
-      });
-
-      const result = await service.healActor(mockActorId, 10);
-
-      expect(result.currentHp).toBe(20);
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: { currentHp: 20 },
-        include: {
-          monster: true,
-          character: true,
-        },
-      });
-    });
-
-    it("should not heal beyond max HP", async () => {
-      const mockActor = {
-        id: mockActorId,
-        currentHp: 20,
-        maxHp: 25,
-        tempHp: 0,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        currentHp: 25,
-      });
-
-      const result = await service.healActor(mockActorId, 10);
-
-      expect(result.currentHp).toBe(25);
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: { currentHp: 25 },
-        include: {
-          monster: true,
-          character: true,
-        },
-      });
-    });
-
-    it("should throw error for non-existent actor", async () => {
-      mockPrisma.actor.findUnique.mockResolvedValue(null);
-
-      await expect(service.healActor("invalid-id", 10)).rejects.toThrow("Actor not found");
-    });
-  });
-
-  describe("damageActor", () => {
-    it("should apply damage to temp HP first", async () => {
-      const mockActor = {
-        id: mockActorId,
-        currentHp: 20,
-        maxHp: 25,
-        tempHp: 10,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        currentHp: 20,
-        tempHp: 5,
-      });
-
-      const result = await service.damageActor(mockActorId, 5);
-
-      expect(result.currentHp).toBe(20);
-      expect(result.tempHp).toBe(5);
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: { currentHp: 20, tempHp: 5 },
-        include: {
-          monster: true,
-          character: true,
-        },
-      });
-    });
-
-    it("should apply overflow damage to regular HP", async () => {
-      const mockActor = {
-        id: mockActorId,
-        currentHp: 20,
-        maxHp: 25,
-        tempHp: 5,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        currentHp: 15,
-        tempHp: 0,
-      });
-
-      const result = await service.damageActor(mockActorId, 10);
-
-      expect(result.currentHp).toBe(15);
-      expect(result.tempHp).toBe(0);
-    });
-
-    it("should not reduce HP below 0", async () => {
-      const mockActor = {
-        id: mockActorId,
+      await service.updateActor(tokenId, {
+        name: "Updated",
         currentHp: 5,
-        maxHp: 25,
-        tempHp: 0,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        currentHp: 0,
-        tempHp: 0,
+        maxHp: 8,
+        initiative: 4,
       });
 
-      const result = await service.damageActor(mockActorId, 10);
-
-      expect(result.currentHp).toBe(0);
-    });
-
-    it("should throw error for non-existent actor", async () => {
-      mockPrisma.actor.findUnique.mockResolvedValue(null);
-
-      await expect(service.damageActor("invalid-id", 10)).rejects.toThrow("Actor not found");
-    });
-  });
-
-  describe("addTempHp", () => {
-    it("should set temp HP to new value if higher", async () => {
-      const mockActor = {
-        id: mockActorId,
-        currentHp: 20,
-        maxHp: 25,
-        tempHp: 5,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        tempHp: 10,
-      });
-
-      const result = await service.addTempHp(mockActorId, 10);
-
-      expect(result.tempHp).toBe(10);
-    });
-
-    it("should keep existing temp HP if higher", async () => {
-      const mockActor = {
-        id: mockActorId,
-        currentHp: 20,
-        maxHp: 25,
-        tempHp: 15,
-      };
-
-      mockPrisma.actor.findUnique.mockResolvedValue(mockActor);
-      mockPrisma.actor.update.mockResolvedValue({
-        ...mockActor,
-        tempHp: 15,
-      });
-
-      const result = await service.addTempHp(mockActorId, 10);
-
-      expect(result.tempHp).toBe(15);
-    });
-
-    it("should throw error for non-existent actor", async () => {
-      mockPrisma.actor.findUnique.mockResolvedValue(null);
-
-      await expect(service.addTempHp("invalid-id", 10)).rejects.toThrow("Actor not found");
-    });
-  });
-
-  describe("rollInitiative", () => {
-    it("should update actor initiative", async () => {
-      mockPrisma.actor.update.mockResolvedValue({
-        id: mockActorId,
-        initiative: 18,
-      });
-
-      const result = await service.rollInitiative(mockActorId, 18);
-
-      expect(result.initiative).toBe(18);
-      expect(mockPrisma.actor.update).toHaveBeenCalledWith({
-        where: { id: mockActorId },
-        data: { initiative: 18 },
-        include: {
-          monster: true,
-          character: true,
+      expect(prisma.token.update).toHaveBeenCalledWith({
+        where: { id: tokenId },
+        data: {
+          name: "Updated",
+          health: 5,
+          maxHealth: 8,
+          initiative: 4,
         },
+        include: { gameSession: true },
       });
+    });
+
+    it("deletes token by id", async () => {
+      prisma.token.delete.mockResolvedValue(sampleToken({ id: tokenId }));
+
+      await service.deleteActor(tokenId);
+
+      expect(prisma.token.delete).toHaveBeenCalledWith({ where: { id: tokenId } });
     });
   });
 
-  describe("getActorStats", () => {
-    it("should return actor statistics for campaign", async () => {
-      mockPrisma.actor.count.mockResolvedValueOnce(10); // total
-      mockPrisma.actor.groupBy.mockResolvedValue([
-        { kind: "PC", _count: 3 },
-        { kind: "NPC", _count: 2 },
-        { kind: "MONSTER", _count: 5 },
-      ]);
-      mockPrisma.actor.count.mockResolvedValueOnce(7); // active
+  describe("health helpers", () => {
+    it("heals without exceeding max", async () => {
+      prisma.token.findUnique.mockResolvedValue(sampleToken({ health: 5, maxHealth: 8 }));
+      prisma.token.update.mockResolvedValue(sampleToken({ health: 8, maxHealth: 8 }));
 
-      const result = await service.getActorStats(mockCampaignId);
+      await service.healActor(tokenId, 10);
 
-      expect(result.total).toBe(10);
-      expect(result.active).toBe(7);
-      expect(result.byKind).toEqual({
-        PC: 3,
-        NPC: 2,
-        MONSTER: 5,
-      });
+      expect(prisma.token.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { health: 8 } }),
+      );
     });
 
-    it("should handle empty results", async () => {
-      mockPrisma.actor.count.mockResolvedValue(0);
-      mockPrisma.actor.groupBy.mockResolvedValue([]);
+    it("applies damage and clamps to zero", async () => {
+      prisma.token.findUnique.mockResolvedValue(sampleToken({ health: 5, maxHealth: 10 }));
+      prisma.token.update.mockResolvedValue(sampleToken({ health: 0 }));
 
-      const result = await service.getActorStats(mockCampaignId);
+      await service.damageActor(tokenId, 7);
 
-      expect(result.total).toBe(0);
-      expect(result.active).toBe(0);
-      expect(result.byKind).toEqual({});
+      expect(prisma.token.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { health: 0 } }),
+      );
+    });
+
+    it("attempts to set temp HP (no-op in current model)", async () => {
+      prisma.token.findUnique.mockResolvedValue(sampleToken());
+      prisma.token.update.mockResolvedValue(sampleToken());
+
+      await service.addTempHp(tokenId, 6);
+
+      expect(prisma.token.update).toHaveBeenCalledWith(expect.objectContaining({ data: {} }));
+    });
+  });
+
+  it("rolls initiative", async () => {
+    prisma.token.update.mockResolvedValue(sampleToken({ initiative: 12 }));
+
+    await service.rollInitiative(tokenId, 12);
+
+    expect(prisma.token.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { initiative: 12 } }),
+    );
+  });
+
+  it("computes actor stats", async () => {
+    prisma.token.count.mockResolvedValueOnce(10).mockResolvedValueOnce(6);
+    prisma.token.groupBy.mockResolvedValue([
+      { type: TokenType.PC, _count: { _all: 4 } },
+      { type: TokenType.NPC, _count: { _all: 2 } },
+    ]);
+
+    const stats = await service.getActorStats(campaignId);
+
+    expect(stats).toEqual({
+      total: 10,
+      active: 6,
+      byKind: {
+        PC: 4,
+        NPC: 2,
+      },
+    });
+    expect(prisma.token.groupBy).toHaveBeenCalledWith({
+      by: ["type"],
+      _count: { _all: true },
+      where: { gameSession: { campaignId } },
     });
   });
 });

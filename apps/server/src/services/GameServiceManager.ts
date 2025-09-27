@@ -17,18 +17,28 @@ import { createAssistantService } from "../ai/assistant";
 import { GenesisService as AICharacterService } from "../ai/character";
 import { createContentGenerationService } from "../ai/content";
 
+type WebSocketBroadcastFn = (
+  sessionId: string,
+  event: string,
+  payload: Record<string, unknown>,
+) => void;
+
+type LegacyWebSocketManager = {
+  broadcastToSessionPublic?: WebSocketBroadcastFn;
+};
+
 export class GameServiceManager {
   private static instance: GameServiceManager;
 
   private prismaClient: PrismaClient;
-  private webSocketManager: any; // Legacy - to be refactored
+  private webSocketManager: LegacyWebSocketManager | null; // Legacy - to be refactored
   private mapService: MapService;
   private gameEventBridge: GameEventBridge;
   private crucibleService: CrucibleService;
   private contentInjectionService: ContentInjectionService;
-  private aiAssistant?: any;
+  private aiAssistant?: ReturnType<typeof createAssistantService>;
   private aiCharacter?: AICharacterService;
-  private aiContent?: any;
+  private aiContent?: ReturnType<typeof createContentGenerationService>;
 
   private initialized = false;
 
@@ -36,7 +46,7 @@ export class GameServiceManager {
     this.prismaClient = DatabaseManager.getInstance();
     // WebSocketManager stub for legacy compatibility
     this.webSocketManager = null;
-    this.mapService = new MapService(this.prismaClient, this.webSocketManager as any);
+    this.mapService = new MapService(this.prismaClient, this.webSocketManager ?? undefined);
     this.crucibleService = new CrucibleService(this.prismaClient);
 
     // Initialize Game Event Bridge with all services
@@ -44,7 +54,7 @@ export class GameServiceManager {
       this.prismaClient,
       this.crucibleService,
       this.webSocketManager,
-      this.mapService
+      this.mapService,
     );
 
     // Initialize ContentInjectionService
@@ -52,7 +62,7 @@ export class GameServiceManager {
       this.mapService,
       this.gameEventBridge,
       this.prismaClient,
-      this.webSocketManager as any,
+      this.webSocketManager ?? undefined,
     );
   }
 
@@ -67,7 +77,9 @@ export class GameServiceManager {
    * Initialize all services and wire them together
    */
   async initialize(): Promise<void> {
-    if (this.initialized) {return;}
+    if (this.initialized) {
+      return;
+    }
 
     logger.info("Initializing VTT Game Service Manager...");
 
@@ -87,8 +99,9 @@ export class GameServiceManager {
       this.initialized = true;
       logger.info("VTT Game Service Manager initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize VTT Game Service Manager:", error as any);
-      throw error;
+      const initError = error instanceof Error ? error : new Error(String(error));
+      logger.error("Failed to initialize VTT Game Service Manager:", initError);
+      throw initError;
     }
   }
 
@@ -119,12 +132,12 @@ export class GameServiceManager {
       } else {
         logger.warn("No AI API keys found. Using fallback AI services.");
         logger.info("Initializing fallback AI services for basic functionality...");
-        
+
         // Initialize fallback services even without API keys
         this.aiAssistant = createAssistantService(this.prismaClient);
         this.aiCharacter = new AICharacterService(this.prismaClient);
         this.aiContent = createContentGenerationService(this.prismaClient);
-        
+
         // Wire AI services to the event bridge
         this.gameEventBridge.setAIServices({
           assistant: this.aiAssistant,
@@ -133,7 +146,8 @@ export class GameServiceManager {
         });
       }
     } catch (error) {
-      logger.error("Error initializing AI services:", error as any);
+      const aiError = error instanceof Error ? error : new Error(String(error));
+      logger.error("Error initializing AI services:", aiError);
       logger.warn("Continuing without AI services...");
     }
   }
@@ -152,7 +166,7 @@ export class GameServiceManager {
   /**
    * Get the WebSocket manager instance
    */
-  getWebSocketManager(): any {
+  getWebSocketManager(): LegacyWebSocketManager | null {
     return this.webSocketManager;
   }
 
@@ -187,7 +201,7 @@ export class GameServiceManager {
   /**
    * Get AI assistant service if available
    */
-  getAIAssistant(): any | undefined {
+  getAIAssistant(): ReturnType<typeof createAssistantService> | undefined {
     return this.aiAssistant;
   }
 
@@ -201,7 +215,7 @@ export class GameServiceManager {
   /**
    * Get AI content service if available
    */
-  getAIContent(): any | undefined {
+  getAIContent(): ReturnType<typeof createContentGenerationService> | undefined {
     return this.aiContent;
   }
 
@@ -236,7 +250,8 @@ export class GameServiceManager {
       this.initialized = false;
       logger.info("VTT Game Service Manager shut down successfully");
     } catch (error) {
-      logger.error("Error during shutdown:", error as any);
+      const shutdownError = error instanceof Error ? error : new Error(String(error));
+      logger.error("Error during shutdown:", shutdownError);
     }
   }
 

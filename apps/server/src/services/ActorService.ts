@@ -2,7 +2,7 @@
  * Actor service for business logic and data operations
  */
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 export interface CreateActorRequest {
   name: string;
@@ -37,35 +37,51 @@ export interface ActorSearchOptions {
   offset?: number;
 }
 
+const isJsonObject = (value: Prisma.JsonValue | null | undefined): value is Prisma.JsonObject =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const extractNumber = (
+  value: Prisma.JsonValue | null | undefined,
+  nestedKey?: string,
+): number | undefined => {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (!nestedKey || !isJsonObject(value)) {
+    return undefined;
+  }
+
+  const nestedValue = value[nestedKey];
+  return typeof nestedValue === "number" ? nestedValue : undefined;
+};
+
 export class ActorService {
   constructor(private prisma: PrismaClient) {}
 
   async searchActors(options: ActorSearchOptions) {
-    const { campaignId, kind, isActive, limit = 50, offset = 0 } = options;
-
-    const where: any = { campaignId };
-    if (kind) {where.kind = kind;}
-    if (isActive !== undefined) {where.isActive = isActive;}
+    const { campaignId, kind, limit = 50, offset = 0 } = options;
+    const { isActive: _isActive } = options;
 
     const [items, total] = await Promise.all([
       this.prisma.token.findMany({
         where: {
           gameSession: {
-            campaignId
+            campaignId,
           },
-          ...kind ? { type: kind as any } : {}
+          ...(kind ? { type: kind } : {}),
         },
         skip: offset,
         take: Math.min(limit, 200),
         orderBy: { name: "asc" },
       }),
-      this.prisma.token.count({ 
+      this.prisma.token.count({
         where: {
           gameSession: {
-            campaignId
+            campaignId,
           },
-          ...kind ? { type: kind as any } : {}
-        }
+          ...(kind ? { type: kind } : {}),
+        },
       }),
     ]);
 
@@ -104,8 +120,8 @@ export class ActorService {
     return this.prisma.token.create({
       data: {
         name: request.name,
-        type: 'NPC', // Default type
-        gameSessionId: 'default-session', // Default session
+        type: "NPC", // Default type
+        gameSessionId: "default-session", // Default session
         characterId: request.characterId,
         health: request.currentHp || 0,
         maxHealth: request.maxHp || 0,
@@ -134,15 +150,14 @@ export class ActorService {
     }
 
     // Extract stats from monster statblock
-    const statblock = monster.statblock as any;
-    const hp = statblock?.hp?.average || 1;
-    const ac = statblock?.ac?.value || 10;
+    const statblock = monster.statblock;
+    const hp = isJsonObject(statblock) ? (extractNumber(statblock["hp"], "average") ?? 1) : 1;
 
     return this.prisma.token.create({
       data: {
         name: name || monster.name,
-        type: 'NPC', // Monster type
-        gameSessionId: 'default-session', // Default session
+        type: "NPC", // Monster type
+        gameSessionId: "default-session", // Default session
         health: hp,
         maxHealth: hp,
         initiative: 0,
@@ -156,11 +171,19 @@ export class ActorService {
 
   async updateActor(id: string, request: UpdateActorRequest) {
     const data: Record<string, unknown> = {};
-    if (request.name !== undefined) {data.name = request.name;}
-    if (request.currentHp !== undefined) {data.health = request.currentHp;}
-    if (request.maxHp !== undefined) {data.maxHealth = request.maxHp;}
+    if (request.name !== undefined) {
+      data.name = request.name;
+    }
+    if (request.currentHp !== undefined) {
+      data.health = request.currentHp;
+    }
+    if (request.maxHp !== undefined) {
+      data.maxHealth = request.maxHp;
+    }
     // tempHp, ac, isActive not part of Token model
-    if (request.initiative !== undefined) {data.initiative = request.initiative;}
+    if (request.initiative !== undefined) {
+      data.initiative = request.initiative;
+    }
 
     return this.prisma.token.update({
       where: { id },
@@ -184,7 +207,7 @@ export class ActorService {
       throw new Error("Actor not found");
     }
 
-    const newHp = Math.min((actor.health || 0) + amount, (actor.maxHealth || 0));
+    const newHp = Math.min((actor.health || 0) + amount, actor.maxHealth || 0);
     return this.updateActor(id, { currentHp: newHp });
   }
 
@@ -240,12 +263,15 @@ export class ActorService {
       this.prisma.token.count({ where: { gameSession: { campaignId } } }),
     ]);
 
-    const byKindMap = (byKind as Array<any>).reduce((acc: Record<string, number>, group: any) => {
-      const key = String(group?.type ?? "UNKNOWN");
-      const count = typeof group?._count === "number" ? group._count : (group?._count?._all ?? 0);
-      acc[key] = count;
-      return acc;
-    }, {} as Record<string, number>);
+    const byKindMap = byKind.reduce<Record<string, number>>(
+      (acc, group) => {
+        const key = String(group.type ?? "UNKNOWN");
+        const count = group._count?._all ?? 0;
+        acc[key] = count;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return { total, active: activeCount, byKind: byKindMap };
   }

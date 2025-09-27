@@ -2,7 +2,7 @@
  * Token service for business logic and data operations
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 export interface CreateTokenRequest {
   name: string;
@@ -21,7 +21,7 @@ export interface CreateTokenRequest {
   initiative?: number;
   speed?: number;
   imageUrl?: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue;
 }
 
 export interface UpdateTokenRequest {
@@ -38,7 +38,7 @@ export interface UpdateTokenRequest {
   initiative?: number;
   speed?: number;
   imageUrl?: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue;
 }
 
 export interface TokenSearchOptions {
@@ -55,13 +55,29 @@ export class TokenService {
   constructor(private prisma: PrismaClient) {}
 
   async searchTokens(options: TokenSearchOptions) {
-    const { gameSessionId, sceneId, characterId, type, visibility, limit = 100, offset = 0 } = options;
+    const {
+      gameSessionId,
+      sceneId,
+      characterId,
+      type,
+      visibility,
+      limit = 100,
+      offset = 0,
+    } = options;
 
-    const where: any = { gameSessionId };
-    if (sceneId) {where.sceneId = sceneId;}
-    if (characterId) {where.characterId = characterId;}
-    if (type) {where.type = type;}
-    if (visibility) {where.visibility = visibility;}
+    const where: Prisma.TokenWhereInput = { gameSessionId };
+    if (sceneId) {
+      where.sceneId = sceneId;
+    }
+    if (characterId) {
+      where.characterId = characterId;
+    }
+    if (type) {
+      where.type = type;
+    }
+    if (visibility) {
+      where.visibility = visibility;
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.token.findMany({
@@ -161,21 +177,49 @@ export class TokenService {
   }
 
   async updateToken(id: string, request: UpdateTokenRequest) {
-    const data: Record<string, unknown> = {};
-    if (request.name !== undefined) {data.name = request.name;}
-    if (request.x !== undefined) {data.x = request.x;}
-    if (request.y !== undefined) {data.y = request.y;}
-    if (request.z !== undefined) {data.z = request.z;}
-    if (request.rotation !== undefined) {data.rotation = request.rotation;}
-    if (request.scale !== undefined) {data.scale = request.scale;}
-    if (request.type !== undefined) {data.type = request.type;}
-    if (request.visibility !== undefined) {data.visibility = request.visibility;}
-    if (request.health !== undefined) {data.health = request.health;}
-    if (request.maxHealth !== undefined) {data.maxHealth = request.maxHealth;}
-    if (request.initiative !== undefined) {data.initiative = request.initiative;}
-    if (request.speed !== undefined) {data.speed = request.speed;}
-    if (request.imageUrl !== undefined) {data.imageUrl = request.imageUrl;}
-    if (request.metadata !== undefined) {data.metadata = request.metadata;}
+    const data: Prisma.TokenUpdateInput = {};
+    if (request.name !== undefined) {
+      data.name = request.name;
+    }
+    if (request.x !== undefined) {
+      data.x = request.x;
+    }
+    if (request.y !== undefined) {
+      data.y = request.y;
+    }
+    if (request.z !== undefined) {
+      data.z = request.z;
+    }
+    if (request.rotation !== undefined) {
+      data.rotation = request.rotation;
+    }
+    if (request.scale !== undefined) {
+      data.scale = request.scale;
+    }
+    if (request.type !== undefined) {
+      data.type = request.type;
+    }
+    if (request.visibility !== undefined) {
+      data.visibility = request.visibility;
+    }
+    if (request.health !== undefined) {
+      data.health = request.health;
+    }
+    if (request.maxHealth !== undefined) {
+      data.maxHealth = request.maxHealth;
+    }
+    if (request.initiative !== undefined) {
+      data.initiative = request.initiative;
+    }
+    if (request.speed !== undefined) {
+      data.speed = request.speed;
+    }
+    if (request.imageUrl !== undefined) {
+      data.imageUrl = request.imageUrl;
+    }
+    if (request.metadata !== undefined) {
+      data.metadata = request.metadata;
+    }
 
     return this.prisma.token.update({
       where: { id },
@@ -188,10 +232,11 @@ export class TokenService {
   }
 
   async moveToken(id: string, x: number, y: number, rotation?: number) {
-    const data: Record<string, unknown> = { x, y };
-    if (rotation !== undefined) {data.rotation = rotation;}
-
-    return this.updateToken(id, data);
+    return this.updateToken(id, {
+      x,
+      y,
+      ...(rotation !== undefined ? { rotation } : {}),
+    });
   }
 
   async deleteToken(id: string) {
@@ -200,7 +245,14 @@ export class TokenService {
     });
   }
 
-  async getTokensInArea(gameSessionId: string, sceneId: string, x1: number, y1: number, x2: number, y2: number) {
+  async getTokensInArea(
+    gameSessionId: string,
+    sceneId: string,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ) {
     const minX = Math.min(x1, x2);
     const maxX = Math.max(x1, x2);
     const minY = Math.min(y1, y2);
@@ -220,7 +272,13 @@ export class TokenService {
     });
   }
 
-  async getTokensNear(gameSessionId: string, sceneId: string, x: number, y: number, radius: number) {
+  async getTokensNear(
+    gameSessionId: string,
+    sceneId: string,
+    x: number,
+    y: number,
+    radius: number,
+  ) {
     // Simple distance check - could be optimized with spatial indexing
     const tokens = await this.prisma.token.findMany({
       where: { gameSessionId, sceneId },
@@ -241,13 +299,15 @@ export class TokenService {
   }
 
   // Lock functionality not in schema - could be added to metadata if needed
-  async setTokenMetadata(id: string, metadata: unknown) {
+  async setTokenMetadata(id: string, metadata: Prisma.InputJsonValue) {
     return this.updateToken(id, { metadata });
   }
 
   async getTokenStats(gameSessionId: string, sceneId?: string) {
-    const where: any = { gameSessionId };
-    if (sceneId) {where.sceneId = sceneId;}
+    const where: Prisma.TokenWhereInput = { gameSessionId };
+    if (sceneId) {
+      where.sceneId = sceneId;
+    }
 
     const [total, byType, byVisibility, visible] = await Promise.all([
       this.prisma.token.count({ where }),

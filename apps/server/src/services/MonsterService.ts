@@ -29,18 +29,16 @@ const SRDMonsters = [
   },
 ];
 
-import type { Monster as SRDMonster } from "@vtt/core-schemas";
-
 export interface CreateMonsterRequest {
   name: string;
   stableId?: string;
-  statblock: any;
+  statblock: Prisma.InputJsonValue;
   tags?: string[];
 }
 
 export interface UpdateMonsterRequest {
   name?: string;
-  statblock?: any;
+  statblock?: Prisma.InputJsonValue;
   tags?: string[];
 }
 
@@ -72,8 +70,8 @@ export class MonsterService {
             where: { stableId: srdMonster.id },
             data: {
               name: srdMonster.name,
-              statblock: srdMonster as any,
-              tags: srdMonster.tags || [],
+              statblock: srdMonster as Prisma.InputJsonValue,
+              tags: (srdMonster.tags || []) as Prisma.JsonArray,
             },
           });
           updated++;
@@ -84,15 +82,16 @@ export class MonsterService {
             data: {
               stableId: srdMonster.id,
               name: srdMonster.name,
-              statblock: srdMonster as any,
-              tags: srdMonster.tags || [],
+              statblock: srdMonster as Prisma.InputJsonValue,
+              tags: (srdMonster.tags || []) as Prisma.JsonArray,
             },
           });
           created++;
           logger.debug(`Created SRD monster: ${srdMonster.name}`);
         }
       } catch (error) {
-        logger.error(`Failed to process SRD monster ${srdMonster.name}:`, error);
+        const seedError = error instanceof Error ? error : new Error(String(error));
+        logger.error(`Failed to process SRD monster ${srdMonster.name}:`, seedError);
       }
     }
 
@@ -103,7 +102,7 @@ export class MonsterService {
   async searchMonsters(options: MonsterSearchOptions = {}) {
     const { query, tags, limit = 50, offset = 0 } = options;
 
-    const whereClause: any = {};
+    const whereClause: Prisma.MonsterWhereInput = {};
 
     // Text search in name
     if (query && query.trim()) {
@@ -116,7 +115,7 @@ export class MonsterService {
     // Tag filtering
     if (tags && tags.length > 0) {
       whereClause.tags = {
-        hasAny: tags,
+        array_contains: tags as Prisma.JsonArray,
       };
     }
 
@@ -148,7 +147,8 @@ export class MonsterService {
         hasMore: totalCount > offset + monsters.length,
       };
     } catch (error) {
-      logger.error("Failed to search monsters:", error);
+      const searchError = error instanceof Error ? error : new Error(String(error));
+      logger.error("Failed to search monsters:", searchError);
       throw new Error("Monster search failed");
     }
   }
@@ -164,7 +164,8 @@ export class MonsterService {
 
       return monster;
     } catch (error) {
-      logger.error(`Failed to get monster ${idOrStableId}:`, error);
+      const getError = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Failed to get monster ${idOrStableId}:`, getError);
       throw new Error("Failed to retrieve monster");
     }
   }
@@ -186,15 +187,16 @@ export class MonsterService {
           name: request.name,
           stableId: request.stableId || `custom-${Date.now()}`,
           statblock: request.statblock,
-          tags: request.tags || [],
+          tags: (request.tags || []) as Prisma.JsonArray,
         },
       });
 
       logger.info(`Created monster: ${monster.name} (${monster.id})`);
       return monster;
     } catch (error) {
-      logger.error("Failed to create monster:", error);
-      throw error;
+      const createError = error instanceof Error ? error : new Error(String(error));
+      logger.error("Failed to create monster:", createError);
+      throw createError;
     }
   }
 
@@ -215,7 +217,7 @@ export class MonsterService {
         updateData.statblock = request.statblock;
       }
       if (request.tags !== undefined) {
-        updateData.tags = request.tags;
+        updateData.tags = (request.tags ?? []) as Prisma.JsonArray;
       }
 
       const updatedMonster = await this.prisma.monster.update({
@@ -226,8 +228,9 @@ export class MonsterService {
       logger.info(`Updated monster: ${updatedMonster.name} (${updatedMonster.id})`);
       return updatedMonster;
     } catch (error) {
-      logger.error(`Failed to update monster ${idOrStableId}:`, error);
-      throw error;
+      const updateError = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Failed to update monster ${idOrStableId}:`, updateError);
+      throw updateError;
     }
   }
 
@@ -245,8 +248,9 @@ export class MonsterService {
       logger.info(`Deleted monster: ${existingMonster.name} (${existingMonster.id})`);
       return { success: true, message: `Monster '${existingMonster.name}' deleted successfully` };
     } catch (error) {
-      logger.error(`Failed to delete monster ${idOrStableId}:`, error);
-      throw error;
+      const deleteError = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Failed to delete monster ${idOrStableId}:`, deleteError);
+      throw deleteError;
     }
   }
 
@@ -286,7 +290,8 @@ export class MonsterService {
         })),
       };
     } catch (error) {
-      logger.error("Failed to get monster stats:", error);
+      const statsError = error instanceof Error ? error : new Error(String(error));
+      logger.error("Failed to get monster stats:", statsError);
       throw new Error("Failed to retrieve monster statistics");
     }
   }
