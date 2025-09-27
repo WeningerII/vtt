@@ -38,6 +38,7 @@
     "@vtt/core-schemas": "workspace:*",
     "@vtt/dice-engine": "workspace:*",
     "@vtt/logging": "workspace:*",
+    "@vtt/performance": "workspace:*",
     "@vtt/physics": "workspace:*",
     "@vtt/spell-engine": "workspace:*",
     "@vtt/user-management": "workspace:*",
