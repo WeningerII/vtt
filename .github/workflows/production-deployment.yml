@@ -164,7 +164,7 @@ jobs:
 
       - name: Build and push server image
         id: build_server
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/server/Dockerfile
@@ -180,7 +180,7 @@ jobs:
 
       - name: Build and push client image
         id: build_client
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/client/Dockerfile
