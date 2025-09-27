@@ -29,7 +29,9 @@ const AllTheProviders = ({
 }) => {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children as any}</BrowserRouter>
+      <BrowserRouter>
+        <>{children}</>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 };
