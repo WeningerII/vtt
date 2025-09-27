@@ -33,7 +33,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -58,7 +58,7 @@ jobs:
         app: [client, server]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -106,7 +106,7 @@ jobs:
         app: [client, server]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -152,7 +152,7 @@ jobs:
     needs: [build-images]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -204,7 +204,7 @@ jobs:
     # environment: staging  # Uncomment when staging environment is configured in repo settings
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -262,7 +262,7 @@ jobs:
     # environment: production  # Uncomment when production environment is configured in repo settings
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -385,7 +385,7 @@ jobs:
       SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

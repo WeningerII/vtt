@@ -27,7 +27,7 @@ jobs:
       services: ${{ steps.filter.outputs.services || 'false' }}
       e2e: ${{ steps.filter.outputs.e2e || 'false' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
@@ -76,7 +76,7 @@ jobs:
     timeout-minutes: 10
     needs: [lint-and-typecheck]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
@@ -109,7 +109,7 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
@@ -151,7 +151,7 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
@@ -179,7 +179,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
