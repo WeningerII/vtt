@@ -31,15 +31,8 @@
   },
   "dependencies": {
     "@vtt/logging": "workspace:*",
-    "@vtt/core-ecs": "workspace:*"
-  },
-  "peerDependencies": {
+    "@vtt/core-ecs": "workspace:*",
     "@vtt/performance": "workspace:*"
-  },
-  "peerDependenciesMeta": {
-    "@vtt/performance": {
-      "optional": true
-    }
   },
   "scripts": {
     "build": "tsc -b",
