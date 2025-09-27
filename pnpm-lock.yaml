@@ -511,6 +511,9 @@ importers:
       '@vtt/logging':
         specifier: workspace:*
         version: link:../../packages/logging
+      '@vtt/performance':
+        specifier: workspace:*
+        version: link:../../packages/performance
       '@vtt/physics':
         specifier: workspace:*
         version: link:../../packages/physics
