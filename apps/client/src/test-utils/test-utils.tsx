@@ -19,9 +19,9 @@ const AllTheProviders = ({
     defaultOptions: {
       queries: {
         retry: false,
-        refetchOnWindowFocus: false
-      }
-    }
+        refetchOnWindowFocus: false,
+      },
+    },
   }),
 }: {
   children: React.ReactNode;
@@ -34,7 +34,10 @@ const AllTheProviders = ({
   );
 };
 
-const customRender = (ui: ReactElement, options: CustomRenderOptions = {}): any => {
+const customRender = (
+  ui: ReactElement,
+  options: CustomRenderOptions = {},
+): ReturnType<typeof render> => {
   const { queryClient, ...renderOptions } = options;
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -51,12 +54,12 @@ export const createTestQueryClient = () =>
       queries: {
         retry: false,
         gcTime: 0,
-        staleTime: 0
+        staleTime: 0,
       },
       mutations: {
-        retry: false
-      }
-    }
+        retry: false,
+      },
+    },
   });
 
 // Helper to wait for queries to settle
@@ -76,8 +79,8 @@ export const mockAuthenticatedUser = {
 
 // Helper to mock authentication
 export const withAuthentication = (user = mockAuthenticatedUser) => {
-  return (Component: React.ComponentType<any>) => {
-    return (props: any) => (
+  return (Component: React.ComponentType<Record<string, unknown>>) => {
+    return (props: Record<string, unknown>) => (
       <div data-testid="authenticated-wrapper">
         <Component {...props} user={user} />
       </div>
@@ -181,7 +184,7 @@ const mockUserEvent = {
     type: async (element: HTMLElement, text: string) => {
       if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
         element.value = text;
-        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event("input", { bubbles: true }));
       }
     },
   }),
@@ -202,10 +205,10 @@ export const userInteraction = {
   },
 
   async selectAndWait(element: HTMLElement, value: string, delay = 100) {
-    const user = mockUserEvent.setup();
+    const _user = mockUserEvent.setup();
     if (element instanceof HTMLSelectElement) {
       element.value = value;
-      element.dispatchEvent(new Event('change', { bubbles: true }));
+      element.dispatchEvent(new Event("change", { bubbles: true }));
     }
     await new Promise((resolve) => setTimeout(resolve, delay));
   },
@@ -306,6 +309,67 @@ export const mockResizeObserver = () => {
   });
 };
 
-// Re-export everything from testing-library
-export * from "@testing-library/react";
+// Re-export everything from testing-library except render to avoid conflicts
+export {
+  screen,
+  fireEvent,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+  getByRole,
+  getByText,
+  getByLabelText,
+  getByPlaceholderText,
+  getByAltText,
+  getByDisplayValue,
+  getByTitle,
+  getByTestId,
+  getAllByRole,
+  getAllByText,
+  getAllByLabelText,
+  getAllByPlaceholderText,
+  getAllByAltText,
+  getAllByDisplayValue,
+  getAllByTitle,
+  getAllByTestId,
+  queryByRole,
+  queryByText,
+  queryByLabelText,
+  queryByPlaceholderText,
+  queryByAltText,
+  queryByDisplayValue,
+  queryByTitle,
+  queryByTestId,
+  queryAllByRole,
+  queryAllByText,
+  queryAllByLabelText,
+  queryAllByPlaceholderText,
+  queryAllByAltText,
+  queryAllByDisplayValue,
+  queryAllByTitle,
+  queryAllByTestId,
+  findByRole,
+  findByText,
+  findByLabelText,
+  findByPlaceholderText,
+  findByAltText,
+  findByDisplayValue,
+  findByTitle,
+  findByTestId,
+  findAllByRole,
+  findAllByText,
+  findAllByLabelText,
+  findAllByPlaceholderText,
+  findAllByAltText,
+  findAllByDisplayValue,
+  findAllByTitle,
+  findAllByTestId,
+  prettyDOM,
+  logRoles,
+  configure,
+  getDefaultNormalizer,
+  act,
+  cleanup,
+  renderHook,
+} from "@testing-library/react";
 export { customRender as render };
