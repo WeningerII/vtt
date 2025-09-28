@@ -9,15 +9,11 @@ on:
     branches: [main]
 
 # Only run if secrets are not available (development/fork scenario)
-env:
-  IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
-  HAS_SECRETS: ${{ secrets.GITHUB_TOKEN != '' }}
 
 jobs:
   # Basic build and test without deployment complexity
   quick-build:
     runs-on: ubuntu-latest
-    if: ${{ env.IS_FORK == 'true' || env.HAS_SECRETS == 'false' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5

@@ -198,9 +198,9 @@ jobs:
     needs: [e2e-tests]
     if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID || '' }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY || '' }}
+      TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET || '' }}
     # environment: staging  # Uncomment when staging environment is configured in repo settings
 
     steps:
@@ -215,15 +215,15 @@ jobs:
         if: ${{ env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID || '' }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY || '' }}
           aws-region: us-east-1
 
       - name: Deploy infrastructure
         if: ${{ env.TERRAFORM_STATE_BUCKET != '' && env.AWS_ACCESS_KEY_ID != '' }}
         working-directory: ./infra/terraform
         run: |
-          terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
+          terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET || 'default-bucket' }}"
           terraform workspace select staging || terraform workspace new staging
           terraform plan -var-file="staging.tfvars" -out=tfplan
           terraform apply -auto-approve tfplan
@@ -256,9 +256,9 @@ jobs:
     needs: [deploy-staging]
     if: github.ref == 'refs/heads/main' && github.event.inputs.environment != 'staging'
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID || '' }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY || '' }}
+      TERRAFORM_STATE_BUCKET: ${{ secrets.TERRAFORM_STATE_BUCKET || '' }}
     # environment: production  # Uncomment when production environment is configured in repo settings
 
     steps:
@@ -273,15 +273,15 @@ jobs:
         if: ${{ env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID || '' }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY || '' }}
           aws-region: us-east-1
 
       - name: Deploy infrastructure
         if: ${{ env.TERRAFORM_STATE_BUCKET != '' && env.AWS_ACCESS_KEY_ID != '' }}
         working-directory: ./infra/terraform
         run: |
-          terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}"
+          terraform init -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET || 'default-bucket' }}"
           terraform workspace select production || terraform workspace new production
           terraform plan -var-file="production.tfvars" -out=tfplan
           terraform apply -auto-approve tfplan
@@ -390,8 +390,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID || '' }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY || '' }}
           aws-region: us-east-1
 
       - name: Rollback production deployment

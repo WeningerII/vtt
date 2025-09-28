@@ -10,7 +10,7 @@ on:
     - cron: "*/15 * * * *"
 
 env:
-  METRICS_RETENTION_DAYS: 30
+  METRICS_RETENTION_DAYS: "30"
 
 jobs:
   collect-metrics:
@@ -57,7 +57,7 @@ jobs:
           echo "workflow_status=$WORKFLOW_STATUS" >> $GITHUB_OUTPUT
           echo "duration=$WORKFLOW_DURATION" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Performance trend analysis
         run: |
@@ -85,7 +85,7 @@ jobs:
           echo "  - Failure rate: ${FAILURE_RATE}%"
           echo "  - Success rate: ${{ steps.metrics.outputs.success_rate }}%"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Alert on degraded performance
         if: steps.metrics.outputs.workflow_status == 'failure' || steps.metrics.outputs.success_rate < 90
@@ -156,4 +156,4 @@ jobs:
 
           echo "✅ Health check completed"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}

@@ -14,8 +14,8 @@ on:
         type: boolean
 
 env:
-  DRIFT_TOLERANCE_PERCENT: 5
-  CONFIG_VALIDATION_TIMEOUT: 300
+  DRIFT_TOLERANCE_PERCENT: "5"
+  CONFIG_VALIDATION_TIMEOUT: "300"
 
 jobs:
   detect-configuration-drift:

@@ -5,16 +5,15 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   schedule:
     # Run performance benchmarks daily at 2 AM UTC
     - cron: "0 2 * * *"
 
 env:
-  BENCHMARK_RETENTION_DAYS: 90
-  PERFORMANCE_THRESHOLD_DEGRADATION: 15 # 15% degradation threshold
-  MEMORY_LIMIT_MB: 512
-  CPU_LIMIT_CORES: 2
+  BENCHMARK_RETENTION_DAYS: "90"
+  PERFORMANCE_THRESHOLD_DEGRADATION: "15" # 15% degradation threshold
+  MEMORY_LIMIT_MB: "512"
+  CPU_LIMIT_CORES: "2"
 
 jobs:
   performance-benchmarks:

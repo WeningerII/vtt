@@ -11,9 +11,9 @@ on:
     - cron: "0 3 * * 0"
 
 env:
-  SECURITY_SCAN_TIMEOUT: 30
+  SECURITY_SCAN_TIMEOUT: "30"
   COMPLIANCE_FRAMEWORKS: "OWASP,NIST,SOC2"
-  SECRET_SCAN_DEPTH: 100
+  SECRET_SCAN_DEPTH: "100"
 
 jobs:
   comprehensive-security-scan:

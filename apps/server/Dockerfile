@@ -51,17 +51,29 @@ RUN set -e; \
             # Copy and modify the tsconfig to exclude test files \
             node -e " \
                 const fs = require('fs'); \
-                const config = JSON.parse(fs.readFileSync('/repo/packages/$pkg/tsconfig.json', 'utf8')); \
-                config.exclude = config.exclude || []; \
-                const testExcludes = ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**', '**/__mocks__/**', 'src/**/__tests__/**']; \
-                testExcludes.forEach(pattern => { \
-                    if (!config.exclude.includes(pattern)) config.exclude.push(pattern); \
-                }); \
-                const output = JSON.stringify(config, null, 2); \
-                // Normalize line endings and remove any potential Unicode issues \
-                const normalized = output.normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g, ''); \
-                fs.writeFileSync('./packages/$pkg/tsconfig.json', normalized, 'utf8'); \
-                console.log('Modified and normalized tsconfig for', '$pkg'); \
+                try { \
+                    const content = fs.readFileSync('/repo/packages/$pkg/tsconfig.json', 'utf8'); \
+                    const config = JSON.parse(content); \
+                    config.exclude = config.exclude || []; \
+                    const testExcludes = ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**', '**/__mocks__/**', 'src/**/__tests__/**']; \
+                    testExcludes.forEach(pattern => { \
+                        if (!config.exclude.includes(pattern)) config.exclude.push(pattern); \
+                    }); \
+                    // Use compact formatting to avoid line length issues \
+                    const output = JSON.stringify(config, null, 2); \
+                    // Clean and validate the output \
+                    const lines = output.split('\\n'); \
+                    const cleanedOutput = lines.map(line => line.replace(/[\\u0000-\\u001F\\u007F-\\u009F]/g, '')).join('\\n'); \
+                    // Validate before writing \
+                    JSON.parse(cleanedOutput); \
+                    fs.writeFileSync('./packages/$pkg/tsconfig.json', cleanedOutput, { encoding: 'utf8', flag: 'w' }); \
+                    console.log('Modified and validated tsconfig for', '$pkg'); \
+                } catch (error) { \
+                    console.error('Error processing tsconfig for $pkg:', error.message); \
+                    // Fall back to copying original file \
+                    fs.copyFileSync('/repo/packages/$pkg/tsconfig.json', './packages/$pkg/tsconfig.json'); \
+                    console.log('Copied original tsconfig for', '$pkg'); \
+                } \
             "; \
         else \
             echo "Creating tsconfig for $pkg"; \

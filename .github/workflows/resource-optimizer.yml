@@ -18,9 +18,9 @@ on:
           - aggressive
 
 env:
-  MAX_CONCURRENT_JOBS: 4
-  RESOURCE_USAGE_THRESHOLD: 80
-  OPTIMIZATION_WINDOW_HOURS: 24
+  MAX_CONCURRENT_JOBS: "4"
+  RESOURCE_USAGE_THRESHOLD: "80"
+  OPTIMIZATION_WINDOW_HOURS: "24"
 
 jobs:
   analyze-resource-usage:
@@ -268,11 +268,11 @@ jobs:
             // This is a simplified example - in production this would be much more sophisticated
             const cacheStrategies = {
               ci: {
-                key: '${{ runner.os }}-ci-${{ hashFiles(\'**/pnpm-lock.yaml\', \'**/package-lock.json\') }}',
+                key: '\\${{ runner.os }}-ci-\\${{ hashFiles("**/pnpm-lock.yaml", "**/package-lock.json") }}',
                 paths: ['node_modules', '~/.pnpm-store', '.turbo']
               },
               build: {
-                key: '${{ runner.os }}-build-${{ hashFiles(\'**/pnpm-lock.yaml\', \'**/*.ts\', \'**/*.js\') }}',
+                key: '\\${{ runner.os }}-build-\\${{ hashFiles("**/pnpm-lock.yaml", "**/*.ts", "**/*.js") }}',
                 paths: ['node_modules', '~/.pnpm-store', '.turbo', 'dist', '.next']
               }
             };

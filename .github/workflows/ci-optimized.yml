@@ -62,14 +62,14 @@ jobs:
           prefer-offline: "true"
       - name: Lint (parallel with typecheck dependencies)
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: |
           pnpm turbo lint --cache-dir=.turbo
       - name: Typecheck (with dependencies built)
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: |
           # Typecheck depends on "^build" in turbo.json so this builds deps first
           pnpm turbo typecheck --cache-dir=.turbo
@@ -100,8 +100,8 @@ jobs:
         run: pnpm db:gen
       - name: Build with turbo
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: pnpm turbo build --cache-dir=.turbo
 
   test:
@@ -124,8 +124,8 @@ jobs:
           prefer-offline: "true"
       - name: Run tests with coverage (shard ${{ matrix.shard }}/4)
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: |
           mkdir -p .nyc_output coverage
           pnpm nyc pnpm turbo test --cache-dir=.turbo -- --shard=${{ matrix.shard }}/4
