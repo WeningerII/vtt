@@ -2,156 +2,137 @@
 
 🎲 **A modern, scalable, production-ready virtual tabletop platform for immersive tabletop RPG experiences.**
 
-[![CI/CD](https://github.com/weningerii/vtt/actions/workflows/deploy-production.yml/badge.svg)](https://github.com/weningerii/vtt/actions/workflows/deploy-production.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## 🚀 Features
 
 ### **Core Platform**
+
 - **Real-time Multiplayer** - WebSocket-based synchronization for seamless collaborative gameplay
 - **Campaign Management** - Create, organize, and manage multiple RPG campaigns
 - **User Management** - Complete authentication, authorization, and user profiles
 - **Asset Management** - Upload, organize, and share game assets (maps, tokens, audio)
-- **Cross-Platform** - Web-based platform accessible on desktop, tablet, and mobile
+- **Game Systems** - D&D 5e, Pathfinder 2e, Call of Cthulhu, Cyberpunk Red, and more
 
-### **Game Systems**
-- **Multi-System Support** - D&D 5e, Pathfinder 2e, Call of Cthulhu, Cyberpunk Red, and more
-- **Custom Systems** - Build and share custom rule systems
-- **Character Management** - Digital character sheets with automated calculations
-- **Dice Rolling** - Advanced dice engine with custom formulas and modifiers
-
-### **Technical Excellence**
-- **Enterprise-Grade Security** - JWT authentication, role-based access, encrypted data
-- **High Performance** - Optimized WebGL renderer, efficient data structures
-- **Scalable Architecture** - Microservices, containerized deployment, auto-scaling
-- **Monitoring & Observability** - Comprehensive logging, metrics, and alerting
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        VTT Platform                             │
-├─────────────────┬─────────────────┬─────────────────┬───────────┤
-│   Client App    │   API Server    │   Bot Services  │  Editor   │
-│   (Next.js)     │   (Express)     │   (Discord)     │ (React)   │
-└─────────────────┴─────────────────┴─────────────────┴───────────┘
-├─────────────────────────────────────────────────────────────────┤
-│                     Shared Packages                            │
-│  • User Management  • Content System  • Core ECS Engine       │
-│  • AI Integration   • Analytics       • Authentication        │
+{{ ... }}
 └─────────────────────────────────────────────────────────────────┘
-├─────────────────────────────────────────────────────────────────┤
-│                    Infrastructure                               │
-│  • PostgreSQL     • Redis Cache    • S3 Storage               │
-│  • Kubernetes     • AWS/GCP       • Monitoring Stack          │
-└─────────────────────────────────────────────────────────────────┘
-```
 
 ## 🛠️ Technology Stack
 
 ### **Frontend**
+
 - **Framework**: Next.js 14 with TypeScript
 - **UI Library**: React 18 with custom design system
 - **Styling**: Tailwind CSS with class-variance-authority
 - **State Management**: React Context + Custom hooks
-- **Real-time**: WebSocket integration
-- **Graphics**: WebGL2 renderer for game board
 
-### **Backend**
-- **Runtime**: Node.js 22 with TypeScript
-- **Framework**: Express.js with middleware architecture
-- **Database**: PostgreSQL 16 with Prisma ORM
-- **Cache**: Redis 7 for sessions and real-time data
-- **Authentication**: JWT with refresh tokens
-- **File Storage**: S3-compatible object storage
-- **Validation**: Zod schema validation
+{{ ... }}
 
-### **Infrastructure**
-- **Orchestration**: Kubernetes on AWS EKS
-- **CI/CD**: GitHub Actions with multi-stage deployments
-- **Infrastructure**: Terraform for cloud resources
-- **Monitoring**: Prometheus + Grafana + AlertManager
 - **Logging**: Structured JSON logs with centralized aggregation
 - **Security**: WAF, VPC isolation, encrypted storage
 
 ## 🚦 Getting Started
 
 ### **Prerequisites**
+
 - Node.js 22+
 - pnpm 9+
 - Docker & Docker Compose
 - PostgreSQL 16 (for production)
 
+{{ ... }}
+
 ### **Development Setup**
 
 1. **Clone the repository**
-```bash
-git clone https://github.com/weningerii/vtt.git
-cd vtt
-```
 
-2. **Install dependencies**
+````bash
+git clone <https://github.com/weningerii/vtt.git>
+cd vtt
+
+```text
+1. **Install dependencies**
+
 ```bash
 pnpm install
-```
 
-3. **Setup environment**
+```text
+1. **Setup environment**
+
 ```bash
 cp .env.example .env.dev
-# Edit .env.dev with your configuration
-```
 
-4. **Start development services**
+# Edit .env.dev with your configuration
+
+```text
+1. **Start development services**
+
 ```bash
+
 # Start database and cache services
+
 docker-compose up -d postgres redis minio
 
 # Run database migrations
+
 pnpm run db:migrate
 
 # Start development servers
-pnpm run dev
-```
 
-5. **Access the application**
-- **Client**: http://localhost:3000
-- **API**: http://localhost:8080
-- **MinIO Console**: http://localhost:9090
+pnpm run dev
+
+```text
+1. **Access the application**
+- **Client**: <http://localhost:3000>
+- **API**: <http://localhost:8080>
+- **MinIO Console**: <http://localhost:9090>
 
 ### **Available Scripts**
 
 ```bash
+
 # Development
+
 pnpm run dev              # Start all development servers
 pnpm run dev:client       # Start client only
 pnpm run dev:server       # Start server only
 
 # Building
+
 pnpm run build            # Build all applications
 pnpm run build:client     # Build client application
 pnpm run build:server     # Build server application
 
 # Testing
+
 pnpm run test             # Run all tests
 pnpm run test:unit        # Run unit tests
 pnpm run test:e2e         # Run end-to-end tests
 pnpm run test:coverage    # Generate coverage report
 
+# Security
+
+pnpm run audit            # Run security audit on dependencies
+pnpm run audit:security   # Run comprehensive security scan
+pnpm run audit:full       # Run all security audits
+
 # Database
+
 pnpm run db:migrate       # Run database migrations
 pnpm run db:seed          # Seed development data
 pnpm run db:studio        # Open Prisma Studio
 
 # Linting & Formatting
+
 pnpm run lint             # Lint all code
 pnpm run format           # Format all code
 pnpm run type-check       # Run TypeScript checks
-```
 
+```text
 ## 📦 Project Structure
 
-```
+```text
 vtt/
 ├── apps/                      # Application services
 │   ├── client/               # Next.js frontend application
@@ -173,8 +154,8 @@ vtt/
 │   ├── api/                  # API documentation
 │   └── adr/                  # Architecture decision records
 └── e2e/                      # End-to-end tests
-```
 
+```text
 ## 🔐 Security & Compliance
 
 - **Authentication**: JWT-based with refresh token rotation
@@ -190,24 +171,29 @@ vtt/
 ### **Production Deployment**
 
 1. **Infrastructure Setup**
+
 ```bash
 cd infra/terraform
 terraform init
 terraform workspace new production
 terraform plan -var-file="production.tfvars"
 terraform apply
-```
 
-2. **Application Deployment**
+```text
+1. **Application Deployment**
+
 ```bash
+
 # Automated via GitHub Actions on push to main
+
 git push origin main
 
 # Manual deployment
-kubectl apply -f infra/k8s/production/
-```
 
-3. **Domain Configuration**
+kubectl apply -f infra/k8s/production/
+
+```text
+1. **Domain Configuration**
 - Configure DNS to point to load balancer
 - SSL certificates managed automatically via cert-manager
 
@@ -216,15 +202,19 @@ kubectl apply -f infra/k8s/production/
 Critical environment variables for production:
 
 ```bash
+
 # Database
+
 DB_HOST=your-postgres-host
 DB_PASSWORD=your-secure-password
 
 # Authentication
+
 JWT_ACCESS_SECRET=your-jwt-secret
 JWT_REFRESH_SECRET=your-refresh-secret
 
 # External Services
+
 STRIPE_SECRET_KEY=your-stripe-key
 REDIS_AUTH_TOKEN=your-redis-token
 
@@ -274,8 +264,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 Comprehensive API documentation is available at:
 
-- **Development**: http://localhost:8080/docs
-- **Production**: https://api.vtt.platform.com/docs
+- **Development**: <http://localhost:8080/docs>
+- **Production**: <https://api.vtt.platform.com/docs>
 
 Key API endpoints:
 
@@ -287,18 +277,21 @@ Key API endpoints:
 ## 🗺️ Roadmap
 
 ### **Q1 2025**
+
 - [ ] Advanced dice system with 3D physics
 - [ ] Voice/video chat integration
 - [ ] Mobile companion app
 - [ ] Marketplace for community content
 
 ### **Q2 2025**
+
 - [ ] AR/VR support for immersive gameplay
 - [ ] Advanced AI game master assistance
 - [ ] Multi-language localization
 - [ ] Enhanced accessibility features
 
 ### **Q3 2025**
+
 - [ ] Tournament and event system
 - [ ] Advanced analytics dashboard
 - [ ] Community forums integration
@@ -320,3 +313,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Built with ❤️ for the tabletop gaming community**
 
 For support, feature requests, or questions, please [open an issue](https://github.com/weningerii/vtt/issues) or join our [Discord community](https://discord.gg/vtt-platform).
+````

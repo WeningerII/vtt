@@ -1,0 +1,190 @@
+{
+  "dependencies": {
+    "status": "PASS",
+    "output": "\u001b[36mNPM audit report summary:\u001b[0m\n{\n  \"vulnerabilities\": {\n    \"info\": 0,\n    \"low\": 0,\n    \"moderate\": 0,\n    \"high\": 0,\n    \"critical\": 0,\n    \"total\": 0\n  },\n  \"dependencies\": {\n    \"prod\": 949,\n    \"dev\": 522,\n    \"optional\": 109,\n    \"peer\": 79,\n    \"peerOptional\": 0,\n    \"total\": 1476\n  }\n}\n\u001b[32mPassed npm security audit.\u001b[0m",
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "dockerfiles": [
+    {
+      "file": "apps/client/Dockerfile",
+      "issues": [],
+      "status": "PASS"
+    },
+    {
+      "file": "apps/server/Dockerfile",
+      "issues": [],
+      "status": "PASS"
+    },
+    {
+      "file": "apps/client/Dockerfile",
+      "issues": [],
+      "status": "PASS"
+    },
+    {
+      "file": "apps/server/Dockerfile",
+      "issues": [],
+      "status": "PASS"
+    }
+  ],
+  "secrets": [
+    {
+      "file": "apps/client/package-lock.json",
+      "type": "API Keys",
+      "line": 56
+    },
+    {
+      "file": "apps/client/src/components/MapEditor.tsx",
+      "type": "API Keys",
+      "line": 200
+    },
+    {
+      "file": "apps/server/.env",
+      "type": "Database URLs",
+      "line": 2
+    },
+    {
+      "file": "apps/server/src/index.ts",
+      "type": "API Keys",
+      "line": 91
+    },
+    {
+      "file": "apps/server/src/routes/ai.ts",
+      "type": "API Keys",
+      "line": 37
+    },
+    {
+      "file": "apps/server/src/routes/campaigns.ts",
+      "type": "API Keys",
+      "line": 444
+    },
+    {
+      "file": "apps/server/src/services/ConditionService.old.ts",
+      "type": "API Keys",
+      "line": 255
+    },
+    {
+      "file": "apps/server/src/services/ConditionService.ts",
+      "type": "API Keys",
+      "line": 253
+    },
+    {
+      "file": "packages/ai/src/DynamicNPCManager.ts",
+      "type": "API Keys",
+      "line": 241
+    },
+    {
+      "file": "packages/ai/src/index.js",
+      "type": "API Keys",
+      "line": 151
+    },
+    {
+      "file": "packages/ai/src/index.ts",
+      "type": "API Keys",
+      "line": 380
+    },
+    {
+      "file": "packages/ai/src/model-mapper.ts",
+      "type": "API Keys",
+      "line": 397
+    },
+    {
+      "file": "packages/ai/src/providers/legacy-providers.ts",
+      "type": "API Keys",
+      "line": 369
+    },
+    {
+      "file": "packages/auth/src/SecurityUtils.ts",
+      "type": "API Keys",
+      "line": 22
+    },
+    {
+      "file": "packages/concentration-manager/src/index.ts",
+      "type": "API Keys",
+      "line": 443
+    },
+    {
+      "file": "packages/content-management/package-lock.json",
+      "type": "API Keys",
+      "line": 25
+    },
+    {
+      "file": "packages/core/src/SystemIntegration.ts",
+      "type": "API Keys",
+      "line": 344
+    },
+    {
+      "file": "packages/i18n/tsconfig.json",
+      "type": "API Keys",
+      "line": 18
+    },
+    {
+      "file": "packages/logging/package-lock.json",
+      "type": "API Keys",
+      "line": 40
+    },
+    {
+      "file": "packages/renderer/src/lighting/ShadowManager.ts",
+      "type": "API Keys",
+      "line": 133
+    },
+    {
+      "file": "packages/renderer/src/webgpu-types.d.ts",
+      "type": "API Keys",
+      "line": 277
+    },
+    {
+      "file": "packages/security/src/index.ts",
+      "type": "API Keys",
+      "line": 293
+    },
+    {
+      "file": "packages/spell-engine/src/ConcentrationManager.ts",
+      "type": "API Keys",
+      "line": 336
+    },
+    {
+      "file": "packages/spell-engine-enterprise/src/EnterpriseSpellSystem.ts",
+      "type": "API Keys",
+      "line": 322
+    },
+    {
+      "file": "packages/user-management/src/index.ts",
+      "type": "API Keys",
+      "line": 399
+    },
+    {
+      "file": "packages/utils/src/string.ts",
+      "type": "API Keys",
+      "line": 65
+    },
+    {
+      "file": "packages/utils/tsconfig.json",
+      "type": "API Keys",
+      "line": 17
+    },
+    {
+      "file": "packages/validation/tsconfig.json",
+      "type": "API Keys",
+      "line": 17
+    },
+    {
+      "file": "scripts/exhaustive-scanner.js",
+      "type": "API Keys",
+      "line": 716
+    },
+    {
+      "file": "scripts/setup-i18n.js",
+      "type": "API Keys",
+      "line": 100
+    }
+  ],
+  "permissions": [],
+  "summary": {}
+}

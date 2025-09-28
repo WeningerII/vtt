@@ -5,6 +5,9 @@
   "description": "Skeleton for a modern virtual tabletop.",
   "packageManager": "pnpm@9.12.2",
   "scripts": {
+    "audit": "pnpm dlx audit-ci --config .audit-ci.json",
+    "audit:security": "node scripts/audit-security.js",
+    "audit:full": "pnpm run audit && pnpm run audit:security",
     "build": "turbo run build",
     "test": "turbo run test",
     "test:ci": "turbo run test -- --coverage",
@@ -20,6 +23,7 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "format:markdown": "node scripts/fix-markdown.js",
     "prepare": "husky",
     "dev": "turbo run dev --parallel",
     "dev:server": "tsx apps/server/src/index.ts",
