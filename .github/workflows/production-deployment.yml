@@ -136,7 +136,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Extract metadata (server)
         id: meta_server
@@ -216,7 +216,7 @@ jobs:
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING || '' }}
 
       - name: Deploy to staging
         run: |
@@ -237,7 +237,7 @@ jobs:
           channel: "#deployments"
           text: "Staging deployment completed"
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK || '' }}
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -253,7 +253,7 @@ jobs:
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
 
       - name: Create deployment backup
         run: |
@@ -282,7 +282,7 @@ jobs:
       - name: Update monitoring dashboards
         run: |
           # checkov:skip=CKV_GHA_3: Webhook URL is from secrets, not hardcoded
-          curl -X POST "${{ secrets.GRAFANA_WEBHOOK }}" \
+          curl -X POST "${{ secrets.GRAFANA_WEBHOOK || '' }}" \
             -H "Content-Type: application/json" \
             -d '{"version": "${{ needs.pre-deployment-checks.outputs.version }}", "environment": "production"}'
 
@@ -296,11 +296,11 @@ jobs:
       - name: Configure kubectl
         if: env.KUBE_CONFIG_PRODUCTION != ''
         env:
-          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
 
       - name: Rollback deployment
         run: |
@@ -314,7 +314,7 @@ jobs:
           channel: "#incidents"
           text: "Production deployment rolled back due to health check failure"
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK || '' }}
 
   post-deployment:
     runs-on: ubuntu-latest
@@ -324,7 +324,7 @@ jobs:
       - name: Update deployment tracking
         if: env.DEPLOYMENT_TRACKING_URL != ''
         env:
-          DEPLOYMENT_TRACKING_URL: ${{ secrets.DEPLOYMENT_TRACKING_URL }}
+          DEPLOYMENT_TRACKING_URL: ${{ secrets.DEPLOYMENT_TRACKING_URL || '' }}
         run: |
           # checkov:skip=CKV_GHA_3: Webhook URL is from secrets, not hardcoded
           curl -X POST "$DEPLOYMENT_TRACKING_URL" \
@@ -341,7 +341,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ needs.pre-deployment-checks.outputs.version }}
