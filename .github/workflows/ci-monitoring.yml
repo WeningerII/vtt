@@ -89,6 +89,8 @@ jobs:
 
       - name: Alert on degraded performance
         if: steps.metrics.outputs.workflow_status == 'failure' || steps.metrics.outputs.success_rate < 90
+        env:
+          MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK || '' }}
         run: |
           echo "🚨 Performance degradation detected!"
           echo "Current success rate: ${{ steps.metrics.outputs.success_rate }}%"
@@ -111,8 +113,8 @@ jobs:
           cat alert.json | jq '.'
 
           # If webhook URL is configured, send alert
-          if [ -n "${{ secrets.MONITORING_WEBHOOK || '' }}" ]; then
-            curl -X POST "${{ secrets.MONITORING_WEBHOOK || '' }}" \
+          if [ -n "${MONITORING_WEBHOOK}" ]; then
+            curl -X POST "${MONITORING_WEBHOOK}" \
               -H "Content-Type: application/json" \
               -d @alert.json || echo "Failed to send alert webhook"
           fi
