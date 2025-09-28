@@ -5,9 +5,9 @@ on:
   workflow_run:
     workflows: ["CI", "CI (Optimized)", "Docker Publish", "Deploy to Production"]
     types: [requested, in_progress, completed]
-  schedule:
-    # Run health checks every 15 minutes
-    - cron: "*/15 * * * *"
+  # schedule:
+  # DISABLED: Was running every 15 minutes and overwhelming GitHub Actions
+  # - cron: "*/15 * * * *"
 
 env:
   METRICS_RETENTION_DAYS: "30"

@@ -3,8 +3,8 @@ name: Resource Optimizer
 
 on:
   schedule:
-    # Optimize resource usage every 4 hours
-    - cron: "0 */4 * * *"
+    # Optimize resource usage daily at 3 AM UTC (reduced from every 4 hours)
+    - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
       optimization_level:
