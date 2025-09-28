@@ -120,7 +120,7 @@ jobs:
           echo "recommended_changes=$RECOMMENDATIONS_JSON" >> $GITHUB_OUTPUT
           echo "resource_efficiency=$EFFICIENCY_SCORE" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Generate resource optimization plan
         if: steps.analysis.outputs.optimization_needed == 'true'
@@ -158,7 +158,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Apply workflow optimizations
         run: |
@@ -268,11 +268,11 @@ jobs:
             // This is a simplified example - in production this would be much more sophisticated
             const cacheStrategies = {
               ci: {
-                key: '\\${{ runner.os }}-ci-\\${{ hashFiles("**/pnpm-lock.yaml", "**/package-lock.json") }}',
+                key: '$' + '{{ runner.os }}-ci-$' + '{{ hashFiles("**/pnpm-lock.yaml", "**/package-lock.json") }}',
                 paths: ['node_modules', '~/.pnpm-store', '.turbo']
               },
               build: {
-                key: '\\${{ runner.os }}-build-\\${{ hashFiles("**/pnpm-lock.yaml", "**/*.ts", "**/*.js") }}',
+                key: '$' + '{{ runner.os }}-build-$' + '{{ hashFiles("**/pnpm-lock.yaml", "**/*.ts", "**/*.js") }}',
                 paths: ['node_modules', '~/.pnpm-store', '.turbo', 'dist', '.next']
               }
             };

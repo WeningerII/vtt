@@ -69,7 +69,7 @@ jobs:
           echo "rollback_target=$LAST_SUCCESS" >> $GITHUB_OUTPUT
           echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Create incident report
         if: steps.decision.outputs.severity == 'critical'
@@ -115,8 +115,8 @@ jobs:
           echo "Severity: ${{ needs.evaluate-deployment.outputs.severity }}"
 
           # Send emergency notifications (Slack, PagerDuty, etc.)
-          if [ -n "${{ secrets.EMERGENCY_WEBHOOK }}" ]; then
-            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK }}" \
+          if [ -n "${{ secrets.EMERGENCY_WEBHOOK || '' }}" ]; then
+            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK || '' }}" \
               -H "Content-Type: application/json" \
               -d '{
                 "alert": "EMERGENCY_ROLLBACK_INITIATED",
@@ -197,8 +197,8 @@ jobs:
           echo "✅ ROLLBACK COMPLETED SUCCESSFULLY"
 
           # Send success notification
-          if [ -n "${{ secrets.EMERGENCY_WEBHOOK }}" ]; then
-            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK }}" \
+          if [ -n "${{ secrets.EMERGENCY_WEBHOOK || '' }}" ]; then
+            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK || '' }}" \
               -H "Content-Type: application/json" \
               -d '{
                 "alert": "ROLLBACK_COMPLETED_SUCCESSFULLY",
