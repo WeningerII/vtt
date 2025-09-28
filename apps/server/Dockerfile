@@ -57,7 +57,11 @@ RUN set -e; \
                 testExcludes.forEach(pattern => { \
                     if (!config.exclude.includes(pattern)) config.exclude.push(pattern); \
                 }); \
-                fs.writeFileSync('./packages/$pkg/tsconfig.json', JSON.stringify(config, null, 2)); \
+                const output = JSON.stringify(config, null, 2); \
+                // Normalize line endings and remove any potential Unicode issues \
+                const normalized = output.normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g, ''); \
+                fs.writeFileSync('./packages/$pkg/tsconfig.json', normalized, 'utf8'); \
+                console.log('Modified and normalized tsconfig for', '$pkg'); \
             "; \
         else \
             echo "Creating tsconfig for $pkg"; \
@@ -73,6 +77,15 @@ RUN set -e; \
     done
 # Install @types/jest globally to ensure it's available during package compilation if needed
 RUN pnpm add -D @types/jest@^29.5.14 --no-frozen-lockfile || true
+# Debug: Validate all tsconfig.json files before build
+RUN echo "=== Validating tsconfig files before build ===" && \
+    for file in $(find . -name "tsconfig.json" -not -path "./node_modules/*"); do \
+        echo "Checking: $file"; \
+        node -e "try { JSON.parse(require('fs').readFileSync('$file', 'utf8')); console.log('  ✓ Valid JSON'); } catch(e) { console.log('  ✗ Invalid JSON:', e.message); process.exit(1); }"; \
+        # Check for problematic characters \
+        node -e "const fs=require('fs'); const content=fs.readFileSync('$file','utf8'); const lines=content.split(/\\r?\\n/); lines.forEach((line,i)=>{if(line.length>108){console.log('  Line '+(i+1)+' length '+line.length+':', JSON.stringify(line.slice(100))); if(line.length>108&&line.charCodeAt(108)>127){console.log('    ✗ Non-ASCII at pos 109'); process.exit(1);}}}); console.log('  ✓ No long lines with issues');"; \
+    done
+
 # Build workspace packages that provide type declarations consumed by the server
 RUN pnpm --filter @vtt/logging run build \
  && pnpm --filter @vtt/core run build \
