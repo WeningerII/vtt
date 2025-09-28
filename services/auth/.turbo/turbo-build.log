@@ -1,1 +1,5 @@
 
+
+> @vtt/auth-service@0.0.0 build /home/weningerii/vtt/services/auth
+> tsc -b
+
