@@ -93,7 +93,7 @@ jobs:
       - name: Setup Node and pnpm
         uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: "20"
+          node-version: "22"
           pnpm-version: "9.12.2"
 
       - name: Install dependencies
@@ -168,7 +168,7 @@ jobs:
         with:
           context: .
           file: apps/server/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta_server.outputs.tags }}
           labels: ${{ steps.meta_server.outputs.labels }}
@@ -184,7 +184,7 @@ jobs:
         with:
           context: .
           file: apps/client/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta_client.outputs.tags }}
           labels: ${{ steps.meta_client.outputs.labels }}

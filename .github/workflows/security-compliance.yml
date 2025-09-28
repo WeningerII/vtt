@@ -1,0 +1,396 @@
+# Advanced Security Scanning & Compliance Checks
+name: Security & Compliance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Deep security scan weekly on Sundays at 3 AM UTC
+    - cron: "0 3 * * 0"
+
+env:
+  SECURITY_SCAN_TIMEOUT: 30
+  COMPLIANCE_FRAMEWORKS: "OWASP,NIST,SOC2"
+  SECRET_SCAN_DEPTH: 100
+
+jobs:
+  comprehensive-security-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Full history for comprehensive analysis
+
+      - name: Setup security scanning tools
+        run: |
+          echo "🔒 Installing advanced security tools..."
+
+          # Install multiple security scanners
+          pip install bandit safety semgrep
+          npm install -g retire
+
+          # Install container security scanner
+          wget -O grype.tar.gz https://github.com/anchore/grype/releases/latest/download/grype_linux_amd64.tar.gz
+          tar -xzf grype.tar.gz
+          sudo mv grype /usr/local/bin/
+
+          # Install secret scanner
+          wget -O trufflehog.tar.gz https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64.tar.gz
+          tar -xzf trufflehog.tar.gz
+          sudo mv trufflehog /usr/local/bin/
+
+          echo "✅ Security tools installed"
+
+      - name: Deep secret scanning
+        id: secret_scan
+        run: |
+          echo "🔍 Running comprehensive secret detection..."
+
+          # Scan with TruffleHog (entropy and regex based)
+          echo "Running TruffleHog scan..."
+          trufflehog filesystem . --json --no-update > trufflehog-results.json || true
+
+          SECRET_COUNT=$(jq length trufflehog-results.json 2>/dev/null || echo "0")
+
+          # Custom patterns for VTT-specific secrets
+          echo "Scanning for application-specific secrets..."
+          CUSTOM_SECRETS=0
+
+          # Check for potential API keys, tokens, passwords
+          if grep -r -i --include="*.js" --include="*.ts" --include="*.json" --include="*.yml" --exclude-dir=node_modules \
+             -E "(api[_-]?key|secret|password|token|auth)[\"'\s]*[:=][\"'\s]*[a-zA-Z0-9]{20,}" . > custom-secrets.log; then
+            CUSTOM_SECRETS=$(wc -l < custom-secrets.log)
+          fi
+
+          # Check for hardcoded URLs and endpoints
+          if grep -r -i --include="*.js" --include="*.ts" --exclude-dir=node_modules \
+             -E "https?://[a-zA-Z0-9.-]+\.(com|net|org|io)/[a-zA-Z0-9/._-]+" . > hardcoded-urls.log; then
+            echo "⚠️ Found hardcoded URLs - review for production endpoints"
+          fi
+
+          TOTAL_SECRETS=$((SECRET_COUNT + CUSTOM_SECRETS))
+
+          echo "📊 Secret Scan Results:"
+          echo "  - TruffleHog findings: $SECRET_COUNT"
+          echo "  - Custom pattern matches: $CUSTOM_SECRETS"
+          echo "  - Total potential secrets: $TOTAL_SECRETS"
+
+          if [ "$TOTAL_SECRETS" -gt 0 ]; then
+            echo "🚨 Potential secrets detected!"
+            if [ -s trufflehog-results.json ]; then
+              echo "TruffleHog findings:"
+              jq -r '.[] | "Type: \(.DetectorName), File: \(.SourceMetadata.Data.Filesystem.file), Line: \(.SourceMetadata.Data.Filesystem.line)"' trufflehog-results.json | head -10
+            fi
+          fi
+
+          echo "secret_count=$TOTAL_SECRETS" >> $GITHUB_OUTPUT
+
+      - name: Static Application Security Testing (SAST)
+        id: sast_scan
+        run: |
+          echo "🛡️ Running Static Application Security Testing..."
+
+          # Bandit for Python code (if any)
+          if find . -name "*.py" -not -path "./node_modules/*" | head -1 | grep -q .; then
+            echo "Running Bandit scan for Python..."
+            bandit -r . -f json -o bandit-results.json --exclude node_modules || true
+          fi
+
+          # Semgrep for multiple languages
+          echo "Running Semgrep security rules..."
+          semgrep --config auto --json --output semgrep-results.json . || true
+
+          # Node.js specific security checks
+          echo "Running Node.js security analysis..."
+          npm audit --audit-level=moderate --json > npm-audit.json || true
+
+          # Custom security pattern analysis
+          echo "Scanning for security anti-patterns..."
+          SECURITY_ISSUES=0
+
+          # Check for eval() usage
+          if grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "eval\s*(" . > eval-usage.log; then
+            EVAL_COUNT=$(wc -l < eval-usage.log)
+            echo "⚠️ Found $EVAL_COUNT eval() usages - potential security risk"
+            SECURITY_ISSUES=$((SECURITY_ISSUES + EVAL_COUNT))
+          fi
+
+          # Check for innerHTML usage without sanitization
+          if grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "innerHTML\s*=" . | grep -v "DOMPurify\|sanitize" > innerHTML-usage.log; then
+            INNERHTML_COUNT=$(wc -l < innerHTML-usage.log)
+            echo "⚠️ Found $INNERHTML_COUNT potentially unsafe innerHTML usages"
+            SECURITY_ISSUES=$((SECURITY_ISSUES + INNERHTML_COUNT))
+          fi
+
+          # Check for SQL query construction
+          if grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules -E "(query|execute)\s*\(\s*[\"'\`].*\+.*[\"'\`]" . > sql-injection.log; then
+            SQL_COUNT=$(wc -l < sql-injection.log)
+            echo "⚠️ Found $SQL_COUNT potential SQL injection vectors"
+            SECURITY_ISSUES=$((SECURITY_ISSUES + SQL_COUNT))
+          fi
+
+          # Aggregate results
+          SEMGREP_COUNT=$(jq '.results | length' semgrep-results.json 2>/dev/null || echo "0")
+          NPM_VULNS=$(jq '.metadata.vulnerabilities.moderate + .metadata.vulnerabilities.high + .metadata.vulnerabilities.critical' npm-audit.json 2>/dev/null || echo "0")
+
+          TOTAL_SAST_ISSUES=$((SECURITY_ISSUES + SEMGREP_COUNT + NPM_VULNS))
+
+          echo "📊 SAST Results:"
+          echo "  - Semgrep findings: $SEMGREP_COUNT"
+          echo "  - NPM vulnerabilities: $NPM_VULNS"
+          echo "  - Custom security issues: $SECURITY_ISSUES"
+          echo "  - Total SAST issues: $TOTAL_SAST_ISSUES"
+
+          echo "sast_issues=$TOTAL_SAST_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Container security scanning
+        id: container_scan
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          echo "🐳 Scanning container configurations for security issues..."
+
+          CONTAINER_ISSUES=0
+
+          # Scan Dockerfiles for security best practices
+          for dockerfile in $(find . -name "Dockerfile" -not -path "./node_modules/*"); do
+            echo "Scanning $dockerfile..."
+            
+            # Check for root user usage
+            if grep -q "USER root\|USER 0" "$dockerfile"; then
+              echo "⚠️ Root user detected in $dockerfile"
+              CONTAINER_ISSUES=$((CONTAINER_ISSUES + 1))
+            fi
+            
+            # Check for latest tag usage
+            if grep -q "FROM.*:latest" "$dockerfile"; then
+              echo "⚠️ 'latest' tag usage in $dockerfile"
+              CONTAINER_ISSUES=$((CONTAINER_ISSUES + 1))
+            fi
+            
+            # Check for missing healthcheck
+            if ! grep -q "HEALTHCHECK" "$dockerfile"; then
+              echo "ℹ️ No healthcheck in $dockerfile"
+            fi
+            
+            # Check for secret copying
+            if grep -q "COPY.*\.\(env\|key\|pem\|crt\)" "$dockerfile"; then
+              echo "🚨 Potential secret file copying in $dockerfile"
+              CONTAINER_ISSUES=$((CONTAINER_ISSUES + 2))
+            fi
+          done
+
+          # Build images for vulnerability scanning (if not a PR from fork)
+          if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+            echo "Building images for vulnerability scanning..."
+            
+            if [ -f "apps/server/Dockerfile" ]; then
+              docker build -t vtt-server:scan apps/server/ || echo "Server build failed"
+              
+              echo "Scanning server image..."
+              grype vtt-server:scan --output json > server-vulns.json || true
+              SERVER_VULNS=$(jq '.matches | length' server-vulns.json 2>/dev/null || echo "0")
+              echo "Server vulnerabilities: $SERVER_VULNS"
+            fi
+            
+            if [ -f "apps/client/Dockerfile" ]; then
+              docker build -t vtt-client:scan apps/client/ || echo "Client build failed"
+              
+              echo "Scanning client image..."
+              grype vtt-client:scan --output json > client-vulns.json || true
+              CLIENT_VULNS=$(jq '.matches | length' client-vulns.json 2>/dev/null || echo "0")
+              echo "Client vulnerabilities: $CLIENT_VULNS"
+            fi
+            
+            TOTAL_VULNS=$((SERVER_VULNS + CLIENT_VULNS))
+            CONTAINER_ISSUES=$((CONTAINER_ISSUES + TOTAL_VULNS))
+          fi
+
+          echo "container_issues=$CONTAINER_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Compliance validation
+        id: compliance_check
+        run: |
+          echo "📋 Running compliance validation..."
+
+          COMPLIANCE_ISSUES=0
+
+          # OWASP compliance checks
+          echo "Checking OWASP compliance..."
+
+          # A1: Injection - already covered in SAST
+          # A2: Broken Authentication
+          if ! grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "bcrypt\|scrypt\|argon2" . > /dev/null; then
+            echo "⚠️ No secure password hashing detected"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 1))
+          fi
+
+          # A3: Sensitive Data Exposure
+          if grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "console\.log.*password\|console\.log.*token" . > /dev/null; then
+            echo "🚨 Potential sensitive data logging detected"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 2))
+          fi
+
+          # A5: Broken Access Control
+          if ! grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "auth\|permission\|role" . > /dev/null; then
+            echo "⚠️ No obvious access control implementation found"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 1))
+          fi
+
+          # A6: Security Misconfiguration
+          if [ ! -f ".env.example" ] || [ ! -f ".env.production.example" ]; then
+            echo "⚠️ Missing environment configuration examples"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 1))
+          fi
+
+          # A10: Insufficient Logging & Monitoring
+          if ! grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "logger\|log\." . > /dev/null; then
+            echo "⚠️ No obvious logging implementation found"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 1))
+          fi
+
+          # SOC2 compliance basics
+          echo "Checking SOC2 compliance basics..."
+
+          # Data encryption in transit
+          if ! grep -r --include="*.js" --include="*.ts" --exclude-dir=node_modules "https\|tls\|ssl" . > /dev/null; then
+            echo "⚠️ No HTTPS/TLS implementation found"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 1))
+          fi
+
+          # Audit logging
+          if [ ! -f "scripts/audit-security.js" ]; then
+            echo "⚠️ No audit logging script found"
+            COMPLIANCE_ISSUES=$((COMPLIANCE_ISSUES + 1))
+          fi
+
+          echo "📊 Compliance Results:"
+          echo "  - Total compliance issues: $COMPLIANCE_ISSUES"
+
+          echo "compliance_issues=$COMPLIANCE_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Generate security report
+        run: |
+          # Create comprehensive security report
+          cat > security-compliance-report.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "repository": "${{ github.repository }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "scan_type": "${{ github.event_name }}",
+            "security_summary": {
+              "secrets_found": ${{ steps.secret_scan.outputs.secret_count }},
+              "sast_issues": ${{ steps.sast_scan.outputs.sast_issues }},
+              "container_issues": ${{ steps.container_scan.outputs.container_issues }},
+              "compliance_issues": ${{ steps.compliance_check.outputs.compliance_issues }},
+              "total_security_score": $((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }} + ${{ steps.container_scan.outputs.container_issues }} + ${{ steps.compliance_check.outputs.compliance_issues }}))
+            },
+            "risk_assessment": {
+              "level": "$([ $((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }})) -gt 10 ] && echo "HIGH" || ([ $((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }})) -gt 5 ] && echo "MEDIUM" || echo "LOW"))",
+              "critical_findings": $((${{ steps.secret_scan.outputs.secret_count }} + $(echo '${{ steps.sast_scan.outputs.sast_issues }}' | head -c1))),
+              "recommendations": [
+                "Review and remediate identified security issues",
+                "Implement automated security testing in CI/CD",
+                "Regular security training for development team",
+                "Establish incident response procedures"
+              ]
+            },
+            "compliance_frameworks": {
+              "owasp_top_10": "partial",
+              "nist_cybersecurity": "basic",
+              "soc2": "partial"
+            }
+          }
+          EOF
+
+          echo "📋 Security & Compliance Report:"
+          cat security-compliance-report.json | jq '.'
+
+      - name: Security gate check
+        id: security_gate
+        run: |
+          TOTAL_CRITICAL=$((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }}))
+
+          echo "🚦 Security Gate Check:"
+          echo "  - Critical issues: $TOTAL_CRITICAL"
+          echo "  - Gate threshold: 5"
+
+          if [ "$TOTAL_CRITICAL" -gt 5 ]; then
+            echo "❌ Security gate FAILED - too many critical issues"
+            echo "security_gate_passed=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Security gate PASSED"
+            echo "security_gate_passed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload security artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results-${{ github.sha }}
+          path: |
+            security-compliance-report.json
+            trufflehog-results.json
+            semgrep-results.json
+            npm-audit.json
+            *-vulns.json
+            custom-secrets.log
+            eval-usage.log
+            innerHTML-usage.log
+            sql-injection.log
+          retention-days: 90
+
+      - name: Fail on critical security issues
+        if: steps.security_gate.outputs.security_gate_passed == 'false'
+        run: |
+          echo "🚨 CRITICAL SECURITY ISSUES DETECTED"
+          echo "This build contains security vulnerabilities that exceed the acceptable threshold."
+          echo "Please review the security report and address critical issues before proceeding."
+          exit 1
+
+      - name: Post security summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const securityPassed = '${{ steps.security_gate.outputs.security_gate_passed }}' === 'true';
+            const secretCount = ${{ steps.secret_scan.outputs.secret_count }};
+            const sastIssues = ${{ steps.sast_scan.outputs.sast_issues }};
+            const containerIssues = ${{ steps.container_scan.outputs.container_issues }};
+            const complianceIssues = ${{ steps.compliance_check.outputs.compliance_issues }};
+
+            const emoji = securityPassed ? '🛡️' : '🚨';
+            const status = securityPassed ? 'Security check passed' : 'Security issues detected';
+
+            const comment = `${emoji} **Security & Compliance Scan Results**
+
+            **Status:** ${status}
+
+            ### Security Findings
+            | Category | Count | Status |
+            |----------|-------|--------|
+            | Potential Secrets | ${secretCount} | ${secretCount > 0 ? '🚨' : '✅'} |
+            | SAST Issues | ${sastIssues} | ${sastIssues > 3 ? '🚨' : sastIssues > 0 ? '⚠️' : '✅'} |
+            | Container Issues | ${containerIssues} | ${containerIssues > 2 ? '⚠️' : '✅'} |
+            | Compliance Issues | ${complianceIssues} | ${complianceIssues > 3 ? '⚠️' : '✅'} |
+
+            ### Security Gate
+            ${securityPassed ? '✅ **PASSED** - No critical security issues detected' : '❌ **FAILED** - Critical security issues require attention'}
+
+            ${!securityPassed ? '⚠️ **This PR cannot be merged until security issues are resolved.**' : ''}
+
+            📋 Detailed security report available in workflow artifacts.
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

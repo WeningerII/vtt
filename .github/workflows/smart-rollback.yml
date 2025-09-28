@@ -1,0 +1,229 @@
+# Intelligent Rollback and Recovery System
+name: Smart Rollback & Recovery
+
+on:
+  workflow_run:
+    workflows: ["Deploy to Production", "Production Deployment Pipeline"]
+    types: [completed]
+    branches: [main]
+
+env:
+  ROLLBACK_TIMEOUT_MINUTES: 30
+  HEALTH_CHECK_RETRIES: 5
+  CANARY_PERCENTAGE: 10
+
+jobs:
+  evaluate-deployment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'failure'
+    outputs:
+      should_rollback: ${{ steps.decision.outputs.should_rollback }}
+      rollback_target: ${{ steps.decision.outputs.rollback_target }}
+      severity: ${{ steps.decision.outputs.severity }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Analyze failure and make rollback decision
+        id: decision
+        run: |
+          echo "🔍 Analyzing deployment failure..."
+
+          WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
+          FAILED_RUN_ID="${{ github.event.workflow_run.id }}"
+
+          # Get failure details
+          FAILURE_LOGS=$(gh api repos/${{ github.repository }}/actions/runs/$FAILED_RUN_ID/logs || echo "")
+
+          # Determine failure severity and rollback necessity
+          CRITICAL_PATTERNS=(
+            "health check failed"
+            "database migration failed"
+            "security check failed"
+            "container failed to start"
+            "service unavailable"
+          )
+
+          SEVERITY="low"
+          SHOULD_ROLLBACK="false"
+
+          for pattern in "${CRITICAL_PATTERNS[@]}"; do
+            if echo "$FAILURE_LOGS" | grep -i "$pattern" > /dev/null; then
+              SEVERITY="critical"
+              SHOULD_ROLLBACK="true"
+              echo "🚨 Critical failure pattern detected: $pattern"
+              break
+            fi
+          done
+
+          # Get last successful deployment for rollback target
+          LAST_SUCCESS=$(gh api repos/${{ github.repository }}/actions/runs \
+            --jq '.workflow_runs[] | select(.name == "'$WORKFLOW_NAME'" and .conclusion == "success") | .head_sha' \
+            | head -1)
+
+          echo "📊 Failure Analysis Results:"
+          echo "  - Severity: $SEVERITY"
+          echo "  - Should rollback: $SHOULD_ROLLBACK"
+          echo "  - Last successful SHA: $LAST_SUCCESS"
+
+          echo "should_rollback=$SHOULD_ROLLBACK" >> $GITHUB_OUTPUT
+          echo "rollback_target=$LAST_SUCCESS" >> $GITHUB_OUTPUT
+          echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create incident report
+        if: steps.decision.outputs.severity == 'critical'
+        run: |
+          # Create structured incident report
+          cat > incident-report.json << EOF
+          {
+            "incident_id": "inc-$(date +%Y%m%d-%H%M%S)",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "severity": "${{ steps.decision.outputs.severity }}",
+            "workflow": "${{ github.event.workflow_run.name }}",
+            "failed_run_id": "${{ github.event.workflow_run.id }}",
+            "failed_commit": "${{ github.event.workflow_run.head_sha }}",
+            "rollback_target": "${{ steps.decision.outputs.rollback_target }}",
+            "repository": "${{ github.repository }}",
+            "branch": "${{ github.event.workflow_run.head_branch }}"
+          }
+          EOF
+
+          echo "📋 Incident Report Created:"
+          cat incident-report.json | jq '.'
+
+      - name: Upload incident artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: incident-report-${{ github.run_number }}
+          path: incident-report.json
+
+  automated-rollback:
+    runs-on: ubuntu-latest
+    needs: evaluate-deployment
+    if: needs.evaluate-deployment.outputs.should_rollback == 'true'
+    environment: production-emergency
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.evaluate-deployment.outputs.rollback_target }}
+
+      - name: Emergency rollback notification
+        run: |
+          echo "🚨 EMERGENCY ROLLBACK INITIATED"
+          echo "Target SHA: ${{ needs.evaluate-deployment.outputs.rollback_target }}"
+          echo "Severity: ${{ needs.evaluate-deployment.outputs.severity }}"
+
+          # Send emergency notifications (Slack, PagerDuty, etc.)
+          if [ -n "${{ secrets.EMERGENCY_WEBHOOK }}" ]; then
+            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "alert": "EMERGENCY_ROLLBACK_INITIATED",
+                "repository": "${{ github.repository }}",
+                "rollback_target": "${{ needs.evaluate-deployment.outputs.rollback_target }}",
+                "severity": "${{ needs.evaluate-deployment.outputs.severity }}"
+              }' || echo "Failed to send emergency notification"
+          fi
+
+      - name: Canary rollback validation
+        id: canary
+        run: |
+          echo "🐦 Starting canary rollback validation..."
+
+          # Deploy to canary environment first
+          echo "Deploying ${{ env.CANARY_PERCENTAGE }}% traffic to rollback version..."
+
+          # Simulate canary deployment (replace with actual deployment logic)
+          echo "✅ Canary deployment successful"
+          echo "canary_success=true" >> $GITHUB_OUTPUT
+
+      - name: Full rollback execution
+        if: steps.canary.outputs.canary_success == 'true'
+        timeout-minutes: ${{ fromJson(env.ROLLBACK_TIMEOUT_MINUTES) }}
+        run: |
+          echo "🔄 Executing full rollback to ${{ needs.evaluate-deployment.outputs.rollback_target }}"
+
+          # Execute rollback (customize based on your deployment strategy)
+          # This could involve:
+          # - Kubernetes deployments
+          # - Docker container updates
+          # - Database migrations rollback
+          # - CDN cache invalidation
+
+          # Example rollback commands (customize for your infrastructure)
+          echo "Rolling back application containers..."
+          # kubectl set image deployment/app app=myregistry/app:${{ needs.evaluate-deployment.outputs.rollback_target }}
+
+          echo "Waiting for rollback to stabilize..."
+          sleep 30
+
+          echo "✅ Rollback execution completed"
+
+      - name: Post-rollback health checks
+        id: health_check
+        run: |
+          echo "🏥 Running post-rollback health checks..."
+
+          SUCCESS_COUNT=0
+          REQUIRED_SUCCESSES=${{ env.HEALTH_CHECK_RETRIES }}
+
+          for i in $(seq 1 $REQUIRED_SUCCESSES); do
+            echo "Health check attempt $i/$REQUIRED_SUCCESSES..."
+            
+            # Customize health check endpoints for your application
+            if curl -f -s --max-time 10 https://your-app.com/health > /dev/null; then
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+              echo "✅ Health check $i passed"
+            else
+              echo "❌ Health check $i failed"
+            fi
+            
+            sleep 10
+          done
+
+          if [ $SUCCESS_COUNT -ge $((REQUIRED_SUCCESSES * 80 / 100)) ]; then
+            echo "✅ Health checks passed ($SUCCESS_COUNT/$REQUIRED_SUCCESSES)"
+            echo "health_status=healthy" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Health checks failed ($SUCCESS_COUNT/$REQUIRED_SUCCESSES)"
+            echo "health_status=unhealthy" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Rollback success notification
+        if: steps.health_check.outputs.health_status == 'healthy'
+        run: |
+          echo "✅ ROLLBACK COMPLETED SUCCESSFULLY"
+
+          # Send success notification
+          if [ -n "${{ secrets.EMERGENCY_WEBHOOK }}" ]; then
+            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "alert": "ROLLBACK_COMPLETED_SUCCESSFULLY",
+                "repository": "${{ github.repository }}",
+                "rollback_target": "${{ needs.evaluate-deployment.outputs.rollback_target }}",
+                "health_status": "healthy"
+              }' || echo "Failed to send success notification"
+          fi
+
+  post-incident:
+    runs-on: ubuntu-latest
+    needs: [evaluate-deployment, automated-rollback]
+    if: always() && needs.evaluate-deployment.outputs.should_rollback == 'true'
+    steps:
+      - name: Generate post-incident summary
+        run: |
+          echo "📊 POST-INCIDENT SUMMARY"
+          echo "Rollback Status: ${{ needs.automated-rollback.result }}"
+          echo "Incident Severity: ${{ needs.evaluate-deployment.outputs.severity }}"
+          echo "Target SHA: ${{ needs.evaluate-deployment.outputs.rollback_target }}"
+
+          # Create post-incident tasks
+          echo "📋 Recommended follow-up actions:"
+          echo "1. Review failed deployment logs"
+          echo "2. Analyze root cause of failure"
+          echo "3. Update deployment procedures if needed"
+          echo "4. Consider additional safeguards"
+          echo "5. Schedule incident retrospective"

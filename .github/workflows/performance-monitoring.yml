@@ -1,0 +1,296 @@
+# Performance Benchmarking & Regression Detection
+name: Performance Monitoring
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run performance benchmarks daily at 2 AM UTC
+    - cron: "0 2 * * *"
+
+env:
+  BENCHMARK_RETENTION_DAYS: 90
+  PERFORMANCE_THRESHOLD_DEGRADATION: 15 # 15% degradation threshold
+  MEMORY_LIMIT_MB: 512
+  CPU_LIMIT_CORES: 2
+
+jobs:
+  performance-benchmarks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Need full history for comparison
+
+      - uses: ./.github/actions/setup-node-pnpm
+        with:
+          node-version: "22"
+          pnpm-version: "9.12.2"
+
+      - name: Install dependencies with performance monitoring
+        run: |
+          echo "📦 Installing dependencies with timing..."
+          START_TIME=$(date +%s)
+          pnpm install --frozen-lockfile
+          END_TIME=$(date +%s)
+          INSTALL_DURATION=$((END_TIME - START_TIME))
+          echo "install_duration_seconds=$INSTALL_DURATION" >> $GITHUB_ENV
+          echo "✅ Dependencies installed in ${INSTALL_DURATION}s"
+
+      - name: Build performance benchmark
+        id: build_benchmark
+        run: |
+          echo "🏗️ Running build performance benchmark..."
+
+          # Clear any existing build artifacts
+          pnpm run clean || true
+
+          # Warm up (ignore first run)
+          timeout 300 pnpm run build || echo "Warmup build completed"
+          pnpm run clean || true
+
+          # Actual benchmark runs
+          BUILD_TIMES=()
+          MEMORY_PEAKS=()
+
+          for i in {1..3}; do
+            echo "Build run $i/3..."
+            
+            # Monitor memory usage during build
+            (
+              while true; do
+                ps aux | awk '/node|pnpm/ && !/awk/ {sum += $6} END {print sum/1024}' >> memory_usage_$i.log
+                sleep 1
+              done
+            ) &
+            MONITOR_PID=$!
+            
+            START_TIME=$(date +%s%3N)  # milliseconds
+            timeout 600 pnpm run build
+            END_TIME=$(date +%s%3N)
+            
+            kill $MONITOR_PID 2>/dev/null || true
+            
+            BUILD_TIME=$((END_TIME - START_TIME))
+            BUILD_TIMES+=($BUILD_TIME)
+            
+            MEMORY_PEAK=$(sort -nr memory_usage_$i.log | head -1)
+            MEMORY_PEAKS+=($MEMORY_PEAK)
+            
+            echo "Run $i: ${BUILD_TIME}ms, Peak memory: ${MEMORY_PEAK}MB"
+            
+            # Clean for next run
+            pnpm run clean || true
+            rm -f memory_usage_$i.log
+          done
+
+          # Calculate averages
+          AVG_BUILD_TIME=$(echo "${BUILD_TIMES[@]}" | awk '{sum=0; for(i=1;i<=NF;i++) sum+=$i; print int(sum/NF)}')
+          AVG_MEMORY=$(echo "${MEMORY_PEAKS[@]}" | awk '{sum=0; for(i=1;i<=NF;i++) sum+=$i; print int(sum/NF)}')
+
+          echo "📊 Build Performance Results:"
+          echo "  - Average build time: ${AVG_BUILD_TIME}ms"
+          echo "  - Average memory usage: ${AVG_MEMORY}MB"
+          echo "  - Individual times: ${BUILD_TIMES[*]}"
+
+          echo "avg_build_time=$AVG_BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "avg_memory_usage=$AVG_MEMORY" >> $GITHUB_OUTPUT
+
+      - name: Bundle size analysis
+        id: bundle_analysis
+        run: |
+          echo "📦 Analyzing bundle sizes..."
+
+          # Build for production
+          pnpm run build
+
+          # Analyze client bundle
+          CLIENT_BUNDLE_SIZE=0
+          if [ -d "apps/client/dist" ]; then
+            CLIENT_BUNDLE_SIZE=$(du -sb apps/client/dist | cut -f1)
+          fi
+
+          # Analyze server bundle  
+          SERVER_BUNDLE_SIZE=0
+          if [ -d "apps/server/dist" ]; then
+            SERVER_BUNDLE_SIZE=$(du -sb apps/server/dist | cut -f1)
+          fi
+
+          # Package count analysis
+          TOTAL_PACKAGES=$(find node_modules -name "package.json" | wc -l)
+          PACKAGE_SIZE=$(du -sb node_modules | cut -f1)
+
+          echo "📊 Bundle Analysis Results:"
+          echo "  - Client bundle: $(numfmt --to=iec $CLIENT_BUNDLE_SIZE)"
+          echo "  - Server bundle: $(numfmt --to=iec $SERVER_BUNDLE_SIZE)"
+          echo "  - Total packages: $TOTAL_PACKAGES"
+          echo "  - node_modules size: $(numfmt --to=iec $PACKAGE_SIZE)"
+
+          echo "client_bundle_size=$CLIENT_BUNDLE_SIZE" >> $GITHUB_OUTPUT
+          echo "server_bundle_size=$SERVER_BUNDLE_SIZE" >> $GITHUB_OUTPUT
+          echo "total_packages=$TOTAL_PACKAGES" >> $GITHUB_OUTPUT
+          echo "node_modules_size=$PACKAGE_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Load test performance
+        id: load_test
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "🚀 Running load test performance benchmark..."
+
+          # Start services in background
+          pnpm run dev:server &
+          SERVER_PID=$!
+
+          # Wait for server to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:8080/health; do sleep 2; done'
+
+          # Simple load test with curl (replace with proper load testing tool)
+          RESPONSE_TIMES=()
+
+          for i in {1..10}; do
+            RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:8080/health)
+            RESPONSE_TIMES+=($RESPONSE_TIME)
+            echo "Request $i: ${RESPONSE_TIME}s"
+          done
+
+          # Calculate average response time
+          AVG_RESPONSE_TIME=$(echo "${RESPONSE_TIMES[@]}" | awk '{sum=0; for(i=1;i<=NF;i++) sum+=$i; print sum/NF}')
+
+          echo "📊 Load Test Results:"
+          echo "  - Average response time: ${AVG_RESPONSE_TIME}s"
+
+          # Cleanup
+          kill $SERVER_PID 2>/dev/null || true
+
+          echo "avg_response_time=$AVG_RESPONSE_TIME" >> $GITHUB_OUTPUT
+
+      - name: Create performance report
+        run: |
+          # Create comprehensive performance report
+          cat > performance-report.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "pr_number": "${{ github.event.pull_request.number || null }}",
+            "metrics": {
+              "install_duration_seconds": ${{ env.install_duration_seconds }},
+              "avg_build_time_ms": ${{ steps.build_benchmark.outputs.avg_build_time }},
+              "avg_memory_usage_mb": ${{ steps.build_benchmark.outputs.avg_memory_usage }},
+              "client_bundle_size_bytes": ${{ steps.bundle_analysis.outputs.client_bundle_size }},
+              "server_bundle_size_bytes": ${{ steps.bundle_analysis.outputs.server_bundle_size }},
+              "total_packages": ${{ steps.bundle_analysis.outputs.total_packages }},
+              "node_modules_size_bytes": ${{ steps.bundle_analysis.outputs.node_modules_size }},
+              "avg_response_time_seconds": ${{ steps.load_test.outputs.avg_response_time || 0 }}
+            }
+          }
+          EOF
+
+          echo "📊 Performance Report:"
+          cat performance-report.json | jq '.'
+
+      - name: Compare with baseline
+        id: regression_check
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Checking for performance regressions..."
+
+          # Get baseline performance from main branch (simplified)
+          # In production, you'd store this in a database or artifact storage
+          BASELINE_BUILD_TIME=10000  # 10 seconds baseline
+          BASELINE_MEMORY=400        # 400MB baseline
+          BASELINE_BUNDLE_SIZE=5000000  # 5MB baseline
+
+          CURRENT_BUILD_TIME=${{ steps.build_benchmark.outputs.avg_build_time }}
+          CURRENT_MEMORY=${{ steps.build_benchmark.outputs.avg_memory_usage }}
+          CURRENT_BUNDLE_SIZE=${{ steps.bundle_analysis.outputs.client_bundle_size }}
+
+          # Calculate percentage changes
+          BUILD_TIME_CHANGE=$(echo "scale=2; ($CURRENT_BUILD_TIME - $BASELINE_BUILD_TIME) * 100 / $BASELINE_BUILD_TIME" | bc -l)
+          MEMORY_CHANGE=$(echo "scale=2; ($CURRENT_MEMORY - $BASELINE_MEMORY) * 100 / $BASELINE_MEMORY" | bc -l)
+          BUNDLE_CHANGE=$(echo "scale=2; ($CURRENT_BUNDLE_SIZE - $BASELINE_BUNDLE_SIZE) * 100 / $BASELINE_BUNDLE_SIZE" | bc -l)
+
+          echo "📈 Performance Comparison:"
+          echo "  - Build time change: ${BUILD_TIME_CHANGE}%"
+          echo "  - Memory usage change: ${MEMORY_CHANGE}%"
+          echo "  - Bundle size change: ${BUNDLE_CHANGE}%"
+
+          # Check for regressions
+          REGRESSION_DETECTED="false"
+          THRESHOLD=${{ env.PERFORMANCE_THRESHOLD_DEGRADATION }}
+
+          if (( $(echo "$BUILD_TIME_CHANGE > $THRESHOLD" | bc -l) )); then
+            echo "⚠️ Build time regression detected: ${BUILD_TIME_CHANGE}%"
+            REGRESSION_DETECTED="true"
+          fi
+
+          if (( $(echo "$MEMORY_CHANGE > $THRESHOLD" | bc -l) )); then
+            echo "⚠️ Memory usage regression detected: ${MEMORY_CHANGE}%"
+            REGRESSION_DETECTED="true"
+          fi
+
+          if (( $(echo "$BUNDLE_CHANGE > $THRESHOLD" | bc -l) )); then
+            echo "⚠️ Bundle size regression detected: ${BUNDLE_CHANGE}%"
+            REGRESSION_DETECTED="true"
+          fi
+
+          echo "regression_detected=$REGRESSION_DETECTED" >> $GITHUB_OUTPUT
+          echo "build_time_change=$BUILD_TIME_CHANGE" >> $GITHUB_OUTPUT
+          echo "memory_change=$MEMORY_CHANGE" >> $GITHUB_OUTPUT
+          echo "bundle_change=$BUNDLE_CHANGE" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR with performance results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const regressionDetected = '${{ steps.regression_check.outputs.regression_detected }}' === 'true';
+            const buildTimeChange = '${{ steps.regression_check.outputs.build_time_change }}';
+            const memoryChange = '${{ steps.regression_check.outputs.memory_change }}';
+            const bundleChange = '${{ steps.regression_check.outputs.bundle_change }}';
+
+            const emoji = regressionDetected ? '⚠️' : '✅';
+            const status = regressionDetected ? 'Performance regression detected' : 'Performance looks good';
+
+            const comment = `${emoji} **Performance Analysis Results**
+
+            ${status}
+
+            ### Metrics Comparison vs Baseline
+            | Metric | Change | Status |
+            |--------|--------|---------|
+            | Build Time | ${buildTimeChange}% | ${Math.abs(buildTimeChange) > 15 ? '⚠️' : '✅'} |
+            | Memory Usage | ${memoryChange}% | ${Math.abs(memoryChange) > 15 ? '⚠️' : '✅'} |
+            | Bundle Size | ${bundleChange}% | ${Math.abs(bundleChange) > 15 ? '⚠️' : '✅'} |
+
+            ### Current Performance
+            - Build Time: ${{ steps.build_benchmark.outputs.avg_build_time }}ms
+            - Memory Usage: ${{ steps.build_benchmark.outputs.avg_memory_usage }}MB
+            - Client Bundle: ${Math.round(${{ steps.bundle_analysis.outputs.client_bundle_size }} / 1024 / 1024 * 100) / 100}MB
+
+            ${regressionDetected ? '⚠️ This PR introduces performance regressions. Please review and optimize before merging.' : ''}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Fail on significant regression
+        if: github.event_name == 'pull_request' && steps.regression_check.outputs.regression_detected == 'true'
+        run: |
+          echo "❌ Performance regression detected above threshold"
+          echo "This PR introduces significant performance degradation"
+          exit 1
+
+      - name: Store performance data
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report-${{ github.sha }}
+          path: performance-report.json
+          retention-days: ${{ env.BENCHMARK_RETENTION_DAYS }}

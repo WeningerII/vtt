@@ -1,0 +1,339 @@
+# Infrastructure Drift Detection & Configuration Validation
+name: Infrastructure Drift Detection
+
+on:
+  schedule:
+    # Check for drift twice daily
+    - cron: "0 6,18 * * *"
+  workflow_dispatch:
+    inputs:
+      force_validation:
+        description: "Force full infrastructure validation"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  DRIFT_TOLERANCE_PERCENT: 5
+  CONFIG_VALIDATION_TIMEOUT: 300
+
+jobs:
+  detect-configuration-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup validation tools
+        run: |
+          echo "🔧 Installing infrastructure validation tools..."
+
+          # Install configuration validators
+          npm install -g @apidevtools/swagger-cli
+          pip install yamllint
+
+          # Install Dockerfile linter
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x hadolint
+          sudo mv hadolint /usr/local/bin/
+
+          echo "✅ Validation tools installed"
+
+      - name: Validate GitHub Actions configuration
+        id: actions_validation
+        run: |
+          echo "🔍 Validating GitHub Actions workflows..."
+
+          WORKFLOW_ERRORS=0
+          WORKFLOW_WARNINGS=0
+
+          # Check all workflow files
+          for workflow in .github/workflows/*.yml; do
+            echo "Checking $workflow..."
+            
+            # Basic YAML syntax validation
+            if ! yamllint -d relaxed "$workflow" > /dev/null 2>&1; then
+              echo "❌ YAML syntax error in $workflow"
+              WORKFLOW_ERRORS=$((WORKFLOW_ERRORS + 1))
+            fi
+            
+            # Check for common issues
+            if grep -q "actions/checkout@v[12]" "$workflow"; then
+              echo "⚠️  Outdated checkout action in $workflow"
+              WORKFLOW_WARNINGS=$((WORKFLOW_WARNINGS + 1))
+            fi
+            
+            if grep -q "node-version.*['\"]1[0-6]['\"]" "$workflow"; then
+              echo "⚠️  Outdated Node.js version in $workflow" 
+              WORKFLOW_WARNINGS=$((WORKFLOW_WARNINGS + 1))
+            fi
+            
+            # Check for secrets in plain text (basic check)
+            if grep -i "password\|secret\|key" "$workflow" | grep -v "secrets\." | grep -v "#"; then
+              echo "🚨 Potential hardcoded secret in $workflow"
+              WORKFLOW_ERRORS=$((WORKFLOW_ERRORS + 1))
+            fi
+          done
+
+          echo "📊 Workflow Validation Results:"
+          echo "  - Errors: $WORKFLOW_ERRORS"
+          echo "  - Warnings: $WORKFLOW_WARNINGS"
+
+          echo "workflow_errors=$WORKFLOW_ERRORS" >> $GITHUB_OUTPUT
+          echo "workflow_warnings=$WORKFLOW_WARNINGS" >> $GITHUB_OUTPUT
+
+      - name: Validate Docker configurations
+        id: docker_validation
+        run: |
+          echo "🐳 Validating Docker configurations..."
+
+          DOCKER_ISSUES=0
+
+          # Validate Dockerfiles
+          for dockerfile in $(find . -name "Dockerfile" -not -path "./node_modules/*"); do
+            echo "Linting $dockerfile..."
+            
+            if ! hadolint "$dockerfile" > dockerfile_lint.log 2>&1; then
+              echo "❌ Docker lint issues in $dockerfile:"
+              cat dockerfile_lint.log
+              DOCKER_ISSUES=$((DOCKER_ISSUES + 1))
+            else
+              echo "✅ $dockerfile passed validation"
+            fi
+          done
+
+          # Validate docker-compose files
+          for compose_file in $(find . -name "docker-compose*.yml" -not -path "./node_modules/*"); do
+            echo "Validating $compose_file..."
+            
+            if ! docker-compose -f "$compose_file" config > /dev/null 2>&1; then
+              echo "❌ Invalid docker-compose syntax in $compose_file"
+              DOCKER_ISSUES=$((DOCKER_ISSUES + 1))
+            else
+              echo "✅ $compose_file is valid"
+            fi
+          done
+
+          echo "docker_issues=$DOCKER_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Validate package configurations
+        id: package_validation
+        run: |
+          echo "📦 Validating package configurations..."
+
+          PACKAGE_ISSUES=0
+
+          # Check for inconsistent Node.js versions
+          NODE_VERSIONS=$(find . -name "package.json" -not -path "./node_modules/*" -exec jq -r '.engines.node // empty' {} \; | sort -u)
+          VERSION_COUNT=$(echo "$NODE_VERSIONS" | grep -v '^$' | wc -l)
+
+          if [ "$VERSION_COUNT" -gt 1 ]; then
+            echo "⚠️  Inconsistent Node.js engine requirements:"
+            echo "$NODE_VERSIONS"
+            PACKAGE_ISSUES=$((PACKAGE_ISSUES + 1))
+          fi
+
+          # Check for security vulnerabilities in dependencies
+          echo "🔒 Checking for known vulnerabilities..."
+          if ! pnpm audit --audit-level high --json > audit_results.json 2>/dev/null; then
+            VULN_COUNT=$(jq '.metadata.vulnerabilities.high + .metadata.vulnerabilities.critical' audit_results.json 2>/dev/null || echo "0")
+            if [ "$VULN_COUNT" -gt 0 ]; then
+              echo "🚨 $VULN_COUNT high/critical vulnerabilities found"
+              PACKAGE_ISSUES=$((PACKAGE_ISSUES + 1))
+            fi
+          fi
+
+          # Check for outdated major dependencies
+          echo "📅 Checking for significantly outdated dependencies..."
+          # This is a simplified check - in production you'd use more sophisticated tools
+
+          echo "package_issues=$PACKAGE_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Validate TypeScript configurations
+        id: typescript_validation
+        run: |
+          echo "🔧 Validating TypeScript configurations..."
+
+          TS_ISSUES=0
+
+          # Check all tsconfig.json files
+          for tsconfig in $(find . -name "tsconfig*.json" -not -path "./node_modules/*"); do
+            echo "Validating $tsconfig..."
+            
+            # Check JSON syntax
+            if ! jq empty "$tsconfig" > /dev/null 2>&1; then
+              echo "❌ Invalid JSON syntax in $tsconfig"
+              TS_ISSUES=$((TS_ISSUES + 1))
+              continue
+            fi
+            
+            # Check for common configuration issues
+            STRICT_MODE=$(jq -r '.compilerOptions.strict // false' "$tsconfig")
+            if [ "$STRICT_MODE" = "false" ]; then
+              echo "⚠️  Strict mode disabled in $tsconfig"
+            fi
+            
+            # Check for inconsistent module resolution
+            MODULE_RESOLUTION=$(jq -r '.compilerOptions.moduleResolution // empty' "$tsconfig")
+            if [ -n "$MODULE_RESOLUTION" ] && [ "$MODULE_RESOLUTION" != "node" ] && [ "$MODULE_RESOLUTION" != "nodenext" ]; then
+              echo "⚠️  Non-standard module resolution in $tsconfig: $MODULE_RESOLUTION"
+            fi
+          done
+
+          echo "typescript_issues=$TS_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Check for configuration drift
+        id: drift_check
+        run: |
+          echo "📊 Analyzing configuration drift..."
+
+          TOTAL_ISSUES=$((
+            ${{ steps.actions_validation.outputs.workflow_errors }} + 
+            ${{ steps.docker_validation.outputs.docker_issues }} + 
+            ${{ steps.package_validation.outputs.package_issues }} + 
+            ${{ steps.typescript_validation.outputs.typescript_issues }}
+          ))
+
+          TOTAL_WARNINGS=${{ steps.actions_validation.outputs.workflow_warnings }}
+
+          # Calculate drift score (simplified)
+          TOTAL_FILES=$(find . -name "*.yml" -o -name "*.yaml" -o -name "*.json" -o -name "Dockerfile" | grep -v node_modules | wc -l)
+          DRIFT_PERCENTAGE=$(echo "scale=2; $TOTAL_ISSUES * 100 / $TOTAL_FILES" | bc -l)
+
+          echo "📈 Drift Analysis Results:"
+          echo "  - Total configuration files: $TOTAL_FILES"
+          echo "  - Issues found: $TOTAL_ISSUES"
+          echo "  - Warnings: $TOTAL_WARNINGS"
+          echo "  - Drift percentage: $DRIFT_PERCENTAGE%"
+
+          # Determine if drift is significant
+          SIGNIFICANT_DRIFT="false"
+          if (( $(echo "$DRIFT_PERCENTAGE > ${{ env.DRIFT_TOLERANCE_PERCENT }}" | bc -l) )) || [ "$TOTAL_ISSUES" -gt 5 ]; then
+            SIGNIFICANT_DRIFT="true"
+            echo "🚨 Significant configuration drift detected!"
+          else
+            echo "✅ Configuration drift within acceptable limits"
+          fi
+
+          echo "total_issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
+          echo "drift_percentage=$DRIFT_PERCENTAGE" >> $GITHUB_OUTPUT
+          echo "significant_drift=$SIGNIFICANT_DRIFT" >> $GITHUB_OUTPUT
+
+      - name: Generate drift report
+        run: |
+          # Create comprehensive drift report
+          cat > infrastructure-drift-report.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "repository": "${{ github.repository }}",
+            "commit": "${{ github.sha }}",
+            "drift_analysis": {
+              "total_issues": ${{ steps.drift_check.outputs.total_issues }},
+              "drift_percentage": ${{ steps.drift_check.outputs.drift_percentage }},
+              "significant_drift": ${{ steps.drift_check.outputs.significant_drift }},
+              "tolerance_threshold": ${{ env.DRIFT_TOLERANCE_PERCENT }}
+            },
+            "validation_results": {
+              "workflows": {
+                "errors": ${{ steps.actions_validation.outputs.workflow_errors }},
+                "warnings": ${{ steps.actions_validation.outputs.workflow_warnings }}
+              },
+              "docker": {
+                "issues": ${{ steps.docker_validation.outputs.docker_issues }}
+              },
+              "packages": {
+                "issues": ${{ steps.package_validation.outputs.package_issues }}
+              },
+              "typescript": {
+                "issues": ${{ steps.typescript_validation.outputs.typescript_issues }}
+              }
+            },
+            "recommendations": [
+              "Review and fix configuration issues",
+              "Update outdated dependencies and actions",
+              "Standardize configuration across the project",
+              "Implement automated configuration validation"
+            ]
+          }
+          EOF
+
+          echo "📋 Infrastructure Drift Report:"
+          cat infrastructure-drift-report.json | jq '.'
+
+      - name: Create drift issue
+        if: steps.drift_check.outputs.significant_drift == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const driftReport = require('./infrastructure-drift-report.json');
+
+            const issueTitle = `🚨 Infrastructure Configuration Drift Detected (${driftReport.drift_analysis.drift_percentage}%)`;
+            const issueBody = `## Infrastructure Drift Detection Alert
+
+            **Drift Level:** ${driftReport.drift_analysis.significant_drift ? 'SIGNIFICANT' : 'MINOR'}  
+            **Drift Percentage:** ${driftReport.drift_analysis.drift_percentage}%  
+            **Total Issues:** ${driftReport.drift_analysis.total_issues}
+
+            ### Issues Found
+
+            | Component | Issues | Status |
+            |-----------|--------|---------|
+            | GitHub Workflows | ${driftReport.validation_results.workflows.errors} errors, ${driftReport.validation_results.workflows.warnings} warnings | ${driftReport.validation_results.workflows.errors > 0 ? '❌' : '⚠️'} |
+            | Docker Configurations | ${driftReport.validation_results.docker.issues} | ${driftReport.validation_results.docker.issues > 0 ? '❌' : '✅'} |
+            | Package Configurations | ${driftReport.validation_results.packages.issues} | ${driftReport.validation_results.packages.issues > 0 ? '❌' : '✅'} |
+            | TypeScript Configurations | ${driftReport.validation_results.typescript.issues} | ${driftReport.validation_results.typescript.issues > 0 ? '❌' : '✅'} |
+
+            ### Recommended Actions
+            ${driftReport.recommendations.map(rec => `- ${rec}`).join('\n')}
+
+            ### Next Steps
+            1. Review the detailed drift report artifact
+            2. Address high-priority configuration issues
+            3. Update CI/CD pipelines as needed
+            4. Re-run drift detection to verify fixes
+
+            **Report Generated:** ${driftReport.timestamp}  
+            **Commit:** ${driftReport.commit}
+
+            ---
+            *This issue was automatically created by the Infrastructure Drift Detection workflow.*
+            `;
+
+            // Check if drift issue already exists
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['infrastructure-drift'],
+              state: 'open'
+            });
+
+            if (existingIssues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['infrastructure-drift', 'automation', 'configuration']
+              });
+              
+              console.log('✅ Created new infrastructure drift issue');
+            } else {
+              console.log('ℹ️ Drift issue already exists, updating comment');
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssues.data[0].number,
+                body: `## Updated Drift Detection Results\n\n${issueBody}`
+              });
+            }
+
+      - name: Upload drift report
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-drift-report-${{ github.run_number }}
+          path: |
+            infrastructure-drift-report.json
+            audit_results.json
+            dockerfile_lint.log
+          retention-days: 30

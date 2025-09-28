@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -29,6 +29,16 @@ jobs:
       - name: Setup native dependencies
         uses: ./.github/actions/setup-native-deps
 
+      - name: Cache Turbo and node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            node_modules
+            ~/.pnpm-store
+          key: ${{ runner.os }}-docker-build-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-docker-build-
       - name: Verify workspace structure
         run: |
           echo "=== Workspace structure ==="
@@ -92,3 +102,24 @@ jobs:
           labels: ${{ steps.meta_client.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify Docker images
+        run: |
+          echo "🔍 Verifying built images..."
+          docker images | grep ghcr.io/${{ github.repository_owner }}/vtt
+
+          echo "🏥 Testing server image health..."
+          SERVER_TAG=$(echo '${{ steps.meta_server.outputs.tags }}' | head -n1)
+          docker run --rm -d --name test-server -p 8080:8080 $SERVER_TAG || (echo "❌ Server start failed" && exit 1)
+          sleep 10
+          curl -f http://localhost:8080/health || (echo "❌ Server health check failed" && docker logs test-server && exit 1)
+          docker stop test-server || true
+
+          echo "🏥 Testing client image health..."
+          CLIENT_TAG=$(echo '${{ steps.meta_client.outputs.tags }}' | head -n1)
+          docker run --rm -d --name test-client -p 8081:8080 $CLIENT_TAG || (echo "❌ Client start failed" && exit 1)
+          sleep 5
+          curl -f http://localhost:8081/ || (echo "❌ Client health check failed" && docker logs test-client && exit 1)
+          docker stop test-client || true
+
+          echo "✅ All Docker images verified successfully!"

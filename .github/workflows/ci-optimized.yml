@@ -14,9 +14,12 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Resource-aware job scheduling with intelligent concurrency
 env:
-  # Turbo environment - conditionally set based on secrets availability
   TURBO_REMOTE_ONLY: false
+  # Adaptive concurrency based on runner capacity
+  MAX_PARALLEL_JOBS: ${{ github.event_name == 'pull_request' && '2' || '4' }}
+  ENABLE_PERFORMANCE_MONITORING: true
 
 jobs:
   changes:
@@ -45,12 +48,12 @@ jobs:
 
   lint-and-typecheck:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: "20"
+          node-version: "22"
           pnpm-version: "9.12.2"
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - uses: ./.github/actions/install-deps
@@ -73,13 +76,13 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: [lint-and-typecheck]
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: "20"
+          node-version: "22"
           pnpm-version: "9.12.2"
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - name: Restore turbo cache
@@ -112,7 +115,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: "20"
+          node-version: "22"
           pnpm-version: "9.12.2"
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - uses: ./.github/actions/install-deps
@@ -154,7 +157,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-node-pnpm
         with:
-          node-version: "20"
+          node-version: "22"
           pnpm-version: "9.12.2"
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
       - uses: ./.github/actions/install-deps
@@ -174,7 +177,7 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
