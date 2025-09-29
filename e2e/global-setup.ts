@@ -1,4 +1,4 @@
-import { chromium, FullConfig } from "@playwright/test";
+import { FullConfig } from "@playwright/test";
 import { testDb } from "./utils/database";
 import { join } from "path";
 
@@ -14,14 +14,15 @@ async function globalSetup(_config: FullConfig) {
   }
 
   // Setup test database with proper error handling
-  const skipDb = !!process.env.E2E_SKIP_DB || !!process.env.E2E_SKIP_DB_SETUP;
+  const isTrue = (v?: string) => v === "1" || v === "true";
+  const skipDb = isTrue(process.env.E2E_SKIP_DB) || isTrue(process.env.E2E_SKIP_DB_SETUP);
   if (skipDb) {
     console.log("[E2E Setup] Skipping DB setup/seed (E2E_SKIP_DB)");
   } else {
     try {
       console.log("[E2E Setup] Setting up test database...");
       await testDb.setup();
-      console.log("[E2E Setup] Seeding test data...");  
+      console.log("[E2E Setup] Seeding test data...");
       await testDb.seed();
       console.log("[E2E Setup] Database setup complete");
     } catch (error) {
@@ -33,10 +34,7 @@ async function globalSetup(_config: FullConfig) {
   // Wait for services to be ready (webServer handles startup)
   console.log("[E2E Setup] Waiting for services to be ready...");
 
-  // Health check with retry logic
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-
+  // Health check with retry logic (no browser dependency)
   let serverReady = false;
   const skipClient = !!process.env.E2E_SKIP_CLIENT;
   let clientReady = skipClient; // if skipping client, treat as ready
@@ -46,17 +44,15 @@ async function globalSetup(_config: FullConfig) {
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      // Wait for server to be ready
-      const response = await page.request.get("http://localhost:8080/livez");
-      if (response.status() === 200) {
+      const serverResp = await fetch("http://localhost:8080/livez");
+      if (serverResp.ok) {
         console.log("[E2E Setup] Server is ready");
         serverReady = true;
-        
-        // If client is not skipped, check client readiness
+
         if (!skipClient) {
           try {
-            const clientResponse = await page.request.get("http://localhost:3000/");
-            if (clientResponse.status() === 200) {
+            const clientResp = await fetch("http://localhost:3000/");
+            if (clientResp.ok) {
               console.log("[E2E Setup] Client is ready");
               clientReady = true;
             }
@@ -64,8 +60,7 @@ async function globalSetup(_config: FullConfig) {
             console.log(`[E2E Setup] Client not ready yet: ${clientError}`);
           }
         }
-        
-        break; // Exit retry loop when server is ready
+        break;
       }
     } catch (error) {
       console.log(`[E2E Setup] Attempt ${i + 1}/${maxRetries} failed, retrying...`);
@@ -75,8 +70,6 @@ async function globalSetup(_config: FullConfig) {
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
   }
-
-  await browser.close();
 
   if (!serverReady || (!clientReady && !skipClient)) {
     throw new Error("Test environment setup failed - services not ready after maximum retries");

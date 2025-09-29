@@ -408,8 +408,9 @@ app.post(
 );
 
 app.put(
-  "/api/v1/assets/*",
+  "/api/v1/assets/:id",
   validateExpressRequest({
+    params: z.object({ id: z.string().min(1) }),
     body: z.object({
       name: CommonSchemas.name.optional(),
       description: CommonSchemas.description.optional(),
@@ -653,45 +654,45 @@ router.get("/login", loginPageHandler);
 // Game management routes
 router.post("/api/v1/games", createGameHandler);
 router.get("/api/v1/games", listGamesHandler);
-router.get("/api/v1/games/*", getGameHandler);
-router.post("/api/v1/games/*/join", joinGameHandler);
-router.post("/api/v1/games/*/leave", leaveGameHandler);
-router.post("/api/v1/games/*/tokens", createTokenHandler);
-router.post("/api/v1/games/*/tokens/*/move", moveTokenHandler);
-router.post("/api/v1/games/*/dice", rollDiceHandler);
+router.get("/api/v1/games/(.*)", getGameHandler);
+router.post("/api/v1/games/(.*)/join", joinGameHandler);
+router.post("/api/v1/games/(.*)/leave", leaveGameHandler);
+router.post("/api/v1/games/(.*)/tokens", createTokenHandler);
+router.post("/api/v1/games/(.*)/tokens/(.*)/move", moveTokenHandler);
+router.post("/api/v1/games/(.*)/dice", rollDiceHandler);
 
 // Character management routes
 router.post("/api/v1/characters", createCharacterHandler);
 router.get("/api/v1/characters", getUserCharactersHandler);
-router.get("/api/v1/characters/*", getCharacterHandler);
-router.put("/api/v1/characters/*", updateCharacterHandler);
-router.delete("/api/v1/characters/*", deleteCharacterHandler);
+router.get("/api/v1/characters/(.*)", getCharacterHandler);
+router.put("/api/v1/characters/(.*)", updateCharacterHandler);
+router.delete("/api/v1/characters/(.*)", deleteCharacterHandler);
 router.get("/api/v1/character-templates", getCharacterTemplatesHandler);
-router.post("/api/v1/characters/*/level-up", levelUpCharacterHandler);
-router.post("/api/v1/characters/*/rest", characterRestHandler);
+router.post("/api/v1/characters/(.*)/level-up", levelUpCharacterHandler);
+router.post("/api/v1/characters/(.*)/rest", characterRestHandler);
 
 // Campaign management routes
 router.post("/api/v1/campaigns", createCampaignHandler);
 router.get("/api/v1/campaigns", getUserCampaignsHandler);
-router.get("/api/v1/campaigns/*", getCampaignHandler);
-router.put("/api/v1/campaigns/*", updateCampaignHandler);
-router.delete("/api/v1/campaigns/*", deleteCampaignHandler);
-router.get("/api/v1/campaigns/*/players", getCampaignPlayersHandler);
-router.post("/api/v1/campaigns/*/players", addPlayerHandler);
-router.put("/api/v1/campaigns/*/players/*", updatePlayerHandler);
-router.delete("/api/v1/campaigns/*/players/*", removePlayerHandler);
-router.get("/api/v1/campaigns/*/settings", getCampaignSettingsHandler);
-router.put("/api/v1/campaigns/*/settings", updateCampaignSettingsHandler);
-router.post("/api/v1/campaigns/*/characters", addCharacterToCampaignHandler);
-router.delete("/api/v1/campaigns/*/characters/*", removeCharacterFromCampaignHandler);
-router.post("/api/v1/campaigns/*/archive", archiveCampaignHandler);
-router.get("/api/v1/campaigns/*/stats", getCampaignStatsHandler);
-router.get("/api/v1/campaigns/*/scenes", getCampaignScenesHandler);
-router.post("/api/v1/campaigns/*/scenes", createCampaignSceneHandler);
-router.put("/api/v1/campaigns/*/active-scene", setActiveCampaignSceneHandler);
-router.post("/api/v1/campaigns/*/sessions", startSessionHandler);
-router.delete("/api/v1/campaigns/*/sessions/*", endSessionHandler);
-router.get("/api/v1/campaigns/*/sessions/active", getActiveSessionHandler);
+router.get("/api/v1/campaigns/(.*)", getCampaignHandler);
+router.put("/api/v1/campaigns/(.*)", updateCampaignHandler);
+router.delete("/api/v1/campaigns/(.*)", deleteCampaignHandler);
+router.get("/api/v1/campaigns/(.*)/players", getCampaignPlayersHandler);
+router.post("/api/v1/campaigns/(.*)/players", addPlayerHandler);
+router.put("/api/v1/campaigns/(.*)/players/(.*)", updatePlayerHandler);
+router.delete("/api/v1/campaigns/(.*)/players/(.*)", removePlayerHandler);
+router.get("/api/v1/campaigns/(.*)/settings", getCampaignSettingsHandler);
+router.put("/api/v1/campaigns/(.*)/settings", updateCampaignSettingsHandler);
+router.post("/api/v1/campaigns/(.*)/characters", addCharacterToCampaignHandler);
+router.delete("/api/v1/campaigns/(.*)/characters/(.*)", removeCharacterFromCampaignHandler);
+router.post("/api/v1/campaigns/(.*)/archive", archiveCampaignHandler);
+router.get("/api/v1/campaigns/(.*)/stats", getCampaignStatsHandler);
+router.get("/api/v1/campaigns/(.*)/scenes", getCampaignScenesHandler);
+router.post("/api/v1/campaigns/(.*)/scenes", createCampaignSceneHandler);
+router.put("/api/v1/campaigns/(.*)/active-scene", setActiveCampaignSceneHandler);
+router.post("/api/v1/campaigns/(.*)/sessions", startSessionHandler);
+router.delete("/api/v1/campaigns/(.*)/sessions/(.*)", endSessionHandler);
+router.get("/api/v1/campaigns/(.*)/sessions/active", getActiveSessionHandler);
 
 // Asset management routes
 router.post("/api/v1/assets/upload", uploadAssetHandler);
@@ -699,12 +700,12 @@ router.get("/api/v1/assets", searchAssetsHandler);
 router.get("/api/v1/assets/stats", getAssetStatsHandler);
 router.get("/api/v1/assets/libraries", getUserLibrariesHandler);
 router.post("/api/v1/assets/libraries", createLibraryHandler);
-router.get("/api/v1/assets/*", getAssetHandler);
-router.get("/api/v1/assets/*/file", downloadAssetHandler);
-router.put("/api/v1/assets/*", updateAssetHandler);
-router.delete("/api/v1/assets/*", deleteAssetHandler);
-router.post("/api/v1/assets/*/create-token", createAssetTokenHandler);
-router.post("/api/v1/assets/*/create-map", createMapHandler);
+router.get("/api/v1/assets/(.*)", getAssetHandler);
+router.get("/api/v1/assets/(.*)/file", downloadAssetHandler);
+router.put("/api/v1/assets/(.*)", updateAssetHandler);
+router.delete("/api/v1/assets/(.*)", deleteAssetHandler);
+router.post("/api/v1/assets/(.*)/create-token", createAssetTokenHandler);
+router.post("/api/v1/assets/(.*)/create-map", createMapHandler);
 
 // AI Content Generation routes
 router.post("/api/v1/ai/generate-npc", generateNPCHandler);
@@ -736,33 +737,33 @@ router.post("/api/v1/assistant/ruling", generateRulingHandler);
 // Map and Grid System routes
 router.post("/api/v1/maps/scenes", createSceneHandler);
 router.get("/api/v1/maps/scenes", getScenesHandler);
-router.get("/api/v1/maps/scenes/*", getSceneHandler);
-router.put("/api/v1/maps/scenes/*", updateSceneHandler);
-router.post("/api/v1/maps/scenes/*/coordinate-conversion", convertCoordinatesHandler);
-router.post("/api/v1/maps/scenes/*/distance", calculateDistanceHandler);
-router.post("/api/v1/maps/scenes/*/movement-path", getMovementPathHandler);
-router.post("/api/v1/maps/scenes/*/lighting/sources", addLightSourceHandler);
-router.delete("/api/v1/maps/scenes/*/lighting/sources/*", removeLightSourceHandler);
-router.post("/api/v1/maps/scenes/*/line-of-sight", lineOfSightHandler);
-router.post("/api/v1/maps/scenes/*/fog/add", addFogAreaHandler);
-router.post("/api/v1/maps/scenes/*/fog/reveal", revealFogAreaHandler);
-router.post("/api/v1/maps/scenes/*/measurements", createMeasurementHandler);
-router.get("/api/v1/maps/scenes/*/measurements", getMeasurementsHandler);
-router.post("/api/v1/maps/scenes/*/combat/initialize", initializeCombatHandler);
-router.post("/api/v1/maps/scenes/*/combat/combatants", addCombatantHandler);
-router.post("/api/v1/maps/scenes/*/combat/next-turn", nextTurnHandler);
-router.get("/api/v1/maps/scenes/*/combat", getCombatGridHandler);
-router.post("/api/v1/maps/scenes/*/effects", addGridEffectHandler);
-router.post("/api/v1/maps/scenes/*/tokens", addTokenHandler);
-router.put("/api/v1/maps/scenes/*/tokens/*/move", moveSceneTokenHandler);
-router.put("/api/v1/maps/scenes/*/tokens/*", updateTokenHandler);
-router.delete("/api/v1/maps/scenes/*/tokens/*", removeTokenHandler);
+router.get("/api/v1/maps/scenes/(.*)", getSceneHandler);
+router.put("/api/v1/maps/scenes/(.*)", updateSceneHandler);
+router.post("/api/v1/maps/scenes/(.*)/coordinate-conversion", convertCoordinatesHandler);
+router.post("/api/v1/maps/scenes/(.*)/distance", calculateDistanceHandler);
+router.post("/api/v1/maps/scenes/(.*)/movement-path", getMovementPathHandler);
+router.post("/api/v1/maps/scenes/(.*)/lighting/sources", addLightSourceHandler);
+router.delete("/api/v1/maps/scenes/(.*)/lighting/sources/(.*)", removeLightSourceHandler);
+router.post("/api/v1/maps/scenes/(.*)/line-of-sight", lineOfSightHandler);
+router.post("/api/v1/maps/scenes/(.*)/fog/add", addFogAreaHandler);
+router.post("/api/v1/maps/scenes/(.*)/fog/reveal", revealFogAreaHandler);
+router.post("/api/v1/maps/scenes/(.*)/measurements", createMeasurementHandler);
+router.get("/api/v1/maps/scenes/(.*)/measurements", getMeasurementsHandler);
+router.post("/api/v1/maps/scenes/(.*)/combat/initialize", initializeCombatHandler);
+router.post("/api/v1/maps/scenes/(.*)/combat/combatants", addCombatantHandler);
+router.post("/api/v1/maps/scenes/(.*)/combat/next-turn", nextTurnHandler);
+router.get("/api/v1/maps/scenes/(.*)/combat", getCombatGridHandler);
+router.post("/api/v1/maps/scenes/(.*)/effects", addGridEffectHandler);
+router.post("/api/v1/maps/scenes/(.*)/tokens", addTokenHandler);
+router.put("/api/v1/maps/scenes/(.*)/tokens/(.*)/move", moveSceneTokenHandler);
+router.put("/api/v1/maps/scenes/(.*)/tokens/(.*)", updateTokenHandler);
+router.delete("/api/v1/maps/scenes/(.*)/tokens/(.*)", removeTokenHandler);
 router.post("/api/v1/maps/upload", uploadMapHandler);
-router.put("/api/v1/maps/scenes/*/settings", updateSceneSettingsHandler);
+router.put("/api/v1/maps/scenes/(.*)/settings", updateSceneSettingsHandler);
 router.get("/api/v1/maps", getMapsHandler);
 
 // API Scene routes (for client compatibility)
-router.put("/api/v1/scenes/*/settings", updateSceneSettingsHandler);
+router.put("/api/v1/scenes/(.*)/settings", updateSceneSettingsHandler);
 
 // Provide the active scene for the authenticated user
 router.get("/api/v1/scenes/active", async (ctx) => {

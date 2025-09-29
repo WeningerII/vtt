@@ -97,7 +97,8 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [
     {
-      command: "pnpm dev:server",
+      command:
+        "pnpm dlx prisma generate --schema apps/server/prisma/schema.test.prisma && pnpm dev:server",
       port: 8080,
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
@@ -116,7 +117,7 @@ export default defineConfig({
         OAUTH_DISCORD_CLIENT_SECRET: "test-discord-client-secret",
         AI_ENABLE_AUTO_PROVIDERS: "false",
         AI_ENABLE_LOCAL_PROVIDER: "false",
-        E2E_SKIP_DB: process.env.E2E_SKIP_DB || "1",
+        E2E_SKIP_DB: process.env.E2E_SKIP_DB || "0",
         // Do NOT set real or dummy AI keys here so integration tests skip
         // OPENAI_API_KEY: '',
         // ANTHROPIC_API_KEY: '',

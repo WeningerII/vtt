@@ -7,6 +7,7 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { useAuth } from "../providers/AuthProvider";
 import { useGame } from "../providers/GameProvider";
 import { LoadingSpinner } from "./ui/LoadingSpinner";
+import { ScenePage } from "../pages/ScenePage";
 
 // Lazy load route components for code splitting
 const LoginPage = lazy(() => import("../pages/LoginPage").then((m) => ({ default: m.LoginPage })));
@@ -14,7 +15,9 @@ const RegisterPage = lazy(() =>
   import("../pages/RegisterPage").then((m) => ({ default: m.RegisterPage })),
 );
 const Dashboard = lazy(() => import("../pages/Dashboard").then((m) => ({ default: m.Dashboard })));
-const LandingPage = lazy(() => import("../pages/LandingPage").then((m) => ({ default: m.LandingPage })));
+const LandingPage = lazy(() =>
+  import("../pages/LandingPage").then((m) => ({ default: m.LandingPage })),
+);
 const GameSession = lazy(() =>
   import("../pages/GameSession").then((m) => ({ default: m.GameSession })),
 );
@@ -31,6 +34,7 @@ export type Route =
   | "/login"
   | "/register"
   | "/dashboard"
+  | "/scenes/:id"
   | "/session/:id"
   | "/characters"
   | "/characters/:id"
@@ -48,15 +52,34 @@ function parseRoute(path: string): { route: Route; params: RouteParams } {
   const cleanPath = (parts.length > 0 ? parts[0] : "") as string; // Remove query params, ensure string
 
   // Simple route matching
-  if (cleanPath === "/" || cleanPath === "") {return { route: "/", params: {} };}
-  if (cleanPath === "/login") {return { route: "/login", params: {} };}
-  if (cleanPath === "/register") {return { route: "/register", params: {} };}
-  if (cleanPath === "/dashboard") {return { route: "/dashboard", params: {} };}
-  if (cleanPath === "/characters") {return { route: "/characters", params: {} };}
-  if (cleanPath === "/campaigns") {return { route: "/campaigns", params: {} };}
-  if (cleanPath === "/settings") {return { route: "/settings", params: {} };}
+  if (cleanPath === "/" || cleanPath === "") {
+    return { route: "/", params: {} };
+  }
+  if (cleanPath === "/login") {
+    return { route: "/login", params: {} };
+  }
+  if (cleanPath === "/register") {
+    return { route: "/register", params: {} };
+  }
+  if (cleanPath === "/dashboard") {
+    return { route: "/dashboard", params: {} };
+  }
+  if (cleanPath === "/characters") {
+    return { route: "/characters", params: {} };
+  }
+  if (cleanPath === "/campaigns") {
+    return { route: "/campaigns", params: {} };
+  }
+  if (cleanPath === "/settings") {
+    return { route: "/settings", params: {} };
+  }
 
   // Dynamic routes
+  const sceneMatch = cleanPath.match(/^\/scenes\/([^/]+)$/);
+  if (sceneMatch) {
+    return { route: "/scenes/:id", params: { id: sceneMatch[1]! } };
+  }
+
   const sessionMatch = cleanPath.match(/^\/session\/([^/]+)$/);
   if (sessionMatch) {
     return { route: "/session/:id", params: { id: sessionMatch[1]! } };
@@ -156,6 +179,10 @@ export function Router() {
           return <LoginPage router={routerContext} />;
         }
         return <Dashboard router={routerContext} />;
+
+      case "/scenes/:id":
+        // Scene page is public for tests; real app may guard by auth
+        return <ScenePage router={routerContext} />;
 
       case "/session/:id":
         // Game sessions require authentication

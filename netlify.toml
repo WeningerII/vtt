@@ -1,4 +1,4 @@
-run [build]
+[build]
   # Base directory for the build
   base = ""
   
@@ -10,7 +10,7 @@ run [build]
 
 [build.environment]
   # Node version for builds
-  NODE_VERSION = "18"
+  NODE_VERSION = "22"
   # Enable pnpm
   PNPM_VERSION = "9.12.2"
 

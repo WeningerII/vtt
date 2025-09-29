@@ -1,5 +1,12 @@
 import { testDb } from "./database";
 
+// Respect E2E DB skip flags
+const shouldSkipDb = (): boolean => {
+  const skip = process.env.E2E_SKIP_DB;
+  const skipSetup = process.env.E2E_SKIP_DB_SETUP;
+  return skip === "1" || skip === "true" || skipSetup === "1" || skipSetup === "true";
+};
+
 export interface TestUser {
   id: string;
   displayName: string;
@@ -33,13 +40,30 @@ export interface TestActor {
 }
 
 export class TestDataFactory {
+  private isStub(): boolean {
+    return shouldSkipDb();
+  }
+
+  private stubId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
   private async getDb(): Promise<any> {
+    if (shouldSkipDb()) {
+      throw new Error("[Factory] E2E_SKIP_DB is set; database-backed factories are disabled.");
+    }
     return await testDb.getClient();
   }
 
   constructor() {}
 
   async createUser(overrides: Record<string, any> = {}): Promise<TestUser> {
+    if (this.isStub()) {
+      const id = this.stubId("user");
+      const username = (overrides as any).username ?? `user-${Date.now()}`;
+      const displayName = (overrides as any).displayName ?? username;
+      return { id, displayName } as TestUser;
+    }
     const username = (overrides as any).username ?? `user-${Date.now()}`;
     const email = (overrides as any).email ?? `user-${Date.now()}@test.com`;
     const displayName = (overrides as any).displayName ?? username;
@@ -80,6 +104,16 @@ export class TestDataFactory {
   }
 
   async createMap(overrides: Partial<any> = {}) {
+    if (this.isStub()) {
+      return {
+        id: this.stubId("map"),
+        name: (overrides as any).name ?? "Test Map",
+        widthPx: (overrides as any).widthPx ?? 1000,
+        heightPx: (overrides as any).heightPx ?? 800,
+        gridSizePx: (overrides as any).gridSizePx ?? 50,
+        ...overrides,
+      };
+    }
     const mapData = {
       name: "Test Map",
       widthPx: 1000,
@@ -95,6 +129,17 @@ export class TestDataFactory {
   }
 
   async createCampaign(overrides: Partial<TestCampaign> = {}): Promise<TestCampaign> {
+    if (this.isStub()) {
+      const id = this.stubId("campaign");
+      const name = overrides.name ?? "Test Campaign";
+      return {
+        id,
+        name,
+        description: (overrides as any).description ?? "A test campaign for e2e testing",
+        gameSystem: (overrides as any).gameSystem ?? "dnd5e",
+        isActive: (overrides as any).isActive ?? true,
+      } as TestCampaign;
+    }
     const db = await this.getDb();
     const name = overrides.name ?? "Test Campaign";
     // Create campaign with settings that carry description/gameSystem/isActive
@@ -122,6 +167,9 @@ export class TestDataFactory {
   }
 
   async createCampaignMember(userId: string, campaignId: string, role: string = "player") {
+    if (this.isStub()) {
+      return { id: this.stubId("campaignMember"), userId, campaignId, role } as any;
+    }
     const db = await this.getDb();
     return db.campaignMember.create({
       data: {
@@ -133,6 +181,15 @@ export class TestDataFactory {
   }
 
   async createScene(campaignId: string, overrides: Partial<TestScene> = {}): Promise<TestScene> {
+    if (this.isStub()) {
+      const map = await this.createMap();
+      return {
+        id: this.stubId("scene"),
+        name: (overrides as any).name ?? "Test Scene",
+        campaignId,
+        mapId: (overrides as any).mapId ?? (map as any).id ?? null,
+      } as TestScene;
+    }
     const map = await this.createMap();
 
     const sceneData = {
@@ -155,6 +212,20 @@ export class TestDataFactory {
     campaignId: string,
     overrides: Record<string, any> = {},
   ): Promise<TestActor> {
+    if (this.isStub()) {
+      const name = (overrides as any).name ?? "Test Character";
+      return {
+        id: this.stubId("character"),
+        name,
+        kind: ((overrides as any).kind as any) ?? "PC",
+        userId,
+        campaignId,
+        currentHp: (overrides as any).currentHp ?? 25,
+        maxHp: (overrides as any).maxHp ?? 25,
+        ac: (overrides as any).ac ?? 15,
+        initiative: (overrides as any).initiative ?? 12,
+      } as TestActor;
+    }
     const db = await this.getDb();
     const name = (overrides as any).name ?? "Test Character";
     // Create Character and link to Campaign via CampaignCharacter
@@ -193,11 +264,33 @@ export class TestDataFactory {
   }
 
   async createToken(sceneId: string, actorId?: string, overrides: Partial<any> = {}) {
+    if (this.isStub()) {
+      const name = (overrides as any).name ?? "Test Token";
+      const x = (overrides as any).x ?? 100;
+      const y = (overrides as any).y ?? 100;
+      const width = (overrides as any).width ?? 1;
+      const height = (overrides as any).height ?? 1;
+      const disposition = (overrides as any).disposition ?? "FRIENDLY";
+      const isVisible = (overrides as any).isVisible ?? true;
+      return {
+        id: this.stubId("token"),
+        name,
+        sceneId,
+        characterId: actorId,
+        x,
+        y,
+        type: actorId ? "PC" : "NPC",
+        visibility: isVisible ? "VISIBLE" : "HIDDEN",
+        metadata: { width, height, disposition },
+      } as any;
+    }
     const db = await this.getDb();
 
     // Ensure we have a session for this scene's campaign
     const scene = await db.scene.findUnique({ where: { id: sceneId } });
-    if (!scene) { throw new Error(`Scene not found: ${sceneId}`); }
+    if (!scene) {
+      throw new Error(`Scene not found: ${sceneId}`);
+    }
 
     let session = await db.gameSession.findFirst({
       where: { campaignId: scene.campaignId, status: { in: ["ACTIVE", "WAITING"] } },
@@ -243,6 +336,16 @@ export class TestDataFactory {
   }
 
   async createEncounter(campaignId: string, overrides: Partial<any> = {}) {
+    if (this.isStub()) {
+      return {
+        id: this.stubId("encounter"),
+        name: (overrides as any).name ?? "Test Encounter",
+        gameSessionId: this.stubId("session"),
+        sceneId: undefined,
+        status: (overrides as any).isActive ? "ACTIVE" : "PLANNED",
+        initiativeOrder: null,
+      } as any;
+    }
     const db = await this.getDb();
     // Resolve or create a session to attach the encounter
     let session = await db.gameSession.findFirst({
@@ -272,10 +375,22 @@ export class TestDataFactory {
   }
 
   async createEncounterParticipant(encounterId: string, actorId: string, initiative: number = 10) {
+    if (this.isStub()) {
+      return {
+        id: this.stubId("encounterToken"),
+        encounterId,
+        tokenId: this.stubId("token"),
+        initiative,
+        turnOrder: null,
+        isActive: true,
+      } as any;
+    }
     const db = await this.getDb();
     // Find a token associated with the character (actorId)
     const token = await db.token.findFirst({ where: { characterId: actorId } });
-    if (!token) { throw new Error(`No token found for character ${actorId}`); }
+    if (!token) {
+      throw new Error(`No token found for character ${actorId}`);
+    }
 
     return db.encounterToken.create({
       data: {
@@ -289,6 +404,20 @@ export class TestDataFactory {
   }
 
   async createAsset(mapId?: string, overrides: Partial<any> = {}) {
+    if (this.isStub()) {
+      const data: any = {
+        id: this.stubId("asset"),
+        kind: (overrides as any).kind ?? "ORIGINAL",
+        uri: (overrides as any).uri ?? "test://asset.png",
+        mimeType: (overrides as any).mimeType ?? "image/png",
+        width: (overrides as any).width ?? 256,
+        height: (overrides as any).height ?? 256,
+        sizeBytes: (overrides as any).sizeBytes ?? 1024,
+        checksum: (overrides as any).checksum ?? "test-checksum",
+      };
+      if (mapId) data.mapId = mapId;
+      return data;
+    }
     const db = await this.getDb();
 
     // Only allow fields that exist in the Prisma schema for Asset
@@ -312,6 +441,56 @@ export class TestDataFactory {
 
   // Composite factory methods for common scenarios
   async createCompleteGameSession() {
+    if (this.isStub()) {
+      const gm = await this.createGMUser();
+      const player1 = await this.createPlayerUser({ displayName: "Player 1" });
+      const player2 = await this.createPlayerUser({ displayName: "Player 2" });
+      const campaign = await this.createCampaign();
+      await this.createCampaignMember(gm.id, campaign.id, "gm");
+      await this.createCampaignMember(player1.id, campaign.id, "player");
+      await this.createCampaignMember(player2.id, campaign.id, "player");
+      const scene = await this.createScene(campaign.id);
+      const gmActor = await this.createActor(gm.id, campaign.id, {
+        name: "GM Character",
+        kind: "NPC",
+      });
+      const player1Actor = await this.createActor(player1.id, campaign.id, {
+        name: "Player 1 Character",
+      });
+      const player2Actor = await this.createActor(player2.id, campaign.id, {
+        name: "Player 2 Character",
+      });
+      const gmToken = await this.createToken(scene.id, gmActor.id, {
+        name: "GM Token",
+        x: 200,
+        y: 200,
+      });
+      const player1Token = await this.createToken(scene.id, player1Actor.id, {
+        name: "Player 1 Token",
+        x: 150,
+        y: 150,
+      });
+      const player2Token = await this.createToken(scene.id, player2Actor.id, {
+        name: "Player 2 Token",
+        x: 250,
+        y: 150,
+      });
+      const encounter = await this.createEncounter(campaign.id, {
+        name: "Test Combat",
+        isActive: true,
+      });
+      await this.createEncounterParticipant(encounter.id, gmActor.id, 15);
+      await this.createEncounterParticipant(encounter.id, player1Actor.id, 12);
+      await this.createEncounterParticipant(encounter.id, player2Actor.id, 8);
+      return {
+        users: { gm, player1, player2 },
+        campaign,
+        scene,
+        actors: { gmActor, player1Actor, player2Actor },
+        tokens: { gmToken, player1Token, player2Token },
+        encounter,
+      };
+    }
     // Create users
     const gm = await this.createGMUser();
     const player1 = await this.createPlayerUser({ displayName: "Player 1" });
@@ -390,6 +569,17 @@ export class TestDataFactory {
   }
 
   async createMinimalGameSession() {
+    if (this.isStub()) {
+      const gm = await this.createGMUser();
+      const player = await this.createPlayerUser();
+      const campaign = await this.createCampaign();
+      await this.createCampaignMember(gm.id, campaign.id, "gm");
+      await this.createCampaignMember(player.id, campaign.id, "player");
+      const scene = await this.createScene(campaign.id);
+      const actor = await this.createActor(player.id, campaign.id);
+      const token = await this.createToken(scene.id, actor.id);
+      return { users: { gm, player }, campaign, scene, actor, token };
+    }
     const gm = await this.createGMUser();
     const player = await this.createPlayerUser();
     const campaign = await this.createCampaign();

@@ -1,6 +1,14 @@
 import { execSync } from "child_process";
 import { join } from "path";
 import { existsSync, unlinkSync } from "fs";
+import { pathToFileURL } from "url";
+
+// Helper to determine if DB operations should be skipped
+const shouldSkipDb = (): boolean => {
+  const skip = process.env.E2E_SKIP_DB;
+  const skipSetup = process.env.E2E_SKIP_DB_SETUP;
+  return skip === "1" || skip === "true" || skipSetup === "1" || skipSetup === "true";
+};
 
 export class TestDatabase {
   private static instance: TestDatabase;
@@ -37,7 +45,14 @@ export class TestDatabase {
   private async ensurePrisma(): Promise<any> {
     if (!this.prisma) {
       this.ensureGeneratedClient();
-      const { PrismaClient } = await import("../../node_modules/.prisma/test-client/index.js");
+      const clientModulePath = join(
+        process.cwd(),
+        "node_modules",
+        ".prisma",
+        "test-client",
+        "index.js",
+      );
+      const { PrismaClient } = await import(pathToFileURL(clientModulePath).href);
       this.prisma = new PrismaClient({
         datasources: {
           db: {
@@ -51,6 +66,10 @@ export class TestDatabase {
   }
 
   async setup(): Promise<void> {
+    if (shouldSkipDb()) {
+      console.log("[Test DB] Skipping setup due to E2E_SKIP_DB");
+      return;
+    }
     console.log("[Test DB] Setting up test database...");
 
     // Remove existing test database
@@ -73,6 +92,10 @@ export class TestDatabase {
   }
 
   async cleanup(): Promise<void> {
+    if (shouldSkipDb()) {
+      console.log("[Test DB] Skipping cleanup due to E2E_SKIP_DB");
+      return;
+    }
     console.log("[Test DB] Cleaning up test database...");
 
     if (this.prisma) {
@@ -89,40 +112,62 @@ export class TestDatabase {
   }
 
   async reset(): Promise<void> {
-    await this.ensurePrisma();
+    if (shouldSkipDb()) {
+      console.log("[Test DB] Skipping reset due to E2E_SKIP_DB");
+      return;
+    }
 
+    await this.ensurePrisma();
     console.log("[Test DB] Resetting database state...");
 
-    // Delete all data in reverse dependency order (production-mirrored test schema)
-    await this.prisma!.encounterToken.deleteMany();
-    await this.prisma!.encounter.deleteMany();
-    await this.prisma!.token.deleteMany();
-    await this.prisma!.gameSession.deleteMany();
-    await this.prisma!.campaignCharacter.deleteMany();
-    await this.prisma!.character.deleteMany();
-    await this.prisma!.chatMessage.deleteMany();
-    await this.prisma!.campaignSettings.deleteMany();
-    await this.prisma!.campaignMember.deleteMany();
-    await this.prisma!.scene.deleteMany();
-    await this.prisma!.campaign.deleteMany();
-    await this.prisma!.refreshToken.deleteMany();
-    await this.prisma!.providerCall.deleteMany();
-    await this.prisma!.generationJob.deleteMany();
-    await this.prisma!.asset.deleteMany();
-    await this.prisma!.appliedCondition.deleteMany();
-    await this.prisma!.condition.deleteMany();
-    await this.prisma!.monster.deleteMany();
-    await this.prisma!.map.deleteMany();
-    await this.prisma!.user.deleteMany();
+    const runDeletes = async () => {
+      // Delete all data in reverse dependency order (production-mirrored test schema)
+      await this.prisma!.encounterToken.deleteMany();
+      await this.prisma!.encounter.deleteMany();
+      await this.prisma!.token.deleteMany();
+      await this.prisma!.gameSession.deleteMany();
+      await this.prisma!.campaignCharacter.deleteMany();
+      await this.prisma!.character.deleteMany();
+      await this.prisma!.chatMessage.deleteMany();
+      await this.prisma!.campaignSettings.deleteMany();
+      await this.prisma!.campaignMember.deleteMany();
+      await this.prisma!.scene.deleteMany();
+      await this.prisma!.campaign.deleteMany();
+      await this.prisma!.refreshToken.deleteMany();
+      await this.prisma!.providerCall.deleteMany();
+      await this.prisma!.generationJob.deleteMany();
+      await this.prisma!.asset.deleteMany();
+      await this.prisma!.appliedCondition.deleteMany();
+      await this.prisma!.condition.deleteMany();
+      await this.prisma!.monster.deleteMany();
+      await this.prisma!.map.deleteMany();
+      await this.prisma!.user.deleteMany();
+    };
+
+    try {
+      await runDeletes();
+    } catch (error) {
+      console.warn("[Test DB] Reset failed; attempting setup then retry...", error);
+      await this.setup();
+      await this.ensurePrisma();
+      await runDeletes();
+    }
 
     console.log("[Test DB] Database reset complete");
   }
 
   async getClient(): Promise<any> {
+    if (shouldSkipDb()) {
+      throw new Error("[Test DB] E2E_SKIP_DB is set; database operations are disabled.");
+    }
     return this.ensurePrisma();
   }
 
   async seed(): Promise<void> {
+    if (shouldSkipDb()) {
+      console.log("[Test DB] Skipping seed due to E2E_SKIP_DB");
+      return;
+    }
     await this.ensurePrisma();
 
     console.log("[Test DB] Seeding test data...");
