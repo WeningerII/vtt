@@ -356,7 +356,7 @@ jobs:
 
       - name: Post security summary to PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const securityPassed = '${{ steps.security_gate.outputs.security_gate_passed }}' === 'true';
