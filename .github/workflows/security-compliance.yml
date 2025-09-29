@@ -36,10 +36,8 @@ jobs:
           pip install bandit safety semgrep
           npm install -g retire
 
-          # Install container security scanner
-          wget -O grype.tar.gz https://github.com/anchore/grype/releases/latest/download/grype_linux_amd64.tar.gz
-          tar -xzf grype.tar.gz
-          sudo mv grype /usr/local/bin/
+          # Install container security scanner (Grype) via official install script for reliability
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin
 
           # Install secret scanner
           wget -O trufflehog.tar.gz https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64.tar.gz
