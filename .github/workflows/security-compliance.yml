@@ -22,7 +22,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
+      actions: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -42,7 +42,16 @@ jobs:
           # Install secret scanner
           echo "Resolving latest TruffleHog release for Linux amd64..."
           ASSET_JSON=$(curl -sSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN || github.token }}" https://api.github.com/repos/trufflesecurity/trufflehog/releases/latest)
-          TRUFFLE_URL=$(echo "$ASSET_JSON" | jq -r '.assets[].browser_download_url' | grep -iE 'linux.*(amd64|x86_64).*\\.tar\\.gz$' | head -n1)
+          echo "Available release assets:"
+          echo "$ASSET_JSON" | jq -r '.assets[]?.name'
+
+          # Prefer Linux amd64 archives (.tar.gz, .tgz, .zip)
+          TRUFFLE_URL=$(echo "$ASSET_JSON" | jq -r '.assets[] | select(.name | test("(?i)linux.*(amd64|x86_64).*(\\.tar\\.gz|\\.tgz|\\.zip)$")) | .browser_download_url' | head -n1)
+
+          # Fallback: any Linux amd64 asset
+          if [ -z "$TRUFFLE_URL" ] || [ "$TRUFFLE_URL" = "null" ]; then
+            TRUFFLE_URL=$(echo "$ASSET_JSON" | jq -r '.assets[] | select(.name | test("(?i)linux.*(amd64|x86_64)")) | .browser_download_url' | head -n1)
+          fi
 
           if [ -z "$TRUFFLE_URL" ] || [ "$TRUFFLE_URL" = "null" ]; then
             echo "❌ Could not determine TruffleHog asset URL for Linux amd64"
@@ -51,8 +60,22 @@ jobs:
           fi
 
           echo "Downloading: $TRUFFLE_URL"
-          curl -sSLf "$TRUFFLE_URL" -o trufflehog.tar.gz
-          tar -xzf trufflehog.tar.gz
+          FILENAME=$(basename "$TRUFFLE_URL")
+          curl -sSLf "$TRUFFLE_URL" -o "$FILENAME"
+
+          # Extract or prepare the binary depending on archive type
+          case "$FILENAME" in
+            *.tar.gz|*.tgz)
+              tar -xzf "$FILENAME"
+              ;;
+            *.zip)
+              sudo apt-get update && sudo apt-get install -y unzip
+              unzip -q "$FILENAME"
+              ;;
+            *)
+              chmod +x "$FILENAME" 2>/dev/null || true
+              ;;
+          esac
 
           # Robustly locate the extracted binary and install it
           if [ -f trufflehog ]; then
