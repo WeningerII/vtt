@@ -120,7 +120,7 @@ jobs:
       - name: Alert on degraded performance
         if: steps.metrics.outputs.workflow_status == 'failure' || (steps.metrics.outputs.success_rate != '' && fromJSON(steps.metrics.outputs.success_rate) < 90)
         env:
-          MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK }}
+          MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK || '' }}
         run: |
           echo "🚨 Performance degradation detected!"
           echo "Current success rate: ${{ steps.metrics.outputs.success_rate }}%"
