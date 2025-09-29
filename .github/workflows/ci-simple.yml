@@ -45,10 +45,10 @@ jobs:
         run: pnpm db:gen
 
       - name: Build workspace
-        run: pnpm turbo build --cache-dir=.turbo
+        run: pnpm turbo build --cache-dir=.turbo --concurrency=2
 
       - name: Run tests
-        run: pnpm turbo test --cache-dir=.turbo
+        run: pnpm turbo test --cache-dir=.turbo --concurrency=2
         continue-on-error: true
 
       - name: Lint (optional)

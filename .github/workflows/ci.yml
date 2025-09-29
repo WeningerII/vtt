@@ -121,17 +121,19 @@ jobs:
       - uses: ./.github/actions/install-deps
         with:
           ensure-native-deps: "true"
+      - name: Generate Prisma client
+        run: pnpm db:gen
       - name: Build (with retry)
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
           max_attempts: 3
           retry_on: error
-          command: pnpm run build
+          command: pnpm turbo build --concurrency=2
       - name: Lint (continue on error)
         run: pnpm run lint
         continue-on-error: true
       - name: Test
-        run: pnpm run test
+        run: pnpm turbo test --concurrency=2
       - name: Validate build artifacts
         run: pnpm run validate:build

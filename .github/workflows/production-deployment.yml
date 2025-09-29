@@ -212,13 +212,26 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Detect kubeconfig (staging)
+        id: detect_kube_staging
+        env:
+          KUBE_CONFIG_STAGING: ${{ secrets.KUBE_CONFIG_STAGING || '' }}
+        run: |
+          if [ -n "$KUBE_CONFIG_STAGING" ]; then
+            echo "present=true" >> $GITHUB_OUTPUT
+          else
+            echo "present=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Configure kubectl
+        if: ${{ steps.detect_kube_staging.outputs.present == 'true' }}
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING || '' }}
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
 
       - name: Deploy to staging
+        if: ${{ steps.detect_kube_staging.outputs.present == 'true' }}
         run: |
           envsubst < infra/k8s/staging/deployment.yml | kubectl apply -f -
           kubectl rollout status deployment/vtt-app -n staging --timeout=300s
@@ -226,6 +239,7 @@ jobs:
           IMAGE_TAG: ${{ needs.pre-deployment-checks.outputs.version }}
 
       - name: Run smoke tests
+        if: ${{ steps.detect_kube_staging.outputs.present == 'true' }}
         run: |
           sleep 60
           curl -f https://staging.vtt-platform.com/health || exit 1
@@ -237,7 +251,7 @@ jobs:
           channel: "#deployments"
           text: "Staging deployment completed"
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK || '' }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
   deploy-production:
     runs-on: ubuntu-latest
@@ -249,17 +263,31 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Detect kubeconfig (production)
+        id: detect_kube_prod
+        env:
+          KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
+        run: |
+          if [ -n "$KUBE_CONFIG_PRODUCTION" ]; then
+            echo "present=true" >> $GITHUB_OUTPUT
+          else
+            echo "present=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Configure kubectl
+        if: ${{ steps.detect_kube_prod.outputs.present == 'true' }}
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
 
       - name: Create deployment backup
+        if: ${{ steps.detect_kube_prod.outputs.present == 'true' }}
         run: |
           kubectl get deployment vtt-app -n production -o yaml > backup-deployment-$(date +%Y%m%d-%H%M%S).yml
 
       - name: Deploy to production with rolling update
+        if: ${{ steps.detect_kube_prod.outputs.present == 'true' }}
         run: |
           envsubst < infra/k8s/production/deployment.yml | kubectl apply -f -
           kubectl rollout status deployment/vtt-app -n production --timeout=600s
@@ -267,6 +295,7 @@ jobs:
           IMAGE_TAG: ${{ needs.pre-deployment-checks.outputs.version }}
 
       - name: Run production health checks
+        if: ${{ steps.detect_kube_prod.outputs.present == 'true' }}
         run: |
           sleep 120
           for i in {1..5}; do
@@ -275,14 +304,17 @@ jobs:
           done
 
       - name: Run post-deployment tests
+        if: ${{ steps.detect_kube_prod.outputs.present == 'true' }}
         run: |
           cd e2e
           npm run test:production
 
       - name: Update monitoring dashboards
+        env:
+          GRAFANA_WEBHOOK: ${{ secrets.GRAFANA_WEBHOOK || '' }}
         run: |
           # checkov:skip=CKV_GHA_3: Webhook URL is from secrets, not hardcoded
-          curl -X POST "${{ secrets.GRAFANA_WEBHOOK || '' }}" \
+          curl -X POST "$GRAFANA_WEBHOOK" \
             -H "Content-Type: application/json" \
             -d '{"version": "${{ needs.pre-deployment-checks.outputs.version }}", "environment": "production"}'
 
@@ -293,14 +325,23 @@ jobs:
     environment:
       name: production
     steps:
-      - name: Configure kubectl
-        if: env.KUBE_CONFIG_PRODUCTION != ''
+      - name: Detect kubeconfig (production)
+        id: detect_kube_prod_rb
         env:
           KUBE_CONFIG_PRODUCTION: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
+        run: |
+          if [ -n "$KUBE_CONFIG_PRODUCTION" ]; then
+            echo "present=true" >> $GITHUB_OUTPUT
+          else
+            echo "present=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure kubectl
+        if: ${{ steps.detect_kube_prod_rb.outputs.present == 'true' }}
         uses: azure/k8s-set-context@v4
         with:
           method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION || '' }}
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
 
       - name: Rollback deployment
         run: |
@@ -314,15 +355,25 @@ jobs:
           channel: "#incidents"
           text: "Production deployment rolled back due to health check failure"
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK || '' }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
 
   post-deployment:
     runs-on: ubuntu-latest
     needs: [deploy-staging, deploy-production]
     if: always() && (success() || contains(needs.*.result, 'success'))
     steps:
+      - name: Detect deployment tracking webhook
+        id: detect_tracking
+        env:
+          DEPLOYMENT_TRACKING_URL: ${{ secrets.DEPLOYMENT_TRACKING_URL || '' }}
+        run: |
+          if [ -n "$DEPLOYMENT_TRACKING_URL" ]; then
+            echo "present=true" >> $GITHUB_OUTPUT
+          else
+            echo "present=false" >> $GITHUB_OUTPUT
+          fi
       - name: Update deployment tracking
-        if: env.DEPLOYMENT_TRACKING_URL != ''
+        if: ${{ steps.detect_tracking.outputs.present == 'true' }}
         env:
           DEPLOYMENT_TRACKING_URL: ${{ secrets.DEPLOYMENT_TRACKING_URL || '' }}
         run: |

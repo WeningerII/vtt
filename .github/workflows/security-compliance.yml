@@ -32,6 +32,11 @@ jobs:
         run: |
           echo "🔒 Installing advanced security tools..."
 
+          # Ensure jq is available (used extensively below)
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
           # Install multiple security scanners
           pip install bandit safety semgrep
           npm install -g retire
@@ -324,6 +329,21 @@ jobs:
 
       - name: Generate security report
         run: |
+          set -euo pipefail
+          # Coalesce outputs to numeric defaults to avoid arithmetic errors when steps are skipped
+          SECRETS=${{ steps.secret_scan.outputs.secret_count || 0 }}
+          SAST=${{ steps.sast_scan.outputs.sast_issues || 0 }}
+          CONTAINER=${{ steps.container_scan.outputs.container_issues || 0 }}
+          COMPLIANCE=${{ steps.compliance_check.outputs.compliance_issues || 0 }}
+          TOTAL=$((SECRETS + SAST + CONTAINER + COMPLIANCE))
+          if (( SECRETS + SAST > 10 )); then
+            RISK="HIGH"
+          elif (( SECRETS + SAST > 5 )); then
+            RISK="MEDIUM"
+          else
+            RISK="LOW"
+          fi
+
           # Create comprehensive security report
           cat > security-compliance-report.json << EOF
           {
@@ -333,15 +353,15 @@ jobs:
             "branch": "${{ github.ref_name }}",
             "scan_type": "${{ github.event_name }}",
             "security_summary": {
-              "secrets_found": ${{ steps.secret_scan.outputs.secret_count }},
-              "sast_issues": ${{ steps.sast_scan.outputs.sast_issues }},
-              "container_issues": ${{ steps.container_scan.outputs.container_issues }},
-              "compliance_issues": ${{ steps.compliance_check.outputs.compliance_issues }},
-              "total_security_score": $((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }} + ${{ steps.container_scan.outputs.container_issues }} + ${{ steps.compliance_check.outputs.compliance_issues }}))
+              "secrets_found": ${SECRETS},
+              "sast_issues": ${SAST},
+              "container_issues": ${CONTAINER},
+              "compliance_issues": ${COMPLIANCE},
+              "total_security_score": ${TOTAL}
             },
             "risk_assessment": {
-              "level": "$([ $((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }})) -gt 10 ] && echo "HIGH" || ([ $((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }})) -gt 5 ] && echo "MEDIUM" || echo "LOW"))",
-              "critical_findings": $((${{ steps.secret_scan.outputs.secret_count }} + $(echo '${{ steps.sast_scan.outputs.sast_issues }}' | head -c1))),
+              "level": "${RISK}",
+              "critical_findings": $((SECRETS + SAST)),
               "recommendations": [
                 "Review and remediate identified security issues",
                 "Implement automated security testing in CI/CD",
@@ -363,7 +383,10 @@ jobs:
       - name: Security gate check
         id: security_gate
         run: |
-          TOTAL_CRITICAL=$((${{ steps.secret_scan.outputs.secret_count }} + ${{ steps.sast_scan.outputs.sast_issues }}))
+          set -euo pipefail
+          SECRETS=${{ steps.secret_scan.outputs.secret_count || 0 }}
+          SAST=${{ steps.sast_scan.outputs.sast_issues || 0 }}
+          TOTAL_CRITICAL=$((SECRETS + SAST))
 
           echo "🚦 Security Gate Check:"
           echo "  - Critical issues: $TOTAL_CRITICAL"

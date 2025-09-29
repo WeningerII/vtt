@@ -62,17 +62,17 @@ jobs:
           prefer-offline: "true"
       - name: Lint (parallel with typecheck dependencies)
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: |
           pnpm turbo lint --cache-dir=.turbo
       - name: Typecheck (with dependencies built)
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: |
           # Typecheck depends on "^build" in turbo.json so this builds deps first
-          pnpm turbo typecheck --cache-dir=.turbo
+          pnpm turbo typecheck --cache-dir=.turbo --concurrency=2
 
   build:
     runs-on: ubuntu-latest
@@ -100,9 +100,9 @@ jobs:
         run: pnpm db:gen
       - name: Build with turbo
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-        run: pnpm turbo build --cache-dir=.turbo
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
+        run: pnpm turbo build --cache-dir=.turbo --concurrency=2
 
   test:
     runs-on: ubuntu-latest
@@ -124,11 +124,11 @@ jobs:
           prefer-offline: "true"
       - name: Run tests with coverage (shard ${{ matrix.shard }}/4)
         env:
-          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN || '' }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM || '' }}
         run: |
           mkdir -p .nyc_output coverage
-          pnpm nyc pnpm turbo test --cache-dir=.turbo -- --shard=${{ matrix.shard }}/4
+          pnpm nyc pnpm turbo test --cache-dir=.turbo --concurrency=2 -- --shard=${{ matrix.shard }}/4
           ls -la .nyc_output || echo "Warning: .nyc_output directory is empty or missing"
           cp -r .nyc_output coverage/ || echo "No .nyc_output to copy"
           if [ ! -d "coverage/.nyc_output" ] || [ -z "$(ls -A coverage/.nyc_output 2>/dev/null)" ]; then

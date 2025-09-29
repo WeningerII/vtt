@@ -32,6 +32,11 @@ jobs:
       - name: Setup native dependencies
         uses: ./.github/actions/setup-native-deps
 
+      - name: Install required CLI tools (bc, jq)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc jq
+
       - name: Install dependencies with performance monitoring
         id: install_deps
         run: |
@@ -148,7 +153,7 @@ jobs:
           SERVER_PID=$!
 
           # Wait for server to be ready
-          timeout 60 bash -c 'until curl -f http://localhost:8080/health; do sleep 2; done'
+          timeout 60 bash -c 'until curl -f http://localhost:8080/livez; do sleep 2; done'
 
           # Simple load test with curl (replace with proper load testing tool)
           RESPONSE_TIMES=()

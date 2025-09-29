@@ -112,7 +112,7 @@ jobs:
           SERVER_TAG=$(echo '${{ steps.meta_server.outputs.tags }}' | head -n1)
           docker run --rm -d --name test-server -p 8080:8080 $SERVER_TAG || (echo "❌ Server start failed" && exit 1)
           sleep 10
-          curl -f http://localhost:8080/health || (echo "❌ Server health check failed" && docker logs test-server && exit 1)
+          curl -f http://localhost:8080/livez || (echo "❌ Server liveness check failed" && docker logs test-server && exit 1)
           docker stop test-server || true
 
           echo "🏥 Testing client image health..."

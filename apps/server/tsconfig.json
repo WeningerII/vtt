@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "skipLibCheck": true,
-    "types": [],
+    "types": ["node"],
     "outDir": "dist",
     "rootDir": "src",
     "module": "ESNext",
