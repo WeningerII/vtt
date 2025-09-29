@@ -29,14 +29,18 @@ jobs:
           node-version: "22"
           pnpm-version: "9.12.2"
 
+      - name: Setup native dependencies
+        uses: ./.github/actions/setup-native-deps
+
       - name: Install dependencies with performance monitoring
+        id: install_deps
         run: |
           echo "📦 Installing dependencies with timing..."
           START_TIME=$(date +%s)
           pnpm install --frozen-lockfile
           END_TIME=$(date +%s)
           INSTALL_DURATION=$((END_TIME - START_TIME))
-          echo "install_duration_seconds=$INSTALL_DURATION" >> $GITHUB_ENV
+          echo "install_duration_seconds=$INSTALL_DURATION" >> $GITHUB_OUTPUT
           echo "✅ Dependencies installed in ${INSTALL_DURATION}s"
 
       - name: Build performance benchmark
@@ -176,7 +180,7 @@ jobs:
             "branch": "${{ github.ref_name }}",
             "pr_number": "${{ github.event.pull_request.number || null }}",
             "metrics": {
-              "install_duration_seconds": ${{ env.install_duration_seconds }},
+              "install_duration_seconds": ${{ steps.install_deps.outputs.install_duration_seconds }},
               "avg_build_time_ms": ${{ steps.build_benchmark.outputs.avg_build_time }},
               "avg_memory_usage_mb": ${{ steps.build_benchmark.outputs.avg_memory_usage }},
               "client_bundle_size_bytes": ${{ steps.bundle_analysis.outputs.client_bundle_size }},
