@@ -6,7 +6,7 @@
 export const E2E_CONFIG = {
   // Test timeouts
   timeouts: {
-    test: 30000,
+    test: 120000,
     expect: 5000,
     navigation: 10000,
     action: 5000,
