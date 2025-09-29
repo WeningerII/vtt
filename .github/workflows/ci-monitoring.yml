@@ -4,10 +4,14 @@ name: CI Monitoring & Metrics
 on:
   workflow_run:
     workflows: ["CI", "CI (Optimized)", "Docker Publish", "Deploy to Production"]
-    types: [requested, in_progress, completed]
+    types: [requested, completed]
   schedule:
     # Run health checks twice daily at reasonable times
     - cron: "0 8,20 * * *"
+
+permissions:
+  contents: read
+  actions: read
 
 env:
   METRICS_RETENTION_DAYS: "30"
@@ -15,7 +19,7 @@ env:
 jobs:
   collect-metrics:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion != 'cancelled'
+    if: github.event_name == 'workflow_run' && github.event.action == 'completed' && github.event.workflow_run.conclusion != 'cancelled'
     steps:
       - uses: actions/checkout@v5
 
@@ -50,10 +54,10 @@ jobs:
           cat metrics.json | jq '.'
 
           # Calculate success rate (last 50 runs)
-          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows --per-page 100 | jq -r '.workflows[] | select(.name=="'$WORKFLOW_NAME'") | .id' | head -1)
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows?per_page=100 | jq -r --arg n "$WORKFLOW_NAME" '.workflows[] | select(.name==$n) | .id' | head -1)
 
           if [ -n "$WORKFLOW_ID" ] && [ "$WORKFLOW_ID" != "null" ]; then
-            SUCCESS_RATE=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs --per-page 50 | jq '[.workflow_runs[] | select(.conclusion != null)] | length as $total | if $total > 0 then ([.[] | select(.conclusion == "success")] | length / $total * 100) else 100 end')
+            SUCCESS_RATE=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs?per_page=50 | jq '[.workflow_runs[] | select(.conclusion != null)] | length as $total | if $total > 0 then ([.[] | select(.conclusion == "success")] | length / $total * 100) else 100 end')
           else
             SUCCESS_RATE="100"
           fi
@@ -73,7 +77,7 @@ jobs:
           echo "📈 Analyzing performance trends..."
 
           # Get last 10 workflow runs for trend analysis
-          gh api repos/${{ github.repository }}/actions/runs --per-page 10 | jq -r '
+          gh api repos/${{ github.repository }}/actions/runs?per_page=10 | jq -r '
             .workflow_runs[] | 
             select(.name == "${{ steps.metrics.outputs.workflow_name }}") |
             [.created_at, .updated_at, .conclusion] | 
@@ -97,7 +101,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Alert on degraded performance
-        if: steps.metrics.outputs.workflow_status == 'failure' || (steps.metrics.outputs.success_rate != '' && steps.metrics.outputs.success_rate < 90)
+        if: steps.metrics.outputs.workflow_status == 'failure' || (steps.metrics.outputs.success_rate != '' && fromJSON(steps.metrics.outputs.success_rate) < 90)
         env:
           MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK || '' }}
         run: |
@@ -108,11 +112,13 @@ jobs:
           # Create alert payload for external monitoring (webhook, Slack, etc.)
           SUCCESS_RATE_NUM="${{ steps.metrics.outputs.success_rate }}"
           SUCCESS_RATE_NUM=${SUCCESS_RATE_NUM:-100}
+          SUCCESS_RATE_INT=$(printf "%.0f" "$SUCCESS_RATE_NUM" 2>/dev/null || echo "100")
+          SEVERITY="$([ "$SUCCESS_RATE_INT" -lt "80" ] && echo "critical" || echo "warning")"
 
           cat > alert.json << EOF
           {
             "alert_type": "ci_performance_degradation",
-            "severity": "$([ "${SUCCESS_RATE_NUM}" -lt "80" ] && echo "critical" || echo "warning")",
+            "severity": "$SEVERITY",
             "workflow": "${{ steps.metrics.outputs.workflow_name }}",
             "success_rate": "${{ steps.metrics.outputs.success_rate || '100' }}",
             "last_status": "${{ steps.metrics.outputs.workflow_status }}",
@@ -140,6 +146,7 @@ jobs:
             trend_data.csv
             alert.json
           retention-days: ${{ env.METRICS_RETENTION_DAYS }}
+          if-no-files-found: ignore
 
   health-check:
     runs-on: ubuntu-latest
@@ -158,7 +165,7 @@ jobs:
           echo "  - Enabled workflows: $ENABLED_WORKFLOWS"
 
           # Check for stuck workflows (running > 2 hours)
-          STUCK_WORKFLOWS=$(gh api repos/${{ github.repository }}/actions/runs --status in_progress | jq --arg cutoff "$(date -d '2 hours ago' -u +%Y-%m-%dT%H:%M:%SZ)" '[.workflow_runs[] | select(.created_at < $cutoff)] | length')
+          STUCK_WORKFLOWS=$(gh api repos/${{ github.repository }}/actions/runs?status=in_progress | jq --arg cutoff "$(date -d '2 hours ago' -u +%Y-%m-%dT%H:%M:%SZ)" '[.workflow_runs[] | select(.created_at < $cutoff)] | length')
 
           if [ "$STUCK_WORKFLOWS" -gt "0" ]; then
             echo "⚠️  Warning: $STUCK_WORKFLOWS potentially stuck workflow(s) detected"
@@ -166,7 +173,7 @@ jobs:
 
           # Check runner capacity
           echo "🏃 Runner queue status:"
-          gh api repos/${{ github.repository }}/actions/runs --status queued | jq '.total_count as $queued | "Queued jobs: \($queued)"'
+          gh api repos/${{ github.repository }}/actions/runs?status=queued | jq '.total_count as $queued | "Queued jobs: \($queued)"'
 
           echo "✅ Health check completed"
         env:
