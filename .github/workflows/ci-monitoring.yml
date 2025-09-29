@@ -19,6 +19,9 @@ env:
 jobs:
   collect-metrics:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     if: github.event_name == 'workflow_run' && github.event.action == 'completed' && github.event.workflow_run.conclusion != 'cancelled'
     steps:
       - uses: actions/checkout@v5
@@ -28,6 +31,10 @@ jobs:
         run: |
           # Collect comprehensive workflow metrics
           echo "🔍 Collecting CI/CD metrics..."
+
+          # Tooling preflight (for diagnostics)
+          gh --version | head -n1 || true
+          jq --version || true
 
           WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
           WORKFLOW_STATUS="${{ github.event.workflow_run.conclusion }}"
@@ -69,6 +76,7 @@ jobs:
           echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
           echo "workflow_status=$WORKFLOW_STATUS" >> $GITHUB_OUTPUT
           echo "duration=$WORKFLOW_DURATION" >> $GITHUB_OUTPUT
+          echo "workflow_id=$WORKFLOW_ID" >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
@@ -76,13 +84,22 @@ jobs:
         run: |
           echo "📈 Analyzing performance trends..."
 
-          # Get last 10 workflow runs for trend analysis
-          gh api repos/${{ github.repository }}/actions/runs?per_page=10 | jq -r '
-            .workflow_runs[] | 
-            select(.name == "${{ steps.metrics.outputs.workflow_name }}") |
-            [.created_at, .updated_at, .conclusion] | 
-            @csv
-          ' > trend_data.csv
+          # Get last 10 workflow runs for trend analysis (prefer specific workflow id)
+          WF_ID="${{ steps.metrics.outputs.workflow_id }}"
+          if [ -n "$WF_ID" ] && [ "$WF_ID" != "null" ]; then
+            gh api repos/${{ github.repository }}/actions/workflows/$WF_ID/runs?per_page=10 | jq -r '
+              .workflow_runs[] |
+              [.created_at, .updated_at, .conclusion] |
+              @csv
+            ' > trend_data.csv
+          else
+            gh api repos/${{ github.repository }}/actions/runs?per_page=10 | jq -r '
+              .workflow_runs[] |
+              select(.name == "${{ steps.metrics.outputs.workflow_name }}") |
+              [.created_at, .updated_at, .conclusion] |
+              @csv
+            ' > trend_data.csv
+          fi
 
           echo "Recent workflow trend data:"
           cat trend_data.csv
@@ -103,7 +120,7 @@ jobs:
       - name: Alert on degraded performance
         if: steps.metrics.outputs.workflow_status == 'failure' || (steps.metrics.outputs.success_rate != '' && fromJSON(steps.metrics.outputs.success_rate) < 90)
         env:
-          MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK || '' }}
+          MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK }}
         run: |
           echo "🚨 Performance degradation detected!"
           echo "Current success rate: ${{ steps.metrics.outputs.success_rate }}%"
@@ -120,7 +137,7 @@ jobs:
             "alert_type": "ci_performance_degradation",
             "severity": "$SEVERITY",
             "workflow": "${{ steps.metrics.outputs.workflow_name }}",
-            "success_rate": "${{ steps.metrics.outputs.success_rate || '100' }}",
+            "success_rate": $SUCCESS_RATE_NUM,
             "last_status": "${{ steps.metrics.outputs.workflow_status }}",
             "repository": "${{ github.repository }}",
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
