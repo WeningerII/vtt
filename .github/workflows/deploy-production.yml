@@ -87,7 +87,7 @@ jobs:
         run: pnpm --filter @vtt/${{ matrix.app }} --if-present run test -- --coverage
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           file: apps/${{ matrix.app }}/coverage/lcov.info
           flags: ${{ matrix.app }}
