@@ -40,9 +40,35 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sudo sh -s -- -b /usr/local/bin
 
           # Install secret scanner
-          wget -O trufflehog.tar.gz https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_linux_amd64.tar.gz
+          echo "Resolving latest TruffleHog release for Linux amd64..."
+          ASSET_JSON=$(curl -sSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN || github.token }}" https://api.github.com/repos/trufflesecurity/trufflehog/releases/latest)
+          TRUFFLE_URL=$(echo "$ASSET_JSON" | jq -r '.assets[].browser_download_url' | grep -iE 'linux.*(amd64|x86_64).*\\.tar\\.gz$' | head -n1)
+
+          if [ -z "$TRUFFLE_URL" ] || [ "$TRUFFLE_URL" = "null" ]; then
+            echo "❌ Could not determine TruffleHog asset URL for Linux amd64"
+            echo "$ASSET_JSON" | jq '{tag_name, assets: [.assets[]?.name]}' || true
+            exit 1
+          fi
+
+          echo "Downloading: $TRUFFLE_URL"
+          curl -sSLf "$TRUFFLE_URL" -o trufflehog.tar.gz
           tar -xzf trufflehog.tar.gz
-          sudo mv trufflehog /usr/local/bin/
+
+          # Robustly locate the extracted binary and install it
+          if [ -f trufflehog ]; then
+            sudo install -m 0755 trufflehog /usr/local/bin/trufflehog
+          elif [ -f trufflehog_linux_amd64 ]; then
+            sudo install -m 0755 trufflehog_linux_amd64 /usr/local/bin/trufflehog
+          else
+            BIN=$(find . -maxdepth 2 -type f \( -name 'trufflehog' -o -name 'trufflehog_linux_amd64' -o -name 'trufflehog_*linux*amd64*' \) | head -n1)
+            if [ -n "$BIN" ]; then
+              sudo install -m 0755 "$BIN" /usr/local/bin/trufflehog
+            else
+              echo "❌ TruffleHog binary not found after extraction"
+              ls -la
+              exit 1
+            fi
+          fi
 
           echo "✅ Security tools installed"
 
