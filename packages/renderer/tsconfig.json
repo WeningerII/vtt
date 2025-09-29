@@ -6,10 +6,10 @@
     "incremental": true,
     "tsBuildInfoFile": "./renderer.tsbuildinfo",
     "composite": true,
-    "types": ["node"]
+    "types": ["node", "@webgpu/types"],
+    "typeRoots": ["../../node_modules/@types", "../../node_modules", "../../types"]
   },
   "include": ["src"],
-  "references": [
-    { "path": "../logging" }
-  ]
+  "exclude": ["src/webgpu-types.d.ts"],
+  "references": [{ "path": "../logging" }]
 }

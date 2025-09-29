@@ -53,6 +53,7 @@ export interface GPUCapabilities {
 
 export class PerformanceMonitor {
   private gl: WebGL2RenderingContext;
+  private timerExt: any | null = null;
   private metrics: PerformanceMetrics;
   private previousMetrics: PerformanceMetrics;
   private frameHistory: number[] = [];
@@ -100,7 +101,10 @@ export class PerformanceMonitor {
 
     // Set up GPU timer if available
     if (this.capabilities.extensions.includes("EXT_disjoint_timer_query_webgl2")) {
-      this.gpuTimer = this.gl.createQuery();
+      this.timerExt = this.gl.getExtension("EXT_disjoint_timer_query_webgl2");
+      if (this.timerExt) {
+        this.gpuTimer = this.gl.createQuery();
+      }
     }
 
     // Auto-detect best profile
@@ -246,8 +250,8 @@ export class PerformanceMonitor {
     this.shaderSwitchCount = 0;
 
     // Begin GPU timing if available
-    if (this.gpuTimer) {
-      this.gl.beginQuery(this.gl.TIME_ELAPSED, this.gpuTimer);
+    if (this.gpuTimer && this.timerExt) {
+      this.gl.beginQuery(this.timerExt.TIME_ELAPSED_EXT, this.gpuTimer);
     }
   }
 
@@ -255,8 +259,8 @@ export class PerformanceMonitor {
     const frameTime = performance.now() - this.frameStartTime;
 
     // End GPU timing
-    if (this.gpuTimer) {
-      this.gl.endQuery(this.gl.TIME_ELAPSED);
+    if (this.gpuTimer && this.timerExt) {
+      this.gl.endQuery(this.timerExt.TIME_ELAPSED_EXT);
 
       // Check if result is available (from previous frame)
       const available = this.gl.getQueryParameter(this.gpuTimer, this.gl.QUERY_RESULT_AVAILABLE);
@@ -370,7 +374,9 @@ export class PerformanceMonitor {
   }
 
   public getAverageFPS(frames: number = this.frameHistory.length): number {
-    if (this.frameHistory.length === 0) {return 0;}
+    if (this.frameHistory.length === 0) {
+      return 0;
+    }
 
     const recent = this.frameHistory.slice(-frames);
     const avgFrameTime = recent.reduce((_a, __b) => _a + __b, 0) / recent.length;
@@ -378,14 +384,18 @@ export class PerformanceMonitor {
   }
 
   public getAverageFrameTime(frames: number = this.frameHistory.length): number {
-    if (this.frameHistory.length === 0) {return 0;}
+    if (this.frameHistory.length === 0) {
+      return 0;
+    }
 
     const recent = this.frameHistory.slice(-frames);
     return recent.reduce((_a, __b) => _a + __b, 0) / recent.length;
   }
 
   public getFrameTimePercentile(percentile: number): number {
-    if (this.frameHistory.length === 0) {return 0;}
+    if (this.frameHistory.length === 0) {
+      return 0;
+    }
 
     const sorted = [...this.frameHistory].sort((_a, __b) => _a - __b);
     const total = sorted.reduce((_a, __b) => _a + __b, 0);
