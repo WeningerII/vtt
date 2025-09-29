@@ -50,7 +50,16 @@ jobs:
           cat metrics.json | jq '.'
 
           # Calculate success rate (last 50 runs)
-          SUCCESS_RATE=$(gh api repos/${{ github.repository }}/actions/workflows --per-page 100 | jq -r '.workflows[] | select(.name=="'$WORKFLOW_NAME'") | .id' | head -1 | xargs -I {} gh api repos/${{ github.repository }}/actions/workflows/{}/runs --per-page 50 | jq '[.workflow_runs[] | select(.conclusion != null)] | length as $total | [.[] | select(.conclusion == "success")] | length / $total * 100')
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows --per-page 100 | jq -r '.workflows[] | select(.name=="'$WORKFLOW_NAME'") | .id' | head -1)
+
+          if [ -n "$WORKFLOW_ID" ] && [ "$WORKFLOW_ID" != "null" ]; then
+            SUCCESS_RATE=$(gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs --per-page 50 | jq '[.workflow_runs[] | select(.conclusion != null)] | length as $total | if $total > 0 then ([.[] | select(.conclusion == "success")] | length / $total * 100) else 100 end')
+          else
+            SUCCESS_RATE="100"
+          fi
+
+          # Ensure SUCCESS_RATE is a valid number
+          SUCCESS_RATE=${SUCCESS_RATE:-100}
 
           echo "success_rate=$SUCCESS_RATE" >> $GITHUB_OUTPUT
           echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
@@ -88,7 +97,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
 
       - name: Alert on degraded performance
-        if: steps.metrics.outputs.workflow_status == 'failure' || steps.metrics.outputs.success_rate < 90
+        if: steps.metrics.outputs.workflow_status == 'failure' || (steps.metrics.outputs.success_rate != '' && steps.metrics.outputs.success_rate < 90)
         env:
           MONITORING_WEBHOOK: ${{ secrets.MONITORING_WEBHOOK || '' }}
         run: |
@@ -97,12 +106,15 @@ jobs:
           echo "Duration: ${{ steps.metrics.outputs.duration }}s"
 
           # Create alert payload for external monitoring (webhook, Slack, etc.)
+          SUCCESS_RATE_NUM="${{ steps.metrics.outputs.success_rate }}"
+          SUCCESS_RATE_NUM=${SUCCESS_RATE_NUM:-100}
+
           cat > alert.json << EOF
           {
             "alert_type": "ci_performance_degradation",
-            "severity": "$([ "${{ steps.metrics.outputs.success_rate }}" -lt "80" ] && echo "critical" || echo "warning")",
+            "severity": "$([ "${SUCCESS_RATE_NUM}" -lt "80" ] && echo "critical" || echo "warning")",
             "workflow": "${{ steps.metrics.outputs.workflow_name }}",
-            "success_rate": ${{ steps.metrics.outputs.success_rate }},
+            "success_rate": "${{ steps.metrics.outputs.success_rate || '100' }}",
             "last_status": "${{ steps.metrics.outputs.workflow_status }}",
             "repository": "${{ github.repository }}",
             "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
