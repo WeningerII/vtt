@@ -109,14 +109,16 @@ jobs:
           ref: ${{ needs.evaluate-deployment.outputs.rollback_target }}
 
       - name: Emergency rollback notification
+        env:
+          EMERGENCY_WEBHOOK: ${{ secrets.EMERGENCY_WEBHOOK || '' }}
         run: |
           echo "🚨 EMERGENCY ROLLBACK INITIATED"
           echo "Target SHA: ${{ needs.evaluate-deployment.outputs.rollback_target }}"
           echo "Severity: ${{ needs.evaluate-deployment.outputs.severity }}"
 
           # Send emergency notifications (Slack, PagerDuty, etc.)
-          if [ -n "${{ secrets.EMERGENCY_WEBHOOK || '' }}" ]; then
-            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK || '' }}" \
+          if [ -n "${EMERGENCY_WEBHOOK}" ]; then
+            curl -X POST "${EMERGENCY_WEBHOOK}" \
               -H "Content-Type: application/json" \
               -d '{
                 "alert": "EMERGENCY_ROLLBACK_INITIATED",
@@ -193,12 +195,14 @@ jobs:
 
       - name: Rollback success notification
         if: steps.health_check.outputs.health_status == 'healthy'
+        env:
+          EMERGENCY_WEBHOOK: ${{ secrets.EMERGENCY_WEBHOOK || '' }}
         run: |
           echo "✅ ROLLBACK COMPLETED SUCCESSFULLY"
 
           # Send success notification
-          if [ -n "${{ secrets.EMERGENCY_WEBHOOK || '' }}" ]; then
-            curl -X POST "${{ secrets.EMERGENCY_WEBHOOK || '' }}" \
+          if [ -n "${EMERGENCY_WEBHOOK}" ]; then
+            curl -X POST "${EMERGENCY_WEBHOOK}" \
               -H "Content-Type: application/json" \
               -d '{
                 "alert": "ROLLBACK_COMPLETED_SUCCESSFULLY",

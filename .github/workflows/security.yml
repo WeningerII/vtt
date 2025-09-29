@@ -57,7 +57,7 @@ jobs:
 
       - name: TruffleHog OSS
         if: steps.trufflehog_range.outputs.run == 'true'
-        uses: trufflesecurity/trufflehog@v3
+        uses: trufflesecurity/trufflehog@v3.90.8
         with:
           path: ./
           base: ${{ steps.trufflehog_range.outputs.base }}
