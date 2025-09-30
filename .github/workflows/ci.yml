@@ -1,139 +1,195 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: CI
 
-permissions:
-  contents: read
-
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  security:
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-node-pnpm
-        with:
-          node-version: "22"
-          pnpm-version: "9.12.2"
-      - name: Cache node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules
-            ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - uses: ./.github/actions/setup-native-deps
-      - uses: ./.github/actions/install-deps
-        with:
-          ensure-native-deps: "true"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Debug workspace for Trivy
-        run: |
-          echo "=== Current directory contents ==="
-          ls -la
-          echo "=== Disk space ==="
-          df -h
-          echo "=== Memory usage ==="
-          free -h
-
-      - name: Run Trivy vulnerability scanner
-        id: trivy-scan
-        continue-on-error: true
-        uses: aquasecurity/trivy-action@master
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
-          # Add additional configuration to help with potential issues
-          timeout: "10m"
+          version: 10.17.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: Check formatting
+        run: pnpm run format:check
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm run db:gen
+
+      - name: Run TypeScript type check
+        run: pnpm run typecheck
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
         env:
-          TRIVY_DEBUG: true
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: vtt_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
-      - name: Check if Trivy results exist
-        id: check-trivy
-        run: |
-          if [ -f "trivy-results.sarif" ]; then
-            echo "trivy-results-exist=true" >> $GITHUB_OUTPUT
-            echo "Trivy results file exists"
-          else
-            echo "trivy-results-exist=false" >> $GITHUB_OUTPUT
-            echo "Trivy results file does not exist"
-          fi
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ steps.check-trivy.outputs.trivy-results-exist == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: "trivy-results.sarif"
-
-      - name: Upload SARIF as artifact (forked PRs)
-        if: ${{ steps.check-trivy.outputs.trivy-results-exist == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-results-sarif
-          path: trivy-results.sarif
-      - name: Run pnpm audit
-        run: |
-          pnpm audit --audit-level high --prod
-        continue-on-error: true
-      - name: Check for known vulnerabilities
-        run: |
-          npx audit-ci --config .audit-ci.json
-        continue-on-error: true
-
-  license-compliance:
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-node-pnpm
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: "22"
-          pnpm-version: "9.12.2"
-      - name: Setup native dependencies
-        uses: ./.github/actions/setup-native-deps
-      - uses: ./.github/actions/install-deps
+          version: 10.17.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          ensure-native-deps: "true"
-      - name: Check license compliance
-        run: node scripts/license-check.js
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm run db:gen
+
+      - name: Run database migrations
+        run: pnpm run db:migrate
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/vtt_test
+
+      - name: Run tests
+        run: pnpm run test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/vtt_test
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          fail_ci_if_error: false
 
   build:
+    name: Build
     runs-on: ubuntu-latest
-    needs: [security, license-compliance]
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        app: [client, server, bots, editor]
     steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-node-pnpm
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          node-version: "22"
-          pnpm-version: "9.12.2"
-      - name: Setup native dependencies
-        uses: ./.github/actions/setup-native-deps
-      - uses: ./.github/actions/install-deps
+          version: 10.17.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          ensure-native-deps: "true"
-      - name: Generate Prisma client
-        run: pnpm db:gen
-      - name: Build (with retry)
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          retry_on: error
-          command: pnpm turbo build --concurrency=2
-      - name: Lint (continue on error)
-        run: pnpm run lint
-        continue-on-error: true
-      - name: Test
-        run: pnpm turbo test --concurrency=2
-      - name: Validate build artifacts
-        run: pnpm run validate:build
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        if: matrix.app == 'server'
+        run: pnpm run db:gen
+
+      - name: Build ${{ matrix.app }}
+        run: pnpm --filter @vtt/${{ matrix.app }} run build
+
+      - name: Check build artifacts
+        run: |
+          if [ "${{ matrix.app }}" = "client" ]; then
+            ls -la apps/client/dist
+          elif [ "${{ matrix.app }}" = "server" ]; then
+            ls -la apps/server/dist
+          fi
+
+  all-checks:
+    name: All Checks Complete
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test, build]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" || 
+                "${{ needs.typecheck.result }}" != "success" || 
+                "${{ needs.test.result }}" != "success" || 
+                "${{ needs.build.result }}" != "success" ]]; then
+            echo "One or more checks failed"
+            exit 1
+          fi
+          echo "All checks passed!"

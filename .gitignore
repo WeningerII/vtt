@@ -84,3 +84,5 @@ pnpm-debug.log*
 # ESLint cache
 .eslintcache
 .ms-playwright
+
+**/*.log

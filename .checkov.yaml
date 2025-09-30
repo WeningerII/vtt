@@ -1,4 +1,0 @@
-skip-check:
-  - CKV_K8S_43 # Image digests enforced during deployment promotion
-  - CKV_K8S_35 # Secret values currently exposed via env vars for backward compatibility
-  - CKV_K8S_38 # Service account tokens intentionally mounted until workload identity rollout concludes

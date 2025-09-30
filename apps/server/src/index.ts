@@ -4,7 +4,19 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-import { logger } from "@vtt/logging";
+// Validate environment variables before starting
+import { validateEnvironmentOrExit } from "./config/env-validation";
+validateEnvironmentOrExit();
+
+import { logger as importedLogger } from "@vtt/logging";
+// Fallback logger in case @vtt/logging fails to load
+const logger = importedLogger || {
+  info: console.log.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.log.bind(console),
+};
+
 import { createServer } from "http";
 import { URL } from "url";
 import { WebSocketServer } from "ws";
@@ -182,7 +194,7 @@ import type { Context } from "./router/types";
 import { AuthConfig, getAuthManager } from "./auth/auth-manager";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { Strategy as DiscordStrategy } from "passport-discord";
+import { Strategy as DiscordStrategy } from "passport-discord-auth";
 
 // Use DatabaseManager singleton for consistent database connection
 const prisma = DatabaseManager.getInstance();
@@ -222,30 +234,33 @@ passport.use(
   ),
 );
 
-passport.use(
-  new DiscordStrategy(
-    {
-      clientID: process.env.DISCORD_CLIENT_ID || "123456789012345678",
-      clientSecret: process.env.DISCORD_CLIENT_SECRET || "dummy-discord-client-secret",
-      callbackURL:
-        process.env.DISCORD_CALLBACK_URL || "http://localhost:8080/api/v1/auth/discord/callback",
-      scope: ["identify", "email"],
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const user = {
-          id: profile.id,
-          email: profile.email,
-          displayName: profile.global_name || profile.username,
-          provider: "discord",
-        };
-        return done(null, user);
-      } catch (error) {
-        return done(error, false);
-      }
-    },
-  ),
-);
+// Only initialize Discord OAuth if credentials are provided
+if (process.env.DISCORD_CLIENT_ID && process.env.DISCORD_CLIENT_SECRET) {
+  passport.use(
+    new DiscordStrategy(
+      {
+        clientId: process.env.DISCORD_CLIENT_ID,
+        clientSecret: process.env.DISCORD_CLIENT_SECRET,
+        callbackUrl:
+          process.env.DISCORD_CALLBACK_URL || "http://localhost:8080/api/v1/auth/discord/callback",
+        scope: ["identify", "email"],
+      },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          const user = {
+            id: profile.id,
+            email: profile.email,
+            displayName: profile.global_name || profile.username,
+            provider: "discord",
+          };
+          return done(null, user);
+        } catch (error) {
+          return done(error, false);
+        }
+      },
+    ),
+  );
+}
 
 passport.serializeUser((user: any, done) => {
   done(null, user.id);

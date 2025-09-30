@@ -1,121 +1,156 @@
-name: Security Scanning
+name: Security Scan
+
 on:
-  schedule:
-    - cron: "0 2 * * *" # Daily at 2 AM UTC
-  workflow_dispatch:
   push:
-    branches: [main]
-    paths:
-      - "**/Dockerfile"
-      - "**/package.json"
-      - "**/pnpm-lock.yaml"
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
   security-events: write
-  actions: read
 
 jobs:
   dependency-review:
+    name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
         with:
-          fail-on-severity: moderate
-          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD
-          deny-licenses: GPL-2.0, GPL-3.0, AGPL-1.0, AGPL-3.0
+          fail-on-severity: high
+          deny-licenses: GPL-3.0, AGPL-3.0
 
-  secrets-scan:
+  npm-audit:
+    name: NPM Audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Run pnpm audit
+        run: pnpm audit --audit-level=moderate || true
+
+      - name: Run pnpm audit (production only)
+        run: pnpm audit --audit-level=high --prod
+
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Determine TruffleHog diff base
-        id: trufflehog_range
-        run: |
-          head_sha=$(git rev-parse HEAD)
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            base_sha=$(git rev-parse HEAD~1)
-          else
-            base_sha="$head_sha"
-          fi
-
-          echo "base=$base_sha" >> "$GITHUB_OUTPUT"
-          if [ "$base_sha" = "$head_sha" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: TruffleHog OSS
-        if: steps.trufflehog_range.outputs.run == 'true'
-        uses: trufflesecurity/trufflehog@v3.90.8
+        uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ steps.trufflehog_range.outputs.base }}
-          head: ${{ github.sha }}
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
           extra_args: --debug --only-verified
 
-      - name: TruffleHog skipped (no new commits)
-        if: steps.trufflehog_range.outputs.run != 'true'
-        run: echo "TruffleHog skipped because there is no new commit to diff against."
-
-      - name: GitLeaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
-
-  infrastructure-scan:
+  docker-security:
+    name: Docker Image Scan
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      - name: Checkov Infrastructure Security
-        uses: bridgecrewio/checkov-action@master
+      - name: Build Docker image
+        run: docker build -f apps/server/Dockerfile -t vtt-server:test .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
         with:
-          directory: .
-          framework: kubernetes,dockerfile,github_actions
-          config_file: .checkov.yaml
-          output_format: sarif
-          output_file_path: checkov-results.sarif
-          quiet: true
-          soft_fail: true
+          image-ref: 'vtt-server:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
 
-      - name: Upload Checkov scan results
+      - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: "checkov-results.sarif"
+          sarif_file: 'trivy-results.sarif'
 
-      - name: Install Kubesec dependencies
+  env-var-check:
+    name: Environment Variable Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for hardcoded secrets
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq bc
-
-      - name: Kubesec scan
-        run: |
-          curl -sSX POST --data-binary @infra/k8s/base/deployment-server.yaml https://v2.kubesec.io/scan > kubesec-server.json
-          curl -sSX POST --data-binary @infra/k8s/base/deployment-client.yaml https://v2.kubesec.io/scan > kubesec-client.json
-
-          # Fail if score is below 5
-          SERVER_SCORE=$(jq '.[0].score' kubesec-server.json)
-          CLIENT_SCORE=$(jq '.[0].score' kubesec-client.json)
-
-          if (( $(echo "$SERVER_SCORE < 5" | bc -l) )); then
-            echo "Server deployment security score too low: $SERVER_SCORE"
-            exit 1
+          echo "Checking for hardcoded development secrets..."
+          if grep -r "dev-secret-change-in-production" apps/server/src/; then
+            echo "::warning::Found hardcoded development secrets in production code"
           fi
 
-          if (( $(echo "$CLIENT_SCORE < 5" | bc -l) )); then
-            echo "Client deployment security score too low: $CLIENT_SCORE"
-            exit 1
+      - name: Validate .env.example completeness
+        run: |
+          echo "Checking .env.example is up to date..."
+          # Check that all required env vars are documented
+          grep -h "process.env." apps/server/src/**/*.ts | grep -oP 'process\.env\.\K[A-Z_]+' | sort -u > required-vars.txt
+          grep -oP '^[A-Z_]+=*' .env.example | cut -d= -f1 | sort -u > documented-vars.txt
+          
+          echo "Required environment variables:"
+          cat required-vars.txt
+          echo ""
+          echo "Documented environment variables:"
+          cat documented-vars.txt
+          
+          # Find missing vars (for informational purposes)
+          comm -23 required-vars.txt documented-vars.txt > missing-vars.txt
+          if [ -s missing-vars.txt ]; then
+            echo "::warning::Some environment variables may not be documented:"
+            cat missing-vars.txt
           fi

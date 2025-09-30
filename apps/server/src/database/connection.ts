@@ -1,7 +1,15 @@
 import path from "path";
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
-import { logger } from "@vtt/logging";
+import { logger as importedLogger } from "@vtt/logging";
+
+// Fallback logger in case @vtt/logging fails to load
+const logger = importedLogger || {
+  info: console.log.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.log.bind(console),
+};
 
 type PrismaClientConstructor = typeof PrismaClient;
 

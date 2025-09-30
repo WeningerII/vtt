@@ -293,7 +293,19 @@ export function getSpellSlotsForClass(className: string, level: number): Record<
     return {};
   }
 
-  return classData.slotProgression[level] || {};
+  const slots = classData.slotProgression[level];
+  if (!slots) {
+    return {};
+  }
+  
+  // Filter out undefined values
+  const result: Record<number, number> = {};
+  for (const [key, value] of Object.entries(slots)) {
+    if (value !== undefined) {
+      result[Number(key)] = value;
+    }
+  }
+  return result;
 }
 
 export function getCantripsKnown(className: string, level: number): number {
