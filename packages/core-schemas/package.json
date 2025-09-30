@@ -19,6 +19,6 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "zod": "^3.0.0"
+    "zod": "^4.1.11"
   }
 }
