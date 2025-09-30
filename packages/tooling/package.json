@@ -11,6 +11,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest --passWithNoTests"
+    "test": "vitest --passWithNoTests",
+    "clean": "rm -rf dist *.tsbuildinfo"
   }
 }

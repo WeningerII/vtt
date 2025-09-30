@@ -9,7 +9,7 @@ inputs:
   pnpm-version:
     description: "pnpm version to install or activate"
     required: false
-    default: "9.12.2"
+    default: "10.17.1"
   check-latest:
     description: "Request the latest minor/patch for the Node.js version"
     required: false

@@ -17,7 +17,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "20"
-          pnpm-version: "9.12.2"
+          pnpm-version: "10.17.1"
           install-system-packages: "libpng-dev libpng16-16 libpng-tools build-essential nasm yasm"
 
       - name: Install dependencies (dry run)

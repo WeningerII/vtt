@@ -588,6 +588,10 @@ importers:
         version: link:../performance
 
   packages/audio:
+    dependencies:
+      "@vtt/logging":
+        specifier: workspace:*
+        version: link:../logging
     devDependencies:
       "@types/node":
         specifier: ^20.0.0

@@ -94,7 +94,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
         with:
           node-version: "22"
-          pnpm-version: "9.12.2"
+          pnpm-version: "10.17.1"
 
       - name: Install dependencies
         uses: ./.github/actions/install-deps

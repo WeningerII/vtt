@@ -9,6 +9,7 @@
     "audit:security": "node scripts/audit-security.js",
     "audit:full": "pnpm run audit && pnpm run audit:security",
     "build": "turbo run build",
+    "clean": "turbo run clean",
     "test": "turbo run test",
     "test:ci": "turbo run test -- --coverage",
     "test:coverage": "./scripts/test-coverage.sh",
