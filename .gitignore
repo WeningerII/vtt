@@ -52,6 +52,10 @@ results.json
 results.xml
 check-sessions.sql
 
+# Empty placeholder files
+check-circular-deps.js
+validate-tsconfigs.js
+
 # npm lockfile (using pnpm)
 package-lock.json
 
