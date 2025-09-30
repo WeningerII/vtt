@@ -38,8 +38,7 @@ module.exports = {
         project: [
           "./tsconfig.json",
           "./apps/*/tsconfig.json",
-          "./packages/*/tsconfig.json",
-          "./services/*/tsconfig.json"
+          "./packages/*/tsconfig.json"
         ],
       },
     },
@@ -49,16 +48,7 @@ module.exports = {
     "**/build/**",
     "**/.turbo/**",
     "**/coverage/**",
-    "**/node_modules/**",
-    "**/playwright-report/**",
-    "**/test-results/**",
-    "e2e/**",
-    "tests/**",
-    "infra/**",
-    "aws/**",
-    "assets/**",
-    "docs/**",
-    "scripts/**",
+    "**/node_modules/**"
   ],
   rules: {
     // Basic ESLint rules
@@ -143,7 +133,7 @@ module.exports = {
     },
     {
       // Libraries: relax explicit any so it doesn't block CI while types are improved
-      files: ["packages/**/*", "services/**/*"],
+      files: ["packages/**/*"],
       rules: {
         "@typescript-eslint/no-explicit-any": "off",
       },
