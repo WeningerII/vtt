@@ -28,7 +28,7 @@ export class BufferManager {
     label: string,
     size: number,
     usage: GPUBufferUsageFlags,
-    data?: ArrayBuffer | ArrayBufferView
+    data?: ArrayBuffer | ArrayBufferView,
   ): GPUBuffer {
     const buffer = this.device.createBuffer({
       label,
@@ -42,7 +42,9 @@ export class BufferManager {
       if (data instanceof ArrayBuffer) {
         new Uint8Array(mappedRange).set(new Uint8Array(data));
       } else {
-        new Uint8Array(mappedRange).set(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+        new Uint8Array(mappedRange).set(
+          new Uint8Array(data.buffer, data.byteOffset, data.byteLength),
+        );
       }
       buffer.unmap();
     }
@@ -56,7 +58,7 @@ export class BufferManager {
       label,
       vertices.byteLength,
       GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-      vertices
+      vertices,
     );
   }
 
@@ -65,20 +67,27 @@ export class BufferManager {
       label,
       indices.byteLength,
       GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
-      indices
+      indices,
     );
   }
 
   createUniformBuffer(label: string, size: number): GPUBuffer {
-    return this.createBuffer(
-      label,
-      size,
-      GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-    );
+    return this.createBuffer(label, size, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
   }
 
   updateBuffer(buffer: GPUBuffer, data: ArrayBuffer | ArrayBufferView, offset = 0): void {
-    this.device.queue.writeBuffer(buffer, offset, data);
+    if (data instanceof ArrayBuffer) {
+      this.device.queue.writeBuffer(buffer, offset, data);
+    } else {
+      // Pass the underlying ArrayBuffer and view offsets to satisfy GPUAllowSharedBufferSource
+      this.device.queue.writeBuffer(
+        buffer,
+        offset,
+        data.buffer as ArrayBuffer,
+        data.byteOffset,
+        data.byteLength,
+      );
+    }
   }
 
   // Camera uniform buffer (view, projection, camera position)
@@ -94,23 +103,23 @@ export class BufferManager {
     viewMatrix: Float32Array,
     projMatrix: Float32Array,
     viewProjMatrix: Float32Array,
-    cameraPos: Float32Array
+    cameraPos: Float32Array,
   ): void {
     if (!this.uniformBuffers.camera) {
       this.uniformBuffers.camera = new Float32Array(52); // Total size / 4
     }
 
     const data = this.uniformBuffers.camera;
-    
+
     // View-projection matrix (16 floats)
     data.set(viewProjMatrix, 0);
-    
+
     // View matrix (16 floats)
     data.set(viewMatrix, 16);
-    
+
     // Projection matrix (16 floats)
     data.set(projMatrix, 32);
-    
+
     // Camera position (3 floats + 1 padding)
     data.set(cameraPos, 48);
 
@@ -128,7 +137,7 @@ export class BufferManager {
   updateModelUniforms(
     buffer: GPUBuffer,
     modelMatrix: Float32Array,
-    normalMatrix: Float32Array
+    normalMatrix: Float32Array,
   ): void {
     if (!this.uniformBuffers.model) {
       this.uniformBuffers.model = new Float32Array(32);
@@ -155,26 +164,26 @@ export class BufferManager {
     lightPos: Float32Array,
     lightDir: Float32Array,
     lightColor: Float32Array,
-    lightIntensity: number
+    lightIntensity: number,
   ): void {
     if (!this.uniformBuffers.light) {
       this.uniformBuffers.light = new Float32Array(28);
     }
 
     const data = this.uniformBuffers.light;
-    
+
     // Light view-projection matrix (16 floats)
     data.set(lightViewProjMatrix, 0);
-    
+
     // Light position (3 floats + 1 padding)
     data.set(lightPos, 16);
-    
+
     // Light direction (3 floats + 1 padding)
     data.set(lightDir, 20);
-    
+
     // Light color (3 floats + 1 padding)
     data.set(lightColor, 24);
-    
+
     // Light intensity (1 float)
     data[27] = lightIntensity;
 
@@ -194,23 +203,23 @@ export class BufferManager {
     albedo: Float32Array,
     metallic: number,
     roughness: number,
-    emissive: Float32Array
+    emissive: Float32Array,
   ): void {
     if (!this.uniformBuffers.material) {
       this.uniformBuffers.material = new Float32Array(12);
     }
 
     const data = this.uniformBuffers.material;
-    
+
     // Albedo (4 floats - RGBA)
     data.set(albedo, 0);
-    
+
     // Metallic (1 float)
     data[4] = metallic;
-    
+
     // Roughness (1 float)
     data[5] = roughness;
-    
+
     // Emissive (3 floats + 1 padding)
     data.set(emissive, 6);
 
@@ -230,7 +239,7 @@ export class BufferManager {
   }
 
   dispose(): void {
-    for (const [label, bufferInfo] of this.buffers) {
+    for (const [_label, bufferInfo] of this.buffers) {
       bufferInfo.buffer.destroy();
     }
     this.buffers.clear();

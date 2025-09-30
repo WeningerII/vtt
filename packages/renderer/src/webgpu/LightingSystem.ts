@@ -429,7 +429,13 @@ export class ProfessionalLightingSystem {
       lightData[offset + 13] = light.castShadows ? 1 : 0;
     });
 
-    this.device.queue.writeBuffer(this.lightBuffer!, 0, lightData);
+    this.device.queue.writeBuffer(
+      this.lightBuffer!,
+      0,
+      lightData.buffer as ArrayBuffer,
+      lightData.byteOffset,
+      lightData.byteLength,
+    );
   }
 
   renderShadowMaps(
@@ -444,7 +450,9 @@ export class ProfessionalLightingSystem {
     const shadowCasters = Array.from(this.lights.values()).filter((light) => light.castShadows);
 
     shadowCasters.forEach((light, lightIndex) => {
-      if (lightIndex >= lightViewMatrices.length / 16) {return;}
+      if (lightIndex >= lightViewMatrices.length / 16) {
+        return;
+      }
 
       const lightViewMatrix = lightViewMatrices.slice(lightIndex * 16, (lightIndex + 1) * 16);
 
@@ -465,7 +473,13 @@ export class ProfessionalLightingSystem {
       renderPass.setPipeline(this.shadowMapPipeline!);
 
       // Update light view-projection matrix
-      this.device.queue.writeBuffer(this.shadowMatrixBuffer!, lightIndex * 64, lightViewMatrix);
+      this.device.queue.writeBuffer(
+        this.shadowMatrixBuffer!,
+        lightIndex * 64,
+        lightViewMatrix.buffer as ArrayBuffer,
+        lightViewMatrix.byteOffset,
+        lightViewMatrix.byteLength,
+      );
 
       // Render objects from light's perspective
       objects.forEach((obj) => {
@@ -483,7 +497,9 @@ export class ProfessionalLightingSystem {
   }
 
   renderVolumetricLighting(encoder: GPUCommandEncoder, _camera: any): void {
-    if (!this.volumetricSettings.enabled || !this.volumetricPipeline) {return;}
+    if (!this.volumetricSettings.enabled || !this.volumetricPipeline) {
+      return;
+    }
 
     const startTime = performance.now();
 
@@ -493,7 +509,13 @@ export class ProfessionalLightingSystem {
     // Update volumetric uniforms
     const volumetricData = new Float32Array(32);
     // Set matrices, camera position, and volumetric parameters
-    this.device.queue.writeBuffer(this.lightingUniformBuffer!, 0, volumetricData);
+    this.device.queue.writeBuffer(
+      this.lightingUniformBuffer!,
+      0,
+      volumetricData.buffer as ArrayBuffer,
+      volumetricData.byteOffset,
+      volumetricData.byteLength,
+    );
 
     // Dispatch compute work
     const workgroupsX = Math.ceil(1920 / 2 / 8);
