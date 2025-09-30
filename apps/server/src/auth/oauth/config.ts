@@ -4,10 +4,20 @@
 
 import passport, { type DoneCallback } from "passport";
 import { logger } from "@vtt/logging";
-import { Strategy as DiscordStrategy, type Profile as DiscordProfile } from "passport-discord";
+import { Strategy as DiscordStrategy } from "passport-discord-auth";
 import { Strategy as GoogleStrategy, type Profile as GoogleProfile } from "passport-google-oauth20";
 import type { VerifyCallback } from "passport-oauth2";
 import { AuthManager } from "@vtt/auth";
+
+// Minimal shape used from the Discord OAuth profile. Some community strategies may differ slightly,
+// so we keep this interface narrow and resilient to missing fields.
+interface DiscordProfile {
+  id: string;
+  email?: string;
+  username?: string;
+  global_name?: string;
+  avatar?: string;
+}
 
 // Note: This server uses the in-memory AuthManager for OAuth user handling during tests.
 // We intentionally avoid direct Prisma usage here to prevent schema mismatches and runtime issues.
