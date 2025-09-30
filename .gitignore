@@ -31,7 +31,29 @@ node_modules
 exhaustive-scan-*.csv
 exhaustive-scan-*.json
 audit-report.json
+security-audit-*.json
+eslint-report.json
+eslint-results.json
+style-audit-report.csv
+
+# Archive directory
+archive/
+
+# Binary artifacts
+*.zip
+awscliv2.zip
+
+# Fix scripts (archived)
 fix-*.js
+fix-*.sh
+
+# Test and build artifacts  
+results.json
+results.xml
+check-sessions.sql
+
+# npm lockfile (using pnpm)
+package-lock.json
 
 # Test outputs
 test-results/
