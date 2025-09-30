@@ -4,6 +4,11 @@ import { aiProviderRegistry } from "@vtt/core";
 import { buildSystemPrompt, buildUserPrompt, safeJsonExtract, applyNameFallback } from "./utils";
 import type { CharacterSheet, GenerateInput } from "./types";
 
+/**
+ * Genesis Character Generation Service
+ * Generates D&D 5E character sheets using AI providers
+ */
+
 const prisma = new PrismaClient();
 
 export async function generateCharacter(input: GenerateInput) {

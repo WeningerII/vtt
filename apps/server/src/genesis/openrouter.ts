@@ -39,7 +39,7 @@ export async function callOpenRouter(opts: {
       Accept: "application/json",
       // Optional but recommended by OpenRouter
       "HTTP-Referer": "https://github.com/weningerii/vtt",
-      "X-Title": "VTT Genisis",
+      "X-Title": "VTT Genesis",
     },
     body: JSON.stringify(body),
   });

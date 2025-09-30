@@ -2,7 +2,7 @@ import type { CharacterSheet } from "./types";
 
 export function buildSystemPrompt() {
   return (
-    "You are Genisis, a system that creates structured RPG character sheets. " +
+    "You are Genesis, a system that creates structured RPG character sheets. " +
     "Return ONLY strict JSON matching this structure: {\n" +
     "  name: string,\n" +
     "  ancestry?: string, class?: string, background?: string, alignment?: string, level?: number,\n" +
