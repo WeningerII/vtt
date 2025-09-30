@@ -14,7 +14,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "analyze": "node webpack-bundle-analyzer.js"
+    "analyze": "node webpack-bundle-analyzer.js",
+    "migrate": "node scripts/migrations/run-all-migrations.js",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@vtt/core-schemas": "workspace:*",
