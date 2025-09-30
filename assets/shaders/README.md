@@ -1,1 +1,0 @@
-GLSL shaders for fog, outlines, and particle effects.

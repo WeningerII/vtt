@@ -1,1 +1,0 @@
-Sprites or models representing PCs, NPCs, and objects.
